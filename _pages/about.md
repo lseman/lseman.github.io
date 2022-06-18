@@ -21,7 +21,7 @@ Hi! My name is Laio, I am an Electrical Engineer from Brazil. I received a Ph.D.
 
 From 2018 to 2019 I worked as an Assistant Professor at the Federal University of Technology - Paraná (UTFPR), Brazil.
 
-Since 2019 I am a professor in the Graduate Program of Applied Computer Sciences, at the Itajai Valley University (UNIVALI), focusing on strategies for static and dynamic optimization, along with applications in traffic control, cyberphysical systems, and oil and gas production systems.
+Since 2019 I am a professor in the Graduate Program in Applied Computer Science, at the University of Vale do Itajaí (UNIVALI), focusing on strategies for static and dynamic optimization and deep learning, along with applications in traffic control, cyberphysical systems, and oil and gas production systems.
 
 Also, I have been working as a Postdoctoral Researcher at UFSC, focused on optimizing production for the oil and gas industry.
 
