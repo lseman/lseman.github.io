@@ -25,6 +25,6 @@ Since 2019 I am a professor in the Graduate Program of Applied Computer Sciences
 
 Also, I have been working as a Postdoctoral Researcher at UFSC, focused on optimizing production for the oil and gas industry.
 
-In this context, I have been co-advising theses and dissertations in the area of optimization, including decomposition strategies such as Benders, Lagrange and Dantzig-Wolfe.
+In this context, I have been advising and co-advising theses and dissertations in the area of optimization and deep learning, including decomposition strategies such as Benders, Lagrange and Dantzig-Wolfe.
 
--- I was the Program Chair of the IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020).
+*--* I was the Program Chair of the IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020).
