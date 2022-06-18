@@ -8,17 +8,23 @@ profile:
   align: right
   image: prof_pic.jpg
   address: >
-    <p>555 your office number</p>
-    <p>123 your address street</p>
-    <p>Your City, State 12345</p>
+    <p>UNIVALI</p>
+    <p>R. Uruguai, 458 - Centro</p>
+    <p>Itajaí - SC, 88302-901</p>
 
-news: true  # includes a list of news items
-selected_papers: true # includes a list of papers marked as "selected={true}"
+news: false  # includes a list of news items
+selected_papers: false # includes a list of papers marked as "selected={true}"
 social: true  # includes social icons at the bottom of the page
 ---
 
-Write your biography here. Tell the world about yourself. Link to your favorite [subreddit](http://reddit.com). You can put a picture in, too. The code is already in, just name your picture `prof_pic.jpg` and put it in the `img/` folder.
+Hi! My name is Laio, I am an Electrical Engineer from Brazil. I received a Ph.D. degree in Electrical Engineering from the Federal University of Santa Catarina (UFSC) in 2017.
 
-Put your address / P.O. box / other info right below your picture. You can also disable any these elements by editing `profile` property of the YAML header of your `_pages/about.md`. Edit `_bibliography/papers.bib` and Jekyll will render your [publications page](/al-folio/publications/) automatically.
+From 2018 to 2019 I worked as an Assistant Professor at the Federal University of Technology - Paraná (UTFPR), Brazil.
 
-Link to your social media connections, too. This theme is set up to use [Font Awesome icons](http://fortawesome.github.io/Font-Awesome/) and [Academicons](https://jpswalsh.github.io/academicons/), like the ones below. Add your Facebook, Twitter, LinkedIn, Google Scholar, or just disable all of them.
+Since 2019 I am a professor in the Graduate Program of Applied Computer Sciences, at the Itajai Valley University (UNIVALI), focusing on strategies for static and dynamic optimization, along with applications in traffic control, cyberphysical systems, and oil and gas production systems.
+
+Also, I have been working as a Postdoctoral Researcher at UFSC, focused on optimizing production for the oil and gas industry.
+
+In this context, I have been co-advising theses and dissertations in the area of optimization, including decomposition strategies such as Benders, Lagrange and Dantzig-Wolfe.
+
+-- I was the Program Chair of the IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020).
