@@ -6,7 +6,7 @@ subtitle: <a href='#'>Affiliations</a>. Address. Contacts. Moto. Etc.
 
 profile:
   align: right
-  image: prof_pic.jpg
+  image: laio.jpeg
   image_circular: false # crops the image to make it circular
   more_info: >
     <p>555 your office number</p>
@@ -19,8 +19,12 @@ selected_papers: true # includes a list of papers marked as "selected={true}"
 social: true  # includes social icons at the bottom of the page
 ---
 
-Write your biography here. Tell the world about yourself. Link to your favorite [subreddit](http://reddit.com). You can put a picture in, too. The code is already in, just name your picture `prof_pic.jpg` and put it in the `img/` folder.
+Possui graduação (2013) e mestrado (2015) em Engenharia Elétrica pela Universidade Regional de Blumenau (FURB) e doutorado (2017) em Engenharia Elétrica pela Universidade Federal de Santa Catarina (UFSC). Na pós-graduação, é professor permanente do Mestrado em Computação Aplicada da Universidade do Vale do Itajaí (UNIVALI) e professor colaborador do PosAutomação (Programa de Pós-Graduação em Automação e Sistemas) da UFSC. É professor adjunto da Pontífice Universidade Católica do Paraná (PUC-PR), onde leciona disciplinas da área de controle.
 
-Put your address / P.O. box / other info right below your picture. You can also disable any of these elements by editing `profile` property of the YAML header of your `_pages/about.md`. Edit `_bibliography/papers.bib` and Jekyll will render your [publications page](/al-folio/publications/) automatically.
+Foi Program Chair do V International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2022), tendo sido também Program Chair da edição anterior (IAA-LACW 2020).
 
-Link to your social media connections, too. This theme is set up to use [Font Awesome icons](http://fortawesome.github.io/Font-Awesome/) and [Academicons](https://jpswalsh.github.io/academicons/), like the ones below. Add your Facebook, Twitter, LinkedIn, Google Scholar, or just disable all of them.
+Tem experiência na área de engenharia elétrica com ênfase em sistemas computacionais, atuando principalmente em estratégias de modelagem, controle e otimização (programação linear, não-linear e inteira mista) e inteligência artificial aplicada. Suas principais aplicações incluem sistemas de transporte inteligentes, sistemas ciberfísicos, sistemas aeroespaciais (CubeSats) e produção de petróleo e gás. Participou do projeto FloripaSat-I, primeiro nanosatélite de Santa Catarina. Atualmente participa do desenvolvimento dos seguintes CubeSats: GOLDS-UFSC e Catarina-A1.
+
+Recentemente, suas pesquisas na área de pequenos satélites receberam fomento da FAPESC (Chamada Pública nº 27/2021 - Jovem Pesquisador): "Escalonamento de tarefas para pequenos satélites visando maximização da qualidade de serviço" e do CNPq (CNPq/MCTI/FNDCT Nº 18/2021 - Universal): "Arcabouço de simulação termoelétrico visando qualidade de serviço para pequenos satélites".
+
+Confira nosso último pre-print a respeito do uso de Graph Neural Networks para resolução de MILP: https://arxiv.org/abs/2303.13773 
