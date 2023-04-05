@@ -24,7 +24,7 @@ social: true  # includes social icons at the bottom of the page
 - Master's degree in Electrical Engineering, Universidade Regional de Blumenau (FURB), 2015
 - PhD in Electrical Engineering, Universidade Federal de Santa Catarina (UFSC), 2017
 
-### Work Experience
+### Current Positions
 - Assistant Professor at Pontifical Catholic University of Paraná (PUC-PR)
 - Professor of the Gradute Program in Applied Computing (MCA) at Universidade do Vale do Itajaí (UNIVALI)
 - Visiting Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
@@ -35,8 +35,8 @@ social: true  # includes social icons at the bottom of the page
 - Intelligent transportation systems, cyber-physical systems, aerospace systems (CubeSats), and oil and gas production 
 
 ### Event Organization
-- Program Chair of V International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2022)
-- Program Chair of IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020)
+- Program Chair of the V International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2022)
+- Program Chair of the IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020)
 
 ### CubeSats
 - Participated in the FloripaSat-I project, the first nanosatellite in Santa Catarina 
