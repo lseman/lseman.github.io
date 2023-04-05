@@ -43,9 +43,9 @@ social: true  # includes social icons at the bottom of the page
 - Participated in the FloripaSat-I project, the first nanosatellite in Santa Catarina 
 - Currently involved in the development of CubeSats, including GOLDS-UFSC and Catarina-A1 
 
-### Research
+### Grants
 - Funding from FAPESC (Public Call nº 27/2021 - Young Researcher) for research on task scheduling for small satellites aimed at maximizing service quality
 - Funding from CNPq (CNPq/MCTI/FNDCT nº 18/2021 - Universal) for research on a thermoelectric simulation framework aimed at service quality for small satellites 
 
-### Publications
-- [Pre-print on Graph Neural Networks for MILP resolution](https://arxiv.org/abs/2303.13773)
+### Pre-prints
+- [Pre-print on Graph Neural Networks for Nanosatellite Task Scheduling](https://arxiv.org/abs/2303.13773)
