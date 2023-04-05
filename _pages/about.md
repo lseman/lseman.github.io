@@ -29,15 +29,14 @@ social: true  # includes social icons at the bottom of the page
 - Professor of the Gradute Program in Applied Computing (MCA) at Universidade do Vale do Itajaí (UNIVALI)
 - Visiting Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
 
-
-### Event Organization
-- Program Chair of V International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2022)
-- Program Chair of IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020)
-
 ### Areas of Expertise
 - Modeling, control, and optimization strategies (linear, nonlinear, and mixed integer programming) 
 - Artificial intelligence and deep learning applications 
 - Intelligent transportation systems, cyber-physical systems, aerospace systems (CubeSats), and oil and gas production 
+
+### Event Organization
+- Program Chair of V International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2022)
+- Program Chair of IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020)
 
 ### CubeSats
 - Participated in the FloripaSat-I project, the first nanosatellite in Santa Catarina 
