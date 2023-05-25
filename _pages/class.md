@@ -1,6 +1,6 @@
 ---
 layout: page
-title: class
+title: CDSC
 permalink: /assignments/
 description: Class Assignments
 nav: true
