@@ -54,11 +54,12 @@ where:
 
 - **Designing Buck Converter in MATLAB:** Utilize MATLAB to design your buck converter based on the parameters defined. Generate and analyze all the relevant waveforms such as input and output voltages, current waveforms, etc.
 
-- **Implementation and Control in Simulink's SimScape:** Implement your buck converter design in SimScape, an advanced simulation environment in Simulink. Use various control strategies to control the output voltage of the buck converter under different load conditions. Verify the stability and performance of the control system under different operating conditions.
+- **Control Methods**: Apply direct tuning methods, such as Ziegler-Nichols, to design a controller for the system. You can also use [Sisotool](https://www.mathworks.com/help/control/ref/controlsystemdesigner-app.html) to design your controller.
+  
+
+- **Implementation and Control in Simulink's SimScape:** Implement your buck converter design in SimScape, an advanced simulation environment in Simulink. Employ the previous defined control strategy to control the output voltage of the buck converter under different load conditions. Verify the stability and performance of the control system under different operating conditions.
 
 - **Documentation:** Document all your steps, observations, and conclusions. Include necessary screenshots, plots, graphs, and other relevant visuals. Make sure to describe each step of your work in a clear and comprehensible way, so that readers with various levels of knowledge can understand your process and results.
-
-- Apply direct tuning methods, such as Ziegler-Nichols, to design a controller for the system. You can also use [Sisotool](https://www.mathworks.com/help/control/ref/controlsystemdesigner-app.html) to design your controller.
 
 ## Deliverables
 
@@ -197,5 +198,4 @@ translation_field = robot_node.getField('translation')
 
 # i.e., the next line moves it back to position 0, 0, 0 (x, y, z)
 translation_field.setSFVec3f([0, 0, 0])
-
 ```
