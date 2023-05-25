@@ -189,10 +189,10 @@ In order to be able to move transport your robot back to the initial position, i
 from controller import Supervisor
 robot = Supervisor()
 
-# the next line instantiate the robot node according to it's DEF
+# the next line instantiate the robot node according to its DEF
 robot_node = robot.getFromDef("E_PUCK")
 
-# from the translation field, you are able to overwrite it's position
+# from the translation field, you are able to overwrite its position
 translation_field = robot_node.getField('translation')
 
 # i.e., the next line moves it back to position 0, 0, 0 (x, y, z)
