@@ -25,6 +25,7 @@ horizontal: false
   - [Deliverables](#deliverables-2)
   - [Assessment Criteria](#assessment-criteria-2)
   - [Links](#links-2)
+  - [Tips-n-Tricks](#tips-n-tricks)
 
 --- 
 
@@ -179,3 +180,22 @@ Your assignment will be assessed based on:
 - https://optuna.org
 - https://github.com/pydae/pydae
 - https://github.com/PKU-DAIR/open-box
+
+## Tips-n-Tricks
+
+In order to be able to move transport your robot back to the initial position, in order to start the next iteration of the hypertuning procedure, you need to instantiate it as a supervisor.
+
+```python
+from controller import Supervisor
+robot = Supervisor()
+
+# the next line instantiate the robot node according to it's DEF
+robot_node = robot.getFromDef("E_PUCK")
+
+# from the translation field, you are able to overwrite it's position
+translation_field = robot_node.getField('translation')
+
+# i.e., the next line moves it back to position 0, 0, 0 (x, y, z)
+translation_field.setSFVec3f([0, -0.43, 0])
+
+```
