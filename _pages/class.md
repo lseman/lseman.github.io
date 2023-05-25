@@ -90,11 +90,11 @@ Your assignment will be assessed based on the following:
 
 - Ziegler-Nichols
 
-| Control Type | Kp      | Ti    | Td  |
-|--------------|---------|-------|-----|
-| P            | 0.5*Ku  | -     | -   |
-| PI           | 0.45*Ku | T/1.2 | -   |
-| PID          | 0.6*Ku  | T/2   | T/8 |
+| Control Type | Kp        | Ti        | Td        |
+|:-------------|:----------|:----------|:----------|
+| P            | 0.5 $$\times$$ Ku    | -         | -         |
+| PI           | 0.45 $$\times$$ Ku   | T/1.2     | -         |
+| PID          | 0.6 $$\times$$ Ku    | T/2       | T/8       |
 
 
 ---
