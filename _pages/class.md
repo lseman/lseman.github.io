@@ -8,7 +8,7 @@ nav_order: 2
 horizontal: false
 ---
 
-# Table of Contents <!-- omit in toc -->
+# Assignments <!-- omit in toc -->
 
 - [**Assignment 1:** Buck Converter Design and Control using MATLAB and Simulink](#assignment-1-buck-converter-design-and-control-using-matlab-and-simulink)
   - [Assignment Description](#assignment-description)
@@ -40,7 +40,7 @@ $$
 $$
 
 where:
-- $$V_o(s)$$ and $$V_i(s)$$ are the Laplace transforms of the output and input voltages respectively,
+- $$ V_o(s) $$ and $$ V_i(s) $$ are the Laplace transforms of the output and input voltages respectively,
 - D is the duty cycle of the PWM control,
 - s is the complex frequency in the Laplace domain,
 - R is the load resistance,
