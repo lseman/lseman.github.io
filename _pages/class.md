@@ -30,6 +30,8 @@ horizontal: false
     - [Assessment Criteria:](#assessment-criteria-2)
     - [Links](#links-2)
 
+--- 
+
 # Assignment 1
 
 ## Buck Converter Design and Control using MATLAB and Simulink
@@ -87,6 +89,8 @@ Your assignment will be assessed based on the following:
 - https://laioseman.com/ccccjsv2
 - http://www.mathworks.com/help/sps/ug/buck-converter.html
 
+---
+
 # Assignment 2
 
 ## Inverted Pendulum Control using Python and Gym Library
@@ -132,6 +136,8 @@ Your assignment will be assessed based on:
 - https://gymnasium.farama.org
 - https://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
 - https://www3.diism.unisi.it/~control/ctm/examples/pend/invpen.html
+
+---
 
 # Assignment 3
 
