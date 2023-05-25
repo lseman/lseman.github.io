@@ -1,8 +1,8 @@
 ---
 layout: page
-title: CDSC
+title: Class
 permalink: /assignments/
-description: Class Assignments
+description: CDSC 2023.1
 nav: true
 nav_order: 2
 horizontal: false
