@@ -20,8 +20,8 @@ horizontal: false
 - [Assignment 2](#assignment-2)
   - [Inverted Pendulum Control using Python and Gym Library](#inverted-pendulum-control-using-python-and-gym-library)
     - [Assignment Description:](#assignment-description-1)
-  - [Deliverables:](#deliverables-1)
-  - [Assessment Criteria:](#assessment-criteria-1)
+    - [Deliverables:](#deliverables-1)
+    - [Assessment Criteria:](#assessment-criteria-1)
     - [Links](#links-1)
 - [Assignment 3](#assignment-3)
   - [Robot Control in Webots with Hyperparameter Tuning](#robot-control-in-webots-with-hyperparameter-tuning)
@@ -93,7 +93,7 @@ Your assignment will be assessed based on the following:
 
 - **Understanding Inverted Pendulum Dynamics:** Start with a brief overview of the theory and principles of the inverted pendulum system. Highlight the challenges related to balancing the pendulum and the key aspects of its dynamic behaviour.
 
-- **Setting Up the Environment:** Set up your Python environment and install the Gym library. Gym is a toolkit for developing and comparing reinforcement learning algorithms. It provides a variety of environments, including the CartPole-v1 for the inverted pendulum problem.
+- **Setting Up the Environment:** Set up your Python environment and install the Gymnasium library. Gymnasium is a toolkit for developing and comparing reinforcement learning algorithms. It provides a variety of environments, including the CartPole-v1 for the inverted pendulum problem.
 
 - **Implementing the Inverted Pendulum in Gymnasium:** Utilize the CartPole-v1 environment provided by Gymnasium to implement the inverted pendulum problem. This environment simulates the dynamics of the inverted pendulum and provides a reward system for balancing the pendulum.
 
@@ -103,7 +103,7 @@ Your assignment will be assessed based on the following:
 
 - **Documentation:** Document all your steps, code, observations, and conclusions. Include relevant visualizations, such as plots of the pendulum's state over time or the cumulative reward.
 
-## Deliverables:
+### Deliverables:
 
 - A comprehensive report detailing your design process, control strategy, simulation results, and conclusions. Include relevant screenshots, code snippets, and plots.
 
@@ -111,7 +111,7 @@ Your assignment will be assessed based on the following:
 
 - A presentation summarizing your findings.
 
-## Assessment Criteria: 
+### Assessment Criteria: 
 
 Your assignment will be assessed based on:
 
