@@ -8,33 +8,27 @@ nav_order: 2
 horizontal: false
 ---
 
-# Table of Contents
+# Table of Contents <!-- omit in toc -->
 
-- [Table of Contents](#table-of-contents)
-- [Assignment 1](#assignment-1)
-  - [Buck Converter Design and Control using MATLAB and Simulink](#buck-converter-design-and-control-using-matlab-and-simulink)
-    - [Assignment Description:](#assignment-description)
-    - [Deliverables:](#deliverables)
-    - [Assessment Criteria:](#assessment-criteria)
-    - [Links:](#links)
-- [Assignment 2](#assignment-2)
-  - [Inverted Pendulum Control using Python and Gym Library](#inverted-pendulum-control-using-python-and-gym-library)
+- [**Assignment 1:** Buck Converter Design and Control using MATLAB and Simulink](#assignment-1-buck-converter-design-and-control-using-matlab-and-simulink)
+  - [Assignment Description:](#assignment-description)
+  - [Deliverables:](#deliverables)
+  - [Assessment Criteria:](#assessment-criteria)
+  - [Links:](#links)
+- [**Assignment 2:** Inverted Pendulum Control using Python and Gym/Gymnasium Library](#assignment-2-inverted-pendulum-control-using-python-and-gymgymnasium-library)
     - [Assignment Description:](#assignment-description-1)
     - [Deliverables:](#deliverables-1)
     - [Assessment Criteria:](#assessment-criteria-1)
     - [Links](#links-1)
-- [Assignment 3](#assignment-3)
-  - [Robot Control in Webots with Hyperparameter Tuning](#robot-control-in-webots-with-hyperparameter-tuning)
-    - [Assignment Description:](#assignment-description-2)
-    - [Deliverables:](#deliverables-2)
-    - [Assessment Criteria:](#assessment-criteria-2)
-    - [Links](#links-2)
+- [**Assignment 3:** Robot Control in Webots with Hyperparameter Tuning](#assignment-3-robot-control-in-webots-with-hyperparameter-tuning)
+  - [Assignment Description:](#assignment-description-2)
+  - [Deliverables:](#deliverables-2)
+  - [Assessment Criteria:](#assessment-criteria-2)
+  - [Links](#links-2)
 
 --- 
 
-# Assignment 1
-
-## Buck Converter Design and Control using MATLAB and Simulink
+# **Assignment 1:** Buck Converter Design and Control using MATLAB and Simulink
 
 The buck converter is a type of DC-DC converter that steps down voltage from its input to its output. It operates in two modes: the switch (usually a transistor) is either in the on-state (closed) or in the off-state (open).
 
@@ -53,7 +47,7 @@ where:
 - C is the capacitance.
 
 
-### Assignment Description:
+## Assignment Description:
 
 - **Defining Buck Converter Parameters:** Use the tool available at laioseman.com/ccccjsv2 to define the parameters for your buck converter. This should include the input voltage (Vin), the output voltage (Vout), and other necessary parameters such as frequency, duty cycle, load resistance, etc.
 
@@ -65,14 +59,14 @@ where:
 
 - Apply direct tuning methods, such as Ziegler-Nichols, to design a controller for the system. You can also use Sisotool (https://www.mathworks.com/help/control/ref/controlsystemdesigner-app.html) to design your controller.
 
-### Deliverables:
+## Deliverables:
 
 - A comprehensive report detailing your design process, implementation, control strategy, and results. Include screenshots and diagrams where necessary.
 The MATLAB and Simulink files used in your work.
 
 - A presentation summarizing your findings, suitable for a 15-minute presentation.
 
-### Assessment Criteria:
+## Assessment Criteria:
 
 Your assignment will be assessed based on the following:
 
@@ -84,16 +78,14 @@ Your assignment will be assessed based on the following:
 
 - Grades will be given individually.
 
-### Links:
+## Links:
 
 - https://laioseman.com/ccccjsv2
 - http://www.mathworks.com/help/sps/ug/buck-converter.html
 
 ---
 
-# Assignment 2
-
-## Inverted Pendulum Control using Python and Gym Library
+# **Assignment 2:** Inverted Pendulum Control using Python and Gym/Gymnasium Library
 
 ### Assignment Description:
 
@@ -139,13 +131,11 @@ Your assignment will be assessed based on:
 
 ---
 
-# Assignment 3
-
-##  Robot Control in Webots with Hyperparameter Tuning
+# **Assignment 3:** Robot Control in Webots with Hyperparameter Tuning
 
 The goal of this assignment is to create a custom environment in Webots, design a robot with a specific behavior to control, and apply hyperparameter tuning methods using libraries like Optuna, Open-Box, or PyDAE to design an optimal PID controller for the robot.
 
-### Assignment Description:
+## Assignment Description:
 
 - **World Creation in Webots:** Start by creating your custom world in Webots. Define the layout, objects, and other features of the world as per the problem requirements.
 
@@ -159,7 +149,7 @@ The goal of this assignment is to create a custom environment in Webots, design 
 
 - **Evaluation and Documentation:** Evaluate the performance of your tuned controller through simulations in Webots. Document all your steps, observations, code, and conclusions. Include relevant screenshots, code snippets, and performance plots.
 
-### Deliverables:
+## Deliverables:
 
 - A comprehensive report detailing your world creation, behavior definition, PID design, hyperparameter optimization process, and evaluation results. Include relevant screenshots, code snippets, and performance plots.
 
@@ -167,7 +157,7 @@ The goal of this assignment is to create a custom environment in Webots, design 
 
 - A presentation summarizing your findings.
 
-### Assessment Criteria:
+## Assessment Criteria:
 
 Your assignment will be assessed based on:
 
@@ -183,7 +173,7 @@ Your assignment will be assessed based on:
 
 - Grades will be given individually.
 
-### Links
+## Links
 
 - https://cyberbotics.com
 - https://optuna.org
