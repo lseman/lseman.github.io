@@ -57,7 +57,7 @@ where:
 
 - **Documentation:** Document all your steps, observations, and conclusions. Include necessary screenshots, plots, graphs, and other relevant visuals. Make sure to describe each step of your work in a clear and comprehensible way, so that readers with various levels of knowledge can understand your process and results.
 
-- Apply direct tuning methods, such as Ziegler-Nichols, to design a controller for the system. You can also use Sisotool (https://www.mathworks.com/help/control/ref/controlsystemdesigner-app.html) to design your controller.
+- Apply direct tuning methods, such as Ziegler-Nichols, to design a controller for the system. You can also use [Sisotool](https://www.mathworks.com/help/control/ref/controlsystemdesigner-app.html) to design your controller.
 
 ## Deliverables:
 
@@ -80,7 +80,7 @@ Your assignment will be assessed based on the following:
 
 ## Links:
 
-- https://laioseman.com/ccccjsv2
+- http://laioseman.com/ccccjsv2
 - http://www.mathworks.com/help/sps/ug/buck-converter.html
 
 ---
