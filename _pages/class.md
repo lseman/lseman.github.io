@@ -92,14 +92,15 @@ Your assignment will be assessed based on the following:
 
 $$\begin{array}{llll}
 \hline
-\text{Control Type} & Kp & Ti & Td \\
+\text{Control Type} & K_p & T_i & T_d \\
 \hline
-\text{P} & 0.5 \times Ku & - & - \\
-\text{PI} & 0.45 \times Ku & T/1.2 & - \\
-\text{PID} & 0.6 \times Ku & T/2 & T/8 \\
+\text{P} & 0.5 \times K_u & - & - \\
+\text{PI} & 0.45 \times K_u & T/1.2 & - \\
+\text{PID} & 0.6 \times K_u & T/2 & T/8 \\
 \hline
 \end{array}$$ 
 <!-- omit in toc -->
+
 ---
 
 # **Assignment 2:** Inverted Pendulum Control using Python and Gym/Gymnasium Library
