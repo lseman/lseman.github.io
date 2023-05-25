@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Class
+title: classes
 permalink: /assignments/
 description: CDSC 2023.1
 nav: true
