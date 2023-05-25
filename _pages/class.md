@@ -15,6 +15,7 @@ horizontal: false
   - [Deliverables](#deliverables)
   - [Assessment Criteria](#assessment-criteria)
   - [Links](#links)
+  - [Tips-n-Tricks](#tips-n-tricks)
 - [**Assignment 2:** Inverted Pendulum Control using Python and Gym/Gymnasium Library](#assignment-2-inverted-pendulum-control-using-python-and-gymgymnasium-library)
     - [Assignment Description](#assignment-description-1)
     - [Deliverables](#deliverables-1)
@@ -25,7 +26,7 @@ horizontal: false
   - [Deliverables](#deliverables-2)
   - [Assessment Criteria](#assessment-criteria-2)
   - [Links](#links-2)
-  - [Tips-n-Tricks](#tips-n-tricks)
+  - [Tips-n-Tricks](#tips-n-tricks-1)
 
 --- 
 
@@ -84,6 +85,17 @@ Your assignment will be assessed based on the following:
 
 - http://laioseman.com/ccccjsv2
 - http://www.mathworks.com/help/sps/ug/buck-converter.html
+
+## Tips-n-Tricks
+
+- Ziegler-Nichols
+
+| Control Type | Kp      | Ti    | Td  |
+|--------------|---------|-------|-----|
+| P            | 0.5*Ku  | -     | -   |
+| PI           | 0.45*Ku | T/1.2 | -   |
+| PID          | 0.6*Ku  | T/2   | T/8 |
+
 
 ---
 
