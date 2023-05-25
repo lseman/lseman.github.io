@@ -61,7 +61,7 @@ where:
 
 - **Documentation:** Document all your steps, observations, and conclusions. Include necessary screenshots, plots, graphs, and other relevant visuals. Make sure to describe each step of your work in a clear and comprehensible way, so that readers with various levels of knowledge can understand your process and results.
 
-- Apply direct tuning methods, such as Ziegler-Nichols, to design a controller for the system.
+- Apply direct tuning methods, such as Ziegler-Nichols, to design a controller for the system. You can also use Sisotool (https://www.mathworks.com/help/control/ref/controlsystemdesigner-app.html) to design your controller.
 
 ### Deliverables:
 
@@ -79,6 +79,8 @@ Your assignment will be assessed based on the following:
 - Correctness and complexity of your MATLAB and Simulink designs.
 
 - Ability to effectively control the output voltage of the buck converter under various conditions.
+
+- Grades will be given individually.
 
 ### Links:
 
@@ -123,6 +125,8 @@ Your assignment will be assessed based on:
 
 - The clarity and quality of your report and presentation.
 
+- Grades will be given individually.
+
 ### Links
 
 - https://gymnasium.farama.org
@@ -162,10 +166,16 @@ The goal of this assignment is to create a custom environment in Webots, design 
 Your assignment will be assessed based on:
 
 - The complexity and creativity of your custom world and robot behavior.
+  
 - The correctness and sophistication of your PID design and tuning method.
+  
 - Your understanding of PID control, hyperparameter optimization, and their application to robot behavior control, as demonstrated in your work and report.
+  
 - The performance of your tuned controller, as shown by your simulation results.
+  
 - The clarity and quality of your report and presentation.
+
+- Grades will be given individually.
 
 ### Links
 
