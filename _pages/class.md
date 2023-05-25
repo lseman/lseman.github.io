@@ -16,6 +16,7 @@ horizontal: false
   - [Assessment Criteria](#assessment-criteria)
   - [Links](#links)
   - [Tips-n-Tricks](#tips-n-tricks)
+  - [$$](#)
 - [**Assignment 2:** Inverted Pendulum Control using Python and Gym/Gymnasium Library](#assignment-2-inverted-pendulum-control-using-python-and-gymgymnasium-library)
     - [Assignment Description](#assignment-description-1)
     - [Deliverables](#deliverables-1)
@@ -90,13 +91,15 @@ Your assignment will be assessed based on the following:
 
 - Ziegler-Nichols
 
-| Control Type &nbsp;&nbsp; | Kp &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Ti &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Td  |
-|:-------------|:----------|:----------|:----------|
-| P            | 0.5$$\times$$Ku    | -         | -         |
-| PI           | 0.45$$\times$$Ku   | T/1.2     | -         |
-| PID          | 0.6$$\times$$Ku    | T/2       | T/8       |
-
-
+$$
+\begin{array}{llll}
+\text{Control Type} & Kp & Ti & Td \\
+\hline
+\text{P} & 0.5 \times Ku & - & - \\
+\text{PI} & 0.45 \times Ku & T/1.2 & - \\
+\text{PID} & 0.6 \times Ku & T/2 & T/8 \\
+\end{array}
+$$
 ---
 
 # **Assignment 2:** Inverted Pendulum Control using Python and Gym/Gymnasium Library
