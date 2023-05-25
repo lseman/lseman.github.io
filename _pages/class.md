@@ -196,6 +196,6 @@ robot_node = robot.getFromDef("E_PUCK")
 translation_field = robot_node.getField('translation')
 
 # i.e., the next line moves it back to position 0, 0, 0 (x, y, z)
-translation_field.setSFVec3f([0, -0.43, 0])
+translation_field.setSFVec3f([0, 0, 0])
 
 ```
