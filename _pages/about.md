@@ -8,11 +8,6 @@ profile:
   align: right
   image: laio.jpeg
   image_circular: false # crops the image to make it circular
-  address: >
-    <p>PPGEPS</p>
-    <p>PUC-PR</p>
-    <p>Câmpus Curitiba</p>
-    <p>Brazil</p>
 
 news: false  # includes a list of news items
 selected_papers: false # includes a list of papers marked as "selected={true}"
@@ -25,9 +20,8 @@ social: true  # includes social icons at the bottom of the page
 - PhD in Electrical Engineering, Universidade Federal de Santa Catarina (UFSC), 2017
 
 #### Current Positions
-- Assistant Professor at Pontifical Catholic University of Paraná (PUC-PR)
-- Professor of the Gradute Program in Applied Computing (MCA) at Universidade do Vale do Itajaí (UNIVALI)
 - Visiting Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
+- Professor of the Gradute Program in Applied Computing (MCA) at Universidade do Vale do Itajaí (UNIVALI)
 
 #### Areas of Expertise
 - Modeling, control, and optimization strategies (linear, nonlinear, and mixed integer programming) 
