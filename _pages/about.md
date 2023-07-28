@@ -21,7 +21,6 @@ social: true  # includes social icons at the bottom of the page
 
 #### Current Positions
 - Visiting Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
-- Professor of the Gradute Program in Applied Computing (MCA) at Universidade do Vale do Itajaí (UNIVALI)
 
 #### Areas of Expertise
 - Modeling, control, and optimization strategies (linear, nonlinear, and mixed integer programming) 
