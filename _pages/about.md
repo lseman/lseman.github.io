@@ -20,7 +20,7 @@ social: true  # includes social icons at the bottom of the page
 - PhD in Electrical Engineering, Universidade Federal de Santa Catarina (UFSC), 2017
 
 #### Current Positions
-- Visiting Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
+- Research Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
 
 #### Areas of Expertise
 - Modeling, control, and optimization strategies (linear, nonlinear, and mixed integer programming) 
@@ -38,6 +38,7 @@ social: true  # includes social icons at the bottom of the page
 #### Grants
 - Funding from FAPESC (Public Call nº 27/2021 - Young Researcher) for research on task scheduling for small satellites aimed at maximizing service quality
 - Funding from CNPq (CNPq/MCTI/FNDCT nº 18/2021 - Universal) for research on a thermoelectric simulation framework aimed at service quality for small satellites 
+- Grant from CNPq awarded from research productivity (Produtividade em Pesquisa 2)
 
 #### Pre-prints
 - [Pre-print on Graph Neural Networks for Nanosatellite Task Scheduling](https://arxiv.org/abs/2303.13773)
