@@ -15,9 +15,9 @@ social: true  # includes social icons at the bottom of the page
 ---
 
 #### Education
-- Bachelor's degree in Electrical Engineering, Universidade Regional de Blumenau (FURB), 2013
-- Master's degree in Electrical Engineering, Universidade Regional de Blumenau (FURB), 2015
 - PhD in Electrical Engineering, Universidade Federal de Santa Catarina (UFSC), 2017
+- Master's degree in Electrical Engineering, Universidade Regional de Blumenau (FURB), 2015
+- Bachelor's degree in Electrical Engineering, Universidade Regional de Blumenau (FURB), 2013
 
 #### Current Positions
 - Research Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
@@ -40,5 +40,6 @@ social: true  # includes social icons at the bottom of the page
 - Funding from CNPq (CNPq/MCTI/FNDCT nº 18/2021 - Universal) for research on a thermoelectric simulation framework aimed at service quality for small satellites 
 - Grant from CNPq awarded from research productivity (Produtividade em Pesquisa 2)
 
-#### Pre-prints
+#### Pre-prints on Deep Learning for Mathematical Programming
 - [Pre-print on Graph Neural Networks for Nanosatellite Task Scheduling](https://arxiv.org/abs/2303.13773)
+- [Deep-learning-based Early Fixing for Gas-lifted Oil Production Optimization: Supervised and Weakly-supervised Approaches](hhttps://arxiv.org/abs/2309.00197)
