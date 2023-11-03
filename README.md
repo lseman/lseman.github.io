@@ -121,6 +121,10 @@ Feel free to add your own page(s) by sending a PR.
 <a href="https://kudhru.github.io/" target="_blank">★</a>
 <a href="https://mbarbetti.github.io/" target="_blank">★</a>
 <a href="https://www.zhivotenko.com/" target="_blank">★</a>
+<a href="https://giordanodaloisio.github.io/" target="_blank">★</a>
+<a href="https://aadityaura.github.io/" target="_blank">★</a>
+<a href="https://abhinav-mehta.github.io/" target="_blank">★</a>
+<a href="https://shubhashisroydipta.com/" target="_blank">★</a>
 </td>
 </tr>
 <tr>
@@ -227,12 +231,13 @@ You need to take the following steps to get `al-folio` up and running on your lo
 - Finally, run the following command that will pull the latest pre-built image from DockerHub and will run your website.
 
 ```bash
-$ docker-compose up
+$ docker compose pull
+$ docker compose up
 ```
 
 Note that when you run it for the first time, it will download a docker image of size 400MB or so. 
 
-Now, feel free to customize the theme however you like (don't forget to change the name!). After you are done, you can use the same command (`docker-compose up`) to render the webpage with all you changes. Also, make sure to commit your final changes.
+Now, feel free to customize the theme however you like (don't forget to change the name!). After you are done, you can use the same command (`docker compose up`) to render the webpage with all you changes. Also, make sure to commit your final changes.
 
 > To change port number, you can edit `docker-compose.yml` file.
 
@@ -243,7 +248,7 @@ Now, feel free to customize the theme however you like (don't forget to change t
 Build and run a new docker image using:
 
 ```bash
-$ docker-compose -f docker-local.yml up
+$ docker compose up --build
 ```
 
 > If you want to update jekyll, install new ruby packages, etc., all you have to do is build the image again using `--force-recreate` argument at the end of previous command! It will download ruby and jekyll and install all ruby packages again from scratch.
