@@ -2,43 +2,24 @@
 layout: about
 title: about
 permalink: /
-subtitle: Optimization; Deep Learning; Space Systems
+subtitle: <a href='#'>Affiliations</a>. Address. Contacts. Moto. Etc.
 
 profile:
   align: right
-  image: laio.jpeg
+  image: prof_pic.jpg
   image_circular: false # crops the image to make it circular
+  more_info: >
+    <p>555 your office number</p>
+    <p>123 your address street</p>
+    <p>Your City, State 12345</p>
 
-news: false  # includes a list of news items
-selected_papers: false # includes a list of papers marked as "selected={true}"
-social: true  # includes social icons at the bottom of the page
+news: true # includes a list of news items
+selected_papers: true # includes a list of papers marked as "selected={true}"
+social: true # includes social icons at the bottom of the page
 ---
 
-#### Education
-- Bachelor's degree in Electrical Engineering, Universidade Regional de Blumenau (FURB), 2013
-- Master's degree in Electrical Engineering, Universidade Regional de Blumenau (FURB), 2015
-- PhD in Electrical Engineering, Universidade Federal de Santa Catarina (UFSC), 2017
+Write your biography here. Tell the world about yourself. Link to your favorite [subreddit](http://reddit.com). You can put a picture in, too. The code is already in, just name your picture `prof_pic.jpg` and put it in the `img/` folder.
 
-#### Current Positions
-- Research Professor of the PosAutomação (Automation and Systems Graduate Program) at Federal University of Santa Catarina (UFSC)
+Put your address / P.O. box / other info right below your picture. You can also disable any of these elements by editing `profile` property of the YAML header of your `_pages/about.md`. Edit `_bibliography/papers.bib` and Jekyll will render your [publications page](/al-folio/publications/) automatically.
 
-#### Areas of Expertise
-- Modeling, control, and optimization strategies (linear, nonlinear, and mixed integer programming) 
-- Artificial intelligence and deep learning applications 
-- Intelligent transportation systems, cyber-physical systems, aerospace systems (CubeSats), and oil and gas production 
-
-#### Event Organization
-- Program Chair of the V International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2022)
-- Program Chair of the IV International Academy of Astronautics Latin American CubeSat Workshop (IAA-LACW 2020)
-
-#### CubeSats
-- Participated in the FloripaSat-I project, the first nanosatellite in Santa Catarina 
-- Currently involved in the development of CubeSats, including GOLDS-UFSC and Catarina-A1 
-
-#### Grants
-- Funding from FAPESC (Public Call nº 27/2021 - Young Researcher) for research on task scheduling for small satellites aimed at maximizing service quality
-- Funding from CNPq (CNPq/MCTI/FNDCT nº 18/2021 - Universal) for research on a thermoelectric simulation framework aimed at service quality for small satellites 
-- Grant from CNPq awarded from research productivity (Produtividade em Pesquisa 2)
-
-#### Pre-prints
-- [Pre-print on Graph Neural Networks for Nanosatellite Task Scheduling](https://arxiv.org/abs/2303.13773)
+Link to your social media connections, too. This theme is set up to use [Font Awesome icons](https://fontawesome.com/) and [Academicons](https://jpswalsh.github.io/academicons/), like the ones below. Add your Facebook, Twitter, LinkedIn, Google Scholar, or just disable all of them.
