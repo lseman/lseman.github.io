@@ -7,18 +7,28 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- MathJax for LaTeX rendering -->
-  <script>
-    window.MathJax = { 
-      tex: { 
-        inlineMath: [['$', '$'], ['\\(', '\\)']] 
-      }, 
-      svg: { 
-        fontCache: 'global' 
-      }
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true
+    },
+    chtml: {
+      // disable MathJax linebreaking entirely
+      linebreaks: { automatic: false },
+      matchFontHeight: true
+    },
+    options: {
+      ignoreHtmlClass: 'tex2jax_ignore',
+      processHtmlClass: 'tex2jax_process'
+    }
+  };
+</script>
+<!-- Use CHTML instead of SVG -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
   
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -33,6 +43,24 @@
     .bg-hero { background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff); background-size: 200% 200%; animation: grad 18s ease infinite; }
     @keyframes grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
     .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    /* Prevent inline MathJax from breaking across lines */
+mjx-container[jax="SVG"][display="inline"] {
+  white-space: nowrap;
+}
+
+/* Make long lines with inline math still usable on small screens */
+.math-nowrap {
+  white-space: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Optional: keep display equations blocky and not wrapped */
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  overflow-x: auto; /* in case a wide display equation exceeds container */
+}
+
   </style>
 </head>
 <body class="min-h-screen text-slate-800">
@@ -321,7 +349,7 @@
   </footer>
 
   <script>
-  // Footer year
+// Footer year
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('year').textContent = new Date().getFullYear();
   
@@ -538,7 +566,7 @@ function recurrenceWizard() {
         };
         this.method = 'Power‑shrink';
         this.confidence = 'medium';
-        this.verdict = `Depth $O(\\log\\log n)$ for $0<r<1$. Often $T(n)=\\Theta(g(n) \\cdot \\log\\log n)$ if $a$ is modest.`;
+        this.verdict = `$\\text{Depth } O(\\log\\log n) \\text{ for } 0<r<1 \\text{. Often } T(n)=\\Theta(g(n) \\cdot \\log\\log n) \\text{ if } a \\text{ is modest.}$`;
         this.renderLatex(this.verdict);
         this.triggerMathJax();
         return;
@@ -606,7 +634,7 @@ function recurrenceWizard() {
     },
     
     renderLatex(html) {
-      this.rendered = html;
+      this.rendered = `<div>${html}</div>`;
     },
     
     triggerMathJax() {
