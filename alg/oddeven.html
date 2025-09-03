@@ -3,17 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bubble Sort — Interactive Visualizer (Vanilla JS + Tailwind)</title>
-  <!-- TailwindCSS CDN -->
+  <title>Odd–Even Sort — Interactive Visualizer (Vanilla JS + Tailwind)</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-800">
   <div class="mx-auto max-w-6xl px-5 py-8">
     <header>
-      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Bubble Sort — Interactive Visualizer</h1>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Odd–Even Sort — Interactive Visualizer</h1>
       <p class="mt-2 text-slate-600 max-w-3xl">
-        Explore how Bubble Sort works step-by-step. Watch adjacent pairs compare and swap, see passes push the largest
-        elements to the end, and connect the animation to the algorithm and its complexity.
+        A parallel-friendly Bubble variant: alternate passes comparing disjoint pairs
+        <span class="font-mono">(0,1),(2,3),…</span> then <span class="font-mono">(1,2),(3,4),…</span> until no swaps.
       </p>
     </header>
 
@@ -56,12 +55,16 @@
         <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 class="text-lg font-semibold mb-2">Pseudocode</h3>
           <pre id="pseudocode" class="rounded-2xl p-4 bg-slate-900 text-slate-100 text-sm leading-6 overflow-auto"><code>
-<span data-line="1" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>for i = 0 .. n-2:</span>
-<span data-line="2" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>  swapped ← false</span>
-<span data-line="3" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  for j = 0 .. n-2-i:</span>
-<span data-line="4" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>    if A[j] &gt; A[j+1]:</span>
-<span data-line="5" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>      swap(A[j], A[j+1]); swapped ← true</span>
-<span data-line="6" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>  if not swapped: break</span>
+<span data-line="1" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>swapped ← true; pass ← 0</span>
+<span data-line="2" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>while swapped:</span>
+<span data-line="3" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  swapped ← false</span>
+<span data-line="4" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>  if pass is even:  // even pass</span>
+<span data-line="5" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>    for j = 0,2,4,.. &lt; n-1:</span>
+<span data-line="6" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>      if A[j] &gt; A[j+1]: swap; swapped ← true</span>
+<span data-line="7" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">07</span>  else:              // odd pass</span>
+<span data-line="8" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">08</span>    for j = 1,3,5,.. &lt; n-1:</span>
+<span data-line="9" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">09</span>      if A[j] &gt; A[j+1]: swap; swapped ← true</span>
+<span data-line="10" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">10</span>  pass ← pass + 1</span>
           </code></pre>
         </div>
       </section>
@@ -69,16 +72,15 @@
       <!-- Right: Theory & Complexity -->
       <aside class="flex flex-col gap-4">
         <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-semibold">How Bubble Sort Works</h3>
+          <h3 class="text-lg font-semibold">How It Works</h3>
           <p class="mt-2 text-sm leading-6 text-slate-600">
-            Bubble Sort repeatedly steps through the list, compares adjacent pairs, and swaps them if they are in the wrong order.
-            After each full pass, the largest remaining element bubbles up to its final position at the end.
-            The process repeats on the unsorted prefix until no swaps are needed.
+            Each iteration does two disjoint comparison passes (even then odd indices), similar to a
+            synchronous version of Bubble. Stops when a full iteration makes no swaps.
           </p>
           <ul class="mt-3 text-sm text-slate-700 list-disc pl-5 space-y-1">
-            <li><span class="font-medium text-amber-700">Amber</span> bars indicate the pair currently being compared.</li>
-            <li><span class="font-medium text-rose-700">Rose</span> bars indicate a swap just happened.</li>
-            <li><span class="font-medium text-emerald-700">Emerald</span> bars are already in their final positions.</li>
+            <li><span class="font-medium text-amber-700">Amber</span>: currently compared pair.</li>
+            <li><span class="font-medium text-rose-700">Rose</span>: a swap just occurred.</li>
+            <li><span class="font-medium text-emerald-700">Emerald</span>: final (fully sorted) state.</li>
           </ul>
         </div>
 
@@ -90,33 +92,19 @@
               <ul class="mt-1 space-y-1">
                 <li><span class="font-semibold">Worst:</span> O(n²)</li>
                 <li><span class="font-semibold">Average:</span> O(n²)</li>
-                <li><span class="font-semibold">Best:</span> O(n) with early‑exit</li>
+                <li><span class="font-semibold">Best:</span> O(n) if already sorted</li>
               </ul>
             </div>
             <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
               <div class="text-slate-500 text-xs uppercase">Space</div>
-              <p class="mt-1">O(1) extra memory (in‑place)</p>
+              <p class="mt-1">O(1) extra memory (in-place)</p>
             </div>
           </div>
-          <p class="mt-3 text-sm text-slate-600">
-            The inner loop performs at most <span class="font-mono">n−1−i</span> comparisons on pass <span class="font-mono">i</span>.
-            Summing over passes yields <span class="font-mono">∑<sub>i=0</sub><sup>n-2</sup> (n-1-i) = (n−1)n/2 = O(n²)</span> comparisons in the worst case.
-            With the “swapped” early‑exit, a sorted input finishes after one pass: O(n).
-          </p>
-        </div>
-
-        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 class="text-lg font-semibold">Try These Experiments</h3>
-          <ol class="mt-2 list-decimal pl-5 space-y-2 text-sm text-slate-700">
-            <li>Set a small size (e.g., 8), shuffle, then <span class="font-medium">Step</span> through to understand each comparison.</li>
-            <li>Increase the size to 40–60 and <span class="font-medium">Play</span> at different speeds; watch the green tail grow after each pass.</li>
-            <li>Start with a nearly sorted array (shuffle until it looks sorted) and notice the early exit: best‑case O(n).</li>
-          </ol>
         </div>
       </aside>
     </main>
 
-    <footer class="text-center text-xs text-slate-500 pb-4">Built with ❤️ for learning. Use sliders to explore performance and behavior.</footer>
+    <footer class="text-center text-xs text-slate-500 pb-4">Built for learning. Use sliders to explore behavior.</footer>
   </div>
 
   <script>
@@ -124,27 +112,48 @@
     function rngArray(n, min = 5, max = 100) {
       return Array.from({ length: n }, () => Math.floor(min + Math.random() * (max - min + 1)));
     }
+    function maxVal(a){ return a.length ? Math.max(...a) : 1; }
 
-    function* bubbleSortSteps(original) {
+    // -------- Steps generator (Odd–Even Sort) --------
+    function* oddEvenSteps(original){
       const a = [...original];
       const n = a.length;
-      let swapped;
-      for (let pass = 0; pass < n - 1; pass++) {
-        swapped = false; // line 2
-        yield { type: 'outer', pass, idx: null, snapshot: [...a], line: 1 };
-        yield { type: 'set-swapped', pass, idx: null, snapshot: [...a], line: 2 };
-        for (let idx = 0; idx < n - 1 - pass; idx++) {
-          yield { type: 'compare', pass, idx, snapshot: [...a], line: 4 };
-          if (a[idx] > a[idx + 1]) {
-            [a[idx], a[idx + 1]] = [a[idx + 1], a[idx]];
-            swapped = true;
-            yield { type: 'swap', pass, idx, snapshot: [...a], line: 5 };
+      let swapped = true;
+      let pass = 0;
+
+      yield { type: 'init', pass, snapshot: [...a], line: 1 };
+
+      while (swapped) {
+        swapped = false;
+        yield { type: 'pass-start', pass, snapshot: [...a], line: 3 };
+
+        if (pass % 2 === 0) { // even pass
+          yield { type: 'phase', phase: 'even', pass, snapshot: [...a], line: 4 };
+          for (let j = 0; j <= n - 2; j += 2) {
+            yield { type: 'compare', j, pass, phase: 'even', snapshot: [...a], line: 6 };
+            if (a[j] > a[j+1]) {
+              [a[j], a[j+1]] = [a[j+1], a[j]];
+              swapped = true;
+              yield { type: 'swap', j, pass, phase: 'even', snapshot: [...a], line: 6 };
+            }
+          }
+        } else { // odd pass
+          yield { type: 'phase', phase: 'odd', pass, snapshot: [...a], line: 7 };
+          for (let j = 1; j <= n - 2; j += 2) {
+            yield { type: 'compare', j, pass, phase: 'odd', snapshot: [...a], line: 9 };
+            if (a[j] > a[j+1]) {
+              [a[j], a[j+1]] = [a[j+1], a[j]];
+              swapped = true;
+              yield { type: 'swap', j, pass, phase: 'odd', snapshot: [...a], line: 9 };
+            }
           }
         }
-        yield { type: 'post-pass', pass, idx: null, snapshot: [...a], line: 6, swapped };
-        if (!swapped) break;
+
+        yield { type: 'pass-end', pass, swapped, snapshot: [...a], line: 10 };
+        pass += 1;
       }
-      yield { type: 'done', pass: null, idx: null, snapshot: [...a], line: 0 };
+
+      yield { type: 'done', snapshot: [...a], line: 0 };
     }
 
     // -------- State --------
@@ -158,21 +167,22 @@
     const btnShuffle = document.getElementById('btnShuffle');
     const rangeSpeed = document.getElementById('rangeSpeed');
     const rangeSize = document.getElementById('rangeSize');
-
     const PSEUDO = document.getElementById('pseudocode');
 
     let arr = rngArray(parseInt(rangeSize.value, 10));
-    let steps = Array.from(bubbleSortSteps(arr));
+    let steps = Array.from(oddEvenSteps(arr));
     let stepIdx = 0;
     let running = false;
-    let sortedTail = 0; // number of elements at end confirmed sorted
-    let compareIdx = null; // highlight pair j and j+1
-    let swapIdx = null;    // highlight last swap pair center at j+1
+
+    // Visual flags
+    let compareIdx = null;   // j of (j, j+1)
+    let swapIdx = null;      // for highlighting swap pair
+    let currentPhase = 'even'; // 'even' or 'odd'
+    let allSorted = false;
+
     let comparisons = 0;
     let swaps = 0;
     let timer = null;
-
-    function maxVal(a){ return a.length ? Math.max(...a) : 1; }
 
     // -------- Rendering --------
     function renderBars() {
@@ -181,12 +191,14 @@
       arr.forEach((v, i) => {
         const h = Math.max(4, (v / M) * 100);
         let cls = 'bg-slate-400';
-        const isCompare = compareIdx === i || compareIdx === i - 1;
-        const isSwap = swapIdx === i || swapIdx === i - 1;
-        const isSorted = i >= arr.length - sortedTail;
-        if (isSorted) cls = 'bg-emerald-400';
+        const isCompare = (compareIdx === i || compareIdx + 1 === i);
+        const isSwap = (swapIdx === i || swapIdx + 1 === i);
+        const isFinal = allSorted;
+
+        if (isFinal) cls = 'bg-emerald-400';
         if (isCompare) cls = 'bg-amber-400';
         if (isSwap) cls = 'bg-rose-400';
+
         const d = document.createElement('div');
         d.className = `w-full max-w-[18px] flex-1 rounded-t-lg transition-all duration-300 ease-out ${cls}`;
         d.style.height = h + '%';
@@ -212,8 +224,9 @@
 
     function resetState(newArr){
       arr = [...newArr];
-      steps = Array.from(bubbleSortSteps(arr));
-      stepIdx = 0; running = false; sortedTail = 0; compareIdx = null; swapIdx = null;
+      steps = Array.from(oddEvenSteps(arr));
+      stepIdx = 0; running = false;
+      compareIdx = null; swapIdx = null; currentPhase = 'even'; allSorted = false;
       comparisons = 0; swaps = 0;
       statComparisons.textContent = '0';
       statSwaps.textContent = '0';
@@ -226,22 +239,46 @@
 
     function applyStep(s){
       setPseudoHighlight(s.line || 0);
-      if (s.type === 'compare'){
-        comparisons += 1; statComparisons.textContent = String(comparisons);
-        compareIdx = s.idx + 1; swapIdx = null; arr = s.snapshot; // show snapshot before potential swap
-      } else if (s.type === 'swap'){
-        swaps += 1; statSwaps.textContent = String(swaps);
-        swapIdx = s.idx + 1; compareIdx = null; arr = s.snapshot;
-      } else if (s.type === 'outer'){
-        sortedTail = 0; compareIdx = null; swapIdx = null;
-      } else if (s.type === 'post-pass'){
-        const tail = Math.max(0, (s.pass || 0) + 1);
-        sortedTail = tail;
-      } else if (s.type === 'done'){
-        sortedTail = arr.length; compareIdx = null; swapIdx = null; running = false; btnPlay.textContent = 'Play';
-        clearInterval(timer); timer = null;
-      } else {
-        arr = s.snapshot;
+
+      switch (s.type) {
+        case 'init':
+          arr = s.snapshot; compareIdx = null; swapIdx = null; currentPhase = 'even'; allSorted = false;
+          break;
+
+        case 'pass-start':
+          arr = s.snapshot; compareIdx = null; swapIdx = null;
+          break;
+
+        case 'phase':
+          arr = s.snapshot; currentPhase = s.phase; compareIdx = null; swapIdx = null;
+          break;
+
+        case 'compare':
+          arr = s.snapshot; compareIdx = s.j; swapIdx = null;
+          comparisons += 1; statComparisons.textContent = String(comparisons);
+          break;
+
+        case 'swap':
+          arr = s.snapshot; swapIdx = s.j; compareIdx = null;
+          swaps += 1; statSwaps.textContent = String(swaps);
+          break;
+
+        case 'pass-end':
+          arr = s.snapshot;
+          if (!s.swapped) {
+            allSorted = true;
+          }
+          compareIdx = null; swapIdx = null;
+          break;
+
+        case 'done':
+          arr = s.snapshot; allSorted = true; compareIdx = null; swapIdx = null;
+          running = false; btnPlay.textContent = 'Play';
+          clearInterval(timer); timer = null;
+          break;
+
+        default:
+          arr = s.snapshot;
       }
       renderBars();
     }
@@ -253,19 +290,20 @@
       stepIdx += 1;
     }
 
-function playLoop(){
-  clearInterval(timer);
-  // invert the mapping: higher slider value -> smaller delay (faster)
-  const delay = Math.max(
-    30,
-    Number(rangeSpeed.max) - Number(rangeSpeed.value) + Number(rangeSpeed.min)
-  );
-  timer = setInterval(() => {
-    if (stepIdx >= steps.length){ running = false; btnPlay.textContent = 'Play'; clearInterval(timer); timer=null; return; }
-    stepOnce();
-  }, delay);
-}
-
+    function playLoop(){
+      clearInterval(timer);
+      // Inverted mapping: higher slider value -> smaller delay (faster)
+      const delay = Math.max(
+        30,
+        Number(rangeSpeed.max) - Number(rangeSpeed.value) + Number(rangeSpeed.min)
+      );
+      timer = setInterval(() => {
+        if (stepIdx >= steps.length){
+          running = false; btnPlay.textContent = 'Play'; clearInterval(timer); timer=null; return;
+        }
+        stepOnce();
+      }, delay);
+    }
 
     // -------- Event bindings --------
     btnPlay.addEventListener('click', () => {

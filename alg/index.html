@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sorting Visualizer — Bubble Family (Vanilla JS + Tailwind)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-800">
+  <div class="mx-auto max-w-6xl px-5 py-8">
+    <header class="mb-4">
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Sorting Visualizer — Bubble Family</h1>
+      <p class="mt-2 text-slate-600 max-w-3xl">
+        Switch algorithms with the tabs. Use <span class="font-medium">Play</span> or <span class="font-medium">Step</span>.
+        Speed slider is inverted (move right to go faster).
+      </p>
+    </header>
+
+    <!-- Tabs -->
+    <nav id="algoTabs" class="flex flex-wrap gap-2 mb-4">
+      <button data-algo="bubble"   class="tab px-3 py-1.5 rounded-xl border text-sm bg-white shadow-sm ring-1 ring-transparent">Bubble</button>
+      <button data-algo="cocktail" class="tab px-3 py-1.5 rounded-xl border text-sm bg-white shadow-sm ring-1 ring-transparent">Cocktail</button>
+      <button data-algo="gnome"    class="tab px-3 py-1.5 rounded-xl border text-sm bg-white shadow-sm ring-1 ring-transparent">Gnome</button>
+      <button data-algo="oddeven"  class="tab px-3 py-1.5 rounded-xl border text-sm bg-white shadow-sm ring-1 ring-transparent">Odd–Even</button>
+    </nav>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-16">
+      <!-- Left: Visualization -->
+      <section class="lg:col-span-2 flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button id="btnPlay" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm font-medium">Play</button>
+            <button id="btnStep" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Step</button>
+            <button id="btnReset" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Reset</button>
+            <button id="btnShuffle" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Shuffle</button>
+
+            <div class="ml-auto flex items-center gap-3">
+              <label class="text-sm text-slate-600">Speed</label>
+              <input id="rangeSpeed" type="range" min="50" max="1500" value="400" class="w-40">
+              <label class="text-sm text-slate-600">Size</label>
+              <input id="rangeSize" type="range" min="6" max="64" value="24" class="w-40">
+            </div>
+          </div>
+
+          <div id="bars" class="relative w-full h-64 md:h-72 lg:h-80 flex items-end gap-1 p-2 rounded-2xl bg-gradient-to-b from-white to-slate-100 border border-slate-200"></div>
+
+          <div class="mt-4 grid grid-cols-3 gap-3">
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Comparisons</div>
+              <div id="statComparisons" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Swaps</div>
+              <div id="statSwaps" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Array Size</div>
+              <div id="statSize" class="text-xl font-semibold tabular-nums text-slate-900">24</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold mb-2">Pseudocode</h3>
+            <span id="algoLabel" class="text-xs px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-600">Bubble</span>
+          </div>
+          <pre id="pseudocode" class="rounded-2xl p-4 bg-slate-900 text-slate-100 text-sm leading-6 overflow-auto"></pre>
+        </div>
+      </section>
+
+      <!-- Right: Panels -->
+      <aside class="flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Legend</h3>
+          <ul class="mt-2 text-sm text-slate-700 list-disc pl-5 space-y-1">
+            <li><span class="font-medium text-amber-700">Amber</span>: currently compared pair.</li>
+            <li><span class="font-medium text-rose-700">Rose</span>: a swap occurred.</li>
+            <li><span class="font-medium text-emerald-700">Emerald</span>: region known sorted (or fully sorted at end).</li>
+          </ul>
+          <p class="mt-2 text-sm text-slate-600">Cocktail shrinks head &amp; tail; Bubble grows a sorted tail; Gnome only marks green at the end; Odd–Even marks at the end.</p>
+        </div>
+
+        <!-- NEW: Complexity card that updates per algorithm -->
+        <div id="complexityCard" class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Complexity</h3>
+          <div id="complexity" class="mt-2 text-sm text-slate-700"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="text-center text-xs text-slate-500 pb-4">Built for learning. Tabs switch the algorithm; UI is shared.</footer>
+  </div>
+
+  <script>
+    // ---------- Utilities ----------
+    const $ = (q) => document.querySelector(q);
+    function rngArray(n, min = 5, max = 100) {
+      return Array.from({ length: n }, () => Math.floor(min + Math.random() * (max - min + 1)));
+    }
+    const maxVal = (a) => (a.length ? Math.max(...a) : 1);
+
+    // ---------- Pseudocode per algorithm ----------
+    const PSEUDO_MAP = {
+      bubble: `
+<span data-line="1" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>for i = 0 .. n-2:</span>
+<span data-line="2" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>  swapped ← false</span>
+<span data-line="3" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  for j = 0 .. n-2-i:</span>
+<span data-line="4" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>    if A[j] &gt; A[j+1]:</span>
+<span data-line="5" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>      swap(A[j], A[j+1]); swapped ← true</span>
+<span data-line="6" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>  if not swapped: break</span>`.trim(),
+      cocktail: `
+<span data-line="1"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>start ← 0; end ← n-1</span>
+<span data-line="2"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>while start &lt; end:</span>
+<span data-line="3"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  swapped ← false</span>
+<span data-line="4"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>  for j = start .. end-1:</span>
+<span data-line="5"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>    if A[j] &gt; A[j+1]: swap; swapped ← true</span>
+<span data-line="6"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>  end ← end - 1</span>
+<span data-line="7"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">07</span>  if not swapped: break</span>
+<span data-line="8"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">08</span>  swapped ← false</span>
+<span data-line="9"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">09</span>  for j = end-1 .. start:</span>
+<span data-line="10" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">10</span>    if A[j] &gt; A[j+1]: swap; swapped ← true</span>
+<span data-line="11" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">11</span>  start ← start + 1</span>`.trim(),
+      gnome: `
+<span data-line="1" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>i ← 1</span>
+<span data-line="2" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>while i &lt; n:</span>
+<span data-line="3" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  if A[i-1] ≤ A[i]:</span>
+<span data-line="4" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>    i ← i + 1</span>
+<span data-line="5" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>  else:</span>
+<span data-line="6" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>    swap(A[i-1], A[i])</span>
+<span data-line="7" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">07</span>    if i &gt; 1: i ← i - 1 else i ← 1</span>`.trim(),
+      oddeven: `
+<span data-line="1"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>swapped ← true; pass ← 0</span>
+<span data-line="2"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>while swapped:</span>
+<span data-line="3"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  swapped ← false</span>
+<span data-line="4"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>  if pass is even:</span>
+<span data-line="5"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>    for j = 0,2,4,.. &lt; n-1:</span>
+<span data-line="6"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>      if A[j] &gt; A[j+1]: swap; swapped ← true</span>
+<span data-line="7"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">07</span>  else:</span>
+<span data-line="8"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">08</span>    for j = 1,3,5,.. &lt; n-1:</span>
+<span data-line="9"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">09</span>      if A[j] &gt; A[j+1]: swap; swapped ← true</span>
+<span data-line="10" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">10</span>  pass ← pass + 1</span>`.trim(),
+    };
+
+    // ---------- Complexity per algorithm (HTML blocks) ----------
+    const COMPLEXITY_MAP = {
+      bubble: `
+<div class="grid grid-cols-2 gap-3">
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Time</div>
+    <ul class="mt-1 space-y-1">
+      <li><span class="font-semibold">Worst:</span> O(n²)</li>
+      <li><span class="font-semibold">Average:</span> O(n²)</li>
+      <li><span class="font-semibold">Best:</span> O(n) (early exit)</li>
+    </ul>
+  </div>
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Space</div>
+    <p class="mt-1">O(1) extra (in-place)</p>
+  </div>
+</div>
+<p class="mt-3 text-sm text-slate-600">At pass i, inner loop does n−1−i comps; total ~ n(n−1)/2.</p>
+`.trim(),
+      cocktail: `
+<div class="grid grid-cols-2 gap-3">
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Time</div>
+    <ul class="mt-1 space-y-1">
+      <li><span class="font-semibold">Worst:</span> O(n²)</li>
+      <li><span class="font-semibold">Average:</span> O(n²)</li>
+      <li><span class="font-semibold">Best:</span> O(n) (early exit)</li>
+    </ul>
+  </div>
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Space</div>
+    <p class="mt-1">O(1) extra (in-place)</p>
+  </div>
+</div>
+<p class="mt-3 text-sm text-slate-600">Bidirectional passes shrink both ends of the window each round.</p>
+`.trim(),
+      gnome: `
+<div class="grid grid-cols-2 gap-3">
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Time</div>
+    <ul class="mt-1 space-y-1">
+      <li><span class="font-semibold">Worst:</span> O(n²)</li>
+      <li><span class="font-semibold">Average:</span> O(n²)</li>
+      <li><span class="font-semibold">Best:</span> O(n) (already sorted)</li>
+    </ul>
+  </div>
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Space</div>
+    <p class="mt-1">O(1) extra (in-place)</p>
+  </div>
+</div>
+<p class="mt-3 text-sm text-slate-600">Walks forward if in order; swap and step back if out of order.</p>
+`.trim(),
+      oddeven: `
+<div class="grid grid-cols-2 gap-3">
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Time</div>
+    <ul class="mt-1 space-y-1">
+      <li><span class="font-semibold">Worst:</span> O(n²)</li>
+      <li><span class="font-semibold">Average:</span> O(n²)</li>
+      <li><span class="font-semibold">Best:</span> O(n) (already sorted)</li>
+    </ul>
+  </div>
+  <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+    <div class="text-slate-500 text-xs uppercase">Space</div>
+    <p class="mt-1">O(1) extra (in-place)</p>
+  </div>
+</div>
+<p class="mt-3 text-sm text-slate-600">Alternates even/odd disjoint pair comparisons until a full iteration has no swaps.</p>
+`.trim(),
+    };
+
+    // ---------- Step Generators ----------
+    function* bubbleSteps(original){
+      const a = [...original], n = a.length;
+      let swapped;
+      for (let pass = 0; pass < n - 1; pass++) {
+        swapped = false;
+        yield { type: 'outer', pass, line: 1, snapshot: [...a] };
+        yield { type: 'set-swapped', pass, line: 2, snapshot: [...a] };
+        for (let j = 0; j < n - 1 - pass; j++) {
+          yield { type: 'compare', pass, j, line: 4, snapshot: [...a] };
+          if (a[j] > a[j+1]) {
+            [a[j], a[j+1]] = [a[j+1], a[j]];
+            swapped = true;
+            yield { type: 'swap', pass, j, line: 5, snapshot: [...a] };
+          }
+        }
+        yield { type: 'post-pass', pass, swapped, line: 6, snapshot: [...a] };
+        if (!swapped) break;
+      }
+      yield { type: 'done', snapshot: [...a], line: 0 };
+    }
+
+    function* cocktailSteps(original){
+      const a = [...original], n = a.length;
+      let start = 0, end = n - 1;
+      yield { type: 'init', start, end, line: 1, snapshot: [...a] };
+      while (start < end) {
+        let swapped = false;
+        yield { type: 'forward-start', start, end, line: 3, snapshot: [...a] };
+        for (let j = start; j < end; j++){
+          yield { type: 'compare', dir:'fwd', j, start, end, line: 5, snapshot: [...a] };
+          if (a[j] > a[j+1]) {
+            [a[j], a[j+1]] = [a[j+1], a[j]];
+            swapped = true;
+            yield { type: 'swap', dir:'fwd', j, start, end, line: 5, snapshot: [...a] };
+          }
+        }
+        end -= 1; yield { type:'shrink-tail', start, end, line: 6, snapshot: [...a] };
+        if (!swapped) { yield { type:'early-exit', line:7, snapshot:[...a] }; break; }
+
+        swapped = false;
+        yield { type:'back-start', start, end, line:8, snapshot:[...a] };
+        for (let j = end - 1; j >= start; j--) {
+          yield { type:'compare', dir:'back', j, start, end, line:10, snapshot:[...a] };
+          if (a[j] > a[j+1]) {
+            [a[j], a[j+1]] = [a[j+1], a[j]];
+            swapped = true;
+            yield { type:'swap', dir:'back', j, start, end, line:10, snapshot:[...a] };
+          }
+        }
+        start += 1; yield { type:'shrink-head', start, end, line:11, snapshot:[...a] };
+      }
+      yield { type:'done', snapshot:[...a], line:0 };
+    }
+
+    function* gnomeSteps(original){
+      const a = [...original], n = a.length;
+      let i = 1;
+      yield { type:'init', i, line:1, snapshot:[...a] };
+      while (i < n) {
+        yield { type:'compare', i, line:3, snapshot:[...a] };
+        if (a[i-1] <= a[i]) {
+          i += 1; yield { type:'forward', i, line:4, snapshot:[...a] };
+        } else {
+          [a[i-1], a[i]] = [a[i], a[i-1]];
+          yield { type:'swap', i, line:6, snapshot:[...a] };
+          if (i > 1) { i -= 1; yield { type:'back', i, line:7, snapshot:[...a] }; }
+          else { i = 1; yield { type:'reset', i, line:7, snapshot:[...a] }; }
+        }
+      }
+      yield { type:'done', snapshot:[...a], line:0 };
+    }
+
+    function* oddEvenSteps(original){
+      const a = [...original], n = a.length;
+      let swapped = true, pass = 0;
+      yield { type:'init', pass, line:1, snapshot:[...a] };
+      while (swapped) {
+        swapped = false; yield { type:'pass-start', pass, line:3, snapshot:[...a] };
+        if (pass % 2 === 0) {
+          yield { type:'phase', phase:'even', pass, line:4, snapshot:[...a] };
+          for (let j = 0; j <= n - 2; j += 2) {
+            yield { type:'compare', j, pass, phase:'even', line:6, snapshot:[...a] };
+            if (a[j] > a[j+1]) { [a[j], a[j+1]] = [a[j+1], a[j]]; swapped = true;
+              yield { type:'swap', j, pass, phase:'even', line:6, snapshot:[...a] }; }
+          }
+        } else {
+          yield { type:'phase', phase:'odd', pass, line:7, snapshot:[...a] };
+          for (let j = 1; j <= n - 2; j += 2) {
+            yield { type:'compare', j, pass, phase:'odd', line:9, snapshot:[...a] };
+            if (a[j] > a[j+1]) { [a[j], a[j+1]] = [a[j+1], a[j]]; swapped = true;
+              yield { type:'swap', j, pass, phase:'odd', line:9, snapshot:[...a] }; }
+          }
+        }
+        yield { type:'pass-end', pass, swapped, line:10, snapshot:[...a] };
+        pass += 1;
+      }
+      yield { type:'done', snapshot:[...a], line:0 };
+    }
+
+    const GENERATORS = { bubble: bubbleSteps, cocktail: cocktailSteps, gnome: gnomeSteps, oddeven: oddEvenSteps };
+
+    // ---------- Shared UI State ----------
+    const barsEl = $('#bars');
+    const statComparisons = $('#statComparisons');
+    const statSwaps = $('#statSwaps');
+    const statSize = $('#statSize');
+    const btnPlay = $('#btnPlay');
+    const btnStep = $('#btnStep');
+    const btnReset = $('#btnReset');
+    const btnShuffle = $('#btnShuffle');
+    const rangeSpeed = $('#rangeSpeed');
+    const rangeSize = $('#rangeSize');
+    const PSEUDO = $('#pseudocode');
+    const algoLabel = $('#algoLabel');
+    const complexityEl = $('#complexity');
+
+    let activeAlgo = 'bubble';
+    let arr = rngArray(parseInt(rangeSize.value, 10));
+    let steps = Array.from(GENERATORS[activeAlgo](arr));
+    let stepIdx = 0;
+    let running = false;
+    let timer = null;
+
+    // Visual flags (generic)
+    let compareIdx = null;   // j of (j, j+1)
+    let swapIdx = null;      // pair center index
+    let headSorted = 0;      // sorted prefix length (for Cocktail)
+    let tailSorted = 0;      // sorted suffix length (Bubble/Cocktail)
+    let allSorted = false;   // Gnome/Odd-Even "final only" green
+
+    // ---------- Rendering ----------
+    function renderBars() {
+      const M = maxVal(arr), n = arr.length;
+      barsEl.innerHTML = '';
+      arr.forEach((v, i) => {
+        const h = Math.max(4, (v / M) * 100);
+        let cls = 'bg-slate-400';
+
+        const inHeadSorted = i < headSorted;
+        const inTailSorted = i >= n - tailSorted;
+        const isCompare = (compareIdx === i || compareIdx + 1 === i);
+        const isSwap = (swapIdx === i || swapIdx + 1 === i);
+        const isAll = allSorted;
+
+        if (inHeadSorted || inTailSorted || isAll) cls = 'bg-emerald-400';
+        if (isCompare) cls = 'bg-amber-400';
+        if (isSwap) cls = 'bg-rose-400';
+
+        const d = document.createElement('div');
+        d.className = `w-full max-w-[18px] flex-1 rounded-t-lg transition-all duration-300 ease-out ${cls}`;
+        d.style.height = h + '%';
+        d.title = `A[${i}] = ${v}`;
+        barsEl.appendChild(d);
+      });
+    }
+
+    function setPseudo(codeHtml){ PSEUDO.innerHTML = `<code>${codeHtml}</code>`; }
+    function setComplexity(html){ complexityEl.innerHTML = html; }
+
+    function setPseudoHighlight(line){
+      PSEUDO.querySelectorAll('[data-line]').forEach(x => {
+        x.classList.remove('bg-emerald-700/30');
+        x.querySelectorAll('span').forEach(s => s.classList.remove('text-emerald-300'));
+      });
+      if (line > 0){
+        const el = PSEUDO.querySelector(`[data-line="${line}"]`);
+        if (el){
+          el.classList.add('bg-emerald-700/30');
+          const spans = el.querySelectorAll('span');
+          if (spans.length) spans[spans.length-1].classList.add('text-emerald-300');
+        }
+      }
+    }
+
+    // ---------- State helpers ----------
+    function resetVisualFlags(){ compareIdx = null; swapIdx = null; headSorted = 0; tailSorted = 0; allSorted = false; }
+    function resetState(newArr){
+      arr = [...newArr];
+      steps = Array.from(GENERATORS[activeAlgo](arr));
+      stepIdx = 0; running = false;
+      resetVisualFlags();
+      comparisons = 0; swaps = 0;
+      statComparisons.textContent = '0';
+      statSwaps.textContent = '0';
+      statSize.textContent = String(arr.length);
+      btnPlay.textContent = 'Play';
+      clearInterval(timer); timer = null;
+      setPseudoHighlight(0);
+      renderBars();
+    }
+
+    // ---------- Apply steps (per algorithm shapes) ----------
+    let comparisons = 0, swaps = 0;
+
+    function applyStepBubble(s){
+      setPseudoHighlight(s.line || 0);
+      switch (s.type){
+        case 'compare': compareIdx = s.j; swapIdx = null; arr = s.snapshot; comparisons++; statComparisons.textContent = String(comparisons); break;
+        case 'swap': swapIdx = s.j; compareIdx = null; arr = s.snapshot; swaps++; statSwaps.textContent = String(swaps); break;
+        case 'post-pass': tailSorted = (s.pass + 1); compareIdx = null; swapIdx = null; arr = s.snapshot; if (!s.swapped) { tailSorted = arr.length; } break;
+        case 'done': tailSorted = arr.length; compareIdx = null; swapIdx = null; running = false; btnPlay.textContent = 'Play'; clearInterval(timer); timer=null; break;
+        default: arr = s.snapshot;
+      }
+      renderBars();
+    }
+
+    function applyStepCocktail(s){
+      setPseudoHighlight(s.line || 0);
+      switch (s.type){
+        case 'init':
+        case 'forward-start':
+        case 'back-start':
+          arr = s.snapshot; compareIdx = null; swapIdx = null;
+          headSorted = s.start ?? headSorted; tailSorted = (arr.length - 1) - (s.end ?? (arr.length-1)); break;
+        case 'compare': arr = s.snapshot; compareIdx = s.j; swapIdx = null; comparisons++; statComparisons.textContent = String(comparisons); break;
+        case 'swap': arr = s.snapshot; swapIdx = s.j; compareIdx = null; swaps++; statSwaps.textContent = String(swaps); break;
+        case 'shrink-tail': arr = s.snapshot; tailSorted = (arr.length - 1) - s.end; compareIdx = null; swapIdx = null; break;
+        case 'shrink-head': arr = s.snapshot; headSorted = s.start; compareIdx = null; swapIdx = null; break;
+        case 'early-exit':
+        case 'done': arr = s.snapshot; headSorted = arr.length; tailSorted = 0; compareIdx = null; swapIdx = null; running=false; btnPlay.textContent='Play'; clearInterval(timer); timer=null; break;
+        default: arr = s.snapshot;
+      }
+      renderBars();
+    }
+
+    function applyStepGnome(s){
+      setPseudoHighlight(s.line || 0);
+      switch (s.type){
+        case 'compare': arr = s.snapshot; compareIdx = Math.max(0, s.i - 1); swapIdx = null; comparisons++; statComparisons.textContent = String(comparisons); break;
+        case 'forward': arr = s.snapshot; compareIdx = Math.max(0, s.i - 1); swapIdx = null; break;
+        case 'swap': arr = s.snapshot; swapIdx = Math.max(0, s.i - 1); compareIdx = null; swaps++; statSwaps.textContent = String(swaps); break;
+        case 'back':
+        case 'reset': arr = s.snapshot; compareIdx = Math.max(0, s.i - 1); swapIdx = null; break;
+        case 'done': arr = s.snapshot; allSorted = true; compareIdx = null; swapIdx = null; running=false; btnPlay.textContent='Play'; clearInterval(timer); timer=null; break;
+        default: arr = s.snapshot;
+      }
+      renderBars();
+    }
+
+    function applyStepOddEven(s){
+      setPseudoHighlight(s.line || 0);
+      switch (s.type){
+        case 'compare': arr = s.snapshot; compareIdx = s.j; swapIdx = null; comparisons++; statComparisons.textContent = String(comparisons); break;
+        case 'swap': arr = s.snapshot; swapIdx = s.j; compareIdx = null; swaps++; statSwaps.textContent = String(swaps); break;
+        case 'pass-end': arr = s.snapshot; if (!s.swapped) allSorted = true; compareIdx = null; swapIdx = null; break;
+        case 'done': arr = s.snapshot; allSorted = true; compareIdx = null; swapIdx = null; running=false; btnPlay.textContent='Play'; clearInterval(timer); timer=null; break;
+        default: arr = s.snapshot;
+      }
+      renderBars();
+    }
+
+    const APPLY = { bubble: applyStepBubble, cocktail: applyStepCocktail, gnome: applyStepGnome, oddeven: applyStepOddEven };
+
+    // ---------- Controls ----------
+    function stepOnce(){
+      if (stepIdx >= steps.length) return;
+      const s = steps[stepIdx];
+      APPLY[activeAlgo](s);
+      stepIdx += 1;
+    }
+
+    function playLoop(){
+      clearInterval(timer);
+      // Inverted mapping: higher = faster
+      const delay = Math.max(
+        30,
+        Number(rangeSpeed.max) - Number(rangeSpeed.value) + Number(rangeSpeed.min)
+      );
+      timer = setInterval(() => {
+        if (stepIdx >= steps.length){ running=false; btnPlay.textContent='Play'; clearInterval(timer); timer=null; return; }
+        stepOnce();
+      }, delay);
+    }
+
+    btnPlay.addEventListener('click', () => {
+      running = !running;
+      btnPlay.textContent = running ? 'Pause' : 'Play';
+      if (running) playLoop(); else { clearInterval(timer); timer = null; }
+    });
+    btnStep.addEventListener('click', () => { if (!running) stepOnce(); });
+    btnReset.addEventListener('click', () => { resetState(arr); });
+    btnShuffle.addEventListener('click', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+    rangeSize.addEventListener('input', () => { statSize.textContent = String(parseInt(rangeSize.value,10)); });
+    rangeSize.addEventListener('change', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+    rangeSpeed.addEventListener('change', () => { if (running) playLoop(); });
+
+    // Tabs switching
+    function setActiveTab(btn){
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('ring-2','ring-emerald-400','bg-emerald-50'));
+      btn.classList.add('ring-2','ring-emerald-400','bg-emerald-50');
+    }
+    document.querySelectorAll('#algoTabs .tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const next = btn.getAttribute('data-algo');
+        if (next === activeAlgo) return;
+        activeAlgo = next;
+        setActiveTab(btn);
+        algoLabel.textContent = btn.textContent.trim();
+        setPseudo(PSEUDO_MAP[activeAlgo]);
+        setComplexity(COMPLEXITY_MAP[activeAlgo]);
+        // reset everything for the new algorithm
+        resetState(arr);
+      });
+    });
+
+    // ---------- Initial ----------
+    setActiveTab(document.querySelector('[data-algo="bubble"]'));
+    setPseudo(PSEUDO_MAP[activeAlgo]);
+    setComplexity(COMPLEXITY_MAP[activeAlgo]);
+    resetState(rngArray(parseInt(rangeSize.value, 10)));
+  </script>
+</body>
+</html>
