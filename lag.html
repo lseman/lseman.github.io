@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Augmented Lagrangian Blocks — Interactive Guide</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- MathJax -->
+  <script>
+    window.MathJax = {
+      tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]},
+      svg: {fontCache: 'global'}
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-800">
+  <div class="max-w-6xl mx-auto p-8">
+    <!-- Header -->
+    <header class="text-center mb-12">
+      <h1 class="text-4xl font-extrabold text-slate-900">Augmented Lagrangian — Building Blocks</h1>
+      <p class="text-slate-600 mt-2">A pedagogical breakdown of filters, penalties, solvers, and strategies</p>
+    </header>
+
+    <!-- Blocks grid -->
+    <div class="grid md:grid-cols-2 gap-8">
+      <!-- Block: AL Core -->
+      <div class="bg-white shadow rounded-2xl p-6 border border-slate-200">
+        <h2 class="text-xl font-bold text-indigo-700">1. Core Formulation</h2>
+        <p class="mt-2 text-sm text-slate-700">
+          The augmented Lagrangian combines the original objective $f(x)$ with equality and inequality constraints.
+        </p>
+        <div class="mt-4 p-3 bg-slate-50 rounded text-sm">
+          $$\mathcal{L}_A(x, \lambda, \mu, \rho) = f(x) + 
+            \lambda^T h(x) + \tfrac{\rho}{2}\|h(x)\|^2 +
+            \sum_i \frac{\max\{0, \mu_i + \rho g_i(x)\}^2 - \mu_i^2}{2\rho}$$
+        </div>
+      </div>
+
+      <!-- Block: Penalty Updates -->
+      <div class="bg-white shadow rounded-2xl p-6 border border-slate-200">
+        <h2 class="text-xl font-bold text-emerald-700">2. Penalty Updates</h2>
+        <p class="mt-2 text-sm text-slate-700">
+          If constraints remain violated, penalties grow. Strategies:
+        </p>
+        <ul class="list-disc ml-5 mt-2 text-sm text-slate-700">
+          <li>Simple geometric growth ($\\rho \\leftarrow \\gamma \\rho$)</li>
+          <li>Per-constraint updates</li>
+          <li>CAPU (Conditionally Adaptive Penalty Updates)</li>
+        </ul>
+      </div>
+
+      <!-- Block: Inner Solvers -->
+      <div class="bg-white shadow rounded-2xl p-6 border border-slate-200">
+        <h2 class="text-xl font-bold text-rose-700">3. Inner Solvers</h2>
+        <p class="mt-2 text-sm text-slate-700">
+          The AL subproblem is minimized with a chosen solver:
+        </p>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <div class="bg-rose-50 rounded p-2">Gradient Descent</div>
+          <div class="bg-rose-50 rounded p-2">Adam</div>
+          <div class="bg-rose-50 rounded p-2">Newton-CG</div>
+          <div class="bg-rose-50 rounded p-2">L-BFGS</div>
+          <div class="bg-rose-50 rounded p-2">Trust-Region OSQP</div>
+          <div class="bg-rose-50 rounded p-2">Trust-Region PIQP</div>
+        </div>
+      </div>
+
+      <!-- Block: Filters & SOC -->
+      <div class="bg-white shadow rounded-2xl p-6 border border-slate-200">
+        <h2 class="text-xl font-bold text-amber-700">4. Filters & Second-Order Correction</h2>
+        <p class="mt-2 text-sm text-slate-700">
+          Enhancements that stabilize convergence:
+        </p>
+        <ul class="list-disc ml-5 mt-2 text-sm text-slate-700">
+          <li><span class="font-semibold">Filter</span>: accepts iterates if they improve feasibility or optimality.</li>
+          <li><span class="font-semibold">SOC</span>: Newton-style correction step to reduce constraint violation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Interactive Toggle -->
+    <div class="mt-12 bg-white border border-slate-200 rounded-2xl shadow p-6">
+      <h2 class="text-xl font-bold text-slate-900">Try Switching Solvers</h2>
+      <p class="text-sm text-slate-600 mt-2">Choose a solver and see its role:</p>
+      <select id="solverSelect" class="mt-4 p-2 border rounded">
+        <option>Gradient Descent</option>
+        <option>Adam</option>
+        <option>Newton-CG</option>
+        <option>L-BFGS</option>
+        <option>Trust-Region OSQP</option>
+        <option>Trust-Region PIQP</option>
+      </select>
+      <div id="solverInfo" class="mt-4 text-sm text-slate-700"></div>
+    </div>
+  </div>
+
+  <script>
+    const solverDetails = {
+      "Gradient Descent": "Simple updates $x \\leftarrow x - \\alpha \\nabla f(x)$. Slow but robust.",
+      "Adam": "Adaptive momentum method, good for noisy objectives.",
+      "Newton-CG": "Uses Hessian-vector products, efficient for large problems.",
+      "L-BFGS": "Quasi-Newton with limited memory, balances speed and scalability.",
+      "Trust-Region OSQP": "QP-based subsolver with box trust regions.",
+      "Trust-Region PIQP": "Interior-point QP with proximal regularization."
+    };
+    document.getElementById("solverSelect").addEventListener("change", e => {
+      const info = solverDetails[e.target.value] || "";
+      document.getElementById("solverInfo").innerHTML = info;
+      MathJax.typeset();
+    });
+  </script>
+</body>
+</html>
