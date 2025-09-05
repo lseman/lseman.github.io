@@ -253,7 +253,7 @@
               </tr>
               <tr>
                 <td class="py-2 text-slate-500">f(n)/g(n)</td>
-                <td class="py-2 code" x-text="parsed.f"></td>
+                <td class="py-2 code" x-text="`$${parsed.f}$`"></td>
               </tr>
             </tbody>
           </table>
@@ -308,15 +308,16 @@
     </section>
 
 
+
     <!-- Illustrated Guide -->
     <section id="guide" class="py-14 bg-slate-50">
       <div class="max-w-7xl mx-auto px-6">
         <div class="mb-10">
-          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
-          <p class="mt-2 text-slate-600">Pedagogical explanations with formulas you can expand. Click a card to toggle
-            details.</p>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide to Solving Recurrence Relations
+          </h2>
+          <p class="mt-2 text-slate-600">Explore common recurrence relation patterns with intuitive explanations,
+            formulas, and examples. Click a card to reveal detailed steps and insights.</p>
         </div>
-
         <div class="grid lg:grid-cols-2 gap-6">
           <!-- Master Theorem -->
           <article x-data="{open:false}"
@@ -325,41 +326,60 @@
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
                 <h3 class="text-xl font-semibold">1) Master Theorem</h3>
-                <p class="text-slate-600 text-sm mt-1">Compare $f(n)$ vs. $n^{\log_b a}$ in $T(n) = aT(n/b) + f(n)$.</p>
+                <p class="text-slate-600 text-sm mt-1">Solves recurrences of the form $T(n) = aT(n/b) + f(n)$ by
+                  comparing $f(n)$ to $n^{\log_b a}$.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p><strong>Intuition.</strong> Recursion tree with branching factor $a$ and shrink $b$; threshold
-                $n^{\log_b
-                a}$.</p>
+              <p><strong>Intuition.</strong> Imagine a recursion tree where each node splits into $a$ subproblems, each
+                of size $n/b$. The term $f(n)$ represents the work done at each level. The threshold $n^{\log_b a}$
+                determines whether the recursive cost or $f(n)$ dominates.</p>
+              <p class="mt-2"><strong>Formula.</strong> For $T(n) = aT(n/b) + f(n)$:</p>
               <ul class="list-disc pl-5 mt-2">
-                <li>Case 1: $f(n)=O(n^{p-\epsilon}) \Rightarrow T(n)=\Theta(n^p)$</li>
-                <li>Case 2: $f(n)=\Theta(n^p\log^k n) \Rightarrow T(n)=\Theta(n^p \log^{k+1} n)$</li>
-                <li>Case 3: $f(n)=\Omega(n^{p+\epsilon})$ with regularity $af(n/b)\le c f(n)$ $\Rightarrow
-                  T(n)=\Theta(f(n))$</li>
+                <li><strong>Case 1:</strong> If $f(n) = O(n^{\log_b a - \epsilon})$ for some $\epsilon > 0$, then $T(n)
+                  = \Theta(n^{\log_b a})$.</li>
+                <li><strong>Case 2:</strong> If $f(n) = \Theta(n^{\log_b a} \log^k n)$, then $T(n) = \Theta(n^{\log_b a}
+                  \log^{k+1} n)$.</li>
+                <li><strong>Case 3:</strong> If $f(n) = \Omega(n^{\log_b a + \epsilon})$ and $af(n/b) \leq c f(n)$ for
+                  some $c < 1$, then $T(n)=\Theta(f(n))$.</li>
+              </ul>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = 4T(n/2) + n$ (e.g., merge sort with linear work):
+              </p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Here, $a=4$, $b=2$, so $\log_b a = \log_2 4 = 2$. Compare $f(n) = n$ to $n^2$.</li>
+                <li>Since $n = O(n^{2 - \epsilon})$, Case 1 applies: $T(n) = \Theta(n^2)$.</li>
               </ul>
             </div>
           </article>
-
           <!-- Akra–Bazzi -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
-                <h3 class="text-xl font-semibold">2) Akra–Bazzi</h3>
-                <p class="text-slate-600 text-sm mt-1">General form $T(n)=\sum a_i T(b_i n)+g(n)$ with balance $\sum a_i
-                  b_i^p=1$.</p>
+                <h3 class="text-xl font-semibold">2) Akra–Bazzi Method</h3>
+                <p class="text-slate-600 text-sm mt-1">Generalizes Master Theorem for $T(n) = \sum a_i T(b_i n) + g(n)$
+                  by solving $\sum a_i b_i^p = 1$.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p>Solution: $T(n)=\Theta\big(n^p \big(1+\int_1^n g(u)/u^{p+1}\,du\big)\big)$.</p>
-              <p class="mt-2">Use when branches differ or Master doesn't apply directly.</p>
+              <p><strong>Intuition.</strong> Handles recurrences with unequal splits (e.g., different $b_i$). The
+                exponent $p$ balances the recursive terms, and the integral accounts for the non-recursive work $g(n)$.
+              </p>
+              <p class="mt-2"><strong>Formula.</strong> Solve for $p$ where $\sum a_i b_i^p = 1$. Then: $$T(n) =
+                \Theta\left(n^p \left(1 + \int_1^n \frac{g(u)}{u^{p+1}}\,du\right)\right).$$</p>
+              <p class="mt-2"><strong>When to Use.</strong> Use when branches have different sizes or Master Theorem
+                fails.</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = T(n/3) + T(2n/3) + n$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Solve $(1/3)^p + (2/3)^p = 1$ to find $p \approx 1$.</li>
+                <li>Compute integral: $\int_1^n \frac{u}{u^2}\,du = \ln n$.</li>
+                <li>Thus, $T(n) = \Theta(n \cdot (1 + \ln n)) = \Theta(n \log n)$.</li>
+              </ul>
             </div>
           </article>
-
           <!-- Subtractive -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
@@ -367,48 +387,71 @@
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
                 <h3 class="text-xl font-semibold">3) Subtractive Recurrence</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=T(n-c)+g(n)$ telescopes: $T(n)\approx const +
-                  \tfrac{1}{c}\int_0^n g(u)du$.</p>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = T(n-c) + g(n)$ approximates to $T(n) \approx \text{const}
+                  + \frac{1}{c} \int_0^n g(u) \, du$.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p>Linear chain depth $\approx n/c$. Great for peeling‑style processes.</p>
+              <p><strong>Intuition.</strong> Each recursive call reduces the problem size by a fixed $c$, forming a
+                linear chain of depth $\approx n/c$. The solution accumulates $g(n)$ over these steps.</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = T(n-1) + n$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Unroll: $T(n) = T(n-1) + n = T(n-2) + (n-1) + n = \cdots = T(0) + \sum_{k=1}^n k$.</li>
+                <li>Summation: $\sum_{k=1}^n k = \frac{n(n+1)}{2}$, so $T(n) = \Theta(n^2)$.</li>
+              </ul>
+              <p class="mt-2"><strong>When to Use.</strong> Ideal for algorithms that "peel off" a fixed amount each
+                step, like linear search with decrements.</p>
             </div>
           </article>
-
-          <!-- Power‑shrink -->
+          <!-- Power-shrink -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
-                <h3 class="text-xl font-semibold">4) Power‑shrink</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=a(n)T(n^r)+g(n)$, depth $O(\log\log n)$ when $0<r<1$.< /p>
+                <h3 class="text-xl font-semibold">4) Power-Shrink Recurrence</h3>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = a T(n^r) + g(n)$, with depth $O(\log \log n)$ for $0 < r
+                    < 1$.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p>Use substitution $n=2^{2^k}$ for $r=1/2$ to linearize depth in $k$.</p>
+              <p><strong>Intuition.</strong> The problem size shrinks exponentially (e.g., $n^{1/2}$), leading to a very
+                shallow recursion tree.</p>
+              <p class="mt-2"><strong>Method.</strong> Use substitution like $n = 2^{2^k}$ for $r = 1/2$ to transform
+                into a linear recurrence in $k$.</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = T(\sqrt{n}) + 1$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Let $n = 2^k$, so $T(2^k) = T(2^{k/2}) + 1$.</li>
+                <li>Define $S(k) = T(2^k)$, then $S(k) = S(k/2) + 1$.</li>
+                <li>Solve $S(k) = \Theta(\log k)$, so $T(n) = \Theta(\log \log n)$.</li>
+              </ul>
             </div>
           </article>
-
           <!-- Iterated Log -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
-                <h3 class="text-xl font-semibold">5) Iterated Log</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=T(\log n)+O(1) \Rightarrow T(n)=\Theta(\log^* n)$.</p>
+                <h3 class="text-xl font-semibold">5) Iterated Log Recurrence</h3>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = T(\log n) + O(1) \Rightarrow T(n) = \Theta(\log^* n)$.
+                </p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p>Lazy shrinking; $\log^* n$ is $\le 5$ for any earthly $n$.</p>
+              <p><strong>Intuition.</strong> The problem size shrinks logarithmically each step, and $\log^* n$
+                (iterated logarithm) counts how many times you can take $\log n$ until $n \leq 1$. It grows extremely
+                slowly (e.g., $\log^* n \leq 5$ for practical $n$).</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = T(\log n) + 1$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Each step reduces $n$ to $\log n$, then $\log \log n$, etc.</li>
+                <li>The depth is $\log^* n$, so $T(n) = \Theta(\log^* n)$.</li>
+              </ul>
             </div>
           </article>
-
           <!-- Dominance -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
@@ -416,78 +459,93 @@
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
                 <h3 class="text-xl font-semibold">6) Dominance Analysis</h3>
-                <p class="text-slate-600 text-sm mt-1">When $g(n)$ dwarfs recursive contribution: $T(n)=\Theta(g(n))$.
-                </p>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = \Theta(g(n))$ when $g(n)$ dominates recursive terms.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p>Compare $\prod a(\cdot)$ vs. $g(n)$ growth; e.g. $n^n \gg 2^{O(n)}$.</p>
+              <p><strong>Intuition.</strong> If the non-recursive work $g(n)$ grows much faster than the recursive
+                terms, it dictates the overall runtime.</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = 2T(n/2) + n^n$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Recursive part: $2T(n/2) = \Theta(n \log n)$ (Master Theorem, Case 2).</li>
+                <li>Since $n^n \gg n \log n$, $T(n) = \Theta(n^n)$.</li>
+              </ul>
             </div>
           </article>
-
           <!-- Variable Change -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
-                <h3 class="text-xl font-semibold">7) Variable Changing</h3>
-                <p class="text-slate-600 text-sm mt-1">Substitute $n=h(k)$ to linearize: $\sqrt{n}, \log n, 2^k$ tricks.
-                </p>
+                <h3 class="text-xl font-semibold">7) Variable Change</h3>
+                <p class="text-slate-600 text-sm mt-1">Transform $n = h(k)$ (e.g., $\sqrt{n}$, $\log n$, $2^k$) to
+                  simplify recurrences.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p>Turn exotic arguments into standard recurrences in $k$; back‑substitute.</p>
+              <p><strong>Intuition.</strong> Change the variable to make the recurrence easier to solve, then
+                back-substitute to get $T(n)$.</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = T(\sqrt{n}) + n$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Let $n = 2^k$, so $T(2^k) = T(2^{k/2}) + 2^k$.</li>
+                <li>Define $S(k) = T(2^k)$, then $S(k) = S(k/2) + 2^k$.</li>
+                <li>Solve $S(k) = \Theta(2^k)$, so $T(n) = \Theta(n)$.</li>
+              </ul>
             </div>
           </article>
-
-          <!-- Fibonacci / Linear Homogeneous with Constant Coefficients -->
+          <!-- Linear Homogeneous -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
-                <h3 class="text-xl font-semibold">8) Linear Homogeneous (Characteristic Eq.)</h3>
-                <p class="text-slate-600 text-sm mt-1">General form $T(n)=\sum_{i=1}^k a_i\,T(n-i)+g(n)$; solve
-                  homogeneous part via roots.</p>
+                <h3 class="text-xl font-semibold">8) Linear Homogeneous (Characteristic Equation)</h3>
+                <p class="text-slate-600 text-sm mt-1">For $T(n) = \sum_{i=1}^k a_i T(n-i) + g(n)$, solve via
+                  characteristic polynomial.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p><strong>Method.</strong> Solve characteristic polynomial $\lambda^k=a_1\lambda^{k-1}+\cdots+a_k$.
-                If roots $\lambda_i$ are distinct, $T_h(n)=\sum c_i\,\lambda_i^n$; add a particular solution for $g(n)$.
-              </p>
-              <ul class="list-disc pl-5 mt-2">
-                <li>Fibonacci: $T(n)=T(n-1)+T(n-2)$ $\Rightarrow$ roots $\tfrac{1\pm\sqrt5}{2}$, growth $Θ(\varphi^n)$.
+              <p><strong>Intuition.</strong> The homogeneous part gives the growth rate via roots of a polynomial, and
+                $g(n)$ adds a particular solution.</p>
+              <p class="mt-2"><strong>Method.</strong> Solve $\lambda^k = a_1 \lambda^{k-1} + \cdots + a_k$. If roots
+                $\lambda_i$ are distinct, $T_h(n) = \sum c_i \lambda_i^n$. Add particular solution for $g(n)$.</p>
+              <p class="mt-2"><strong>Example.</strong> Fibonacci: $T(n) = T(n-1) + T(n-2)$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Characteristic equation: $\lambda^2 = \lambda + 1 \Rightarrow \lambda = \frac{1 \pm \sqrt{5}}{2}$.
                 </li>
-                <li>If $g(n)$ is poly/log, use annihilator or undetermined coefficients.</li>
+                <li>Solution: $T(n) = c_1 \left(\frac{1+\sqrt{5}}{2}\right)^n + c_2 \left(\frac{1-\sqrt{5}}{2}\right)^n
+                  = \Theta(\varphi^n)$, where $\varphi = \frac{1+\sqrt{5}}{2}$.</li>
               </ul>
             </div>
           </article>
-
-          <!-- Unequal Splits (Quicksort-style) -->
+          <!-- Unequal Splits -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
-                <h3 class="text-xl font-semibold">9) Unequal Splits (Akra–Bazzi, weighted)</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=T(\alpha n)+T((1-\alpha)n)+f(n)$, with $0<\alpha<1$.< /p>
+                <h3 class="text-xl font-semibold">9) Unequal Splits (Akra–Bazzi)</h3>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = T(\alpha n) + T((1-\alpha)n) + f(n)$, with $0 < \alpha <
+                    1$.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p><strong>Akra–Bazzi.</strong> Find $p$ s.t. $\alpha^p+(1-\alpha)^p=1$. Then
-                $$T(n)=\Theta\!\Big(n^p\Big(1+\int_1^n \frac{f(u)}{u^{p+1}}\,du\Big)\Big).$$</p>
-              <ul class="list-disc pl-5 mt-2">
-                <li>Quicksort average: $\alpha=1/2$, $f(n)=Θ(n)$ $\Rightarrow p=1$ $\Rightarrow T(n)=Θ(n\log n)$.</li>
-                <li>Handles uneven branches better than classical Master.</li>
+              <p><strong>Intuition.</strong> Handles recurrences with uneven splits, like Quicksort’s average case.</p>
+              <p class="mt-2"><strong>Formula.</strong> Find $p$ such that $\alpha^p + (1-\alpha)^p = 1$. Then: $$T(n) =
+                \Theta\left(n^p \left(1 + \int_1^n \frac{f(u)}{u^{p+1}}\,du\right)\right).$$</p>
+              <p class="mt-2"><strong>Example.</strong> Quicksort: $T(n) = T(n/2) + T(n/2) + \Theta(n)$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>For $\alpha = 1/2$, solve $(1/2)^p + (1/2)^p = 2 \cdot (1/2)^p = 1 \Rightarrow p = 1$.</li>
+                <li>Integral: $\int_1^n \frac{u}{u^2}\,du = \ln n$.</li>
+                <li>Thus, $T(n) = \Theta(n \log n)$.</li>
               </ul>
             </div>
           </article>
-
           <!-- Factorial Growth -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
@@ -495,39 +553,49 @@
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
                 <h3 class="text-xl font-semibold">10) Factorial Growth</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=n\,T(n-1)+g(n)$ typically yields $Θ(n!)$ up to factors from
-                  $g$.</p>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = n T(n-1) + g(n)$ typically yields $\Theta(n!)$ up to
+                  factors from $g(n)$.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p><strong>Idea.</strong> Unroll:
-                $T(n)=n(n-1)\cdots 1\,T(0)+\sum_{k=1}^n \big(n(n-1)\cdots(k+1)\big)\,g(k)$.</p>
-              <p class="mt-2">Use Stirling ($n!\approx \sqrt{2\pi n}(n/e)^n$) for asymptotics if needed.</p>
+              <p><strong>Intuition.</strong> Each step multiplies the previous result by $n$, leading to factorial
+                growth.</p>
+              <p class="mt-2"><strong>Formula.</strong> Unroll: $$T(n) = n(n-1)\cdots 1 T(0) + \sum_{k=1}^n
+                \left(n(n-1)\cdots(k+1)\right) g(k).$$</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = n T(n-1) + 1$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Unroll: $T(n) = n! T(0) + n! \sum_{k=1}^n \frac{1}{k!}$.</li>
+                <li>The sum $\sum_{k=1}^n \frac{1}{k!} \approx e$, so $T(n) = \Theta(n!)$.</li>
+              </ul>
+              <p class="mt-2">Use Stirling’s approximation ($n! \approx \sqrt{2\pi n} (n/e)^n$) for precise asymptotics.
+              </p>
             </div>
           </article>
-
-          <!-- Full Recurrence (Cumulative) -->
+          <!-- Full Recurrence -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
                 <h3 class="text-xl font-semibold">11) Full (Cumulative) Recurrence</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=\sum_{i=1}^{n-1}T(i)+g(n)$ often gives exponential growth.
+                <p class="text-slate-600 text-sm mt-1">$T(n) = \sum_{i=1}^{n-1} T(i) + g(n)$ often yields $\Theta(2^n)$.
                 </p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p><strong>Trick.</strong> Note $T(n)-T(n-1)=\sum_{i=1}^{n-1}T(i-1)+g(n)-g(n-1)$; or guess-and-check: with
-                $g(n)=O(1)$, $T(n)=Θ(2^n)$.</p>
-              <ul class="list-disc pl-5 mt-2">
-                <li>If $g(n)=Θ(n^k)$, still $T(n)=Θ(2^n)$; polynomial terms don’t beat the sum.</li>
+              <p><strong>Intuition.</strong> Summing all previous $T(i)$ creates exponential growth due to the
+                cumulative effect.</p>
+              <p class="mt-2"><strong>Method.</strong> Use difference: $T(n) - T(n-1) = \sum_{i=1}^{n-1} T(i-1) + g(n) -
+                g(n-1)$, or guess $T(n) = \Theta(2^n)$ and verify.</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = \sum_{i=1}^{n-1} T(i) + 1$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Difference: $T(n) - T(n-1) = T(n-1) + 1 \Rightarrow T(n) = 2T(n-1) + 1$.</li>
+                <li>Solve to get $T(n) = \Theta(2^n)$.</li>
               </ul>
             </div>
           </article>
-
           <!-- Nested Recurrences -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
@@ -535,40 +603,48 @@
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
                 <h3 class="text-xl font-semibold">12) Nested Recurrences</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=T(T(n/2))+g(n)$ and similar hard cases.</p>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = T(T(n/2)) + g(n)$ requires iterative bounding.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p><strong>Heuristics.</strong> Bound inner $T(\cdot)$ (e.g., $T(x)\le h(x)$) and iterate bounds;
-                sometimes
-                switch variables
-                ($n=2^{2^k}$) to reason about depth. Often needs problem-specific arguments.</p>
+              <p><strong>Intuition.</strong> The inner $T(n/2)$ makes this tricky; bound the inner term and iterate.</p>
+              <p class="mt-2"><strong>Method.</strong> Assume $T(n) \leq h(n)$, substitute, and refine bounds.
+                Alternatively, use a change of variables like $n = 2^{2^k}$.</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = T(T(n/2)) + 1$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Bound $T(n/2) \leq c \log n$, so $T(n) \leq T(c \log n) + 1$.</li>
+                <li>Iterate or use problem-specific analysis to approximate growth.</li>
+              </ul>
             </div>
           </article>
-
-          <!-- Exponential Step (a > 1 in T(n-1)) -->
+          <!-- Exponential Step -->
           <article x-data="{open:false}"
             class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
             <header class="flex items-start justify-between cursor-pointer"
               @click="open=!open; $nextTick(() => MathJax.typesetPromise())">
               <div>
                 <h3 class="text-xl font-semibold">13) Exponential Step</h3>
-                <p class="text-slate-600 text-sm mt-1">$T(n)=a\,T(n-1)+g(n)$ with $a>1$ gives $Θ(a^n)$ (plus particular
-                  solution).</p>
+                <p class="text-slate-600 text-sm mt-1">$T(n) = a T(n-1) + g(n)$ with $a > 1$ gives $\Theta(a^n)$ plus a
+                  particular solution.</p>
               </div>
               <span class="text-slate-500 text-sm" x-text="open ? 'Hide' : 'Show'"></span>
             </header>
             <div x-show="open" x-transition class="mt-4 text-sm leading-7">
-              <p><strong>Method.</strong> Solve homogeneous $T_h(n)=C a^n$. For $g(n)$ (poly/log/exp), use summation of
-                the form
-                $T(n)=a^n\!\left(C+\sum_{k=1}^n \frac{g(k)}{a^k}\right)$ and compare the series to get $Θ$.</p>
+              <p><strong>Intuition.</strong> The factor $a > 1$ amplifies each step, leading to exponential growth.</p>
+              <p class="mt-2"><strong>Formula.</strong> Homogeneous solution: $T_h(n) = C a^n$. Full solution: $$T(n) =
+                a^n \left(C + \sum_{k=1}^n \frac{g(k)}{a^k}\right).$$</p>
+              <p class="mt-2"><strong>Example.</strong> For $T(n) = 2 T(n-1) + n$:</p>
+              <ul class="list-disc pl-5 mt-1">
+                <li>Homogeneous: $T_h(n) = C \cdot 2^n$.</li>
+                <li>Particular solution: Sum $\sum_{k=1}^n \frac{k}{2^k} \approx 2$, so $T(n) = \Theta(2^n)$.</li>
+              </ul>
             </div>
           </article>
-
         </div>
       </div>
     </section>
+
     <!-- Comparison Table -->
     <section class="py-14">
       <div class="max-w-7xl mx-auto px-6">
@@ -781,65 +857,92 @@
 
       function recurrenceWizard() {
         return {
-          input: '',
-          parsed: { form: '-', a: null, b: null, p: null, r: null, f: '-', branches: [], coeffs: [] },
-          method: '—',
-          confidence: 0,
-          confidenceText: '',
-          notes: '',
-          verdict: '',
-          caveats: '',
-          rendered: '',
-          suggestions: [],
-          treeDepth: 4,
+          // State for user input and analysis output
+          input: '', // User-provided recurrence relation (e.g., "T(n) = 2 T(n/2) + n")
+          parsed: {
+            form: '-', // Parsed recurrence form
+            a: null, // Coefficient for recursive term(s)
+            b: null, // Division factor (e.g., n/2 -> b=2)
+            p: null, // Critical exponent (log_b a for Master, solved for Akra-Bazzi)
+            r: null, // Power for power-shrink (e.g., n^r)
+            f: '-', // Non-recursive term f(n) or g(n)
+            branches: [], // For Akra-Bazzi: array of {a, b} pairs
+            coeffs: [] // For Fibonacci-like: array of coefficients
+          },
+          method: '—', // Analysis method (e.g., "Master Theorem")
+          confidence: 0, // Confidence score for method selection (0 to 0.95)
+          confidenceText: '', // Displayable confidence percentage
+          notes: '', // Notes for user (e.g., parsing issues)
+          verdict: '', // Final complexity result (e.g., "T(n) = Θ(n log n)")
+          caveats: '', // Warnings or limitations of analysis
+          rendered: '', // LaTeX-rendered output for display
+          suggestions: [], // Suggestions for fixing input errors
+          treeDepth: 4, // Depth of recursion tree visualization
+          derivation: '', // Step-by-step derivation explanation
+          levelTableHTML: '', // HTML for recursion tree ledger table
+
+          // CSS class for method display pill (color-coded by method)
           get methodPillClass() {
             const m = this.method.toLowerCase();
             const base = 'text-xs px-2 py-1 rounded-full font-medium';
-            if (m.includes('master')) return base + ' bg-indigo-100 text-indigo-700';
-            if (m.includes('akra')) return base + ' bg-emerald-100 text-emerald-700';
-            if (m.includes('subtract')) return base + ' bg-amber-100 text-amber-800';
-            if (m.includes('power')) return base + ' bg-fuchsia-100 text-fuchsia-700';
-            if (m.includes('iter')) return base + ' bg-sky-100 text-sky-700';
-            if (m.includes('dom')) return base + ' bg-rose-100 text-rose-700';
-            if (m.includes('fibonacci')) return base + ' bg-purple-100 text-purple-700';
-            if (m.includes('exponential')) return base + ' bg-red-100 text-red-700';
-            if (m.includes('full')) return base + ' bg-orange-100 text-orange-700';
-            if (m.includes('nested')) return base + ' bg-cyan-100 text-cyan-700';
-            if (m.includes('variable')) return base + ' bg-slate-100 text-slate-700';
-            return base + ' bg-slate-100 text-slate-700';
+            const methodStyles = {
+              'master': 'bg-indigo-100 text-indigo-700',
+              'akra': 'bg-emerald-100 text-emerald-700',
+              'subtract': 'bg-amber-100 text-amber-800',
+              'power': 'bg-fuchsia-100 text-fuchsia-700',
+              'iter': 'bg-sky-100 text-sky-700',
+              'dom': 'bg-rose-100 text-rose-700',
+              'fibonacci': 'bg-purple-100 text-purple-700',
+              'exponential': 'bg-red-100 text-red-700',
+              'full': 'bg-orange-100 text-orange-700',
+              'nested': 'bg-cyan-100 text-cyan-700',
+              'variable': 'bg-slate-100 text-slate-700'
+            };
+            for (const [key, style] of Object.entries(methodStyles)) {
+              if (m.includes(key)) return `${base} ${style}`;
+            }
+            return `${base} bg-slate-100 text-slate-700`;
           },
+
+          // CSS class for confidence score display
           get confidenceClass() {
             if (this.confidence >= 0.8) return 'text-green-600 font-semibold';
             if (this.confidence >= 0.6) return 'text-yellow-600 font-medium';
             return 'text-red-500 font-medium';
           },
+
+          // Initialize with a default example and set up tree watcher
           init() {
             this.setExample('master1');
             this.$nextTick(() => this.updateTree());
             this.$watch('treeDepth', () => this.updateTree());
           },
+
+          // Load predefined example recurrences for testing
           setExample(which) {
             const examples = {
-              master1: 'T(n) = 2 T(n/2) + n',
-              master2: 'T(n) = 3 T(n/4) + n log n',
-              master3: 'T(n) = 2T(n/2) + n/log n',
-              akra: 'T(n) = T(n/2) + T(n/3) + n',
-              akra2: 'T(n) = 2T(n/4) + 3T(n/8) + n^2',
-              sub: 'T(n) = T(n-1) + n',
-              sub2: 'T(n) = 2T(n-1) + n',
-              fib: 'T(n) = T(n-1) + T(n-2) + n',
-              fib2: 'T(n) = T(n-1) + T(n-2) + 1',
-              power: 'T(n) = 2 T(n^(1/2)) + log n',
-              power2: 'T(n) = T(sqrt(n)) + n',
-              ilog: 'T(n) = T(log n) + 1',
-              factorial: 'T(n) = n T(n-1) + 1',
-              dom: 'T(n) = 2^n T(n/2) + n^n',
-              full: 'T(n) = sum(i=1 to n-1) T(i) + n',
-              nested: 'T(n) = T(T(n/2)) + n'
+              master1: 'T(n) = 2 T(n/2) + n', // Merge sort
+              master2: 'T(n) = 3 T(n/4) + n log n', // Slower branching
+              master3: 'T(n) = 2 T(n/2) + n/log n', // Extended Master case
+              akra: 'T(n) = T(n/2) + T(n/3) + n', // Uneven splits
+              akra2: 'T(n) = 2 T(n/4) + 3 T(n/8) + n^2', // Multi-branch
+              sub: 'T(n) = T(n-1) + n', // Linear reduction
+              sub2: 'T(n) = 2 T(n-1) + n', // Exponential with c=2
+              fib: 'T(n) = T(n-1) + T(n-2) + n', // Fibonacci with work
+              fib2: 'T(n) = T(n-1) + T(n-2) + 1', // Fibonacci with constant
+              power: 'T(n) = 2 T(n^(1/2)) + log n', // Power-shrink
+              power2: 'T(n) = T(sqrt(n)) + n', // Sqrt reduction
+              ilog: 'T(n) = T(log n) + 1', // Iterated logarithm
+              factorial: 'T(n) = n T(n-1) + 1', // Factorial growth
+              dom: 'T(n) = 2^n T(n/2) + n^n', // Dominance by n^n
+              full: 'T(n) = sum(i=1 to n-1) T(i) + n', // Full history
+              nested: 'T(n) = T(T(n/2)) + n' // Nested recurrence
             };
             this.input = examples[which] || '';
             this.analyze();
           },
+
+          // Parse coefficient from string (handles '2', '', '-', etc.)
           parseCoefficient(str) {
             if (!str || str.trim() === '' || str.trim() === '+') return 1;
             if (str.trim() === '-') return -1;
@@ -847,50 +950,48 @@
             const num = parseFloat(str.trim());
             return isNaN(num) ? 1 : num;
           },
+
+          // Normalize input for consistent parsing
           normalizeInput(input) {
             return input
-              // collapse spaces
-              .replace(/\s+/g, ' ')
-              // insert explicit * when a number is followed by T( with a space: "2 T(n/2)" -> "2*T(n/2)"
-              .replace(/([0-9])\s+(?=T\()/g, '$1*')
-              // also handle "+ 2 T(...)" etc.
-              .replace(/([+\-])\s+([0-9]+)\s+(?=T\()/g, '$1 $2*')
-              // normalize spaces inside T( ... )
-              .replace(/T\s*\(\s*/g, 'T(')
-              .replace(/\s*\)\s*/g, ')')
-              // make "+", "-", "=", "(" and ")" spacing canonical
-              .replace(/\s*\+\s*/g, '+')
-              .replace(/\s*-\s*/g, '-')
-              .replace(/\s*=\s*/g, '=')
-              // sqrt forms
-              .replace(/sqrt\s*\(\s*n\s*\)/gi, 'n^0.5')
-              // handle "n log n" / "n   log   n" by inserting a *
-              .replace(/n\s+log\s*n/gi, 'n*log n')
-              // normalize log tokens to a compact "logn" that your regex already expects
-              .replace(/log\s*n/gi, 'logn')
-              .replace(/ln\s*n/gi, 'logn')
-              // strip stray "*" before T or parentheses (harmless)
-              .replace(/\*\s*/g, '*')
+              .replace(/\s+/g, ' ') // Collapse multiple spaces
+              .replace(/([0-9])\s+(?=T\()/g, '$1*') // Add * before T (e.g., "2 T" -> "2*T")
+              .replace(/([+\-])\s+([0-9]+)\s+(?=T\()/g, '$1 $2*') // Handle "+ 2 T"
+              .replace(/T\s*\(\s*/g, 'T(') // Normalize T( spacing
+              .replace(/\s*\)\s*/g, ')') // Normalize ) spacing
+              .replace(/\s*\+\s*/g, '+') // Canonicalize +
+              .replace(/\s*-\s*/g, '-') // Canonicalize -
+              .replace(/\s*=\s*/g, '=') // Canonicalize =
+              .replace(/sqrt\s*\(\s*n\s*\)/gi, 'n^0.5') // Normalize sqrt(n)
+              .replace(/n\s+log\s*n/gi, 'n*log n') // Add * for n log n
+              .replace(/log\s*n/gi, 'logn') // Normalize log n
+              .replace(/ln\s*n/gi, 'logn') // Normalize ln(n)
+              .replace(/\*\s*/g, '*') // Clean stray *
               .trim();
           },
 
+
+          // Analyze non-recursive function f(n) or g(n)
           analyzeFunction(f) {
             if (!f) return { type: 'constant', complexity: 'simple', value: 1, latex: '1' };
             f = f.toLowerCase().replace(/\s+/g, '');
-            let mathNode;
-            let latex = f;
+            let mathNode, latex = f;
+
+            // Parse with Math.js for LaTeX rendering
             if (typeof math !== 'undefined') {
               try {
                 mathNode = math.parse(f.replace('logn', 'log(n)').replace('loglogn', 'log(log(n))').replace(/n\^([0-9]*\.?[0-9]+)/, 'n^($1)'));
                 f = mathNode.toString({ parenthesis: 'keep' });
                 latex = mathNode.toTex();
               } catch (e) {
-                console.warn('MathJS parse error:', e);
-                this.notes = 'Math.js failed to parse f(n). Falling back to string-based analysis.';
+                console.warn('Math.js parse error:', e);
+                this.notes = 'Failed to parse f(n) with Math.js. Using string-based analysis.';
               }
             } else {
-              this.notes = 'Math.js not loaded. Using string-based analysis.';
+              this.notes = 'Math.js not available. Using string-based analysis.';
             }
+
+            // Patterns for common function types
             const patterns = {
               constant: /^([0-9]*\.?[0-9]+|1)$/,
               linear: /^([0-9]*\.?[0-9]*)\*?n$/,
@@ -904,6 +1005,7 @@
               exponential: /(2\^n|e\^n)/,
               superexp: /n\^n/
             };
+
             for (const [type, pattern] of Object.entries(patterns)) {
               const match = f.match(pattern);
               if (match) {
@@ -934,14 +1036,16 @@
                     const c2 = this.parseCoefficient(match[3]);
                     return { type, complexity: 'complex', latex: `${c1 === 1 ? '' : c1}n^{${p1}} + ${c2 === 1 ? '' : c2}n \\log n`, mathNode };
                   default:
-                    return { type, complexity: 'high', latex: latex, mathNode };
+                    return { type, complexity: 'high', latex, mathNode };
                 }
               }
             }
-            return { type: 'unknown', complexity: 'unknown', latex: latex, mathNode, note: 'Complex expression - try simplifying.' };
+            return { type: 'unknown', complexity: 'unknown', latex, mathNode, note: 'Complex expression - simplify for better analysis.' };
           },
+
+          // Calculate confidence score for the selected method
           calculateConfidence(method, parsed, fAnalysis) {
-            let confidence = 0.5;
+            let confidence = 0.5; // Base confidence
             switch (method) {
               case 'Master Theorem':
                 if (parsed.a && parsed.b && parsed.p !== null) {
@@ -976,7 +1080,7 @@
               case 'Exponential Growth':
                 confidence = 0.9;
                 break;
-              case 'Power‑shrink':
+              case 'Power-shrink':
                 confidence = 0.7;
                 if (parsed.r && parsed.r < 1 && parsed.r > 0) confidence += 0.1;
                 break;
@@ -994,14 +1098,16 @@
                 confidence = 0.3;
             }
             if (method.includes('Master') && parsed.p !== null) {
-              if (Math.abs(parsed.p - 1) < 0.01) confidence -= 0.1;
-              if (Math.abs(parsed.p) < 0.01) confidence -= 0.05;
+              if (Math.abs(parsed.p - 1) < 0.01) confidence -= 0.1; // Edge case for p ≈ 1
+              if (Math.abs(parsed.p) < 0.01) confidence -= 0.05; // Edge case for p ≈ 0
             }
-            if (fAnalysis.note) confidence -= 0.05;
+            if (fAnalysis.note) confidence -= 0.05; // Reduce confidence for parsing issues
             confidence = Math.round(confidence * 100) / 100;
-            this.confidenceText = (confidence * 100).toFixed(0) + '%';
+            this.confidenceText = `${(confidence * 100).toFixed(0)}%`;
             return Math.min(Math.max(confidence, 0.1), 0.95);
           },
+
+          // Check regularity condition for Master Theorem Case 3
           checkRegularity(a, b, fAnalysis) {
             const regularTypes = ['polynomial', 'polylog', 'linear', 'constant'];
             const irregularTypes = ['factorial', 'exponential', 'superexp'];
@@ -1016,7 +1122,7 @@
                   if (ratio < 1) {
                     return { regular: true, note: `Regularity holds: a * f(n/b) ≈ ${ratio.toFixed(3)} * f(n) < f(n).` };
                   }
-                  return { regular: false, note: `Regularity may fail: a * f(n/b) ≈ ${ratio.toFixed(3)} * f(n) ≥ f(n).` };
+                  return { regular: false, note: `Regularity may fail: a * f(n/b) ≈ ${ratio.toFixed(3)} * f(n) ≥ f(n). Verify manually.` };
                 } catch (e) {
                   console.warn('Regularity check failed:', e);
                 }
@@ -1024,10 +1130,12 @@
               return { regular: true, note: 'Likely satisfies regularity condition.' };
             }
             if (irregularTypes.includes(fAnalysis.type)) {
-              return { regular: false, note: 'May violate regularity condition - verify manually.' };
+              return { regular: false, note: 'May violate regularity condition due to fast-growing f(n). Verify manually.' };
             }
-            return { regular: null, note: 'Regularity unclear - manual verification needed.' };
+            return { regular: null, note: 'Regularity unclear. Manual verification needed.' };
           },
+
+          // Levenshtein distance for fuzzy matching
           levenshtein(a, b) {
             const matrix = Array(b.length + 1).fill().map(() => Array(a.length + 1).fill(0));
             for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
@@ -1036,14 +1144,16 @@
               for (let i = 1; i <= a.length; i++) {
                 const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
                 matrix[j][i] = Math.min(
-                  matrix[j][i - 1] + 1,
-                  matrix[j - 1][i] + 1,
-                  matrix[j - 1][i - 1] + indicator
+                  matrix[j][i - 1] + 1, // Deletion
+                  matrix[j - 1][i] + 1, // Insertion
+                  matrix[j - 1][i - 1] + indicator // Substitution
                 );
               }
             }
             return matrix[b.length][a.length];
           },
+
+          // Fuzzy match input against expected patterns
           fuzzyMatch(input, pattern) {
             const cleanInput = input.replace(/\s/g, '');
             const cleanPattern = pattern.replace(/\s/g, '');
@@ -1051,6 +1161,8 @@
             const similarity = 1 - distance / Math.max(cleanInput.length, cleanPattern.length);
             return similarity > 0.85 ? { similarity, pattern } : null;
           },
+
+          // Generate suggestions for fixing input errors
           generateSuggestions(input) {
             const suggestions = [];
             const clean = input.replace(/\s+/g, '');
@@ -1064,7 +1176,7 @@
             for (const pattern of expectedPatterns) {
               const match = this.fuzzyMatch(clean, pattern.replace(/\s/g, ''));
               if (match) {
-                suggestions.push(`Input resembles "${pattern}". Try formatting as: ${pattern.replace('a', '2').replace('b', '2').replace('c', '3').replace('f(n)', 'n')}.`);
+                suggestions.push(`Input resembles "${pattern}". Try: ${pattern.replace('a', '2').replace('b', '2').replace('c', '3').replace('f(n)', 'n')}.`);
               }
             }
             if (clean.includes('T(n-1)T(n-2)')) {
@@ -1074,7 +1186,7 @@
               suggestions.push('Did you mean n*log(n) or n + log(n)? Use * for multiplication.');
             }
             if (clean.includes('T(n)') && !clean.includes('T(n)=')) {
-              suggestions.push('Use the format T(n) = ... for the recurrence relation.');
+              suggestions.push('Use format T(n) = ... for the recurrence relation.');
             }
             if (clean.includes('log(n)') || clean.includes('ln(n)')) {
               suggestions.push('Use "log n" instead of "log(n)" or "ln(n)" for better parsing.');
@@ -1083,20 +1195,23 @@
               suggestions.push('Only variable "n" is supported in T(...).');
             }
             if (clean.match(/T\(n\/[0-9]+\)/g)?.length >= 3) {
-              suggestions.push('Multiple branches detected. This may be an Akra-Bazzi recurrence.');
+              suggestions.push('Multiple branches detected. Consider Akra-Bazzi method.');
             }
             if (clean.includes('loglogn') || clean.includes('T(logn)')) {
-              suggestions.push('Try substitution n = 2^k to simplify iterated logarithm recurrences.');
+              suggestions.push('Try substitution n = 2^k for iterated logarithm recurrences.');
             }
             if (clean.includes('n^2+n') || clean.includes('n*logn')) {
-              suggestions.push('Complex f(n) detected. Consider breaking into simpler terms or verifying dominance.');
+              suggestions.push('Complex f(n) detected. Simplify terms or verify dominance.');
             }
             if (clean.includes('2*T(n/2)+n')) {
-              suggestions.push('This resembles merge sort’s recurrence: T(n) = 2T(n/2) + n → Θ(n log n).');
+              suggestions.push('Resembles merge sort: T(n) = 2T(n/2) + n → Θ(n log n).');
             }
             return suggestions;
           },
+
+          // Main analysis function
           analyze() {
+            // Reset state
             this.parsed = { form: '-', a: null, b: null, p: null, r: null, f: '-', branches: [], coeffs: [] };
             this.method = '—';
             this.confidence = 0;
@@ -1106,23 +1221,31 @@
             this.caveats = '';
             this.rendered = '';
             this.suggestions = [];
+            this.derivation = '';
+            this.levelTableHTML = '';
+
+            // Validate input
             if (!this.input.trim()) {
-              this.notes = 'Enter a recurrence relation like T(n) = 2T(n/2) + n';
+              this.notes = 'Please enter a recurrence relation, e.g., T(n) = 2T(n/2) + n';
               return;
             }
+
             const s = this.normalizeInput(this.input);
             this.suggestions = this.generateSuggestions(s);
+
             if (!s.includes('T(') || !s.includes('T(n)=')) {
               this.notes = 'Invalid format. Use T(n) = ... with at least one recursive term.';
               return;
             }
+
+            // Define patterns for recurrence types
             const patterns = {
               iterLog: s.match(/^T\(n\)=([0-9]*\.?[0-9]*)\*?T\(log.?\(n\)\)\+(.+)$/i) ||
                 s.match(/^T\(n\)=([0-9]*\.?[0-9]*)\*?T\(logn\)\+(.+)$/i),
               master: s.match(/^T\(\s*n\s*\)\s*=\s*([0-9]*\.?[0-9]*)\s*\*?\s*T\(\s*n\s*\/\s*([0-9]*\.?[0-9]+)\s*\)\s*\+\s*(.+)$/i),
               extendedMaster: s.match(/^T\(\s*n\s*\)\s*=\s*([0-9]*\.?[0-9]*)\s*\*?\s*T\(\s*n\s*\/\s*([0-9]*\.?[0-9]+)\s*\)\s*\+\s*(.+\/\s*log.*)$/i),
               fibonacci: s.match(/^T\(n\)=([0-9]*\.?[0-9]*)\*?T\(n-([0-9]+)\)\+([0-9]*\.?[0-9]*)\*?T\(n-([0-9]+)\)\+(.+)$/i),
-              exponentialCoeff: s.match(/^T\(n\)=([0-9]*\.?[0-9]*)\*?T\(n-([0-9]+)\)\+(.+)$/i),
+              exponential: s.match(/^T\(n\)=([0-9]*\.?[0-9]*)\*?T\(n-([0-9]+)\)\+(.+)$/i),
               factorial: s.match(/^T\(n\)=n\*?T\(n-([0-9]+)\)\+(.+)$/i),
               power: s.match(/^T\(n\)=([0-9]*\.?[0-9]*)\*?T\(n\^?\(?([0-9]*\.?[0-9]+|1\/2|0\.5)\)?\)\+(.+)$/i),
               sqrt: s.match(/^T\(n\)=([0-9]*\.?[0-9]*)\*?T\(sqrt\(n\)\)\+(.+)$/i) ||
@@ -1131,12 +1254,13 @@
               nested: s.match(/^T\(n\)=T\(T\((.+?)\)\)\+(.+)$/i),
               multibranch: s.match(/^T\(n\)=\s*([0-9]*\.?[0-9]*)\*?T\(n\/([0-9]*\.?[0-9]+)\)\+([0-9]*\.?[0-9]*)\*?T\(n\/([0-9]*\.?[0-9]+)\)\+([0-9]*\.?[0-9]*)\*?T\(n\/([0-9]*\.?[0-9]+)\)\+(.+)$/i)
             };
+
+            // Match and analyze recurrence type
             if (patterns.iterLog) {
               this.analyzeIteratedLog(patterns.iterLog);
             } else if (s.includes(')+T(') && s.includes('n/')) {
               if (this.analyzeAkraBazzi(s)) {
                 this.updateTree();
-                this.method = 'Akra–Bazzi';
                 return;
               }
             } else if (patterns.multibranch) {
@@ -1149,8 +1273,8 @@
               this.analyzeExtendedMaster(patterns.extendedMaster);
             } else if (patterns.master) {
               this.analyzeMaster(patterns.master);
-            } else if (patterns.exponentialCoeff) {
-              this.analyzeExponential(patterns.exponentialCoeff);
+            } else if (patterns.exponential) {
+              this.analyzeExponential(patterns.exponential);
             } else if (patterns.sqrt || patterns.power) {
               this.analyzePower(patterns.sqrt || patterns.power);
             } else if (patterns.full) {
@@ -1162,9 +1286,11 @@
             } else {
               this.analyzeUnknown(s);
             }
-            this.confidenceText = `${Math.round(this.confidence * 100)}%`;
+
             this.updateTree();
           },
+
+          // Analyze Akra-Bazzi recurrence (multiple branches)
           analyzeAkraBazzi(s) {
             const parts = s.split('=')[1];
             if (!parts) return false;
@@ -1182,303 +1308,367 @@
             if (branches.length >= 2) {
               this.parsed.form = 'Σ a_i T(n/b_i) + g(n)';
               this.parsed.branches = branches;
-              let p = this.solveP(branches);
+              const p = this.solveP(branches);
               this.parsed.p = p.toFixed(4);
               this.method = 'Akra–Bazzi';
               const remaining = parts.split('+').filter(t => !t.includes('T(')).join('+').trim();
               const fAnalysis = this.analyzeFunction(remaining);
               this.parsed.f = fAnalysis.latex;
               this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-              this.verdict = `Critical exponent: $p \\approx ${this.parsed.p}$ solves $\\sum a_i b_i^{-p} = 1$. Compare $g(n)$ with $n^p$.`;
-              this.renderLatex(`$T(n) = \\sum_{i} a_i T(n/b_i) + g(n)$ where $p \\approx ${p.toFixed(3)}$`);
+              this.verdict = `Solve for $p$ where $\\sum a_i b_i^{-p} = 1$. Here, $p \\approx ${p.toFixed(3)}$. Compare $g(n) = ${fAnalysis.latex}$ with $n^p$ to determine $T(n)$.`;
+              this.renderLatex(`$T(n) = \\sum_{i} ${branches.map(b => `${b.a}T(n/${b.b})`).join('+')} + ${fAnalysis.latex}$, with $p \\approx ${p.toFixed(3)}$`);
+              this.derivation = `<div class="mt-3 p-3 bg-emerald-50 rounded border border-emerald-200">
+                    <div class="font-semibold">Step-by-Step (Akra–Bazzi)</div>
+                    <ol class="list-decimal ml-5 leading-6">
+                        <li>Identify branches: ${branches.map((b, i) => `a_${i + 1} = ${b.a}, b_${i + 1} = ${b.b}`).join('; ')}.</li>
+                        <li>Solve $\\sum a_i b_i^{-p} = 1$ → $p \\approx ${p.toFixed(3)}$.</li>
+                        <li>Evaluate integral: $1 + \\int_1^n \\frac{g(u)}{u^{p+1}}\\,du$ for $g(n) = ${fAnalysis.latex}$.</li>
+                        <li>Conclude: $T(n) = \\Theta(n^p \\cdot (1 + \\text{integral}))$.</li>
+                    </ol>
+                </div>`;
               this.triggerMathJax();
               return true;
             }
             return false;
           },
+
+          // Analyze Master Theorem recurrence
           analyzeMaster(match) {
             const a = this.parseCoefficient(match[1]);
             const b = parseFloat(match[2]);
             const f = match[3];
             const p = Math.log(a) / Math.log(b);
-            this.parsed = {
-              form: 'aT(n/b) + f(n)',
-              a, b,
-              p: p.toFixed(4),
-              r: null,
-              f,
-              branches: []
-            };
+            this.parsed = { form: 'aT(n/b) + f(n)', a, b, p: p.toFixed(4), r: null, f, branches: [] };
             this.method = 'Master Theorem';
             const fAnalysis = this.analyzeFunction(f);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.renderLatex(`$p = \\log_b a = \\log_{${b}} ${a} \\approx ${p.toFixed(3)}$`);
             this.masterVerdictDetailed(fAnalysis, p, a, b);
+            this.renderLatex(`$T(n) = ${a}T(n/${b}) + ${fAnalysis.latex}$, with $p = \\log_{${b}} ${a} \\approx ${p.toFixed(3)}$`);
             this.triggerMathJax();
           },
+
+          // Analyze Extended Master Theorem recurrence
           analyzeExtendedMaster(match) {
             const a = this.parseCoefficient(match[1]);
             const b = parseFloat(match[2]);
             const f = match[3];
             const p = Math.log(a) / Math.log(b);
-            this.parsed = {
-              form: 'aT(n/b) + f(n)',
-              a, b,
-              p: p.toFixed(4),
-              r: null,
-              f,
-              branches: []
-            };
+            this.parsed = { form: 'aT(n/b) + f(n)', a, b, p: p.toFixed(4), r: null, f, branches: [] };
             this.method = 'Extended Master Theorem';
             const fAnalysis = this.analyzeFunction(f);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.renderLatex(`Extended case: $p = \\log_{${b}} ${a} \\approx ${p.toFixed(3)}$`);
-            this.verdict = `For $f(n) = n/\\log n$ type functions, often $T(n) = \\Theta(n^p \\log \\log n)$ when $f(n) = \\Theta(n^p / \\log^k n)$.`;
-            this.caveats = 'Extended Master Theorem cases require careful analysis of logarithmic factors.';
+            this.verdict = `For $f(n) = ${fAnalysis.latex}$ (e.g., $n/\\log^k n$), often $T(n) = \\Theta(n^p \\log \\log n)$.`;
+            this.caveats = 'Extended Master Theorem requires careful analysis of logarithmic factors.';
+            this.derivation = `<div class="mt-3 p-3 bg-indigo-50 rounded border border-indigo-200">
+                <div class="font-semibold">Step-by-Step (Extended Master Theorem)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Compute $p = \\log_b a = \\log_{${b}} ${a} \\approx ${p.toFixed(3)}$.</li>
+                    <li>Analyze $f(n) = ${fAnalysis.latex}$ against $n^p$.</li>
+                    <li>Apply extended case: Likely $T(n) = \\Theta(n^p \\log \\log n)$ for logarithmic denominators.</li>
+                </ol>
+            </div>`;
+            this.renderLatex(`$T(n) = ${a}T(n/${b}) + ${fAnalysis.latex}$`);
             this.triggerMathJax();
           },
+
+          // Analyze Fibonacci-like recurrence
           analyzeFibonacci(match) {
             const a1 = this.parseCoefficient(match[1]);
             const c1 = parseInt(match[2]);
             const a2 = this.parseCoefficient(match[3]);
             const c2 = parseInt(match[4]);
             const g = match[5];
-            this.parsed = {
-              form: `a₁T(n-${c1}) + a₂T(n-${c2}) + g(n)`,
-              a: null, b: null, p: null, r: null,
-              f: g,
-              branches: [],
-              coeffs: [a1, a2]
-            };
+            this.parsed = { form: `${a1}T(n-${c1}) + ${a2}T(n-${c2}) + g(n)`, a: null, b: null, p: null, r: null, f: g, branches: [], coeffs: [a1, a2] };
             this.method = 'Fibonacci-like';
             const fAnalysis = this.analyzeFunction(g);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
             const discriminant = (a1 + a2) * (a1 + a2) + 4 * a2;
             const lambda1 = ((a1 + a2) + Math.sqrt(discriminant)) / 2;
             const lambda2 = ((a1 + a2) - Math.sqrt(discriminant)) / 2;
-            this.verdict = `Characteristic equation: $\\lambda^2 = ${a1}\\lambda + ${a2}$. `;
-            this.verdict += `Roots: $\\lambda_1 \\approx ${lambda1.toFixed(3)}, $\\lambda_2 \\approx ${lambda2.toFixed(3)}. `;
-            if (Math.abs(lambda1) > 1) {
-              this.verdict += `Dominant root $|\\lambda_1| > 1$ → growth rate $\\Theta(\\lambda_1^n + \\text{particular solution})$.`;
-            } else {
-              this.verdict += `All roots $|\\lambda_i| \\leq 1$ → polynomial growth dominated by $g(n)$.`;
-            }
+            this.verdict = `Solve characteristic equation: $\\lambda^2 = ${a1}\\lambda + ${a2}$. Roots: $\\lambda_1 \\approx ${lambda1.toFixed(3)}, \\lambda_2 \\approx ${lambda2.toFixed(3)}. Growth: $\\Theta(\\lambda_1^n)$ if $|\\lambda_1| > 1$.`;
+            this.derivation = `<div class="mt-3 p-3 bg-purple-50 rounded border border-purple-200">
+                <div class="font-semibold">Step-by-Step (Fibonacci-like)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Form equation: $\\lambda^2 = ${a1}\\lambda + ${a2}$.</li>
+                    <li>Solve roots: $\\lambda_1 \\approx ${lambda1.toFixed(3)}, \\lambda_2 \\approx ${lambda2.toFixed(3)}$.</li>
+                    <li>Homogeneous solution: $T_h(n) = c_1 \\lambda_1^n + c_2 \\lambda_2^n$.</li>
+                    <li>Add particular solution for $g(n) = ${fAnalysis.latex}$.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Analyze exponential recurrence
           analyzeExponential(match) {
             const c = this.parseCoefficient(match[1]);
             const step = parseInt(match[2]);
             const g = match[3];
             if (c > 1) {
-              this.parsed = {
-                form: `${c}T(n-${step}) + g(n)`,
-                a: c, b: null, p: null, r: null,
-                f: g,
-                branches: []
-              };
+              this.parsed = { form: `${c}T(n-${step}) + g(n)`, a: c, b: null, p: null, r: null, f: g, branches: [] };
               this.method = 'Exponential Growth';
               const fAnalysis = this.analyzeFunction(g);
+              this.parsed.f = fAnalysis.latex;
               this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-              this.verdict = `Exponential coefficient $c = ${c} > 1$ → $T(n) = \\Theta(${c}^{n/${step}} + \\text{particular solution})$.`;
+              this.verdict = `Coefficient $c = ${c} > 1$ → $T(n) = \\Theta(${c}^{n/${step}})$ plus particular solution for $g(n) = ${fAnalysis.latex}$.`;
+              this.derivation = `<div class="mt-3 p-3 bg-red-50 rounded border border-red-200">
+                    <div class="font-semibold">Step-by-Step (Exponential Growth)</div>
+                    <ol class="list-decimal ml-5 leading-6">
+                        <li>Homogeneous solution: $T_h(n) = C \\cdot ${c}^n$.</li>
+                        <li>Sum particular solution: $\\sum_{k=1}^n \\frac{g(k)}{${c}^k}$ for $g(n) = ${fAnalysis.latex}$.</li>
+                        <li>Combine: $T(n) = ${c}^n \\cdot (C + \\text{sum})$.</li>
+                    </ol>
+                </div>`;
               this.renderLatex(this.verdict);
               this.triggerMathJax();
             } else {
               this.analyzeSubtractive(c, step, g);
             }
           },
+
+          // Analyze factorial growth recurrence
           analyzeFactorial(match) {
             const step = parseInt(match[1]);
             const g = match[2];
-            this.parsed = {
-              form: `nT(n-${step}) + g(n)`,
-              a: null, b: null, p: null, r: null,
-              f: g,
-              branches: []
-            };
+            this.parsed = { form: `nT(n-${step}) + g(n)`, a: null, b: null, p: null, r: null, f: g, branches: [] };
             this.method = 'Factorial Growth';
             const fAnalysis = this.analyzeFunction(g);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.verdict = `Linear coefficient in $n$ → factorial growth: $T(n) = \\Theta(n! \\cdot \\text{factor})$ typically.`;
-            this.caveats = 'Exact analysis depends on g(n) and initial conditions.';
+            this.verdict = `Coefficient $n$ leads to factorial growth: $T(n) = \\Theta(n! \\cdot \\text{factor})$ for $g(n) = ${fAnalysis.latex}$.`;
+            this.derivation = `<div class="mt-3 p-3 bg-orange-50 rounded border border-orange-200">
+                <div class="font-semibold">Step-by-Step (Factorial Growth)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Unroll: $T(n) = n \\cdot (n-1) \\cdot \\ldots \\cdot 1 \\cdot T(0) + \\sum_{k=1}^n (n \\cdot (n-1) \\cdot \\ldots \\cdot (k+1)) \\cdot g(k)$.</li>
+                    <li>Leading term: $n! \\cdot T(0)$.</li>
+                    <li>Evaluate sum for $g(n) = ${fAnalysis.latex}$ to adjust factor.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Analyze subtractive recurrence
           analyzeSubtractive(c, step, g) {
-            this.parsed = {
-              form: `T(n-${step}) + g(n)`,
-              a: c || 1, b: null, p: null, r: null,
-              f: g,
-              branches: []
-            };
+            this.parsed = { form: `T(n-${step}) + g(n)`, a: c || 1, b: null, p: null, r: null, f: g, branches: [] };
             this.method = 'Subtractive';
             const fAnalysis = this.analyzeFunction(g);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.verdict = `Linear recursion depth $\\approx n/${step}$. Solution: $T(n) \\approx T(0) + \\frac{1}{${step}} \\sum_{i=0}^{n-1} g(i)$.`;
+            this.verdict = `Linear recursion with depth $\\approx n/${step}$. Solution: $T(n) \\approx T(0) + \\frac{1}{${step}} \\sum_{i=0}^{n-1} g(i)$.`;
             if (fAnalysis.type === 'linear') {
-              this.verdict += ` For $g(n) = n$: $T(n) = \\Theta(n^2)$.`;
+              this.verdict += ` For $g(n) = ${fAnalysis.latex}$, $T(n) = \\Theta(n^2)$.`;
             } else if (fAnalysis.type === 'constant') {
-              this.verdict += ` For constant $g(n)$: $T(n) = \\Theta(n)$.`;
+              this.verdict += ` For $g(n) = ${fAnalysis.latex}$, $T(n) = \\Theta(n)$.`;
             }
+            this.derivation = `<div class="mt-3 p-3 bg-amber-50 rounded border border-amber-200">
+                <div class="font-semibold">Step-by-Step (Subtractive)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Unroll: $T(n) = T(n-${step}) + g(n) = \\ldots = T(0) + \\sum g(n-k\\cdot${step})$.</li>
+                    <li>Depth: $\\approx n/${step}$ steps.</li>
+                    <li>Sum $g(n) = ${fAnalysis.latex}$ to get $T(n)$.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Analyze power-shrink recurrence
           analyzePower(match) {
             const a = this.parseCoefficient(match[1]);
-            let r = match[2];
-            if (r === '1/2') r = 0.5;
-            else if (!r) r = 0.5;
-            else r = parseFloat(r);
+            let r = match[2] === '1/2' ? 0.5 : parseFloat(match[2]) || 0.5;
             const g = match[3];
-            this.parsed = {
-              form: `${a}T(n^${r}) + g(n)`,
-              a, b: null, p: null,
-              r: r.toFixed(3),
-              f: g,
-              branches: []
-            };
-            this.method = 'Power‑shrink';
+            this.parsed = { form: `${a}T(n^${r}) + g(n)`, a, b: null, p: null, r: r.toFixed(3), f: g, branches: [] };
+            this.method = 'Power-shrink';
             const fAnalysis = this.analyzeFunction(g);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            if (r < 1 && r > 0) {
-              this.verdict = `Power reduction $0 < r = ${r} < 1$ → recursion depth $\\Theta(\\log \\log n)$. `;
-              this.verdict += `Often $T(n) = \\Theta(g(n) \\cdot \\log \\log n)$ for reasonable $g(n)$.`;
-            } else {
-              this.verdict = `Unusual power $r = ${r}$ - requires specialized analysis.`;
-            }
+            this.verdict = r < 1 && r > 0
+              ? `Power $r = ${r} < 1$ → depth $\\Theta(\\log \\log n)$. Often $T(n) = \\Theta(g(n) \\cdot \\log \\log n)$ for $g(n) = ${fAnalysis.latex}$.`
+              : `Unusual power $r = ${r}$. Requires specialized analysis.`;
+            this.derivation = `<div class="mt-3 p-3 bg-fuchsia-50 rounded border border-fuchsia-200">
+                <div class="font-semibold">Step-by-Step (Power-shrink)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Substitute $n = 2^k$ → $T(2^k) = ${a}T(2^{k \\cdot ${r}}) + g(2^k)$.</li>
+                    <li>Depth: $\\Theta(\\log \\log n)$ due to exponential size reduction.</li>
+                    <li>Analyze $g(n) = ${fAnalysis.latex}$ to find $T(n)$.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Analyze iterated log recurrence
           analyzeIteratedLog(match) {
             const a = this.parseCoefficient(match[1] || '1');
             const g = match[2];
-            this.parsed = {
-              form: `${a}T(log n) + g(n)`,
-              a, b: null, p: null, r: null,
-              f: g,
-              branches: []
-            };
+            this.parsed = { form: `${a}T(log n) + g(n)`, a, b: null, p: null, r: null, f: g, branches: [] };
             this.method = 'Iterated Log';
             const fAnalysis = this.analyzeFunction(g);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.verdict = `Iterated logarithm pattern: $T(n) = ${a}T(\\log n) + ${fAnalysis.latex}$. Typically $T(n) = \\Theta(\\log^* n)$ where $\\log^* n$ is the number of times we apply $\\log$ to reach $\\leq 1$.`;
+            this.verdict = `Iterated log: $T(n) = ${a}T(\\log n) + ${fAnalysis.latex}$. Typically $T(n) = \\Theta(\\log^* n)$, where $\\log^* n$ counts repeated logarithms.`;
             if (fAnalysis.type === 'constant') {
-              this.verdict += ` For constant $g(n) = ${fAnalysis.latex}$, solution is often $T(n) = \\Theta(\\log^* n)$.`;
+              this.verdict += ` For $g(n) = ${fAnalysis.latex}$, $T(n) = \\Theta(\\log^* n)$.`;
             }
+            this.derivation = `<div class="mt-3 p-3 bg-sky-50 rounded border border-sky-200">
+                <div class="font-semibold">Step-by-Step (Iterated Log)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Each step reduces to $\\log n$, then $\\log \\log n$, etc.</li>
+                    <li>Depth: $\\log^* n$ (number of logs to reach $\\leq 1$).</li>
+                    <li>Accumulate $g(n) = ${fAnalysis.latex}$ over $\\log^* n$ steps.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Analyze multi-branch recurrence
           analyzeMultiBranch(match) {
-            const a1 = this.parseCoefficient(match[1]);
-            const b1 = parseFloat(match[2]);
-            const a2 = this.parseCoefficient(match[3]);
-            const b2 = parseFloat(match[4]);
-            const a3 = this.parseCoefficient(match[5]);
-            const b3 = parseFloat(match[6]);
+            const branches = [
+              { a: this.parseCoefficient(match[1]), b: parseFloat(match[2]) },
+              { a: this.parseCoefficient(match[3]), b: parseFloat(match[4]) },
+              { a: this.parseCoefficient(match[5]), b: parseFloat(match[6]) }
+            ];
             const f = match[7];
-            this.parsed = {
-              form: 'a1T(n/b1) + a2T(n/b2) + a3T(n/b3) + f(n)',
-              branches: [
-                { a: a1, b: b1 },
-                { a: a2, b: b2 },
-                { a: a3, b: b3 }
-              ],
-              f,
-              a: null, b: null, p: null, r: null
-            };
+            this.parsed = { form: 'a1T(n/b1) + a2T(n/b2) + a3T(n/b3) + f(n)', branches, f, a: null, b: null, p: null, r: null };
             this.method = 'Akra–Bazzi';
             const fAnalysis = this.analyzeFunction(f);
             this.parsed.f = fAnalysis.latex;
-            const p = this.solveP(this.parsed.branches);
+            const p = this.solveP(branches);
             this.parsed.p = p.toFixed(4);
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.verdict = `Critical exponent: $p \\approx ${p.toFixed(3)}$ solves $\\sum a_i b_i^{-p} = 1$. Compare $f(n) = ${fAnalysis.latex}$ with $n^p$.`;
-            this.renderLatex(`$T(n) = \\sum_{i=1}^3 a_i T(n/b_i) + f(n)$, where $p \\approx ${p.toFixed(3)}$`);
+            this.verdict = `Solve $\\sum a_i b_i^{-p} = 1$ → $p \\approx ${p.toFixed(3)}. Compare $f(n) = ${fAnalysis.latex}$ with $n^p$.`;
+            this.derivation = `<div class="mt-3 p-3 bg-emerald-50 rounded border border-emerald-200">
+                <div class="font-semibold">Step-by-Step (Akra–Bazzi)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Branches: ${branches.map((b, i) => `a_${i + 1} = ${b.a}, b_${i + 1} = ${b.b}`).join('; ')}.</li>
+                    <li>Solve $\\sum a_i b_i^{-p} = 1$ → $p \\approx ${p.toFixed(3)}$.</li>
+                    <li>Evaluate integral for $f(n) = ${fAnalysis.latex}$.</li>
+                    <li>Conclude: $T(n) = \\Theta(n^p \\cdot (1 + \\text{integral}))$.</li>
+                </ol>
+            </div>`;
+            this.renderLatex(`$T(n) = ${branches.map(b => `${b.a}T(n/${b.b})`).join('+')} + ${fAnalysis.latex}$, with $p \\approx ${p.toFixed(3)}$`);
             this.triggerMathJax();
           },
+
+          // Analyze full recurrence
           analyzeFull(match) {
             const g = match[1];
-            this.parsed = {
-              form: 'Σ T(i) + g(n)',
-              a: null, b: null, p: null, r: null,
-              f: g,
-              branches: []
-            };
+            this.parsed = { form: 'Σ T(i) + g(n)', a: null, b: null, p: null, r: null, f: g, branches: [] };
             this.method = 'Full Recurrence';
             const fAnalysis = this.analyzeFunction(g);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.verdict = `Full history dependence: $T(n) = \\sum_{i=1}^{n-1} T(i) + g(n)$. `;
-            this.verdict += `Often leads to $T(n) = \\Theta(2^n \\cdot \\text{factor})$ or $T(n) = \\Theta(g(n) \\cdot 2^n)$.`;
-            this.caveats = 'Exact growth depends heavily on g(n) and base cases.';
+            this.verdict = `Full history: $T(n) = \\sum_{i=1}^{n-1} T(i) + ${fAnalysis.latex}$. Typically $T(n) = \\Theta(2^n)$.`;
+            this.caveats = 'Exact growth depends on $g(n)$ and base cases.';
+            this.derivation = `<div class="mt-3 p-3 bg-orange-50 rounded border border-orange-200">
+                <div class="font-semibold">Step-by-Step (Full Recurrence)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Recognize: $T(n) = \\sum_{i=1}^{n-1} T(i) + g(n)$.</li>
+                    <li>Use difference: $T(n) - T(n-1) = T(n-1) + g(n)$.</li>
+                    <li>Solve for $g(n) = ${fAnalysis.latex}$, often yielding $\\Theta(2^n)$.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Analyze nested recurrence
           analyzeNested(match) {
             const inner = match[1];
             const g = match[2];
-            this.parsed = {
-              form: `T(T(${inner})) + g(n)`,
-              a: null, b: null, p: null, r: null,
-              f: g,
-              branches: []
-            };
+            this.parsed = { form: `T(T(${inner})) + g(n)`, a: null, b: null, p: null, r: null, f: g, branches: [] };
             this.method = 'Nested Recurrence';
             const fAnalysis = this.analyzeFunction(g);
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
-            this.verdict = `Nested recurrence - highly complex. Growth depends on how quickly inner argument shrinks. `;
-            this.verdict += `Often requires specialized techniques or numerical analysis.`;
-            this.caveats = 'Nested recurrences are notoriously difficult to analyze exactly.';
+            this.verdict = `Nested recurrence with inner $T(${inner})$. Requires iterative bounding or substitution.`;
+            this.caveats = 'Nested recurrences are complex and may need numerical analysis.';
+            this.derivation = `<div class="mt-3 p-3 bg-cyan-50 rounded border border-cyan-200">
+                <div class="font-semibold">Step-by-Step (Nested Recurrence)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Recognize: $T(n) = T(T(${inner})) + ${fAnalysis.latex}$.</li>
+                    <li>Bound inner $T(${inner})$ with an assumed form.</li>
+                    <li>Iterate or use substitution (e.g., $n = 2^{2^k}$) to estimate growth.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Analyze dominance-based recurrence
           analyzeDominance(s) {
             this.method = 'Dominance Analysis';
-            const fAnalysis = this.analyzeFunction(s);
+            const fAnalysis = this.analyzeFunction(s.split('+').pop() || 'unknown');
+            this.parsed.f = fAnalysis.latex;
             this.confidence = this.calculateConfidence(this.method, this.parsed, fAnalysis);
             if (s.includes('n^n')) {
-              this.verdict = `Super-exponential term $n^n$ likely dominates → $T(n) = \\Theta(n^n)$ (verify recursive part is smaller).`;
-              this.parsed.f = 'n^n';
+              this.verdict = `Super-exponential $n^n$ dominates → $T(n) = \\Theta(n^n)$.`;
             } else if (s.includes('n!')) {
-              this.verdict = `Factorial term $n!$ likely dominates → $T(n) = \\Theta(n!)$ (verify recursive part is smaller).`;
-              this.parsed.f = 'n!';
+              this.verdict = `Factorial $n!$ dominates → $T(n) = \\Theta(n!)$.`;
             } else if (s.includes('2^n')) {
-              this.verdict = `Exponential term $2^n$ may dominate → compare with recursive part growth.`;
-              this.parsed.f = '2^n';
+              this.verdict = `Exponential $2^n$ likely dominates → $T(n) = \\Theta(2^n)$.`;
             }
+            this.derivation = `<div class="mt-3 p-3 bg-rose-50 rounded border border-rose-200">
+                <div class="font-semibold">Step-by-Step (Dominance Analysis)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Identify dominant term: ${fAnalysis.latex}.</li>
+                    <li>Compare recursive terms vs. ${fAnalysis.latex}.</li>
+                    <li>Conclude $T(n) = \\Theta(${fAnalysis.latex})$ if dominant.</li>
+                </ol>
+            </div>`;
             this.renderLatex(this.verdict);
             this.triggerMathJax();
           },
+
+          // Handle unrecognized patterns
           analyzeUnknown(s) {
             this.method = 'Pattern Recognition Failed';
             this.confidence = 0.2;
-            this.notes = 'Pattern not recognized. Try these approaches:';
+            this.notes = 'Could not recognize recurrence pattern. Try these steps:';
             this.suggestions = [
-              'Rewrite in standard form: T(n) = ...',
-              'Use substitution: n = 2^k, n = 2^(2^k), etc.',
-              'Check if it matches Master, Akra-Bazzi, or subtractive forms',
-              'Consider dominance analysis if large terms present',
-              'Verify syntax: use T(n/2) not T(n/2.0), use + not implicit multiplication'
+              'Use standard form: T(n) = ...',
+              'Try substitution: n = 2^k or n = 2^(2^k)',
+              'Check for Master, Akra-Bazzi, or subtractive forms',
+              'Verify large terms for dominance analysis',
+              'Ensure correct syntax: T(n/2), not T(n/2.0)'
             ];
-            this.verdict = 'Manual analysis required - see suggestions above.';
+            this.verdict = 'Manual analysis required. See suggestions for help.';
+            this.renderLatex('Unrecognized recurrence: $' + s.replace(/=/g, '=') + '$');
+            this.triggerMathJax();
           },
+
+          // Detailed verdict for Master Theorem
           masterVerdictDetailed(fAnalysis, p, a, b) {
-            const pRounded = Math.round(p * 1000) / 1000;
+            const pRounded = p.toFixed(3);
+            const comparison = this.compare_g_vs_np(fAnalysis, p);
+            const caseTxt = comparison.rel === 'smaller' ? 'Case 1' :
+              comparison.rel === 'equal' ? 'Case 2' :
+                comparison.rel === 'larger' ? 'Case 3' : 'Case ?';
+            this.derivation = `<div class="mt-3 p-3 bg-indigo-50 rounded border border-indigo-200">
+                <div class="font-semibold">Step-by-Step (Master Theorem)</div>
+                <ol class="list-decimal ml-5 leading-6">
+                    <li>Compute threshold: $n^{\\log_b a} = n^{\\log_{${b}} ${a}} \\approx n^{${pRounded}}$.</li>
+                    <li>Compare $f(n) = ${fAnalysis.latex}$ vs. $n^{${pRounded}}$: ${comparison.note}.</li>
+                    <li>Determine case: ${caseTxt}.</li>
+                    <li>Apply case rule to find $T(n)$.</li>
+                </ol>
+            </div>`;
+
             if (fAnalysis.type === 'constant') {
-              const c = fAnalysis.value;
-              if (c === 0) {
-                this.verdict = `$f(n) = 0$, so $T(n) = \\Theta(n^{${pRounded}})$ (Case 1).`;
-              } else {
-                this.verdict = `$f(n) = ${c}$ is $O(n^{${pRounded} - \\epsilon})$ for any $\\epsilon > 0$ → Case 1: $T(n) = \\Theta(n^{${pRounded}})$.`;
-              }
+              this.verdict = `$f(n) = ${fAnalysis.latex}$ is $O(n^{${pRounded} - \\epsilon})$ → Case 1: $T(n) = \\Theta(n^{${pRounded}})$.`;
             } else if (fAnalysis.type === 'linear') {
-              const k = 1;
-              if (k < p - 0.01) {
+              if (1 < p - 0.01) {
                 this.verdict = `Case 1: $f(n) = ${fAnalysis.latex} = O(n^{${pRounded} - \\epsilon})$ → $T(n) = \\Theta(n^{${pRounded}})$.`;
-              } else if (Math.abs(k - p) < 0.01) {
+              } else if (Math.abs(1 - p) < 0.01) {
                 this.verdict = `Case 2: $f(n) = ${fAnalysis.latex} = \\Theta(n^{${pRounded}})$ → $T(n) = \\Theta(n^{${pRounded}} \\log n)$.`;
               } else {
                 const reg = this.checkRegularity(a, b, fAnalysis);
-                this.verdict = `Case 3: $f(n) = ${fAnalysis.latex} = \\Omega(n^{${pRounded} + \\epsilon})$ → $T(n) = \\Theta(n^{${k}})$ if regularity holds.`;
+                this.verdict = `Case 3: $f(n) = ${fAnalysis.latex} = \\Omega(n^{${pRounded} + \\epsilon})$ → $T(n) = \\Theta(n)$ if ${reg.note}`;
                 this.caveats = reg.note;
               }
             } else if (fAnalysis.type === 'polynomial') {
@@ -1489,81 +1679,85 @@
                 this.verdict = `Case 2: $f(n) = ${fAnalysis.latex}$ with $k = p = ${pRounded}$ → $T(n) = \\Theta(n^{${pRounded}} \\log n)$.`;
               } else {
                 const reg = this.checkRegularity(a, b, fAnalysis);
-                this.verdict = `Case 3: $f(n) = ${fAnalysis.latex}$ with $k = ${k} > p = ${pRounded}$ → $T(n) = \\Theta(n^{${k}})$ if regularity holds.`;
+                this.verdict = `Case 3: $f(n) = ${fAnalysis.latex}$ with $k = ${k} > p = ${pRounded}$ → $T(n) = \\Theta(n^{${k}})$ if ${reg.note}`;
                 this.caveats = reg.note;
               }
             } else if (fAnalysis.type === 'polylog') {
               const k = fAnalysis.power || 1;
               const m = fAnalysis.logPower || 1;
               if (k < p - 0.01) {
-                this.verdict = `Case 1: $f(n) = ${fAnalysis.latex}$ with base power $k = ${k} < p = ${pRounded}$ → $T(n) = \\Theta(n^{${pRounded}})$.`;
+                this.verdict = `Case 1: $f(n) = ${fAnalysis.latex}$ with $k = ${k} < p = ${pRounded}$ → $T(n) = \\Theta(n^{${pRounded}})$.`;
               } else if (Math.abs(k - p) < 0.01) {
                 this.verdict = `Case 2: $f(n) = ${fAnalysis.latex}$ → $T(n) = \\Theta(n^{${pRounded}} \\log^{${m + 1}} n)$.`;
               } else {
                 const reg = this.checkRegularity(a, b, fAnalysis);
-                this.verdict = `Case 3: $f(n) = ${fAnalysis.latex}$ → $T(n) = \\Theta(${fAnalysis.latex})$ if regularity holds.`;
+                this.verdict = `Case 3: $f(n) = ${fAnalysis.latex}$ → $T(n) = \\Theta(${fAnalysis.latex})$ if ${reg.note}`;
                 this.caveats = reg.note;
               }
             } else if (fAnalysis.type === 'logonly') {
-              this.verdict = `$f(n) = ${fAnalysis.latex}$ grows slower than any polynomial → Case 1: $T(n) = \\Theta(n^{${pRounded}})$.`;
+              this.verdict = `$f(n) = ${fAnalysis.latex}$ grows slower than $n^{${pRounded}}$ → Case 1: $T(n) = \\Theta(n^{${pRounded}})$.`;
             } else if (fAnalysis.type === 'logdiv') {
               if (Math.abs(p - 1) < 0.01) {
-                this.verdict = `$f(n) = n/\\log n$ is asymptotically smaller than $n^{1+\\epsilon}$ → likely $T(n) = \\Theta(n \\log \\log n)$.`;
-                this.caveats = 'This requires extended Master Theorem analysis.';
+                this.verdict = `$f(n) = ${fAnalysis.latex}$ → likely $T(n) = \\Theta(n \\log \\log n)$.`;
+                this.caveats = 'Requires extended Master Theorem analysis.';
               } else if (p > 1) {
-                this.verdict = `$f(n) = n/\\log n = o(n^{${pRounded}})$ → Case 1: $T(n) = \\Theta(n^{${pRounded}})$.`;
+                this.verdict = `$f(n) = ${fAnalysis.latex} = o(n^{${pRounded}})$ → Case 1: $T(n) = \\Theta(n^{${pRounded}})$.`;
               } else {
-                this.verdict = `$f(n) = n/\\log n$ case with $p < 1$ needs careful analysis.`;
+                this.verdict = `$f(n) = ${fAnalysis.latex}$ with $p < 1$ needs careful analysis.`;
               }
             } else {
-              this.verdict = `$f(n) = ${fAnalysis.latex}$ - compare manually with $n^{${pRounded}}$ to determine case.`;
-              this.caveats = 'Complex f(n) requires manual verification of Master Theorem conditions.';
+              this.verdict = `$f(n) = ${fAnalysis.latex}$ - compare with $n^{${pRounded}}$ to determine case.`;
+              this.caveats = 'Complex $f(n)$ requires manual verification of Master Theorem conditions.';
             }
           },
+
+          // Solve for p in Akra-Bazzi: Σ a_i (1/b_i)^p = 1
           solveP(branches) {
             let lo = -10, hi = 10;
             for (let iter = 0; iter < 100; iter++) {
               const mid = (lo + hi) / 2;
               const val = branches.reduce((s, br) => s + br.a * Math.pow(1 / br.b, mid), 0);
               if (Math.abs(val - 1) < 1e-8) break;
-              if (val > 1) {
-                lo = mid;
-              } else {
-                hi = mid;
-              }
+              if (val > 1) lo = mid; else hi = mid;
             }
             return (lo + hi) / 2;
           },
+
+          // Render LaTeX output in a styled container
           renderLatex(html) {
             this.rendered = `<div class="mt-2 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">${html}</div>`;
           },
+
+          // Trigger MathJax to render LaTeX
           triggerMathJax() {
             if (this.$nextTick) {
               this.$nextTick(() => {
-                if (window.MathJax) {
-                  MathJax.typesetPromise();
-                }
+                if (window.MathJax) MathJax.typesetPromise();
               });
             } else {
               setTimeout(() => {
-                if (window.MathJax) {
-                  MathJax.typesetPromise();
-                }
+                if (window.MathJax) MathJax.typesetPromise();
               }, 50);
             }
           },
+
+          // Generate HTML for branch list
           branchList() {
-            if (!this.parsed.branches || !this.parsed.branches.length) return '';
+            if (!this.parsed.branches.length) return '';
             return this.parsed.branches.map((b, i) =>
               `<div class="text-sm"><strong>Branch ${i + 1}:</strong> a=${b.a}, b=${b.b}</div>`
             ).join('');
           },
+
+          // Generate HTML for suggestions list
           suggestionsList() {
-            if (!this.suggestions || !this.suggestions.length) return '';
+            if (!this.suggestions.length) return '';
             return this.suggestions.map(s =>
               `<li class="text-sm text-gray-600">• ${s}</li>`
             ).join('');
           },
+
+          // Export analysis as JSON file
           exportAnalysis() {
             const analysis = {
               input: this.input,
@@ -1583,20 +1777,19 @@
             a.click();
             URL.revokeObjectURL(url);
           },
+
+          // Estimate recursion tree depth based on method
           estimateTreeDepth() {
             if (this.method.includes('Master') && this.parsed.b) {
               return Math.ceil(Math.log(100) / Math.log(this.parsed.b)) + 2;
             }
-            if (this.method.includes('Subtractive')) {
-              return 5;
-            }
-            if (this.method.includes('Power') || this.method.includes('Iterated')) {
-              return 3;
-            }
+            if (this.method.includes('Subtractive')) return 5;
+            if (this.method.includes('Power') || this.method.includes('Iterated')) return 3;
             return this.treeDepth || 4;
           },
+
+          // Build logical tree structure for visualization
           buildLogicalTree() {
-            console.log('Building tree for method:', this.method);
             const depth = Math.max(2, Math.min(10, this.treeDepth || this.estimateTreeDepth()));
             const root = { name: 'n', sub: this.parsed.f ? `f(n)≈${this.parsed.f}` : '', children: [] };
             const pushLevel = (parent, labels, workFn = null) => {
@@ -1615,15 +1808,15 @@
               });
             };
 
-            // If Master/Akra chosen, craft derivation & level table
+            // Generate derivation and level table for relevant methods
             if (this.method.includes('Master') || this.method.includes('Akra')) {
-              this.buildDerivationCard();
+              //this.buildDerivationCard();
               this.levelTableHTML = this.buildLevelTable();
             }
 
+            // Master Theorem tree
             if (this.method.includes('Master') && this.parsed.a && this.parsed.b) {
-              const a = Number(this.parsed.a);
-              const b = Number(this.parsed.b);
+              const a = Number(this.parsed.a), b = Number(this.parsed.b);
               const fAnalysis = this.analyzeFunction(this.parsed.f);
               const perLevel = (node, level) => {
                 if (level >= depth) return;
@@ -1632,16 +1825,13 @@
                 pushLevel(node, children, fAnalysis.mathNode);
                 node.children.forEach(ch => perLevel(ch, level + 1));
               };
-              if (this.parsed.f) root.sub = `f(n)≈${this.parsed.f}`;
               perLevel(root, 0);
               return root;
             }
 
-            if (this.method.toLowerCase().includes('akra') && this.parsed.branches?.length) {
-              const branches = this.parsed.branches.map(br => ({
-                a: Number(br.a) || 1,
-                b: Number(br.b) || 2
-              }));
+            // Akra-Bazzi tree
+            if (this.method.includes('Akra') && this.parsed.branches?.length) {
+              const branches = this.parsed.branches.map(br => ({ a: Number(br.a) || 1, b: Number(br.b) || 2 }));
               const fAnalysis = this.analyzeFunction(this.parsed.f);
               const expand = (node, level, sizeLabel) => {
                 if (level >= depth) return;
@@ -1652,14 +1842,12 @@
                 pushLevel(node, childLabels, fAnalysis.mathNode);
                 node.children.forEach(ch => expand(ch, level + 1, ch.name));
               };
-              const p = Number(this.parsed.p);
-              if (!Number.isNaN(p)) {
-                root.sub = `p≈${p.toFixed(3)}, f(n)≈${this.parsed.f || '-'}`;
-              }
+              root.sub = `p≈${Number(this.parsed.p).toFixed(3)}, f(n)≈${this.parsed.f || '-'}`;
               expand(root, 0, 'n');
               return root;
             }
 
+            // Subtractive tree
             if (this.method.includes('Subtractive')) {
               const step = 1;
               const fAnalysis = this.analyzeFunction(this.parsed.f);
@@ -1681,22 +1869,23 @@
               return root;
             }
 
-            if (this.method.toLowerCase().includes('power')) {
+            // Power-shrink tree
+            if (this.method.includes('Power')) {
               const a = this.parsed.a ? Number(this.parsed.a) : 1;
               const r = this.parsed.r ? Number(this.parsed.r) : 0.5;
               const fAnalysis = this.analyzeFunction(this.parsed.f);
-              const powerLabel = (lvl) => `n^${(Math.pow(r, lvl + 1)).toFixed(3)}`;
+              const powerLabel = lvl => `n^${(Math.pow(r, lvl + 1)).toFixed(3)}`;
               const perLevel = (node, level) => {
                 if (level >= depth) return;
                 pushLevel(node, Array.from({ length: a }, () => powerLabel(level)), fAnalysis.mathNode);
                 node.children.forEach(ch => perLevel(ch, level + 1));
               };
-              if (this.parsed.f) root.sub = `f(n)≈${this.parsed.f}`;
               perLevel(root, 0);
               return root;
             }
 
-            if (this.method.toLowerCase().includes('iterated')) {
+            // Iterated log tree
+            if (this.method.includes('Iterated')) {
               const fAnalysis = this.analyzeFunction(this.parsed.f);
               let cur = root;
               const steps = ['log n', 'log log n', 'log log log n', '…'];
@@ -1717,18 +1906,20 @@
               return root;
             }
 
-            if (this.method.toLowerCase().includes('exponential')) {
+            // Exponential tree
+            if (this.method.includes('Exponential')) {
               const fAnalysis = this.analyzeFunction(this.parsed.f);
               let cur = root;
               for (let i = 1; i < depth; i++) {
-                const child = { name: `n-${i}`, sub: i === 1 ? `~a^(n), f(n)≈${this.parsed.f}` : '', children: [] };
+                const child = { name: `n-${i}`, sub: i === 1 ? `~a^n, f(n)≈${this.parsed.f}` : '', children: [] };
                 cur.children = [child];
                 cur = child;
               }
               return root;
             }
 
-            if (this.method.toLowerCase().includes('factorial')) {
+            // Factorial tree
+            if (this.method.includes('Factorial')) {
               const fAnalysis = this.analyzeFunction(this.parsed.f);
               let cur = root;
               for (let i = 1; i < depth; i++) {
@@ -1739,7 +1930,8 @@
               return root;
             }
 
-            if (this.method.toLowerCase().includes('full')) {
+            // Full recurrence tree
+            if (this.method.includes('Full')) {
               const fAnalysis = this.analyzeFunction(this.parsed.f);
               const perLevel = (node, level, fanout) => {
                 if (level >= depth) return;
@@ -1750,7 +1942,8 @@
               return root;
             }
 
-            if (this.method.toLowerCase().includes('nested')) {
+            // Nested recurrence tree
+            if (this.method.includes('Nested')) {
               const fAnalysis = this.analyzeFunction(this.parsed.f);
               let cur = root;
               for (let i = 1; i < Math.min(depth, 4); i++) {
@@ -1761,34 +1954,41 @@
               return root;
             }
 
+            // Fallback for unrecognized patterns
             const clean = this.normalizeInput(this.input).replace(/\s+/g, '');
             const fuzzyPatterns = [
               {
-                pattern: 'T(n)=a*T(n/b)+f(n)', method: 'Master', structure: (node, level) => {
+                pattern: 'T(n)=a*T(n/b)+f(n)',
+                method: 'Master',
+                structure: (node, level) => {
                   if (level >= depth) return;
                   const b = this.parsed.b || 2;
                   const a = this.parsed.a || 2;
                   const lbl = level === 0 ? `n/${b}` : `n/${Math.pow(b, level + 1)}`;
                   const children = Array.from({ length: a }, () => lbl);
                   pushLevel(node, children);
-                  node.children.forEach(ch => structure(ch, level + 1));
+                  node.children.forEach(ch => this.structure(ch, level + 1));
                 }
               },
               {
-                pattern: 'T(n)=T(n-1)+T(n-2)+f(n)', method: 'Fibonacci-like', structure: (node, level) => {
+                pattern: 'T(n)=T(n-1)+T(n-2)+f(n)',
+                method: 'Fibonacci-like',
+                structure: (node, level) => {
                   if (level >= depth) return;
                   const children = [`n-${level + 1}`, `n-${level + 2}`];
                   pushLevel(node, children);
-                  node.children.forEach(ch => structure(ch, level + 1));
+                  node.children.forEach(ch => this.structure(ch, level + 1));
                 }
               },
               {
-                pattern: 'T(n)=T(log n)+f(n)', method: 'Iterated Log', structure: (node, level) => {
+                pattern: 'T(n)=T(log n)+f(n)',
+                method: 'Iterated Log',
+                structure: (node, level) => {
                   if (level >= depth) return;
                   const steps = ['log n', 'log log n', 'log log log n', '…'];
                   const child = { name: steps[level] || '…', sub: '', children: [] };
                   node.children = [child];
-                  structure(child, level + 1);
+                  this.structure(child, level + 1);
                 }
               }
             ];
@@ -1801,6 +2001,7 @@
               }
             }
 
+            // Default tree for unrecognized patterns
             let cur = root;
             for (let i = 1; i < depth; i++) {
               const child = { name: `n_${i}`, sub: '', children: [] };
@@ -1809,6 +2010,8 @@
             }
             return root;
           },
+
+          // Draw recursion tree using D3.js
           drawTree(treeData) {
             const svg = d3.select('#recursionTree');
             const { width } = svg.node().getBoundingClientRect();
@@ -1825,10 +2028,7 @@
               .append('path')
               .attr('class', 'tree-link')
               .attr('fill', 'none')
-              .attr('d', d3.linkVertical()
-                .x(d => d.x)
-                .y(d => d.y)
-              );
+              .attr('d', d3.linkVertical().x(d => d.x).y(d => d.y));
             const node = g.selectAll('.node')
               .data(root.descendants())
               .enter()
@@ -1852,36 +2052,30 @@
               if (sub) sub.attr('x', -bbox2.width / 2).attr('y', -h / 2 + padY + bbox1.height + 4 + bbox2.height);
             });
           },
+
           updateTree() {
             const data = this.buildLogicalTree();
             this.$nextTick(() => this.drawTree(data));
           },
           compare_g_vs_np(fAnalysis, p) {
-            // Symbolic-ish dominance decision used to pick Master/Akra case quickly.
-            // Returns one of: 'smaller', 'equal', 'larger', plus an explanatory note.
             if (['factorial', 'exponential', 'superexp'].includes(fAnalysis.type)) {
               return { rel: 'larger', note: 'g(n) grows faster than any n^p.' };
             }
-            if (fAnalysis.type === 'polynomial') {
-              const k = fAnalysis.power;
-              if (k < p - 1e-6) return { rel: 'smaller', note: `k=${k} < p=${p.toFixed(3)}` };
-              if (Math.abs(k - p) < 1e-6) return { rel: 'equal', note: `k≈p=${p.toFixed(3)}` };
-              return { rel: 'larger', note: `k=${k} > p=${p.toFixed(3)}` };
+            if (!fAnalysis.mathNode) {
+              return { rel: 'unknown', note: 'Unable to compare due to parsing failure.' };
             }
-            if (fAnalysis.type === 'polylog') {
-              const k = fAnalysis.power ?? 1;
-              const m = fAnalysis.logPower ?? 1;
-              if (k < p - 1e-6) return { rel: 'smaller', note: `n^${k} log^${m} n < n^p` };
-              if (Math.abs(k - p) < 1e-6) return { rel: 'equal', note: `n^p log^${m} n` };
-              return { rel: 'larger', note: `n^${k} log^${m} n > n^p` };
+            try {
+              const n = 100; // Evaluate at a large n for stability
+              const g_n = fAnalysis.mathNode.evaluate({ n });
+              const n_p = math.pow(n, p);
+              const ratio = g_n / n_p;
+              if (ratio < 0.1) return { rel: 'smaller', note: `g(n) ≈ ${ratio.toFixed(3)} * n^${p.toFixed(3)} at n=${n}` };
+              if (Math.abs(ratio - 1) < 0.2) return { rel: 'equal', note: `g(n) ≈ n^${p.toFixed(3)} at n=${n}` };
+              return { rel: 'larger', note: `$g(n) ≈ ${ratio.toFixed(3)} \\cdot n^{${p.toFixed(3)}}$ at n=$${n} $` };
+            } catch (e) {
+              console.warn('Comparison failed:', e);
+              return { rel: 'unknown', note: 'Complex g(n), manual comparison needed.' };
             }
-            if (fAnalysis.type === 'logonly') return { rel: 'smaller', note: 'polylog < any n^ε' };
-            if (fAnalysis.type === 'logdiv') {
-              if (p > 1 + 1e-6) return { rel: 'smaller', note: 'n/log n = o(n^p) for p>1' };
-              if (Math.abs(p - 1) < 1e-6) return { rel: 'equal', note: 'borderline n / log n vs n^1' };
-              return { rel: 'larger', note: 'p<1 (rare in Master); handle carefully' };
-            }
-            return { rel: 'unknown', note: 'complex g(n)' };
           },
 
           // Replace standalone 'n' tokens in TeX, but skip \ln, \log, and any \command
@@ -1957,37 +2151,7 @@
       <table class="w-full text-sm">${head}<tbody>${body}</tbody></table>
     </div>`;
           },
-          // -------- Derivation card & level table (pedagogical) --------
-          buildDerivationCard() {
-            if (this.method.includes('Master') && this.parsed.a && this.parsed.b) {
-              const { a, b } = this.parsed, p = parseFloat(this.parsed.p);
-              const thr = `n^{\\log_{${b}} ${a}}`;
-              const rel = this.compare_g_vs_np(this.analyzeFunction(this.parsed.f), p).rel;
-              const caseTxt = (rel === 'smaller' ? 'Case 1' : rel === 'equal' ? 'Case 2' : rel === 'larger' ? 'Case 3' : 'Case ?');
-              this.derivation =
-                `<div class="mt-3 p-3 bg-indigo-50 rounded border border-indigo-200">
-            <div class="font-semibold">Derivation (Master Theorem)</div>
-            <ol class="list-decimal ml-5 leading-6">
-              <li>Threshold: $n^{\\log_b a} = ${thr}$.</li>
-              <li>Compare $f(n)$ vs $n^{\\log_b a}$ ⇒ <em>${caseTxt}</em>.</li>
-              <li>Apply the case rule to conclude $T(n)$.</li>
-            </ol>
-           </div>`;
-              this.triggerMathJax();
-            } else if (this.method.includes('Akra') && this.parsed.branches?.length) {
-              const p = parseFloat(this.parsed.p);
-              this.derivation =
-                `<div class="mt-3 p-3 bg-emerald-50 rounded border border-emerald-200">
-            <div class="font-semibold">Derivation (Akra–Bazzi)</div>
-            <ol class="list-decimal ml-5 leading-6">
-              <li>Solve $\\sum_i a_i b_i^{-p} = 1$ ⇒ $p\\approx ${p.toFixed(3)}$.</li>
-              <li>Compare $g(n)$ to $n^p$ to decide the leading term.</li>
-              <li>Conclude via the Akra–Bazzi form.</li>
-            </ol>
-           </div>`;
-              this.triggerMathJax();
-            }
-          },
+
         };
 
       }
