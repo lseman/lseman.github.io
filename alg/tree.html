@@ -73,7 +73,6 @@
         <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
             <div class="flex flex-col lg:flex-row items-center gap-10">
                 <div class="flex-1">
-                    <img src="logo.png" alt="Logo" class="mx-auto mb-4 w-16 h-16">
                     <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
                         CART <span class="text-indigo-600">Regression</span> & Ensembles Lab
                     </h1>
@@ -367,214 +366,258 @@
             </div>
         </div>
     </section>
-<!-- Guide -->
-<section id="guide" class="py-12 bg-slate-50">
-  <div class="max-w-7xl mx-auto px-6">
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
-      <p class="mt-2 text-slate-600">
-        Decision trees split the input space with rules like <span class="font-mono">x<sub>j</sub> ≤ t</span>.  
-        CART for regression minimizes MSE; for classification it reduces impurity (e.g., Gini).  
-        Bagging lowers variance by averaging many trees; gradient boosting lowers bias by chaining
-        small trees on the residuals.
-      </p>
-    </div>
-
-    <!-- Core recap -->
-    <div class="grid lg:grid-cols-3 gap-6 mb-10">
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">CART (Regression)</h3>
-        <p class="mt-2 text-sm leading-7 text-slate-700">
-          At each node, search axis-aligned splits <span class="font-mono">x<sub>j</sub> ≤ t</span> that best reduce
-          mean squared error:
-          <span class="font-mono">ΔMSE = MSE(parent) − [w<sub>L</sub>MSE(L)+w<sub>R</sub>MSE(R)]</span>.
-          Stop when limits hit (depth / min_leaf). Leaves predict the average <span class="font-mono">y</span> in the region.
-        </p>
-      </article>
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Bagging / Random Forest-like</h3>
-        <p class="mt-2 text-sm leading-7 text-slate-700">
-          Train many trees on bootstrapped rows and randomized feature subsets; average predictions.
-          Parallel “voters” → robust to noise, strong variance reduction, little training-time coupling.
-        </p>
-      </article>
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Gradient Boosting (Squared Loss)</h3>
-        <p class="mt-2 text-sm leading-7 text-slate-700">
-          Maintain prediction <span class="font-mono">F</span>. Residuals
-          <span class="font-mono">r = y − F</span> (the negative gradient for MSE).
-          Fit a small tree to <span class="font-mono">r</span>, then update
-          <span class="font-mono">F ← F + η · tree(x)</span> with learning rate <span class="font-mono">η</span>.
-        </p>
-      </article>
-    </div>
-
-    <!-- Advanced tree building: Exact vs Histogram -->
-    <div class="grid lg:grid-cols-2 gap-6 mb-10">
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Exact vs. Histogram Trees</h3>
-        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
-          <div>
-            <p class="font-semibold">Exact (Greedy) Split Finding</p>
-            <ul class="list-disc ml-5">
-              <li>Sort the feature values and scan every possible threshold <span class="font-mono">t</span>.</li>
-              <li>Accurate but costly: sorting &amp; scanning cost grows with samples × features.</li>
-              <li>Great for small/medium data where precision matters.</li>
-            </ul>
-          </div>
-          <div>
-            <p class="font-semibold">Histogram-Based Split Finding</p>
-            <ul class="list-disc ml-5">
-              <li>Bin each feature value into <span class="font-mono">B</span> discrete buckets (e.g., 63/255).</li>
-              <li>At each node, compute per-bin sums (and for boosting: sum of gradients <span class="font-mono">g</span> and Hessians <span class="font-mono">h</span>).</li>
-              <li>Scan only <span class="font-mono">B−1</span> cut points → massive speed &amp; memory savings.</li>
-              <li>Accuracy is typically close to exact if bins capture the distribution (use quantile bins).</li>
-            </ul>
-          </div>
-          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <p class="font-semibold mb-1">Pedagogical picture</p>
-            <p>Exact = “check every slit on the ruler.” Histogram = “first snap numbers to nearby ticks, then check only the tick marks.”</p>
-          </div>
-          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
-            <p class="font-semibold mb-1">Math bite (boosting gain per split)</p>
-            <p>
-              For a candidate split, with gradient sum <span class="font-mono">G</span> and Hessian sum
-              <span class="font-mono">H</span> in each child, a common gain is
-              <span class="font-mono">Gain = ½ [ G<sub>L</sub>²/(H<sub>L</sub>+λ) + G<sub>R</sub>²/(H<sub>R</sub>+λ) − G²/(H+λ) ] − γ</span>,
-              where <span class="font-mono">λ</span> (L2) and <span class="font-mono">γ</span> (min split gain) regularize complexity.
-            </p>
-          </div>
-        </div>
-      </article>
-
-      <!-- Growth strategy & regularization sidebar -->
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Growth Strategy &amp; Regularization</h3>
-        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
-          <div>
-            <p class="font-semibold">Level-wise vs Leaf-wise</p>
-            <ul class="list-disc ml-5">
-              <li><span class="font-semibold">Level-wise</span> (XGBoost default): expand all nodes at depth <span class="font-mono">d</span> → balanced, stable.</li>
-              <li><span class="font-semibold">Leaf-wise</span> (LightGBM): repeatedly split the leaf with the biggest gain → deeper, high accuracy, may overfit without <span class="font-mono">min_data_in_leaf</span>.</li>
-            </ul>
-          </div>
-          <div>
-            <p class="font-semibold">Shrinkage &amp; Subsampling</p>
-            <ul class="list-disc ml-5">
-              <li><span class="font-semibold">Learning rate η</span>: scales each tree’s contribution (smaller η → more trees, smoother fit).</li>
-              <li><span class="font-semibold">Row subsampling</span> (<span class="font-mono">subsample</span>) and <span class="font-semibold">column subsampling</span> (<span class="font-mono">colsample_bytree</span>) inject randomness → reduce variance.</li>
-            </ul>
-          </div>
-          <div>
-            <p class="font-semibold">Monotone Constraints</p>
-            <p>Force prediction to increase/decrease with a chosen feature (e.g., price ↑ ⇒ risk ↑). Helpful for trust &amp; policy compliance.</p>
-          </div>
-          <div>
-            <p class="font-semibold">Handling Missing &amp; Categorical</p>
-            <ul class="list-disc ml-5">
-              <li>Missing values: learn default direction per split (sends NaNs to the better side).</li>
-              <li>Categoricals: one-hot (simple), or ordered/target-based encodings (careful: avoid leakage).</li>
-            </ul>
-          </div>
-        </div>
-      </article>
-    </div>
-
-    <!-- GOSS and DART -->
-    <div class="grid lg:grid-cols-2 gap-6 mb-10">
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">GOSS — Gradient-based One-Side Sampling</h3>
-        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
-          <p>
-            In boosting, each iteration computes instance gradients <span class="font-mono">g<sub>i</sub></span>.  
-            <span class="font-semibold">GOSS</span> keeps all examples with the largest |gradient| (the “hard” cases),
-            and randomly samples from the small-|g| ones, reweighting them so totals stay unbiased.
-          </p>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <p class="font-semibold mb-1">Why it works</p>
-              <p>Big gradients dominate the split gain calculation; small-gradient points mainly refine estimates and can be down-sampled.</p>
+    <!-- Guide -->
+    <section id="guide" class="py-12 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
+                <p class="mt-2 text-slate-600">
+                    Decision trees split the input space with rules like <span class="font-mono">x<sub>j</sub> ≤
+                        t</span>.
+                    CART for regression minimizes MSE; for classification it reduces impurity (e.g., Gini).
+                    Bagging lowers variance by averaging many trees; gradient boosting lowers bias by chaining
+                    small trees on the residuals.
+                </p>
             </div>
-            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-              <p class="font-semibold mb-1">Teacher-talk</p>
-              <p>“Focus grading time on the students most off the answer; skim sample from those already close.”</p>
+
+            <!-- Core recap -->
+            <div class="grid lg:grid-cols-3 gap-6 mb-10">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">CART (Regression)</h3>
+                    <p class="mt-2 text-sm leading-7 text-slate-700">
+                        At each node, search axis-aligned splits <span class="font-mono">x<sub>j</sub> ≤ t</span> that
+                        best reduce
+                        mean squared error:
+                        <span class="font-mono">ΔMSE = MSE(parent) − [w<sub>L</sub>MSE(L)+w<sub>R</sub>MSE(R)]</span>.
+                        Stop when limits hit (depth / min_leaf). Leaves predict the average <span
+                            class="font-mono">y</span> in the region.
+                    </p>
+                </article>
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Bagging / Random Forest-like</h3>
+                    <p class="mt-2 text-sm leading-7 text-slate-700">
+                        Train many trees on bootstrapped rows and randomized feature subsets; average predictions.
+                        Parallel “voters” → robust to noise, strong variance reduction, little training-time coupling.
+                    </p>
+                </article>
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Gradient Boosting (Squared Loss)</h3>
+                    <p class="mt-2 text-sm leading-7 text-slate-700">
+                        Maintain prediction <span class="font-mono">F</span>. Residuals
+                        <span class="font-mono">r = y − F</span> (the negative gradient for MSE).
+                        Fit a small tree to <span class="font-mono">r</span>, then update
+                        <span class="font-mono">F ← F + η · tree(x)</span> with learning rate <span
+                            class="font-mono">η</span>.
+                    </p>
+                </article>
             </div>
-          </div>
-          <ul class="list-disc ml-5">
-            <li><span class="font-semibold">Speed-accuracy trade-off</span>: much faster per iteration with minimal loss in accuracy.</li>
-            <li>Choose top fraction <span class="font-mono">a</span> (keep) and random fraction <span class="font-mono">b</span> (sample) for the rest; rescale weights by <span class="font-mono">\((1-a)/b\)</span>.</li>
-          </ul>
-          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
-            <p class="font-semibold mb-1">Mini-formula</p>
-            <p>With kept set <span class="font-mono">A</span> and sampled set <span class="font-mono">B</span>,  
-              use <span class="font-mono">w<sub>i</sub>=1</span> for <span class="font-mono">i∈A</span> and
-              <span class="font-mono">w<sub>i</sub>=(1-a)/b</span> for <span class="font-mono">i∈B</span> when forming histogram sums.</p>
-          </div>
+
+            <!-- Advanced tree building: Exact vs Histogram -->
+            <div class="grid lg:grid-cols-2 gap-6 mb-10">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Exact vs. Histogram Trees</h3>
+                    <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+                        <div>
+                            <p class="font-semibold">Exact (Greedy) Split Finding</p>
+                            <ul class="list-disc ml-5">
+                                <li>Sort the feature values and scan every possible threshold <span
+                                        class="font-mono">t</span>.</li>
+                                <li>Accurate but costly: sorting &amp; scanning cost grows with samples × features.</li>
+                                <li>Great for small/medium data where precision matters.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Histogram-Based Split Finding</p>
+                            <ul class="list-disc ml-5">
+                                <li>Bin each feature value into <span class="font-mono">B</span> discrete buckets (e.g.,
+                                    63/255).</li>
+                                <li>At each node, compute per-bin sums (and for boosting: sum of gradients <span
+                                        class="font-mono">g</span> and Hessians <span class="font-mono">h</span>).</li>
+                                <li>Scan only <span class="font-mono">B−1</span> cut points → massive speed &amp; memory
+                                    savings.</li>
+                                <li>Accuracy is typically close to exact if bins capture the distribution (use quantile
+                                    bins).</li>
+                            </ul>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                            <p class="font-semibold mb-1">Pedagogical picture</p>
+                            <p>Exact = “check every slit on the ruler.” Histogram = “first snap numbers to nearby ticks,
+                                then check only the tick marks.”</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <p class="font-semibold mb-1">Math bite (boosting gain per split)</p>
+                            <p>
+                                For a candidate split, with gradient sum <span class="font-mono">G</span> and Hessian
+                                sum
+                                <span class="font-mono">H</span> in each child, a common gain is
+                                <span class="font-mono">Gain = ½ [ G<sub>L</sub>²/(H<sub>L</sub>+λ) +
+                                    G<sub>R</sub>²/(H<sub>R</sub>+λ) − G²/(H+λ) ] − γ</span>,
+                                where <span class="font-mono">λ</span> (L2) and <span class="font-mono">γ</span> (min
+                                split gain) regularize complexity.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Growth strategy & regularization sidebar -->
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Growth Strategy &amp; Regularization</h3>
+                    <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+                        <div>
+                            <p class="font-semibold">Level-wise vs Leaf-wise</p>
+                            <ul class="list-disc ml-5">
+                                <li><span class="font-semibold">Level-wise</span> (XGBoost default): expand all nodes at
+                                    depth <span class="font-mono">d</span> → balanced, stable.</li>
+                                <li><span class="font-semibold">Leaf-wise</span> (LightGBM): repeatedly split the leaf
+                                    with the biggest gain → deeper, high accuracy, may overfit without <span
+                                        class="font-mono">min_data_in_leaf</span>.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Shrinkage &amp; Subsampling</p>
+                            <ul class="list-disc ml-5">
+                                <li><span class="font-semibold">Learning rate η</span>: scales each tree’s contribution
+                                    (smaller η → more trees, smoother fit).</li>
+                                <li><span class="font-semibold">Row subsampling</span> (<span
+                                        class="font-mono">subsample</span>) and <span class="font-semibold">column
+                                        subsampling</span> (<span class="font-mono">colsample_bytree</span>) inject
+                                    randomness → reduce variance.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Monotone Constraints</p>
+                            <p>Force prediction to increase/decrease with a chosen feature (e.g., price ↑ ⇒ risk ↑).
+                                Helpful for trust &amp; policy compliance.</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Handling Missing &amp; Categorical</p>
+                            <ul class="list-disc ml-5">
+                                <li>Missing values: learn default direction per split (sends NaNs to the better side).
+                                </li>
+                                <li>Categoricals: one-hot (simple), or ordered/target-based encodings (careful: avoid
+                                    leakage).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <!-- GOSS and DART -->
+            <div class="grid lg:grid-cols-2 gap-6 mb-10">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">GOSS — Gradient-based One-Side Sampling</h3>
+                    <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+                        <p>
+                            In boosting, each iteration computes instance gradients <span
+                                class="font-mono">g<sub>i</sub></span>.
+                            <span class="font-semibold">GOSS</span> keeps all examples with the largest |gradient| (the
+                            “hard” cases),
+                            and randomly samples from the small-|g| ones, reweighting them so totals stay unbiased.
+                        </p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <p class="font-semibold mb-1">Why it works</p>
+                                <p>Big gradients dominate the split gain calculation; small-gradient points mainly
+                                    refine estimates and can be down-sampled.</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                                <p class="font-semibold mb-1">Teacher-talk</p>
+                                <p>“Focus grading time on the students most off the answer; skim sample from those
+                                    already close.”</p>
+                            </div>
+                        </div>
+                        <ul class="list-disc ml-5">
+                            <li><span class="font-semibold">Speed-accuracy trade-off</span>: much faster per iteration
+                                with minimal loss in accuracy.</li>
+                            <li>Choose top fraction <span class="font-mono">a</span> (keep) and random fraction <span
+                                    class="font-mono">b</span> (sample) for the rest; rescale weights by <span
+                                    class="font-mono">\((1-a)/b\)</span>.</li>
+                        </ul>
+                        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <p class="font-semibold mb-1">Mini-formula</p>
+                            <p>With kept set <span class="font-mono">A</span> and sampled set <span
+                                    class="font-mono">B</span>,
+                                use <span class="font-mono">w<sub>i</sub>=1</span> for <span
+                                    class="font-mono">i∈A</span> and
+                                <span class="font-mono">w<sub>i</sub>=(1-a)/b</span> for <span
+                                    class="font-mono">i∈B</span> when forming histogram sums.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">DART — Dropouts meet Additive Regression Trees</h3>
+                    <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+                        <p>
+                            Boosting adds trees sequentially; later trees can over-specialize.
+                            <span class="font-semibold">DART</span> randomly “drops” a set of existing trees when
+                            fitting the new tree,
+                            forcing it to be useful on its own. After training the new tree, scale contributions so the
+                            total stays balanced.
+                        </p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <p class="font-semibold mb-1">Intuition</p>
+                                <p>Like dropout in neural nets: hide part of the ensemble, so each tree learns robust,
+                                    non-coattailing signal.</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-fuchsia-50 border border-fuchsia-200">
+                                <p class="font-semibold mb-1">Effect</p>
+                                <p>Reduces overfitting, yields smoother learning curves; slight extra compute from
+                                    randomization &amp; scaling.</p>
+                            </div>
+                        </div>
+                        <ul class="list-disc ml-5">
+                            <li>Typical knobs: drop rate, max dropped trees per iteration, normalization strategy after
+                                drop.</li>
+                            <li>Works best with small learning rates and moderately deep leaves.</li>
+                        </ul>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Practical tips / when-to-use -->
+            <div class="grid lg:grid-cols-3 gap-6">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">When to Prefer Each</h3>
+                    <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+                        <li><span class="font-semibold">Exact</span>: small/medium data; need maximal split precision.
+                        </li>
+                        <li><span class="font-semibold">Histogram</span>: large/tabular data; fastest training, good
+                            accuracy with quantile bins.</li>
+                        <li><span class="font-semibold">GOSS</span>: very large data where boosting dominates cost;
+                            gradients are heavy-tailed.</li>
+                        <li><span class="font-semibold">DART</span>: strong learners starting to overfit; want
+                            dropout-style regularization.</li>
+                    </ul>
+                </article>
+
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Common Pitfalls</h3>
+                    <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+                        <li>Too few bins → coarse splits, bias ↑. Too many → memory/compute ↑.</li>
+                        <li>Leaf-wise growth without <span class="font-mono">min_data_in_leaf</span> → overfitting.</li>
+                        <li>High learning rate with deep trees → wild training curves.</li>
+                        <li>Target leakage in categorical encodings (especially with low-cardinality classes).</li>
+                    </ul>
+                </article>
+
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Cheat Sheet (Symbols)</h3>
+                    <ul class="mt-2 text-sm leading-7 text-slate-700 list-none space-y-1">
+                        <li><span class="font-mono">g<sub>i</sub></span>: gradient for sample <span
+                                class="font-mono">i</span></li>
+                        <li><span class="font-mono">h<sub>i</sub></span>: Hessian (2nd derivative or approx.)</li>
+                        <li><span class="font-mono">G,H</span>: sums of gradients/Hessians in a node/bin</li>
+                        <li><span class="font-mono">λ, γ</span>: regularization (L2 and min split gain)</li>
+                        <li><span class="font-mono">η</span>: learning rate (shrinkage)</li>
+                        <li><span class="font-mono">B</span>: number of histogram bins</li>
+                    </ul>
+                </article>
+            </div>
         </div>
-      </article>
-
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">DART — Dropouts meet Additive Regression Trees</h3>
-        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
-          <p>
-            Boosting adds trees sequentially; later trees can over-specialize.  
-            <span class="font-semibold">DART</span> randomly “drops” a set of existing trees when fitting the new tree,
-            forcing it to be useful on its own. After training the new tree, scale contributions so the total stays balanced.
-          </p>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <p class="font-semibold mb-1">Intuition</p>
-              <p>Like dropout in neural nets: hide part of the ensemble, so each tree learns robust, non-coattailing signal.</p>
-            </div>
-            <div class="p-3 rounded-xl bg-fuchsia-50 border border-fuchsia-200">
-              <p class="font-semibold mb-1">Effect</p>
-              <p>Reduces overfitting, yields smoother learning curves; slight extra compute from randomization &amp; scaling.</p>
-            </div>
-          </div>
-          <ul class="list-disc ml-5">
-            <li>Typical knobs: drop rate, max dropped trees per iteration, normalization strategy after drop.</li>
-            <li>Works best with small learning rates and moderately deep leaves.</li>
-          </ul>
-        </div>
-      </article>
-    </div>
-
-    <!-- Practical tips / when-to-use -->
-    <div class="grid lg:grid-cols-3 gap-6">
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">When to Prefer Each</h3>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li><span class="font-semibold">Exact</span>: small/medium data; need maximal split precision.</li>
-          <li><span class="font-semibold">Histogram</span>: large/tabular data; fastest training, good accuracy with quantile bins.</li>
-          <li><span class="font-semibold">GOSS</span>: very large data where boosting dominates cost; gradients are heavy-tailed.</li>
-          <li><span class="font-semibold">DART</span>: strong learners starting to overfit; want dropout-style regularization.</li>
-        </ul>
-      </article>
-
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Common Pitfalls</h3>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li>Too few bins → coarse splits, bias ↑. Too many → memory/compute ↑.</li>
-          <li>Leaf-wise growth without <span class="font-mono">min_data_in_leaf</span> → overfitting.</li>
-          <li>High learning rate with deep trees → wild training curves.</li>
-          <li>Target leakage in categorical encodings (especially with low-cardinality classes).</li>
-        </ul>
-      </article>
-
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Cheat Sheet (Symbols)</h3>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-none space-y-1">
-          <li><span class="font-mono">g<sub>i</sub></span>: gradient for sample <span class="font-mono">i</span></li>
-          <li><span class="font-mono">h<sub>i</sub></span>: Hessian (2nd derivative or approx.)</li>
-          <li><span class="font-mono">G,H</span>: sums of gradients/Hessians in a node/bin</li>
-          <li><span class="font-mono">λ, γ</span>: regularization (L2 and min split gain)</li>
-          <li><span class="font-mono">η</span>: learning rate (shrinkage)</li>
-          <li><span class="font-mono">B</span>: number of histogram bins</li>
-        </ul>
-      </article>
-    </div>
-  </div>
-</section>
+    </section>
 
     <!-- Footer -->
     <footer class="py-10 bg-slate-900 text-slate-200">
@@ -1304,12 +1347,12 @@
                 _inited: false,
                 _resizeHandler: null,
 
-init(){
-  this.regenData();
-  this.initFeatChart();
-  // run training once with default params
-  this.train();
-},
+                init() {
+                    this.regenData();
+                    this.initFeatChart();
+                    // run training once with default params
+                    this.train();
+                },
 
                 destroy() {
                     try {
