@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CART & Ensembles Lab</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root { color-scheme: light; }
+    html { scroll-behavior: smooth; }
+    .bg-hero {
+      background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
+      background-size: 200% 200%;
+      animation: grad 18s ease infinite;
+    }
+    @keyframes grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+    .fade-in { animation: fade .25s ease-in; }
+    @keyframes fade { from {opacity:.2} to {opacity:1} }
+    .cell-highlight { outline: 2px solid #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.2) inset; }
+    canvas { image-rendering: crisp-edges; }
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-800">
+
+  <!-- Header -->
+  <header class="bg-hero">
+    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+      <div class="flex flex-col lg:flex-row items-center gap-10">
+        <div class="flex-1">
+          <img src="logo.png" alt="CART Lab Logo" class="mx-auto mb-4 w-20 h-20">
+          <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            CART <span class="text-indigo-600">Trees</span> & Ensembles Lab
+          </h1>
+          <p class="mt-3 text-lg md:text-xl text-slate-700">
+            Build decision boundaries with <span class="font-semibold">CART</span>, then boost it with
+            <span class="font-semibold">Bagging</span> and <span class="font-semibold">Gradient Boosting</span>.
+            Toggle <span class="font-semibold">GOSS</span> and <span class="font-semibold">DART</span> to see modern tweaks.
+          </p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a href="#sim" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open Simulator</a>
+            <a href="#guide" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Read the Illustrated Guide</a>
+          </div>
+          <p class="mt-4 text-sm text-slate-500">Pedagogical playground — single file, no build.</p>
+        </div>
+        <div class="flex-1 w-full">
+          <div class="bg-white/70 backdrop-blur rounded-2xl p-6 shadow border border-slate-100">
+            <canvas id="featChart" height="220"></canvas>
+            <p class="mt-3 text-center text-sm text-slate-600">Feature usage / importance across trained trees.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Simulator -->
+  <section id="sim" class="py-12" x-data="cartLab()" x-init="init()">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Simulator</h2>
+          <p class="text-slate-600 mt-1">
+            Binary classification in 2D for visualization. Train a single CART, a bagged ensemble, or a gradient boosted model.
+          </p>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <label class="text-slate-600">Samples</label>
+          <input type="number" min="40" step="10" class="w-24 rounded-lg border-slate-300" x-model.number="nSamples">
+          <label class="text-slate-600">Noise</label>
+          <input type="number" step="0.02" min="0" max="0.5" class="w-24 rounded-lg border-slate-300" x-model.number="noise">
+          <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-white" @click="regenData()">Regenerate Data</button>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="grid lg:grid-cols-5 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Data -->
+          <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <h3 class="font-semibold text-slate-800">Dataset</h3>
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Type</label>
+                <select class="mt-1 w-full rounded-xl border-slate-300" x-model="datasetType">
+                  <option value="blobs">Blobs (linearly separable)</option>
+                  <option value="moons">Two Moons</option>
+                  <option value="circles">Concentric Circles</option>
+                  <option value="xor">XOR</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Class balance</label>
+                <select class="mt-1 w-full rounded-xl border-slate-300" x-model="balance">
+                  <option value="balanced">Balanced</option>
+                  <option value="skewed">Skewed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Model -->
+          <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <h3 class="font-semibold text-slate-800">Model</h3>
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Mode</label>
+                <select class="mt-1 w-full rounded-xl border-slate-300" x-model="mode">
+                  <option value="cart">Single CART</option>
+                  <option value="bagging">Bagging (Random Forest-like)</option>
+                  <option value="gbdt">Gradient Boosting</option>
+                </select>
+              </div>
+              <template x-if="mode !== 'cart'">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">n_estimators</label>
+                  <input type="number" min="1" step="1" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="nEstimators">
+                </div>
+              </template>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-700">max_depth</label>
+                <input type="number" min="1" max="20" step="1" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="maxDepth">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700">min_samples_leaf</label>
+                <input type="number" min="1" step="1" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="minLeaf">
+              </div>
+            </div>
+
+            <template x-if="mode === 'bagging'">
+              <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">bootstrap (rows)</label>
+                  <select class="mt-1 w-full rounded-xl border-slate-300" x-model="bootstrapRows">
+                    <option :value="true">true</option>
+                    <option :value="false">false</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">max_features</label>
+                  <select class="mt-1 w-full rounded-xl border-slate-300" x-model="maxFeaturesMode">
+                    <option value="all">all</option>
+                    <option value="sqrt">sqrt</option>
+                    <option value="half">half</option>
+                  </select>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="mode === 'gbdt'">
+              <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">learning_rate</label>
+                  <input type="number" step="0.05" min="0.05" max="1" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="learningRate">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">subsample (rows)</label>
+                  <input type="number" step="0.05" min="0.2" max="1" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="subsample">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">GOSS top_rate</label>
+                  <input type="number" step="0.05" min="0" max="0.6" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="gossTop">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">GOSS bottom_rate</label>
+                  <input type="number" step="0.05" min="0" max="0.6" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="gossBottom">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700">DART dropout_rate</label>
+                  <input type="number" step="0.05" min="0" max="0.8" class="mt-1 w-full rounded-xl border-slate-300" x-model.number="dartDrop">
+                </div>
+              </div>
+            </template>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="train()">Train</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-200" @click="resetModel()">Clear Model</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas + Log -->
+        <div class="lg:col-span-3">
+          <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-slate-800">Decision Boundary</h3>
+              <div class="text-sm text-slate-600 flex gap-4">
+                <span>mode: <span class="font-mono" x-text="mode"></span></span>
+                <span>acc: <span class="font-mono" x-text="(metrics.acc*100).toFixed(1)+'%'"></span></span>
+                <span>trees: <span class="font-mono" x-text="modelSummary.trees"></span></span>
+              </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 lg:grid-cols-5 gap-4">
+              <div class="lg:col-span-3">
+                <canvas id="dbCanvas" width="520" height="390" class="w-full rounded-xl border border-slate-200"></canvas>
+              </div>
+              <div class="lg:col-span-2">
+                <h4 class="font-semibold text-slate-800">Operation Log</h4>
+                <div id="logBox" class="mt-2 h-44 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
+                  <template x-for="(line,i) in log" :key="i">
+                    <div class="mb-0.5"><span class="text-slate-400">#</span> <span x-text="line"></span></div>
+                  </template>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                  <div class="bg-slate-50 rounded p-2 border">
+                    <div class="text-slate-500">Confusion</div>
+                    <div class="font-mono mt-1">
+                      <div>TP: <span x-text="metrics.TP"></span></div>
+                      <div>TN: <span x-text="metrics.TN"></span></div>
+                      <div>FP: <span x-text="metrics.FP"></span></div>
+                      <div>FN: <span x-text="metrics.FN"></span></div>
+                    </div>
+                  </div>
+                  <div class="bg-slate-50 rounded p-2 border">
+                    <div class="text-slate-500">Model</div>
+                    <div class="font-mono mt-1">
+                      <div>max_depth=<span x-text="maxDepth"></span></div>
+                      <div>min_leaf=<span x-text="minLeaf"></span></div>
+                      <template x-if="mode!=='cart'">
+                        <div>n_estimators=<span x-text="nEstimators"></span></div>
+                      </template>
+                      <template x-if="mode==='gbdt'">
+                        <div>lr=<span x-text="learningRate"></span>, subsample=<span x-text="subsample"></span></div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics cards -->
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Accuracy (train)</div>
+          <div class="text-2xl font-semibold" x-text="(metrics.acc*100).toFixed(2)+'%'"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Trees</div>
+          <div class="text-2xl font-semibold" x-text="modelSummary.trees"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Avg depth</div>
+          <div class="text-2xl font-semibold" x-text="modelSummary.avgDepth.toFixed(2)"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Leaf count (avg)</div>
+          <div class="text-2xl font-semibold" x-text="modelSummary.avgLeaves.toFixed(1)"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Guide -->
+  <section id="guide" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
+        <p class="mt-2 text-slate-600">Key ideas for CART, Bagging, Boosting — and modern variants GOSS & DART.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">CART Splitting</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            CART finds a <em>feature</em> and <em>threshold</em> that best separates labels (here: binary).
+            We try axis-aligned splits and choose the one that maximizes impurity reduction (Gini).
+            Trees grow until stopping criteria (depth or leaf size).
+          </p>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">Bagging (Random Forest-like)</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            Train many trees on bootstrapped samples (rows) and (optionally) random feature subsets.
+            Averaging their votes reduces variance and improves generalization.
+          </p>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">Gradient Boosting</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            Fit shallow trees to the <em>current errors</em> (negative gradients of the loss).
+            Add each tree’s prediction with a small learning rate (shrinkage).
+          </p>
+          <ul class="mt-2 text-sm list-disc pl-5 text-slate-700">
+            <li><span class="font-semibold">GOSS</span>: keep all large-gradient samples, subsample small-gradient ones, and reweight to stay unbiased.</li>
+            <li><span class="font-semibold">DART</span>: randomly drop some prior trees when computing the current prediction; rescale to stabilize.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 bg-slate-900 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">© <span id="year"></span> CART & Ensembles Lab — Single-file, no build.</p>
+        <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Logic -->
+  <script>
+  // ========= Utilities =========
+  function randn() {
+    // Box-Muller
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+  function shuffleInPlace(a) {
+    for (let i=a.length-1;i>0;i--) { const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function argMax(arr){ let b=-Infinity,idx=0; for(let i=0;i<arr.length;i++) if(arr[i]>b){b=arr[i];idx=i;} return idx; }
+  function sigmoid(z){ return 1/(1+Math.exp(-z)); }
+
+  // ========= Data generator (2D) =========
+  function makeDataset(type, n, noise, balance='balanced') {
+    let X=[], y=[];
+    if (type==='blobs') {
+      const centers = balance==='balanced' ? [[-1,-1],[1,1]] : [[-1,-1],[1.5,1.5]];
+      const p0 = balance==='balanced'? 0.5 : 0.3;
+      for (let i=0;i<n;i++){
+        const c = Math.random()<p0?0:1;
+        const mu = centers[c];
+        X.push([mu[0]+noise*randn()*3, mu[1]+noise*randn()*3]);
+        y.push(c);
+      }
+    } else if (type==='moons') {
+      for (let i=0;i<n;i++){
+        if (i%2===0) {
+          const t = Math.random()*Math.PI;
+          X.push([Math.cos(t), Math.sin(t)+0.2 + noise*randn()]);
+          y.push(0);
+        } else {
+          const t = Math.random()*Math.PI;
+          X.push([1-Math.cos(t), 1-Math.sin(t)-0.2 + noise*randn()]);
+          y.push(1);
+        }
+      }
+    } else if (type==='circles') {
+      for (let i=0;i<n;i++){
+        const r = (i%2===0)? 0.7:1.4;
+        const t = Math.random()*2*Math.PI;
+        const rr = r + noise*randn();
+        X.push([rr*Math.cos(t), rr*Math.sin(t)]);
+        y.push((i%2===0)?0:1);
+      }
+    } else if (type==='xor') {
+      for (let i=0;i<n;i++){
+        const u = (Math.random()*2-1), v=(Math.random()*2-1);
+        X.push([u+noise*randn(), v+noise*randn()]);
+        y.push((u>0)^(v>0) ? 1:0);
+      }
+    }
+    // scale to [0,1] box for canvas mapping: just keep as is; renderer rescales dynamically
+    return {X, y};
+  }
+
+  // ========= CART (binary, Gini) =========
+  class CART {
+    constructor(maxDepth=5, minLeaf=2, featureBag=null, logFn=null) {
+      this.maxDepth = maxDepth;
+      this.minLeaf = minLeaf;
+      this.featureBag = featureBag; // array of feature indices or null (use all)
+      this.root = null;
+      this._log = logFn || (()=>{});
+      this.featureGain = [0,0]; // accumulate impurity reduction per feature
+      this.depth = 0;
+      this.leafCount = 0;
+    }
+    _gini(y) {
+      if (y.length===0) return 0;
+      let c0=0; for (const t of y) if (t===0) c0++;
+      const p = c0/y.length;
+      return 2*p*(1-p);
+    }
+    _bestSplit(X, y) {
+      const n = X.length; if (n < 2*this.minLeaf) return null;
+      const feats = this.featureBag ?? [0,1];
+      const base = this._gini(y);
+      let best = {gain:0, feat:null, thr:null, leftIdx:null, rightIdx:null};
+      for (const f of feats) {
+        // collect unique thresholds
+        let pairs = X.map((xi, i) => [xi[f], y[i], i]).sort((a,b)=>a[0]-b[0]);
+        let leftY=[], rightY=y.slice();
+        let leftIdx=[], rightIdx=pairs.map(p=>p[2]);
+        let c0L=0, c0R= rightY.filter(t=>t===0).length;
+        for (let k=this.minLeaf; k<=n-this.minLeaf; k++){
+          // move one point from right to left
+          const lab = pairs[k-1][1];
+          if (lab===0){ c0L++; c0R--; }
+          leftY.push(lab);
+          rightY.shift();
+          if (pairs[k-1][0] === pairs[k][0]) continue; // same value, skip
+          const thr = (pairs[k-1][0] + pairs[k][0]) / 2;
+          const gL = 2*(c0L/k)*(1-(c0L/k));
+          const rN = n-k;
+          const p0R = c0R/rN;
+          const gR = 2*p0R*(1-p0R);
+          const gain = base - (k/n)*gL - (rN/n)*gR;
+          if (gain > best.gain) {
+            best = {
+              gain, feat:f, thr,
+              leftIdx: pairs.slice(0,k).map(p=>p[2]),
+              rightIdx: pairs.slice(k).map(p=>p[2]),
+            };
+          }
+        }
+      }
+      return best.gain>0 ? best : null;
+    }
+    _build(X, y, depth=0) {
+      this.depth = Math.max(this.depth, depth);
+      // Majority class
+      let c0=0; for (const t of y) if (t===0) c0++; const maj = c0>=y.length-c0 ? 0:1;
+      if (depth>=this.maxDepth || y.length<=this.minLeaf || this._gini(y)===0) {
+        this.leafCount++;
+        return {leaf:true, proba: (y.length? (y.filter(t=>t===1).length/y.length):0), pred: maj};
+      }
+      const split = this._bestSplit(X,y);
+      if (!split) { this.leafCount++; return {leaf:true, proba:y.filter(t=>t===1).length/y.length, pred:maj}; }
+      // account gain
+      this.featureGain[split.feat] += split.gain;
+      this._log(`split: x${split.feat} <= ${split.thr.toFixed(3)} | gain=${split.gain.toFixed(4)}`);
+      const XL = split.leftIdx.map(i=>X[i]), yL=split.leftIdx.map(i=>y[i]);
+      const XR = split.rightIdx.map(i=>X[i]), yR=split.rightIdx.map(i=>y[i]);
+      return {
+        leaf:false, feat:split.feat, thr:split.thr,
+        left: this._build(XL,yL,depth+1),
+        right: this._build(XR,yR,depth+1)
+      };
+    }
+    fit(X,y) { this.root = this._build(X,y,0); }
+    _predictOne(x, node=this.root) {
+      if (node.leaf) return node.proba;
+      if (x[node.feat] <= node.thr) return this._predictOne(x, node.left);
+      else return this._predictOne(x, node.right);
+    }
+    predictProba(X){ return X.map(x=>this._predictOne(x)); }
+    predict(X){ return this.predictProba(X).map(p=> p>=0.5 ? 1:0); }
+  }
+
+  // ========= Bagging =========
+  class Bagging {
+    constructor(n=25, opts, logFn){
+      this.n=n;
+      this.opts=opts;
+      this.trees=[];
+      this._log = logFn || (()=>{});
+      this.featureUsage=[0,0];
+      this.depths=[];
+      this.leaves=[];
+    }
+    _featureBag(mode){
+      const all=[0,1];
+      if (mode==='all') return all;
+      if (mode==='sqrt') return [all[Math.random()<0.5?0:1]];
+      if (mode==='half') return [all[Math.random()<0.5?0:1]];
+      return all;
+    }
+    fit(X,y){
+      this.trees=[]; this.featureUsage=[0,0]; this.depths=[]; this.leaves=[];
+      const n=X.length;
+      for (let t=0;t<this.n;t++){
+        // bootstrap rows
+        let idx=[];
+        if (this.opts.bootstrapRows) {
+          for (let i=0;i<n;i++) idx.push((Math.random()*n)|0);
+        } else {
+          idx = [...Array(n).keys()];
+          shuffleInPlace(idx);
+        }
+        const Xb = idx.map(i=>X[i]), yb=idx.map(i=>y[i]);
+        const fbag = this._featureBag(this.opts.maxFeaturesMode);
+        const tree = new CART(this.opts.maxDepth, this.opts.minLeaf, fbag, (m)=>this._log(`[T${t}] ${m}`));
+        tree.fit(Xb,yb);
+        this.trees.push(tree);
+        this.featureUsage[0]+=tree.featureGain[0];
+        this.featureUsage[1]+=tree.featureGain[1];
+        this.depths.push(tree.depth);
+        this.leaves.push(tree.leafCount);
+      }
+    }
+    predictProba(X){
+      const sums = new Array(X.length).fill(0);
+      for (const tr of this.trees){
+        const p = tr.predictProba(X);
+        for (let i=0;i<p.length;i++) sums[i]+=p[i];
+      }
+      return sums.map(s=> this.trees.length? s/this.trees.length : 0.5);
+    }
+    predict(X){ return this.predictProba(X).map(p=>p>=0.5?1:0); }
+  }
+
+  // ========= Gradient Boosting (logistic loss) with GOSS + DART (simplified) =========
+  class GBDT {
+    constructor(n=50, opts, logFn){
+      this.n=n; this.opts=opts;
+      this.trees=[]; this._log = logFn || (()=>{});
+      this.featureUsage=[0,0]; this.depths=[]; this.leaves=[];
+    }
+    fit(X,y){
+      const n=X.length;
+      this.trees=[]; this.featureUsage=[0,0]; this.depths=[]; this.leaves=[];
+      let F = new Array(n).fill(0); // raw score
+      for (let m=0;m<this.n;m++){
+        // DART: compute working prediction with dropout
+        let dropMask = null;
+        if (this.opts.dartDrop>0 && this.trees.length>0){
+          dropMask = this.trees.map(()=> Math.random()<this.opts.dartDrop);
+        }
+        const F_work = F.slice();
+        if (dropMask){
+          // subtract dropped trees' contributions
+          for (let i=0;i<n;i++){
+            for (let t=0;t<this.trees.length;t++){
+              if (!dropMask[t]) continue;
+              const pt = this.trees[t].predictProba([X[i]])[0];
+              F_work[i] -= Math.log(pt/(1-pt+1e-9)+1e-9); // crude inverse mapping; pedagogical
+            }
+          }
+        }
+
+        const p = F_work.map(z=>sigmoid(z));
+        // gradients for logistic loss: g = p - y
+        const g = p.map((pi,i)=> pi - y[i]);
+
+        // GOSS sampling: keep top |g| by top_rate; sample bottom_rate from rest
+        let idxAll = [...Array(n).keys()];
+        let selectIdx = idxAll;
+        if (this.opts.gossTop>0 || this.opts.gossBottom>0){
+          const abs = g.map((gi,i)=> [Math.abs(gi), i]).sort((a,b)=>b[0]-a[0]);
+          const nTop = Math.floor(this.opts.gossTop*n);
+          const nBot = Math.floor(this.opts.gossBottom*n);
+          const top = abs.slice(0,nTop).map(p=>p[1]);
+          const rest = abs.slice(nTop).map(p=>p[1]);
+          shuffleInPlace(rest);
+          const bot = rest.slice(0,nBot);
+          selectIdx = top.concat(bot);
+        }
+        // weights to debias (LightGBM style: small-gradient part gets weight (1 - top_rate)/bottom_rate)
+        const w = new Array(n).fill(1.0);
+        if (this.opts.gossTop>0 || this.opts.gossBottom>0){
+          const topSet = new Set();
+          const abs = g.map((gi,i)=> [Math.abs(gi), i]).sort((a,b)=>b[0]-a[0]);
+          const nTop = Math.floor(this.opts.gossTop*n);
+          for (const ii of abs.slice(0,nTop)) topSet.add(ii[1]);
+          const alpha = this.opts.gossTop, beta = Math.max(1e-6, this.opts.gossBottom);
+          const scaleSmall = (1 - alpha) / beta;
+          for (let i=0;i<n;i++){
+            if (!topSet.has(i)) w[i] = scaleSmall;
+          }
+        }
+
+        // Create pseudo-residual target for tree: r = -g (gradient descent)
+        const r = g.map(gi=> -gi);
+
+        // Fit regression CART on (X, r) with weights w, using squared error (we'll approximate with classification CART thresholds but minimizing MSE).
+        const {Xsub, rsub, wsub, subIdx} = (()=> {
+          if (selectIdx.length===n) return {Xsub:X, rsub:r, wsub:w, subIdx:idxAll};
+          return {Xsub:selectIdx.map(i=>X[i]), rsub:selectIdx.map(i=>r[i]), wsub:selectIdx.map(i=>w[i]), subIdx:selectIdx};
+        })();
+
+        const tree = new CARTReg(this.opts.maxDepth, this.opts.minLeaf, null, (m)=>this._log(`[T${m}] ${m}`));
+        tree.fit(Xsub, rsub, wsub);
+        this.trees.push(tree);
+        this.depths.push(tree.depth);
+        this.leaves.push(tree.leafCount);
+        this.featureUsage[0]+=tree.featureGain[0];
+        this.featureUsage[1]+=tree.featureGain[1];
+
+        // Update scores: F += lr * tree(x)
+        const lr = this.opts.learningRate;
+        for (let i=0;i<n;i++){
+          const inc = lr * tree.predictOne(X[i]);
+          // DART rescale (LightGBM rescales new tree by 1/(1 - drop_rate)); here: simple 1/(1 - q)
+          const scale = (dropMask? (1.0/Math.max(1e-6, (1 - this.opts.dartDrop))) : 1.0);
+          F[i] = F_work[i] + scale*inc;
+        }
+        if ((m+1)%5===0) this._log(`boost ${m+1}/${this.n}`);
+      }
+    }
+    predictProba(X){
+      if (this.trees.length===0) return new Array(X.length).fill(0.5);
+      // raw score
+      const F = new Array(X.length).fill(0);
+      for (const tr of this.trees){
+        for (let i=0;i<X.length;i++){
+          F[i] += this.opts.learningRate * tr.predictOne(X[i]);
+        }
+      }
+      return F.map(z=>sigmoid(z));
+    }
+    predict(X){ return this.predictProba(X).map(p=>p>=0.5?1:0); }
+  }
+
+  // Simple regression CART for boosting residuals (MSE, with weights)
+  class CARTReg {
+    constructor(maxDepth=3, minLeaf=5, featureBag=null, logFn=null){
+      this.maxDepth=maxDepth; this.minLeaf=minLeaf; this.featureBag=featureBag; this.root=null; this._log=logFn||(()=>{});
+      this.featureGain=[0,0]; this.depth=0; this.leafCount=0;
+    }
+    _mse(y,w){
+      const sw=w.reduce((a,b)=>a+b,0);
+      if (sw<=0) return 0;
+      let mu=0; for(let i=0;i<y.length;i++) mu+=w[i]*y[i]; mu/=sw;
+      let v=0; for(let i=0;i<y.length;i++) { const d=y[i]-mu; v+=w[i]*d*d; }
+      return v/sw;
+    }
+    _bestSplit(X,y,w){
+      const n=X.length; if (n<2*this.minLeaf) return null;
+      const feats=this.featureBag ?? [0,1];
+      const base=this._mse(y,w);
+      let best={gain:0, feat:null, thr:null, L:null, R:null};
+      for(const f of feats){
+        let arr=X.map((xi,i)=> [xi[f], y[i], w[i], i]).sort((a,b)=>a[0]-b[0]);
+        // prefix sums
+        const Wpref=[], Ypref=[];
+        let ws=0, ys=0; for(let i=0;i<arr.length;i++){ ws+=arr[i][2]; ys+=arr[i][1]*arr[i][2]; Wpref.push(ws); Ypref.push(ys); }
+        const Wtot=ws, Ytot=ys;
+        for(let k=this.minLeaf;k<=n-this.minLeaf;k++){
+          if (arr[k-1][0]===arr[k][0]) continue;
+          const thr=(arr[k-1][0]+arr[k][0])/2;
+          const WL=Wpref[k-1], YL=Ypref[k-1];
+          const WR=Wtot-WL, YR=Ytot-YL;
+          const muL=YL/Math.max(1e-9,WL), muR=YR/Math.max(1e-9,WR);
+          // compute mse pieces
+          let vL=0, vR=0;
+          for(let i=0;i<k;i++){ const d=arr[i][1]-muL; vL+=arr[i][2]*d*d; }
+          for(let i=k;i<n;i++){ const d=arr[i][1]-muR; vR+=arr[i][2]*d*d; }
+          const mse=(vL+vR)/Math.max(1e-9,(WL+WR));
+          const gain = base - mse;
+          if (gain>best.gain) best={gain, feat:f, thr, L:arr.slice(0,k).map(p=>p[3]), R:arr.slice(k).map(p=>p[3])};
+        }
+      }
+      return best.gain>0?best:null;
+    }
+    _build(X,y,w,depth=0){
+      this.depth=Math.max(this.depth, depth);
+      const sw=w.reduce((a,b)=>a+b,0);
+      let mu=0; for(let i=0;i<y.length;i++) mu+=w[i]*y[i]; mu/=Math.max(1e-9,sw);
+      if (depth>=this.maxDepth || y.length<=this.minLeaf){
+        this.leafCount++; return {leaf:true, value:mu};
+      }
+      const sp=this._bestSplit(X,y,w);
+      if (!sp){ this.leafCount++; return {leaf:true, value:mu}; }
+      this.featureGain[sp.feat]+=sp.gain;
+      const XL=sp.L.map(i=>X[i]), yL=sp.L.map(i=>y[i]), wL=sp.L.map(i=>w[i]);
+      const XR=sp.R.map(i=>X[i]), yR=sp.R.map(i=>y[i]), wR=sp.R.map(i=>w[i]);
+      return {leaf:false, feat:sp.feat, thr:sp.thr,
+              left:this._build(XL,yL,wL,depth+1),
+              right:this._build(XR,yR,wR,depth+1)};
+    }
+    fit(X,y,w){
+      // normalize weights
+      const sw=w.reduce((a,b)=>a+b,0); const wn=w.map(vi=>vi/Math.max(1e-9,sw));
+      this.root=this._build(X,y,wn,0);
+    }
+    predictOne(x, node=this.root){
+      if (node.leaf) return node.value;
+      if (x[node.feat]<=node.thr) return this.predictOne(x,node.left);
+      else return this.predictOne(x,node.right);
+    }
+  }
+
+  // ========= Alpine component =========
+  function cartLab(){
+    return {
+      // Data / model state
+      datasetType: 'moons',
+      nSamples: 400,
+      noise: 0.15,
+      balance: 'balanced',
+
+      mode: 'cart',
+      maxDepth: 5,
+      minLeaf: 5,
+
+      // Bagging
+      nEstimators: 25,
+      bootstrapRows: true,
+      maxFeaturesMode: 'sqrt',
+
+      // GBDT
+      learningRate: 0.2,
+      subsample: 0.8,
+      gossTop: 0.2,
+      gossBottom: 0.2,
+      dartDrop: 0.1,
+
+      // runtime
+      X: [], y: [],
+      model: null,
+      modelSummary: {trees:0, avgDepth:0, avgLeaves:0},
+      metrics: {acc:0, TP:0,TN:0,FP:0,FN:0},
+      featChart: null,
+      log: [],
+
+      init(){
+        this.regenData();
+        this.initFeatChart();
+        this.drawBoundary();
+      },
+
+      regenData(){
+        const d = makeDataset(this.datasetType, this.nSamples, this.noise, this.balance);
+        this.X = d.X; this.y = d.y;
+        this.log.push(`data: ${this.datasetType}, n=${this.X.length}, noise=${this.noise}`);
+        this.$nextTick(()=>this._autoScroll());
+        this.drawBoundary();
+      },
+
+      resetModel(){
+        this.model=null;
+        this.modelSummary={trees:0, avgDepth:0, avgLeaves:0};
+        this.metrics={acc:0,TP:0,TN:0,FP:0,FN:0};
+        this.updateFeatChart([0,0]);
+        this.drawBoundary();
+        this.log.push(`model cleared`);
+        this.$nextTick(()=>this._autoScroll());
+      },
+
+      train(){
+        if (this.mode==='cart'){
+          const tree = new CART(this.maxDepth, this.minLeaf, null, (m)=>this._pushLog(m));
+          tree.fit(this.X, this.y);
+          this.model = tree;
+          this.modelSummary={trees:1, avgDepth:tree.depth, avgLeaves:tree.leafCount};
+          this.updateFeatChart(tree.featureGain);
+          this._pushLog(`CART trained: depth=${tree.depth}, leaves=${tree.leafCount}`);
+        } else if (this.mode==='bagging'){
+          const bag = new Bagging(this.nEstimators, {
+            maxDepth:this.maxDepth, minLeaf:this.minLeaf,
+            bootstrapRows:this.bootstrapRows, maxFeaturesMode:this.maxFeaturesMode
+          }, (m)=>this._pushLog(m));
+          bag.fit(this.X, this.y);
+          this.model=bag;
+          const avgD=bag.depths.reduce((a,b)=>a+b,0)/bag.depths.length;
+          const avgL=bag.leaves.reduce((a,b)=>a+b,0)/bag.leaves.length;
+          this.modelSummary={trees:this.nEstimators, avgDepth:avgD, avgLeaves:avgL};
+          this.updateFeatChart(bag.featureUsage);
+          this._pushLog(`Bagging trained: trees=${this.nEstimators}`);
+        } else if (this.mode==='gbdt'){
+          // sampled rows (subsample) is handled implicitly in GOSS below; here keep all -> pedagogical simplicity
+          const gbdt = new GBDT(this.nEstimators, {
+            maxDepth:this.maxDepth, minLeaf:this.minLeaf,
+            learningRate:this.learningRate, subsample:this.subsample,
+            gossTop:this.gossTop, gossBottom:this.gossBottom,
+            dartDrop:this.dartDrop
+          }, (m)=>this._pushLog(m));
+          gbdt.fit(this.X, this.y);
+          this.model=gbdt;
+          const avgD=gbdt.depths.reduce((a,b)=>a+b,0)/gbdt.depths.length;
+          const avgL=gbdt.leaves.reduce((a,b)=>a+b,0)/gbdt.leaves.length;
+          this.modelSummary={trees:this.nEstimators, avgDepth:avgD, avgLeaves:avgL};
+          this.updateFeatChart(gbdt.featureUsage);
+          this._pushLog(`GBDT trained: trees=${this.nEstimators}, lr=${this.learningRate}`);
+        }
+        this.evalAndRender();
+      },
+
+      evalAndRender(){
+        if (!this.model){ this.drawBoundary(); return; }
+        const yhat = this.model.predict(this.X);
+        // confusion + acc
+        let TP=0,TN=0,FP=0,FN=0;
+        for (let i=0;i<yhat.length;i++){
+          if (yhat[i]===1 && this.y[i]===1) TP++;
+          else if (yhat[i]===0 && this.y[i]===0) TN++;
+          else if (yhat[i]===1 && this.y[i]===0) FP++;
+          else FN++;
+        }
+        const acc=(TP+TN)/yhat.length;
+        this.metrics={acc, TP,TN,FP,FN};
+        this.drawBoundary();
+        this.$nextTick(()=>this._autoScroll());
+      },
+
+      // ---- Visualization ----
+      drawBoundary(){
+        const cvs = document.getElementById('dbCanvas');
+        const ctx = cvs.getContext('2d');
+        const W=cvs.width, H=cvs.height;
+
+        // find bounds
+        const xs = this.X.map(p=>p[0]), ys=this.X.map(p=>p[1]);
+        const minX=Math.min(...xs, -2), maxX=Math.max(...xs, 2);
+        const minY=Math.min(...ys, -2), maxY=Math.max(...ys, 2);
+        const pad=0.2;
+        const loX=minX-pad, hiX=maxX+pad, loY=minY-pad, hiY=maxY+pad;
+        const toPix = (x,y)=> [ (x-loX)/(hiX-loX)*W, H - (y-loY)/(hiY-loY)*H ];
+
+        // background
+        const grid=3; // coarse grid step in px
+        const img = ctx.createImageData(W,H);
+        if (this.model){
+          const proba = (x,y)=>{
+            const xx=(x/W)*(hiX-loX)+loX, yy=((H-y)/H)*(hiY-loY)+loY;
+            const p = this.model.predictProba ? this.model.predictProba([[xx,yy]])[0] : (this.model.predict([[xx,yy]])[0]);
+            return p;
+          };
+          for (let y=0;y<H;y++){
+            for (let x=0;x<W;x++){
+              if ((x%grid)!==0 || (y%grid)!==0) continue; // speed
+              const p=proba(x,y);
+              const r = Math.round(255*(1-p)), g= Math.round(255*(1-p)), b=Math.round(255*p);
+              for (let dy=0;dy<grid;dy++){
+                for (let dx=0;dx<grid;dx++){
+                  const xx=x+dx, yy=y+dy; if (xx>=W||yy>=H) continue;
+                  const k=(yy*W+xx)*4;
+                  img.data[k]=r; img.data[k+1]=g; img.data[k+2]=b; img.data[k+3]=40;
+                }
+              }
+            }
+          }
+          ctx.putImageData(img,0,0);
+        } else {
+          ctx.clearRect(0,0,W,H);
+          ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+        }
+
+        // points
+        for (let i=0;i<this.X.length;i++){
+          const [px,py]=toPix(this.X[i][0], this.X[i][1]);
+          ctx.beginPath();
+          ctx.arc(px,py,3,0,2*Math.PI);
+          const truth=this.y[i];
+          const pred = this.model? (this.model.predict([[this.X[i][0], this.X[i][1]]])[0]) : truth;
+          // correct -> darker; wrong -> light
+          if (truth===1){ ctx.fillStyle = (pred===1)? '#1e3a8a' : '#93c5fd'; }
+          else { ctx.fillStyle = (pred===0)? '#0f766e' : '#99f6e4'; }
+          ctx.fill();
+        }
+      },
+
+      // ---- Feature importance chart ----
+      initFeatChart(){
+        const ctx = document.getElementById('featChart');
+        this.featChart = new Chart(ctx, {
+          type:'bar',
+          data:{ labels:['x0','x1'], datasets:[{label:'gain', data:[0,0]}] },
+          options:{ responsive:true, aspectRatio:2.2, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+        });
+      },
+      updateFeatChart(gain){
+        this.featChart.data.datasets[0].data = [gain[0], gain[1]];
+        this.featChart.update();
+      },
+
+      _pushLog(msg){ this.log.push(msg); this.$nextTick(()=>this._autoScroll()); },
+      _autoScroll(){ const box=document.getElementById('logBox'); if (box) box.scrollTop = box.scrollHeight; },
+    };
+  }
+
+  // Footer year
+  document.addEventListener('DOMContentLoaded', ()=> {
+    const y=document.getElementById('year'); if (y) y.textContent=new Date().getFullYear();
+  });
+  </script>
+</body>
+</html>
