@@ -1,981 +1,1473 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>CART Regression & Ensembles Lab</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CART Regression & Ensembles Lab</title>
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Alpine -->
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <style>
-    :root { color-scheme: light; }
-    html { scroll-behavior: smooth; }
-    .bg-hero {
-      background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
-      background-size: 200% 200%;
-      animation: grad 18s ease infinite;
-    }
-    @keyframes grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
-    .fade-in { animation: fade .25s ease-in; } @keyframes fade { from{opacity:.2} to{opacity:1} }
-    .node { filter: drop-shadow(0 2px 2px rgba(0,0,0,.08)); }
-  </style>
+    <style>
+        :root {
+            color-scheme: light;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .bg-hero {
+            background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
+            background-size: 200% 200%;
+            animation: grad 18s ease infinite;
+        }
+
+        @keyframes grad {
+            0% {
+                background-position: 0% 50%
+            }
+
+            50% {
+                background-position: 100% 50%
+            }
+
+            100% {
+                background-position: 0% 50%
+            }
+        }
+
+        .code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .fade-in {
+            animation: fade .25s ease-in;
+        }
+
+        @keyframes fade {
+            from {
+                opacity: .2
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        .node {
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .08));
+        }
+    </style>
 </head>
+
 <body class="min-h-screen text-slate-800">
 
-  <!-- Header -->
-  <header class="bg-hero">
-    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
-      <div class="flex flex-col lg:flex-row items-center gap-10">
-        <div class="flex-1">
-          <img src="logo.png" alt="Logo" class="mx-auto mb-4 w-16 h-16">
-          <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-            CART <span class="text-indigo-600">Regression</span> & Ensembles Lab
-          </h1>
-          <p class="mt-3 text-lg md:text-xl text-slate-700">
-            Build a <span class="font-semibold">CART regressor</span>, compare with
-            <span class="font-semibold">Bagging</span> (averager) and
-            <span class="font-semibold">Gradient Boosting</span> (residual chain).
-            Toggle classification to contrast impurity vs MSE logic.
-          </p>
-          <div class="mt-5 flex flex-wrap gap-3">
-            <a href="#sim" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open Simulator</a>
-            <a href="#guide" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Illustrated Guide</a>
-          </div>
-          <p class="mt-4 text-sm text-slate-500">Single file • Tailwind + Alpine + Chart.js • No build step</p>
+    <!-- Header -->
+    <header class="bg-hero">
+        <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+            <div class="flex flex-col lg:flex-row items-center gap-10">
+                <div class="flex-1">
+                    <img src="logo.png" alt="Logo" class="mx-auto mb-4 w-16 h-16">
+                    <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+                        CART <span class="text-indigo-600">Regression</span> & Ensembles Lab
+                    </h1>
+                    <p class="mt-3 text-lg md:text-xl text-slate-700">
+                        Build a <span class="font-semibold">CART regressor</span>, compare with
+                        <span class="font-semibold">Bagging</span> (averager) and
+                        <span class="font-semibold">Gradient Boosting</span> (residual chain).
+                        Toggle classification to contrast impurity vs MSE logic.
+                    </p>
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <a href="#sim"
+                            class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open
+                            Simulator</a>
+                        <a href="#guide"
+                            class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Illustrated
+                            Guide</a>
+                    </div>
+                    <p class="mt-4 text-sm text-slate-500">Single file • Tailwind + Alpine + Chart.js • No build step
+                    </p>
+                </div>
+                <div class="flex-1 w-full">
+                    <div class="bg-white/70 backdrop-blur rounded-2xl p-6 shadow border border-slate-100">
+                        <canvas id="featChart" height="220"></canvas>
+                        <p class="mt-3 text-center text-sm text-slate-600">
+                            Split gain (feature importance) across the trained model(s).
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="flex-1 w-full">
-          <div class="bg-white/70 backdrop-blur rounded-2xl p-6 shadow border border-slate-100">
-            <canvas id="featChart" height="220"></canvas>
-            <p class="mt-3 text-center text-sm text-slate-600">
-              Split gain (feature importance) across the trained model(s).
+    </header>
+    <!-- Simulator -->
+    <section id="sim" class="py-12" x-data="lab()" x-init="init()">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Header -->
+            <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Simulator</h2>
+                    <p class="text-slate-600 mt-1">2D problems for visualization; focus on regression, optional
+                        classification.</p>
+                </div>
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="text-slate-600">MSE/R² or Acc update after training.</span>
+                </div>
+            </div>
+
+            <!-- Top toolbar: all controls -->
+            <div class="mb-6 bg-white rounded-2xl shadow p-5 border border-slate-200">
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <!-- Task / Data size / Noise -->
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">Task</label>
+                        <select class="mt-1 rounded-xl border-slate-300" x-model="task">
+                            <option value="reg">Regression</option>
+                            <option value="clf">Classification</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">Samples</label>
+                        <input type="number" min="60" step="10" class="mt-1 rounded-xl border-slate-300"
+                            x-model.number="nSamples">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">Noise</label>
+                        <input type="number" step="0.02" min="0" max="0.6" class="mt-1 rounded-xl border-slate-300"
+                            x-model.number="noise">
+                    </div>
+
+                    <!-- Dataset selector -->
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">Dataset</label>
+                        <select class="mt-1 rounded-xl border-slate-300" x-model="dataset">
+                            <template x-if="task==='reg'">
+                                <optgroup label="Regression">
+                                    <option value="sine">Sine ridge (nonlinear)</option>
+                                    <option value="plane">Plane (linear)</option>
+                                    <option value="peaks">Humps (piecewise)</option>
+                                    <option value="friedman2d">Friedman-like (2D)</option>
+                                </optgroup>
+                            </template>
+                            <template x-if="task==='clf'">
+                                <optgroup label="Classification">
+                                    <option value="blobs">Blobs</option>
+                                    <option value="moons">Two Moons</option>
+                                    <option value="xor">XOR</option>
+                                </optgroup>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Balance (clf) -->
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">Balance (clf)</label>
+                        <select class="mt-1 rounded-xl border-slate-300" x-model="balance">
+                            <option value="balanced">Balanced</option>
+                            <option value="skewed">Skewed</option>
+                        </select>
+                    </div>
+
+                    <!-- Model mode -->
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">Mode</label>
+                        <select class="mt-1 rounded-xl border-slate-300" x-model="mode">
+                            <option value="cart">Single CART</option>
+                            <option value="bagging">Bagging / Random Forest-like</option>
+                            <option value="gbdt">Gradient Boosting</option>
+                        </select>
+                    </div>
+
+                    <!-- n_estimators when needed -->
+                    <template x-if="mode!=='cart'">
+                        <div class="flex flex-col">
+                            <label class="text-sm text-slate-700">n_estimators</label>
+                            <input type="number" min="1" step="1" class="mt-1 rounded-xl border-slate-300"
+                                x-model.number="nEstimators">
+                        </div>
+                    </template>
+
+                    <!-- Depth / Leaf -->
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">max_depth</label>
+                        <input type="number" min="1" max="20" step="1" class="mt-1 rounded-xl border-slate-300"
+                            x-model.number="maxDepth">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-sm text-slate-700">min_samples_leaf</label>
+                        <input type="number" min="1" step="1" class="mt-1 rounded-xl border-slate-300"
+                            x-model.number="minLeaf">
+                    </div>
+
+                    <!-- Bagging extras -->
+                    <template x-if="mode==='bagging'">
+                        <div class="flex flex-col">
+                            <label class="text-sm text-slate-700">bootstrap rows</label>
+                            <select class="mt-1 rounded-xl border-slate-300" x-model="bootstrapRows">
+                                <option :value="true">true</option>
+                                <option :value="false">false</option>
+                            </select>
+                        </div>
+                    </template>
+                    <template x-if="mode==='bagging'">
+                        <div class="flex flex-col">
+                            <label class="text-sm text-slate-700">max_features</label>
+                            <select class="mt-1 rounded-xl border-slate-300" x-model="maxFeaturesMode">
+                                <option value="all">all</option>
+                                <option value="sqrt">sqrt</option>
+                                <option value="half">half</option>
+                            </select>
+                        </div>
+                    </template>
+
+                    <!-- GBDT extras -->
+                    <template x-if="mode==='gbdt'">
+                        <div class="flex flex-col">
+                            <label class="text-sm text-slate-700">learning_rate</label>
+                            <input type="number" step="0.05" min="0.05" max="1" class="mt-1 rounded-xl border-slate-300"
+                                x-model.number="learningRate">
+                        </div>
+                    </template>
+                    <template x-if="mode==='gbdt'">
+                        <div class="flex flex-col">
+                            <label class="text-sm text-slate-700">subsample (rows)</label>
+                            <input type="number" step="0.05" min="0.2" max="1" class="mt-1 rounded-xl border-slate-300"
+                                x-model.number="subsample">
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Toolbar actions -->
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="train()">Train</button>
+                    <button class="px-3 py-1.5 rounded-lg bg-slate-200" @click="resetModel()">Clear Model</button>
+                    <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-white ml-auto"
+                        @click="regenData()">Regenerate Data</button>
+                </div>
+            </div>
+
+            <!-- Visualizations -->
+            <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <h3 class="font-semibold text-slate-800">Fit & Visualizations</h3>
+                    <div class="text-sm text-slate-600 grid grid-flow-col gap-4">
+                        <template x-if="task==='reg'">
+                            <span>MSE: <span class="font-mono" x-text="metrics.mse.toFixed(4)"></span></span>
+                        </template>
+                        <template x-if="task==='reg'">
+                            <span>R²: <span class="font-mono" x-text="metrics.r2.toFixed(3)"></span></span>
+                        </template>
+                        <template x-if="task==='clf'">
+                            <span>Acc: <span class="font-mono" x-text="(metrics.acc*100).toFixed(1)+'%'"></span></span>
+                        </template>
+                        <span>trees: <span class="font-mono" x-text="modelSummary.trees"></span></span>
+                    </div>
+                </div>
+
+                <!-- Bigger canvases & tree -->
+                <div class="mt-4 grid grid-cols-1 2xl:grid-cols-3 gap-6">
+                    <!-- Decision surface / scatter -->
+                    <div class="2xl:col-span-2">
+                        <canvas id="dbCanvas" width="840" height="560"
+                            class="w-full h-[520px] rounded-xl border border-slate-200"></canvas>
+                        <div class="text-xs text-slate-500 mt-2">
+                            Regression: color = predicted value (blue low → red high). Classification: blue vs green
+                            regions.
+                        </div>
+                    </div>
+
+                    <!-- Ensemble diagram -->
+                    <div class="">
+                        <h4 class="font-semibold text-slate-800">Ensemble Topology</h4>
+                        <svg id="ensSvg" class="mt-2 w-full h-[520px] border rounded-xl border-slate-200 bg-white"
+                            viewBox="0 0 900 560" preserveAspectRatio="xMidYMid meet"></svg>
+                        <div class="text-xs text-slate-500 mt-2">
+                            Bagging: parallel trees → <span class="font-semibold">averager</span>. Boosting: residuals →
+                            next tree (gradient flow).
+                        </div>
+                    </div>
+
+                    <!-- Tree viz (now spans full width on 2xl) -->
+                    <div class="2xl:col-span-3">
+                        <h4 class="font-semibold text-slate-800">Current CART (structure)</h4>
+                        <svg id="treeSvg" class="mt-2 w-full h-[640px] border rounded-xl border-slate-200 bg-white"
+                            viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid meet"></svg>
+                        <div class="text-xs text-slate-500 mt-2">
+                            Internal node: <span class="font-mono">xj ≤ thr</span> (gain). Leaf: prediction (reg) /
+                            proba (clf).
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log + stats -->
+                <div class="mt-6 grid lg:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-semibold text-slate-800">Operation Log</h4>
+                        <div id="logBox"
+                            class="mt-2 h-48 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
+                            <template x-for="(line,i) in log" :key="i">
+                                <div class="mb-0.5"><span class="text-slate-400">#</span> <span x-text="line"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-50 rounded p-3 border">
+                            <div class="text-slate-500 text-xs">Model summary</div>
+                            <div class="font-mono mt-1 text-sm">
+                                <div>max_depth=<span x-text="maxDepth"></span></div>
+                                <div>min_leaf=<span x-text="minLeaf"></span></div>
+                                <template x-if="mode!=='cart'">
+                                    <div>n_estimators=<span x-text="nEstimators"></span></div>
+                                </template>
+                                <template x-if="mode==='gbdt'">
+                                    <div>lr=<span x-text="learningRate"></span>, subsample=<span
+                                            x-text="subsample"></span></div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 rounded p-3 border">
+                            <div class="text-slate-500 text-xs">Tree stats</div>
+                            <div class="font-mono mt-1 text-sm">
+                                <div>Avg depth: <span x-text="modelSummary.avgDepth.toFixed(2)"></span></div>
+                                <div>Avg leaves: <span x-text="modelSummary.avgLeaves.toFixed(1)"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+                    <div class="text-xs text-slate-500" x-text="task==='reg' ? 'MSE (train)' : 'Accuracy (train)'">
+                    </div>
+                    <div class="text-2xl font-semibold">
+                        <span x-show="task==='reg'" x-text="metrics.mse.toFixed(4)"></span>
+                        <span x-show="task==='clf'" x-text="(metrics.acc*100).toFixed(2)+'%'"></span>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+                    <div class="text-xs text-slate-500">Trees</div>
+                    <div class="text-2xl font-semibold" x-text="modelSummary.trees"></div>
+                </div>
+                <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+                    <div class="text-xs text-slate-500">Avg depth</div>
+                    <div class="text-2xl font-semibold" x-text="modelSummary.avgDepth.toFixed(2)"></div>
+                </div>
+                <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+                    <div class="text-xs text-slate-500">Avg leaves</div>
+                    <div class="text-2xl font-semibold" x-text="modelSummary.avgLeaves.toFixed(1)"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+<!-- Guide -->
+<section id="guide" class="py-12 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
+      <p class="mt-2 text-slate-600">
+        Decision trees split the input space with rules like <span class="font-mono">x<sub>j</sub> ≤ t</span>.  
+        CART for regression minimizes MSE; for classification it reduces impurity (e.g., Gini).  
+        Bagging lowers variance by averaging many trees; gradient boosting lowers bias by chaining
+        small trees on the residuals.
+      </p>
+    </div>
+
+    <!-- Core recap -->
+    <div class="grid lg:grid-cols-3 gap-6 mb-10">
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">CART (Regression)</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">
+          At each node, search axis-aligned splits <span class="font-mono">x<sub>j</sub> ≤ t</span> that best reduce
+          mean squared error:
+          <span class="font-mono">ΔMSE = MSE(parent) − [w<sub>L</sub>MSE(L)+w<sub>R</sub>MSE(R)]</span>.
+          Stop when limits hit (depth / min_leaf). Leaves predict the average <span class="font-mono">y</span> in the region.
+        </p>
+      </article>
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Bagging / Random Forest-like</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">
+          Train many trees on bootstrapped rows and randomized feature subsets; average predictions.
+          Parallel “voters” → robust to noise, strong variance reduction, little training-time coupling.
+        </p>
+      </article>
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Gradient Boosting (Squared Loss)</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">
+          Maintain prediction <span class="font-mono">F</span>. Residuals
+          <span class="font-mono">r = y − F</span> (the negative gradient for MSE).
+          Fit a small tree to <span class="font-mono">r</span>, then update
+          <span class="font-mono">F ← F + η · tree(x)</span> with learning rate <span class="font-mono">η</span>.
+        </p>
+      </article>
+    </div>
+
+    <!-- Advanced tree building: Exact vs Histogram -->
+    <div class="grid lg:grid-cols-2 gap-6 mb-10">
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Exact vs. Histogram Trees</h3>
+        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+          <div>
+            <p class="font-semibold">Exact (Greedy) Split Finding</p>
+            <ul class="list-disc ml-5">
+              <li>Sort the feature values and scan every possible threshold <span class="font-mono">t</span>.</li>
+              <li>Accurate but costly: sorting &amp; scanning cost grows with samples × features.</li>
+              <li>Great for small/medium data where precision matters.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="font-semibold">Histogram-Based Split Finding</p>
+            <ul class="list-disc ml-5">
+              <li>Bin each feature value into <span class="font-mono">B</span> discrete buckets (e.g., 63/255).</li>
+              <li>At each node, compute per-bin sums (and for boosting: sum of gradients <span class="font-mono">g</span> and Hessians <span class="font-mono">h</span>).</li>
+              <li>Scan only <span class="font-mono">B−1</span> cut points → massive speed &amp; memory savings.</li>
+              <li>Accuracy is typically close to exact if bins capture the distribution (use quantile bins).</li>
+            </ul>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <p class="font-semibold mb-1">Pedagogical picture</p>
+            <p>Exact = “check every slit on the ruler.” Histogram = “first snap numbers to nearby ticks, then check only the tick marks.”</p>
+          </div>
+          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <p class="font-semibold mb-1">Math bite (boosting gain per split)</p>
+            <p>
+              For a candidate split, with gradient sum <span class="font-mono">G</span> and Hessian sum
+              <span class="font-mono">H</span> in each child, a common gain is
+              <span class="font-mono">Gain = ½ [ G<sub>L</sub>²/(H<sub>L</sub>+λ) + G<sub>R</sub>²/(H<sub>R</sub>+λ) − G²/(H+λ) ] − γ</span>,
+              where <span class="font-mono">λ</span> (L2) and <span class="font-mono">γ</span> (min split gain) regularize complexity.
             </p>
           </div>
         </div>
-      </div>
-    </div>
-  </header>
-<!-- Simulator -->
-<section id="sim" class="py-12" x-data="lab()" x-init="init()">
-  <div class="max-w-7xl mx-auto px-6">
-    <!-- Header -->
-    <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
-      <div>
-        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Simulator</h2>
-        <p class="text-slate-600 mt-1">2D problems for visualization; focus on regression, optional classification.</p>
-      </div>
-      <div class="flex items-center gap-3 text-sm">
-        <span class="text-slate-600">MSE/R² or Acc update after training.</span>
-      </div>
-    </div>
+      </article>
 
-    <!-- Top toolbar: all controls -->
-    <div class="mb-6 bg-white rounded-2xl shadow p-5 border border-slate-200">
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        <!-- Task / Data size / Noise -->
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">Task</label>
-          <select class="mt-1 rounded-xl border-slate-300" x-model="task">
-            <option value="reg">Regression</option>
-            <option value="clf">Classification</option>
-          </select>
-        </div>
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">Samples</label>
-          <input type="number" min="60" step="10" class="mt-1 rounded-xl border-slate-300" x-model.number="nSamples">
-        </div>
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">Noise</label>
-          <input type="number" step="0.02" min="0" max="0.6" class="mt-1 rounded-xl border-slate-300" x-model.number="noise">
-        </div>
-
-        <!-- Dataset selector -->
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">Dataset</label>
-          <select class="mt-1 rounded-xl border-slate-300" x-model="dataset">
-            <template x-if="task==='reg'">
-              <optgroup label="Regression">
-                <option value="sine">Sine ridge (nonlinear)</option>
-                <option value="plane">Plane (linear)</option>
-                <option value="peaks">Humps (piecewise)</option>
-                <option value="friedman2d">Friedman-like (2D)</option>
-              </optgroup>
-            </template>
-            <template x-if="task==='clf'">
-              <optgroup label="Classification">
-                <option value="blobs">Blobs</option>
-                <option value="moons">Two Moons</option>
-                <option value="xor">XOR</option>
-              </optgroup>
-            </template>
-          </select>
-        </div>
-
-        <!-- Balance (clf) -->
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">Balance (clf)</label>
-          <select class="mt-1 rounded-xl border-slate-300" x-model="balance">
-            <option value="balanced">Balanced</option>
-            <option value="skewed">Skewed</option>
-          </select>
-        </div>
-
-        <!-- Model mode -->
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">Mode</label>
-          <select class="mt-1 rounded-xl border-slate-300" x-model="mode">
-            <option value="cart">Single CART</option>
-            <option value="bagging">Bagging / Random Forest-like</option>
-            <option value="gbdt">Gradient Boosting</option>
-          </select>
-        </div>
-
-        <!-- n_estimators when needed -->
-        <template x-if="mode!=='cart'">
-          <div class="flex flex-col">
-            <label class="text-sm text-slate-700">n_estimators</label>
-            <input type="number" min="1" step="1" class="mt-1 rounded-xl border-slate-300" x-model.number="nEstimators">
+      <!-- Growth strategy & regularization sidebar -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Growth Strategy &amp; Regularization</h3>
+        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+          <div>
+            <p class="font-semibold">Level-wise vs Leaf-wise</p>
+            <ul class="list-disc ml-5">
+              <li><span class="font-semibold">Level-wise</span> (XGBoost default): expand all nodes at depth <span class="font-mono">d</span> → balanced, stable.</li>
+              <li><span class="font-semibold">Leaf-wise</span> (LightGBM): repeatedly split the leaf with the biggest gain → deeper, high accuracy, may overfit without <span class="font-mono">min_data_in_leaf</span>.</li>
+            </ul>
           </div>
-        </template>
-
-        <!-- Depth / Leaf -->
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">max_depth</label>
-          <input type="number" min="1" max="20" step="1" class="mt-1 rounded-xl border-slate-300" x-model.number="maxDepth">
+          <div>
+            <p class="font-semibold">Shrinkage &amp; Subsampling</p>
+            <ul class="list-disc ml-5">
+              <li><span class="font-semibold">Learning rate η</span>: scales each tree’s contribution (smaller η → more trees, smoother fit).</li>
+              <li><span class="font-semibold">Row subsampling</span> (<span class="font-mono">subsample</span>) and <span class="font-semibold">column subsampling</span> (<span class="font-mono">colsample_bytree</span>) inject randomness → reduce variance.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="font-semibold">Monotone Constraints</p>
+            <p>Force prediction to increase/decrease with a chosen feature (e.g., price ↑ ⇒ risk ↑). Helpful for trust &amp; policy compliance.</p>
+          </div>
+          <div>
+            <p class="font-semibold">Handling Missing &amp; Categorical</p>
+            <ul class="list-disc ml-5">
+              <li>Missing values: learn default direction per split (sends NaNs to the better side).</li>
+              <li>Categoricals: one-hot (simple), or ordered/target-based encodings (careful: avoid leakage).</li>
+            </ul>
+          </div>
         </div>
-        <div class="flex flex-col">
-          <label class="text-sm text-slate-700">min_samples_leaf</label>
-          <input type="number" min="1" step="1" class="mt-1 rounded-xl border-slate-300" x-model.number="minLeaf">
-        </div>
-
-        <!-- Bagging extras -->
-        <template x-if="mode==='bagging'">
-          <div class="flex flex-col">
-            <label class="text-sm text-slate-700">bootstrap rows</label>
-            <select class="mt-1 rounded-xl border-slate-300" x-model="bootstrapRows">
-              <option :value="true">true</option>
-              <option :value="false">false</option>
-            </select>
-          </div>
-        </template>
-        <template x-if="mode==='bagging'">
-          <div class="flex flex-col">
-            <label class="text-sm text-slate-700">max_features</label>
-            <select class="mt-1 rounded-xl border-slate-300" x-model="maxFeaturesMode">
-              <option value="all">all</option>
-              <option value="sqrt">sqrt</option>
-              <option value="half">half</option>
-            </select>
-          </div>
-        </template>
-
-        <!-- GBDT extras -->
-        <template x-if="mode==='gbdt'">
-          <div class="flex flex-col">
-            <label class="text-sm text-slate-700">learning_rate</label>
-            <input type="number" step="0.05" min="0.05" max="1" class="mt-1 rounded-xl border-slate-300" x-model.number="learningRate">
-          </div>
-        </template>
-        <template x-if="mode==='gbdt'">
-          <div class="flex flex-col">
-            <label class="text-sm text-slate-700">subsample (rows)</label>
-            <input type="number" step="0.05" min="0.2" max="1" class="mt-1 rounded-xl border-slate-300" x-model.number="subsample">
-          </div>
-        </template>
-      </div>
-
-      <!-- Toolbar actions -->
-      <div class="mt-4 flex flex-wrap gap-2">
-        <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="train()">Train</button>
-        <button class="px-3 py-1.5 rounded-lg bg-slate-200" @click="resetModel()">Clear Model</button>
-        <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-white ml-auto" @click="regenData()">Regenerate Data</button>
-      </div>
+      </article>
     </div>
 
-    <!-- Visualizations -->
-    <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
-      <div class="flex items-center justify-between flex-wrap gap-3">
-        <h3 class="font-semibold text-slate-800">Fit & Visualizations</h3>
-        <div class="text-sm text-slate-600 grid grid-flow-col gap-4">
-          <template x-if="task==='reg'">
-            <span>MSE: <span class="font-mono" x-text="metrics.mse.toFixed(4)"></span></span>
-          </template>
-          <template x-if="task==='reg'">
-            <span>R²: <span class="font-mono" x-text="metrics.r2.toFixed(3)"></span></span>
-          </template>
-          <template x-if="task==='clf'">
-            <span>Acc: <span class="font-mono" x-text="(metrics.acc*100).toFixed(1)+'%'"></span></span>
-          </template>
-          <span>trees: <span class="font-mono" x-text="modelSummary.trees"></span></span>
-        </div>
-      </div>
-
-      <!-- Bigger canvases & tree -->
-      <div class="mt-4 grid grid-cols-1 2xl:grid-cols-3 gap-6">
-        <!-- Decision surface / scatter -->
-        <div class="2xl:col-span-2">
-          <canvas id="dbCanvas" width="840" height="560" class="w-full h-[520px] rounded-xl border border-slate-200"></canvas>
-          <div class="text-xs text-slate-500 mt-2">
-            Regression: color = predicted value (blue low → red high). Classification: blue vs green regions.
-          </div>
-        </div>
-
-        <!-- Ensemble diagram -->
-        <div class="">
-          <h4 class="font-semibold text-slate-800">Ensemble Topology</h4>
-          <svg id="ensSvg" class="mt-2 w-full h-[520px] border rounded-xl border-slate-200 bg-white"
-               viewBox="0 0 900 560" preserveAspectRatio="xMidYMid meet"></svg>
-          <div class="text-xs text-slate-500 mt-2">
-            Bagging: parallel trees → <span class="font-semibold">averager</span>. Boosting: residuals → next tree (gradient flow).
-          </div>
-        </div>
-
-        <!-- Tree viz (now spans full width on 2xl) -->
-        <div class="2xl:col-span-3">
-          <h4 class="font-semibold text-slate-800">Current CART (structure)</h4>
-          <svg id="treeSvg" class="mt-2 w-full h-[640px] border rounded-xl border-slate-200 bg-white"
-               viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid meet"></svg>
-          <div class="text-xs text-slate-500 mt-2">
-            Internal node: <span class="font-mono">xj ≤ thr</span> (gain). Leaf: prediction (reg) / proba (clf).
-          </div>
-        </div>
-      </div>
-
-      <!-- Log + stats -->
-      <div class="mt-6 grid lg:grid-cols-2 gap-4">
-        <div>
-          <h4 class="font-semibold text-slate-800">Operation Log</h4>
-          <div id="logBox" class="mt-2 h-48 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
-            <template x-for="(line,i) in log" :key="i">
-              <div class="mb-0.5"><span class="text-slate-400">#</span> <span x-text="line"></span></div>
-            </template>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="bg-slate-50 rounded p-3 border">
-            <div class="text-slate-500 text-xs">Model summary</div>
-            <div class="font-mono mt-1 text-sm">
-              <div>max_depth=<span x-text="maxDepth"></span></div>
-              <div>min_leaf=<span x-text="minLeaf"></span></div>
-              <template x-if="mode!=='cart'"><div>n_estimators=<span x-text="nEstimators"></span></div></template>
-              <template x-if="mode==='gbdt'"><div>lr=<span x-text="learningRate"></span>, subsample=<span x-text="subsample"></span></div></template>
+    <!-- GOSS and DART -->
+    <div class="grid lg:grid-cols-2 gap-6 mb-10">
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">GOSS — Gradient-based One-Side Sampling</h3>
+        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+          <p>
+            In boosting, each iteration computes instance gradients <span class="font-mono">g<sub>i</sub></span>.  
+            <span class="font-semibold">GOSS</span> keeps all examples with the largest |gradient| (the “hard” cases),
+            and randomly samples from the small-|g| ones, reweighting them so totals stay unbiased.
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="font-semibold mb-1">Why it works</p>
+              <p>Big gradients dominate the split gain calculation; small-gradient points mainly refine estimates and can be down-sampled.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+              <p class="font-semibold mb-1">Teacher-talk</p>
+              <p>“Focus grading time on the students most off the answer; skim sample from those already close.”</p>
             </div>
           </div>
-          <div class="bg-slate-50 rounded p-3 border">
-            <div class="text-slate-500 text-xs">Tree stats</div>
-            <div class="font-mono mt-1 text-sm">
-              <div>Avg depth: <span x-text="modelSummary.avgDepth.toFixed(2)"></span></div>
-              <div>Avg leaves: <span x-text="modelSummary.avgLeaves.toFixed(1)"></span></div>
-            </div>
+          <ul class="list-disc ml-5">
+            <li><span class="font-semibold">Speed-accuracy trade-off</span>: much faster per iteration with minimal loss in accuracy.</li>
+            <li>Choose top fraction <span class="font-mono">a</span> (keep) and random fraction <span class="font-mono">b</span> (sample) for the rest; rescale weights by <span class="font-mono">\((1-a)/b\)</span>.</li>
+          </ul>
+          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <p class="font-semibold mb-1">Mini-formula</p>
+            <p>With kept set <span class="font-mono">A</span> and sampled set <span class="font-mono">B</span>,  
+              use <span class="font-mono">w<sub>i</sub>=1</span> for <span class="font-mono">i∈A</span> and
+              <span class="font-mono">w<sub>i</sub>=(1-a)/b</span> for <span class="font-mono">i∈B</span> when forming histogram sums.</p>
           </div>
         </div>
-      </div>
+      </article>
+
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">DART — Dropouts meet Additive Regression Trees</h3>
+        <div class="mt-2 text-sm leading-7 text-slate-700 space-y-3">
+          <p>
+            Boosting adds trees sequentially; later trees can over-specialize.  
+            <span class="font-semibold">DART</span> randomly “drops” a set of existing trees when fitting the new tree,
+            forcing it to be useful on its own. After training the new tree, scale contributions so the total stays balanced.
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="font-semibold mb-1">Intuition</p>
+              <p>Like dropout in neural nets: hide part of the ensemble, so each tree learns robust, non-coattailing signal.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-fuchsia-50 border border-fuchsia-200">
+              <p class="font-semibold mb-1">Effect</p>
+              <p>Reduces overfitting, yields smoother learning curves; slight extra compute from randomization &amp; scaling.</p>
+            </div>
+          </div>
+          <ul class="list-disc ml-5">
+            <li>Typical knobs: drop rate, max dropped trees per iteration, normalization strategy after drop.</li>
+            <li>Works best with small learning rates and moderately deep leaves.</li>
+          </ul>
+        </div>
+      </article>
     </div>
 
-    <!-- KPI cards -->
-    <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
-        <div class="text-xs text-slate-500" x-text="task==='reg' ? 'MSE (train)' : 'Accuracy (train)'"></div>
-        <div class="text-2xl font-semibold">
-          <span x-show="task==='reg'" x-text="metrics.mse.toFixed(4)"></span>
-          <span x-show="task==='clf'" x-text="(metrics.acc*100).toFixed(2)+'%'"></span>
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
-        <div class="text-xs text-slate-500">Trees</div>
-        <div class="text-2xl font-semibold" x-text="modelSummary.trees"></div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
-        <div class="text-xs text-slate-500">Avg depth</div>
-        <div class="text-2xl font-semibold" x-text="modelSummary.avgDepth.toFixed(2)"></div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
-        <div class="text-xs text-slate-500">Avg leaves</div>
-        <div class="text-2xl font-semibold" x-text="modelSummary.avgLeaves.toFixed(1)"></div>
-      </div>
+    <!-- Practical tips / when-to-use -->
+    <div class="grid lg:grid-cols-3 gap-6">
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">When to Prefer Each</h3>
+        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+          <li><span class="font-semibold">Exact</span>: small/medium data; need maximal split precision.</li>
+          <li><span class="font-semibold">Histogram</span>: large/tabular data; fastest training, good accuracy with quantile bins.</li>
+          <li><span class="font-semibold">GOSS</span>: very large data where boosting dominates cost; gradients are heavy-tailed.</li>
+          <li><span class="font-semibold">DART</span>: strong learners starting to overfit; want dropout-style regularization.</li>
+        </ul>
+      </article>
+
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Common Pitfalls</h3>
+        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+          <li>Too few bins → coarse splits, bias ↑. Too many → memory/compute ↑.</li>
+          <li>Leaf-wise growth without <span class="font-mono">min_data_in_leaf</span> → overfitting.</li>
+          <li>High learning rate with deep trees → wild training curves.</li>
+          <li>Target leakage in categorical encodings (especially with low-cardinality classes).</li>
+        </ul>
+      </article>
+
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Cheat Sheet (Symbols)</h3>
+        <ul class="mt-2 text-sm leading-7 text-slate-700 list-none space-y-1">
+          <li><span class="font-mono">g<sub>i</sub></span>: gradient for sample <span class="font-mono">i</span></li>
+          <li><span class="font-mono">h<sub>i</sub></span>: Hessian (2nd derivative or approx.)</li>
+          <li><span class="font-mono">G,H</span>: sums of gradients/Hessians in a node/bin</li>
+          <li><span class="font-mono">λ, γ</span>: regularization (L2 and min split gain)</li>
+          <li><span class="font-mono">η</span>: learning rate (shrinkage)</li>
+          <li><span class="font-mono">B</span>: number of histogram bins</li>
+        </ul>
+      </article>
     </div>
   </div>
 </section>
 
-  <!-- Guide -->
-  <section id="guide" class="py-12 bg-slate-50">
-    <div class="max-w-7xl mx-auto px-6">
-      <div class="mb-8">
-        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
-        <p class="mt-2 text-slate-600">
-          CART for regression minimizes MSE; for classification it reduces impurity (Gini).
-          Bagging averages many trees (variance ↓). Boosting chains shallow trees on residuals (bias ↓).
-        </p>
-      </div>
-      <div class="grid lg:grid-cols-3 gap-6">
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-          <h3 class="text-xl font-semibold">CART (Regression)</h3>
-          <p class="mt-2 text-sm leading-7 text-slate-700">
-            At each node, search axis-aligned splits <span class="font-mono">xj ≤ thr</span> that best reduce MSE.
-            Stop at limits (depth / min_leaf). Leaves predict the average y in that region.
-          </p>
-        </article>
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-          <h3 class="text-xl font-semibold">Bagging / Random Forest-like</h3>
-          <p class="mt-2 text-sm leading-7 text-slate-700">
-            Train many trees on bootstrapped rows and randomized feature subsets; average predictions.
-            Parallel “voters” → robust to noise, lowers variance.
-          </p>
-        </article>
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-          <h3 class="text-xl font-semibold">Gradient Boosting (Squared Loss)</h3>
-          <p class="mt-2 text-sm leading-7 text-slate-700">
-            Maintain current prediction F. Residuals r = y − F (negative gradient of MSE).
-            Fit a small tree to r, update F ← F + η·tree(x). Repeat.
-          </p>
-        </article>
-      </div>
-    </div>
-  </section>
+    <!-- Footer -->
+    <footer class="py-10 bg-slate-900 text-slate-200">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm">© <span id="year"></span> CART Regression Lab — Single-file</p>
+                <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js • SVG</div>
+            </div>
+        </div>
+    </footer>
 
-  <!-- Footer -->
-  <footer class="py-10 bg-slate-900 text-slate-200">
-    <div class="max-w-7xl mx-auto px-6">
-      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-        <p class="text-sm">© <span id="year"></span> CART Regression Lab — Single-file</p>
-        <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js • SVG</div>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Logic -->
-<script>
-/* ===================== Utils ===================== */
-function randn(){ let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
-  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
-function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]];} return a; }
-const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
-
-/* =========== Data generators (2D) =========== */
-function genData(task, kind, n, noise, balance='balanced'){
-  const X=[], y=[];
-  if (task==='reg'){
-    if (kind==='sine'){
-      for(let i=0;i<n;i++){
-        const x=Math.random()*4-2, z=Math.random()*4-2;
-        const t = Math.sin(1.5*x)+0.5*Math.cos(2*z);
-        X.push([x,z]); y.push(t + noise*randn());
-      }
-    } else if (kind==='plane'){
-      const a=0.8,b=-0.6,c=0.2;
-      for(let i=0;i<n;i++){
-        const x=Math.random()*4-2, z=Math.random()*4-2;
-        X.push([x,z]); y.push(a*x + b*z + c + noise*randn());
-      }
-    } else if (kind==='peaks'){
-      for(let i=0;i<n;i++){
-        const x=Math.random()*4-2, z=Math.random()*4-2;
-        const t= 1.5*Math.exp(-((x-1)**2+(z-1)**2)) - 1.2*Math.exp(-((x+1)**2+(z+1)**2));
-        X.push([x,z]); y.push(t + 0.2*Math.sin(3*x) + noise*randn()*0.3);
-      }
-    } else if (kind==='friedman2d'){
-      for(let i=0;i<n;i++){
-        const x=Math.random()*4-2, z=Math.random()*4-2;
-        X.push([x,z]); y.push(Math.sin(x*z)+0.5*x - 0.3*z*z + noise*randn()*0.2);
-      }
-    }
-  } else { // classification
-    if (kind==='blobs'){
-      const centers = balance==='balanced' ? [[-1,-1],[1,1]] : [[-1,-1],[1.6,1.6]];
-      const p0 = balance==='balanced'? 0.5 : 0.3;
-      for (let i=0;i<n;i++){
-        const c = Math.random()<p0?0:1, mu=centers[c];
-        X.push([mu[0]+noise*randn()*2, mu[1]+noise*randn()*2]); y.push(c);
-      }
-    } else if (kind==='moons'){
-      for(let i=0;i<n;i++){
-        const t=Math.random()*Math.PI; const a=(i%2===0)?0:1;
-        const base = a? [1-Math.cos(t), 1-Math.sin(t)] : [Math.cos(t), Math.sin(t)];
-        X.push([base[0]+(a?0.1:-0.1)+noise*randn()*0.2, base[1]+noise*randn()*0.2]);
-        y.push(a);
-      }
-    } else if (kind==='xor'){
-      for(let i=0;i<n;i++){
-        const u=(Math.random()*2-1), v=(Math.random()*2-1);
-        X.push([u+noise*randn(), v+noise*randn()]);
-        y.push(((u>0)^(v>0)) ? 1:0);
-      }
-    }
-  }
-  return {X,y};
-}
-
-/* ============== CART (reg + clf) ============== */
-class CARTReg {
-  constructor(maxDepth=5, minLeaf=5, featureBag=null, logFn=null){
-    this.maxDepth=maxDepth; this.minLeaf=minLeaf; this.featureBag=featureBag; this.root=null;
-    this._log=logFn||(()=>{}); this.featureGain=[0,0]; this.depth=0; this.leafCount=0;
-  }
-  _mse(y,w){
-    const sw=w.reduce((a,b)=>a+b,0)||1e-9;
-    let mu=0; for(let i=0;i<y.length;i++) mu+=w[i]*y[i]; mu/=sw;
-    let v=0; for(let i=0;i<y.length;i++){ const d=y[i]-mu; v+=w[i]*d*d; }
-    return v/sw;
-  }
-  _bestSplit(X,y,w){
-    const n=X.length; if (n<2*this.minLeaf) return null;
-    const feats=this.featureBag ?? [0,1];
-    const base=this._mse(y,w);
-    let best={gain:0, feat:null, thr:null, L:null, R:null};
-    for(const f of feats){
-      let arr=X.map((xi,i)=>[xi[f], y[i], w[i], i]).sort((a,b)=>a[0]-b[0]);
-      // prefix sums
-      const Wp=[], Yp=[]; let ws=0, ys=0;
-      for(let i=0;i<arr.length;i++){ ws+=arr[i][2]; ys+=arr[i][1]*arr[i][2]; Wp.push(ws); Yp.push(ys); }
-      const Wtot=ws, Ytot=ys;
-      for(let k=this.minLeaf;k<=n-this.minLeaf;k++){
-        if (arr[k-1][0]===arr[k][0]) continue;
-        const WL=Wp[k-1], YL=Yp[k-1], WR=Wtot-WL, YR=Ytot-YL;
-        const muL=YL/Math.max(1e-9,WL), muR=YR/Math.max(1e-9,WR);
-        // variances
-        let vL=0, vR=0;
-        for(let i=0;i<k;i++){ const d=arr[i][1]-muL; vL+=arr[i][2]*d*d; }
-        for(let i=k;i<n;i++){ const d=arr[i][1]-muR; vR+=arr[i][2]*d*d; }
-        const mse=(vL+vR)/Math.max(1e-9,(WL+WR));
-        const gain=base-mse;
-        if (gain>best.gain){
-          best={gain, feat:f, thr:(arr[k-1][0]+arr[k][0])/2, L:arr.slice(0,k).map(p=>p[3]), R:arr.slice(k).map(p=>p[3])};
+    <!-- Logic -->
+    <script>
+        /* ===================== Utils ===================== */
+        function randn() {
+            let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random();
+            return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
         }
-      }
-    }
-    return best.gain>1e-12?best:null;
-  }
-  _build(X,y,w,depth=0){
-    this.depth=Math.max(this.depth, depth);
-    const sw=w.reduce((a,b)=>a+b,0)||1e-9;
-    let mu=0; for(let i=0;i<y.length;i++) mu+=w[i]*y[i]; mu/=sw;
-    if (depth>=this.maxDepth || y.length<=this.minLeaf){
-      this.leafCount++; return {leaf:true, value:mu, n:y.length};
-    }
-    const sp=this._bestSplit(X,y,w);
-    if (!sp){ this.leafCount++; return {leaf:true, value:mu, n:y.length}; }
-    this.featureGain[sp.feat]+=sp.gain;
-    this._log(`split: x${sp.feat} ≤ ${sp.thr.toFixed(3)} | ΔMSE=${sp.gain.toFixed(4)}`);
-    const XL=sp.L.map(i=>X[i]), yL=sp.L.map(i=>y[i]), wL=sp.L.map(i=>w[i]);
-    const XR=sp.R.map(i=>X[i]), yR=sp.R.map(i=>y[i]), wR=sp.R.map(i=>w[i]);
-    return {leaf:false, feat:sp.feat, thr:sp.thr,
-            left:this._build(XL,yL,wL,depth+1),
-            right:this._build(XR,yR,wR,depth+1)};
-  }
-  fit(X,y,w=null){
-    const W = w ?? new Array(y.length).fill(1);
-    this.featureGain=[0,0]; this.depth=0; this.leafCount=0;
-    this.root=this._build(X,y,W,0);
-  }
-  predictOne(x, node=this.root){
-    if (!node) return 0;
-    if (node.leaf) return node.value;
-    return (x[node.feat] <= node.thr) ? this.predictOne(x,node.left) : this.predictOne(x,node.right);
-  }
-  predict(X){ return X.map(x=>this.predictOne(x)); }
-}
+        function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0;[a[i], a[j]] = [a[j], a[i]]; } return a; }
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-class CARTClf {
-  constructor(maxDepth=5, minLeaf=5, featureBag=null, logFn=null){
-    this.maxDepth=maxDepth; this.minLeaf=minLeaf; this.featureBag=featureBag; this.root=null;
-    this._log=logFn||(()=>{}); this.featureGain=[0,0]; this.depth=0; this.leafCount=0;
-  }
-  _gini(y){ if(y.length===0) return 0; let c1=0; for(const t of y) if(t===1) c1++; const p=c1/y.length; return 2*p*(1-p); }
-  _bestSplit(X,y){
-    const n=X.length; if(n<2*this.minLeaf) return null;
-    const feats=this.featureBag ?? [0,1]; const base=this._gini(y);
-    let best={gain:0, feat:null, thr:null, L:null, R:null};
-    for(const f of feats){
-      let arr=X.map((xi,i)=>[xi[f], y[i], i]).sort((a,b)=>a[0]-b[0]);
-      let c1L=0,c1R=y.filter(t=>t===1).length;
-      for(let k=this.minLeaf;k<=n-this.minLeaf;k++){
-        const lab=arr[k-1][1]; if(lab===1){ c1L++; c1R--; }
-        if (arr[k-1][0]===arr[k][0]) continue;
-        const thr=(arr[k-1][0]+arr[k][0])/2;
-        const pL=c1L/k, pR=c1R/(n-k);
-        const gL=2*pL*(1-pL), gR=2*pR*(1-pR);
-        const gain= base - (k/n)*gL - ((n-k)/n)*gR;
-        if (gain>best.gain) best={gain, feat:f, thr, L:arr.slice(0,k).map(p=>p[2]), R:arr.slice(k).map(p=>p[2])};
-      }
-    }
-    return best.gain>1e-12?best:null;
-  }
-  _build(X,y,depth=0){
-    this.depth=Math.max(this.depth, depth);
-    let c1=0; for(const t of y) if(t===1) c1++; const proba=y.length? c1/y.length : 0, pred=(proba>=0.5?1:0);
-    if (depth>=this.maxDepth || y.length<=this.minLeaf || this._gini(y)===0){ this.leafCount++; return {leaf:true, proba, pred, n:y.length}; }
-    const sp=this._bestSplit(X,y);
-    if(!sp){ this.leafCount++; return {leaf:true, proba, pred, n:y.length}; }
-    this.featureGain[sp.feat]+=sp.gain;
-    this._log(`split: x${sp.feat} ≤ ${sp.thr.toFixed(3)} | ΔGini=${sp.gain.toFixed(4)}`);
-    const XL=sp.L.map(i=>X[i]), yL=sp.L.map(i=>y[i]);
-    const XR=sp.R.map(i=>X[i]), yR=sp.R.map(i=>y[i]);
-    return {leaf:false, feat:sp.feat, thr:sp.thr,
-            left:this._build(XL,yL,depth+1),
-            right:this._build(XR,yR,depth+1)};
-  }
-  fit(X,y){ this.featureGain=[0,0]; this.depth=0; this.leafCount=0; this.root=this._build(X,y,0); }
-  _predOne(x,node=this.root){ if(!node) return 0.5; if(node.leaf) return node.proba;
-    return (x[node.feat]<=node.thr) ? this._predOne(x,node.left) : this._predOne(x,node.right); }
-  predictProba(X){ return X.map(x=>this._predOne(x)); }
-  predict(X){ return this.predictProba(X).map(p=>p>=0.5?1:0); }
-}
-
-/* ============== Ensembles (bagging & GBDT) ============== */
-class BaggingReg {
-  constructor(n, opts, logFn){ this.n=n; this.opts=opts; this.trees=[]; this._log=logFn||(()=>{}); this.featureGain=[0,0]; this.depths=[]; this.leaves=[]; }
-  _featureBag(mode){ const all=[0,1]; if(mode==='all')return all; const pick=all[Math.random()<0.5?0:1]; return [pick]; }
-  fit(X,y){
-    this.trees=[]; this.featureGain=[0,0]; this.depths=[]; this.leaves=[];
-    const n=X.length;
-    for(let t=0;t<this.n;t++){
-      let idx=[]; if(this.opts.bootstrapRows){ for(let i=0;i<n;i++) idx.push((Math.random()*n)|0); }
-      else { idx=[...Array(n).keys()]; shuffle(idx); }
-      const Xb=idx.map(i=>X[i]), yb=idx.map(i=>y[i]);
-      const fbag=this._featureBag(this.opts.maxFeaturesMode);
-      const tr = (this.opts.task==='reg') ? new CARTReg(this.opts.maxDepth, this.opts.minLeaf, fbag, m=>this._log(`[T${t}] ${m}`))
-                                          : new CARTClf(this.opts.maxDepth, this.opts.minLeaf, fbag, m=>this._log(`[T${t}] ${m}`));
-      tr.fit(Xb,yb);
-      this.trees.push(tr);
-      this.featureGain[0]+=tr.featureGain[0]; this.featureGain[1]+=tr.featureGain[1];
-      this.depths.push(tr.depth); this.leaves.push(tr.leafCount);
-    }
-  }
-  predict(X){
-    if (this.opts.task==='reg'){
-      const sums=new Array(X.length).fill(0);
-      for(const tr of this.trees){ const p=tr.predict(X); for(let i=0;i<p.length;i++) sums[i]+=p[i]; }
-      return sums.map(s=> s/Math.max(1,this.trees.length));
-    } else {
-      const sums=new Array(X.length).fill(0);
-      for(const tr of this.trees){
-        const p=tr.predict(X);
-        for(let i=0;i<p.length;i++) sums[i]+= (p[i] ? 1 : 0);
-      }
-      return sums.map(s=> s>= (this.trees.length/2) ? 1:0);
-    }
-  }
-  predictProba(X){
-    if (this.opts.task==='clf'){
-      const sums=new Array(X.length).fill(0);
-      for(const tr of this.trees){
-        const p=tr.predictProba ? tr.predictProba(X) : tr.predict(X).map(v=>v?1:0);
-        for(let i=0;i<p.length;i++) sums[i]+=p[i];
-      }
-      return sums.map(s=> s/Math.max(1,this.trees.length));
-    }
-    return null;
-  }
-}
-
-class GBDTReg {
-  constructor(n, opts, logFn){ this.n=n; this.opts=opts; this.trees=[]; this.depths=[]; this.leaves=[]; this.featureGain=[0,0]; this._log=logFn||(()=>{}); this.flow=[]; }
-  fit(X,y){
-    this.trees=[]; this.depths=[]; this.leaves=[]; this.featureGain=[0,0]; this.flow=[];
-    const n=X.length; let F=new Array(n).fill(0);
-    for(let m=0;m<this.n;m++){
-      let idx=[...Array(n).keys()];
-      if(this.opts.subsample<1.0){ shuffle(idx); idx=idx.slice(0, Math.max(1, Math.floor(this.opts.subsample*n))); }
-      const Xs=idx.map(i=>X[i]), ys=idx.map(i=>y[i]), Fs=idx.map(i=>F[i]);
-      const residuals = ys.map((yi,i)=> yi - Fs[i]);
-      const tr=new CARTReg(this.opts.maxDepth, this.opts.minLeaf, null, m2=>this._log(`[t${m}] ${m2}`));
-      tr.fit(Xs, residuals, new Array(residuals.length).fill(1));
-      this.trees.push(tr); this.depths.push(tr.depth); this.leaves.push(tr.leafCount);
-      this.featureGain[0]+=tr.featureGain[0]; this.featureGain[1]+=tr.featureGain[1];
-      for(let i=0;i<n;i++){ F[i]+= this.opts.learningRate * tr.predictOne(X[i]); }
-      this.flow.push({m, usedFeat: tr.featureGain[0]>=tr.featureGain[1]?0:1});
-      if((m+1)%5===0) this._log(`boost ${m+1}/${this.n}`);
-    }
-  }
-  predict(X){
-    if(this.trees.length===0) return new Array(X.length).fill(0);
-    const out=new Array(X.length).fill(0);
-    for(const tr of this.trees){
-      for(let i=0;i<X.length;i++) out[i]+= this.opts.learningRate * tr.predictOne(X[i]);
-    }
-    return out;
-  }
-}
-
-/* ===================== Visuals ===================== */
-function ensureCanvasSize(cvs){
-  if (!cvs) return;
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = cvs.clientWidth || 600;
-  const cssH = cvs.clientHeight || 400;
-  const needW = Math.round(cssW * dpr);
-  const needH = Math.round(cssH * dpr);
-  if (cvs.width !== needW || cvs.height !== needH){
-    cvs.width = needW; cvs.height = needH;
-  }
-}
-
-function drawSurface(ctx, X, y, model, task){
-  if (!ctx) return;
-  const cvs = ctx.canvas;
-  ensureCanvasSize(cvs);
-  const W=cvs.width, H=cvs.height;
-  ctx.clearRect(0,0,W,H);
-  if (!X || X.length===0) return;
-
-  const xs=X.map(p=>p[0]), zs=X.map(p=>p[1]);
-  const minX=Math.min(...xs,-2), maxX=Math.max(...xs,2);
-  const minZ=Math.min(...zs,-2), maxZ=Math.max(...zs,2);
-  const pad=.2; const loX=minX-pad, hiX=maxX+pad, loZ=minZ-pad, hiZ=maxZ+pad;
-
-  const grid=4;
-  const img=ctx.createImageData(W,H);
-  for(let ypix=0; ypix<H; ypix+=grid){
-    for(let xpix=0; xpix<W; xpix+=grid){
-      const xx = (xpix/W)*(hiX-loX)+loX;
-      const zz = ((H-ypix)/H)*(hiZ-loZ)+loZ;
-      if (task==='reg'){
-        const p = (typeof model.predict === 'function') ? model.predict([[xx,zz]])[0] : 0;
-        const nv = 0.5 + 0.5 * Math.tanh(p/3);
-        const r = Math.round(255*nv), g = Math.round(255*(1-Math.abs(nv-0.5)*2)), b = Math.round(255*(1-nv));
-        for(let dy=0; dy<grid; dy++) for(let dx=0; dx<grid; dx++){
-          const Xp=xpix+dx, Yp=ypix+dy; if(Xp>=W||Yp>=H) continue;
-          const k=(Yp*W+Xp)*4; img.data[k]=r; img.data[k+1]=g; img.data[k+2]=b; img.data[k+3]=56;
+        /* =========== Data generators (1D + 2D) =========== */
+        function genData(task, kind, n, noise, balance = 'balanced') {
+            const X = [], y = [];
+            if (task === 'reg') {
+                if (kind === 'sine') {                 // 1D SINE (curve)
+                    for (let i = 0; i < n; i++) {
+                        const x = Math.random() * 4 - 2;
+                        const t = Math.sin(1.5 * x);
+                        X.push([x, 0]);                 // second feature constant => 1D
+                        y.push(t + noise * randn());
+                    }
+                } else if (kind === 'sine2d') {        // old 2D “sine-like” surface
+                    for (let i = 0; i < n; i++) {
+                        const x = Math.random() * 4 - 2, z = Math.random() * 4 - 2;
+                        const t = Math.sin(1.5 * x) + 0.5 * Math.cos(2 * z);
+                        X.push([x, z]); y.push(t + noise * randn());
+                    }
+                } else if (kind === 'plane') {
+                    const a = 0.8, b = -0.6, c = 0.2;
+                    for (let i = 0; i < n; i++) {
+                        const x = Math.random() * 4 - 2, z = Math.random() * 4 - 2;
+                        X.push([x, z]); y.push(a * x + b * z + c + noise * randn());
+                    }
+                } else if (kind === 'peaks') {
+                    for (let i = 0; i < n; i++) {
+                        const x = Math.random() * 4 - 2, z = Math.random() * 4 - 2;
+                        const t = 1.5 * Math.exp(-((x - 1) ** 2 + (z - 1) ** 2)) - 1.2 * Math.exp(-((x + 1) ** 2 + (z + 1) ** 2));
+                        X.push([x, z]); y.push(t + 0.2 * Math.sin(3 * x) + noise * randn() * 0.3);
+                    }
+                } else if (kind === 'friedman2d') {
+                    for (let i = 0; i < n; i++) {
+                        const x = Math.random() * 4 - 2, z = Math.random() * 4 - 2;
+                        X.push([x, z]); y.push(Math.sin(x * z) + 0.5 * x - 0.3 * z * z + noise * randn() * 0.2);
+                    }
+                }
+            } else { // classification
+                if (kind === 'blobs') {
+                    const centers = balance === 'balanced' ? [[-1, -1], [1, 1]] : [[-1, -1], [1.6, 1.6]];
+                    const p0 = balance === 'balanced' ? 0.5 : 0.3;
+                    for (let i = 0; i < n; i++) {
+                        const c = Math.random() < p0 ? 0 : 1, mu = centers[c];
+                        X.push([mu[0] + noise * randn() * 2, mu[1] + noise * randn() * 2]); y.push(c);
+                    }
+                } else if (kind === 'moons') {
+                    for (let i = 0; i < n; i++) {
+                        const t = Math.random() * Math.PI; const a = (i % 2 === 0) ? 0 : 1;
+                        const base = a ? [1 - Math.cos(t), 1 - Math.sin(t)] : [Math.cos(t), Math.sin(t)];
+                        X.push([base[0] + (a ? 0.1 : -0.1) + noise * randn() * 0.2, base[1] + noise * randn() * 0.2]);
+                        y.push(a);
+                    }
+                } else if (kind === 'xor') {
+                    for (let i = 0; i < n; i++) {
+                        const u = (Math.random() * 2 - 1), v = (Math.random() * 2 - 1);
+                        X.push([u + noise * randn(), v + noise * randn()]);
+                        y.push(((u > 0) ^ (v > 0)) ? 1 : 0);
+                    }
+                }
+            }
+            return { X, y };
         }
-      } else {
-        const pp = (model.predictProba) ? model.predictProba([[xx,zz]])[0]
-                  : (model.predict && model.predict([[xx,zz]])[0] ? 1 : 0);
-        const r = Math.round(255*(1-pp)), g = Math.round(255*pp), b=180;
-        for(let dy=0; dy<grid; dy++) for(let dx=0; dx<grid; dx++){
-          const Xp=xpix+dx, Yp=ypix+dy; if(Xp>=W||Yp>=H) continue;
-          const k=(Yp*W+Xp)*4; img.data[k]=r; img.data[k+1]=g; img.data[k+2]=b; img.data[k+3]=48;
+
+        /* ============== CART (reg + clf) ============== */
+        class CARTReg {
+            constructor(maxDepth = 5, minLeaf = 5, featureBag = null, logFn = null) {
+                this.maxDepth = maxDepth; this.minLeaf = minLeaf; this.featureBag = featureBag; this.root = null;
+                this._log = logFn || (() => { }); this.featureGain = [0, 0]; this.depth = 0; this.leafCount = 0;
+            }
+            _mse(y, w) {
+                const sw = w.reduce((a, b) => a + b, 0) || 1e-9;
+                let mu = 0; for (let i = 0; i < y.length; i++) mu += w[i] * y[i]; mu /= sw;
+                let v = 0; for (let i = 0; i < y.length; i++) { const d = y[i] - mu; v += w[i] * d * d; }
+                return v / sw;
+            }
+            _bestSplit(X, y, w) {
+                const n = X.length; if (n < 2 * this.minLeaf) return null;
+                const feats = this.featureBag ?? [0, 1];
+                const base = this._mse(y, w);
+                let best = { gain: 0, feat: null, thr: null, L: null, R: null };
+                for (const f of feats) {
+                    let arr = X.map((xi, i) => [xi[f], y[i], w[i], i]).sort((a, b) => a[0] - b[0]);
+                    const Wp = [], Yp = []; let ws = 0, ys = 0;
+                    for (let i = 0; i < arr.length; i++) { ws += arr[i][2]; ys += arr[i][1] * arr[i][2]; Wp.push(ws); Yp.push(ys); }
+                    const Wtot = ws, Ytot = ys;
+                    for (let k = this.minLeaf; k <= n - this.minLeaf; k++) {
+                        if (arr[k - 1][0] === arr[k][0]) continue;
+                        const WL = Wp[k - 1], YL = Yp[k - 1], WR = Wtot - WL, YR = Ytot - YL;
+                        const muL = YL / Math.max(1e-9, WL), muR = YR / Math.max(1e-9, WR);
+                        let vL = 0, vR = 0;
+                        for (let i = 0; i < k; i++) { const d = arr[i][1] - muL; vL += arr[i][2] * d * d; }
+                        for (let i = k; i < n; i++) { const d = arr[i][1] - muR; vR += arr[i][2] * d * d; }
+                        const mse = (vL + vR) / Math.max(1e-9, (WL + WR));
+                        const gain = base - mse;
+                        if (gain > best.gain) {
+                            best = { gain, feat: f, thr: (arr[k - 1][0] + arr[k][0]) / 2, L: arr.slice(0, k).map(p => p[3]), R: arr.slice(k).map(p => p[3]) };
+                        }
+                    }
+                }
+                return best.gain > 1e-12 ? best : null;
+            }
+            _build(X, y, w, depth = 0) {
+                this.depth = Math.max(this.depth, depth);
+                const sw = w.reduce((a, b) => a + b, 0) || 1e-9;
+                let mu = 0; for (let i = 0; i < y.length; i++) mu += w[i] * y[i]; mu /= sw;
+                if (depth >= this.maxDepth || y.length <= this.minLeaf) {
+                    this.leafCount++; return { leaf: true, value: mu, n: y.length };
+                }
+                const sp = this._bestSplit(X, y, w);
+                if (!sp) { this.leafCount++; return { leaf: true, value: mu, n: y.length }; }
+                this.featureGain[sp.feat] += sp.gain;
+                this._log(`split: x${sp.feat} ≤ ${sp.thr.toFixed(3)} | ΔMSE=${sp.gain.toFixed(4)}`);
+                const XL = sp.L.map(i => X[i]), yL = sp.L.map(i => y[i]), wL = sp.L.map(i => w[i]);
+                const XR = sp.R.map(i => X[i]), yR = sp.R.map(i => y[i]), wR = sp.R.map(i => w[i]);
+                return {
+                    leaf: false, feat: sp.feat, thr: sp.thr,
+                    left: this._build(XL, yL, wL, depth + 1),
+                    right: this._build(XR, yR, wR, depth + 1)
+                };
+            }
+            fit(X, y, w = null) {
+                const W = w ?? new Array(y.length).fill(1);
+                this.featureGain = [0, 0]; this.depth = 0; this.leafCount = 0;
+                this.root = this._build(X, y, W, 0);
+            }
+            predictOne(x, node = this.root) {
+                if (!node) return 0;
+                if (node.leaf) return node.value;
+                return (x[node.feat] <= node.thr) ? this.predictOne(x, node.left) : this.predictOne(x, node.right);
+            }
+            predict(X) { return X.map(x => this.predictOne(x)); }
         }
-      }
-    }
-  }
-  ctx.putImageData(img,0,0);
 
-  // scatter
-  ctx.save();
-  ctx.fillStyle = '#111827';
-  for(let i=0;i<X.length;i++){
-    const x=X[i][0], z=X[i][1];
-    const px=(x-loX)/(hiX-loX)*W, py=H - (z-loZ)/(hiZ-loZ)*H;
-    ctx.beginPath(); ctx.arc(px,py,3,0,2*Math.PI);
-    if (task==='reg'){
-      const nv = 0.5 + 0.5 * Math.tanh((y[i])/3);
-      ctx.fillStyle = `rgb(${Math.round(255*nv)}, ${Math.round(255*(1-Math.abs(nv-0.5)*2))}, ${Math.round(255*(1-nv))})`;
-    } else {
-      ctx.fillStyle = y[i] ? '#166534' : '#1e3a8a';
-    }
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-function renderTreeSVG(svgEl, tree, task){
-  const w=600, h=420;
-  if (!svgEl){ return; }
-  svgEl.setAttribute('viewBox',`0 0 ${w} ${h}`);
-  svgEl.innerHTML='';
-  if (!tree || !tree.root){ return; }
-
-  // layout with DFS (stable even for skewed trees)
-  function annotate(node, depth=0){
-    if (!node) return {leaves:[], depth};
-    if (node.leaf){ node._depth=depth; return {leaves:[node], depth}; }
-    const L=annotate(node.left, depth+1), R=annotate(node.right, depth+1);
-    node._depth=depth; return {leaves:[...L.leaves, ...R.leaves], depth:Math.max(L.depth,R.depth)};
-  }
-  const info=annotate(tree.root,0);
-  const depth=info.depth;
-  const yGap = h / (depth+2);
-
-  // assign x by in-order traversal
-  let xpos=40;
-  function setPos(node){
-    if (!node) return;
-    if (node.leaf){ node._x=xpos; node._y=(node._depth+1)*yGap; xpos+= (w-80)/Math.max(1,info.leaves.length-1); }
-    else { setPos(node.left); const lx=node.left?node.left._x:xpos;
-           setPos(node.right); const rx=node.right?node.right._x:lx+60;
-           node._x = (lx+rx)/2; node._y=(node._depth+1)*yGap; }
-  }
-  setPos(tree.root);
-
-  const NS='http://www.w3.org/2000/svg';
-  const addLine=(x1,y1,x2,y2)=>{ const el=document.createElementNS(NS,'line');
-    el.setAttribute('x1',x1); el.setAttribute('y1',y1); el.setAttribute('x2',x2); el.setAttribute('y2',y2);
-    el.setAttribute('stroke','#cbd5e1'); el.setAttribute('stroke-width','2'); svgEl.appendChild(el); };
-  const addBox=(x,y,w2,h2,rx=10)=>{ const r=document.createElementNS(NS,'rect');
-    r.setAttribute('x',x-w2/2); r.setAttribute('y',y-h2/2); r.setAttribute('width',w2); r.setAttribute('height',h2);
-    r.setAttribute('rx',rx); r.setAttribute('fill','#ffffff'); r.setAttribute('stroke','#e2e8f0'); svgEl.appendChild(r); };
-  const addText=(x,y,text,fs='12px')=>{ const t=document.createElementNS(NS,'text');
-    t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('text-anchor','middle');
-    t.setAttribute('dominant-baseline','middle'); t.setAttribute('fill','#334155'); t.setAttribute('font-size',fs);
-    t.textContent=text; svgEl.appendChild(t); };
-
-  (function drawEdges(node){
-    if (!node || node.leaf) return;
-    if (node.left)  addLine(node._x, node._y+20, node.left._x,  node.left._y-20);
-    if (node.right) addLine(node._x, node._y+20, node.right._x, node.right._y-20);
-    drawEdges(node.left); drawEdges(node.right);
-  })(tree.root);
-
-  (function drawNodes(node){
-    if (!node) return;
-    if (node.leaf){
-      addBox(node._x, node._y, 140, 36, 12);
-      const txt = (task==='reg') ? `leaf: ŷ=${(node.value??0).toFixed(3)} (n=${node.n})`
-                                 : `leaf: p1=${((node.proba??0)*100).toFixed(1)}% (n=${node.n})`;
-      addText(node._x, node._y, txt);
-    } else {
-      addBox(node._x, node._y, 180, 44, 12);
-      const top = `x${node.feat} ≤ ${node.thr.toFixed(3)}`;
-      addText(node._x, node._y-8, top);
-      addText(node._x, node._y+10, '(split)');
-    }
-    drawNodes(node.left); drawNodes(node.right);
-  })(tree.root);
-}
-
-function renderEnsembleSVG(svgEl, mode, model){
-  const w=600,h=420; if (!svgEl) return;
-  svgEl.setAttribute('viewBox',`0 0 ${w} ${h}`); svgEl.innerHTML='';
-  const NS='http://www.w3.org/2000/svg';
-  const box=(x,y,txt)=>{ const g=document.createElementNS(NS,'g');
-    const r=document.createElementNS(NS,'rect'); r.setAttribute('x',x-70); r.setAttribute('y',y-20);
-    r.setAttribute('width',140); r.setAttribute('height',40); r.setAttribute('rx',10);
-    r.setAttribute('fill','#fff'); r.setAttribute('stroke','#e2e8f0'); g.appendChild(r);
-    const t=document.createElementNS(NS,'text'); t.setAttribute('x',x); t.setAttribute('y',y+2);
-    t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#334155'); t.setAttribute('font-size','12px');
-    t.textContent=txt; g.appendChild(t); svgEl.appendChild(g); };
-  const arrow=(x1,y1,x2,y2)=>{ const l=document.createElementNS(NS,'line');
-    l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
-    l.setAttribute('stroke','#94a3b8'); l.setAttribute('stroke-width','2'); svgEl.appendChild(l);
-    const m=document.createElementNS(NS,'polygon'); const ang=Math.atan2(y2-y1,x2-x1);
-    const ax=x2-8*Math.cos(ang), ay=y2-8*Math.sin(ang);
-    const p1=[x2,y2], p2=[ax-4*Math.sin(ang), ay+4*Math.cos(ang)], p3=[ax+4*Math.sin(ang), ay-4*Math.cos(ang)];
-    m.setAttribute('points',`${p1} ${p2} ${p3}`); m.setAttribute('fill','#94a3b8'); svgEl.appendChild(m); };
-
-  if (mode==='bagging'){
-    box(80,210,'Data X,y');
-    const rows=3, cols=3, startX=220, startY=120, dx=120, dy=90;
-    const n=(model?.trees?.length)||9; let k=0; const centers=[];
-    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
-      if (k>=n) break; const x=startX+c*dx, y=startY+r*dy; box(x,y,`Tree ${k}`); arrow(150,210,x-80,y); centers.push([x,y]); k++; }
-    box(520,210,'Averager');
-    for(const [x,y] of centers) arrow(x+70,y, 450,210);
-  } else if (mode==='gbdt'){
-    box(80,210,'Data X,y');
-    box(220,210,'Init F=0'); arrow(220+70,210, 320-80,210);
-    const n=(model?.trees?.length)||4; let x=320;
-    for(let m=0;m<n;m++){
-      box(x,160,`Tree ${m} on r=y−F`); arrow(x-120,210, x-70,160);
-      box(x,260,'F ← F + η·tree'); arrow(x,180, x,240);
-      if (m<n-1) arrow(x+70,260, x+120,210);
-      x+=160;
-    }
-  } else {
-    box(300,210,'Single CART');
-  }
-}
-
-/* ============== Alpine component ============== */
-function lab(){
-  return {
-    // data & config
-    task: 'reg',
-    dataset: 'sine',
-    balance: 'balanced',
-    nSamples: 400,
-    noise: 0.15,
-
-    mode: 'cart',
-    maxDepth: 5,
-    minLeaf: 5,
-
-    // ensembles
-    nEstimators: 25,
-    bootstrapRows: true,
-    maxFeaturesMode: 'sqrt',
-
-    learningRate: 0.2,
-    subsample: 0.8,
-
-    // runtime
-    X: [], y: [],
-    model: null,
-    baseTree: null,
-    modelSummary: {trees:0, avgDepth:0, avgLeaves:0},
-    metrics: {mse:0, r2:0, acc:0},
-    featChart: null,
-    log: [],
-    _inited: false,
-    _resizeHandler: null,
-
-    init(){
-      if (this._inited) return;
-      this._inited = true;
-
-      this.regenData();
-      this.initFeatChart();
-      this.drawAll();
-
-      // live redraw on resize
-      this._resizeHandler = () => { this.drawAll(); };
-      window.addEventListener('resize', this._resizeHandler, {passive:true});
-
-      // return cleanup for Alpine
-      return () => this.destroy();
-    },
-
-    destroy(){
-      try {
-        if (this.featChart && typeof this.featChart.destroy === 'function') {
-          this.featChart.destroy();
-          this.featChart = null;
+        class CARTClf {
+            constructor(maxDepth = 5, minLeaf = 5, featureBag = null, logFn = null) {
+                this.maxDepth = maxDepth; this.minLeaf = minLeaf; this.featureBag = featureBag; this.root = null;
+                this._log = logFn || (() => { }); this.featureGain = [0, 0]; this.depth = 0; this.leafCount = 0;
+            }
+            _gini(y) { if (y.length === 0) return 0; let c1 = 0; for (const t of y) if (t === 1) c1++; const p = c1 / y.length; return 2 * p * (1 - p); }
+            _bestSplit(X, y) {
+                const n = X.length; if (n < 2 * this.minLeaf) return null;
+                const feats = this.featureBag ?? [0, 1]; const base = this._gini(y);
+                let best = { gain: 0, feat: null, thr: null, L: null, R: null };
+                for (const f of feats) {
+                    let arr = X.map((xi, i) => [xi[f], y[i], i]).sort((a, b) => a[0] - b[0]);
+                    let c1L = 0, c1R = y.filter(t => t === 1).length;
+                    for (let k = this.minLeaf; k <= n - this.minLeaf; k++) {
+                        const lab = arr[k - 1][1]; if (lab === 1) { c1L++; c1R--; }
+                        if (arr[k - 1][0] === arr[k][0]) continue;
+                        const thr = (arr[k - 1][0] + arr[k][0]) / 2;
+                        const pL = c1L / k, pR = c1R / (n - k);
+                        const gL = 2 * pL * (1 - pL), gR = 2 * pR * (1 - pR);
+                        const gain = base - (k / n) * gL - ((n - k) / n) * gR;
+                        if (gain > best.gain) best = { gain, feat: f, thr, L: arr.slice(0, k).map(p => p[2]), R: arr.slice(k).map(p => p[2]) };
+                    }
+                }
+                return best.gain > 1e-12 ? best : null;
+            }
+            _build(X, y, depth = 0) {
+                this.depth = Math.max(this.depth, depth);
+                let c1 = 0; for (const t of y) if (t === 1) c1++; const proba = y.length ? c1 / y.length : 0, pred = (proba >= 0.5 ? 1 : 0);
+                if (depth >= this.maxDepth || y.length <= this.minLeaf || this._gini(y) === 0) { this.leafCount++; return { leaf: true, proba, pred, n: y.length }; }
+                const sp = this._bestSplit(X, y);
+                if (!sp) { this.leafCount++; return { leaf: true, proba, pred, n: y.length }; }
+                this.featureGain[sp.feat] += sp.gain;
+                const XL = sp.L.map(i => X[i]), yL = sp.L.map(i => y[i]);
+                const XR = sp.R.map(i => X[i]), yR = sp.R.map(i => y[i]);
+                return {
+                    leaf: false, feat: sp.feat, thr: sp.thr,
+                    left: this._build(XL, yL, depth + 1),
+                    right: this._build(XR, yR, depth + 1)
+                };
+            }
+            fit(X, y) { this.featureGain = [0, 0]; this.depth = 0; this.leafCount = 0; this.root = this._build(X, y, 0); }
+            _predOne(x, node = this.root) {
+                if (!node) return 0.5; if (node.leaf) return node.proba;
+                return (x[node.feat] <= node.thr) ? this._predOne(x, node.left) : this._predOne(x, node.right);
+            }
+            predictProba(X) { return X.map(x => this._predOne(x)); }
+            predict(X) { return this.predictProba(X).map(p => p >= 0.5 ? 1 : 0); }
         }
-        if (this._resizeHandler){
-          window.removeEventListener('resize', this._resizeHandler);
-          this._resizeHandler = null;
+
+        /* ============== Ensembles ============== */
+        class BaggingReg {
+            constructor(n, opts, logFn) { this.n = n; this.opts = opts; this.trees = []; this._log = logFn || (() => { }); this.featureGain = [0, 0]; this.depths = []; this.leaves = []; }
+            _featureBag(mode) { const all = [0, 1]; if (mode === 'all') return all; const pick = all[Math.random() < 0.5 ? 0 : 1]; return [pick]; }
+            fit(X, y) {
+                this.trees = []; this.featureGain = [0, 0]; this.depths = []; this.leaves = [];
+                const n = X.length;
+                for (let t = 0; t < this.n; t++) {
+                    let idx = []; if (this.opts.bootstrapRows) { for (let i = 0; i < n; i++) idx.push((Math.random() * n) | 0); }
+                    else { idx = [...Array(n).keys()]; shuffle(idx); }
+                    const Xb = idx.map(i => X[i]), yb = idx.map(i => y[i]);
+                    const fbag = this._featureBag(this.opts.maxFeaturesMode);
+                    const tr = (this.opts.task === 'reg') ? new CARTReg(this.opts.maxDepth, this.opts.minLeaf, fbag, m => this._log(`[T${t}] ${m}`))
+                        : new CARTClf(this.opts.maxDepth, this.opts.minLeaf, fbag, m => this._log(`[T${t}] ${m}`));
+                    tr.fit(Xb, yb);
+                    this.trees.push(tr);
+                    this.featureGain[0] += tr.featureGain[0]; this.featureGain[1] += tr.featureGain[1];
+                    this.depths.push(tr.depth); this.leaves.push(tr.leafCount);
+                }
+            }
+            predict(X) {
+                if (this.opts.task === 'reg') {
+                    const sums = new Array(X.length).fill(0);
+                    for (const tr of this.trees) { const p = tr.predict(X); for (let i = 0; i < p.length; i++) sums[i] += p[i]; }
+                    return sums.map(s => s / Math.max(1, this.trees.length));
+                } else {
+                    const sums = new Array(X.length).fill(0);
+                    for (const tr of this.trees) {
+                        const p = tr.predict(X);
+                        for (let i = 0; i < p.length; i++) sums[i] += (p[i] ? 1 : 0);
+                    }
+                    return sums.map(s => s >= (this.trees.length / 2) ? 1 : 0);
+                }
+            }
+            predictProba(X) {
+                if (this.opts.task === 'clf') {
+                    const sums = new Array(X.length).fill(0);
+                    for (const tr of this.trees) {
+                        const p = tr.predictProba ? tr.predictProba(X) : tr.predict(X).map(v => v ? 1 : 0);
+                        for (let i = 0; i < p.length; i++) sums[i] += p[i];
+                    }
+                    return sums.map(s => s / Math.max(1, this.trees.length));
+                }
+                return null;
+            }
         }
-      } catch(e){}
-      this._inited = false;
-    },
 
-    regenData(){
-      const d=genData(this.task, this.dataset, this.nSamples, this.noise, this.balance);
-      this.X=d.X; this.y=d.y;
-      this.log.push(`data: ${this.task}/${this.dataset}, n=${this.X.length}, noise=${this.noise}`);
-      this.$nextTick(()=>this._autoScroll());
-      this.drawAll();
-    },
+        class GBDTReg {
+            constructor(n, opts, logFn) { this.n = n; this.opts = opts; this.trees = []; this.depths = []; this.leaves = []; this.featureGain = [0, 0]; this._log = logFn || (() => { }); this.flow = []; }
+            fit(X, y) {
+                this.trees = []; this.depths = []; this.leaves = []; this.featureGain = [0, 0]; this.flow = [];
+                const n = X.length; let F = new Array(n).fill(0);
+                for (let m = 0; m < this.n; m++) {
+                    let idx = [...Array(n).keys()];
+                    if (this.opts.subsample < 1.0) { shuffle(idx); idx = idx.slice(0, Math.max(1, Math.floor(this.opts.subsample * n))); }
+                    const Xs = idx.map(i => X[i]), ys = idx.map(i => y[i]), Fs = idx.map(i => F[i]);
+                    const residuals = ys.map((yi, i) => yi - Fs[i]);
+                    const tr = new CARTReg(this.opts.maxDepth, this.opts.minLeaf, null, m2 => this._log(`[t${m}] ${m2}`));
+                    tr.fit(Xs, residuals, new Array(residuals.length).fill(1));
+                    this.trees.push(tr); this.depths.push(tr.depth); this.leaves.push(tr.leafCount);
+                    this.featureGain[0] += tr.featureGain[0]; this.featureGain[1] += tr.featureGain[1];
+                    for (let i = 0; i < n; i++) { F[i] += this.opts.learningRate * tr.predictOne(X[i]); }
+                    this.flow.push({ m, usedFeat: tr.featureGain[0] >= tr.featureGain[1] ? 0 : 1 });
+                }
+            }
+            predict(X) {
+                if (this.trees.length === 0) return new Array(X.length).fill(0);
+                const out = new Array(X.length).fill(0);
+                for (const tr of this.trees) {
+                    for (let i = 0; i < X.length; i++) out[i] += this.opts.learningRate * tr.predictOne(X[i]);
+                }
+                return out;
+            }
+        }
 
-    resetModel(){
-      this.model=null; this.baseTree=null;
-      this.modelSummary={trees:0, avgDepth:0, avgLeaves:0};
-      this.metrics={mse:0,r2:0,acc:0};
-      this.updateFeatChart([0,0]);
-      this.log.push('model cleared');
-      this.$nextTick(()=>this._autoScroll());
-      this.drawAll();
-    },
+        /* ===================== Visuals ===================== */
+        function ensureCanvasSize(cvs) {
+            if (!cvs) return;
+            const dpr = window.devicePixelRatio || 1;
+            const cssW = cvs.clientWidth || 600;
+            const cssH = cvs.clientHeight || 400;
+            const needW = Math.round(cssW * dpr);
+            const needH = Math.round(cssH * dpr);
+            if (cvs.width !== needW || cvs.height !== needH) {
+                cvs.width = needW; cvs.height = needH;
+            }
+        }
 
-    train(){
-      if (this.mode==='cart'){
-        const tree = (this.task==='reg')
-          ? new CARTReg(this.maxDepth, this.minLeaf, null, m=>this._pushLog(m))
-          : new CARTClf(this.maxDepth, this.minLeaf, null, m=>this._pushLog(m));
-        tree.fit(this.X,this.y);
-        this.model = tree;
-        this.baseTree = tree;
-        this.modelSummary={trees:1, avgDepth:tree.depth, avgLeaves:tree.leafCount};
-        this.updateFeatChart(tree.featureGain);
-        this._pushLog(`CART trained: depth=${tree.depth}, leaves=${tree.leafCount}`);
-      } else if (this.mode==='bagging'){
-        const bag = new BaggingReg(this.nEstimators, {
-          task:this.task, maxDepth:this.maxDepth, minLeaf:this.minLeaf,
-          bootstrapRows:this.bootstrapRows, maxFeaturesMode:this.maxFeaturesMode
-        }, m=>this._pushLog(m));
-        bag.fit(this.X,this.y);
-        this.model=bag;
-        const avgD=bag.depths.length? bag.depths.reduce((a,b)=>a+b,0)/bag.depths.length : 0;
-        const avgL=bag.leaves.length? bag.leaves.reduce((a,b)=>a+b,0)/bag.leaves.length : 0;
-        this.modelSummary={trees:bag.trees.length, avgDepth:avgD, avgLeaves:avgL};
-        this.updateFeatChart(bag.featureGain);
-        // show a real single tree for the SVG (if present)
-        this.baseTree = bag.trees && bag.trees.length ? bag.trees[0] : null;
-        this._pushLog(`Bagging trained: trees=${bag.trees.length}`);
-      } else if (this.mode==='gbdt'){
-        if (this.task==='clf'){ this._pushLog('Note: boosting demo here is regression-focused.'); }
-        const gbdt = new GBDTReg(this.nEstimators, {
-          maxDepth:this.maxDepth, minLeaf:this.minLeaf,
-          learningRate:this.learningRate, subsample:this.subsample
-        }, m=>this._pushLog(m));
-        gbdt.fit(this.X, this.y);
-        this.model=gbdt;
-        const avgD=gbdt.depths.length? gbdt.depths.reduce((a,b)=>a+b,0)/gbdt.depths.length : 0;
-        const avgL=gbdt.leaves.length? gbdt.leaves.reduce((a,b)=>a+b,0)/gbdt.leaves.length : 0;
-        this.modelSummary={trees:gbdt.trees.length, avgDepth:avgD, avgLeaves:avgL};
-        this.updateFeatChart(gbdt.featureGain);
-        this.baseTree = gbdt.trees.length ? gbdt.trees[gbdt.trees.length-1] : null;
-        this._pushLog(`GBDT trained: trees=${gbdt.trees.length}, lr=${this.learningRate}`);
-      }
-      this.evalAndDraw();
-    },
+        function regColor(v) {
+            const nv = 0.5 + 0.5 * Math.tanh(v / 3);
+            const r = Math.round(255 * nv);
+            const g = Math.round(255 * (1 - Math.abs(nv - 0.5) * 2));
+            const b = Math.round(255 * (1 - nv));
+            return `rgb(${r},${g},${b})`;
+        }
 
-    evalAndDraw(){
-      if (!this.model){ this.drawAll(); return; }
-      if (this.task==='reg'){
-        const pred = this.model.predict ? this.model.predict(this.X) : new Array(this.X.length).fill(0);
-        let mse=0, ybar=0; const n=this.y.length||1;
-        for(let i=0;i<n;i++){ const di = (pred[i]??0) - (this.y[i]??0); mse+=di*di; ybar+=this.y[i]??0; }
-        mse/=Math.max(1,n); ybar/=Math.max(1,n);
-        let sst=0; for(let i=0;i<n;i++){ const d=(this.y[i]??0)-ybar; sst+=d*d; }
-        const r2 = (sst<=1e-12) ? 1.0 : (1 - (mse*n) / Math.max(1e-12, sst));
-        this.metrics={...this.metrics, mse, r2};
-      } else {
-        const pred = this.model.predict ? this.model.predict(this.X) : [];
-        let acc=0; for(let i=0;i<pred.length;i++) if((pred[i]??0)===(this.y[i]??1)) acc++;
-        acc/=Math.max(1,pred.length);
-        this.metrics={...this.metrics, acc};
-      }
-      this.drawAll();
-      this.$nextTick(()=>this._autoScroll());
-    },
+        /* 1D regression renderer: x horizontal, y vertical */
+        function drawRegression1D(ctx, X, y, model) {
+            if (!ctx) return;
+            const cvs = ctx.canvas;
+            ensureCanvasSize(cvs);
+            const W = cvs.width, H = cvs.height;
+            ctx.clearRect(0, 0, W, H);
+            if (!X || X.length === 0) return;
 
-    drawAll(){
-      // canvas
-      const cvs=document.getElementById('dbCanvas');
-      const ctx=cvs ? cvs.getContext('2d') : null;
-      drawSurface(ctx, this.X, this.y, this.model ?? this.baseTree ?? {predict:()=>[0]}, this.task);
+            const xs = X.map(p => p[0]);
+            const yhatPts = (model && model.predict) ? model.predict(X) : new Array(y.length).fill(0);
+            const ys = y.concat(yhatPts);
+            const minX = Math.min(...xs), maxX = Math.max(...xs);
+            const minY = Math.min(...ys), maxY = Math.max(...ys);
+            const padX = 0.05 * (maxX - minX || 1), padY = 0.1 * (maxY - minY || 1);
+            const loX = minX - padX, hiX = maxX + padX, loY = minY - padY, hiY = maxY + padY;
 
-      // tree (use a single-tree model if available)
-      const treeTarget = (this.mode==='cart') ? this.model : this.baseTree;
-      renderTreeSVG(document.getElementById('treeSvg'), treeTarget, this.task);
+            const xPix = x => ((x - loX) / (hiX - loX)) * W;
+            const yPix = yv => H - ((yv - loY) / (hiY - loY)) * H;
 
-      // ensemble diagram
-      renderEnsembleSVG(document.getElementById('ensSvg'), this.mode, this.model);
-    },
+            // axes (light)
+            ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(40, yPix(0)); ctx.lineTo(W - 10, yPix(0)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(xPix(0), 10); ctx.lineTo(xPix(0), H - 20); ctx.stroke();
 
-    /* -------- Chart.js (feature gains) -------- */
-    initFeatChart(){
-      const el = document.getElementById('featChart');
-      if (!el) return;
-      // Kill any existing Chart on this canvas
-      if (typeof Chart !== 'undefined') {
-        const existing = Chart.getChart ? Chart.getChart(el) : null;
-        if (existing) existing.destroy();
-      }
-      if (this.featChart && typeof this.featChart.destroy === 'function') {
-        this.featChart.destroy();
-        this.featChart = null;
-      }
-      const ctx = el.getContext('2d');
-      this.featChart = new Chart(ctx, {
-        type:'bar',
-        data:{ labels:['x0','x1'], datasets:[{label:'gain', data:[0,0]}] },
-        options:{ responsive:true, aspectRatio:2.2, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
-      });
-    },
-    updateFeatChart(g){
-      if (!this.featChart) return;
-      const d0 = Array.isArray(g) && g.length>0 ? g[0]||0 : 0;
-      const d1 = Array.isArray(g) && g.length>1 ? g[1]||0 : 0;
-      this.featChart.data.datasets[0].data=[d0,d1];
-      this.featChart.update();
-    },
+            // truth points
+            for (let i = 0; i < X.length; i++) {
+                const px = xPix(X[i][0]), py = yPix(y[i]);
+                ctx.beginPath(); ctx.arc(px, py, 3.2, 0, 2 * Math.PI);
+                ctx.fillStyle = regColor(y[i]); ctx.fill();
+            }
 
-    _pushLog(m){ this.log.push(m); this.$nextTick(()=>this._autoScroll()); },
-    _autoScroll(){ const box=document.getElementById('logBox'); if (box) box.scrollTop=box.scrollHeight; },
-  };
-}
+            // predicted curve (dense line)
+            const G = 300;
+            const xsGrid = Array.from({ length: G }, (_, k) => loX + (k / (G - 1)) * (hiX - loX));
+            const Xgrid = xsGrid.map(x => [x, 0]);
+            const yhat = (model && model.predict) ? model.predict(Xgrid) : new Array(G).fill(0);
 
-/* Footer year (optional) */
-document.addEventListener('DOMContentLoaded', ()=>{
-  const y=document.getElementById('year'); if (y) y.textContent=new Date().getFullYear();
-});
-</script>
+            ctx.strokeStyle = '#111827'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let k = 0; k < G; k++) {
+                const px = xPix(xsGrid[k]), py = yPix(yhat[k]);
+                if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            // legend
+            ctx.save();
+            ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto';
+            ctx.fillStyle = '#111827';
+            ctx.fillText('● truth   — ŷ (predicted curve)', 12, 20);
+            ctx.restore();
+        }
+
+        /* 2D renderer: background off, dots vs ring predictions (kept) */
+        function drawRegression2D(ctx, X, y, model) {
+            if (!ctx) return;
+            const cvs = ctx.canvas;
+            ensureCanvasSize(cvs);
+            const W = cvs.width, H = cvs.height;
+            ctx.clearRect(0, 0, W, H);
+            if (!X || X.length === 0) return;
+
+            const xs = X.map(p => p[0]), zs = X.map(p => p[1]);
+            const minX = Math.min(...xs, -2), maxX = Math.max(...xs, 2);
+            const minZ = Math.min(...zs, -2), maxZ = Math.max(...zs, 2);
+            const pad = .2; const loX = minX - pad, hiX = maxX + pad, loZ = minZ - pad, hiZ = maxZ + pad;
+
+            const yhat = (model && typeof model.predict === 'function') ? model.predict(X) : new Array(X.length).fill(0);
+
+            // truth
+            for (let i = 0; i < X.length; i++) {
+                const x = X[i][0], z = X[i][1];
+                const px = (x - loX) / (hiX - loX) * W, py = H - (z - loZ) / (hiZ - loZ) * H;
+                ctx.beginPath(); ctx.arc(px, py, 3.2, 0, 2 * Math.PI);
+                ctx.fillStyle = regColor(y[i]); ctx.fill();
+            }
+            // predicted rings
+            ctx.lineWidth = 2;
+            for (let i = 0; i < X.length; i++) {
+                const x = X[i][0], z = X[i][1];
+                const px = (x - loX) / (hiX - loX) * W, py = H - (z - loZ) / (hiZ - loZ) * H;
+                ctx.beginPath(); ctx.arc(px, py, 6, 0, 2 * Math.PI);
+                ctx.strokeStyle = regColor(yhat[i]); ctx.stroke();
+            }
+            ctx.save();
+            ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto';
+            ctx.fillStyle = '#111827';
+            ctx.fillText('● truth (fill)   ○ prediction (ring)', 12, 20);
+            ctx.restore();
+        }
+
+        /* Classification background (unchanged) */
+        function drawClassification(ctx, X, y, model) {
+            const cvs = ctx.canvas;
+            ensureCanvasSize(cvs);
+            const W = cvs.width, H = cvs.height;
+            ctx.clearRect(0, 0, W, H);
+            if (!X || X.length === 0) return;
+
+            const xs = X.map(p => p[0]), zs = X.map(p => p[1]);
+            const minX = Math.min(...xs, -2), maxX = Math.max(...xs, 2);
+            const minZ = Math.min(...zs, -2), maxZ = Math.max(...zs, 2);
+            const pad = .2; const loX = minX - pad, hiX = maxX + pad, loZ = minZ - pad, hiZ = maxZ + pad;
+
+            const grid = 4;
+            const img = ctx.createImageData(W, H);
+            for (let ypix = 0; ypix < H; ypix += grid) {
+                for (let xpix = 0; xpix < W; xpix += grid) {
+                    const xx = (xpix / W) * (hiX - loX) + loX;
+                    const zz = ((H - ypix) / H) * (hiZ - loZ) + loZ;
+                    const pp = (model && model.predictProba) ? model.predictProba([[xx, zz]])[0]
+                        : (model && model.predict && model.predict([[xx, zz]])[0] ? 1 : 0);
+                    const r = Math.round(255 * (1 - pp)), g = Math.round(255 * pp), b = 180;
+                    for (let dy = 0; dy < grid; dy++) for (let dx = 0; dx < grid; dx++) {
+                        const Xp = xpix + dx, Yp = ypix + dy; if (Xp >= W || Yp >= H) continue;
+                        const k = (Yp * W + Xp) * 4; img.data[k] = r; img.data[k + 1] = g; img.data[k + 2] = b; img.data[k + 3] = 48;
+                    }
+                }
+            }
+            ctx.putImageData(img, 0, 0);
+            // points
+            for (let i = 0; i < X.length; i++) {
+                const x = X[i][0], z = X[i][1];
+                const px = (x - loX) / (hiX - loX) * W, py = H - (z - loZ) / (hiZ - loZ) * H;
+                ctx.beginPath(); ctx.arc(px, py, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = y[i] ? '#166534' : '#1e3a8a';
+                ctx.fill();
+            }
+        }
+        function renderTreeSVG(svgEl, tree, task) {
+            const W = 600, H = 420;
+            if (!svgEl) return;
+            svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            svgEl.innerHTML = '';
+            if (!tree || !tree.root) return;
+
+            // --------- Tighter nodes + larger child spacing ----------
+            const cfg = {
+                // compact boxes
+                leaf: { minW: 90, h: 22, rx: 8, padX: 8 },
+                inner: { minW: 120, h: 26, rx: 8, padX: 8 },
+                font: { innerTop: '10px', innerSub: '9px', leaf: '10px' },
+
+                // spacing
+                yGapMin: 58,            // slightly larger vertical levels
+                xMargin: 32,
+                yMargin: 18,
+                siblingSepUnits: 1.5,   // <-- increase this to push children apart
+                edgeStroke: 1.1,
+                boxStroke: 1.1,
+            };
+
+            // --------- Annotate depths ----------
+            function annotate(node, depth = 0) {
+                if (!node) return { leaves: [], depth };
+                if (node.leaf) { node._depth = depth; return { leaves: [node], depth }; }
+                const L = annotate(node.left, depth + 1), R = annotate(node.right, depth + 1);
+                node._depth = depth;
+                return { leaves: [...L.leaves, ...R.leaves], depth: Math.max(L.depth, R.depth) };
+            }
+            const info = annotate(tree.root, 0);
+            const depth = info.depth;
+            const yGap = Math.max(cfg.yGapMin, (H - 2 * cfg.yMargin) / Math.max(1, depth + 0.6));
+
+            // --------- Tidy-ish X layout with minimum sibling separation ----------
+            let nextLeaf = 0;
+            function shiftX(node, delta) {
+                if (!node) return;
+                if (typeof node._x === 'number') node._x += delta;
+                shiftX(node.left, delta);
+                shiftX(node.right, delta);
+            }
+            function layoutX(node) {
+                if (!node) return { min: +Infinity, max: -Infinity, center: 0 };
+                if (node.leaf) {
+                    node._x = nextLeaf++;
+                    return { min: node._x, max: node._x, center: node._x };
+                }
+                const L = layoutX(node.left);
+                const R = layoutX(node.right);
+                // enforce min gap between subtrees
+                if (isFinite(L.min) && isFinite(R.min)) {
+                    const currentGap = R.min - L.max;
+                    const need = cfg.siblingSepUnits - currentGap;
+                    if (need > 0) {
+                        shiftX(node.right, need);
+                        R.min += need; R.max += need; R.center += need;
+                    }
+                    node._x = (L.center + R.center) / 2;
+                    return { min: Math.min(L.min, R.min), max: Math.max(L.max, R.max), center: node._x };
+                } else if (isFinite(L.min)) {
+                    node._x = L.center;
+                    return L;
+                } else if (isFinite(R.min)) {
+                    node._x = R.center;
+                    return R;
+                } else {
+                    // no children (shouldn't happen)
+                    node._x = nextLeaf++;
+                    return { min: node._x, max: node._x, center: node._x };
+                }
+            }
+            const xb = layoutX(tree.root);
+
+            // assign Y after X done
+            (function assignY(node) {
+                if (!node) return;
+                node._y = cfg.yMargin + (node._depth + 1) * yGap;
+                assignY(node.left); assignY(node.right);
+            })(tree.root);
+
+            // map abstract x → pixels using global bounds
+            const NS = 'http://www.w3.org/2000/svg';
+            const gZoom = document.createElementNS(NS, 'g');
+            const gContent = document.createElementNS(NS, 'g');
+            svgEl.appendChild(gZoom); gZoom.appendChild(gContent);
+
+            const axMin = Math.min(xb.min, 0), axMax = Math.max(xb.max, 1e-6);
+            function AX(x) {
+                const t = (x - axMin) / Math.max(1e-6, (axMax - axMin));
+                return cfg.xMargin + t * (W - 2 * cfg.xMargin);
+            }
+            function AY(node) { return node._y; }
+
+            // helpers
+            const addLine = (x1, y1, x2, y2) => {
+                const el = document.createElementNS(NS, 'line');
+                el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+                el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+                el.setAttribute('stroke', '#cbd5e1');
+                el.setAttribute('stroke-width', cfg.edgeStroke);
+                el.setAttribute('vector-effect', 'non-scaling-stroke');
+                gContent.appendChild(el);
+            };
+            const addBox = (x, y, w, h, rx = 8) => {
+                const r = document.createElementNS(NS, 'rect');
+                r.setAttribute('x', x - w / 2); r.setAttribute('y', y - h / 2);
+                r.setAttribute('width', w); r.setAttribute('height', h);
+                r.setAttribute('rx', rx);
+                r.setAttribute('fill', '#ffffff');
+                r.setAttribute('stroke', '#e2e8f0');
+                r.setAttribute('stroke-width', cfg.boxStroke);
+                r.setAttribute('vector-effect', 'non-scaling-stroke');
+                gContent.appendChild(r);
+            };
+            const addText = (x, y, text, fs = '10px') => {
+                const t = document.createElementNS(NS, 'text');
+                t.setAttribute('x', x); t.setAttribute('y', y);
+                t.setAttribute('text-anchor', 'middle');
+                t.setAttribute('dominant-baseline', 'middle');
+                t.setAttribute('fill', '#334155');
+                t.setAttribute('font-size', fs);
+                t.textContent = text;
+                gContent.appendChild(t);
+            };
+
+            // rough text width estimator (keeps nodes tight)
+            const estWidth = (s, pad) => Math.max(pad * 2 + 6.2 * (s?.length || 0), 0);
+
+            // edges first
+            (function drawEdges(node) {
+                if (!node || node.leaf) return;
+                const x = AX(node._x), y = AY(node);
+                if (node.left) {
+                    const xl = AX(node.left._x), yl = AY(node.left);
+                    addLine(x, y + cfg.inner.h / 2, xl, yl - (node.left.leaf ? cfg.leaf.h / 2 : cfg.inner.h / 2));
+                }
+                if (node.right) {
+                    const xr = AX(node.right._x), yr = AY(node.right);
+                    addLine(x, y + cfg.inner.h / 2, xr, yr - (node.right.leaf ? cfg.leaf.h / 2 : cfg.inner.h / 2));
+                }
+                drawEdges(node.left); drawEdges(node.right);
+            })(tree.root);
+
+            // nodes + bbox
+            const bbox = { minX: +Infinity, minY: +Infinity, maxX: -Infinity, maxY: -Infinity };
+            (function drawNodes(node) {
+                if (!node) return;
+                const x = AX(node._x), y = AY(node);
+                if (node.leaf) {
+                    const txt = (task === 'reg')
+                        ? `ŷ=${(node.value ?? 0).toFixed(3)}  n=${node.n}`
+                        : `p1=${((node.proba ?? 0) * 100).toFixed(1)}%  n=${node.n}`;
+                    const w = Math.max(cfg.leaf.minW, estWidth(txt, cfg.leaf.padX)), h = cfg.leaf.h;
+                    addBox(x, y, w, h, cfg.leaf.rx);
+                    addText(x, y, txt, cfg.font.leaf);
+                    bbox.minX = Math.min(bbox.minX, x - w / 2); bbox.maxX = Math.max(bbox.maxX, x + w / 2);
+                    bbox.minY = Math.min(bbox.minY, y - h / 2); bbox.maxY = Math.max(bbox.maxY, y + h / 2);
+                } else {
+                    const top = `x${node.feat} ≤ ${(+node.thr).toFixed(3)}`;
+                    const sub = '(split)';
+                    const w = Math.max(cfg.inner.minW, estWidth(top, cfg.inner.padX));
+                    const h = cfg.inner.h;
+                    addBox(x, y, w, h, cfg.inner.rx);
+                    addText(x, y - 7, top, cfg.font.innerTop);
+                    addText(x, y + 7, sub, cfg.font.innerSub);
+                    bbox.minX = Math.min(bbox.minX, x - w / 2); bbox.maxX = Math.max(bbox.maxX, x + w / 2);
+                    bbox.minY = Math.min(bbox.minY, y - h / 2); bbox.maxY = Math.max(bbox.maxY, y + h / 2);
+                }
+                drawNodes(node.left); drawNodes(node.right);
+            })(tree.root);
+
+            // --------- Auto-fit + interactions (zoom/pan/reset) ----------
+            const PAD = 14;
+            const contentW = Math.max(10, (bbox.maxX - bbox.minX) + 2 * PAD);
+            const contentH = Math.max(10, (bbox.maxY - bbox.minY) + 2 * PAD);
+            const sx = (W) / contentW, sy = (H) / contentH;
+            let scale = Math.min(sx, sy) * 0.98;
+            let tx = (W - scale * (bbox.minX + bbox.maxX)) / 2;
+            let ty = (H - scale * (bbox.minY + bbox.maxY)) / 2;
+
+            function applyTransform() {
+                gZoom.setAttribute('transform', `matrix(${scale},0,0,${scale},${tx},${ty})`);
+            }
+            applyTransform();
+
+            const minScale = 0.3, maxScale = 6.0;
+            svgEl.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const rect = svgEl.getBoundingClientRect();
+                const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+                const z = Math.exp(-e.deltaY * 0.0016);
+                const ns = Math.min(maxScale, Math.max(minScale, scale * z));
+                const k = ns / scale;
+                tx = cx - k * (cx - tx); ty = cy - k * (cy - ty); scale = ns;
+                applyTransform();
+            }, { passive: false });
+
+            let dragging = false, lx = 0, ly = 0;
+            svgEl.addEventListener('mousedown', e => { dragging = true; lx = e.clientX; ly = e.clientY; });
+            window.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
+                tx += dx; ty += dy; applyTransform();
+            });
+            window.addEventListener('mouseup', () => dragging = false);
+            svgEl.addEventListener('dblclick', () => {
+                scale = Math.min(sx, sy) * 0.98;
+                tx = (W - scale * (bbox.minX + bbox.maxX)) / 2;
+                ty = (H - scale * (bbox.minY + bbox.maxY)) / 2;
+                applyTransform();
+            });
+
+            const overlay = document.createElementNS(NS, 'rect');
+            overlay.setAttribute('x', 0); overlay.setAttribute('y', 0);
+            overlay.setAttribute('width', W); overlay.setAttribute('height', H);
+            overlay.setAttribute('fill', 'transparent');
+            overlay.style.cursor = 'grab';
+            svgEl.insertBefore(overlay, gZoom);
+        }
+
+        function renderEnsembleSVG(svgEl, mode, model) {
+            const w = 600, h = 420; if (!svgEl) return;
+            svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`); svgEl.innerHTML = '';
+            const NS = 'http://www.w3.org/2000/svg';
+            const box = (x, y, txt) => {
+                const g = document.createElementNS(NS, 'g');
+                const r = document.createElementNS(NS, 'rect'); r.setAttribute('x', x - 70); r.setAttribute('y', y - 20);
+                r.setAttribute('width', 140); r.setAttribute('height', 40); r.setAttribute('rx', 10);
+                r.setAttribute('fill', '#fff'); r.setAttribute('stroke', '#e2e8f0'); g.appendChild(r);
+                const t = document.createElementNS(NS, 'text'); t.setAttribute('x', x); t.setAttribute('y', y + 2);
+                t.setAttribute('text-anchor', 'middle'); t.setAttribute('fill', '#334155'); t.setAttribute('font-size', '12px');
+                t.textContent = txt; g.appendChild(t); svgEl.appendChild(g);
+            };
+            const arrow = (x1, y1, x2, y2) => {
+                const l = document.createElementNS(NS, 'line');
+                l.setAttribute('x1', x1); l.setAttribute('y1', y1); l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+                l.setAttribute('stroke', '#94a3b8'); l.setAttribute('stroke-width', '2'); svgEl.appendChild(l);
+                const m = document.createElementNS(NS, 'polygon'); const ang = Math.atan2(y2 - y1, x2 - x1);
+                const ax = x2 - 8 * Math.cos(ang), ay = y2 - 8 * Math.sin(ang);
+                const p1 = [x2, y2], p2 = [ax - 4 * Math.sin(ang), ay + 4 * Math.cos(ang)], p3 = [ax + 4 * Math.sin(ang), ay - 4 * Math.cos(ang)];
+                m.setAttribute('points', `${p1} ${p2} ${p3}`); m.setAttribute('fill', '#94a3b8'); svgEl.appendChild(m);
+            };
+
+            if (mode === 'bagging') {
+                box(80, 210, 'Data X,y');
+                const rows = 3, cols = 3, startX = 220, startY = 120, dx = 120, dy = 90;
+                const n = (model?.trees?.length) || 9; let k = 0; const centers = [];
+                for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+                    if (k >= n) break; const x = startX + c * dx, y = startY + r * dy; box(x, y, `Tree ${k}`); arrow(150, 210, x - 80, y); centers.push([x, y]); k++;
+                }
+                box(520, 210, 'Averager');
+                for (const [x, y] of centers) arrow(x + 70, y, 450, 210);
+            } else if (mode === 'gbdt') {
+                box(80, 210, 'Data X,y');
+                box(220, 210, 'Init F=0'); arrow(220 + 70, 210, 320 - 80, 210);
+                const n = (model?.trees?.length) || 4; let x = 320;
+                for (let m = 0; m < n; m++) {
+                    box(x, 160, `Tree ${m} on r=y−F`); arrow(x - 120, 210, x - 70, 160);
+                    box(x, 260, 'F ← F + η·tree'); arrow(x, 180, x, 240);
+                    if (m < n - 1) arrow(x + 70, 260, x + 120, 210);
+                    x += 160;
+                }
+            } else {
+                box(300, 210, 'Single CART');
+            }
+        }
+
+        /* ============== Alpine component ============== */
+        function lab() {
+            return {
+                // data & config
+                task: 'reg',
+                dataset: 'sine',          // now 1D by default; use 'sine2d' for the surface
+                balance: 'balanced',
+                nSamples: 400,
+                noise: 0.15,
+
+                mode: 'cart',
+                maxDepth: 5,
+                minLeaf: 5,
+
+                // ensembles
+                nEstimators: 25,
+                bootstrapRows: true,
+                maxFeaturesMode: 'sqrt',
+
+                learningRate: 0.2,
+                subsample: 0.8,
+
+                // runtime
+                X: [], y: [],
+                model: null,
+                baseTree: null,
+                modelSummary: { trees: 0, avgDepth: 0, avgLeaves: 0 },
+                metrics: { mse: 0, r2: 0, acc: 0 },
+                featChart: null,
+                log: [],
+                _inited: false,
+                _resizeHandler: null,
+
+init(){
+  this.regenData();
+  this.initFeatChart();
+  // run training once with default params
+  this.train();
+},
+
+                destroy() {
+                    try {
+                        if (this.featChart && typeof this.featChart.destroy === 'function') {
+                            this.featChart.destroy();
+                            this.featChart = null;
+                        }
+                        if (this._resizeHandler) {
+                            window.removeEventListener('resize', this._resizeHandler);
+                            this._resizeHandler = null;
+                        }
+                    } catch (e) { }
+                    this._inited = false;
+                },
+
+                regenData() {
+                    const d = genData(this.task, this.dataset, this.nSamples, this.noise, this.balance);
+                    this.X = d.X; this.y = d.y;
+                    this.log.push(`data: ${this.task}/${this.dataset}, n=${this.X.length}, noise=${this.noise}`);
+                    this.$nextTick(() => this._autoScroll());
+                    this.drawAll();
+                },
+
+                resetModel() {
+                    this.model = null; this.baseTree = null;
+                    this.modelSummary = { trees: 0, avgDepth: 0, avgLeaves: 0 };
+                    this.metrics = { mse: 0, r2: 0, acc: 0 };
+                    this.updateFeatChart([0, 0]);
+                    this.log.push('model cleared');
+                    this.$nextTick(() => this._autoScroll());
+                    this.drawAll();
+                },
+
+                train() {
+                    if (this.mode === 'cart') {
+                        const tree = (this.task === 'reg')
+                            ? new CARTReg(this.maxDepth, this.minLeaf, null, m => this._pushLog(m))
+                            : new CARTClf(this.maxDepth, this.minLeaf, null, m => this._pushLog(m));
+                        tree.fit(this.X, this.y);
+                        this.model = tree;
+                        this.baseTree = tree;
+                        this.modelSummary = { trees: 1, avgDepth: tree.depth, avgLeaves: tree.leafCount };
+                        this.updateFeatChart(tree.featureGain);
+                        this._pushLog(`CART trained: depth=${tree.depth}, leaves=${tree.leafCount}`);
+                    } else if (this.mode === 'bagging') {
+                        const bag = new BaggingReg(this.nEstimators, {
+                            task: this.task, maxDepth: this.maxDepth, minLeaf: this.minLeaf,
+                            bootstrapRows: this.bootstrapRows, maxFeaturesMode: this.maxFeaturesMode
+                        }, m => this._pushLog(m));
+                        bag.fit(this.X, this.y);
+                        this.model = bag;
+                        const avgD = bag.depths.length ? bag.depths.reduce((a, b) => a + b, 0) / bag.depths.length : 0;
+                        const avgL = bag.leaves.length ? bag.leaves.reduce((a, b) => a + b, 0) / bag.leaves.length : 0;
+                        this.modelSummary = { trees: bag.trees.length, avgDepth: avgD, avgLeaves: avgL };
+                        this.updateFeatChart(bag.featureGain);
+                        this.baseTree = bag.trees && bag.trees.length ? bag.trees[0] : null;
+                        this._pushLog(`Bagging trained: trees=${bag.trees.length}`);
+                    } else if (this.mode === 'gbdt') {
+                        if (this.task === 'clf') { this._pushLog('Note: boosting demo here is regression-focused.'); }
+                        const gbdt = new GBDTReg(this.nEstimators, {
+                            maxDepth: this.maxDepth, minLeaf: this.minLeaf,
+                            learningRate: this.learningRate, subsample: this.subsample
+                        }, m => this._pushLog(m));
+                        gbdt.fit(this.X, this.y);
+                        this.model = gbdt;
+                        const avgD = gbdt.depths.length ? gbdt.depths.reduce((a, b) => a + b, 0) / gbdt.depths.length : 0;
+                        const avgL = gbdt.leaves.length ? gbdt.leaves.reduce((a, b) => a + b, 0) / gbdt.leaves.length : 0;
+                        this.modelSummary = { trees: gbdt.trees.length, avgDepth: avgD, avgLeaves: avgL };
+                        this.updateFeatChart(gbdt.featureGain);
+                        this.baseTree = gbdt.trees.length ? gbdt.trees[gbdt.trees.length - 1] : null;
+                        this._pushLog(`GBDT trained: trees=${gbdt.trees.length}, lr=${this.learningRate}`);
+                    }
+                    this.evalAndDraw();
+                },
+
+                evalAndDraw() {
+                    if (!this.model) { this.drawAll(); return; }
+                    if (this.task === 'reg') {
+                        const pred = this.model.predict ? this.model.predict(this.X) : new Array(this.X.length).fill(0);
+                        let mse = 0, ybar = 0; const n = this.y.length || 1;
+                        for (let i = 0; i < n; i++) { const di = (pred[i] ?? 0) - (this.y[i] ?? 0); mse += di * di; ybar += this.y[i] ?? 0; }
+                        mse /= Math.max(1, n); ybar /= Math.max(1, n);
+                        let sst = 0; for (let i = 0; i < n; i++) { const d = (this.y[i] ?? 0) - ybar; sst += d * d; }
+                        const r2 = (sst <= 1e-12) ? 1.0 : (1 - (mse * n) / Math.max(1e-12, sst));
+                        this.metrics = { ...this.metrics, mse, r2 };
+                    } else {
+                        const pred = this.model.predict ? this.model.predict(this.X) : [];
+                        let acc = 0; for (let i = 0; i < pred.length; i++) if ((pred[i] ?? 0) === (this.y[i] ?? 1)) acc++;
+                        acc /= Math.max(1, pred.length);
+                        this.metrics = { ...this.metrics, acc };
+                    }
+                    this.drawAll();
+                    this.$nextTick(() => this._autoScroll());
+                },
+
+                drawAll() {
+                    const cvs = document.getElementById('dbCanvas');
+                    const ctx = cvs ? cvs.getContext('2d') : null;
+
+                    // detect 1D (second feature constant)
+                    let is1D = false;
+                    if (this.X && this.X.length) {
+                        const z0 = this.X[0][1];
+                        is1D = this.X.every(p => Math.abs(p[1] - z0) < 1e-12);
+                    }
+
+                    if (this.task === 'reg') {
+                        if (is1D) drawRegression1D(ctx, this.X, this.y, this.model ?? this.baseTree ?? { predict: () => [0] });
+                        else drawRegression2D(ctx, this.X, this.y, this.model ?? this.baseTree ?? { predict: () => [0] });
+                    } else {
+                        drawClassification(ctx, this.X, this.y, this.model ?? this.baseTree ?? { predict: () => [0], predictProba: () => [0.5] });
+                    }
+
+                    const treeTarget = (this.mode === 'cart') ? this.model : this.baseTree;
+                    renderTreeSVG(document.getElementById('treeSvg'), treeTarget, this.task);
+
+                    renderEnsembleSVG(document.getElementById('ensSvg'), this.mode, this.model);
+                },
+
+                /* -------- Chart.js (feature gains) -------- */
+                initFeatChart() {
+                    const el = document.getElementById('featChart');
+                    if (!el) return;
+                    if (typeof Chart !== 'undefined') {
+                        const existing = Chart.getChart ? Chart.getChart(el) : null;
+                        if (existing) existing.destroy();
+                    }
+                    if (this.featChart && typeof this.featChart.destroy === 'function') {
+                        this.featChart.destroy();
+                        this.featChart = null;
+                    }
+                    const ctx = el.getContext('2d');
+                    this.featChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: ['x0', 'x1'], datasets: [{ label: 'gain', data: [0, 0] }] },
+                        options: { responsive: true, aspectRatio: 2.2, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    });
+                },
+                updateFeatChart(g) {
+                    if (!this.featChart) return;
+                    const d0 = Array.isArray(g) && g.length > 0 ? g[0] || 0 : 0;
+                    const d1 = Array.isArray(g) && g.length > 1 ? g[1] || 0 : 0;
+                    this.featChart.data.datasets[0].data = [d0, d1];
+                    this.featChart.update();
+                },
+
+                _pushLog(m) { this.log.push(m); this.$nextTick(() => this._autoScroll()); },
+                _autoScroll() { const box = document.getElementById('logBox'); if (box) box.scrollTop = box.scrollHeight; },
+            };
+        }
+
+        /* Footer year (optional) */
+        document.addEventListener('DOMContentLoaded', () => {
+            const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear();
+        });
+    </script>
+
 
 </body>
+
 </html>
