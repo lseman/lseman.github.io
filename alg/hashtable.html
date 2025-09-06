@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Robin Hood Hash Table Lab</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Chart.js (for simple histograms/metrics) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root { color-scheme: light; }
+    html { scroll-behavior: smooth; }
+
+    /* nice animated bg */
+    .bg-hero {
+      background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
+      background-size: 200% 200%;
+      animation: grad 18s ease infinite;
+    }
+    @keyframes grad { 0% {background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* cell colors */
+    .cell-empty   { background: #ffffff; }
+    .cell-full    { background: #e0f2fe; }   /* sky-100 */
+    .cell-tomb    { background: #fee2e2; }   /* rose-200 */
+    .cell-highlight { outline: 2px solid #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.2) inset; }
+
+    .fade-in { animation: fade .25s ease-in; }
+    @keyframes fade { from {opacity:.2} to {opacity:1} }
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-800">
+  <!-- Hero / Header -->
+  <header class="bg-hero">
+    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+      <div class="flex flex-col lg:flex-row items-center gap-10">
+        <div class="flex-1">
+          <img src="logo.png" alt="Hash Lab Logo" class="mx-auto mb-4 w-24 h-24">
+          <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            Robin Hood Hash Table <span class="text-indigo-600">Lab</span>
+          </h1>
+          <p class="mt-3 text-lg md:text-xl text-slate-700">
+            Interactive, single‑file site to <span class="font-semibold">insert</span>, <span class="font-semibold">find</span>, and <span class="font-semibold">delete</span> while visualizing probe distances, conflicts, and <span class="font-semibold">rehash</span> growth. Built with vanilla JS, Tailwind, Alpine.js.
+          </p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a href="#sim" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open Simulator</a>
+            <a href="#guide" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Read the Illustrated Guide</a>
+          </div>
+          <p class="mt-4 text-sm text-slate-500">Prof. Laio Oriel Seman — UFSC</p>
+        </div>
+        <div class="flex-1 w-full">
+          <div class="bg-white/70 backdrop-blur rounded-2xl p-6 shadow border border-slate-100">
+            <canvas id="histChart" height="220"></canvas>
+            <p class="mt-3 text-center text-sm text-slate-600">Probe distance histogram updates as you insert/remove.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Simulator -->
+  <section id="sim" class="py-12" x-data="hashLab()" x-init="init()">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Simulator</h2>
+          <p class="text-slate-600 mt-1">Open addressing with <span class="font-semibold">Robin Hood</span> insertion and <span class="font-semibold">tombstone</span> deletion. Quadratic probing by triangular numbers.</p>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <label class="text-slate-600">Capacity</label>
+          <input type="number" min="4" step="1" class="w-24 rounded-lg border-slate-300" x-model.number="capacityInput">
+          <label class="text-slate-600 ml-2">Load Threshold</label>
+          <input type="number" step="0.05" min="0.1" max="0.95" class="w-24 rounded-lg border-slate-300" x-model.number="maxLoad">
+          <button class="ml-2 px-3 py-1.5 rounded-lg bg-slate-800 text-white" @click="rebuild(capacityInput)">Rebuild</button>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="grid lg:grid-cols-5 gap-6">
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <h3 class="font-semibold text-slate-800">Operations</h3>
+
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Key</label>
+                <input class="mt-1 w-full rounded-xl border-slate-300 code" placeholder="e.g., 42 or user:anna" x-model="key">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Value</label>
+                <input class="mt-1 w-full rounded-xl border-slate-300 code" placeholder="optional" x-model="value">
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="opInsert()">Insert / Update</button>
+              <button class="px-3 py-1.5 rounded-lg bg-amber-600 text-white" @click="opFind()">Find</button>
+              <button class="px-3 py-1.5 rounded-lg bg-rose-600 text-white" @click="opDelete()">Delete</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-700 text-white" @click="randomInsert(1)">+1 random</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-700 text-white" @click="randomInsert(10)">+10 random</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-200" @click="reset()">Clear</button>
+            </div>
+
+            <div class="mt-4 text-xs text-slate-600">
+              <p><span class="font-semibold">Hash family:</span> 32‑bit Murmur3‑like (JS) → index = h(key) mod capacity.</p>
+              <p class="mt-1">Probing: i, i+1, i+3, i+6, ... (triangular numbers) 
+                <span class="text-slate-500">— good locality + avoids primary clustering.</span></p>
+            </div>
+          </div>
+
+          <div class="mt-6 bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <h3 class="font-semibold text-slate-800">Explanation</h3>
+            <ul class="mt-2 text-sm space-y-1 text-slate-700 list-disc pl-5">
+              <li><span class="font-semibold">Robin Hood:</span> items with <em>larger</em> probe distance can steal slots from items with smaller distance (minimizes variance of search cost).</li>
+              <li><span class="font-semibold">Tombstones:</span> deletions mark a cell as <em>tomb</em> so lookups don’t stop early; insertions can reuse tombs.</li>
+              <li><span class="font-semibold">Rebuild:</span> when load &gt; threshold, capacity grows and we reinsert all live items (tombs vanish).</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Board + Log -->
+        <div class="lg:col-span-3">
+          <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-slate-800">Buckets</h3>
+              <div class="text-sm text-slate-600 flex gap-4">
+                <span>capacity: <span class="font-mono" x-text="table.capacity"></span></span>
+                <span>size: <span class="font-mono" x-text="table.size"></span></span>
+                <span>tombs: <span class="font-mono" x-text="table.tombstones"></span></span>
+                <span>load: <span class="font-mono" x-text="(table.size/table.capacity).toFixed(2)"></span></span>
+                <span>max d: <span class="font-mono" x-text="table.maxD"></span></span>
+              </div>
+            </div>
+
+            <div class="mt-3 overflow-x-auto">
+              <table class="min-w-full text-xs">
+                <thead class="bg-slate-50 text-slate-600">
+                  <tr class="[&>th]:text-left [&>th]:p-2 [&>th]:font-semibold">
+                    <th>#</th>
+                    <th>State</th>
+                    <th>Key</th>
+                    <th>Val</th>
+                    <th>Hash</th>
+                    <th>Home</th>
+                    <th>d</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 code">
+                  <template x-for="(cell, idx) in table.buckets" :key="idx">
+                    <tr :class="rowClass(idx, cell)" class="fade-in">
+                      <td class="p-2 text-slate-500"> <span x-text="idx"></span> </td>
+                      <td class="p-2">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                              :class="cellClass(cell)">
+                          <span x-text="cellState(cell)"></span>
+                        </span>
+                      </td>
+                      <td class="p-2" x-text="cell?.key ?? ''"></td>
+                      <td class="p-2" x-text="cell?.value ?? ''"></td>
+                      <td class="p-2" x-text="cell?.hash ?? ''"></td>
+                      <td class="p-2" x-text="cell?.home ?? ''"></td>
+                      <td class="p-2" x-text="cell?.d ?? ''"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-4">
+              <h4 class="font-semibold text-slate-800">Operation Log</h4>
+              <div id="logBox" class="mt-2 h-40 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
+                <template x-for="(line, i) in log" :key="i">
+                  <div class="mb-0.5"><span class="text-slate-400">#</span> <span x-text="line"></span></div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics cards -->
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Mean probe distance</div>
+          <div class="text-2xl font-semibold" x-text="metrics.meanD.toFixed(3)"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Std probe distance</div>
+          <div class="text-2xl font-semibold" x-text="metrics.stdD.toFixed(3)"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Displacements (swaps)</div>
+          <div class="text-2xl font-semibold" x-text="metrics.swaps"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">Probes (last op)</div>
+          <div class="text-2xl font-semibold" x-text="metrics.lastProbes"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Guide -->
+  <section id="guide" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
+        <p class="mt-2 text-slate-600">What does “Robin Hood” mean, why tombstones, and when do we rebuild?</p>
+      </div>
+      <div class="grid lg:grid-cols-3 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">The Robin Hood Principle</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            If an incoming item has probed farther than the resident item, they swap: the one <em>farther from home</em> “steals” the slot.
+            This equalizes probe distances and lowers variance of successful searches (flatter histogram).
+          </p>
+          <p class="mt-2 text-sm text-slate-600">We track each item’s <span class="font-mono">d</span> = distance from its home bucket.</p>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">Deletion via Tombstones</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            Removing an item leaves a tombstone so searches won’t incorrectly stop at an empty gap.
+            Tombs can be reused by new insertions. A rebuild compacts the table and erases tombs.
+          </p>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">Rebuild / Resize</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            When the load factor exceeds a threshold, we create a new array (usually ~2× capacity) and reinsert all live items. This reduces average probe length and clears tombstones.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 bg-slate-900 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">© <span id="year"></span> Hash Table Lab — Single‑file, no build.</p>
+        <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Logic -->
+  <script>
+  // ---------- Small hash helpers ----------
+  function murmur3_32_gc(key) {
+    // Simple Murmur3-ish for teaching (stringified input)
+    let str = String(key);
+    let seed = 0x9747b28c >>> 0;
+    let h1 = seed ^ (str.length);
+    for (let i = 0; i < str.length; i++) {
+      let k1 = str.charCodeAt(i);
+      k1 = Math.imul(k1, 0xcc9e2d51);
+      k1 = (k1 << 15) | (k1 >>> 17);
+      k1 = Math.imul(k1, 0x1b873593);
+      h1 ^= k1;
+      h1 = (h1 << 13) | (h1 >>> 19);
+      h1 = (Math.imul(h1, 5) + 0xe6546b64) >>> 0;
+    }
+    h1 ^= h1 >>> 16; h1 = Math.imul(h1, 0x85ebca6b) >>> 0;
+    h1 ^= h1 >>> 13; h1 = Math.imul(h1, 0xc2b2ae35) >>> 0;
+    h1 ^= h1 >>> 16;
+    return h1 >>> 0; // unsigned
+  }
+
+  // Triangular probing: 0,1,3,6,10,... (t(k) = k*(k+1)/2)
+  function probeIndex(home, k, cap) {
+    const t = (k * (k + 1)) >>> 1; // triangular
+    return (home + t) % cap;
+  }
+
+  // ---------- Robin Hood Hash Table (teaching-grade) ----------
+  class RHTable {
+    constructor(capacity = 17, maxLoad = 0.8) {
+      this.capacity = Math.max(4, capacity|0);
+      this.maxLoad = maxLoad;
+      this.buckets = Array(this.capacity).fill(null); // {key, value, hash, home, d, tomb}
+      this.size = 0;            // live items
+      this.tombstones = 0;      // tomb count
+      this.maxD = 0;            // max probe distance observed
+      this.swaps = 0;           // displacements during insert
+      // optional event sink set by UI: (evt)=>void
+      this.onEvent = null;
+    }
+
+    load() { return this.size / this.capacity; }
+    _homeIdx(hash) { return hash % this.capacity; }
+    _emit(evt) { try { this.onEvent && this.onEvent(evt); } catch(_){} }
+
+    _maybeGrow() {
+      if (this.load() > this.maxLoad) {
+        const newCap = this._nextCapacity(this.capacity);
+        this._emit({type:'grow_trigger', from:this.capacity, to:newCap, load:this.load().toFixed(3)});
+        this._rehash(newCap);
+      }
+    }
+
+    _nextCapacity(cur) {
+      // simple growth policy: next odd ~2x + 1
+      return cur * 2 + 1;
+    }
+
+    _rehash(newCapacity) {
+      const old = this.buckets;
+      const prev = {cap:this.capacity, size:this.size, tombs:this.tombstones};
+      this._emit({type:'rehash_start', from:this.capacity, to:Math.max(4, newCapacity|0), prev});
+      this.capacity = Math.max(4, newCapacity|0);
+      this.buckets = Array(this.capacity).fill(null);
+      this.size = 0;
+      this.tombstones = 0;
+      this.maxD = 0;
+      this.swaps = 0;
+      for (const cell of old) {
+        if (!cell || cell.tomb) continue;
+        this.insert(cell.key, cell.value, /*allowRehash*/ false);
+      }
+      this._emit({type:'rehash_done', capacity:this.capacity});
+    }
+
+    insert(key, value, allowRehash=true, onStep=null) {
+      if (allowRehash) this._maybeGrow();
+      const hash = murmur3_32_gc(key) >>> 0;
+      let home = this._homeIdx(hash);
+      let k = 0;
+
+      let cur = { key, value, hash, home, d: 0, tomb: false };
+
+      while (true) {
+        const idx = probeIndex(home, k, this.capacity);
+        const cell = this.buckets[idx];
+        if (onStep) onStep({type:'probe', idx, k, d: cur.d});
+
+        if (cell === null || (cell && cell.tomb)) {
+          // place here
+          const prevTomb = cell && cell.tomb;
+          this.buckets[idx] = { ...cur, d: cur.d, tomb: false };
+          if (prevTomb) { this.tombstones--; this._emit({type:'reuse_tomb', idx}); }
+          else { this.size++; }
+          this.maxD = Math.max(this.maxD, cur.d);
+          this._emit({type:'place', idx, cell: this.buckets[idx]});
+          if (onStep) onStep({type:'place', idx, cell: this.buckets[idx]});
+          return {idx, placed:true, probes:k+1};
+        }
+
+        // key match → update
+        if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
+          this.buckets[idx] = { ...cell, value };
+          this._emit({type:'update', idx});
+          if (onStep) onStep({type:'update', idx});
+          return {idx, placed:false, updated:true, probes:k+1};
+        }
+
+        // conflict: occupied by different key
+        this._emit({type:'conflict', idx, curD:cur.d, resD:cell.d});
+        if (onStep) onStep({type:'conflict', idx, curD:cur.d, resD:cell.d});
+
+        // Robin Hood: if current item's distance is greater than resident's, swap
+        if (cur.d > cell.d) {
+          this.swaps++;
+          this._emit({type:'swap', idx, reason:'cur.d > res.d', curD:cur.d, resD:cell.d});
+          // swap: cur takes this spot; bumped item continues with increased d
+          this.buckets[idx] = { ...cur, d: cur.d };
+          cur = { ...cell, d: cell.d };
+        } else {
+          this._emit({type:'skip', idx, reason:'res.d >= cur.d'});
+        }
+
+        // advance probe for whichever item is now "carried" in cur
+        k++;
+        cur.d++;
+        if (k > this.capacity) throw new Error('Table full or probe cycle');
+      }
+    }
+
+    find(key, onStep=null) {
+      const hash = murmur3_32_gc(key) >>> 0;
+      const home = this._homeIdx(hash);
+      let k = 0;
+      let d = 0;
+      while (k <= this.capacity) {
+        const idx = probeIndex(home, k, this.capacity);
+        const cell = this.buckets[idx];
+        if (onStep) onStep({type:'probe', idx, k, d});
+        if (cell === null) {
+          if (onStep) onStep({type:'miss', idx});
+          return {found:false, probes:k+1};
+        }
+        if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
+          if (onStep) onStep({type:'hit', idx});
+          return {found:true, value:cell.value, idx, probes:k+1};
+        }
+        if (!cell.tomb && cell.d < d) {
+          if (onStep) onStep({type:'miss-early', idx});
+          return {found:false, probes:k+1};
+        }
+        k++; d++;
+      }
+      return {found:false, probes:k};
+    }
+
+    delete(key, onStep=null) {
+      const hash = murmur3_32_gc(key) >>> 0;
+      const home = this._homeIdx(hash);
+      let k = 0, d=0;
+      while (k <= this.capacity) {
+        const idx = probeIndex(home, k, this.capacity);
+        const cell = this.buckets[idx];
+        if (onStep) onStep({type:'probe', idx, k, d});
+        if (cell === null) return {deleted:false, probes:k+1};
+        if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
+          // mark tomb
+          this.buckets[idx] = { ...cell, tomb: true };
+          this.size--; this.tombstones++;
+          if (onStep) onStep({type:'tomb', idx});
+          this._emit({type:'tomb', idx});
+          return {deleted:true, probes:k+1};
+        }
+        if (!cell.tomb && cell.d < d) return {deleted:false, probes:k+1};
+        k++; d++;
+      }
+      return {deleted:false, probes:k};
+    }
+  }
+
+  // ---------- Alpine component ----------
+  function hashLab() {
+    return {
+      // UI state
+      capacityInput: 17,
+      maxLoad: 0.8,
+      table: null,
+      key: '',
+      value: '',
+      log: [],
+      metrics: { meanD: 0, stdD: 0, swaps: 0, lastProbes: 0 },
+      chart: null,
+
+      init() {
+        this.table = new RHTable(this.capacityInput, this.maxLoad);
+        // wire event sink into UI log
+        this.table.onEvent = (e) => this.log.push(this.formatEvent(e));
+
+                // wire event sink into UI log + autoscroll after DOM update
+        this.table.onEvent = (e) => {
+          this.log.push(this.formatEvent(e));
+          this.$nextTick(() => this._autoScroll());
+        };
+        this.updateMetrics();
+        this.initChart();
+
+        
+      },
+
+      reset() {
+        this.table = new RHTable(this.capacityInput, this.maxLoad);
+        this.table.onEvent = (e) => this.log.push(this.formatEvent(e));
+        this.log = [];
+        this.updateMetrics();
+        this.updateChart();
+      },
+
+      rebuild(newCap) {
+        const cap = Math.max(4, Number(newCap) || this.table.capacity);
+        this.table._rehash(cap);
+        this.log.push(`manual rebuild → capacity=${cap}`);
+        this.updateMetrics();
+        this.updateChart();
+        this.$nextTick(() => this._autoScroll());
+      },
+
+      opInsert() {
+        if (this.key === '') { this.log.push('insert: missing key'); return; }
+        const steps = [];
+        const res = this.table.insert(this.key, this.value, true, s=>steps.push(s));
+        this.metrics.lastProbes = res.probes || 0;
+        this.logInsertSteps(steps);
+        this.updateMetrics();
+        this.updateChart();
+        this.highlightSteps(steps);
+        this.$nextTick(() => this._autoScroll());
+      },
+
+      opFind() {
+        if (this.key === '') { this.log.push('find: missing key'); return; }
+        const steps = [];
+        const res = this.table.find(this.key, s=>steps.push(s));
+        this.metrics.lastProbes = res.probes || 0;
+        if (res.found) this.log.push(`find(${this.key}) → idx=${res.idx}, val=${res.value}, probes=${res.probes}`);
+        else this.log.push(`find(${this.key}) → not found, probes=${res.probes}`);
+        this.highlightSteps(steps);
+        this.$nextTick(() => this._autoScroll());
+      },
+
+      opDelete() {
+        if (this.key === '') { this.log.push('delete: missing key'); return; }
+        const steps = [];
+        const res = this.table.delete(this.key, s=>steps.push(s));
+        this.metrics.lastProbes = res.probes || 0;
+        this.log.push(`delete(${this.key}) → ${res.deleted?'ok':'miss'}, probes=${res.probes}`);
+        this.updateMetrics();
+        this.updateChart();
+        this.highlightSteps(steps);
+      },
+
+      randomInsert(n=1) {
+        for (let i=0;i<n;i++) {
+          const k = `k${Math.floor(Math.random()*9999)}`;
+          const v = `v${Math.floor(Math.random()*9999)}`;
+          const steps = [];
+          const res = this.table.insert(k, v, true, s=>steps.push(s));
+          this.metrics.lastProbes = res.probes || 0;
+          this.log.push(`insert(${k}) → probes=${res.probes}`);
+        }
+        this.updateMetrics();
+        this.updateChart();
+        this.$nextTick(() => this._autoScroll());
+      },
+
+      // ---- visuals & logging ----
+      rowClass(idx, cell) {
+        if (cell === null) return 'cell-empty';
+        if (cell.tomb) return 'cell-tomb';
+        return 'cell-full';
+      },
+      cellClass(cell) {
+        if (cell === null) return 'bg-slate-200 text-slate-700';
+        if (cell.tomb) return 'bg-rose-100 text-rose-700';
+        return 'bg-sky-100 text-sky-800';
+      },
+      cellState(cell) {
+        if (cell === null) return 'empty';
+        if (cell.tomb) return 'tomb';
+        return 'full';
+      },
+
+      async highlightSteps(steps) {
+        // add transient highlight to probed/affected rows
+        const rows = document.querySelectorAll('tbody tr');
+        for (const s of steps) {
+          if (s.idx == null) continue;
+          const tr = rows[s.idx];
+          if (!tr) continue;
+          tr.classList.add('cell-highlight');
+          await new Promise(r => setTimeout(r, 120));
+          tr.classList.remove('cell-highlight');
+        }
+      },
+
+      logInsertSteps(steps) {
+        for (const s of steps) {
+          if (s.type === 'probe') {
+            this.log.push(`probe → idx=${s.idx} d=${s.d}`);
+          } else if (s.type === 'conflict') {
+            const relation = s.curD > s.resD ? 'swap (cur farther)' : 'keep (resident farther/equal)';
+            this.log.push(`conflict at idx=${s.idx}: cur.d=${s.curD}, res.d=${s.resD} → ${relation}`);
+          } else if (s.type === 'swap') {
+            this.log.push(`swap at idx=${s.idx} because cur.d>res.d`);
+          } else if (s.type === 'place') {
+            this.log.push(`place at idx=${s.idx}`);
+          } else if (s.type === 'update') {
+            this.log.push(`update at idx=${s.idx}`);
+          }
+        }
+        this.$nextTick(() => this._autoScroll());
+      },
+
+      updateMetrics() {
+        const ds = this.table.buckets.filter(c=>c && !c.tomb).map(c=>c.d);
+        const mean = ds.length? ds.reduce((a,b)=>a+b,0)/ds.length : 0;
+        const varc = ds.length? ds.reduce((a,b)=>a+(b-mean)*(b-mean),0)/ds.length : 0;
+        this.metrics.meanD = mean; this.metrics.stdD = Math.sqrt(varc);
+        this.metrics.swaps = this.table.swaps;
+      },
+
+      initChart() {
+        const ctx = document.getElementById('histChart');
+        this.chart = new Chart(ctx, {
+          type: 'bar',
+          data: { labels: [], datasets: [{ label: 'count', data: [] }] },
+          options: { responsive: true, aspectRatio: 2.2, plugins:{legend:{display:false}}, scales:{x:{title:{display:true, text:'probe distance d'}}, y:{beginAtZero:true}} }
+        });
+        this.updateChart();
+      },
+
+      updateChart() {
+        const ds = this.table.buckets.filter(c=>c && !c.tomb).map(c=>c.d);
+        const freq = new Map();
+        for (const d of ds) freq.set(d, (freq.get(d)||0)+1);
+        const labels = Array.from(freq.keys()).sort((a,b)=>a-b);
+        const data = labels.map(k=>freq.get(k));
+        this.chart.data.labels = labels;
+        this.chart.data.datasets[0].data = data;
+        this.chart.update();
+      },
+
+      // human-friendly event messages
+      formatEvent(e) {
+        if (!e || !e.type) return '';
+        switch(e.type) {
+          case 'grow_trigger': return `grow-trigger: load=${e.load} → rehash ${e.from}→${e.to}`;
+          case 'rehash_start': return `rehash-start: ${e.from}→${e.to} (prev size=${e.prev.size}, tombs=${e.prev.tombs})`;
+          case 'rehash_done':  return `rehash-done: capacity=${e.capacity}`;
+          case 'reuse_tomb':   return `reuse tomb at idx=${e.idx}`;
+          case 'place':        return `place at idx=${e.idx}`;
+          case 'update':       return `update at idx=${e.idx}`;
+          case 'conflict':     return `conflict at idx=${e.idx} (cur.d=${e.curD}, res.d=${e.resD})`;
+          case 'swap':         return `swap at idx=${e.idx} (${e.reason})`;
+          case 'skip':         return `skip at idx=${e.idx} (${e.reason})`;
+          case 'tomb':         return `delete → tomb at idx=${e.idx}`;
+          default:             return `${e.type}`;
+        }
+      },
+
+    _autoScroll(){ const box=document.getElementById('logBox'); if(box) box.scrollTop = box.scrollHeight; }
+
+    }
+  }
+
+  // Footer year
+  document.addEventListener('DOMContentLoaded', () => {
+    const y = document.getElementById('year');
+    if (y) y.textContent = new Date().getFullYear();
+  });
+
+  </script>
+</body>
+</html>
