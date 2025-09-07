@@ -240,6 +240,523 @@
     </div>
   </section>
 
+  <!-- Neural Network Animation -->
+<section id="nn-animation" class="py-12 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="text-3xl font-bold tracking-tight text-slate-900">How a Neural Network Learns — Animated</h2>
+    <p class="mt-2 text-slate-600">Watch activations flow forward and gradients flow backward on a tiny 2→3→1 MLP.</p>
+
+    <div x-data="nnAnim()" x-init="init()" class="mt-6 grid lg:grid-cols-2 gap-6">
+      <!-- Scene -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+        <svg id="nnsvg" class="w-full h-[460px]"></svg>
+        <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+          <div class="bg-white rounded-xl border p-3">
+            <div class="font-semibold text-slate-800 mb-1">Sample</div>
+            <div class="font-mono text-xs text-slate-700">x = [<span x-text="x[0].toFixed(2)"></span>, <span x-text="x[1].toFixed(2)"></span>]</div>
+            <div class="font-mono text-xs text-slate-700">y = [<span x-text="y[0].toFixed(2)"></span>]</div>
+          </div>
+          <div class="bg-white rounded-xl border p-3">
+            <div class="font-semibold text-slate-800 mb-1">Loss (MSE)</div>
+            <div class="font-mono text-xl" x-text="loss.toFixed(5)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls / Readouts -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button @click="toggle()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-sm shadow">
+            <span x-show="!playing">▶ Play</span><span x-show="playing">⏸ Pause</span>
+          </button>
+          <button @click="step()" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-900 text-sm border">Step</button>
+          <button @click="trainOnce()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm shadow">Train one step</button>
+          <button @click="reset(true)" class="px-3 py-1.5 rounded-lg bg-white text-slate-900 text-sm border">Reset Weights</button>
+
+          <div class="ml-auto flex items-center gap-2">
+            <label class="text-sm text-slate-600">Speed</label>
+            <input type="range" min="0.3" max="2.0" step="0.1" x-model.number="speedScale" class="accent-slate-700">
+            <span class="text-xs font-mono text-slate-600" x-text="speedText"></span>
+          </div>
+        </div>
+
+        <div class="mt-5 grid md:grid-cols-2 gap-4">
+          <div class="bg-slate-50 rounded-xl p-3 border">
+            <div class="font-semibold text-slate-800 mb-1">Hyperparameters</div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <label>lr
+                <input type="range" min="0.001" max="0.3" step="0.001" x-model.number="lr" class="w-full accent-slate-700">
+                <span class="font-mono text-xs text-slate-600" x-text="lr.toFixed(3)"></span>
+              </label>
+              <label>Activation
+                <select x-model="actName" @change="renderAll()" class="w-full text-sm border rounded-lg px-2 py-1">
+                  <option value="sigmoid">Sigmoid</option>
+                  <option value="tanh">Tanh</option>
+                  <option value="relu">ReLU</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-3 border text-sm">
+            <div class="font-semibold text-slate-800 mb-2">State</div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>Phase: <span class="font-mono" x-text="phase"></span></div>
+              <div>Layer idx: <span class="font-mono" x-text="layerIdx"></span></div>
+              <div>Step: <span class="font-mono" x-text="stepIdx"></span></div>
+              <div>Output ŷ: <span class="font-mono" x-text="a[2][0].toFixed(4)"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-xs text-slate-600 leading-6">
+          <span class="inline-block w-3 h-3 rounded-full align-middle mr-1" style="background:#2563eb"></span>
+          Blue edges = forward activations (thicker = larger contribution).
+          <br>
+          <span class="inline-block w-3 h-3 rounded-full align-middle mr-1" style="background:#dc2626"></span>
+          Red edges = backward gradients (thicker = larger |∂L/∂w|). Weight updates happen at the end.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function nnAnim() {
+  // --- small helpers
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const randn = ()=> { // Box–Muller
+    let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  };
+  const actFns = {
+    sigmoid: {
+      f: (z)=>1/(1+Math.exp(-z)),
+      df:(a)=>a*(1-a)
+    },
+    tanh: {
+      f: (z)=>Math.tanh(z),
+      df:(a)=>1-a*a
+    },
+    relu: {
+      f: (z)=>Math.max(0,z),
+      df:(a)=> (a>0?1:0)
+    }
+  };
+
+  return {
+    // === public state ===
+    lr: 0.08,
+    actName: 'sigmoid',
+    x: [0.60, -0.40],
+    y: [1.0],
+    loss: 0,
+    playing: false,
+    speedScale: 1.0,  // 0.3x .. 2.0x
+    get speedText(){ return this.speedScale.toFixed(1)+'x'; },
+
+    // phases: 'forward' -> 'backward' -> 'update' -> 'idle'
+    phase: 'idle',
+    layerIdx: 0,  // which layer boundary is active in phase
+    stepIdx: 0,   // counts full cycles
+    raf: null,
+
+    // topology & parameters
+    L: [2,3,1], // sizes per layer
+    W: [], b: [],
+    // forward buffers
+    z: [[],[],[]],
+    a: [[],[],[]],
+    // backward buffers
+    delta: [[],[],[]],
+    dW: [], db: [],
+
+    // svg elements registry
+    svg: null,
+    nodes: [],       // per layer: array of node <circle>
+    edges: [],       // per layer boundary: 2D array [j][i] edge <line> from layer l to l+1
+    labels: { node: [], edge: [] },
+
+    // animation timing
+    t: 0,  // 0..1 within current layer boundary
+    durForward: 900,   // ms per boundary at 1.0x
+    durBackward: 900,
+    durUpdate: 600,
+
+    init(){
+      this.svg = document.getElementById('nnsvg');
+      this.buildParams(true);
+      this.layoutAndDraw();
+      this.computeForward(); // populate a, z, loss
+      this.renderAll();
+      this.loop(); // create RAF loop but idle by default
+    },
+
+    reset(reinitWeights=false){
+      if(reinitWeights) this.buildParams(true);
+      this.computeForward();
+      this.computeBackward();
+      this.renderAll();
+      this.phase='idle'; this.layerIdx=0; this.t=0; this.playing=false;
+    },
+
+    buildParams(init=false){
+      // init weights ~ N(0,0.7/sqrt(n)), bias=0
+      if (init || this.W.length===0){
+        this.W = [
+          Array.from({length:this.L[1]}, _=> Array.from({length:this.L[0]}, _=> 0.7*randn()/Math.sqrt(this.L[0]))),
+          Array.from({length:this.L[2]}, _=> Array.from({length:this.L[1]}, _=> 0.7*randn()/Math.sqrt(this.L[1])))
+        ];
+        this.b = [
+          Array.from({length:this.L[1]}, _=> 0.0),
+          Array.from({length:this.L[2]}, _=> 0.0)
+        ];
+      }
+      this.dW = this.W.map(layer => layer.map(row => row.map(_=>0)));
+      this.db = this.b.map(row => row.map(_=>0));
+    },
+
+    // =========== math =============
+    act(z){ return actFns[this.actName].f(z); },
+    dact(a){ return actFns[this.actName].df(a); },
+
+    computeForward(){
+      // layer 0 -> 1
+      this.a[0] = [...this.x];
+      this.z[1] = new Array(this.L[1]).fill(0);
+      this.a[1] = new Array(this.L[1]).fill(0);
+      for(let j=0;j<this.L[1];j++){
+        let s = this.b[0][j];
+        for(let i=0;i<this.L[0];i++) s += this.W[0][j][i]*this.a[0][i];
+        this.z[1][j]=s; this.a[1][j]=this.act(s);
+      }
+      // layer 1 -> 2
+      this.z[2] = new Array(this.L[2]).fill(0);
+      this.a[2] = new Array(this.L[2]).fill(0);
+      for(let k=0;k<this.L[2];k++){
+        let s = this.b[1][k];
+        for(let j=0;j<this.L[1];j++) s += this.W[1][k][j]*this.a[1][j];
+        this.z[2][k]=s; this.a[2][k]=this.act(s);
+      }
+      // loss (MSE)
+      const e = this.a[2][0] - this.y[0];
+      this.loss = 0.5*e*e;
+    },
+
+    computeBackward(){
+      // output delta
+      let e = this.a[2][0] - this.y[0];
+      this.delta[2] = [ e * this.dact(this.a[2][0]) ];
+      // hidden delta
+      this.delta[1] = new Array(this.L[1]).fill(0);
+      for(let j=0;j<this.L[1];j++){
+        let s=0;
+        for(let k=0;k<this.L[2];k++) s += this.W[1][k][j]*this.delta[2][k];
+        this.delta[1][j] = s * this.dact(this.a[1][j]);
+      }
+      // grads
+      // dW1 (1->2)
+      for(let k=0;k<this.L[2];k++){
+        for(let j=0;j<this.L[1];j++){
+          this.dW[1][k][j] = this.delta[2][k]*this.a[1][j];
+        }
+        this.db[1][k] = this.delta[2][k];
+      }
+      // dW0 (0->1)
+      for(let j=0;j<this.L[1];j++){
+        for(let i=0;i<this.L[0];i++){
+          this.dW[0][j][i] = this.delta[1][j]*this.a[0][i];
+        }
+        this.db[0][j] = this.delta[1][j];
+      }
+    },
+
+    applyUpdate(){
+      for(let j=0;j<this.L[1];j++){
+        for(let i=0;i<this.L[0];i++){
+          this.W[0][j][i] -= this.lr * this.dW[0][j][i];
+        }
+        this.b[0][j] -= this.lr * this.db[0][j];
+      }
+      for(let k=0;k<this.L[2];k++){
+        for(let j=0;j<this.L[1];j++){
+          this.W[1][k][j] -= this.lr * this.dW[1][k][j];
+        }
+        this.b[1][k] -= this.lr * this.db[1][k];
+      }
+    },
+
+    // ========== SVG drawing ==========
+    layoutAndDraw(){
+      const svg = this.svg;
+      while(svg.firstChild) svg.removeChild(svg.firstChild);
+      const W = svg.clientWidth || svg.parentElement.clientWidth;
+      const H = svg.clientHeight || 460;
+      // layer x positions
+      const xs = [W*0.12, W*0.50, W*0.88];
+      const ys = (n)=> {
+        const top = H*0.14, bot = H*0.86;
+        const gap = (bot-top)/(n-1||1);
+        return Array.from({length:n}, (_,i)=> top + i*gap);
+      };
+      const colors = { node:'#0f172a', edgeFwd:'#2563eb', edgeBwd:'#dc2626', fill:'#e2e8f0' };
+
+      // defs for glows
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.innerHTML = `
+        <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#2563eb" flood-opacity="0.7"/>
+        </filter>
+        <filter id="glowRed" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#dc2626" flood-opacity="0.7"/>
+        </filter>`;
+      svg.appendChild(defs);
+
+      // draw edges first
+      this.edges = [[],[]];
+      for(let l=0;l<2;l++){
+        const yFrom = ys(this.L[l]);
+        const yTo   = ys(this.L[l+1]);
+        this.edges[l] = Array.from({length:this.L[l+1]}, ()=>[]);
+        for(let j=0;j<this.L[l+1];j++){
+          for(let i=0;i<this.L[l];i++){
+            const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+            line.setAttribute('x1', xs[l]);   line.setAttribute('y1', yFrom[i]);
+            line.setAttribute('x2', xs[l+1]); line.setAttribute('y2', yTo[j]);
+            line.setAttribute('stroke', '#cbd5e1');
+            line.setAttribute('stroke-width', '1.2');
+            line.setAttribute('opacity','0.9');
+            svg.appendChild(line);
+            this.edges[l][j][i] = line;
+          }
+        }
+      }
+
+      // draw nodes
+      this.nodes = [[],[],[]];
+      for(let l=0;l<3;l++){
+        const y = ys(this.L[l]);
+        for(let i=0;i<this.L[l];i++){
+          const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+          const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+          c.setAttribute('cx', xs[l]); c.setAttribute('cy', y[i]); c.setAttribute('r', 16);
+          c.setAttribute('fill', colors.fill); c.setAttribute('stroke', colors.node); c.setAttribute('stroke-width','1.5');
+          g.appendChild(c);
+
+          const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+          txt.setAttribute('x', xs[l]); txt.setAttribute('y', y[i]+4);
+          txt.setAttribute('text-anchor','middle');
+          txt.setAttribute('font-size','10');
+          txt.setAttribute('fill', '#0f172a');
+          txt.textContent = l===0 ? `x${i+1}` : (l===2 ? `ŷ` : `h${i+1}`);
+          g.appendChild(txt);
+          svg.appendChild(g);
+          this.nodes[l][i] = { circle:c, label:txt };
+        }
+      }
+    },
+
+    renderAll(){
+      // color edges by |weight| baseline
+      for(let j=0;j<this.L[1];j++){
+        for(let i=0;i<this.L[0];i++){
+          const w = this.W[0][j][i], a = Math.min(3, Math.abs(w))*0.8+0.2;
+          this.edges[0][j][i].setAttribute('stroke', '#cbd5e1');
+          this.edges[0][j][i].setAttribute('stroke-width', (1.2 + 1.0*a).toFixed(2));
+        }
+      }
+      for(let k=0;k<this.L[2];k++){
+        for(let j=0;j<this.L[1];j++){
+          const w = this.W[1][k][j], a = Math.min(3, Math.abs(w))*0.8+0.2;
+          this.edges[1][k][j].setAttribute('stroke', '#cbd5e1');
+          this.edges[1][k][j].setAttribute('stroke-width', (1.2 + 1.0*a).toFixed(2));
+        }
+      }
+      // node activation fill intensity
+      const fillScale = (val)=> {
+        const v = clamp(val, 0, 1); // assume sigmoid-like for color scale
+        const t = Math.round(220 - 140*v); // 220 (light) -> 80 (darker)
+        return `rgb(${t+10},${t+16},${t+24})`;
+      };
+      for(let i=0;i<this.L[0];i++){
+        this.nodes[0][i].circle.setAttribute('fill', fillScale(0.5+0.4*this.x[i]));
+      }
+      for(let j=0;j<this.L[1];j++){
+        const a = this.a[1][j]; this.nodes[1][j].circle.setAttribute('fill', fillScale(a));
+      }
+      this.nodes[2][0].circle.setAttribute('fill', fillScale(this.a[2][0]));
+    },
+
+    // ========== animation engine ==========
+    toggle(){ this.playing = !this.playing; if(this.playing && this.phase==='idle'){ this.phase='forward'; this.layerIdx=0; this.t=0; } },
+
+    step(){ // single logical step
+      if(this.phase==='idle'){ this.phase='forward'; this.layerIdx=0; this.t=0; return; }
+      if(this.phase==='forward'){
+        if(this.layerIdx<1){ this.layerIdx++; this.t=0; }
+        else { this.phase='backward'; this.layerIdx=1; this.t=0; }
+        return;
+      }
+      if(this.phase==='backward'){
+        if(this.layerIdx>0){ this.layerIdx--; this.t=0; }
+        else { this.phase='update'; this.t=0; }
+        return;
+      }
+      if(this.phase==='update'){ this.finishUpdate(); return; }
+    },
+
+    trainOnce(){
+      // run full cycle FWD->BWD->UPDATE instantly (no animation), then re-render
+      this.computeForward();
+      this.computeBackward();
+      this.applyUpdate();
+      this.computeForward();
+      this.renderAll();
+      this.phase='idle'; this.layerIdx=0; this.t=0; this.stepIdx++;
+    },
+
+    finishUpdate(){
+      // apply grads after a short “flash”
+      this.applyUpdate();
+      this.computeForward();
+      this.renderAll();
+      this.phase='idle'; this.layerIdx=0; this.t=0; this.stepIdx++;
+    },
+
+    loop(){
+      const tick = (ts)=>{
+        this.raf = requestAnimationFrame(tick);
+        if(!this.playing || this.phase==='idle') return;
+
+        // ensure we have fresh math for the shown phase
+        if(this.phase==='forward'){ this.computeForward(); }
+        if(this.phase==='backward'){ this.computeBackward(); }
+
+        // progress t
+        const dt = (16 / (this.speedScale)); // ~60fps; higher speedScale -> faster phase
+        const dur = (this.phase==='forward'? this.durForward : (this.phase==='backward'? this.durBackward : this.durUpdate)) / this.speedScale;
+        this.t += dt / dur;
+        if(this.t>1) this.t=1;
+
+        // render phase
+        if(this.phase==='forward') this.renderForwardBoundary(this.layerIdx, this.t);
+        else if(this.phase==='backward') this.renderBackwardBoundary(this.layerIdx, this.t);
+        else if(this.phase==='update') this.renderUpdate(this.t);
+
+        // phase transition
+        if(this.t>=1){
+          if(this.phase==='forward'){
+            if(this.layerIdx<1){ this.layerIdx++; this.t=0; }
+            else { this.phase='backward'; this.layerIdx=1; this.t=0; }
+          }else if(this.phase==='backward'){
+            if(this.layerIdx>0){ this.layerIdx--; this.t=0; }
+            else { this.phase='update'; this.t=0; }
+          }else if(this.phase==='update'){
+            this.finishUpdate();
+          }
+        }
+      };
+      this.raf = requestAnimationFrame(tick);
+    },
+
+    // visualizations for a single boundary (l -> l+1)
+    renderForwardBoundary(l, t){
+      // fade all to baseline
+      for(const layer of this.edges) for(const row of layer) for(const line of row){
+        line.setAttribute('stroke', '#cbd5e1'); line.removeAttribute('filter');
+      }
+      const color = '#2563eb';
+      const aFrom = this.a[l];
+      const W = this.W[l];
+      const targets = this.edges[l]; // [j][i]
+      for(let j=0;j<this.L[l+1];j++){
+        let acc = 0;
+        for(let i=0;i<this.L[l];i++){
+          const contrib = Math.abs(W[j][i]*aFrom[i]);
+          const thk = 1.5 + 4*contrib * (t); // grow with t
+          const line = targets[j][i];
+          line.setAttribute('stroke', color);
+          line.setAttribute('stroke-width', thk.toFixed(2));
+          line.setAttribute('opacity', (0.3 + 0.7*t).toFixed(2));
+          line.setAttribute('filter', 'url(#glowBlue)');
+          acc += contrib;
+        }
+        // pulse next layer node fill slightly
+        const n = this.nodes[l+1][j].circle;
+        n.setAttribute('filter', 'url(#glowBlue)');
+      }
+      // reset glow on previous layer nodes to reduce clutter
+      if(l>0){ for(let p=0;p<this.L[l];p++) this.nodes[l][p].circle.removeAttribute('filter'); }
+      this.renderNodeValues(); // update labels/values
+    },
+
+    renderBackwardBoundary(l, t){
+      // fade to baseline
+      for(const layer of this.edges) for(const row of layer) for(const line of row){
+        line.setAttribute('stroke', '#cbd5e1'); line.removeAttribute('filter');
+      }
+      const color = '#dc2626';
+      const grads = this.dW[l]; // shape like W[l]: next x prev
+      const targets = this.edges[l];
+      for(let j=0;j<this.L[l+1];j++){
+        for(let i=0;i<this.L[l];i++){
+          const mag = Math.abs(grads[j][i]);
+          const thk = 1.4 + 4.2*mag * (t);
+          const line = targets[j][i];
+          line.setAttribute('stroke', color);
+          line.setAttribute('stroke-width', thk.toFixed(2));
+          line.setAttribute('opacity', (0.25 + 0.75*t).toFixed(2));
+          line.setAttribute('filter', 'url(#glowRed)');
+        }
+        // glow source nodes too
+        this.nodes[l][0]?.circle.setAttribute('filter','url(#glowRed)');
+      }
+      // glow target nodes slightly
+      for(let j=0;j<this.L[l+1];j++){
+        this.nodes[l+1][j].circle.setAttribute('filter','url(#glowRed)');
+      }
+      this.renderNodeValues(true); // with deltas
+    },
+
+    renderUpdate(t){
+      // flash both colors proportionally to |grad|
+      for(let l=0;l<2;l++){
+        for(let j=0;j<this.L[l+1];j++){
+          for(let i=0;i<this.L[l];i++){
+            const g = Math.abs(this.dW[l][j][i]);
+            const line = this.edges[l][j][i];
+            const mix = 0.3 + 0.7*t;
+            const width = 1.2 + 5*(g*mix);
+            line.setAttribute('stroke-width', width.toFixed(2));
+            line.setAttribute('stroke', t<0.5? '#dc2626' : '#2563eb');
+            line.setAttribute('filter', t<0.5? 'url(#glowRed)' : 'url(#glowBlue)');
+            line.setAttribute('opacity', (0.3 + 0.7*t).toFixed(2));
+          }
+        }
+      }
+      this.renderNodeValues();
+    },
+
+    renderNodeValues(showDeltas=false){
+      // Update inner node labels to show values quickly (hover-level)
+      // Keep node text simple to avoid clutter
+      for(let j=0;j<this.L[1];j++){
+        this.nodes[1][j].label.textContent = showDeltas
+          ? `δ${j+1}=${this.delta[1][j].toFixed(2)}`
+          : `h${j+1}=${this.a[1][j].toFixed(2)}`;
+      }
+      this.nodes[2][0].label.textContent = showDeltas
+        ? `δ_out=${this.delta[2][0].toFixed(2)}`
+        : `ŷ=${this.a[2][0].toFixed(2)}`;
+    },
+
+    // cleanup if Alpine tears down (optional; safe no-op otherwise)
+    destroy(){ if(this.raf) cancelAnimationFrame(this.raf); }
+  }
+}
+</script>
+
+
   <!-- Activations -->
   <section id="activations" class="py-12 bg-slate-50">
     <div class="max-w-7xl mx-auto px-6">
