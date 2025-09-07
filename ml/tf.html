@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transformers — Illustrated Cheatsheet</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Chart.js (for tiny demo plots) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <!-- MathJax (v3) -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                tags: 'none'
+            },
+            chtml: {
+                linebreaks: { automatic: false },
+                matchFontHeight: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        :root {
+            color-scheme: light;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .bg-hero {
+            background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
+            background-size: 200% 200%;
+            animation: grad 18s ease infinite;
+        }
+
+        @keyframes grad {
+            0% {
+                background-position: 0% 50%
+            }
+
+            50% {
+                background-position: 100% 50%
+            }
+
+            100% {
+                background-position: 0% 50%
+            }
+        }
+
+        .code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .card {
+            backdrop-filter: blur(6px);
+        }
+
+        .node {
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .06));
+        }
+
+        .fade-in {
+            animation: fade .25s ease-in;
+        }
+
+        @keyframes fade {
+            from {
+                opacity: .2
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        .grid-auto {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
+        .mono {
+            font-feature-settings: "tnum" 1, "lnum" 1;
+        }
+
+        .hint {
+            font-size: .875rem;
+            color: #64748b
+        }
+
+        .kbd {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: .125rem .375rem;
+            border-radius: .375rem
+        }
+
+        .mask-cell {
+            stroke: #e5e7eb
+        }
+
+        .mjx-assistive-mml {
+            position: absolute !important;
+            width: 1px;
+            height: 1px;
+            overflow: hidden !important;
+            clip: rect(1px, 1px, 1px, 1px);
+            clip-path: inset(50%);
+            pointer-events: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+        }
+
+        mjx-container[display="inline"] {
+            white-space: nowrap;
+        }
+
+        mjx-container[display="block"] {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-hero">
+        <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+            <div class="flex flex-col lg:flex-row items-center gap-10">
+                <div class="flex-1">
+                    <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+                        <span class="text-indigo-600">Transformers</span> — Illustrated Cheatsheet
+                    </h1>
+                    <p class="mt-3 text-lg md:text-xl text-slate-700 max-w-2xl">
+                        A single-file visual guide to the Transformer: self-attention, multi-head attention, positional
+                        encoding,
+                        encoder/decoder stacks, masking, training tips, and efficiency tricks — with equations and
+                        interactive demos.
+                    </p>
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <a href="#primer"
+                            class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Start
+                            here</a>
+                        <a href="#attention"
+                            class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Self-Attention</a>
+                        <a href="#posenc"
+                            class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Positional
+                            Encoding</a>
+                        <a href="#encoderdecoder"
+                            class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Encoder/Decoder</a>
+                    </div>
+                    <p class="mt-4 text-sm text-slate-500">Single file • Tailwind + Alpine + Chart.js • MathJax •
+                        SVG/Canvas</p>
+                </div>
+                <div class="flex-1 w-full">
+                    <div class="bg-white/70 card rounded-2xl p-6 shadow border border-slate-100">
+                        <canvas id="sparkTrain" height="220"></canvas>
+                        <p class="mt-3 text-center text-sm text-slate-600">Toy training curves (loss & cosine lr) +
+                            warmup preview.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Primer -->
+    <section id="primer" class="py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900">What is a Transformer?</h2>
+                <p class="mt-2 text-slate-600 max-w-3xl">
+                    A Transformer layers <span class="font-semibold">self-attention</span> and <span
+                        class="font-semibold">feed-forward</span> blocks with residual connections and normalization.
+                    Unlike RNNs, it processes tokens in parallel; unlike CNNs, it learns long-range dependencies
+                    directly via attention weights.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Diagram -->
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Encoder Block (Pre-LN)</h3>
+                    <svg viewBox="0 0 760 300" class="w-full h-auto mt-3">
+                        <!-- tokens -->
+                        <g font-size="12" fill="#334155">
+                            <rect x="20" y="40" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe" /><text
+                                x="60" y="58" text-anchor="middle">x₁</text>
+                            <rect x="20" y="90" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe" /><text
+                                x="60" y="108" text-anchor="middle">x₂</text>
+                            <rect x="20" y="140" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe" /><text
+                                x="60" y="158" text-anchor="middle">x₃</text>
+                            <rect x="20" y="190" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe" /><text
+                                x="60" y="208" text-anchor="middle">x₄</text>
+                        </g>
+                        <!-- block -->
+                        <g>
+                            <rect x="140" y="20" width="580" height="240" rx="16" fill="#fff" stroke="#e2e8f0" />
+                            <text x="430" y="45" text-anchor="middle" font-size="13" fill="#475569">Transformer Encoder
+                                Block</text>
+                        </g>
+                        <!-- sublayers -->
+                        <g>
+                            <rect x="170" y="70" width="220" height="60" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="280" y="98" text-anchor="middle" font-size="12" fill="#334155">Multi-Head
+                                Self-Attention</text>
+                            <rect x="420" y="70" width="260" height="60" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="550" y="98" text-anchor="middle" font-size="12" fill="#334155">Residual +
+                                LayerNorm</text>
+
+                            <rect x="170" y="150" width="220" height="60" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="280" y="178" text-anchor="middle" font-size="12" fill="#334155">Feed-Forward
+                                (MLP)</text>
+                            <rect x="420" y="150" width="260" height="60" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="550" y="178" text-anchor="middle" font-size="12" fill="#334155">Residual +
+                                LayerNorm</text>
+                        </g>
+                        <!-- arrows -->
+                        <defs>
+                            <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"
+                                markerUnits="strokeWidth">
+                                <path d="M0,0 L0,6 L6,3 z" fill="#94a3b8" />
+                            </marker>
+                        </defs>
+                        <g stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)">
+                            <path d="M100,54 C120,54 130,54 140,54" />
+                            <path d="M100,104 C120,104 130,104 140,104" />
+                            <path d="M100,154 C120,154 130,154 140,154" />
+                            <path d="M100,204 C120,204 130,204 140,204" />
+                            <path d="M640,100 C660,100 700,100 720,100" />
+                            <path d="M640,180 C660,180 700,180 720,180" />
+                        </g>
+                    </svg>
+                    <p class="mt-3 text-sm text-slate-600">Pre-LayerNorm variant shown (LN before sublayer). Post-LN is
+                        also used in practice.</p>
+                </article>
+
+                <!-- Math -->
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Core Equations (Single Head)</h3>
+                    <div class="mt-3 text-sm leading-7 text-slate-700 space-y-3">
+                        <p>Embeddings + positions: \( X \in \mathbb{R}^{T \times d} \), \( E \in \mathbb{R}^{V \times d}
+                            \), \( P \in \mathbb{R}^{T \times d} \). Tokens map to rows in \( E \) and are summed with
+                            \( P \).</p>
+                        <p class="whitespace-nowrap overflow-x-auto">
+                            Queries/Keys/Values:
+                            \( Q = X W_Q,\; K = X W_K,\; V = X W_V \), with \( W_*\in \mathbb{R}^{d \times d_k} \).
+                        </p>
+                        <p class="whitespace-nowrap overflow-x-auto">
+                            Self-attention (scaled dot-product):
+                            $$\mathrm{Attn}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\mathsf
+                            T}}{\sqrt{d_k}}\right)\,V.$$
+                        </p>
+                        <p>Multi-Head: compute $h$ heads in parallel, then concatenate and project: \(
+                            \mathrm{MHA}(X)=\mathrm{Concat}(H_1,\dots,H_h)W_O \).</p>
+                        <p>FFN (per token): \( \mathrm{FFN}(x)=\sigma(xW_1+b_1)W_2+b_2 \) (often GELU + dropout).</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Self-Attention Interactive -->
+    <section id="attention" class="py-12 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Self-Attention — Interactive Demo</h2>
+            <p class="mt-2 text-slate-600 max-w-3xl">
+                Explore how the query at a position attends to other tokens. We build tiny $Q, K, V$ from low-dim
+                vectors and show the attention heatmap and the resulting value mix. Change <span
+                    class="kbd">temperature</span> to sharpen or smooth attention and toggle <span class="kbd">causal
+                    mask</span>.
+            </p>
+
+            <div x-data="attentionDemo()" x-init="init()" class="mt-6 grid grid-auto gap-6">
+                <div class="bg-white rounded-2xl shadow p-6 border">
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <label class="text-sm">Tokens:
+                            <select x-model.number="T" @change="randomize()"
+                                class="ml-2 text-sm border rounded-lg px-2 py-1">
+                                <option>4</option>
+                                <option>5</option>
+                                <option>6</option>
+                                <option>8</option>
+                            </select>
+                        </label>
+                        <label class="text-sm">d<sub>k</sub>:
+                            <select x-model.number="dk" @change="randomize()"
+                                class="ml-2 text-sm border rounded-lg px-2 py-1">
+                                <option>2</option>
+                                <option>3</option>
+                                <option>4</option>
+                            </select>
+                        </label>
+                        <label class="text-sm">Query pos:
+                            <input type="range" min="0" :max="T-1" x-model.number="qpos" @input="recompute()" />
+                            <span class="ml-2 mono text-slate-700" x-text="qpos"></span>
+                        </label>
+                        <label class="text-sm">Temp:
+                            <input type="range" min="0.3" max="2.5" step="0.1" x-model.number="temp"
+                                @input="recompute()" />
+                            <span class="ml-2 mono text-slate-700" x-text="temp.toFixed(1)"></span>
+                        </label>
+                        <label class="text-sm inline-flex items-center gap-2">
+                            <input type="checkbox" x-model="causal" @change="recompute()" />
+                            causal mask
+                        </label>
+                        <button class="text-sm px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                            @click="randomize()">Randomize</button>
+                    </div>
+
+                    <div class="grid md:grid-cols-1 gap-4 mt-5">
+                        <div>
+                            <div class="text-sm text-slate-500 mb-2"><b>Attention Weights (softmax of $q_{t}\!\cdot\!K /
+                                    \sqrt{d_k}$)</b></div>
+                            <canvas id="attHeat" width="360" height="180" class="border rounded-lg"></canvas>
+                            <div class="hint mt-2">Row = query position (we highlight current), Col = key position.
+                            </div>
+                            <br><br>
+                            <div class="text-sm text-slate-500 mb-2"><b>Weighted Sum of Values for the current query</b>
+                            </div>
+                            <canvas id="valueBar" width="360" height="180" class="border rounded-lg"></canvas>
+                            <div class="hint mt-2">We show the resulting $y_t = \sum_j \alpha_{t,j} v_j$ components.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow p-6 border">
+                    <h3 class="text-xl font-semibold">Equations with Masking & Temperature</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-700">
+                        With temperature $\tau$ (default $\tau=\sqrt{d_k}$) and an additive mask $M$ (0 = allowed,
+                        $-\infty$ = blocked):
+                    </p>
+                    <p class="whitespace-nowrap overflow-x-auto">
+                        $$A = \mathrm{softmax}\!\left(\tfrac{QK^\top}{\tau} + M\right), \quad Y = A\,V.$$
+                    </p>
+                    <p class="text-sm text-slate-700">For causal decoding, $M_{ij}=-\infty$ when $j>i$ so future
+                        positions are hidden.</p>
+
+                    <!-- Causal mask tiny SVG -->
+                    <div class="mt-4">
+                        <div class="text-sm text-slate-500 mb-1">Causal mask (T=6): white = allowed, gray = masked</div>
+                        <svg viewBox="0 0 240 240" class="w-56 h-auto">
+                            <defs>
+                                <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6">
+                                    <path d="M0,6 l6,-6 M-1,1 l2,-2 M5,7 l2,-2" stroke="#e2e8f0" stroke-width="1" />
+                                </pattern>
+                            </defs>
+                            <g>
+                                <!-- grid -->
+                                <g stroke="#e5e7eb" fill="none">
+                                    <rect x="0" y="0" width="240" height="240" fill="#ffffff" />
+                                    <!-- cells -->
+                                    <g>
+                                        <!-- draw lower triangle white, upper masked -->
+                                        <script type="application/ecmascript">< ![CDATA[]] ></script>
+                                    </g>
+                                </g>
+                                <!-- programmatic rectangles -->
+                                <g id="mask-cells"></g>
+                            </g>
+                        </svg>
+                        <script>
+                                // draw the mask matrix (T=6)
+                                (function drawMask() {
+                                    const T = 6, size = 40;
+                                    const g = document.currentScript.previousElementSibling.querySelector('#mask-cells');
+                                    for (let i = 0; i < T; i++) {
+                                        for (let j = 0; j < T; j++) {
+                                            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                                            rect.setAttribute('x', j * size); rect.setAttribute('y', i * size);
+                                            rect.setAttribute('width', size); rect.setAttribute('height', size);
+                                            rect.setAttribute('class', 'mask-cell');
+                                            if (j > i) rect.setAttribute('fill', '#f1f5f9'); else rect.setAttribute('fill', '#ffffff');
+                                            rect.setAttribute('stroke', '#e5e7eb');
+                                            g.appendChild(rect);
+                                        }
+                                    }
+                                })();
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Positional Encoding -->
+    <section id="posenc" class="py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Positional Encoding</h2>
+            <p class="mt-2 text-slate-600 max-w-3xl">
+                Because attention is permutation-invariant, we inject order information. The classic choice uses
+                sinusoids with different frequencies; other popular options include learned absolute embeddings and
+                relative position encodings (e.g., RoPE).
+            </p>
+
+            <div class="mt-6 grid lg:grid-cols-2 gap-6">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Sinusoidal (Absolute)</h3>
+                    <div class="mt-3 text-sm leading-7 text-slate-700">
+                        <p class="whitespace-nowrap overflow-x-auto">
+                            $$\mathrm{PE}_{(pos,\,2i)}=\sin\!\left(\frac{pos}{10000^{2i/d}}\right),\quad
+                            \mathrm{PE}_{(pos,\,2i+1)}=\cos\!\left(\frac{pos}{10000^{2i/d}}\right).$$
+                        </p>
+                        <p>Add to token embeddings: \( X' = X + \mathrm{PE} \).</p>
+                    </div>
+                    <canvas id="posines" height="200" class="mt-4"></canvas>
+                    <p class="hint mt-2">We plot a few PE dimensions vs. position.</p>
+                </article>
+
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Relative / Rotary (RoPE)</h3>
+                    <p class="mt-3 text-sm leading-7 text-slate-700">
+                        Relative encodings inject distance-aware bias or rotations so that attention depends on token
+                        offsets. RoPE rotates query/key pairs in each head so dot products carry relative phase:
+                    </p>
+                    <p class="whitespace-nowrap overflow-x-auto">
+                        $$\tilde{q}=\mathcal{R}_\theta q,\;\tilde{k}=\mathcal{R}_\theta k,\quad
+                        \langle \tilde{q}_i,\tilde{k}_j\rangle \approx \langle q_i, k_j\rangle\text{ with relative phase
+                        }(i-j).$$
+                    </p>
+                    <p class="text-sm text-slate-700">Effect: better extrapolation to long contexts and stable inductive
+                        biases for order.</p>
+                    <canvas id="tempSoftmax" height="200" class="mt-4"></canvas>
+                    <p class="hint mt-2">Softmax with different temperatures (a stand-in for sharpening from
+                        scaling/rotations).</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Encoder/Decoder -->
+    <section id="encoderdecoder" class="py-12 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Encoder / Decoder & Masks</h2>
+            <div class="grid lg:grid-cols-2 gap-6 mt-6">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Autoregressive Decoder (Causal)</h3>
+                    <p class="mt-3 text-sm text-slate-700">Decoder uses <span class="font-semibold">self-attention with
+                            causal mask</span> + cross-attention to encoder outputs (for seq2seq tasks).</p>
+                    <svg viewBox="0 0 760 300" class="w-full h-auto mt-3">
+                        <!-- decoder block -->
+                        <g>
+                            <rect x="20" y="20" width="720" height="260" rx="16" fill="#fff" stroke="#e2e8f0" />
+                            <text x="380" y="45" text-anchor="middle" font-size="13" fill="#475569">Transformer Decoder
+                                Block</text>
+                        </g>
+                        <!-- sublayers -->
+                        <g>
+                            <rect x="50" y="70" width="260" height="52" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="180" y="98" text-anchor="middle" font-size="12" fill="#334155">Masked
+                                Self-Attention</text>
+
+                            <rect x="330" y="70" width="400" height="52" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="530" y="98" text-anchor="middle" font-size="12" fill="#334155">Residual +
+                                LayerNorm</text>
+
+                            <rect x="50" y="140" width="260" height="52" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="180" y="168" text-anchor="middle" font-size="12" fill="#334155">Cross-Attention
+                                (Q=decoder, K/V=encoder)</text>
+
+                            <rect x="330" y="140" width="400" height="52" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="530" y="168" text-anchor="middle" font-size="12" fill="#334155">Residual +
+                                LayerNorm</text>
+
+                            <rect x="50" y="210" width="260" height="52" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="180" y="238" text-anchor="middle" font-size="12" fill="#334155">Feed-Forward
+                                (MLP)</text>
+
+                            <rect x="330" y="210" width="400" height="52" rx="10" fill="#f8fafc" stroke="#e5e7eb" />
+                            <text x="530" y="238" text-anchor="middle" font-size="12" fill="#334155">Residual +
+                                LayerNorm</text>
+                        </g>
+                    </svg>
+                    <p class="hint mt-2">Teacher forcing during training uses shifted targets; at inference we use KV
+                        cache for speed.</p>
+                </article>
+
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Heads, Dimensions, & Costs</h3>
+                    <ul class="mt-3 text-sm leading-7 text-slate-700 list-disc ml-5">
+                        <li><span class="font-semibold">Shapes</span>: \(X\in \mathbb{R}^{T\times d}\), heads \(h\),
+                            \(d_k=d/h\). Per head \(Q,K,V\in\mathbb{R}^{T\times d_k}\).</li>
+                        <li><span class="font-semibold">Complexity</span>: attention is \(O(T^2 d)\) time, \(O(T^2)\)
+                            memory (per head). Use local/sparse/linear attention for long $T$.</li>
+                        <li><span class="font-semibold">Normalization</span>: pre-LN stabilizes deep stacks; residuals
+                            help gradient flow.</li>
+                        <li><span class="font-semibold">Decoder-only</span>: GPT-style causal transformer for
+                            generation.</li>
+                        <li><span class="font-semibold">Encoder-only</span>: BERT-style bidirectional modeling for
+                            understanding.</li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- MHA & FFN details -->
+    <section id="mha-ffn" class="py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Multi-Head Attention & Feed-Forward</h2>
+            <div class="mt-6 grid lg:grid-cols-3 gap-6">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Multi-Head Attention</h3>
+                    <p class="mt-2 text-sm text-slate-700">
+                        Each head learns different relations (syntax, coreference, long-range dependencies).
+                        Concatenation plus a linear map mixes heads.
+                    </p>
+                    <p>
+                        \[
+                        \begin{aligned}
+                        & \mathrm{MHA}(X) = \\
+                        & \mathrm{Concat}\big(\mathrm{Attn}(XW_Q^{(i)},XW_K^{(i)},XW_V^{(i)})\big)_{i=1}^h W_O.
+                        \end{aligned}
+                        \]
+                    </p>
+
+                    </p>
+                </article>
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Position-wise FFN</h3>
+                    <p class="mt-2 text-sm text-slate-700">
+                        Applied per token; hidden size often 4×-8× the model dim (e.g., \(d_{ff}\approx 4d\)).
+                        SwiGLU/GELU are popular.
+                    </p>
+                    <p class="whitespace-nowrap overflow-x-auto mt-2">$$\mathrm{FFN}(x)=\phi(xW_1+b_1)W_2+b_2.$$
+                    </p>
+                </article>
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Efficiency Tricks</h3>
+                    <ul class="mt-2 text-sm text-slate-700 list-disc ml-5">
+                        <li><span class="font-semibold">FlashAttention</span>: IO-aware exact attention; reduces memory
+                            traffic.</li>
+                        <li><span class="font-semibold">KV Cache</span>: reuse $K,V$ for past tokens in decoding.</li>
+                        <li><span class="font-semibold">RoPE / Relative Bias</span>: better long-context behavior.</li>
+                        <li><span class="font-semibold">Grouped-Query / Multi-Query</span>: share keys/values across
+                            heads to save memory.</li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Best Practices -->
+    <section id="tips" class="py-12 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Training Tips & Debugging</h2>
+            <div class="mt-6 grid lg:grid-cols-3 gap-6">
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Optimization</h3>
+                    <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+                        <li>Use AdamW with weight decay (e.g., 0.01).</li>
+                        <li>Warmup + cosine decay; clip gradients (e.g., 1.0).</li>
+                        <li>Scale batch size with LR; use mixed precision (AMP).</li>
+                    </ul>
+                </article>
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Regularization</h3>
+                    <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+                        <li>Dropout in MHA/FFN; token dropout for robust inputs.</li>
+                        <li>Label smoothing for classification/language modeling.</li>
+                        <li>Data augmentation (masking, span corruption, etc.).</li>
+                    </ul>
+                </article>
+                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+                    <h3 class="text-xl font-semibold">Troubleshooting</h3>
+                    <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+                        <li><span class="font-semibold">Divergence</span>: reduce LR, increase warmup, check norm
+                            scaling.</li>
+                        <li><span class="font-semibold">Collapse</span>: monitor attention entropies; add dropout or
+                            temperature.</li>
+                        <li><span class="font-semibold">Long contexts</span>: try RoPE, ALiBi, or local/sparse
+                            attention.</li>
+                        <li>Inspect loss curves, grad norms, and activation stats.</li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-10 bg-slate-900 text-slate-200">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm">© <span id="year"></span> Transformers Cheatsheet — Single-file</p>
+                <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js • MathJax • SVG/Canvas</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Logic -->
+    <script>
+        // Safe DPR scaler that won't grow on each call
+        function ensureCanvasSize(cvs) {
+            if (!cvs) return;
+            const dpr = window.devicePixelRatio || 1;
+
+            // Establish a stable CSS baseline ONCE (from attributes or defaults)
+            if (!cvs._baseCSS) {
+                const attrW = parseFloat(cvs.getAttribute('width')) || 360; // treat as CSS px
+                const attrH = parseFloat(cvs.getAttribute('height')) || 180; // treat as CSS px
+                cvs._baseCSS = { w: attrW, h: attrH };
+
+                // Make sure CSS size is explicit so clientWidth is reliable
+                if (!cvs.style.width) cvs.style.width = attrW + 'px';
+                if (!cvs.style.height) cvs.style.height = attrH + 'px';
+            }
+
+            // Prefer real layout size; if 0 (hidden/not laid out), use our baseline CSS size
+            const cssW = cvs.clientWidth || cvs._baseCSS.w;
+            const cssH = cvs.clientHeight || cvs._baseCSS.h;
+
+            const needW = Math.round(cssW * dpr);
+            const needH = Math.round(cssH * dpr);
+
+            if (cvs.width !== needW) cvs.width = needW;
+            if (cvs.height !== needH) cvs.height = needH;
+        }
+
+
+        // Footer year
+        document.addEventListener('DOMContentLoaded', () => {
+            const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear();
+        });
+
+        // Toy training curves (loss, cosine lr, warmup)
+        (function trainSpark() {
+            const ctx = document.getElementById('sparkTrain'); if (!ctx || !Chart) return;
+            const N = 160, warm = 10;
+            const loss = Array.from({ length: N }, (_, i) => 2.2 * Math.exp(-(i) / 40) + 0.05 * Math.sin(i / 6) + 0.06 * Math.max(0, Math.random() - 0.7));
+            const lr = Array.from({ length: N }, (_, i) => {
+                if (i < warm) return (i + 1) / (warm) * 0.6;
+                const t = (i - warm) / (N - warm);
+                return 0.6 * 0.5 * (1 + Math.cos(Math.PI * t));
+            });
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: loss.map((_, i) => i + 1), datasets: [
+                        { label: 'loss', data: loss, yAxisID: 'y', tension: 0.25 },
+                        { label: 'lr (warmup+cosine)', data: lr, yAxisID: 'y1', tension: 0.25 }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { type: 'linear', position: 'left' }, y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } } }, plugins: { legend: { display: true } } }
+            });
+        })();
+
+        // Positional encodings chart
+        (function posines() {
+            const el = document.getElementById('posines'); if (!el || !Chart) return;
+            const T = 80, d = 8;
+            const pe = (pos, i) => {
+                const denom = Math.pow(10000, (2 * i) / d);
+                return i % 2 === 0 ? Math.sin(pos / denom) : Math.cos(pos / denom);
+            };
+            const xs = Array.from({ length: T }, (_, i) => i);
+            const datasets = [];
+            for (let i = 0; i < 6; i++) {
+                const ys = xs.map(x => pe(x, i));
+                datasets.push({ label: `dim ${i}`, data: ys, tension: 0.25 });
+            }
+            new Chart(el.getContext('2d'), { type: 'line', data: { labels: xs, datasets }, options: { responsive: true, plugins: { legend: { display: true } }, elements: { point: { radius: 0 } }, scales: { x: { display: true }, y: { display: true } } } });
+        })();
+
+        // Temperature softmax chart
+        (function tempSoftmax() {
+            const el = document.getElementById('tempSoftmax'); if (!el || !Chart) return;
+            const z = [0.2, 1.0, 2.0, 0.5, -0.2];
+            function softmax_t(logits, t) {
+                const s = logits.map(v => v / t);
+                const m = Math.max(...s);
+                const ex = s.map(v => Math.exp(v - m));
+                const S = ex.reduce((a, b) => a + b, 0);
+                return ex.map(v => v / S);
+            }
+            const temps = [0.5, 1.0, 2.0];
+            const xs = z.map((_, i) => `logit${i}`);
+            const datasets = temps.map((t, i) => ({ label: `τ=${t}`, data: softmax_t(z, t), type: 'line', tension: 0.25 }));
+            new Chart(el.getContext('2d'), { type: 'bar', data: { labels: xs, datasets }, options: { responsive: true, scales: { y: { min: 0, max: 1 } } } });
+        })();
+
+        function attentionDemo() {
+            return {
+                // state
+                T: 6, dk: 3, qpos: 0, temp: Math.SQRT2, causal: true,
+                Q: null, K: null, V: null, A: null, y: null,
+                heat: null,     // manual heatmap drawer
+                bar: null,      // Chart.js instance
+                _inited: false, // guard against double Alpine inits
+
+                init() {
+                    if (this._inited) return;   // idempotent
+                    this._inited = true;
+
+                    // create drawing targets first
+                    this.heat = this.makeHeat('attHeat');
+                    this.bar = this.makeBar('valueBar');
+
+                    // then data
+                    this.randomize();
+                    this.recompute();
+
+                    setTimeout(() => { window.MathJax?.typesetPromise?.(); }, 50);
+                },
+
+                randomize() {
+                    this.Q = this.randn(this.T, this.dk);
+                    this.K = this.randn(this.T, this.dk);
+                    this.V = this.randn(this.T, this.dk);
+                    this.qpos = Math.min(this.qpos, this.T - 1);
+                    // NOTE: init() calls recompute() after charts exist
+                },
+
+                recompute() {
+                    // logits = QK^T / temp (+ causal mask)
+                    const logits = this.zeros(this.T, this.T);
+                    for (let i = 0; i < this.T; i++) {
+                        for (let j = 0; j < this.T; j++) {
+                            let dot = 0;
+                            for (let k = 0; k < this.dk; k++) dot += this.Q[i][k] * this.K[j][k];
+                            logits[i][j] = dot / this.temp;
+                            if (this.causal && j > i) logits[i][j] = -1e9;
+                        }
+                    }
+                    // softmax rows
+                    const A = this.zeros(this.T, this.T);
+                    for (let i = 0; i < this.T; i++) {
+                        const row = logits[i], m = Math.max(...row);
+                        const ex = row.map(v => Math.exp(v - m));
+                        const S = ex.reduce((a, b) => a + b, 0);
+                        for (let j = 0; j < this.T; j++) A[i][j] = ex[j] / S;
+                    }
+                    this.A = A;
+
+                    // y_t = Σ_j α_{t,j} v_j  (for current query row i)
+                    const i = this.qpos;
+                    const y = new Array(this.dk).fill(0);
+                    for (let j = 0; j < this.T; j++) {
+                        for (let k = 0; k < this.dk; k++) {
+                            y[k] += A[i][j] * this.V[j][k];
+                        }
+                    }
+                    this.y = y;
+
+                    this.drawHeat();
+                    this.drawBar();
+                },
+
+                // ------- drawing
+                makeHeat(id) {
+                    const el = document.getElementById(id);
+                    const ctx = el?.getContext('2d');
+                    if (!ctx) return null;
+                    return { canvas: el, ctx, cell: 24, pad: 6 };
+                },
+
+                drawHeat() {
+                    if (!this.heat) return;
+                    const { canvas, ctx, cell, pad } = this.heat;
+                    const W = this.T * cell + 2 * pad, H = this.T * cell + 2 * pad;
+                    canvas.width = W; canvas.height = H;
+                    ctx.clearRect(0, 0, W, H);
+                    for (let i = 0; i < this.T; i++) {
+                        for (let j = 0; j < this.T; j++) {
+                            const a = this.A[i][j];
+                            const g = Math.round(255 - 180 * a);
+                            ctx.fillStyle = `rgb(${g},${g + 10},255)`;
+                            ctx.fillRect(pad + j * cell, pad + i * cell, cell - 1, cell - 1);
+                        }
+                    }
+                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+                    ctx.strokeRect(pad - 1, pad + this.qpos * cell - 1, this.T * cell + 2, cell + 2);
+                },
+                makeBar(id) {
+                    const el = document.getElementById(id); if (!el) return null;
+                    const ctx = el.getContext('2d'); if (!ctx) return null;
+                    return { canvas: el, ctx };
+                },
+
+                drawBar() {
+                    if (!this.bar || !this.y) return;
+                    const { canvas, ctx } = this.bar;
+                    ensureCanvasSize(canvas);
+                    const dpr = window.devicePixelRatio || 1;
+                    const W = canvas.width, H = canvas.height;
+
+                    // Clear
+                    ctx.clearRect(0, 0, W, H);
+
+                    // Padding and geometry
+                    const padL = 36 * dpr, padR = 10 * dpr, padT = 14 * dpr, padB = 28 * dpr;
+                    const chartW = W - padL - padR;
+                    const chartH = H - padT - padB;
+
+                    // Data range (include zero)
+                    const vals = Array.from(this.y);
+                    const minV = Math.min(0, ...vals);
+                    const maxV = Math.max(0, ...vals);
+                    const span = (maxV - minV) || 1;
+
+                    // Scales
+                    const xN = vals.length;
+                    const gap = Math.max(2 * dpr, chartW * 0.04 / Math.max(1, xN - 1));
+                    const barW = Math.max(6 * dpr, (chartW - gap * (xN - 1)) / Math.max(1, xN));
+                    const xAt = i => padL + i * (barW + gap);
+                    const yAt = v => padT + (1 - (v - minV) / span) * chartH;   // bigger v → higher
+
+                    // Zero line
+                    const y0 = yAt(0);
+                    ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1 * dpr;
+                    ctx.beginPath(); ctx.moveTo(padL, y0); ctx.lineTo(W - padR, y0); ctx.stroke();
+
+                    // Bars (sign-aware coloring)
+                    for (let i = 0; i < xN; i++) {
+                        const v = vals[i] ?? 0;
+                        const x = xAt(i);
+                        const y = Math.min(yAt(v), yAt(0));
+                        const h = Math.abs(yAt(v) - y0);
+                        ctx.fillStyle = v >= 0 ? 'rgba(99,102,241,0.65)' : 'rgba(239,68,68,0.65)'; // indigo vs red
+                        ctx.fillRect(x, y, barW, Math.max(1 * dpr, h));
+                    }
+
+                    // X labels (dim 0..)
+                    ctx.save();
+                    ctx.fillStyle = '#475569';
+                    ctx.font = `${11 * dpr}px system-ui, -apple-system, Segoe UI, Roboto`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                    for (let i = 0; i < xN; i++) {
+                        const x = xAt(i) + barW / 2;
+                        ctx.fillText(`dim ${i}`, x, H - padB + 6 * dpr);
+                    }
+                    ctx.restore();
+
+                    // Title (small)
+                    ctx.save();
+                    ctx.fillStyle = '#334155';
+                    ctx.font = `${12 * dpr}px system-ui, -apple-system, Segoe UI, Roboto`;
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+                    ctx.fillText('y components', padL, padT - 4 * dpr);
+                    ctx.restore();
+                },
+
+
+                // ------- utils
+                randn(m, n) { const A = []; for (let i = 0; i < m; i++) { const r = []; for (let j = 0; j < n; j++) r.push(this.gauss()); A.push(r); } return A; },
+                zeros(m, n) { const A = []; for (let i = 0; i < m; i++) { A.push(new Array(n).fill(0)); } return A; },
+                gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+            }
+        }
+
+        // Ensure MathJax typesets after DOM/plots
+        (function ensureMathJax() {
+            function typesetNow() {
+                if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+            }
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(typesetNow, 60);
+            } else {
+                document.addEventListener('DOMContentLoaded', () => setTimeout(typesetNow, 60));
+            }
+            setTimeout(typesetNow, 450);
+        })();
+    </script>
+</body>
+
+</html>

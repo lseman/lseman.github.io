@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mixture of Experts — Illustrated Cheatsheet</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- MathJax -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'none'
+      },
+      chtml: {
+        linebreaks: { automatic: false },
+        matchFontHeight: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <style>
+    :root { color-scheme: light; }
+    html { scroll-behavior: smooth; }
+
+    .bg-hero {
+      background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
+      background-size: 200% 200%;
+      animation: grad 18s ease infinite;
+    }
+    @keyframes grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    .card { backdrop-filter: blur(6px); }
+    .node { filter: drop-shadow(0 2px 2px rgba(0,0,0,.06)); }
+
+    mjx-container[display="inline"] { white-space: nowrap; }
+    mjx-container[display="block"] { overflow-x: auto; overflow-y: hidden; }
+
+    .hint { font-size:.875rem; color:#64748b }
+    .mono { font-feature-settings: "tnum" 1, "lnum" 1; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+           background:#f8fafc; border:1px solid #e2e8f0; padding:.125rem .375rem; border-radius:.375rem; }
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-800">
+
+  <!-- Header -->
+  <header class="bg-hero">
+    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+      <div class="flex flex-col lg:flex-row items-center gap-10">
+        <div class="flex-1">
+          <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            <span class="text-indigo-600">Mixture of Experts</span> — Illustrated Cheatsheet
+          </h1>
+          <p class="mt-3 text-lg md:text-xl text-slate-700 max-w-2xl">
+            Scalable feed-forward layers with a trainable <span class="font-semibold">router</span> that sends tokens
+            to one or a few <span class="font-semibold">experts</span>. Includes equations, design choices (top-1/top-2, capacity),
+            load balancing loss, and an interactive routing demo.
+          </p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a href="#primer" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Start here</a>
+            <a href="#routing" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Routing Demo</a>
+            <a href="#equations" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Equations</a>
+            <a href="#design" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Design Choices</a>
+          </div>
+          <p class="mt-4 text-sm text-slate-500">Single file • Tailwind + Alpine + Chart.js • MathJax • SVG/Canvas</p>
+        </div>
+
+        <div class="flex-1 w-full">
+          <div class="bg-white/70 card rounded-2xl p-6 shadow border border-slate-100">
+            <canvas id="sparkUtil" height="220"></canvas>
+            <p class="mt-3 text-center text-sm text-slate-600">Toy utilization over steps (capacity factor & routing noise).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Primer -->
+  <section id="primer" class="py-12">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">What is an MoE layer?</h2>
+        <p class="mt-2 text-slate-600 max-w-3xl">
+          An MoE replaces a dense FFN with <span class="font-semibold">E experts</span> (small MLPs).
+          A router produces gate scores and selects top-k experts per token. Only selected experts compute, so
+          compute cost scales with the fraction of tokens they process—enabling larger effective model capacity
+          at similar FLOPs.
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Diagram -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">MoE Feed-Forward (Top-k Routing)</h3>
+          <svg viewBox="0 0 760 300" class="w-full h-auto mt-3">
+            <!-- tokens -->
+            <g font-size="12" fill="#334155">
+              <rect x="20" y="60" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="60" y="78" text-anchor="middle">x₁</text>
+              <rect x="20" y="110" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="60" y="128" text-anchor="middle">x₂</text>
+              <rect x="20" y="160" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="60" y="178" text-anchor="middle">x₃</text>
+              <rect x="20" y="210" width="80" height="28" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="60" y="228" text-anchor="middle">x₄</text>
+            </g>
+
+            <!-- router -->
+            <g>
+              <rect x="140" y="30" width="180" height="240" rx="16" fill="#fff" stroke="#e2e8f0"/>
+              <text x="230" y="55" text-anchor="middle" font-size="13" fill="#475569">Router (gates)</text>
+              <rect x="160" y="80" width="140" height="40" rx="8" fill="#f8fafc" stroke="#e5e7eb"/>
+              <text x="230" y="105" text-anchor="middle" font-size="12" fill="#334155">$g(x)=\\mathrm{softmax}(W_r x)$</text>
+              <rect x="160" y="150" width="140" height="40" rx="8" fill="#f8fafc" stroke="#e5e7eb"/>
+              <text x="230" y="175" text-anchor="middle" font-size="12" fill="#334155">top-k + capacity</text>
+            </g>
+
+            <!-- experts -->
+            <g>
+              <rect x="360" y="30" width="380" height="240" rx="16" fill="#fff" stroke="#e2e8f0"/>
+              <text x="550" y="55" text-anchor="middle" font-size="13" fill="#475569">Experts</text>
+
+              <g font-size="12" fill="#334155">
+                <rect x="380" y="80" width="140" height="40" rx="10" fill="#f0f9ff" stroke="#bae6fd"/><text x="450" y="105" text-anchor="middle">Expert 1</text>
+                <rect x="540" y="80" width="180" height="40" rx="10" fill="#f0f9ff" stroke="#bae6fd"/><text x="630" y="105" text-anchor="middle">Expert 2</text>
+
+                <rect x="380" y="150" width="140" height="40" rx="10" fill="#f0f9ff" stroke="#bae6fd"/><text x="450" y="175" text-anchor="middle">Expert 3</text>
+                <rect x="540" y="150" width="180" height="40" rx="10" fill="#f0f9ff" stroke="#bae6fd"/><text x="630" y="175" text-anchor="middle">Expert 4</text>
+              </g>
+            </g>
+
+            <!-- arrows -->
+            <defs>
+              <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L6,3 z" fill="#94a3b8" />
+              </marker>
+            </defs>
+            <g stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arr)">
+              <!-- tokens -> router -->
+              <path d="M100,74 C120,74 130,74 140,74"/>
+              <path d="M100,124 C120,124 130,124 140,124"/>
+              <path d="M100,174 C120,174 130,174 140,174"/>
+              <path d="M100,224 C120,224 130,224 140,224"/>
+
+              <!-- router -> experts -->
+              <path d="M320,100 C340,100 350,100 360,100"/>
+              <path d="M320,100 C430,100 520,100 540,100"/>
+              <path d="M320,170 C340,170 350,170 360,170"/>
+              <path d="M320,170 C430,170 520,170 540,170"/>
+            </g>
+          </svg>
+          <p class="mt-3 text-sm text-slate-600">Router picks top-k experts per token; a <em>capacity factor</em> limits per-expert tokens, dropping or rerouting overflow.</p>
+        </article>
+
+        <!-- Core ideas -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Why MoE?</h3>
+          <ul class="mt-3 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li><span class="font-semibold">Capacity & efficiency</span>: grow parameters via experts, but activate only a few per token.</li>
+            <li><span class="font-semibold">Specialization</span>: experts learn complementary patterns (syntax, rare tokens, domains).</li>
+            <li><span class="font-semibold">Control</span>: top-k (1–2) keeps memory/FLOPs reasonable; capacity factor shapes load.</li>
+            <li><span class="font-semibold">Stability</span>: add auxiliary loss to discourage collapse into a few experts.</li>
+          </ul>
+          <div class="mt-4 text-sm text-slate-700">
+            <p class="whitespace-nowrap overflow-x-auto">
+              $$y = \sum_{i \in \mathcal{S}(x)} p_i(x)\, f_i(x),\quad \mathcal{S}(x)=\text{TopK}(g(x)).$$
+            </p>
+            <p class="hint mt-2">Here $g(x)$ are router logits, $p_i$ the normalized gates for selected experts, and $f_i$ the expert MLPs.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Routing Demo -->
+  <section id="routing" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Router & Load Balancing</h2>
+      <p class="mt-2 text-slate-600 max-w-3xl">
+        Play with token count, experts, top-k, temperature, and capacity factor. See how overflow happens and how the
+        auxiliary loss reacts.
+      </p>
+
+      <div x-data="moeDemo()" x-init="init()" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Controls + Stats -->
+        <div class="bg-white rounded-2xl shadow p-6 border">
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="text-sm">Tokens:
+              <select x-model.number="T" @change="randomize()" class="ml-2 text-sm border rounded-lg px-2 py-1">
+                <option>32</option><option>64</option><option>96</option><option>128</option>
+              </select>
+            </label>
+            <label class="text-sm">Experts:
+              <select x-model.number="E" @change="randomize()" class="ml-2 text-sm border rounded-lg px-2 py-1">
+                <option>4</option><option>6</option><option>8</option>
+              </select>
+            </label>
+            <label class="text-sm">top-k:
+              <select x-model.number="K" @change="recompute()" class="ml-2 text-sm border rounded-lg px-2 py-1">
+                <option>1</option><option>2</option>
+              </select>
+            </label>
+            <label class="text-sm">Temp:
+              <input type="range" min="0.3" max="2.5" step="0.1" x-model.number="temp" @input="recompute()"/>
+              <span class="ml-2 mono text-slate-700" x-text="temp.toFixed(1)"></span>
+            </label>
+            <label class="text-sm">Capacity factor:
+              <input type="range" min="0.5" max="2.0" step="0.1" x-model.number="cap" @input="recompute()"/>
+              <span class="ml-2 mono text-slate-700" x-text="cap.toFixed(1)"></span>
+            </label>
+            <button class="text-sm px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700" @click="randomize()">Randomize</button>
+          </div>
+
+          <div class="grid md:grid-cols-1 gap-4 mt-5">
+            <div>
+              <div class="text-sm text-slate-500 mb-2"><b>Per-expert load (used / capacity)</b></div>
+              <canvas id="loadChart" width="360" height="200" class="border rounded-lg"></canvas>
+              <p class="mt-2 text-sm">
+                <span class="hint">Overflow (drops):</span> <span class="mono" x-text="overflow"></span> /
+                <span class="mono" x-text="T*K"></span>
+                &nbsp;•&nbsp;
+                <span class="hint">Aux loss (Switch-style):</span> <span class="mono" x-text="auxLoss.toFixed(4)"></span>
+              </p>
+            </div>
+
+            <div>
+              <div class="text-sm text-slate-500 mb-2"><b>Gate probabilities (mean per expert)</b></div>
+              <canvas id="gateChart" width="360" height="200" class="border rounded-lg"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explanations -->
+        <div class="bg-white rounded-2xl shadow p-6 border">
+          <h3 class="text-xl font-semibold">How this demo routes</h3>
+          <ul class="mt-3 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li>We synthesize $T$ token embeddings and a random router matrix $W_r$.</li>
+            <li>Compute logits $z=W_r x$ and softmax with temperature $\tau$ to get gates $p$.</li>
+            <li>Pick top-$k$ experts per token; each expert has capacity
+              $C=\lceil \text{cap} \cdot T \cdot K / E \rceil$.</li>
+            <li>We admit tokens up to capacity (by highest gate first). Overflow is dropped (for simplicity).</li>
+            <li>Auxiliary loss (Switch-style): encourages uniform <em>assignment</em> and <em>probabilities</em>
+              across experts.
+            </li>
+          </ul>
+          <p class="mt-4 text-sm text-slate-700 whitespace-nowrap overflow-x-auto">
+            $$\mathcal{L}_{aux}=E\cdot \sum_{i=1}^{E} \Big(\underbrace{\tfrac{n_i}{T}}_{\text{fraction used}}\Big)\cdot
+            \Big(\underbrace{\tfrac{1}{T}\sum_{t=1}^{T} p_i(x_t)}_{\text{mean gate}}\Big).$$
+          </p>
+          <p class="hint mt-2">Lower is better when both usage and probabilities are close to uniform.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Equations -->
+  <section id="equations" class="py-12">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Core Equations</h2>
+      <div class="mt-6 grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Router & Experts</h3>
+          <p class="mt-3 text-sm text-slate-700 whitespace-nowrap overflow-x-auto">
+            $$g(x)=W_r x + b_r,\qquad p=\mathrm{softmax}\!\left(\tfrac{g(x)}{\tau}\right).$$
+            $$\mathcal{S}(x)=\mathrm{TopK}(p),\qquad y=\sum_{i\in\mathcal{S}(x)} \tilde{p}_i\, f_i(x),$$
+            where $\tilde{p}$ renormalizes $p$ over $\mathcal{S}(x)$.
+          </p>
+          <p class="mt-3 text-sm text-slate-700 whitespace-nowrap overflow-x-auto">
+            \[
+            f_i(x) = W_{2,i}\,\phi(W_{1,i}x + b_{1,i}) + b_{2,i}\quad\text{(SwiGLU/GELU common)}.
+            \]
+          </p>
+          <p class="hint mt-2">Often $k\in\{1,2\}$; top-2 yields smoother grad flow but more compute.</p>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Capacity & Complexity</h3>
+          <p class="mt-3 text-sm text-slate-700 whitespace-nowrap overflow-x-auto">
+            $$C=\left\lceil \text{cap}\cdot \frac{T\cdot K}{E}\right\rceil\quad\text{tokens per expert.}$$
+            Time $\approx O(T\,d + T\,K\,d_{ff})$ (router + selected experts) vs dense $O(T\,d_{ff})$ with $d_{ff}\gg d$.
+          </p>
+          <p class="mt-3 text-sm text-slate-700">
+            In practice: communication/sharding overhead matters; balance router sharpness (temperature), noise, and
+            aux loss to avoid hot spots.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Design choices -->
+  <section id="design" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Design Choices & Tips</h2>
+      <div class="mt-6 grid lg:grid-cols-3 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Router & Noise</h3>
+          <ul class="mt-2 text-sm text-slate-700 list-disc ml-5">
+            <li><span class="font-semibold">Temperature</span> controls sharpness; too low → hot experts.</li>
+            <li>Gaussian or Gumbel noise can improve exploration early in training.</li>
+            <li>Top-1 (Switch) is simplest/fastest; top-2 smooths gradients, better quality at slight extra cost.</li>
+          </ul>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Capacity & Dropping</h3>
+          <ul class="mt-2 text-sm text-slate-700 list-disc ml-5">
+            <li>Capacity factor 1.0 ≈ uniform ideal; &lt;1.0 will drop more; &gt;1.0 reduces drops but increases comms.</li>
+            <li>Overflow policies: drop, reroute to next expert, or dynamic capacity growth.</li>
+            <li>Batch-wise balancing helps when sequence lengths vary.</li>
+          </ul>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Stability & Regularization</h3>
+          <ul class="mt-2 text-sm text-slate-700 list-disc ml-5">
+            <li>Auxiliary load-balancing loss; optionally z-loss on logits.</li>
+            <li>Expert dropout during training for robustness.</li>
+            <li>Shard experts across devices; consider capacity-aware all-to-all schedules.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 bg-slate-900 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">© <span id="year"></span> Mixture of Experts Cheatsheet — Single-file</p>
+        <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js • MathJax • SVG/Canvas</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Logic -->
+  <script>
+    // Stable DPR scaler so canvases don't grow on re-render
+    function ensureCanvasSize(cvs) {
+      if (!cvs) return;
+      const dpr = window.devicePixelRatio || 1;
+      if (!cvs._baseCSS) {
+        const attrW = parseFloat(cvs.getAttribute('width')) || 360;
+        const attrH = parseFloat(cvs.getAttribute('height')) || 180;
+        cvs._baseCSS = { w: attrW, h: attrH };
+        if (!cvs.style.width) cvs.style.width = attrW + 'px';
+        if (!cvs.style.height) cvs.style.height = attrH + 'px';
+      }
+      const cssW = cvs.clientWidth || cvs._baseCSS.w;
+      const cssH = cvs.clientHeight || cvs._baseCSS.h;
+      const needW = Math.round(cssW * dpr);
+      const needH = Math.round(cssH * dpr);
+      if (cvs.width !== needW) cvs.width = needW;
+      if (cvs.height !== needH) cvs.height = needH;
+    }
+
+    // Footer year
+    document.addEventListener('DOMContentLoaded', () => {
+      const y = document.getElementById('year');
+      if (y) y.textContent = new Date().getFullYear();
+    });
+
+    // Toy sparkline of average utilization vs steps (purely illustrative)
+    (function sparkUtil() {
+      const ctx = document.getElementById('sparkUtil'); if (!ctx || !Chart) return;
+      const N = 160;
+      const util = Array.from({ length: N }, (_, i) =>
+        0.55 + 0.15 * Math.sin(i / 14) + 0.07 * Math.max(0, Math.random() - 0.7)
+      );
+      const cap = util.map(u => Math.min(1, u + 0.1 * (Math.random() * 0.6 - 0.3)));
+      new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: util.map((_, i) => i + 1),
+          datasets: [
+            { label: 'avg util', data: util, yAxisID: 'y', tension: 0.25 },
+            { label: 'cap factor (proxy)', data: cap, yAxisID: 'y1', tension: 0.25 }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { min: 0, max: 1 }, y1: { min: 0, max: 1, position: 'right', grid: { drawOnChartArea: false } } },
+          plugins: { legend: { display: true } },
+          elements: { point: { radius: 0 } }
+        }
+      });
+    })();
+
+    function moeDemo() {
+      return {
+        // State
+        T: 64, E: 6, K: 1, temp: 1.0, cap: 1.0,
+        d: 8, Wr: null, X: null,
+        gates: null, // [T, E]
+        assign: null, // per token: selected expert indices (length K)
+        loads: null, // per expert counts
+        capacity: null,
+        overflow: 0,
+        auxLoss: 0.0,
+        loadChart: null,
+        gateChart: null,
+        _inited: false,
+
+        init() {
+          if (this._inited) return;
+          this._inited = true;
+          this.loadChart = this.makeBar('loadChart');
+          this.gateChart = this.makeBar('gateChart');
+          this.randomize();
+          this.recompute();
+          setTimeout(() => { window.MathJax?.typesetPromise?.(); }, 50);
+        },
+
+        randomize() {
+          this.X = this.randn(this.T, this.d);
+          this.Wr = this.randn(this.E, this.d); // logits per expert
+          this.recompute();
+        },
+
+        recompute() {
+          // gates = softmax((Wr X^T)/temp) per token
+          const Z = this.zeros(this.T, this.E);
+          for (let t = 0; t < this.T; t++) {
+            for (let i = 0; i < this.E; i++) {
+              let dot = 0;
+              for (let k = 0; k < this.d; k++) dot += this.Wr[i][k] * this.X[t][k];
+              Z[t][i] = dot / this.temp;
+            }
+          }
+          const P = this.softmaxRows(Z);
+          this.gates = P;
+
+          // top-k selection per token
+          const topK = [];
+          const probsTop = [];
+          for (let t = 0; t < this.T; t++) {
+            // indices sorted by prob desc
+            const arr = P[t].map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]);
+            topK.push(arr.slice(0, this.K).map(x => x[1]));
+            probsTop.push(arr.slice(0, this.K).map(x => x[0]));
+          }
+
+          // compute capacity
+          const C = Math.ceil(this.cap * this.T * this.K / this.E);
+          this.capacity = C;
+
+          // admit up to capacity per expert by highest gate first
+          const perExpert = Array.from({ length: this.E }, () => []);
+          for (let t = 0; t < this.T; t++) {
+            for (let j = 0; j < this.K; j++) {
+              const e = topK[t][j];
+              perExpert[e].push({ t, p: probsTop[t][j], slot: j });
+            }
+          }
+          // sort each expert's queue by probability desc
+          for (let e = 0; e < this.E; e++) perExpert[e].sort((a, b) => b.p - a.p);
+
+          const admitted = Array.from({ length: this.E }, () => []);
+          let overflow = 0;
+          for (let e = 0; e < this.E; e++) {
+            const keep = perExpert[e].slice(0, C);
+            admitted[e] = keep;
+            overflow += Math.max(0, perExpert[e].length - C);
+          }
+          this.overflow = overflow;
+
+          // build loads & (conceptual) assignment
+          const loads = new Array(this.E).fill(0);
+          const assign = Array.from({ length: this.T }, () => []);
+          for (let e = 0; e < this.E; e++) {
+            loads[e] = admitted[e].length;
+            for (const rec of admitted[e]) assign[rec.t].push(e);
+          }
+          this.loads = loads;
+          this.assign = assign;
+
+          // auxiliary loss (Switch-like)
+          const usedFrac = loads.map(c => c / (this.T * this.K));
+          const meanGate = this.meanCols(P); // average probability across tokens
+          let aux = 0;
+          for (let i = 0; i < this.E; i++) aux += usedFrac[i] * meanGate[i];
+          this.auxLoss = aux * this.E;
+
+          // update charts
+          this.drawLoad();
+          this.drawGates();
+        },
+
+        // ----- charts
+        makeBar(id) {
+          const el = document.getElementById(id); if (!el || !Chart) return null;
+          const ctx = el.getContext('2d'); if (!ctx) return null;
+          return { canvas: el, ctx };
+        },
+
+        drawLoad() {
+          if (!this.loadChart) return;
+          const { canvas, ctx } = this.loadChart;
+          ensureCanvasSize(canvas);
+          const E = this.E;
+          const labels = Array.from({ length: E }, (_, i) => `E${i}`);
+          const used = this.loads ?? new Array(E).fill(0);
+          const cap = new Array(E).fill(this.capacity ?? 0);
+
+          // manual bar rendering (no Chart.js object to avoid reflow bloat)
+          const dpr = window.devicePixelRatio || 1;
+          const W = canvas.width, H = canvas.height;
+          ctx.clearRect(0, 0, W, H);
+
+          // paddings
+          const padL = 40 * dpr, padR = 10 * dpr, padT = 16 * dpr, padB = 30 * dpr;
+          const chartW = W - padL - padR, chartH = H - padT - padB;
+
+          const maxV = Math.max(1, ...used, ...cap);
+          const xN = E;
+          const gap = Math.max(2 * dpr, chartW * 0.04 / Math.max(1, xN - 1));
+          const groupW = Math.max(12 * dpr, (chartW - gap * (xN - 1)) / Math.max(1, xN));
+          const barW = Math.max(6 * dpr, groupW / 2 - 2 * dpr);
+          const xAt = i => padL + i * (groupW + gap);
+          const yAt = v => padT + (1 - v / maxV) * chartH;
+
+          // grid
+          ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1 * dpr;
+          ctx.beginPath(); for (let g = 0; g <= 4; g++) {
+            const y = padT + (g / 4) * chartH; ctx.moveTo(padL, y); ctx.lineTo(W - padR, y);
+          } ctx.stroke();
+
+          for (let i = 0; i < xN; i++) {
+            const x = xAt(i);
+            const yU = yAt(used[i]), yC = yAt(cap[i]);
+            const hU = Math.max(1 * dpr, (padT + chartH) - yU);
+            const hC = Math.max(1 * dpr, (padT + chartH) - yC);
+
+            // capacity (light)
+            ctx.fillStyle = 'rgba(148,163,184,0.35)';
+            ctx.fillRect(x, yC, barW, hC);
+
+            // used (indigo)
+            ctx.fillStyle = 'rgba(99,102,241,0.75)';
+            ctx.fillRect(x + barW + 2 * dpr, yU, barW, hU);
+
+            // labels
+            ctx.fillStyle = '#475569';
+            ctx.font = `${11 * dpr}px system-ui`; ctx.textAlign = 'center';
+            ctx.fillText(labels[i], x + barW, H - padB + 6 * dpr);
+          }
+
+          // legend
+          ctx.fillStyle = '#334155';
+          ctx.font = `${12 * dpr}px system-ui`; ctx.textAlign = 'left';
+          ctx.fillText('used vs capacity', padL, padT - 4 * dpr);
+        },
+
+        drawGates() {
+          if (!this.gateChart) return;
+          const { canvas, ctx } = this.gateChart;
+          ensureCanvasSize(canvas);
+          const meanGate = this.meanCols(this.gates ?? this.zeros(this.T, this.E));
+          const E = meanGate.length;
+
+          const dpr = window.devicePixelRatio || 1;
+          const W = canvas.width, H = canvas.height;
+          ctx.clearRect(0, 0, W, H);
+
+          const padL = 40 * dpr, padR = 10 * dpr, padT = 16 * dpr, padB = 30 * dpr;
+          const chartW = W - padL - padR, chartH = H - padT - padB;
+
+          const maxV = Math.max(0.25, ...meanGate);
+          const xN = E;
+          const gap = Math.max(2 * dpr, chartW * 0.04 / Math.max(1, xN - 1));
+          const barW = Math.max(10 * dpr, (chartW - gap * (xN - 1)) / Math.max(1, xN));
+          const xAt = i => padL + i * (barW + gap);
+          const yAt = v => padT + (1 - v / maxV) * chartH;
+
+          // grid
+          ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1 * dpr;
+          ctx.beginPath(); for (let g = 0; g <= 4; g++) {
+            const y = padT + (g / 4) * chartH; ctx.moveTo(padL, y); ctx.lineTo(W - padR, y);
+          } ctx.stroke();
+
+          for (let i = 0; i < xN; i++) {
+            const v = meanGate[i];
+            const x = xAt(i), y = yAt(v), h = Math.max(1 * dpr, (padT + chartH) - y);
+            ctx.fillStyle = 'rgba(16,185,129,0.75)'; // teal-ish
+            ctx.fillRect(x, y, barW, h);
+
+            ctx.fillStyle = '#475569';
+            ctx.font = `${11 * dpr}px system-ui`; ctx.textAlign = 'center';
+            ctx.fillText(`E${i}`, x + barW / 2, H - padB + 6 * dpr);
+          }
+
+          // legend
+          ctx.fillStyle = '#334155';
+          ctx.font = `${12 * dpr}px system-ui`; ctx.textAlign = 'left';
+          ctx.fillText('mean gate prob per expert', padL, padT - 4 * dpr);
+        },
+
+        // ----- helpers
+        softmaxRows(Z) {
+          const T = Z.length, E = Z[0].length;
+          const P = this.zeros(T, E);
+          for (let t = 0; t < T; t++) {
+            const row = Z[t];
+            const m = Math.max(...row);
+            const ex = row.map(v => Math.exp(v - m));
+            const S = ex.reduce((a, b) => a + b, 0);
+            for (let i = 0; i < E; i++) P[t][i] = ex[i] / (S || 1);
+          }
+          return P;
+        },
+
+        meanCols(M) {
+          const T = M.length, E = M[0].length;
+          const out = new Array(E).fill(0);
+          for (let t = 0; t < T; t++) for (let i = 0; i < E; i++) out[i] += M[t][i];
+          for (let i = 0; i < E; i++) out[i] /= Math.max(1, T);
+          return out;
+        },
+
+        randn(m, n) { const A = []; for (let i = 0; i < m; i++) { const r = []; for (let j = 0; j < n; j++) r.push(this.gauss()); A.push(r);} return A; },
+        zeros(m, n) { const A = []; for (let i = 0; i < m; i++) A.push(new Array(n).fill(0)); return A; },
+        gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); },
+      }
+    }
+
+    // After DOM ready, one extra typeset to catch any late content
+    (function ensureMathJax() {
+      function typesetNow() { if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise(); }
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(typesetNow, 60);
+      } else {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(typesetNow, 60));
+      }
+      setTimeout(typesetNow, 450);
+    })();
+  </script>
+</body>
+</html>
