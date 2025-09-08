@@ -1,16 +1,13 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Timsort Lab — Stable, Hybrid Sort Visualizer</title>
-  <!-- Tailwind CSS CDN -->
+  <title>Timsort Lab — Pedagogical, Step-by-Step Visualizer</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- Chart.js (optional mini charts) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root { color-scheme: light; }
     html { scroll-behavior: smooth; }
@@ -21,15 +18,15 @@
     }
     @keyframes grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
     .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    .fade-in { animation: fade .25s ease-in; }
-    @keyframes fade { from {opacity:.2} to {opacity:1} }
     .bar { transition: transform .15s ease, background-color .15s ease; }
     .bar.highlight { outline: 2px solid #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.25) inset; }
+    .badge { border:1px solid rgba(0,0,0,.08); background: rgba(0,0,0,.03); }
+    .tiny { font-size: 11px; }
+    .logbox { height: 180px; }
   </style>
 </head>
-
-<body class="min-h-screen text-slate-800">
-  <!-- Header / Hero -->
+<body class="min-h-screen text-slate-800" x-data="timsortTeach()" x-init="init()">
+  <!-- Header -->
   <header class="bg-hero">
     <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
       <div class="flex flex-col lg:flex-row items-center gap-10">
@@ -38,20 +35,23 @@
             Timsort <span class="text-indigo-600">Lab</span>
           </h1>
           <p class="mt-3 text-lg md:text-xl text-slate-700">
-            Interactive, single‑file site to <span class="font-semibold">detect runs</span>,
-            <span class="font-semibold">binary‑insert</span> short runs up to <span class="font-semibold">minrun</span>, and
-            <span class="font-semibold">merge with galloping</span> while enforcing the stack invariants — exactly how Python’s sort works.
+            A <span class="font-semibold">pedagogical</span> Timsort that executes <span class="font-semibold">one micro‑step at a time</span> — run detection, optional reversal, minrun extension via <span class="font-semibold">binary insertion</span>, and
+            <span class="font-semibold">invariant‑driven merges</span> (with optional galloping). Includes <span class="font-semibold">step back</span>, throttled play, and large‑N safe fast‑forward.
           </p>
           <div class="mt-5 flex flex-wrap gap-3">
             <a href="#sim" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open Simulator</a>
-            <a href="#guide" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Read the Illustrated Guide</a>
+            <a href="#guide" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Read the Guide</a>
           </div>
-          <p class="mt-4 text-sm text-slate-500">Stable hybrid of run detection + insertion sort + merge sort (with galloping).</p>
+          <p class="mt-4 text-sm text-slate-500">Stable hybrid: natural runs + (binary) insertion on short runs + merges under stack invariants; galloping optional.</p>
         </div>
         <div class="flex-1 w-full">
           <div class="bg-white/70 backdrop-blur rounded-2xl p-6 shadow border border-slate-100">
-            <canvas id="lenChart" height="220"></canvas>
-            <p class="mt-3 text-center text-sm text-slate-600">Run‑length distribution updates as the array changes.</p>
+            <p class="text-sm text-slate-700">This version avoids UI hangs by chunking work and throttling updates. Enable <span class="font-semibold">Teaching Mode</span> to force small <span class="font-mono">minrun</span> and disable galloping.</p>
+            <ul class="mt-3 text-sm text-slate-600 list-disc pl-6">
+              <li>Every click of <span class="font-semibold">Step</span> performs exactly one micro‑operation.</li>
+              <li><span class="font-semibold">Back</span> restores the previous snapshot (up to a cap).</li>
+              <li><span class="font-semibold">Finish</span> runs in chunks with yielding to the event loop.</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -59,57 +59,90 @@
   </header>
 
   <!-- Simulator -->
-  <section id="sim" class="py-12" x-data="timsortLab()" x-init="init()">
+  <section id="sim" class="py-12">
     <div class="max-w-7xl mx-auto px-6">
       <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Simulator</h2>
-          <p class="text-slate-600 mt-1">Generate data, step through the algorithm, and watch <span class="font-semibold">runs</span>, <span class="font-semibold">stack invariants</span>, and <span class="font-semibold">galloping</span>.</p>
+          <p class="text-slate-600 mt-1">Generate data, step through <span class="font-semibold">scan → (reverse) → extend to minrun → push → merge‑while‑violated</span>.</p>
         </div>
         <div class="flex items-center gap-2 text-sm">
           <label class="text-slate-600">N</label>
-          <input type="number" min="8" step="1" class="w-20 rounded-lg border-slate-300" x-model.number="N">
+          <input type="number" min="4" step="1" class="w-20 rounded-lg border-slate-300" x-model.number="N">
           <label class="text-slate-600 ml-2">Range</label>
           <input type="number" min="5" step="5" class="w-24 rounded-lg border-slate-300" x-model.number="rangeMax">
-          <label class="text-slate-600 ml-2">Nearly‑sorted</label>
-          <input type="range" min="0" max="100" step="5" x-model.number="nearly" class="w-32">
-          <label class="text-slate-600 ml-2">Reversed</label>
-          <input type="checkbox" x-model="reversed">
+          <label class="text-slate-600 ml-2">Pattern</label>
+          <select class="rounded-lg border-slate-300" x-model="pattern">
+            <option value="random">random</option>
+            <option value="nearly">nearly‑sorted</option>
+            <option value="reversed">reversed</option>
+            <option value="runs">pre‑built runs</option>
+          </select>
           <button class="ml-2 px-3 py-1.5 rounded-lg bg-slate-800 text-white" @click="regen()">Regenerate</button>
         </div>
       </div>
 
-      <!-- Controls -->
       <div class="grid lg:grid-cols-5 gap-6">
+        <!-- Controls -->
         <div class="lg:col-span-2">
           <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
             <h3 class="font-semibold text-slate-800">Controls</h3>
             <div class="mt-3 flex flex-wrap gap-2">
-              <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="resetAlgo()">Prepare</button>
+              <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="prepare()">Prepare</button>
               <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white" @click="step()">Step</button>
-              <button class="px-3 py-1.5 rounded-lg bg-emerald-700 text-white" @click="play()">Play</button>
-              <button class="px-3 py-1.5 rounded-lg bg-slate-700 text-white" @click="pause()">Pause</button>
+              <button class="px-3 py-1.5 rounded-lg bg-emerald-700 text-white" @click="play()" :disabled="playing">Play</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-700 text-white" @click="pause()" :disabled="!playing">Pause</button>
               <button class="px-3 py-1.5 rounded-lg bg-amber-600 text-white" @click="finish()">Finish</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-500 text-white" @click="back()" :disabled="!canBack">Back</button>
             </div>
-            <div class="mt-3 flex items-center gap-2 text-sm">
-              <label class="text-slate-600">Speed</label>
-              <input type="range" min="20" max="800" step="20" class="w-40" x-model.number="speed">
-              <span class="text-slate-500">(<span x-text="speed"></span> ms)</span>
+
+            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div class="col-span-2 flex items-center gap-2">
+                <label class="text-slate-600">Speed</label>
+                <input type="range" min="20" max="800" step="20" class="w-40" x-model.number="speed">
+                <span class="text-slate-500">(<span x-text="speed"></span> ms per tick)</span>
+              </div>
+
+              <div class="col-span-2">
+                <label class="font-semibold text-slate-800">Mode</label>
+                <div class="mt-1 grid grid-cols-2 gap-2">
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" value="teach" x-model="mode"> Teaching (small minrun, no gallop)</label>
+                  <label class="flex items-center gap-2 text-sm"><input type="radio" value="normal" x-model="mode"> Normal (CPython‑like)</label>
+                </div>
+              </div>
+
+              <template x-if="mode==='teach'">
+                <div class="col-span-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <div class="text-xs text-slate-500">minrun</div>
+                    <input type="number" class="w-24 rounded-lg border-slate-300" min="3" max="32" step="1" x-model.number="fixedMinrun">
+                  </div>
+                  <div>
+                    <div class="text-xs text-slate-500">History cap (steps)</div>
+                    <input type="number" class="w-28 rounded-lg border-slate-300" min="100" max="5000" step="100" x-model.number="historyCap">
+                  </div>
+                </div>
+              </template>
+
+              <div class="col-span-2 grid grid-cols-2 gap-3">
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="opts.binaryInsertion"> Binary insertion</label>
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="opts.gallop" :disabled="mode==='teach'"> Galloping</label>
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="opts.leftoverSlow"> Copy leftovers step‑by‑step</label>
+                <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="opts.colorByRun"> Color bars by run</label>
+              </div>
             </div>
+
             <div class="mt-4 text-xs text-slate-600">
-              <p><span class="font-semibold">minrun</span> is computed as in CPython: collapse high bits of n until it fits \[32, 64), then leftover bits decide the final value.</p>
-              <p class="mt-1">Short runs (len &lt; minrun) are extended via <span class="font-semibold">binary insertion sort</span>.</p>
-              <p class="mt-1">Merge stack invariants ensure <span class="font-semibold">balanced merges</span>, triggering merges whenever violated.</p>
-              <p class="mt-1">Galloping switches from 1‑by‑1 comparisons to <span class="font-semibold">exponential jumps</span> once a side wins repeatedly.</p>
+              <p><span class="font-semibold">Pedagogical guarantees:</span> one micro‑op per Step; stack invariants checked after each run push; merges performed only when violated; fast‑forward yields between chunks to keep UI responsive.</p>
             </div>
           </div>
 
           <div class="mt-6 bg-white rounded-2xl shadow p-5 border border-slate-200">
             <h3 class="font-semibold text-slate-800">Metrics</h3>
-            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+            <div class="mt-3 grid grid-cols-3 gap-3 text-sm">
               <div>
                 <div class="text-xs text-slate-500">minrun</div>
-                <div class="text-xl font-semibold" x-text="state.minrun"></div>
+                <div class="text-xl font-semibold" x-text="engine.minrun"></div>
               </div>
               <div>
                 <div class="text-xs text-slate-500">Comparisons</div>
@@ -129,7 +162,7 @@
               </div>
               <div>
                 <div class="text-xs text-slate-500">Runs on stack</div>
-                <div class="text-xl font-semibold" x-text="state.stack.length"></div>
+                <div class="text-xl font-semibold" x-text="engine.stack.length"></div>
               </div>
             </div>
           </div>
@@ -142,8 +175,9 @@
               <h3 class="font-semibold text-slate-800">Array</h3>
               <div class="text-sm text-slate-600 flex gap-4">
                 <span>n: <span class="font-mono" x-text="A.length"></span></span>
-                <span>phase: <span class="font-mono" x-text="state.phase"></span></span>
-                <span>i: <span class="font-mono" x-text="state.i"></span></span>
+                <span>phase: <span class="font-mono" x-text="engine.phase"></span></span>
+                <span>i: <span class="font-mono" x-text="engine.i"></span></span>
+                <span>sub: <span class="font-mono" x-text="engine.sub"></span></span>
               </div>
             </div>
 
@@ -158,29 +192,35 @@
               </div>
             </div>
 
-            <!-- Runs on stack -->
+            <!-- Run stack -->
             <div class="mt-4">
               <h4 class="font-semibold text-slate-800">Run stack (base..top)</h4>
               <div class="mt-2 flex flex-wrap gap-2">
-                <template x-for="(r, k) in state.stack" :key="k">
-                  <span class="px-2 py-1 rounded-lg text-xs font-mono"
+                <template x-for="(r, k) in engine.stack" :key="k">
+                  <span class="px-2 py-1 rounded-lg text-xs font-mono badge"
                         :style="`background:${r.color}22;border:1px solid ${r.color}55`">
                     [<span x-text="r.lo"></span>..<span x-text="r.lo + r.len - 1"></span>] len=<span x-text="r.len"></span>
                   </span>
                 </template>
-                <template x-if="!state.stack.length"><span class="text-sm text-slate-500">(empty)</span></template>
+                <template x-if="!engine.stack.length"><span class="text-sm text-slate-500">(empty)</span></template>
               </div>
+            </div>
+
+            <!-- Teaching panel -->
+            <div class="mt-4 p-3 rounded-xl border bg-slate-50">
+              <div class="text-sm text-slate-700"><span class="font-semibold">Explanation:</span> <span x-text="explain"></span></div>
             </div>
 
             <!-- Log -->
             <div class="mt-4">
               <h4 class="font-semibold text-slate-800">Operation Log</h4>
-              <div id="logBox" class="mt-2 h-40 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
+              <div id="logBox" class="mt-2 logbox overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
                 <template x-for="(line, i) in log" :key="i">
                   <div class="mb-0.5"><span class="text-slate-400">#</span> <span x-text="line"></span></div>
                 </template>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -189,359 +229,546 @@
   </section>
 
   <!-- Guide -->
+  <!-- Guide -->
   <section id="guide" class="py-12 bg-slate-50">
     <div class="max-w-7xl mx-auto px-6">
       <div class="mb-8">
-        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
-        <p class="mt-2 text-slate-600">Timsort = natural <span class="font-semibold">run detection</span> + <span class="font-semibold">insertion sort</span> for short runs + <span class="font-semibold">merge sort</span> with <span class="font-semibold">galloping</span>, guarded by invariants.</p>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide (Step‑by‑Step)</h2>
+        <p class="mt-2 text-slate-600">We follow the exact pipeline your simulator executes — one micro‑operation at a time. Values like <span class="font-mono">minrun</span> and the current phase are live: <span class="font-mono">minrun=<span x-text="engine.minrun"></span></span>, <span class="font-mono">phase=<span x-text="engine.phase"></span></span>, <span class="font-mono">i=<span x-text="engine.i"></span></span>.</p>
       </div>
-      <div class="grid lg:grid-cols-3 gap-6">
+
+      <div class="grid lg:grid-cols-2 gap-6 text-sm leading-7 text-slate-700">
+        <!-- 1. Compute minrun -->
         <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-          <h3 class="text-xl font-semibold">1) Detect runs & compute minrun</h3>
-          <p class="mt-2 text-sm leading-7 text-slate-700">
-            Scan left→right to find monotone runs. If a run is strictly decreasing, reverse it to make it increasing (stability is preserved).
-            Compute <span class="font-mono">minrun</span> from <span class="font-mono">n</span> so most runs are at least 32…64 long.
-          </p>
+          <h3 class="text-xl font-semibold">1) Compute <span class="font-mono">minrun</span> (CPython rule)</h3>
+          <p class="mt-2">Collapse high bits of <span class="font-mono">n</span> until the remainder fits in <span class="font-mono">[32,64)</span>; the last dropped bit decides the +1. This keeps runs balanced for merging.</p>
+          <details class="mt-3">
+            <summary class="cursor-pointer text-slate-800 font-medium">Pseudocode</summary>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto text-xs mt-2"><code>function MINRUN(n):
+    r ← 0
+    while n ≥ 64 do
+        r ← r OR (n AND 1)     // remember if any 1-bits were shifted out
+        n ← n >> 1
+    return n + r               // in [32, 64]
+</code></pre>
+          </details>
+          <ul class="mt-3 list-disc pl-5">
+            <li>Live value: <span class="font-mono" x-text="engine.minrun"></span></li>
+            <li>Why: Ensures we don’t end with a long chain of tiny merges.</li>
+          </ul>
         </article>
+
+        <!-- 2. Detect run & reverse if needed -->
         <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-          <h3 class="text-xl font-semibold">2) Extend short runs by binary insertion</h3>
-          <p class="mt-2 text-sm leading-7 text-slate-700">
-            If <span class="font-mono">len(run) &lt; minrun</span>, extend it using binary insertion sort.
-            This keeps the overall work small on nearly‑sorted data, a common real‑world case.
-          </p>
+          <h3 class="text-xl font-semibold">2) Scan &amp; reverse (normalize to non‑decreasing)</h3>
+          <p class="mt-2">From index <span class="font-mono">i</span>, grow a monotone run. If strictly decreasing, reverse it in place (swapping pairs) to keep stability for equal keys.</p>
+          <details class="mt-3">
+            <summary class="cursor-pointer text-slate-800 font-medium">Pseudocode</summary>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto text-xs mt-2"><code>function DETECT_RUN(A, i):
+    lo ← i; hi ← i + 1
+    if hi = n then return (lo, 1, 'asc')
+    if A[hi] < A[hi-1] then
+        // strictly decreasing
+        while hi < n and A[hi] < A[hi-1] do hi ← hi + 1
+        REVERSE(A, lo, hi-1)
+        return (lo, hi-lo, 'asc')
+    else
+        // non-decreasing
+        while hi < n and A[hi] ≥ A[hi-1] do hi ← hi + 1
+        return (lo, hi-lo, 'asc')
+
+procedure REVERSE(A, L, R):
+    while L < R do
+        swap A[L], A[R]
+        L ← L + 1; R ← R - 1
+</code></pre>
+          </details>
+          <ul class="mt-3 list-disc pl-5">
+            <li>Live: scanning at <span class="font-mono">i=<span x-text="engine.i"></span></span>, substep <span class="font-mono" x-text="engine.sub"></span>.</li>
+            <li>Stability: We reverse only strictly decreasing runs, so equal keys keep their relative order.</li>
+          </ul>
         </article>
+
+        <!-- 3. Extend to minrun via binary insertion -->
         <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-          <h3 class="text-xl font-semibold">3) Merge with invariants + galloping</h3>
-          <p class="mt-2 text-sm leading-7 text-slate-700">
-            Maintain a stack of runs with length invariants to avoid very unbalanced merges. When violated, merge the appropriate runs.
-            During merging, if one side wins repeatedly, switch to <em>galloping</em> (exponential then binary search) to skip ahead.
-          </p>
+          <h3 class="text-xl font-semibold">3) Extend short runs to <span class="font-mono">minrun</span> (binary insertion)</h3>
+          <p class="mt-2">If the detected run length is below <span class="font-mono">minrun</span>, extend it element by element using binary search + shifts. This is where Step mode shows each compare/shift/place.</p>
+          <details class="mt-3">
+            <summary class="cursor-pointer text-slate-800 font-medium">Pseudocode</summary>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto text-xs mt-2"><code>procedure EXTEND_TO_MINRUN(A, lo, hi, minrun):
+    target ← min(n, lo + minrun)
+    while hi < target do
+        x ← A[hi]
+        // first position ≥ x in A[lo..hi)
+        pos ← LOWER_BOUND(A, lo, hi, x)
+        // shift right the window [pos..hi)
+        k ← hi
+        while k > pos do
+            A[k] ← A[k-1]
+            k ← k - 1
+        A[pos] ← x
+        hi ← hi + 1
+
+function LOWER_BOUND(A, lo, hi, x):
+    while lo < hi do
+        mid ← ⌊(lo+hi)/2⌋
+        if A[mid] < x then lo ← mid + 1 else hi ← mid
+    return lo
+</code></pre>
+          </details>
+          <ul class="mt-3 list-disc pl-5">
+            <li>Why: Near‑sorted inputs finish fast; worst‑case work stays bounded.</li>
+            <li>Pedagogy: Every compare/shift is a separate micro‑step in the simulator.</li>
+          </ul>
         </article>
+
+        <!-- 4. Push & maintain invariants -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">4) Push run &amp; enforce stack invariants</h3>
+          <p class="mt-2">Push the (normalized/extended) run. Then, while any invariant is violated, merge the chosen adjacent pair to keep runs balanced.</p>
+          <details class="mt-3">
+            <summary class="cursor-pointer text-slate-800 font-medium">Pseudocode</summary>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto text-xs mt-2"><code>procedure PUSH_AND_FIX(stack, run):
+    push(stack, run)
+    while VIOLATED(stack) do
+        pos ← CHOOSE_MERGE(stack)
+        MERGE_AT(stack, pos)
+
+function VIOLATED(stack):
+    if |stack| < 2 then return false
+    X ← top; Y ← second; Z ← third (if exists)
+    return (Z exists and Z.len ≤ Y.len + X.len) or (Y.len ≤ X.len)
+
+function CHOOSE_MERGE(stack):
+    if |stack| ≥ 3 then
+        return (Z.len < X.len) ? (pos = index(Y)) : (pos = index(X))
+    else
+        return index(X)   // merge the top two
+</code></pre>
+          </details>
+          <ul class="mt-3 list-disc pl-5">
+            <li>Live stack size: <span class="font-mono" x-text="engine.stack.length"></span></li>
+            <li>Intuition: Prevents pathological tall stacks of tiny runs.</li>
+          </ul>
+        </article>
+
+        <!-- 5. Stable merge (+ optional galloping) -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow lg:col-span-2">
+          <h3 class="text-xl font-semibold">5) Stable merge (optionally with galloping)</h3>
+          <p class="mt-2">Merge the chosen adjacent runs. Stability: when keys tie, take from the left run. Optional galloping switches to exponential skipping after repeated wins by one side.</p>
+          <details class="mt-3">
+            <summary class="cursor-pointer text-slate-800 font-medium">Pseudocode</summary>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto text-xs mt-2"><code>procedure STABLE_MERGE(A, [L..M), [M..R)):
+    a ← copy A[L..M); b ← copy A[M..R)
+    i ← 0; j ← 0; k ← L; wins ← 0
+    while i < |a| and j < |b| do
+        if a[i] ≤ b[j] then       // stability on ties
+            A[k] ← a[i]; i ← i+1; k ← k+1; wins ← wins+1
+        else
+            A[k] ← b[j]; j ← j+1; k ← k+1; wins ← 0
+        if GALLOP and wins ≥ THRESH then
+            k, i or j ← GALLOP_ADVANCE(...)
+            wins ← 0
+    // drain leftovers
+    while i < |a| do A[k] ← a[i]; i ← i+1; k ← k+1
+    while j < |b| do A[k] ← b[j]; j ← j+1; k ← k+1
+</code></pre>
+          </details>
+          <ul class="mt-3 list-disc pl-5">
+            <li>Stability proof idea: equal keys always leave the left buffer first.</li>
+            <li>Galloping: exponential search to skip long winning streaks.</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="mt-8 text-xs text-slate-500">
+        <p><span class="font-semibold">Tip:</span> In Teaching mode, each bullet above maps 1:1 to a simulator micro‑step. Click <span class="font-mono">Step</span> and watch the corresponding substep name update (e.g., <span class="font-mono">grow</span>, <span class="font-mono">reverse</span>, <span class="font-mono">bis_shift</span>, <span class="font-mono">commit</span>).</p>
       </div>
     </div>
   </section>
-
   <!-- Footer -->
   <footer class="py-10 bg-slate-900 text-slate-200">
     <div class="max-w-7xl mx-auto px-6">
       <div class="flex flex-col md:flex-row items-center justify-between gap-4">
         <p class="text-sm">© <span id="year"></span> Timsort Lab — Single‑file, no build.</p>
-        <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js</div>
+        <div class="text-xs text-slate-400">Tailwind • Alpine.js</div>
       </div>
     </div>
   </footer>
 
   <!-- Logic -->
   <script>
-  // ------------------------- Utilities -------------------------
+  // -------------------------------
+  // Colors & utils
+  // -------------------------------
   const COLORS = ["#ef4444","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316","#22c55e","#06b6d4"]; // looped
   function colorFor(k){ return COLORS[k % COLORS.length]; }
   function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+  function cpMinrun(n){ let r=0; while(n>=64){ r|=n&1; n>>=1; } return n + r; }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function deepCopy(obj){ return JSON.parse(JSON.stringify(obj)); }
 
-  function computeMinrun(n){
-    // CPython timsort logic (simplified but equivalent)
-    let r = 0;
-    while (n >= 64) { r |= n & 1; n >>= 1; }
-    return n + r; // in [32,64]
-  }
-
-  function binarySearch(arr, lo, hi, x, cmps){
-    // find first index >= x in arr[lo..hi)
-    while (lo < hi){
-      const mid = (lo + hi) >>> 1; cmps.c++;
-      if (arr[mid] < x) lo = mid + 1; else hi = mid;
-    }
-    return lo;
-  }
-
-  function gallop(arr, start, length, key, dir, cmps){
-    // Exponential then binary locate boundary where condition flips.
-    // dir: 1 to find first > key; -1 to find first >= key when scanning backward.
-    let ofs = 1, last = 0;
-    if (dir > 0){
-      while (ofs < length && (cmps.c++, arr[start + ofs] <= key)) { last = ofs; ofs = (ofs<<1) + 1; }
-      if (ofs > length) ofs = length;
-      // now key in (last .. ofs]
-      const base = start + last + 1;
-      const end = start + ofs + 1;
-      let lo = base, hi = end; // find first > key
-      while (lo < hi){ const mid = (lo+hi)>>>1; cmps.c++; if (arr[mid-1] <= key) lo = mid; else hi = mid; }
-      return lo - start; // offset into [start..start+length]
-    } else {
-      // backward variant (not fully needed here). Keep simple:
-      let idx = start + length - 1;
-      while (idx >= start && (cmps.c++, arr[idx] > key)) idx--;
-      return idx - start + 1;
-    }
-  }
-
-  // ------------------------- Timsort core (step-able) -------------------------
-  function timsortEngine(A){
+  // -------------------------------
+  // Engine (deterministic state machine; one micro-op per step)
+  // -------------------------------
+  function makeEngine(A, opts){
     const n = A.length;
-    const minrun = computeMinrun(n);
-    const state = {
-      phase: 'scan',
+    const minrun = (opts.mode==='teach') ? clamp(opts.fixedMinrun||4,3,32) : cpMinrun(n);
+
+    const engine = {
+      // public
+      phase: 'idle', // 'scan' | 'merge' | 'done'
+      sub: '-',      // substep name for teaching
       i: 0,
       minrun,
-      stack: [], // runs: {lo,len,color}
-      merging: null, // {a:{lo,len}, b:{lo,len}, i:0, j:0, buf:[], outLo}
-      gallopWins: 0,
+      stack: [], // {lo,len,color}
+      explain: '',
+      // metrics (mutated by caller)
+      metrics: opts.metrics,
+      // internal cursors for scan
+      scan: {
+        lo: 0, hi: 0,
+        dir: null, // 'asc' | 'desc'
+        revL: 0, revR: 0,
+        // binary insertion cursors
+        target: 0, x: null, bsLo: 0, bsHi: 0, k: 0,
+        stage: 'idle' // 'startRun'|'grow'|'reverse'|'maybeExtend'|'bis_start'|'bis_cmp'|'bis_shift'|'bis_place'|'pushRun'
+      },
+      // internal for merge
+      merge: {
+        stage: 'check', // 'check'|'choose'|'setup'|'cmp'|'gallop'|'left'|'right'|'commit'
+        pos: null, // which pair to merge (index of right run)
+        a: [], b: [], lo: 0, i:0, j:0, out:0, win:0
+      }
     };
-    const metrics = { cmps:0, moves:0, merges:0, gallops:0 };
 
-    // helper: push run and enforce invariants
-    function pushRun(lo, len){
-      state.stack.push({lo, len, color: colorFor(state.stack.length)});
-    }
+    function pushRun(lo,len){ engine.stack.push({lo,len,color:colorFor(engine.stack.length)}); }
 
-    function top(k){ return state.stack[state.stack.length-1-k]; }
-
-    function invariantViolated(){
-      // Classic timsort invariants (simplified):
-      // A: length of second-last, B: last, C: third-last (on stack base..top)
-      if (state.stack.length < 2) return false;
-      const n = state.stack.length;
-      const X = state.stack[n-1];
-      const Y = state.stack[n-2];
-      const Z = n>=3 ? state.stack[n-3] : null;
+    function invariantsViolated(){
+      const m = engine.stack.length; if (m<2) return false;
+      const X = engine.stack[m-1];
+      const Y = engine.stack[m-2];
+      const Z = (m>=3) ? engine.stack[m-3] : null;
       if (Z && Z.len <= Y.len + X.len) return true;
       if (Y.len <= X.len) return true;
       return false;
     }
 
-    function mergeAt(pos){
-      // merge stack[pos-1] with stack[pos]
-      const left = state.stack[pos-1];
-      const right = state.stack[pos];
-      const a = A.slice(left.lo, left.lo+left.len); // copies for clarity
-      const b = A.slice(right.lo, right.lo+right.len);
-      metrics.moves += a.length + b.length; // buffer copies (teaching metric)
-      const outLo = left.lo;
-      let i=0, j=0, out=outLo;
-      let winCount = 0; // for galloping
-
-      // merge loop with simple galloping trigger (threshold=7)
-      while (i < a.length && j < b.length){
-        // try gallop from the side that is winning repeatedly
-        if (winCount >= 7){
-          // determine which side is winning
-          const aWinning = (metrics.cmps++, a[i] <= b[j]);
-          if (aWinning){
-            const adv = gallop(a, i, a.length - i, b[j], 1, {c:metrics.cmps});
-            for (let t=0; t<adv; t++) { A[out++] = a[i++]; metrics.moves++; }
-          } else {
-            const adv = gallop(b, j, b.length - j, a[i], 1, {c:metrics.cmps});
-            for (let t=0; t<adv; t++) { A[out++] = b[j++]; metrics.moves++; }
-          }
-          metrics.gallops++; winCount = 0; // reset after gallop
-          continue;
-        }
-        if (metrics.cmps++, a[i] <= b[j]) { A[out++] = a[i++]; metrics.moves++; winCount++; }
-        else { A[out++] = b[j++]; metrics.moves++; winCount = 0; }
+    function chooseMergePos(){
+      const m = engine.stack.length;
+      if (m>=3){
+        const X = engine.stack[m-1], Y=engine.stack[m-2], Z=engine.stack[m-3];
+        return (Z.len < X.len) ? (m-2) : (m-1);
       }
-      while (i < a.length) { A[out++] = a[i++]; metrics.moves++; }
-      while (j < b.length) { A[out++] = b[j++]; metrics.moves++; }
-
-      // fix stack: replace left with merged, remove right
-      const mergedLen = left.len + right.len;
-      state.stack.splice(pos-1, 2, {lo: outLo, len: mergedLen, color: left.color});
-      metrics.merges++;
+      return m-1;
     }
 
-    function enforceInvariants(){
-      // keep merging while violated; prefer merging the smaller of the two topmost runs
-      while (invariantViolated()){
-        const n = state.stack.length;
-        if (n >= 3){
-          const X = state.stack[n-1], Y = state.stack[n-2], Z = state.stack[n-3];
-          if (Z.len < X.len) mergeAt(n-2); else mergeAt(n-1);
-        } else {
-          mergeAt(n-1);
-        }
-      }
+    function startScan(){
+      engine.phase='scan'; engine.sub='startRun'; engine.explain='Start scanning for the next monotone run.';
+      engine.scan.lo = engine.i;
+      engine.scan.hi = Math.min(engine.i+1, n);
+      engine.scan.dir = null;
+      engine.scan.stage='startRun';
     }
 
-    // public step: returns description string
-    function step(){
-      if (state.phase === 'done') return {done:true, msg:'done'};
+    function stepScan(){
+      const s = engine.scan;
+      if (engine.i >= n){ engine.phase='merge'; engine.sub='check'; engine.explain='Scanning finished. Enforce stack invariants and merge runs.'; engine.merge.stage='check'; return 'scan→merge'; }
 
-      if (state.phase === 'scan'){
-        if (state.i >= n) { state.phase = 'merge'; return {msg:'switch to merge'}; }
-        // detect next run starting at i
-        let lo = state.i;
-        let hi = lo + 1;
-        if (hi === n){ // single element run
-          pushRun(lo, 1); state.i = hi; return {msg:`run [${lo}..${hi-1}] len=1`};
+      if (s.stage==='startRun'){
+        s.lo = engine.i; s.hi = Math.min(engine.i+1, n);
+        if (s.hi===n){ pushRun(s.lo,1); engine.i=s.hi; engine.sub='pushRun'; engine.explain=`Single‑element run [${s.lo}..${s.hi-1}]`; s.stage='pushRun'; return `run len=1`; }
+        // decide direction by comparing A[hi] to A[hi-1]
+        engine.metrics.cmps++; const desc = (A[s.hi] < A[s.hi-1]);
+        s.dir = desc ? 'desc' : 'asc'; s.stage='grow'; engine.sub='grow'; engine.explain = desc? 'Descending: grow while strictly decreasing.' : 'Non‑decreasing: grow while >=.';
+        return `decide direction: ${s.dir}`;
+      }
+
+      if (s.stage==='grow'){
+        if (s.hi < n){
+          engine.metrics.cmps++; const ok = s.dir==='desc' ? (A[s.hi] < A[s.hi-1]) : (A[s.hi] >= A[s.hi-1]);
+          if (ok){ s.hi++; engine.sub='grow'; engine.explain = s.dir==='desc' ? 'Still decreasing.' : 'Still non‑decreasing.'; return 'grow'; }
         }
-        // decide direction
-        if (A[hi] < A[lo]){ // descending
-          while (hi < n && A[hi] < A[hi-1]) hi++;
-          // reverse to make it ascending (stable for equal keys)
-          const len = hi - lo;
-          for (let L=0, R=len-1; L < R; L++, R--){ const tmp=A[lo+L]; A[lo+L]=A[lo+R]; A[lo+R]=tmp; metrics.moves+=2; }
-          pushRun(lo, len);
-          state.i = hi;
-          return {msg:`found descending run, reversed → [${lo}..${hi-1}] len=${len}`};
-        } else { // non-decreasing
-          while (hi < n && A[hi] >= A[hi-1]) hi++;
-          let len = hi - lo;
-          // grow to minrun using binary insertion sort
-          if (len < minrun){
-            const target = Math.min(n, lo + minrun);
-            while (hi < target){
-              const x = A[hi];
-              // find position in A[lo..hi)
-              const pos = binarySearch(A, lo, hi, x, metrics); // first >= x
-              // move [pos..hi) right by 1
-              for (let k=hi; k>pos; k--){ A[k]=A[k-1]; metrics.moves++; }
-              A[pos]=x; metrics.moves++;
-              hi++;
+        // stop growing
+        if (s.dir==='desc'){
+          s.revL = s.lo; s.revR = s.hi-1; s.stage='reverse'; engine.sub='reverse'; engine.explain='Reverse the descending run to make it non‑decreasing.'; return 'reverse start';
+        } else { s.stage='maybeExtend'; engine.sub='maybeExtend'; engine.explain='If the run is short, extend it to minrun using binary insertion.'; return 'stop grow'; }
+      }
+
+      if (s.stage==='reverse'){
+        if (s.revL < s.revR){ const L = s.revL, R = s.revR; const t = A[L]; A[L]=A[R]; A[R]=t; engine.metrics.moves+=2; s.revL++; s.revR--; engine.explain=`Swap A[${L}]↔A[${R}]`; return `swap ${L}<->${R}`; }
+        s.stage='maybeExtend'; engine.sub='maybeExtend'; engine.explain='Reversal done. Maybe extend to minrun.'; return 'reverse done';
+      }
+
+      if (s.stage==='maybeExtend'){
+        const len = s.hi - s.lo; const need = engine.minrun;
+        if (opts.binaryInsertion && len < need){
+          s.target = Math.min(n, s.lo + need); s.stage='bis_start'; engine.sub='bis'; engine.explain=`Extend short run: target length ${need}.`; return 'extend start';
+        }
+        // push and then go enforce invariants
+        pushRun(s.lo, len); engine.i = s.hi; s.stage='pushRun'; engine.sub='pushRun'; engine.explain=`Push run [${s.lo}..${s.hi-1}] len=${len}`; return 'push run';
+      }
+
+      if (s.stage==='bis_start'){
+        if (s.hi >= s.target){ // done extending
+          s.stage='pushRun'; engine.sub='pushRun'; engine.explain=`Extension done.`; return 'bis done';
+        }
+        s.x = A[s.hi]; s.bsLo = s.lo; s.bsHi = s.hi; s.stage='bis_cmp'; engine.sub='bis'; engine.explain=`Binary search position for x=A[${s.hi}] in [${s.lo}..${s.hi}).`; return 'bis begin';
+      }
+
+      if (s.stage==='bis_cmp'){
+        if (s.bsLo < s.bsHi){ const mid = (s.bsLo + s.bsHi) >>> 1; engine.metrics.cmps++; if (A[mid] < s.x) s.bsLo = mid + 1; else s.bsHi = mid; engine.explain=`Compare x with A[mid=${mid}]`; return 'bis cmp'; }
+        s.k = s.hi; s.stage='bis_shift'; engine.sub='bis_shift'; engine.explain=`Shift right to open slot at ${s.bsLo}.`; return 'bis pos';
+      }
+
+      if (s.stage==='bis_shift'){
+        if (s.k > s.bsLo){ A[s.k] = A[s.k-1]; engine.metrics.moves++; s.k--; engine.explain=`A[${s.k+1}] ← A[${s.k}]`; return 'shift'; }
+        s.stage='bis_place'; engine.sub='bis_place'; engine.explain=`Place x at ${s.bsLo}.`; return 'place x';
+      }
+
+      if (s.stage==='bis_place'){
+        A[s.bsLo] = s.x; engine.metrics.moves++; s.hi++; s.stage='bis_start'; engine.sub='bis'; engine.explain='Repeat until target length.'; return 'placed';
+      }
+
+      if (s.stage==='pushRun'){
+        // After push, jump to merge phase to enforce invariants immediately
+        engine.phase='merge'; engine.merge.stage='check'; engine.sub='check'; engine.explain='Run pushed. Enforce invariants before continuing scan.'; return 'push→merge';
+      }
+
+      return 'noop-scan';
+    }
+
+    function stepMerge(){
+      const m = engine.merge;
+      if (engine.stack.length <= 1){
+        // nothing to merge → either resume scanning or done
+        if (engine.i >= n){ engine.phase='done'; engine.sub='-'; engine.explain='Sorted.'; return 'done'; }
+        startScan(); return 'merge→scan';
+      }
+
+      if (m.stage==='check'){
+        if (invariantsViolated()){ m.stage='choose'; engine.sub='choose'; engine.explain='Invariant violated. Choose which adjacent runs to merge.'; return 'violated'; }
+        // ok → resume scanning
+        if (engine.i < n){ startScan(); return 'ok→scan'; } else { engine.phase='done'; engine.sub='-'; engine.explain='Sorted.'; return 'done'; }
+      }
+
+      if (m.stage==='choose'){
+        m.pos = chooseMergePos(); m.stage='setup'; engine.sub='setup'; const left = engine.stack[m.pos-1], right = engine.stack[m.pos]; engine.explain=`Merge runs [${left.lo}..${left.lo+left.len-1}] and [${right.lo}..${right.lo+right.len-1}].`; return `choose pos=${m.pos}`;
+      }
+
+      if (m.stage==='setup'){
+        const left = engine.stack[m.pos-1]; const right = engine.stack[m.pos];
+        m.a = A.slice(left.lo, left.lo+left.len); m.b = A.slice(right.lo, right.lo+right.len);
+        m.lo = left.lo; m.i = 0; m.j = 0; m.out = m.lo; m.win = 0; engine.metrics.moves += m.a.length + m.b.length; // educational count: buffer copies
+        m.stage = 'cmp'; engine.sub='merge'; engine.explain='Merge step: compare heads of buffers.'; return 'setup';
+      }
+
+      if (m.stage==='cmp'){
+        if (m.i < m.a.length && m.j < m.b.length){
+          // optional gallop
+          if (opts.gallop && engine.mode!=='teach' && m.win >= (opts.gallopThreshold||7)){
+            // simplistic gallop: advance the winning side until the other catches
+            const aWins = (engine.metrics.cmps++, m.a[m.i] <= m.b[m.j]);
+            if (aWins){
+              // advance in a while a[i] <= b[j]
+              if (m.i < m.a.length && m.a[m.i] <= m.b[m.j]){ A[m.out++] = m.a[m.i++]; engine.metrics.moves++; engine.metrics.gallops++; engine.explain='Gallop A: take another from A.'; return 'gallopA'; }
+              m.win = 0; return 'gallopA-stop';
+            } else {
+              if (m.j < m.b.length && m.b[m.j] < m.a[m.i]){ A[m.out++] = m.b[m.j++]; engine.metrics.moves++; engine.metrics.gallops++; engine.explain='Gallop B: take another from B.'; return 'gallopB'; }
+              m.win = 0; return 'gallopB-stop';
             }
-            len = hi - lo;
-            pushRun(lo, len);
-            state.i = hi;
-            return {msg:`extended short run to minrun → [${lo}..${hi-1}] len=${len}`};
-          } else {
-            pushRun(lo, len);
-            state.i = hi;
-            return {msg:`run [${lo}..${hi-1}] len=${len}`};
           }
+          // regular one-by-one merge
+          engine.metrics.cmps++;
+          if (m.a[m.i] <= m.b[m.j]){ A[m.out++] = m.a[m.i++]; engine.metrics.moves++; m.win++; engine.explain='Take from A (≤).'; return 'mergeA'; }
+          else { A[m.out++] = m.b[m.j++]; engine.metrics.moves++; m.win = 0; engine.explain='Take from B (<).'; return 'mergeB'; }
         }
+        // one side exhausted
+        m.stage = (m.i < m.a.length) ? 'left' : 'right'; engine.sub='drain'; engine.explain='One side empty: drain the other (optionally step-by-step).'; return 'drain';
       }
 
-      if (state.phase === 'merge'){
-        if (state.stack.length <= 1){ state.phase = 'done'; return {done:true, msg:'sorted'}; }
-        // enforce invariants & merge
-        const before = state.stack.map(r=>r.len).join(',');
-        enforceInvariants();
-        const after = state.stack.map(r=>r.len).join(',');
-        return {msg:`merge step: stack ${before} → ${after}`};
+      if (m.stage==='left'){
+        if (m.i < m.a.length){ if (opts.leftoverSlow){ A[m.out++] = m.a[m.i++]; engine.metrics.moves++; engine.explain='Drain A (leftover).'; return 'left1'; } else { while (m.i < m.a.length){ A[m.out++] = m.a[m.i++]; engine.metrics.moves++; } engine.explain='Drain A (bulk).'; } }
+        m.stage='commit'; engine.sub='commit'; return 'left done';
       }
 
-      return {msg:'noop'};
+      if (m.stage==='right'){
+        if (m.j < m.b.length){ if (opts.leftoverSlow){ A[m.out++] = m.b[m.j++]; engine.metrics.moves++; engine.explain='Drain B (leftover).'; return 'right1'; } else { while (m.j < m.b.length){ A[m.out++] = m.b[m.j++]; engine.metrics.moves++; } engine.explain='Drain B (bulk).'; } }
+        m.stage='commit'; engine.sub='commit'; return 'right done';
+      }
+
+      if (m.stage==='commit'){
+        const left = engine.stack[m.pos-1]; const right = engine.stack[m.pos];
+        const mergedLen = left.len + right.len; const mergedColor = left.color;
+        engine.stack.splice(m.pos-1, 2, {lo:left.lo, len:mergedLen, color:mergedColor});
+        engine.metrics.merges++;
+        m.stage='check'; engine.sub='check'; engine.explain='Commit merged run. Recheck invariants.'; return 'commit';
+      }
+
+      return 'noop-merge';
     }
 
-    return { state, metrics, step, A };
+    // public API
+    engine.start = function(){ engine.metrics.cmps=0; engine.metrics.moves=0; engine.metrics.merges=0; engine.metrics.gallops=0; engine.i=0; engine.stack.length=0; startScan(); };
+    engine.step = function(){ if (engine.phase==='scan') return stepScan(); if (engine.phase==='merge') return stepMerge(); if (engine.phase==='idle'){ startScan(); return 'idle→scan'; } return 'done'; };
+    engine.snapshot = function(){
+      return {
+        A: [...A],
+        phase: engine.phase,
+        sub: engine.sub,
+        i: engine.i,
+        minrun: engine.minrun,
+        stack: deepCopy(engine.stack),
+        explain: engine.explain,
+        scan: deepCopy(engine.scan),
+        merge: {
+          stage: engine.merge.stage,
+          pos: engine.merge.pos,
+          a: [...engine.merge.a], b: [...engine.merge.b],
+          lo: engine.merge.lo, i: engine.merge.i, j: engine.merge.j, out: engine.merge.out, win: engine.merge.win
+        },
+      };
+    };
+    engine.restore = function(S){
+      // restore state; A is mutated in place
+      A.length = 0; for (const x of S.A) A.push(x);
+      engine.phase=S.phase; engine.sub=S.sub; engine.i=S.i; engine.minrun=S.minrun; engine.stack = deepCopy(S.stack); engine.explain=S.explain;
+      engine.scan = deepCopy(S.scan);
+      engine.merge.stage=S.merge.stage; engine.merge.pos=S.merge.pos; engine.merge.a=[...S.merge.a]; engine.merge.b=[...S.merge.b]; engine.merge.lo=S.merge.lo; engine.merge.i=S.merge.i; engine.merge.j=S.merge.j; engine.merge.out=S.merge.out; engine.merge.win=S.merge.win;
+    };
+
+    return engine;
   }
 
-  // ------------------------- Alpine component -------------------------
-  function timsortLab(){
+  // -------------------------------
+  // Alpine component
+  // -------------------------------
+  function timsortTeach(){
     return {
       // data
-      N: 40,
+      N: 32,
       rangeMax: 99,
-      nearly: 0, // 0..100
-      reversed: false,
+      pattern: 'random', // random | nearly | reversed | runs
+      mode: 'teach', // teach | normal
+      fixedMinrun: 4,
+      historyCap: 1500,
+      opts: { binaryInsertion: true, gallop: false, gallopThreshold: 7, leftoverSlow: true, colorByRun: true },
       speed: 160,
       A: [],
-      engine: null,
-      state: { minrun: 0, i: 0, phase: 'idle', stack: [] },
+      engine: { minrun: 0, phase: 'idle', sub: '-', i: 0, stack: [] },
       metrics: { cmps:0, moves:0, merges:0, gallops:0 },
+      explain: '',
       log: [],
-      chart: null,
-      player: null,
+      playing: false,
+      timer: null,
+      history: [],
 
-      init(){
-        this.regen();
-        this.initChart();
-        this.$nextTick(()=>this._autoScroll());
-      },
+      init(){ this.regen(); this.$nextTick(()=>this._autoScroll()); document.getElementById('year').textContent = new Date().getFullYear(); },
 
       regen(){
-        // base ascending array to support "nearly-sorted"
-        const base = Array.from({length:this.N}, (_,i)=>randInt(0, this.rangeMax));
-        base.sort((a,b)=>a-b);
-        // introduce perturbations proportional to nearly% and reversed flag
-        const swaps = Math.floor(this.N * (this.nearly/100));
-        for (let s=0; s<swaps; s++){
-          const i = randInt(0,this.N-1), j = randInt(0,this.N-1);
-          const t = base[i]; base[i]=base[j]; base[j]=t;
+        const n = this.N;
+        let arr = [];
+        if (this.pattern==='random'){
+          arr = Array.from({length:n}, ()=>randInt(0,this.rangeMax));
+        } else if (this.pattern==='nearly'){
+          arr = Array.from({length:n}, (_,i)=>i);
+          const swaps = Math.max(1, Math.floor(n*0.15));
+          for (let s=0; s<swaps; s++){ const i=randInt(0,n-1), j=randInt(0,n-1); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+          // map to values in range
+          arr = arr.map(x=>Math.round(x/Math.max(1,(n-1))*this.rangeMax));
+        } else if (this.pattern==='reversed'){
+          arr = Array.from({length:n}, (_,i)=>n-1-i).map(x=>Math.round(x/Math.max(1,(n-1))*this.rangeMax));
+        } else if (this.pattern==='runs'){
+          // build 3 runs of controlled lengths
+          const r1 = Math.max(3, Math.floor(n*0.25));
+          const r2 = Math.max(3, Math.floor(n*0.35));
+          const r3 = Math.max(3, n - r1 - r2);
+          const a = Array.from({length:r1}, ()=>randInt(0,30)).sort((x,y)=>x-y);
+          const b = Array.from({length:r2}, ()=>randInt(20,70)).sort((x,y)=>x-y);
+          const c = Array.from({length:r3}, ()=>randInt(60,99)).sort((x,y)=>x-y);
+          arr = a.concat(b).concat(c);
         }
-        if (this.reversed) base.reverse();
-        this.A = base;
-        this.resetAlgo();
-        this.updateChart();
-        this.log.push(`regen: n=${this.N}, nearly=${this.nearly}%, reversed=${this.reversed}`);
-        this.$nextTick(()=>this._autoScroll());
+        this.A = arr;
+        this.prepare();
+        this.log = [`regen: n=${this.N}, pattern=${this.pattern}, mode=${this.mode}`];
       },
 
-      resetAlgo(){
-        this.engine = timsortEngine(this.A);
-        this.state = this.engine.state;
-        this.metrics = this.engine.metrics;
-        this.state.phase = 'scan';
-        this.state.i = 0;
-        this.log.push(`prepare: minrun=${this.state.minrun}`);
+      prepare(){
+        this.pause();
+        this.engine = makeEngine(this.A, { mode:this.mode, fixedMinrun:this.fixedMinrun, metrics:this.metrics, ...this.opts });
+        this.engine.start();
+        this.explain = this.engine.explain;
+        this.history = [];
+        this.log.push(`prepare: minrun=${this.engine.minrun}`);
         this.$nextTick(()=>this._autoScroll());
       },
 
       step(){
-        if (!this.engine) return;
-        const { msg, done } = this.engine.step();
+        if (this.engine.phase==='done'){ this.log.push('done.'); this.pause(); return; }
+        // snapshot before step (to support Back)
+        if (this._historyEnabled()) this._pushHistory(this.engine.snapshot());
+        const msg = this.engine.step();
+        this.explain = this.engine.explain;
         this.log.push(msg);
-        this.updateChart();
-        if (done) this.pause();
+        if (this.engine.phase==='done') this.pause();
         this.$nextTick(()=>this._autoScroll());
       },
 
-      play(){
-        this.pause();
-        this.player = setInterval(()=>this.step(), this.speed);
+      play(){ this.pause(); this.playing = true; const tick = ()=>{ if(!this.playing) return; // chunked stepping
+        const CHUNK = 1; // 1 micro‑op per tick for clarity; raise to speed up
+        for (let k=0; k<CHUNK && this.engine.phase!=='done'; k++) this.step();
+        if (this.engine.phase!=='done') this.timer = setTimeout(tick, this.speed); };
+        this.timer = setTimeout(tick, this.speed);
       },
 
-      pause(){ if (this.player){ clearInterval(this.player); this.player=null; } },
+      pause(){ if (this.timer) clearTimeout(this.timer); this.timer=null; this.playing=false; },
 
       finish(){
         this.pause();
-        while (this.state.phase !== 'done'){ this.engine.step(); }
-        this.log.push('finish: sorted');
-        this.updateChart();
+        const tick = () => {
+          // run in larger chunks but yield often to keep UI responsive
+          let ops = 0, MAX_OPS = 500; // safety
+          while (this.engine.phase !== 'done' && ops < MAX_OPS){ this.step(); ops++; }
+          if (this.engine.phase !== 'done') setTimeout(tick, 0);
+        };
+        tick();
+      },
+
+      back(){
+        if (!this.canBack) return;
+        const S = this.history.pop();
+        this.engine.restore(S); this.explain = this.engine.explain; this.log.push('⟲ back');
         this.$nextTick(()=>this._autoScroll());
       },
 
-      // --- visuals ---
+      get canBack(){ return this.history.length>0; },
+      _historyEnabled(){ return this.mode==='teach' && this.N <= 200; },
+      _pushHistory(S){ this.history.push(S); if (this.history.length>this.historyCap) this.history.shift(); },
+
+      // visuals
       barStyle(v, idx){
         const max = Math.max(1, ...this.A);
         const h = Math.max(10, Math.round((v/max)*120)+10);
-        // color by current run membership (approx: top run if covers idx)
         let color = '#cbd5e1';
-        for (const r of this.state.stack){
-          if (idx >= r.lo && idx < r.lo + r.len){ color = r.color; break; }
+        if (this.opts.colorByRun){
+          for (const r of this.engine.stack){ if (idx>=r.lo && idx<r.lo+r.len){ color=r.color; break; } }
         }
         return `height:${h}px;background:${color}55`;
       },
       barClass(idx){
-        // highlight scanning boundary
-        if (this.state.phase==='scan' && idx===this.state.i) return 'highlight';
+        if (this.engine.phase==='scan' && (idx===this.engine.i || idx===this.engine.scan.hi)) return 'highlight';
+        if (this.engine.phase==='merge' && idx>=this.engine.merge.lo && idx<this.engine.merge.out) return 'highlight';
         return '';
       },
 
-      // --- charts ---
-      initChart(){
-        const ctx = document.getElementById('lenChart');
-        this.chart = new Chart(ctx, {
-          type: 'bar',
-          data: { labels: [], datasets: [{ label: 'len', data: [] }] },
-          options: { responsive:true, aspectRatio: 2.2, plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:'run #'}}, y:{beginAtZero:true}} }
-        });
-        this.updateChart();
-      },
-      updateChart(){
-        const lens = this.state.stack.map(r=>r.len);
-        this.chart.data.labels = lens.map((_,i)=>String(i));
-        this.chart.data.datasets[0].data = lens;
-        this.chart.update();
-      },
-
-      // --- log ---
+      // log autoscroll
       _autoScroll(){ const box=document.getElementById('logBox'); if(box) box.scrollTop = box.scrollHeight; }
-    }
+    };
   }
 
   // Footer year
   document.addEventListener('DOMContentLoaded', () => {
-    const y = document.getElementById('year');
-    if (y) y.textContent = new Date().getFullYear();
+    const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear();
   });
   </script>
 </body>

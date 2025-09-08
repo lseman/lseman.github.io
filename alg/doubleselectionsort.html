@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Double Selection Sort — Interactive Visualizer (Vanilla JS + Tailwind)</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-800">
+  <div class="mx-auto max-w-6xl px-5 py-8">
+    <header>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Double Selection Sort — Interactive Visualizer</h1>
+      <p class="mt-2 text-slate-600 max-w-3xl">
+        Each pass selects the <b>minimum</b> and the <b>maximum</b> in the current window <span class="font-mono">[i..r]</span>, placing them at both ends.
+        This cuts the number of passes roughly in half compared to classic selection sort.
+      </p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-16 mt-6">
+      <!-- Left: Visualization -->
+      <section class="lg:col-span-2 flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button id="btnPlay" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm font-medium">Play</button>
+            <button id="btnStep" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Step</button>
+            <button id="btnReset" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Reset</button>
+            <button id="btnShuffle" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Shuffle</button>
+
+            <div class="ml-auto flex items-center gap-3">
+              <label class="text-sm text-slate-600">Speed</label>
+              <input id="rangeSpeed" type="range" min="50" max="1500" value="400" class="w-40">
+              <label class="text-sm text-slate-600">Size</label>
+              <input id="rangeSize" type="range" min="6" max="64" value="24" class="w-40">
+            </div>
+          </div>
+
+          <div id="bars" class="relative w-full h-64 md:h-72 lg:h-80 flex items-end gap-1 p-2 rounded-2xl bg-gradient-to-b from-white to-slate-100 border border-slate-200"></div>
+
+          <div class="mt-4 grid grid-cols-3 gap-3">
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Comparisons</div>
+              <div id="statComparisons" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Swaps</div>
+              <div id="statSwaps" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Array Size</div>
+              <div id="statSize" class="text-xl font-semibold tabular-nums text-slate-900">24</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="text-lg font-semibold mb-2">Pseudocode</h3>
+          <pre id="pseudocode" class="rounded-2xl p-4 bg-slate-900 text-slate-100 text-sm leading-6 overflow-auto"><code>
+<span data-line="1"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>i ← 0; r ← n−1</span>
+<span data-line="2"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>while i &lt; r:</span>
+<span data-line="3"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  minIdx ← i; maxIdx ← r</span>
+<span data-line="4"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>  for j = i .. r:</span>
+<span data-line="5"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>    if A[j] &lt; A[minIdx]: minIdx ← j</span>
+<span data-line="6"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>    if A[j] &gt; A[maxIdx]: maxIdx ← j</span>
+<span data-line="7"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">07</span>  # place min at i, max at r; mind index shifts</span>
+<span data-line="8"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">08</span>  if minIdx == i and maxIdx == r: pass</span>
+<span data-line="9"  class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">09</span>  elif minIdx == r and maxIdx == i: swap(A[i], A[r])</span>
+<span data-line="10" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">10</span>  else:</span>
+<span data-line="11" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">11</span>    if minIdx ≠ i: swap(A[i], A[minIdx])</span>
+<span data-line="12" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">12</span>    if maxIdx == i: maxIdx ← minIdx</span>
+<span data-line="13" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">13</span>    if maxIdx ≠ r: swap(A[r], A[maxIdx])</span>
+<span data-line="14" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">14</span>  i ← i+1; r ← r−1</span>
+          </code></pre>
+        </div>
+      </section>
+
+      <!-- Right: Theory & Complexity -->
+      <aside class="flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">How Double Selection Sort Works</h3>
+          <p class="mt-2 text-sm leading-6 text-slate-600">
+            At pass <span class="font-mono">[i..r]</span>, scan to find both the minimum and the maximum. Place the min at <span class="font-mono">i</span>, the max at <span class="font-mono">r</span>, then shrink the window.
+          </p>
+          <ul class="mt-3 text-sm text-slate-700 list-disc pl-5 space-y-1">
+            <li><span class="font-medium text-amber-700">Amber</span> marks the current scanned index <span class="font-mono">j</span>.</li>
+            <li><span class="font-medium text-cyan-700">Cyan</span> marks the current <span class="font-mono">minIdx</span>.</li>
+            <li><span class="font-medium text-fuchsia-700">Fuchsia</span> marks the current <span class="font-mono">maxIdx</span>.</li>
+            <li><span class="font-medium text-emerald-700">Emerald</span> shows the sorted prefix and suffix.</li>
+            <li><span class="font-medium text-rose-700">Rose</span> highlights swaps.</li>
+          </ul>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Complexity</h3>
+          <div class="mt-2 grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+              <div class="text-slate-500 text-xs uppercase">Time</div>
+              <ul class="mt-1 space-y-1">
+                <li><span class="font-semibold">Worst:</span> O(n²)</li>
+                <li><span class="font-semibold">Average:</span> O(n²)</li>
+                <li><span class="font-semibold">Best:</span> O(n²)</li>
+              </ul>
+              <p class="mt-1 text-slate-600">Passes ≈ ⌊n/2⌋ (about half of classic selection sort).</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+              <div class="text-slate-500 text-xs uppercase">Space</div>
+              <p class="mt-1">O(1) extra memory (in-place)</p>
+            </div>
+          </div>
+          <p class="mt-3 text-sm text-slate-600">
+            Usually ≤ 2 swaps per pass (often 0–2), still ~n(n−1)/2 comparisons in total.
+          </p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Experiments</h3>
+          <ol class="mt-2 list-decimal pl-5 space-y-2 text-sm text-slate-700">
+            <li>Compare swaps vs classic selection: fewer passes but up to 2 swaps per pass.</li>
+            <li>Watch the window <span class="font-mono">[i..r]</span> shrink from both sides.</li>
+            <li>Look for the special case when a single swap fixes both ends.</li>
+          </ol>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="text-center text-xs text-slate-500 pb-4">Built for learning. Use sliders to explore behavior.</footer>
+  </div>
+
+  <script>
+    // -------- Utilities --------
+    function rngArray(n, min = 5, max = 100) {
+      return Array.from({ length: n }, () => Math.floor(min + Math.random() * (max - min + 1)));
+    }
+
+    // Generator of step objects to drive the visualization
+    // Types: 'outer', 'scan-start', 'compare', 'update-min', 'update-max',
+    //        'swap-min', 'swap-max', 'swap-both', 'end-pass', 'done'
+    function* doubleSelectionSortSteps(original) {
+      const a = [...original];
+      const n = a.length;
+
+      let i = 0, r = n - 1;
+      while (i < r) {
+        let minIdx = i;
+        let maxIdx = r;
+
+        // start of pass
+        yield { type: 'outer', i, r, minIdx, maxIdx, j: null, snapshot: [...a], line: 2 };
+        yield { type: 'scan-start', i, r, minIdx, maxIdx, j: null, snapshot: [...a], line: 3 };
+
+        for (let j = i; j <= r; j++) {
+          yield { type: 'compare', i, r, minIdx, maxIdx, j, snapshot: [...a], line: 4 };
+          if (a[j] < a[minIdx]) {
+            minIdx = j;
+            yield { type: 'update-min', i, r, minIdx, maxIdx, j, snapshot: [...a], line: 5 };
+          }
+          if (a[j] > a[maxIdx]) {
+            maxIdx = j;
+            yield { type: 'update-max', i, r, minIdx, maxIdx, j, snapshot: [...a], line: 6 };
+          }
+        }
+
+        // Place min at i and max at r, mindful of index interactions.
+        if (minIdx === i && maxIdx === r) {
+          // nothing to swap
+          yield { type: 'end-pass', i, r, minIdx, maxIdx, j: null, snapshot: [...a], line: 8 };
+        } else if (minIdx === r && maxIdx === i) {
+          // one swap fixes both ends
+          [a[i], a[r]] = [a[r], a[i]];
+          yield { type: 'swap-both', i, r, minIdx, maxIdx, j: null, snapshot: [...a], line: 9 };
+        } else {
+          // general case: maybe two swaps
+          if (minIdx !== i) {
+            [a[i], a[minIdx]] = [a[minIdx], a[i]];
+            // if maxIdx was at i, it just moved to minIdx
+            if (maxIdx === i) maxIdx = minIdx;
+            yield { type: 'swap-min', i, r, minIdx, maxIdx, j: null, snapshot: [...a], line: 11 };
+          }
+          if (maxIdx !== r) {
+            [a[r], a[maxIdx]] = [a[maxIdx], a[r]];
+            yield { type: 'swap-max', i, r, minIdx, maxIdx, j: null, snapshot: [...a], line: 13 };
+          }
+          yield { type: 'end-pass', i, r, minIdx, maxIdx, j: null, snapshot: [...a], line: 14 };
+        }
+
+        i += 1; r -= 1;
+      }
+
+      yield { type: 'done', i: null, r: null, minIdx: null, maxIdx: null, j: null, snapshot: [...a], line: 0 };
+    }
+
+    // -------- State --------
+    const barsEl = document.getElementById('bars');
+    const statComparisons = document.getElementById('statComparisons');
+    const statSwaps = document.getElementById('statSwaps');
+    const statSize = document.getElementById('statSize');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStep = document.getElementById('btnStep');
+    const btnReset = document.getElementById('btnReset');
+    const btnShuffle = document.getElementById('btnShuffle');
+    const rangeSpeed = document.getElementById('rangeSpeed');
+    const rangeSize = document.getElementById('rangeSize');
+    const PSEUDO = document.getElementById('pseudocode');
+
+    let arr = rngArray(parseInt(rangeSize.value, 10));
+    let steps = Array.from(doubleSelectionSortSteps(arr));
+    let stepIdx = 0;
+    let running = false;
+
+    // Visual state
+    let iLeft = 0;         // left boundary (inclusive, sorted before this)
+    let rRight = arr.length - 1; // right boundary (inclusive, sorted after this)
+    let minIdx = null;     // current min index in this pass
+    let maxIdx = null;     // current max index in this pass
+    let jScan = null;      // current j being scanned
+    let swapKind = null;   // 'min' | 'max' | 'both' | null
+
+    let comparisons = 0;
+    let swaps = 0;
+    let timer = null;
+
+    function maxVal(a){ return a.length ? Math.max(...a) : 1; }
+
+    // -------- Rendering --------
+    function renderBars() {
+      const M = maxVal(arr);
+      barsEl.innerHTML = '';
+      const n = arr.length;
+
+      for (let idx = 0; idx < n; idx++) {
+        const v = arr[idx];
+        const h = Math.max(4, (v / M) * 100);
+
+        let cls = 'bg-slate-400';
+
+        const isLeftSorted  = idx < iLeft;
+        const isRightSorted = idx > rRight;
+        const isMin = (minIdx === idx);
+        const isMax = (maxIdx === idx);
+        const isScan = (jScan === idx);
+
+        // base sorted regions
+        if (isLeftSorted || isRightSorted) cls = 'bg-emerald-400';
+        // scan highlight
+        if (!isLeftSorted && !isRightSorted && isScan) cls = 'bg-amber-400';
+        // min / max highlights
+        if (!isLeftSorted && !isRightSorted && isMin) cls = 'bg-cyan-400';
+        if (!isLeftSorted && !isRightSorted && isMax) cls = 'bg-fuchsia-400';
+        // recent swap flash
+        if (swapKind === 'both' && (idx === iLeft || idx === rRight)) cls = 'bg-rose-400';
+        if (swapKind === 'min'  && (idx === iLeft)) cls = 'bg-rose-400';
+        if (swapKind === 'max'  && (idx === rRight)) cls = 'bg-rose-400';
+
+        const d = document.createElement('div');
+        d.className = `w-full max-w-[18px] flex-1 rounded-t-lg transition-all duration-300 ease-out ${cls}`;
+        d.style.height = h + '%';
+        d.title = `A[${idx}] = ${v}`;
+        barsEl.appendChild(d);
+      }
+    }
+
+    function setPseudoHighlight(line){
+      PSEUDO.querySelectorAll('[data-line]').forEach(x => {
+        x.classList.remove('bg-emerald-700/30');
+        x.querySelectorAll('span').forEach(s => s.classList.remove('text-emerald-300'));
+      });
+      if (line > 0){
+        const el = PSEUDO.querySelector(`[data-line="${line}"]`);
+        if (el){
+          el.classList.add('bg-emerald-700/30');
+          const spans = el.querySelectorAll('span');
+          if (spans.length) spans[spans.length-1].classList.add('text-emerald-300');
+        }
+      }
+    }
+
+    function resetState(newArr){
+      arr = [...newArr];
+      steps = Array.from(doubleSelectionSortSteps(arr));
+      stepIdx = 0; running = false;
+
+      iLeft = 0;
+      rRight = arr.length - 1;
+      minIdx = null; maxIdx = null; jScan = null; swapKind = null;
+
+      comparisons = 0; swaps = 0;
+      statComparisons.textContent = '0';
+      statSwaps.textContent = '0';
+      statSize.textContent = String(arr.length);
+      btnPlay.textContent = 'Play';
+      clearInterval(timer); timer = null;
+      setPseudoHighlight(0);
+      renderBars();
+    }
+
+    function applyStep(s){
+      setPseudoHighlight(s.line || 0);
+      swapKind = null;
+
+      switch (s.type) {
+        case 'outer':
+          iLeft = s.i;
+          rRight = s.r;
+          minIdx = s.minIdx;
+          maxIdx = s.maxIdx;
+          jScan = null;
+          break;
+
+        case 'scan-start':
+          minIdx = s.minIdx;
+          maxIdx = s.maxIdx;
+          jScan = null;
+          break;
+
+        case 'compare':
+          comparisons += 1;
+          statComparisons.textContent = String(comparisons);
+          jScan = s.j;
+          arr = s.snapshot;
+          break;
+
+        case 'update-min':
+          minIdx = s.minIdx;
+          jScan = s.j;
+          arr = s.snapshot;
+          break;
+
+        case 'update-max':
+          maxIdx = s.maxIdx;
+          jScan = s.j;
+          arr = s.snapshot;
+          break;
+
+        case 'swap-both':
+          swaps += 1; // one swap fixed both ends
+          statSwaps.textContent = String(swaps);
+          arr = s.snapshot;
+          swapKind = 'both';
+          // after pass, shrink window
+          iLeft = s.i + 1;
+          rRight = s.r - 1;
+          minIdx = null; maxIdx = null; jScan = null;
+          break;
+
+        case 'swap-min':
+          swaps += 1;
+          statSwaps.textContent = String(swaps);
+          arr = s.snapshot;
+          swapKind = 'min';
+          break;
+
+        case 'swap-max':
+          swaps += 1;
+          statSwaps.textContent = String(swaps);
+          arr = s.snapshot;
+          swapKind = 'max';
+          break;
+
+        case 'end-pass':
+          // finalize window shrink (if not already done in swap-both case)
+          iLeft = s.i + 1;
+          rRight = s.r - 1;
+          minIdx = null; maxIdx = null; jScan = null;
+          break;
+
+        case 'done':
+          iLeft = arr.length;
+          rRight = -1;
+          minIdx = null; maxIdx = null; jScan = null;
+          running = false; btnPlay.textContent = 'Play';
+          clearInterval(timer); timer = null;
+          break;
+
+        default:
+          arr = s.snapshot;
+      }
+      renderBars();
+    }
+
+    function stepOnce(){
+      if (stepIdx >= steps.length) return;
+      const s = steps[stepIdx];
+      applyStep(s);
+      stepIdx += 1;
+    }
+
+    function playLoop(){
+      clearInterval(timer);
+      // Inverted mapping: higher slider value -> smaller delay (faster)
+      const delay = Math.max(
+        30,
+        Number(rangeSpeed.max) - Number(rangeSpeed.value) + Number(rangeSpeed.min)
+      );
+      timer = setInterval(() => {
+        if (stepIdx >= steps.length){
+          running = false; btnPlay.textContent = 'Play'; clearInterval(timer); timer=null; return;
+        }
+        stepOnce();
+      }, delay);
+    }
+
+    // -------- Event bindings --------
+    btnPlay.addEventListener('click', () => {
+      running = !running;
+      btnPlay.textContent = running ? 'Pause' : 'Play';
+      if (running) playLoop(); else { clearInterval(timer); timer = null; }
+    });
+
+    btnStep.addEventListener('click', () => { if (!running) stepOnce(); });
+
+    btnReset.addEventListener('click', () => { resetState(arr); });
+
+    btnShuffle.addEventListener('click', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+
+    rangeSize.addEventListener('input', () => {
+      const n = parseInt(rangeSize.value,10);
+      statSize.textContent = String(n);
+    });
+
+    rangeSize.addEventListener('change', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+
+    rangeSpeed.addEventListener('change', () => {
+      if (running) playLoop();
+    });
+
+    // -------- Initial render --------
+    resetState(arr);
+  </script>
+</body>
+</html>
