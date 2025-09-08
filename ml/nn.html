@@ -241,520 +241,540 @@
   </section>
 
   <!-- Neural Network Animation -->
-<section id="nn-animation" class="py-12 bg-white">
-  <div class="max-w-7xl mx-auto px-6">
-    <h2 class="text-3xl font-bold tracking-tight text-slate-900">How a Neural Network Learns — Animated</h2>
-    <p class="mt-2 text-slate-600">Watch activations flow forward and gradients flow backward on a tiny 2→3→1 MLP.</p>
+  <section id="nn-animation" class="py-12 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">How a Neural Network Learns — Animated</h2>
+      <p class="mt-2 text-slate-600">Watch activations flow forward and gradients flow backward on a tiny 2→3→1 MLP.</p>
 
-    <div x-data="nnAnim()" x-init="init()" class="mt-6 grid lg:grid-cols-2 gap-6">
-      <!-- Scene -->
-      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-        <svg id="nnsvg" class="w-full h-[460px]"></svg>
-        <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div class="bg-white rounded-xl border p-3">
-            <div class="font-semibold text-slate-800 mb-1">Sample</div>
-            <div class="font-mono text-xs text-slate-700">x = [<span x-text="x[0].toFixed(2)"></span>, <span x-text="x[1].toFixed(2)"></span>]</div>
-            <div class="font-mono text-xs text-slate-700">y = [<span x-text="y[0].toFixed(2)"></span>]</div>
-          </div>
-          <div class="bg-white rounded-xl border p-3">
-            <div class="font-semibold text-slate-800 mb-1">Loss (MSE)</div>
-            <div class="font-mono text-xl" x-text="loss.toFixed(5)"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Controls / Readouts -->
-      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow">
-        <div class="flex items-center gap-2 flex-wrap">
-          <button @click="toggle()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-sm shadow">
-            <span x-show="!playing">▶ Play</span><span x-show="playing">⏸ Pause</span>
-          </button>
-          <button @click="step()" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-900 text-sm border">Step</button>
-          <button @click="trainOnce()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm shadow">Train one step</button>
-          <button @click="reset(true)" class="px-3 py-1.5 rounded-lg bg-white text-slate-900 text-sm border">Reset Weights</button>
-
-          <div class="ml-auto flex items-center gap-2">
-            <label class="text-sm text-slate-600">Speed</label>
-            <input type="range" min="0.3" max="2.0" step="0.1" x-model.number="speedScale" class="accent-slate-700">
-            <span class="text-xs font-mono text-slate-600" x-text="speedText"></span>
-          </div>
-        </div>
-
-        <div class="mt-5 grid md:grid-cols-2 gap-4">
-          <div class="bg-slate-50 rounded-xl p-3 border">
-            <div class="font-semibold text-slate-800 mb-1">Hyperparameters</div>
-            <div class="grid grid-cols-2 gap-3 text-sm">
-              <label>lr
-                <input type="range" min="0.001" max="0.3" step="0.001" x-model.number="lr" class="w-full accent-slate-700">
-                <span class="font-mono text-xs text-slate-600" x-text="lr.toFixed(3)"></span>
-              </label>
-              <label>Activation
-                <select x-model="actName" @change="renderAll()" class="w-full text-sm border rounded-lg px-2 py-1">
-                  <option value="sigmoid">Sigmoid</option>
-                  <option value="tanh">Tanh</option>
-                  <option value="relu">ReLU</option>
-                </select>
-              </label>
+      <div x-data="nnAnim()" x-init="init()" class="mt-6 grid lg:grid-cols-2 gap-6">
+        <!-- Scene -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          <svg id="nnsvg" class="w-full h-[460px]"></svg>
+          <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+            <div class="bg-white rounded-xl border p-3">
+              <div class="font-semibold text-slate-800 mb-1">Sample</div>
+              <div class="font-mono text-xs text-slate-700">x = [<span x-text="x[0].toFixed(2)"></span>, <span
+                  x-text="x[1].toFixed(2)"></span>]</div>
+              <div class="font-mono text-xs text-slate-700">y = [<span x-text="y[0].toFixed(2)"></span>]</div>
             </div>
-          </div>
-
-          <div class="bg-slate-50 rounded-xl p-3 border text-sm">
-            <div class="font-semibold text-slate-800 mb-2">State</div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>Phase: <span class="font-mono" x-text="phase"></span></div>
-              <div>Layer idx: <span class="font-mono" x-text="layerIdx"></span></div>
-              <div>Step: <span class="font-mono" x-text="stepIdx"></span></div>
-              <div>Output ŷ: <span class="font-mono" x-text="a[2][0].toFixed(4)"></span></div>
+            <div class="bg-white rounded-xl border p-3">
+              <div class="font-semibold text-slate-800 mb-1">Loss (MSE)</div>
+              <div class="font-mono text-xl" x-text="loss.toFixed(5)"></div>
             </div>
           </div>
         </div>
 
-        <div class="mt-4 text-xs text-slate-600 leading-6">
-          <span class="inline-block w-3 h-3 rounded-full align-middle mr-1" style="background:#2563eb"></span>
-          Blue edges = forward activations (thicker = larger contribution).
-          <br>
-          <span class="inline-block w-3 h-3 rounded-full align-middle mr-1" style="background:#dc2626"></span>
-          Red edges = backward gradients (thicker = larger |∂L/∂w|). Weight updates happen at the end.
+        <!-- Controls / Readouts -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button @click="toggle()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-sm shadow">
+              <span x-show="!playing">▶ Play</span><span x-show="playing">⏸ Pause</span>
+            </button>
+            <button @click="step()"
+              class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-900 text-sm border">Step</button>
+            <button @click="trainOnce()" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm shadow">Train
+              one step</button>
+            <button @click="reset(true)" class="px-3 py-1.5 rounded-lg bg-white text-slate-900 text-sm border">Reset
+              Weights</button>
+
+            <div class="ml-auto flex items-center gap-2">
+              <label class="text-sm text-slate-600">Speed</label>
+              <input type="range" min="0.3" max="2.0" step="0.1" x-model.number="speedScale" class="accent-slate-700">
+              <span class="text-xs font-mono text-slate-600" x-text="speedText"></span>
+            </div>
+          </div>
+
+          <div class="mt-5 grid md:grid-cols-2 gap-4">
+            <div class="bg-slate-50 rounded-xl p-3 border">
+              <div class="font-semibold text-slate-800 mb-1">Hyperparameters</div>
+              <div class="grid grid-cols-2 gap-3 text-sm">
+                <label>lr
+                  <input type="range" min="0.001" max="0.3" step="0.001" x-model.number="lr"
+                    class="w-full accent-slate-700">
+                  <span class="font-mono text-xs text-slate-600" x-text="lr.toFixed(3)"></span>
+                </label>
+                <label>Activation
+                  <select x-model="actName" @change="renderAll()" class="w-full text-sm border rounded-lg px-2 py-1">
+                    <option value="sigmoid">Sigmoid</option>
+                    <option value="tanh">Tanh</option>
+                    <option value="relu">ReLU</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-3 border text-sm">
+              <div class="font-semibold text-slate-800 mb-2">State</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>Phase: <span class="font-mono" x-text="phase"></span></div>
+                <div>Layer idx: <span class="font-mono" x-text="layerIdx"></span></div>
+                <div>Step: <span class="font-mono" x-text="stepIdx"></span></div>
+                <div>Output ŷ: <span class="font-mono" x-text="a[2][0].toFixed(4)"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 text-xs text-slate-600 leading-6">
+            <span class="inline-block w-3 h-3 rounded-full align-middle mr-1" style="background:#2563eb"></span>
+            Blue edges = forward activations (thicker = larger contribution).
+            <br>
+            <span class="inline-block w-3 h-3 rounded-full align-middle mr-1" style="background:#dc2626"></span>
+            Red edges = backward gradients (thicker = larger |∂L/∂w|). Weight updates happen at the end.
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<script>
-function nnAnim() {
-  // --- small helpers
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const randn = ()=> { // Box–Muller
-    let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random();
-    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
-  };
-  const actFns = {
-    sigmoid: {
-      f: (z)=>1/(1+Math.exp(-z)),
-      df:(a)=>a*(1-a)
-    },
-    tanh: {
-      f: (z)=>Math.tanh(z),
-      df:(a)=>1-a*a
-    },
-    relu: {
-      f: (z)=>Math.max(0,z),
-      df:(a)=> (a>0?1:0)
-    }
-  };
-
-  return {
-    // === public state ===
-    lr: 0.08,
-    actName: 'sigmoid',
-    x: [0.60, -0.40],
-    y: [1.0],
-    loss: 0,
-    playing: false,
-    speedScale: 1.0,  // 0.3x .. 2.0x
-    get speedText(){ return this.speedScale.toFixed(1)+'x'; },
-
-    // phases: 'forward' -> 'backward' -> 'update' -> 'idle'
-    phase: 'idle',
-    layerIdx: 0,  // which layer boundary is active in phase
-    stepIdx: 0,   // counts full cycles
-    raf: null,
-
-    // topology & parameters
-    L: [2,3,1], // sizes per layer
-    W: [], b: [],
-    // forward buffers
-    z: [[],[],[]],
-    a: [[],[],[]],
-    // backward buffers
-    delta: [[],[],[]],
-    dW: [], db: [],
-
-    // svg elements registry
-    svg: null,
-    nodes: [],       // per layer: array of node <circle>
-    edges: [],       // per layer boundary: 2D array [j][i] edge <line> from layer l to l+1
-    labels: { node: [], edge: [] },
-
-    // animation timing
-    t: 0,  // 0..1 within current layer boundary
-    durForward: 900,   // ms per boundary at 1.0x
-    durBackward: 900,
-    durUpdate: 600,
-
-    init(){
-      this.svg = document.getElementById('nnsvg');
-      this.buildParams(true);
-      this.layoutAndDraw();
-      this.computeForward(); // populate a, z, loss
-      this.renderAll();
-      this.loop(); // create RAF loop but idle by default
-    },
-
-    reset(reinitWeights=false){
-      if(reinitWeights) this.buildParams(true);
-      this.computeForward();
-      this.computeBackward();
-      this.renderAll();
-      this.phase='idle'; this.layerIdx=0; this.t=0; this.playing=false;
-    },
-
-    buildParams(init=false){
-      // init weights ~ N(0,0.7/sqrt(n)), bias=0
-      if (init || this.W.length===0){
-        this.W = [
-          Array.from({length:this.L[1]}, _=> Array.from({length:this.L[0]}, _=> 0.7*randn()/Math.sqrt(this.L[0]))),
-          Array.from({length:this.L[2]}, _=> Array.from({length:this.L[1]}, _=> 0.7*randn()/Math.sqrt(this.L[1])))
-        ];
-        this.b = [
-          Array.from({length:this.L[1]}, _=> 0.0),
-          Array.from({length:this.L[2]}, _=> 0.0)
-        ];
-      }
-      this.dW = this.W.map(layer => layer.map(row => row.map(_=>0)));
-      this.db = this.b.map(row => row.map(_=>0));
-    },
-
-    // =========== math =============
-    act(z){ return actFns[this.actName].f(z); },
-    dact(a){ return actFns[this.actName].df(a); },
-
-    computeForward(){
-      // layer 0 -> 1
-      this.a[0] = [...this.x];
-      this.z[1] = new Array(this.L[1]).fill(0);
-      this.a[1] = new Array(this.L[1]).fill(0);
-      for(let j=0;j<this.L[1];j++){
-        let s = this.b[0][j];
-        for(let i=0;i<this.L[0];i++) s += this.W[0][j][i]*this.a[0][i];
-        this.z[1][j]=s; this.a[1][j]=this.act(s);
-      }
-      // layer 1 -> 2
-      this.z[2] = new Array(this.L[2]).fill(0);
-      this.a[2] = new Array(this.L[2]).fill(0);
-      for(let k=0;k<this.L[2];k++){
-        let s = this.b[1][k];
-        for(let j=0;j<this.L[1];j++) s += this.W[1][k][j]*this.a[1][j];
-        this.z[2][k]=s; this.a[2][k]=this.act(s);
-      }
-      // loss (MSE)
-      const e = this.a[2][0] - this.y[0];
-      this.loss = 0.5*e*e;
-    },
-
-    computeBackward(){
-      // output delta
-      let e = this.a[2][0] - this.y[0];
-      this.delta[2] = [ e * this.dact(this.a[2][0]) ];
-      // hidden delta
-      this.delta[1] = new Array(this.L[1]).fill(0);
-      for(let j=0;j<this.L[1];j++){
-        let s=0;
-        for(let k=0;k<this.L[2];k++) s += this.W[1][k][j]*this.delta[2][k];
-        this.delta[1][j] = s * this.dact(this.a[1][j]);
-      }
-      // grads
-      // dW1 (1->2)
-      for(let k=0;k<this.L[2];k++){
-        for(let j=0;j<this.L[1];j++){
-          this.dW[1][k][j] = this.delta[2][k]*this.a[1][j];
-        }
-        this.db[1][k] = this.delta[2][k];
-      }
-      // dW0 (0->1)
-      for(let j=0;j<this.L[1];j++){
-        for(let i=0;i<this.L[0];i++){
-          this.dW[0][j][i] = this.delta[1][j]*this.a[0][i];
-        }
-        this.db[0][j] = this.delta[1][j];
-      }
-    },
-
-    applyUpdate(){
-      for(let j=0;j<this.L[1];j++){
-        for(let i=0;i<this.L[0];i++){
-          this.W[0][j][i] -= this.lr * this.dW[0][j][i];
-        }
-        this.b[0][j] -= this.lr * this.db[0][j];
-      }
-      for(let k=0;k<this.L[2];k++){
-        for(let j=0;j<this.L[1];j++){
-          this.W[1][k][j] -= this.lr * this.dW[1][k][j];
-        }
-        this.b[1][k] -= this.lr * this.db[1][k];
-      }
-    },
-
-    // ========== SVG drawing ==========
-    layoutAndDraw(){
-      const svg = this.svg;
-      while(svg.firstChild) svg.removeChild(svg.firstChild);
-      const W = svg.clientWidth || svg.parentElement.clientWidth;
-      const H = svg.clientHeight || 460;
-      // layer x positions
-      const xs = [W*0.12, W*0.50, W*0.88];
-      const ys = (n)=> {
-        const top = H*0.14, bot = H*0.86;
-        const gap = (bot-top)/(n-1||1);
-        return Array.from({length:n}, (_,i)=> top + i*gap);
+  <script>
+    function nnAnim() {
+      // --- small helpers
+      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      const randn = () => { // Box–Muller
+        let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
       };
-      const colors = { node:'#0f172a', edgeFwd:'#2563eb', edgeBwd:'#dc2626', fill:'#e2e8f0' };
+      const actFns = {
+        sigmoid: {
+          f: (z) => 1 / (1 + Math.exp(-z)),
+          df: (a) => a * (1 - a)
+        },
+        tanh: {
+          f: (z) => Math.tanh(z),
+          df: (a) => 1 - a * a
+        },
+        relu: {
+          f: (z) => Math.max(0, z),
+          df: (a) => (a > 0 ? 1 : 0)
+        }
+      };
 
-      // defs for glows
-      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-      defs.innerHTML = `
+      return {
+        // === public state ===
+        lr: 0.08,
+        actName: 'sigmoid',
+        x: [0.60, -0.40],
+        y: [1.0],
+        loss: 0,
+        playing: false,
+        speedScale: 1.0,  // 0.3x .. 2.0x
+        get speedText() { return this.speedScale.toFixed(1) + 'x'; },
+        _renderPending: false,
+
+        // phases: 'forward' -> 'backward' -> 'update' -> 'idle'
+        phase: 'idle',
+        layerIdx: 0,  // which layer boundary is active in phase
+        stepIdx: 0,   // counts full cycles
+        raf: null,
+
+        // topology & parameters
+        L: [2, 3, 1], // sizes per layer
+        W: [], b: [],
+        // forward buffers
+        z: [[], [], []],
+        a: [[], [], []],
+        // backward buffers
+        delta: [[], [], []],
+        dW: [], db: [],
+
+        // svg elements registry
+        svg: null,
+        nodes: [],       // per layer: array of node <circle>
+        edges: [],       // per layer boundary: 2D array [j][i] edge <line> from layer l to l+1
+        labels: { node: [], edge: [] },
+
+        // animation timing
+        t: 0,  // 0..1 within current layer boundary
+        durForward: 900,   // ms per boundary at 1.0x
+        durBackward: 900,
+        durUpdate: 600,
+
+        init() {
+          this.svg = document.getElementById('nnsvg');
+          this.buildParams(true);
+          this.layoutAndDraw();
+          this.computeForward(); // populate a, z, loss
+          this.renderAll();
+          this.loop(); // create RAF loop but idle by default
+        },
+
+        reset(reinitWeights = false) {
+          if (reinitWeights) this.buildParams(true);
+          this.computeForward();
+          this.computeBackward();
+          this.renderAll();
+          this.phase = 'idle'; this.layerIdx = 0; this.t = 0; this.playing = false;
+        },
+
+        buildParams(init = false) {
+          // init weights ~ N(0,0.7/sqrt(n)), bias=0
+          if (init || this.W.length === 0) {
+            this.W = [
+              Array.from({ length: this.L[1] }, _ => Array.from({ length: this.L[0] }, _ => 0.7 * randn() / Math.sqrt(this.L[0]))),
+              Array.from({ length: this.L[2] }, _ => Array.from({ length: this.L[1] }, _ => 0.7 * randn() / Math.sqrt(this.L[1])))
+            ];
+            this.b = [
+              Array.from({ length: this.L[1] }, _ => 0.0),
+              Array.from({ length: this.L[2] }, _ => 0.0)
+            ];
+          }
+          this.dW = this.W.map(layer => layer.map(row => row.map(_ => 0)));
+          this.db = this.b.map(row => row.map(_ => 0));
+        },
+
+        // =========== math =============
+        act(z) { return actFns[this.actName].f(z); },
+        dact(a) { return actFns[this.actName].df(a); },
+
+        computeForward() {
+          // layer 0 -> 1
+          this.a[0] = [...this.x];
+          this.z[1] = new Array(this.L[1]).fill(0);
+          this.a[1] = new Array(this.L[1]).fill(0);
+          for (let j = 0; j < this.L[1]; j++) {
+            let s = this.b[0][j];
+            for (let i = 0; i < this.L[0]; i++) s += this.W[0][j][i] * this.a[0][i];
+            this.z[1][j] = s; this.a[1][j] = this.act(s);
+          }
+          // layer 1 -> 2
+          this.z[2] = new Array(this.L[2]).fill(0);
+          this.a[2] = new Array(this.L[2]).fill(0);
+          for (let k = 0; k < this.L[2]; k++) {
+            let s = this.b[1][k];
+            for (let j = 0; j < this.L[1]; j++) s += this.W[1][k][j] * this.a[1][j];
+            this.z[2][k] = s; this.a[2][k] = this.act(s);
+          }
+          // loss (MSE)
+          const e = this.a[2][0] - this.y[0];
+          this.loss = 0.5 * e * e;
+        },
+
+        computeBackward() {
+          // output delta
+          let e = this.a[2][0] - this.y[0];
+          this.delta[2] = [e * this.dact(this.a[2][0])];
+          // hidden delta
+          this.delta[1] = new Array(this.L[1]).fill(0);
+          for (let j = 0; j < this.L[1]; j++) {
+            let s = 0;
+            for (let k = 0; k < this.L[2]; k++) s += this.W[1][k][j] * this.delta[2][k];
+            this.delta[1][j] = s * this.dact(this.a[1][j]);
+          }
+          // grads
+          // dW1 (1->2)
+          for (let k = 0; k < this.L[2]; k++) {
+            for (let j = 0; j < this.L[1]; j++) {
+              this.dW[1][k][j] = this.delta[2][k] * this.a[1][j];
+            }
+            this.db[1][k] = this.delta[2][k];
+          }
+          // dW0 (0->1)
+          for (let j = 0; j < this.L[1]; j++) {
+            for (let i = 0; i < this.L[0]; i++) {
+              this.dW[0][j][i] = this.delta[1][j] * this.a[0][i];
+            }
+            this.db[0][j] = this.delta[1][j];
+          }
+        },
+
+        applyUpdate() {
+          for (let j = 0; j < this.L[1]; j++) {
+            for (let i = 0; i < this.L[0]; i++) {
+              this.W[0][j][i] -= this.lr * this.dW[0][j][i];
+            }
+            this.b[0][j] -= this.lr * this.db[0][j];
+          }
+          for (let k = 0; k < this.L[2]; k++) {
+            for (let j = 0; j < this.L[1]; j++) {
+              this.W[1][k][j] -= this.lr * this.dW[1][k][j];
+            }
+            this.b[1][k] -= this.lr * this.db[1][k];
+          }
+        },
+
+        // ========== SVG drawing ==========
+        layoutAndDraw() {
+          const svg = this.svg;
+          while (svg.firstChild) svg.removeChild(svg.firstChild);
+          const W = svg.clientWidth || svg.parentElement.clientWidth;
+          const H = svg.clientHeight || 460;
+          // layer x positions
+          const xs = [W * 0.12, W * 0.50, W * 0.88];
+          const ys = (n) => {
+            const top = H * 0.14, bot = H * 0.86;
+            const gap = (bot - top) / (n - 1 || 1);
+            return Array.from({ length: n }, (_, i) => top + i * gap);
+          };
+          const colors = { node: '#0f172a', edgeFwd: '#2563eb', edgeBwd: '#dc2626', fill: '#e2e8f0' };
+
+          // defs for glows
+          const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+          defs.innerHTML = `
         <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#2563eb" flood-opacity="0.7"/>
         </filter>
         <filter id="glowRed" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#dc2626" flood-opacity="0.7"/>
         </filter>`;
-      svg.appendChild(defs);
+          svg.appendChild(defs);
 
-      // draw edges first
-      this.edges = [[],[]];
-      for(let l=0;l<2;l++){
-        const yFrom = ys(this.L[l]);
-        const yTo   = ys(this.L[l+1]);
-        this.edges[l] = Array.from({length:this.L[l+1]}, ()=>[]);
-        for(let j=0;j<this.L[l+1];j++){
-          for(let i=0;i<this.L[l];i++){
-            const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-            line.setAttribute('x1', xs[l]);   line.setAttribute('y1', yFrom[i]);
-            line.setAttribute('x2', xs[l+1]); line.setAttribute('y2', yTo[j]);
-            line.setAttribute('stroke', '#cbd5e1');
-            line.setAttribute('stroke-width', '1.2');
-            line.setAttribute('opacity','0.9');
-            svg.appendChild(line);
-            this.edges[l][j][i] = line;
+          // draw edges first
+          this.edges = [[], []];
+          for (let l = 0; l < 2; l++) {
+            const yFrom = ys(this.L[l]);
+            const yTo = ys(this.L[l + 1]);
+            this.edges[l] = Array.from({ length: this.L[l + 1] }, () => []);
+            for (let j = 0; j < this.L[l + 1]; j++) {
+              for (let i = 0; i < this.L[l]; i++) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', xs[l]); line.setAttribute('y1', yFrom[i]);
+                line.setAttribute('x2', xs[l + 1]); line.setAttribute('y2', yTo[j]);
+                line.setAttribute('stroke', '#cbd5e1');
+                line.setAttribute('stroke-width', '1.2');
+                line.setAttribute('opacity', '0.9');
+                svg.appendChild(line);
+                this.edges[l][j][i] = line;
+              }
+            }
           }
-        }
-      }
 
-      // draw nodes
-      this.nodes = [[],[],[]];
-      for(let l=0;l<3;l++){
-        const y = ys(this.L[l]);
-        for(let i=0;i<this.L[l];i++){
-          const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-          const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
-          c.setAttribute('cx', xs[l]); c.setAttribute('cy', y[i]); c.setAttribute('r', 16);
-          c.setAttribute('fill', colors.fill); c.setAttribute('stroke', colors.node); c.setAttribute('stroke-width','1.5');
-          g.appendChild(c);
+          // draw nodes
+          this.nodes = [[], [], []];
+          for (let l = 0; l < 3; l++) {
+            const y = ys(this.L[l]);
+            for (let i = 0; i < this.L[l]; i++) {
+              const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+              const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              c.setAttribute('cx', xs[l]); c.setAttribute('cy', y[i]); c.setAttribute('r', 16);
+              c.setAttribute('fill', colors.fill); c.setAttribute('stroke', colors.node); c.setAttribute('stroke-width', '1.5');
+              g.appendChild(c);
 
-          const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
-          txt.setAttribute('x', xs[l]); txt.setAttribute('y', y[i]+4);
-          txt.setAttribute('text-anchor','middle');
-          txt.setAttribute('font-size','10');
-          txt.setAttribute('fill', '#0f172a');
-          txt.textContent = l===0 ? `x${i+1}` : (l===2 ? `ŷ` : `h${i+1}`);
-          g.appendChild(txt);
-          svg.appendChild(g);
-          this.nodes[l][i] = { circle:c, label:txt };
-        }
-      }
-    },
-
-    renderAll(){
-      // color edges by |weight| baseline
-      for(let j=0;j<this.L[1];j++){
-        for(let i=0;i<this.L[0];i++){
-          const w = this.W[0][j][i], a = Math.min(3, Math.abs(w))*0.8+0.2;
-          this.edges[0][j][i].setAttribute('stroke', '#cbd5e1');
-          this.edges[0][j][i].setAttribute('stroke-width', (1.2 + 1.0*a).toFixed(2));
-        }
-      }
-      for(let k=0;k<this.L[2];k++){
-        for(let j=0;j<this.L[1];j++){
-          const w = this.W[1][k][j], a = Math.min(3, Math.abs(w))*0.8+0.2;
-          this.edges[1][k][j].setAttribute('stroke', '#cbd5e1');
-          this.edges[1][k][j].setAttribute('stroke-width', (1.2 + 1.0*a).toFixed(2));
-        }
-      }
-      // node activation fill intensity
-      const fillScale = (val)=> {
-        const v = clamp(val, 0, 1); // assume sigmoid-like for color scale
-        const t = Math.round(220 - 140*v); // 220 (light) -> 80 (darker)
-        return `rgb(${t+10},${t+16},${t+24})`;
-      };
-      for(let i=0;i<this.L[0];i++){
-        this.nodes[0][i].circle.setAttribute('fill', fillScale(0.5+0.4*this.x[i]));
-      }
-      for(let j=0;j<this.L[1];j++){
-        const a = this.a[1][j]; this.nodes[1][j].circle.setAttribute('fill', fillScale(a));
-      }
-      this.nodes[2][0].circle.setAttribute('fill', fillScale(this.a[2][0]));
-    },
-
-    // ========== animation engine ==========
-    toggle(){ this.playing = !this.playing; if(this.playing && this.phase==='idle'){ this.phase='forward'; this.layerIdx=0; this.t=0; } },
-
-    step(){ // single logical step
-      if(this.phase==='idle'){ this.phase='forward'; this.layerIdx=0; this.t=0; return; }
-      if(this.phase==='forward'){
-        if(this.layerIdx<1){ this.layerIdx++; this.t=0; }
-        else { this.phase='backward'; this.layerIdx=1; this.t=0; }
-        return;
-      }
-      if(this.phase==='backward'){
-        if(this.layerIdx>0){ this.layerIdx--; this.t=0; }
-        else { this.phase='update'; this.t=0; }
-        return;
-      }
-      if(this.phase==='update'){ this.finishUpdate(); return; }
-    },
-
-    trainOnce(){
-      // run full cycle FWD->BWD->UPDATE instantly (no animation), then re-render
-      this.computeForward();
-      this.computeBackward();
-      this.applyUpdate();
-      this.computeForward();
-      this.renderAll();
-      this.phase='idle'; this.layerIdx=0; this.t=0; this.stepIdx++;
-    },
-
-    finishUpdate(){
-      // apply grads after a short “flash”
-      this.applyUpdate();
-      this.computeForward();
-      this.renderAll();
-      this.phase='idle'; this.layerIdx=0; this.t=0; this.stepIdx++;
-    },
-
-    loop(){
-      const tick = (ts)=>{
-        this.raf = requestAnimationFrame(tick);
-        if(!this.playing || this.phase==='idle') return;
-
-        // ensure we have fresh math for the shown phase
-        if(this.phase==='forward'){ this.computeForward(); }
-        if(this.phase==='backward'){ this.computeBackward(); }
-
-        // progress t
-        const dt = (16 / (this.speedScale)); // ~60fps; higher speedScale -> faster phase
-        const dur = (this.phase==='forward'? this.durForward : (this.phase==='backward'? this.durBackward : this.durUpdate)) / this.speedScale;
-        this.t += dt / dur;
-        if(this.t>1) this.t=1;
-
-        // render phase
-        if(this.phase==='forward') this.renderForwardBoundary(this.layerIdx, this.t);
-        else if(this.phase==='backward') this.renderBackwardBoundary(this.layerIdx, this.t);
-        else if(this.phase==='update') this.renderUpdate(this.t);
-
-        // phase transition
-        if(this.t>=1){
-          if(this.phase==='forward'){
-            if(this.layerIdx<1){ this.layerIdx++; this.t=0; }
-            else { this.phase='backward'; this.layerIdx=1; this.t=0; }
-          }else if(this.phase==='backward'){
-            if(this.layerIdx>0){ this.layerIdx--; this.t=0; }
-            else { this.phase='update'; this.t=0; }
-          }else if(this.phase==='update'){
-            this.finishUpdate();
+              const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              txt.setAttribute('x', xs[l]); txt.setAttribute('y', y[i] + 4);
+              txt.setAttribute('text-anchor', 'middle');
+              txt.setAttribute('font-size', '10');
+              txt.setAttribute('fill', '#0f172a');
+              txt.textContent = l === 0 ? `x${i + 1}` : (l === 2 ? `ŷ` : `h${i + 1}`);
+              g.appendChild(txt);
+              svg.appendChild(g);
+              this.nodes[l][i] = { circle: c, label: txt };
+            }
           }
-        }
-      };
-      this.raf = requestAnimationFrame(tick);
-    },
+        },
+        renderAll() {
+          // Use requestAnimationFrame to batch DOM updates and prevent recursion
+          if (this._renderPending) return;
+          this._renderPending = true;
 
-    // visualizations for a single boundary (l -> l+1)
-    renderForwardBoundary(l, t){
-      // fade all to baseline
-      for(const layer of this.edges) for(const row of layer) for(const line of row){
-        line.setAttribute('stroke', '#cbd5e1'); line.removeAttribute('filter');
-      }
-      const color = '#2563eb';
-      const aFrom = this.a[l];
-      const W = this.W[l];
-      const targets = this.edges[l]; // [j][i]
-      for(let j=0;j<this.L[l+1];j++){
-        let acc = 0;
-        for(let i=0;i<this.L[l];i++){
-          const contrib = Math.abs(W[j][i]*aFrom[i]);
-          const thk = 1.5 + 4*contrib * (t); // grow with t
-          const line = targets[j][i];
-          line.setAttribute('stroke', color);
-          line.setAttribute('stroke-width', thk.toFixed(2));
-          line.setAttribute('opacity', (0.3 + 0.7*t).toFixed(2));
-          line.setAttribute('filter', 'url(#glowBlue)');
-          acc += contrib;
-        }
-        // pulse next layer node fill slightly
-        const n = this.nodes[l+1][j].circle;
-        n.setAttribute('filter', 'url(#glowBlue)');
-      }
-      // reset glow on previous layer nodes to reduce clutter
-      if(l>0){ for(let p=0;p<this.L[l];p++) this.nodes[l][p].circle.removeAttribute('filter'); }
-      this.renderNodeValues(); // update labels/values
-    },
+          requestAnimationFrame(() => {
+            this._renderPending = false;
 
-    renderBackwardBoundary(l, t){
-      // fade to baseline
-      for(const layer of this.edges) for(const row of layer) for(const line of row){
-        line.setAttribute('stroke', '#cbd5e1'); line.removeAttribute('filter');
-      }
-      const color = '#dc2626';
-      const grads = this.dW[l]; // shape like W[l]: next x prev
-      const targets = this.edges[l];
-      for(let j=0;j<this.L[l+1];j++){
-        for(let i=0;i<this.L[l];i++){
-          const mag = Math.abs(grads[j][i]);
-          const thk = 1.4 + 4.2*mag * (t);
-          const line = targets[j][i];
-          line.setAttribute('stroke', color);
-          line.setAttribute('stroke-width', thk.toFixed(2));
-          line.setAttribute('opacity', (0.25 + 0.75*t).toFixed(2));
-          line.setAttribute('filter', 'url(#glowRed)');
-        }
-        // glow source nodes too
-        this.nodes[l][0]?.circle.setAttribute('filter','url(#glowRed)');
-      }
-      // glow target nodes slightly
-      for(let j=0;j<this.L[l+1];j++){
-        this.nodes[l+1][j].circle.setAttribute('filter','url(#glowRed)');
-      }
-      this.renderNodeValues(true); // with deltas
-    },
+            // Color edges by |weight| baseline
+            for (let j = 0; j < this.L[1]; j++) {
+              for (let i = 0; i < this.L[0]; i++) {
+                const w = this.W[0][j][i];
+                const a = Math.min(3, Math.abs(w)) * 0.8 + 0.2;
+                const edge = this.edges[0][j][i];
+                edge.setAttribute('stroke', '#cbd5e1');
+                edge.setAttribute('stroke-width', (1.2 + 1.0 * a).toFixed(2));
+              }
+            }
+            for (let k = 0; k < this.L[2]; k++) {
+              for (let j = 0; j < this.L[1]; j++) {
+                const w = this.W[1][k][j];
+                const a = Math.min(3, Math.abs(w)) * 0.8 + 0.2;
+                const edge = this.edges[1][k][j];
+                edge.setAttribute('stroke', '#cbd5e1');
+                edge.setAttribute('stroke-width', (1.2 + 1.0 * a).toFixed(2));
+              }
+            }
 
-    renderUpdate(t){
-      // flash both colors proportionally to |grad|
-      for(let l=0;l<2;l++){
-        for(let j=0;j<this.L[l+1];j++){
-          for(let i=0;i<this.L[l];i++){
-            const g = Math.abs(this.dW[l][j][i]);
-            const line = this.edges[l][j][i];
-            const mix = 0.3 + 0.7*t;
-            const width = 1.2 + 5*(g*mix);
-            line.setAttribute('stroke-width', width.toFixed(2));
-            line.setAttribute('stroke', t<0.5? '#dc2626' : '#2563eb');
-            line.setAttribute('filter', t<0.5? 'url(#glowRed)' : 'url(#glowBlue)');
-            line.setAttribute('opacity', (0.3 + 0.7*t).toFixed(2));
+            // Node activation fill intensity
+            const fillScale = (val) => {
+              const v = Math.max(0, Math.min(1, val));
+              const t = Math.round(220 - 140 * v);
+              return `rgb(${t + 10},${t + 16},${t + 24})`;
+            };
+
+            for (let i = 0; i < this.L[0]; i++) {
+              this.nodes[0][i].circle.setAttribute('fill', fillScale(0.5 + 0.4 * this.x[i]));
+            }
+            for (let j = 0; j < this.L[1]; j++) {
+              const a = this.a[1][j];
+              this.nodes[1][j].circle.setAttribute('fill', fillScale(a));
+            }
+            this.nodes[2][0].circle.setAttribute('fill', fillScale(this.a[2][0]));
+          });
+        },
+
+        // ========== animation engine ==========
+        toggle() { this.playing = !this.playing; if (this.playing && this.phase === 'idle') { this.phase = 'forward'; this.layerIdx = 0; this.t = 0; } },
+
+        step() { // single logical step
+          if (this.phase === 'idle') { this.phase = 'forward'; this.layerIdx = 0; this.t = 0; return; }
+          if (this.phase === 'forward') {
+            if (this.layerIdx < 1) { this.layerIdx++; this.t = 0; }
+            else { this.phase = 'backward'; this.layerIdx = 1; this.t = 0; }
+            return;
           }
-        }
-      }
-      this.renderNodeValues();
-    },
+          if (this.phase === 'backward') {
+            if (this.layerIdx > 0) { this.layerIdx--; this.t = 0; }
+            else { this.phase = 'update'; this.t = 0; }
+            return;
+          }
+          if (this.phase === 'update') { this.finishUpdate(); return; }
+        },
 
-    renderNodeValues(showDeltas=false){
-      // Update inner node labels to show values quickly (hover-level)
-      // Keep node text simple to avoid clutter
-      for(let j=0;j<this.L[1];j++){
-        this.nodes[1][j].label.textContent = showDeltas
-          ? `δ${j+1}=${this.delta[1][j].toFixed(2)}`
-          : `h${j+1}=${this.a[1][j].toFixed(2)}`;
-      }
-      this.nodes[2][0].label.textContent = showDeltas
-        ? `δ_out=${this.delta[2][0].toFixed(2)}`
-        : `ŷ=${this.a[2][0].toFixed(2)}`;
-    },
+        trainOnce() {
+          // run full cycle FWD->BWD->UPDATE instantly (no animation), then re-render
+          this.computeForward();
+          this.computeBackward();
+          this.applyUpdate();
+          this.computeForward();
+          this.renderAll();
+          this.phase = 'idle'; this.layerIdx = 0; this.t = 0; this.stepIdx++;
+        },
 
-    // cleanup if Alpine tears down (optional; safe no-op otherwise)
-    destroy(){ if(this.raf) cancelAnimationFrame(this.raf); }
-  }
-}
-</script>
+        finishUpdate() {
+          // apply grads after a short “flash”
+          this.applyUpdate();
+          this.computeForward();
+          this.renderAll();
+          this.phase = 'idle'; this.layerIdx = 0; this.t = 0; this.stepIdx++;
+        },
+
+        loop() {
+          const tick = (ts) => {
+            this.raf = requestAnimationFrame(tick);
+            if (!this.playing || this.phase === 'idle') return;
+
+            // ensure we have fresh math for the shown phase
+            if (this.phase === 'forward') { this.computeForward(); }
+            if (this.phase === 'backward') { this.computeBackward(); }
+
+            // progress t
+            const dt = (16 / (this.speedScale)); // ~60fps; higher speedScale -> faster phase
+            const dur = (this.phase === 'forward' ? this.durForward : (this.phase === 'backward' ? this.durBackward : this.durUpdate)) / this.speedScale;
+            this.t += dt / dur;
+            if (this.t > 1) this.t = 1;
+
+            // render phase
+            if (this.phase === 'forward') this.renderForwardBoundary(this.layerIdx, this.t);
+            else if (this.phase === 'backward') this.renderBackwardBoundary(this.layerIdx, this.t);
+            else if (this.phase === 'update') this.renderUpdate(this.t);
+
+            // phase transition
+            if (this.t >= 1) {
+              if (this.phase === 'forward') {
+                if (this.layerIdx < 1) { this.layerIdx++; this.t = 0; }
+                else { this.phase = 'backward'; this.layerIdx = 1; this.t = 0; }
+              } else if (this.phase === 'backward') {
+                if (this.layerIdx > 0) { this.layerIdx--; this.t = 0; }
+                else { this.phase = 'update'; this.t = 0; }
+              } else if (this.phase === 'update') {
+                this.finishUpdate();
+              }
+            }
+          };
+          this.raf = requestAnimationFrame(tick);
+        },
+
+        // visualizations for a single boundary (l -> l+1)
+        renderForwardBoundary(l, t) {
+          // fade all to baseline
+          for (const layer of this.edges) for (const row of layer) for (const line of row) {
+            line.setAttribute('stroke', '#cbd5e1'); line.removeAttribute('filter');
+          }
+          const color = '#2563eb';
+          const aFrom = this.a[l];
+          const W = this.W[l];
+          const targets = this.edges[l]; // [j][i]
+          for (let j = 0; j < this.L[l + 1]; j++) {
+            let acc = 0;
+            for (let i = 0; i < this.L[l]; i++) {
+              const contrib = Math.abs(W[j][i] * aFrom[i]);
+              const thk = 1.5 + 4 * contrib * (t); // grow with t
+              const line = targets[j][i];
+              line.setAttribute('stroke', color);
+              line.setAttribute('stroke-width', thk.toFixed(2));
+              line.setAttribute('opacity', (0.3 + 0.7 * t).toFixed(2));
+              line.setAttribute('filter', 'url(#glowBlue)');
+              acc += contrib;
+            }
+            // pulse next layer node fill slightly
+            const n = this.nodes[l + 1][j].circle;
+            n.setAttribute('filter', 'url(#glowBlue)');
+          }
+          // reset glow on previous layer nodes to reduce clutter
+          if (l > 0) { for (let p = 0; p < this.L[l]; p++) this.nodes[l][p].circle.removeAttribute('filter'); }
+          this.renderNodeValues(); // update labels/values
+        },
+
+        renderBackwardBoundary(l, t) {
+          // fade to baseline
+          for (const layer of this.edges) for (const row of layer) for (const line of row) {
+            line.setAttribute('stroke', '#cbd5e1'); line.removeAttribute('filter');
+          }
+          const color = '#dc2626';
+          const grads = this.dW[l]; // shape like W[l]: next x prev
+          const targets = this.edges[l];
+          for (let j = 0; j < this.L[l + 1]; j++) {
+            for (let i = 0; i < this.L[l]; i++) {
+              const mag = Math.abs(grads[j][i]);
+              const thk = 1.4 + 4.2 * mag * (t);
+              const line = targets[j][i];
+              line.setAttribute('stroke', color);
+              line.setAttribute('stroke-width', thk.toFixed(2));
+              line.setAttribute('opacity', (0.25 + 0.75 * t).toFixed(2));
+              line.setAttribute('filter', 'url(#glowRed)');
+            }
+            // glow source nodes too
+            this.nodes[l][0]?.circle.setAttribute('filter', 'url(#glowRed)');
+          }
+          // glow target nodes slightly
+          for (let j = 0; j < this.L[l + 1]; j++) {
+            this.nodes[l + 1][j].circle.setAttribute('filter', 'url(#glowRed)');
+          }
+          this.renderNodeValues(true); // with deltas
+        },
+
+        renderUpdate(t) {
+          // flash both colors proportionally to |grad|
+          for (let l = 0; l < 2; l++) {
+            for (let j = 0; j < this.L[l + 1]; j++) {
+              for (let i = 0; i < this.L[l]; i++) {
+                const g = Math.abs(this.dW[l][j][i]);
+                const line = this.edges[l][j][i];
+                const mix = 0.3 + 0.7 * t;
+                const width = 1.2 + 5 * (g * mix);
+                line.setAttribute('stroke-width', width.toFixed(2));
+                line.setAttribute('stroke', t < 0.5 ? '#dc2626' : '#2563eb');
+                line.setAttribute('filter', t < 0.5 ? 'url(#glowRed)' : 'url(#glowBlue)');
+                line.setAttribute('opacity', (0.3 + 0.7 * t).toFixed(2));
+              }
+            }
+          }
+          this.renderNodeValues();
+        },
+
+        renderNodeValues(showDeltas = false) {
+          // Update inner node labels to show values quickly (hover-level)
+          // Keep node text simple to avoid clutter
+          for (let j = 0; j < this.L[1]; j++) {
+            this.nodes[1][j].label.textContent = showDeltas
+              ? `δ${j + 1}=${this.delta[1][j].toFixed(2)}`
+              : `h${j + 1}=${this.a[1][j].toFixed(2)}`;
+          }
+          this.nodes[2][0].label.textContent = showDeltas
+            ? `δ_out=${this.delta[2][0].toFixed(2)}`
+            : `ŷ=${this.a[2][0].toFixed(2)}`;
+        },
+
+        // cleanup if Alpine tears down (optional; safe no-op otherwise)
+        destroy() { if (this.raf) cancelAnimationFrame(this.raf); }
+      }
+    }
+  </script>
 
 
   <!-- Activations -->
@@ -849,285 +869,811 @@ function nnAnim() {
       </div>
     </div>
   </section>
+  <section id="threshold" class="py-12">
+    <div class="max-w-7xl mx-auto px-6" x-data="threshDemo()" x-init="init()">
+      <h2 class="text-2xl font-bold">Threshold Tuning — Precision vs Recall</h2>
+      <p class="text-slate-600 text-sm mt-1">Toy scores + labels → slide threshold τ, see metrics & PR curve.</p>
 
-<!-- Optimizers & Schedules -->
-<section id="optimizers" class="py-12 bg-slate-50">
-  <div class="max-w-7xl mx-auto px-6">
-    <h2 class="text-3xl font-bold tracking-tight text-slate-900">Optimization & Learning Rate Scheduling</h2>
-
-    <div class="mt-6 grid lg:grid-cols-3 gap-6">
-      <!-- Batching quick ref -->
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Batching</h3>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li><span class="font-semibold">SGD</span> (batch=1): fast, noisy updates.</li>
-          <li><span class="font-semibold">Mini-Batch</span> (32–128): practical sweet spot.</li>
-          <li><span class="font-semibold">Full-Batch</span>: stable but slow.</li>
-        </ul>
-        <div class="mt-4 text-xs text-slate-500">
-          Mini-batches reduce gradient variance while keeping updates frequent.
+      <div class="mt-4 grid lg:grid-cols-2 gap-6">
+        <div class="bg-white border rounded-2xl p-6 shadow">
+          <label class="text-sm block">Threshold τ:
+            <input type="range" min="0" max="1" step="0.01" x-model.number="tau" @input="handleTauChange()"
+              class="w-full accent-slate-700">
+          </label>
+          <div class="mt-3 grid grid-cols-3 gap-3 text-sm">
+            <div class="p-3 bg-slate-50 rounded border">Precision<br><span class="font-mono text-lg"
+                x-text="prec.toFixed(3)"></span></div>
+            <div class="p-3 bg-slate-50 rounded border">Recall<br><span class="font-mono text-lg"
+                x-text="rec.toFixed(3)"></span></div>
+            <div class="p-3 bg-slate-50 rounded border">F1<br><span class="font-mono text-lg"
+                x-text="f1.toFixed(3)"></span></div>
+          </div>
+          <p class="text-xs text-slate-600 mt-2">Pick τ on validation data; don’t tune on test.</p>
         </div>
-      </article>
 
-      <!-- Popular Optimizers quick ref -->
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">Popular Optimizers</h3>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li><span class="font-semibold">Adam</span> (lr≈0.001): momentum (β₁) + RMS (β₂) — strong default.</li>
-          <li><span class="font-semibold">RMSProp</span> (lr≈0.001): good for RNNs, non-stationary loss.</li>
-          <li><span class="font-semibold">AdaGrad</span> (lr≈0.01): sparse features, per-param scaling.</li>
-          <li><span class="font-semibold">SGD + Momentum</span> (lr≈0.01, m≈0.9): strong baseline.</li>
-        </ul>
-        <div class="mt-4 text-xs text-slate-500">
-          Adam often wins “out of the box”, but SGD+Momentum can generalize better when tuned.
+        <div class="bg-white border rounded-2xl p-6 shadow">
+          <div class="h-56 relative"><canvas id="prChart"></canvas></div>
+          <p class="text-xs text-slate-500 mt-2">Curve built by sweeping τ ∈ [0,1]. Current τ marked.</p>
         </div>
-      </article>
+      </div>
+    </div>
+  </section>
 
-      <!-- LR schedulers quick ref -->
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h3 class="text-xl font-semibold">LR Schedulers</h3>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li><span class="font-semibold">Step Decay</span>: \( \mathrm{lr} = \mathrm{lr}_0\,\gamma^{\lfloor \mathrm{epoch}/s \rfloor} \).</li>
-          <li><span class="font-semibold">Cosine Annealing</span>: smooth cycles between \( \eta_{\max},\,\eta_{\min} \).</li>
-          <li><span class="font-semibold">Reduce-on-Plateau</span>: drop \( \mathrm{lr} \) when val loss stalls.</li>
-          <li><span class="font-semibold">Warmup</span>: gradually ramp to target lr in first epochs.</li>
-        </ul>
-      </article>
+  <script>
+    function threshDemo() {
+      return {
+        tau: 0.5,
+        scores: [],
+        labels: [],
+        prec: 0,
+        rec: 0,
+        f1: 0,
+        prCurve: [],
+        _updateTimer: null,
+
+        init() {
+          const n = 200;
+          const posRate = 0.2;
+          this.labels = Array.from({ length: n }, _ => Math.random() < posRate ? 1 : 0);
+          this.scores = this.labels.map(y => {
+            const base = y ? 0.65 : 0.35;
+            return Math.min(1, Math.max(0, base + 0.2 * (Math.random() - 0.5)));
+          });
+
+          this._buildPRData();
+          this.updateMetrics();
+
+          // Initialize canvas size once
+          this._initCanvas();
+          this.drawChart();
+        },
+
+        _metrics(tau) {
+          const yhat = this.scores.map(s => s >= tau ? 1 : 0);
+          let TP = 0, FP = 0, FN = 0;
+
+          for (let i = 0; i < this.labels.length; i++) {
+            if (yhat[i] === 1 && this.labels[i] === 1) TP++;
+            else if (yhat[i] === 1 && this.labels[i] === 0) FP++;
+            else if (yhat[i] === 0 && this.labels[i] === 1) FN++;
+          }
+
+          const prec = TP / (TP + FP + 1e-12);
+          const rec = TP / (TP + FN + 1e-12);
+          const f1 = 2 * prec * rec / (prec + rec + 1e-12);
+
+          return { prec, rec, f1 };
+        },
+
+        _buildPRData() {
+          this.prCurve = [];
+          for (let t = 0; t <= 100; t++) {
+            const tau = t / 100;
+            const m = this._metrics(tau);
+            this.prCurve.push({ recall: m.rec, precision: m.prec });
+          }
+        },
+
+        _initCanvas() {
+          const canvas = document.getElementById('prChart');
+          if (!canvas) return;
+
+          // Set CSS size constraints to prevent growth
+          canvas.style.width = '100%';
+          canvas.style.height = '224px'; // h-56 = 14rem = 224px
+          canvas.style.maxWidth = '100%';
+          canvas.style.maxHeight = '224px';
+        },
+
+        handleTauChange() {
+          if (this._updateTimer) clearTimeout(this._updateTimer);
+          this._updateTimer = setTimeout(() => {
+            this.updateMetrics();
+            this.drawChart();
+          }, 16);
+        },
+
+        updateMetrics() {
+          const m = this._metrics(this.tau);
+          this.prec = m.prec;
+          this.rec = m.rec;
+          this.f1 = m.f1;
+        },
+
+        drawChart() {
+          const canvas = document.getElementById('prChart');
+          if (!canvas) return;
+
+          const ctx = canvas.getContext('2d');
+
+          // Get the CURRENT size from CSS (don't use getBoundingClientRect repeatedly)
+          const cssWidth = canvas.clientWidth;
+          const cssHeight = canvas.clientHeight;
+
+          // Only resize canvas buffer if CSS size changed
+          if (canvas.width !== cssWidth || canvas.height !== cssHeight) {
+            canvas.width = cssWidth;
+            canvas.height = cssHeight;
+          }
+
+          const width = cssWidth;
+          const height = cssHeight;
+          const padding = { left: 50, right: 20, top: 20, bottom: 40 };
+          const plotWidth = width - padding.left - padding.right;
+          const plotHeight = height - padding.top - padding.bottom;
+
+          // Clear canvas
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+
+          // Helper functions
+          const scaleX = (recall) => padding.left + recall * plotWidth;
+          const scaleY = (precision) => padding.top + (1 - precision) * plotHeight;
+
+          // Draw grid
+          ctx.strokeStyle = '#e5e7eb';
+          ctx.lineWidth = 1;
+
+          // Vertical grid lines (every 0.2)
+          for (let i = 0; i <= 5; i++) {
+            const x = scaleX(i / 5);
+            ctx.beginPath();
+            ctx.moveTo(x, padding.top);
+            ctx.lineTo(x, padding.top + plotHeight);
+            ctx.stroke();
+          }
+
+          // Horizontal grid lines (every 0.2)
+          for (let i = 0; i <= 5; i++) {
+            const y = scaleY(i / 5);
+            ctx.beginPath();
+            ctx.moveTo(padding.left, y);
+            ctx.lineTo(padding.left + plotWidth, y);
+            ctx.stroke();
+          }
+
+          // Draw axes
+          ctx.strokeStyle = '#374151';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(padding.left, padding.top);
+          ctx.lineTo(padding.left, padding.top + plotHeight);
+          ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+          ctx.stroke();
+
+          // Draw PR curve
+          ctx.strokeStyle = '#3b82f6';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+
+          for (let i = 0; i < this.prCurve.length; i++) {
+            const point = this.prCurve[i];
+            const x = scaleX(point.recall);
+            const y = scaleY(point.precision);
+
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+          ctx.stroke();
+
+          // Draw current point marker
+          const currentX = scaleX(this.rec);
+          const currentY = scaleY(this.prec);
+
+          ctx.fillStyle = '#ef4444';
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, 5, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.stroke();
+
+          // Draw labels
+          ctx.fillStyle = '#374151';
+          ctx.font = '11px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+
+          // X-axis labels (every 0.2)
+          for (let i = 0; i <= 5; i++) {
+            const x = scaleX(i / 5);
+            const y = padding.top + plotHeight + 8;
+            ctx.fillText((i / 5).toFixed(1), x, y);
+          }
+
+          // Y-axis labels (every 0.2)
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          for (let i = 0; i <= 5; i++) {
+            const x = padding.left - 8;
+            const y = scaleY(i / 5);
+            ctx.fillText((i / 5).toFixed(1), x, y);
+          }
+
+          // Axis titles
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.font = 'bold 12px system-ui, sans-serif';
+
+          // X-axis title
+          ctx.fillText('Recall', padding.left + plotWidth / 2, height - 8);
+
+          // Y-axis title (rotated)
+          ctx.save();
+          ctx.translate(12, padding.top + plotHeight / 2);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText('Precision', 0, 0);
+          ctx.restore();
+
+          // Current tau and metrics indicator
+          ctx.fillStyle = '#1f2937';
+          ctx.font = '11px system-ui, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          const info = `τ=${this.tau.toFixed(2)} • P=${this.prec.toFixed(2)} • R=${this.rec.toFixed(2)}`;
+          ctx.fillText(info, padding.left + 5, padding.top + 5);
+        }
+      }
+    }
+  </script>
+
+<section id="scaling" class="py-12">
+  <div class="max-w-7xl mx-auto px-6" x-data="scaleDemo()" x-init="init()">
+    <h2 class="text-2xl font-bold">Feature Scaling — Before vs After</h2>
+
+    <!-- Controls -->
+    <div class="mt-3 flex flex-wrap items-center gap-5 text-sm">
+      <label class="inline-flex items-center gap-2">
+        <input type="checkbox" x-model="worst" @change="regen()" class="accent-slate-700">
+        Worst case
+      </label>
+      <label>λ (weight decay)
+  <input type="range" min="0" max="1500" step="50" x-model.number="lam" @input="regen()" class="accent-slate-700">
+  <span class="font-mono" x-text="lam.toFixed(0)"></span>
+</label>
+<label>Δμ (signal)
+  <input type="range" min="0.05" max="0.5" step="0.01" x-model.number="dmu" @input="regen()" class="accent-slate-700">
+  <span class="font-mono" x-text="dmu.toFixed(2)"></span>
+</label>
+
+      <label>Scale ratio σ₁/σ₂
+        <input type="range" min="1" max="200" step="1" x-model.number="ratio" @input="regen()" class="align-middle accent-slate-700">
+        <span class="font-mono" x-text="ratio.toFixed(0)"></span>
+      </label>
+      <button @click="regen()" class="px-3 py-1.5 rounded-lg border text-slate-800 bg-white">Regenerate</button>
     </div>
 
-    <!-- Interactive Demos -->
-    <div class="mt-8 grid lg:grid-cols-2 gap-6">
-      <!-- SGD vs Momentum demo -->
-      <article x-data="momentumDemo()" x-init="init()"
-               class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl font-semibold">SGD vs Momentum — effect of \( m \)</h3>
-          <span class="text-xs text-slate-500">Toy loss: \( f(w)=(w-3)^2 \), \( w_0=-5 \)</span>
-        </div>
+    <!-- Quick metrics -->
+    <div class="mt-3 grid grid-cols-3 gap-3 text-xs">
+      <div class="p-2 rounded-lg bg-slate-50 border">Acc (unscaled): <span class="font-mono" x-text="accA.toFixed(3)"></span></div>
+      <div class="p-2 rounded-lg bg-slate-50 border">Acc (scaled): <span class="font-mono" x-text="accB.toFixed(3)"></span></div>
+      <div class="p-2 rounded-lg bg-slate-50 border">empirical σ₁/σ₂: <span class="font-mono" x-text="empRatio.toFixed(1)"></span></div>
+    </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-4">
-          <label class="text-sm">
-            <span class="block text-slate-600">Learning rate (lr): <span class="font-mono" x-text="lr.toFixed(4)"></span></span>
-            <input type="range" min="0.0005" max="0.05" step="0.0005" x-model.number="lr" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-          <label class="text-sm">
-            <span class="block text-slate-600">Momentum \( m \): <span class="font-mono" x-text="momentum.toFixed(2)"></span></span>
-            <input type="range" min="0" max="0.99" step="0.01" x-model.number="momentum" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-        </div>
-
-        <div class="mt-4">
-          <div class="h-48 relative">
-            <canvas id="momChart" class="absolute inset-0"></canvas>
-          </div>
-          <div class="mt-2 text-xs text-slate-500">
-            High \( m \) accelerates along consistent gradients and damps oscillations; too high can overshoot.
-          </div>
-        </div>
-      </article>
-
-      <!-- Adam deep dive -->
-      <article x-data="adamDemo()" x-init="init()"
-               class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl font-semibold">Adam — momentum (β₁) + adaptive RMS (β₂)</h3>
-          <span class="text-xs text-slate-500">Toy loss: \( f(w)=(w-3)^2 \), \( w_0=-5 \)</span>
-        </div>
-
-        <p class="mt-3 text-sm text-slate-700 leading-6">
-          Updates:
-          \( m_t=\beta_1 m_{t-1}+(1-\beta_1)g_t,\;\;
-             v_t=\beta_2 v_{t-1}+(1-\beta_2)g_t^2 \).<br>
-          Bias-correct:
-          \( \hat m_t=\frac{m_t}{1-\beta_1^t},\;
-             \hat v_t=\frac{v_t}{1-\beta_2^t} \).<br>
-          Step:
-          \( w_{t+1}=w_t-\eta\, \frac{\hat m_t}{\sqrt{\hat v_t}+\varepsilon} \).
-        </p>
-
-        <div class="mt-4 grid lg:grid-cols-3 gap-4">
-          <label class="text-sm">
-            <span class="block text-slate-600">Learning rate (η): <span class="font-mono" x-text="lr.toFixed(4)"></span></span>
-            <input type="range" min="0.0005" max="0.02" step="0.0005" x-model.number="lr" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-          <label class="text-sm">
-            <span class="block text-slate-600">β₁ (momentum): <span class="font-mono" x-text="beta1.toFixed(2)"></span></span>
-            <input type="range" min="0.7" max="0.99" step="0.01" x-model.number="beta1" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-          <label class="text-sm">
-            <span class="block text-slate-600">β₂ (RMS memory): <span class="font-mono" x-text="beta2.toFixed(2)"></span></span>
-            <input type="range" min="0.8" max="0.999" step="0.001" x-model.number="beta2" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-          <label class="text-sm">
-            <span class="block text-slate-600">ε: <span class="font-mono" x-text="epsilon.toExponential(1)"></span></span>
-            <input type="range" min="1e-10" max="1e-6" step="1e-10" x-model.number="epsilon" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-          <label class="text-sm">
-            <span class="block text-slate-600">Compare: SGD lr <span class="font-mono" x-text="sgdLr.toFixed(3)"></span></span>
-            <input type="range" min="0.001" max="0.05" step="0.001" x-model.number="sgdLr" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-          <label class="text-sm">
-            <span class="block text-slate-600">Steps: <span class="font-mono" x-text="steps"></span></span>
-            <input type="range" min="10" max="200" step="1" x-model.number="steps" @input="update()"
-                   class="w-full accent-slate-700">
-          </label>
-        </div>
-
-        <div class="mt-4">
-          <div class="h-48 relative">
-            <canvas id="adamChart" class="absolute inset-0"></canvas>
-          </div>
-          <div class="mt-2 text-xs text-slate-500">
-            ↑ β₁ ≈ stronger momentum; ↑ β₂ ≈ smoother RMS estimate. ε prevents tiny-denominator spikes.
-          </div>
-        </div>
-      </article>
+    <div class="grid lg:grid-cols-2 gap-6 mt-4">
+      <div class="bg-white border rounded-2xl p-6 shadow">
+        <div class="h-60 relative"><canvas id="scaleBefore"></canvas></div>
+        <p class="text-xs text-slate-500 mt-2">Unscaled features — worst case lets the wrong axis dominate.</p>
+      </div>
+      <div class="bg-white border rounded-2xl p-6 shadow">
+        <div class="h-60 relative"><canvas id="scaleAfter"></canvas></div>
+        <p class="text-xs text-slate-500 mt-2">Standardized (z-score) — boundary aligns with the informative axis.</p>
+      </div>
     </div>
   </div>
 </section>
-
 <script>
-  // ===== Shared toy problem: f(w) = (w-3)^2 =====
-  function grad(w) { return 2 * (w - 3); }
-  function loss(w) { return (w - 3) * (w - 3); }
+function scaleDemo(){
+  // non-reactive Chart handles (avoid Alpine proxies)
+  let chartA = null, chartB = null;
 
-  // ===== SGD vs Momentum component =====
-  function momentumDemo() {
-    return {
-      lr: 0.01,
-      momentum: 0.9,
-      steps: 100,
-      chart: null,
+  // helpers
+  const randn = ()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+  const mean = a => a.reduce((p,c)=>p+c,0)/a.length;
+  const std  = (a,m=mean(a)) => Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/a.length);
 
-      init() { this.update(); },
-      simulate() {
-        const w0 = -5;
-        const T = this.steps;
-        let wSGD = w0, wMom = w0, v = 0;
-        const sgdLoss = [], momLoss = [], labels = [];
+  function ridgeFit(X,y_pm1,lam){
+    // solve (A^T A + λD) w = A^T y, with D=diag(1,1,0) (no bias penalty)
+    const n=X.length, A=X.map(v=>[v[0],v[1],1]);
+    const AT=(M)=>{const m=M.length,n=M[0].length;const T=Array.from({length:n},()=>Array(m));
+      for(let i=0;i<m;i++)for(let j=0;j<n;j++)T[j][i]=M[i][j];return T;};
+    const mul=(A,B)=>{const m=A.length,n=B[0].length,k=B.length;const C=Array.from({length:m},()=>Array(n).fill(0));
+      for(let i=0;i<m;i++)for(let j=0;j<n;j++)for(let t=0;t<k;t++)C[i][j]+=A[i][t]*B[t][j];return C;};
+    const mulv=(A,v)=>A.map(r=>r.reduce((s,rij,j)=>s+rij*v[j],0));
+    const solve3=(M,b)=>{const A=M.map((r,i)=>r.concat([b[i]]));
+      for(let col=0;col<3;col++){let piv=col;for(let r=col+1;r<3;r++)if(Math.abs(A[r][col])>Math.abs(A[piv][col]))piv=r;
+        [A[col],A[piv]]=[A[piv],A[col]];const p=A[col][col]||1e-12;for(let j=col;j<4;j++)A[col][j]/=p;
+        for(let r=0;r<3;r++)if(r!==col){const f=A[r][col];for(let j=col;j<4;j++)A[r][j]-=f*A[col][j];}}
+      return [A[0][3],A[1][3],A[2][3]];};
 
-        for (let t = 1; t <= T; t++) {
-          // SGD
-          const g1 = grad(wSGD);
-          wSGD = wSGD - this.lr * g1;
-          sgdLoss.push(loss(wSGD));
-
-          // Momentum
-          const g2 = grad(wMom);
-          v = this.momentum * v + g2;   // classical momentum
-          wMom = wMom - this.lr * v;
-          momLoss.push(loss(wMom));
-
-          labels.push(t);
-        }
-        return { labels, sgdLoss, momLoss };
-      },
-      update() {
-        const { labels, sgdLoss, momLoss } = this.simulate();
-
-        const ctx = document.getElementById('momChart').getContext('2d');
-        if (this.chart) { this.chart.destroy(); } // prevent chart growth
-        this.chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              { label: 'SGD', data: sgdLoss, borderWidth: 2, tension: 0.2 },
-              { label: 'Momentum', data: momLoss, borderWidth: 2, tension: 0.2 }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-              y: { title: { display: true, text: 'Loss' }, type: 'linear' },
-              x: { title: { display: true, text: 'Step' } }
-            },
-            plugins: { legend: { position: 'bottom' } }
-          }
-        });
-      }
-    }
+    const ATm = AT(A), ATA = mul(ATm,A), ATy = mulv(ATm,y_pm1);
+    // add λD (don’t regularize bias)
+    ATA[0][0]+=lam; ATA[1][1]+=lam; /* ATA[2][2]+=0 */
+    return solve3(ATA, ATy); // [w1,w2,b]
   }
 
-  // ===== Adam component =====
-  function adamDemo() {
-    return {
-      lr: 0.005,
-      beta1: 0.9,
-      beta2: 0.999,
-      epsilon: 1e-8,
-      sgdLr: 0.02,
-      steps: 100,
-      chart: null,
+  const acc = (X,y,w)=> {
+    let ok=0; for(let i=0;i<X.length;i++){
+      const s = w[0]*X[i][0] + w[1]*X[i][1] + w[2];
+      ok += ((s>=0)?1:0) === y[i] ? 1 : 0;
+    } return ok/X.length;
+  };
 
-      init() { this.update(); },
-      simulate() {
-        const w0 = -5;
-        const T = this.steps;
+  const makeScatter = (ctx, X, y, w)=>{
+    const xs=X.map(v=>v[0]); const minx=Math.min(...xs), maxx=Math.max(...xs);
+    const xline=[minx,maxx], yline=xline.map(x=>-(w[0]*x + w[2])/(w[1]+1e-12));
+    return new Chart(ctx,{type:'scatter',
+      data:{datasets:[
+        {label:'Class 0', data:X.map((v,i)=> y[i]?null:{x:v[0],y:v[1]}).filter(Boolean)},
+        {label:'Class 1', data:X.map((v,i)=> y[i]?{x:v[0],y:v[1]}:null).filter(Boolean)},
+        {type:'line', label:'Boundary', data:xline.map((x,i)=>({x, y:yline[i]})), borderWidth:2}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{},y:{}}}
+    });
+  };
 
-        // Adam state
-        let wA = w0, m = 0, v = 0;
-        // SGD baseline
-        let wS = w0;
+  // Alpine component
+  return {
+    // knobs — tuned to make a clear failure pre-scaling
+    worst: true,
+    ratio: 400,       // σ1/σ2 (make big to amplify the pathology)
+    lam: 800,         // λ (weight decay). Large λ hurts unscaled much more.
+    dmu: 0.18,        // Δμ (class mean separation on x2). Smaller => harder.
+    accA: 0, accB: 0, empRatio: 0,
 
-        const adamLoss = [], sgdLoss = [], labels = [];
+    init(){ this.regen(); },
 
-        for (let t = 1; t <= T; t++) {
-          // SGD
-          const gS = grad(wS);
-          wS = wS - this.sgdLr * gS;
-          sgdLoss.push(loss(wS));
+    regen(){
+      const n = 600;
+      const sigma2 = 1.0;
+      const sigma1 = this.worst ? this.ratio * sigma2 : 3.5;
 
-          // Adam
-          const g = grad(wA);
-          m = this.beta1 * m + (1 - this.beta1) * g;
-          v = this.beta2 * v + (1 - this.beta2) * (g * g);
-          const mHat = m / (1 - Math.pow(this.beta1, t));
-          const vHat = v / (1 - Math.pow(this.beta2, t));
-          wA = wA - this.lr * (mHat / (Math.sqrt(vHat) + this.epsilon));
-          adamLoss.push(loss(wA));
-
-          labels.push(t);
-        }
-        return { labels, adamLoss, sgdLoss };
-      },
-      update() {
-        const { labels, adamLoss, sgdLoss } = this.simulate();
-        const ctx = document.getElementById('adamChart').getContext('2d');
-        if (this.chart) { this.chart.destroy(); } // prevent chart growth
-        this.chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              { label: 'Adam', data: adamLoss, borderWidth: 2, tension: 0.2 },
-              { label: 'SGD (baseline)', data: sgdLoss, borderWidth: 2, tension: 0.2 }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-              y: { title: { display: true, text: 'Loss' }, type: 'linear' },
-              x: { title: { display: true, text: 'Step' } }
-            },
-            plugins: { legend: { position: 'bottom' } }
-          }
-        });
+      // synth data: x1 = noisy (useless), x2 = informative (small variance)
+      const X=[], y=[];
+      for(let i=0;i<n;i++){
+        const cls = Math.random()<0.5?0:1; y.push(cls);
+        const x1 = sigma1 * (randn());
+        const x2 = (cls? +this.dmu : -this.dmu) + sigma2 * 0.12*randn();
+        X.push([x1,x2]);
       }
+
+      // empirical stats + z-score
+      const xs1=X.map(v=>v[0]), xs2=X.map(v=>v[1]);
+      const m1=mean(xs1), m2=mean(xs2), s1=std(xs1,m1), s2=std(xs2,m2);
+      const Z = X.map(v=>[(v[0]-m1)/(s1||1), (v[1]-m2)/(s2||1)]);
+      this.empRatio = s1/(s2||1e-12);
+
+      // ridge boundaries (±1 targets), same λ both sides
+      const t = y.map(c=> c?+1:-1);
+      const wA = ridgeFit(X, t, this.lam);
+      const wB = ridgeFit(Z, t, this.lam);
+
+      // metrics
+      this.accA = acc(X,y,wA);
+      this.accB = acc(Z,y,wB);
+
+      // draw charts
+      if (chartA) { chartA.destroy(); chartA=null; }
+      if (chartB) { chartB.destroy(); chartB=null; }
+      const ctxA = document.getElementById('scaleBefore')?.getContext('2d');
+      const ctxB = document.getElementById('scaleAfter')?.getContext('2d');
+      if (!ctxA || !ctxB || typeof Chart === 'undefined') return;
+      chartA = makeScatter(ctxA, X, y, wA);
+      chartB = makeScatter(ctxB, Z, y, wB);
     }
-  }
+  };
+}
 </script>
+
+
+
+  <!-- Optimizers & Schedules -->
+  <section id="optimizers" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Optimization & Learning Rate Scheduling</h2>
+
+      <div class="mt-6 grid lg:grid-cols-3 gap-6">
+        <!-- Batching quick ref -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Batching</h3>
+          <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li><span class="font-semibold">SGD</span> (batch=1): fast, noisy updates.</li>
+            <li><span class="font-semibold">Mini-Batch</span> (32–128): practical sweet spot.</li>
+            <li><span class="font-semibold">Full-Batch</span>: stable but slow.</li>
+          </ul>
+          <div class="mt-4 text-xs text-slate-500">
+            Mini-batches reduce gradient variance while keeping updates frequent.
+          </div>
+        </article>
+
+        <!-- Popular Optimizers quick ref -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Popular Optimizers</h3>
+          <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li><span class="font-semibold">Adam</span> (lr≈0.001): momentum (β₁) + RMS (β₂) — strong default.</li>
+            <li><span class="font-semibold">RMSProp</span> (lr≈0.001): good for RNNs, non-stationary loss.</li>
+            <li><span class="font-semibold">AdaGrad</span> (lr≈0.01): sparse features, per-param scaling.</li>
+            <li><span class="font-semibold">SGD + Momentum</span> (lr≈0.01, m≈0.9): strong baseline.</li>
+          </ul>
+          <div class="mt-4 text-xs text-slate-500">
+            Adam often wins “out of the box”, but SGD+Momentum can generalize better when tuned.
+          </div>
+        </article>
+
+        <!-- LR schedulers quick ref -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">LR Schedulers</h3>
+          <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li><span class="font-semibold">Step Decay</span>: \( \mathrm{lr} = \mathrm{lr}_0\,\gamma^{\lfloor
+              \mathrm{epoch}/s \rfloor} \).</li>
+            <li><span class="font-semibold">Cosine Annealing</span>: smooth cycles between \( \eta_{\max},\,\eta_{\min}
+              \).</li>
+            <li><span class="font-semibold">Reduce-on-Plateau</span>: drop \( \mathrm{lr} \) when val loss stalls.</li>
+            <li><span class="font-semibold">Warmup</span>: gradually ramp to target lr in first epochs.</li>
+          </ul>
+        </article>
+      </div>
+
+      <!-- Interactive Demos -->
+      <div class="mt-8 grid lg:grid-cols-2 gap-6">
+        <!-- SGD vs Momentum demo -->
+        <article x-data="momentumDemo()" x-init="init()"
+          class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold">SGD vs Momentum — effect of \( m \)</h3>
+            <span class="text-xs text-slate-500">Toy loss: \( f(w)=(w-3)^2 \), \( w_0=-5 \)</span>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 gap-4">
+            <label class="text-sm">
+              <span class="block text-slate-600">Learning rate (lr): <span class="font-mono"
+                  x-text="lr.toFixed(4)"></span></span>
+              <input type="range" min="0.0005" max="0.05" step="0.0005" x-model.number="lr" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+            <label class="text-sm">
+              <span class="block text-slate-600">Momentum \( m \): <span class="font-mono"
+                  x-text="momentum.toFixed(2)"></span></span>
+              <input type="range" min="0" max="0.99" step="0.01" x-model.number="momentum" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+          </div>
+
+          <div class="mt-4">
+            <div class="h-48 relative">
+              <canvas id="momChart" class="absolute inset-0"></canvas>
+            </div>
+            <div class="mt-2 text-xs text-slate-500">
+              High \( m \) accelerates along consistent gradients and damps oscillations; too high can overshoot.
+            </div>
+          </div>
+        </article>
+
+        <!-- Adam deep dive -->
+        <article x-data="adamDemo()" x-init="init()" class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold">Adam — momentum (β₁) + adaptive RMS (β₂)</h3>
+            <span class="text-xs text-slate-500">Toy loss: \( f(w)=(w-3)^2 \), \( w_0=-5 \)</span>
+          </div>
+
+          <p class="mt-3 text-sm text-slate-700 leading-6">
+            Updates:
+            \( m_t=\beta_1 m_{t-1}+(1-\beta_1)g_t,\;\;
+            v_t=\beta_2 v_{t-1}+(1-\beta_2)g_t^2 \).<br>
+            Bias-correct:
+            \( \hat m_t=\frac{m_t}{1-\beta_1^t},\;
+            \hat v_t=\frac{v_t}{1-\beta_2^t} \).<br>
+            Step:
+            \( w_{t+1}=w_t-\eta\, \frac{\hat m_t}{\sqrt{\hat v_t}+\varepsilon} \).
+          </p>
+
+          <!-- Controls grid -->
+          <div class="mt-4 grid lg:grid-cols-3 gap-4">
+            <!-- Adam LR (disabled when matching) -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                Learning rate (η):
+                <span class="font-mono" x-text="(matchFirstStep ? _maybeMatchAdamLr() : lr).toFixed(4)"></span>
+                <span x-show="matchFirstStep" class="ml-1 text-[10px] text-slate-500">(matched)</span>
+              </span>
+              <input type="range" min="0.0005" max="0.5" step="0.0005" x-model.number="lr" @input="handleUpdate()"
+                :disabled="matchFirstStep" class="w-full accent-slate-700">
+            </label>
+
+            <!-- β1 -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                β₁ (momentum): <span class="font-mono" x-text="beta1.toFixed(2)"></span>
+              </span>
+              <input type="range" min="0.7" max="0.99" step="0.01" x-model.number="beta1" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+
+            <!-- β2 -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                β₂ (RMS memory): <span class="font-mono" x-text="beta2.toFixed(3)"></span>
+              </span>
+              <input type="range" min="0.80" max="0.999" step="0.001" x-model.number="beta2" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+
+            <!-- epsilon -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                ε: <span class="font-mono" x-text="epsilon.toExponential(1)"></span>
+              </span>
+              <input type="range" min="0.00000001" max="0.000001" step="0.00000001" x-model.number="epsilon"
+                @input="handleUpdate()" class="w-full accent-slate-700">
+            </label>
+
+            <!-- SGD LR -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                Compare: SGD lr <span class="font-mono" x-text="sgdLr.toFixed(3)"></span>
+              </span>
+              <input type="range" min="0.001" max="0.05" step="0.001" x-model.number="sgdLr" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+
+            <!-- Steps -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                Steps: <span class="font-mono" x-text="steps"></span>
+              </span>
+              <input type="range" min="10" max="200" step="1" x-model.number="steps" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+
+            <!-- Noise -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                Noise σ (grad): <span class="font-mono" x-text="noiseStd.toFixed(2)"></span>
+              </span>
+              <input type="range" min="0" max="0.8" step="0.02" x-model.number="noiseStd" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+
+            <!-- w0 -->
+            <label class="text-sm">
+              <span class="block text-slate-600">
+                Initial w₀: <span class="font-mono" x-text="w0.toFixed(1)"></span>
+              </span>
+              <input type="range" min="-10" max="10" step="0.5" x-model.number="w0" @input="handleUpdate()"
+                class="w-full accent-slate-700">
+            </label>
+
+            <!-- Match first step -->
+            <label class="text-sm flex items-center gap-2">
+              <input type="checkbox" x-model="matchFirstStep" @change="handleUpdate()">
+              <span class="text-slate-600">
+                Match Adam’s first step to SGD
+                <span class="block text-[11px] text-slate-500">
+                  uses η<sub>adam</sub> ≈ lr<sub>sgd</sub>·|g(w₀)|; current ≈
+                  <span class="font-mono" x-text="_maybeMatchAdamLr().toFixed(3)"></span>
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <!-- Chart + hint -->
+          <div class="mt-4">
+            <div class="h-48 relative">
+              <canvas id="adamChart" class="absolute inset-0"></canvas>
+            </div>
+            <div class="mt-2 text-xs text-slate-500">
+              ↑ β₁ ≈ stronger momentum; ↑ β₂ ≈ smoother RMS estimate; ε prevents tiny-denominator spikes.
+              <span class="ml-2">Effective Adam lr:
+                <span class="font-mono" x-text="(matchFirstStep ? _maybeMatchAdamLr() : lr).toFixed(3)"></span>,
+                SGD lr: <span class="font-mono" x-text="sgdLr.toFixed(3)"></span>
+              </span>
+            </div>
+          </div>
+
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // ===== Shared toy problem: f(w) = (w-3)^2 =====
+    function grad(w) { return 2 * (w - 3); }
+    function loss(w) { return (w - 3) * (w - 3); }
+
+    // ===== SGD vs Momentum component =====
+    // === PATCH 1: momentumDemo() function ===
+    function momentumDemo() {
+      return {
+        lr: 0.01,
+        momentum: 0.9,
+        steps: 100,
+        chart: null,
+        _debounceTimer: null,
+
+        init() {
+          this.handleUpdate();
+        },
+
+        simulate() {
+          const w0 = -5;
+          const T = this.steps;
+          let wSGD = w0, wMom = w0, v = 0;
+          const sgdLoss = [], momLoss = [], labels = [];
+
+          for (let t = 1; t <= T; t++) {
+            const g1 = 2 * (wSGD - 3); // grad function
+            wSGD = wSGD - this.lr * g1;
+            sgdLoss.push((wSGD - 3) * (wSGD - 3)); // loss function
+
+            const g2 = 2 * (wMom - 3);
+            v = this.momentum * v + g2;
+            wMom = wMom - this.lr * v;
+            momLoss.push((wMom - 3) * (wMom - 3));
+
+            labels.push(t);
+          }
+          return { labels, sgdLoss, momLoss };
+        },
+
+        // Separate debounced handler
+        handleUpdate() {
+          if (this._debounceTimer) clearTimeout(this._debounceTimer);
+          this._debounceTimer = setTimeout(() => {
+            this.updateChart();
+          }, 16);
+        },
+
+        updateChart() {
+          const { labels, sgdLoss, momLoss } = this.simulate();
+
+          const ctx = document.getElementById('momChart').getContext('2d');
+          if (this.chart) this.chart.destroy();
+
+          // Wrap with Alpine.raw()
+          this.chart = Alpine.raw(new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [
+                { label: 'SGD', data: sgdLoss, borderWidth: 2, tension: 0.2 },
+                { label: 'Momentum', data: momLoss, borderWidth: 2, tension: 0.2 }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              scales: {
+                y: { title: { display: true, text: 'Loss' }, type: 'linear' },
+                x: { title: { display: true, text: 'Step' } }
+              },
+              plugins: { legend: { position: 'bottom' } }
+            }
+          }));
+        }
+      }
+    }
+    function adamDemo() {
+      return {
+        // --- params (bind these with x-model if you want sliders/inputs) ---
+        w0: -5,
+        lr: 0.005,
+        beta1: 0.9,
+        beta2: 0.999,
+        epsilon: 1e-8,
+        sgdLr: 0.02,
+        steps: 100,
+        noiseStd: 0.0,          // set >0 to add gradient noise (e.g., 0.2)
+        matchFirstStep: true,  // if true, set Adam LR so its first step ~= SGD's
+
+        // --- internals ---
+        chart: null,
+        _debounceTimer: null,
+
+        init() {
+          this.handleUpdate();
+        },
+
+        // standard normal via Box-Muller
+        _randn() {
+          let u = 0, v = 0;
+          while (u === 0) u = Math.random();
+          while (v === 0) v = Math.random();
+          return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        },
+
+        _grad(w) {
+          // derivative of f(w) = (w - 3)^2
+          return 2 * (w - 3);
+        },
+
+        _maybeMatchAdamLr() {
+          if (!this.matchFirstStep) return this.lr;
+          const g0 = this._grad(this.w0);
+          // Adam's first step magnitude ≈ lr * |m̂| / sqrt(v̂) ≈ lr
+          // Match to SGD's first step magnitude: sgdLr * |g0|
+          const matched = this.sgdLr * Math.abs(g0);
+          return matched;
+        },
+
+        simulate() {
+          const T = Math.max(1, Math.floor(this.steps));
+          const adamLoss = [], sgdLoss = [], labels = [];
+          let wA = this.w0, m = 0, v = 0;
+          let wS = this.w0;
+
+          const adamLr = this._maybeMatchAdamLr();
+
+          for (let t = 1; t <= T; t++) {
+            // optional noise
+            const nS = this.noiseStd > 0 ? this.noiseStd * this._randn() : 0;
+            const nA = this.noiseStd > 0 ? this.noiseStd * this._randn() : 0;
+
+            // SGD update
+            const gS = this._grad(wS) + nS;
+            wS = wS - this.sgdLr * gS;
+            sgdLoss.push((wS - 3) * (wS - 3));
+
+            // Adam update
+            const g = this._grad(wA) + nA;
+            m = this.beta1 * m + (1 - this.beta1) * g;
+            v = this.beta2 * v + (1 - this.beta2) * (g * g);
+            const mHat = m / (1 - Math.pow(this.beta1, t));
+            const vHat = v / (1 - Math.pow(this.beta2, t));
+            wA = wA - adamLr * (mHat / (Math.sqrt(vHat) + this.epsilon));
+            adamLoss.push((wA - 3) * (wA - 3));
+
+            labels.push(t);
+          }
+          return { labels, adamLoss, sgdLoss, adamLr };
+        },
+
+        // debounced redraw
+        handleUpdate() {
+          if (this._debounceTimer) clearTimeout(this._debounceTimer);
+          this._debounceTimer = setTimeout(() => this.updateChart(), 16);
+        },
+
+        updateChart() {
+          const canvas = document.getElementById('adamChart');
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+
+          const { labels, adamLoss, sgdLoss, adamLr } = this.simulate();
+
+          if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
+          }
+
+          this.chart = Alpine.raw(new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [
+                { label: `Adam (lr=${adamLr.toFixed(3)})`, data: adamLoss, borderWidth: 2, tension: 0.2 },
+                { label: `SGD (lr=${this.sgdLr})`, data: sgdLoss, borderWidth: 2, tension: 0.2 }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              scales: {
+                y: { title: { display: true, text: 'Loss' }, type: 'linear' },
+                x: { title: { display: true, text: 'Step' } }
+              },
+              plugins: { legend: { position: 'bottom' } }
+            }
+          }));
+        }
+      }
+    }
+  </script>
 
   <!-- Initialization & Depth Demo -->
   <section id="init-and-depth" class="py-12 bg-slate-50">
@@ -1136,57 +1682,57 @@ function nnAnim() {
       <p class="mt-2 text-slate-600 max-w-3xl">Bad initialization leads to exploding/vanishing activations. This demo
         shows expected layer-wise variance for different schemes.</p>
 
-<div x-data="initDemo()" x-init="mount()" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <div class="bg-white rounded-2xl shadow p-6 border">
-    <div class="flex flex-wrap items-center gap-4 text-sm">
-      <label>Depth
-        <input type="range" min="2" max="12" step="1" x-model.number="L" @input="recompute()" />
-        <span class="mono ml-1" x-text="L"></span>
-      </label>
-      <label>Fan-in
-        <input type="range" min="32" max="512" step="32" x-model.number="fan" @input="recompute()" />
-        <span class="mono ml-1" x-text="fan"></span>
-      </label>
-      <label>Scheme
-        <select x-model="scheme" @change="recompute()" class="ml-1 border rounded px-2 py-1">
-          <option value="he">He (ReLU)</option>
-          <option value="xavier">Xavier (tanh)</option>
-          <option value="custom">Custom</option>
-        </select>
-      </label>
-      <template x-if="scheme==='custom'">
-        <label>Var scale κ
-          <input type="range" min="0.2" max="3.0" step="0.05" x-model.number="kappa" @input="recompute()" />
-          <span class="mono ml-1" x-text="kappa.toFixed(2)"></span>
-        </label>
-      </template>
-    </div>
+      <div x-data="initDemo()" x-init="mount()" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl shadow p-6 border">
+          <div class="flex flex-wrap items-center gap-4 text-sm">
+            <label>Depth
+              <input type="range" min="2" max="12" step="1" x-model.number="L" @input="recompute()" />
+              <span class="mono ml-1" x-text="L"></span>
+            </label>
+            <label>Fan-in
+              <input type="range" min="32" max="512" step="32" x-model.number="fan" @input="recompute()" />
+              <span class="mono ml-1" x-text="fan"></span>
+            </label>
+            <label>Scheme
+              <select x-model="scheme" @change="recompute()" class="ml-1 border rounded px-2 py-1">
+                <option value="he">He (ReLU)</option>
+                <option value="xavier">Xavier (tanh)</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <template x-if="scheme==='custom'">
+              <label>Var scale κ
+                <input type="range" min="0.2" max="3.0" step="0.05" x-model.number="kappa" @input="recompute()" />
+                <span class="mono ml-1" x-text="kappa.toFixed(2)"></span>
+              </label>
+            </template>
+          </div>
 
-    <!-- canvas stays the same id -->
-    <canvas id="varChart" style="width:100%; height:260px;" class="border rounded-lg mt-4"></canvas>
+          <!-- canvas stays the same id -->
+          <canvas id="varChart" style="width:100%; height:260px;" class="border rounded-lg mt-4"></canvas>
 
-    <p class="hint mt-2">
-      For ReLU, He init uses \( \mathrm{Var}(W)=\tfrac{2}{n_{\text{in}}} \).
-      For tanh, Xavier uses \( \tfrac{1}{n_{\text{in}}} \).
-    </p>
-  </div>
+          <p class="hint mt-2">
+            For ReLU, He init uses \( \mathrm{Var}(W)=\tfrac{2}{n_{\text{in}}} \).
+            For tanh, Xavier uses \( \tfrac{1}{n_{\text{in}}} \).
+          </p>
+        </div>
 
-  <div class="bg-white rounded-2xl shadow p-6 border">
-    <h3 class="text-xl font-semibold">Takeaways</h3>
-    <ul class="mt-3 text-sm leading-7 text-slate-700 list-disc ml-5">
-      <li><span class="font-semibold">He</span> keeps variance stable under ReLU’s 50% gating.</li>
-      <li><span class="font-semibold">Xavier</span> balances pre-activation variance for tanh/sigmoid.</li>
-      <li>Too small variance → <em>vanishing</em> signals; too large → <em>exploding</em> signals.</li>
-      <li>Normalization (Batch/Layer Norm) further stabilizes deep nets.</li>
-    </ul>
-    <div class="mt-4 p-3 rounded-xl bg-slate-50 border text-xs">
-      Expected variance recursion (heuristic): \[
-      \mathrm{Var}[a^{(l)}] \approx \rho\,\mathrm{Var}[z^{(l)}],\quad
-      \mathrm{Var}[z^{(l)}] \approx \mathrm{Var}[W^{(l)}]\,n_{\text{in}}\,\mathrm{Var}[a^{(l-1)}]
-      \] with \(\rho\approx \tfrac12\) for ReLU.
-    </div>
-  </div>
-</div>
+        <div class="bg-white rounded-2xl shadow p-6 border">
+          <h3 class="text-xl font-semibold">Takeaways</h3>
+          <ul class="mt-3 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li><span class="font-semibold">He</span> keeps variance stable under ReLU’s 50% gating.</li>
+            <li><span class="font-semibold">Xavier</span> balances pre-activation variance for tanh/sigmoid.</li>
+            <li>Too small variance → <em>vanishing</em> signals; too large → <em>exploding</em> signals.</li>
+            <li>Normalization (Batch/Layer Norm) further stabilizes deep nets.</li>
+          </ul>
+          <div class="mt-4 p-3 rounded-xl bg-slate-50 border text-xs">
+            Expected variance recursion (heuristic): \[
+            \mathrm{Var}[a^{(l)}] \approx \rho\,\mathrm{Var}[z^{(l)}],\quad
+            \mathrm{Var}[z^{(l)}] \approx \mathrm{Var}[W^{(l)}]\,n_{\text{in}}\,\mathrm{Var}[a^{(l-1)}]
+            \] with \(\rho\approx \tfrac12\) for ReLU.
+          </div>
+        </div>
+      </div>
 
     </div>
   </section>
@@ -1230,205 +1776,207 @@ function nnAnim() {
             <text x="420" y="40" fill="#334155" font-size="12">y = F(x) + x</text>
           </svg>
         </article>
-<article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-  <h3 class="text-xl font-semibold">Generalization Curves (Toy)</h3>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Generalization Curves (Toy)</h3>
 
-  <!-- Use CSS size; JS will scale content to fit this box -->
-  <canvas id="genChart" class="border rounded-lg w-full h-56"></canvas>
+          <!-- Use CSS size; JS will scale content to fit this box -->
+          <canvas id="genChart" class="border rounded-lg w-full h-56"></canvas>
 
-  <p class="hint mt-2">Illustrative: train vs val loss with/without weight decay.</p>
-</article>
+          <p class="hint mt-2">Illustrative: train vs val loss with/without weight decay.</p>
+        </article>
 
       </div>
     </div>
   </section>
-<!-- Layers Overview & Recipes -->
-<section id="layers" class="py-12 bg-slate-50">
-  <div class="max-w-7xl mx-auto px-6">
-    <h2 class="text-3xl font-bold tracking-tight text-slate-900">Layer Types & Quick Recipes</h2>
+  <!-- Layers Overview & Recipes -->
+  <section id="layers" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Layer Types & Quick Recipes</h2>
 
-    <!-- ========== Core Building Blocks ========== -->
-    <h3 class="mt-8 text-xl font-semibold text-slate-900">Core Blocks</h3>
-    <div class="mt-4 grid lg:grid-cols-4 gap-4">
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Dense (Fully Connected)</div>
-        <div class="text-xs text-slate-600 mt-2">Feature mixing, classification/regression.</div>
-        <div class="text-xs mt-1">\( z = W x + b \)</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Dropout</div>
-        <div class="text-xs text-slate-600 mt-2">Randomly zero activations (train only).</div>
-        <div class="text-xs mt-1">\( y = x \odot \text{mask} \)</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Batch Norm</div>
-        <div class="text-xs text-slate-600 mt-2">Normalize per batch to stabilize training.</div>
-        <div class="text-xs mt-1">\( y=\gamma\,\frac{x-\mu}{\sigma+\varepsilon}+\beta \)</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Layer Norm</div>
-        <div class="text-xs text-slate-600 mt-2">Normalize per example (seq models).</div>
-        <div class="text-xs mt-1">\( y=\gamma\,\frac{x-\mu}{\sigma+\varepsilon}+\beta \)</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">RMSNorm</div>
-        <div class="text-xs text-slate-600 mt-2">Mean-free normalization; cheaper & stable.</div>
-        <div class="text-xs mt-1">
-          \( \mathrm{rms}(x)=\sqrt{\tfrac{1}{d}\sum_i x_i^2+\varepsilon},\quad
-          y=\gamma \cdot \tfrac{x}{\mathrm{rms}(x)} \)
+      <!-- ========== Core Building Blocks ========== -->
+      <h3 class="mt-8 text-xl font-semibold text-slate-900">Core Blocks</h3>
+      <div class="mt-4 grid lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Dense (Fully Connected)</div>
+          <div class="text-xs text-slate-600 mt-2">Feature mixing, classification/regression.</div>
+          <div class="text-xs mt-1">\( z = W x + b \)</div>
         </div>
-        <div class="text-[11px] text-slate-500 mt-1">Common in pre-norm Transformers.</div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Dropout</div>
+          <div class="text-xs text-slate-600 mt-2">Randomly zero activations (train only).</div>
+          <div class="text-xs mt-1">\( y = x \odot \text{mask} \)</div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Batch Norm</div>
+          <div class="text-xs text-slate-600 mt-2">Normalize per batch to stabilize training.</div>
+          <div class="text-xs mt-1">\( y=\gamma\,\frac{x-\mu}{\sigma+\varepsilon}+\beta \)</div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Layer Norm</div>
+          <div class="text-xs text-slate-600 mt-2">Normalize per example (seq models).</div>
+          <div class="text-xs mt-1">\( y=\gamma\,\frac{x-\mu}{\sigma+\varepsilon}+\beta \)</div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">RMSNorm</div>
+          <div class="text-xs text-slate-600 mt-2">Mean-free normalization; cheaper & stable.</div>
+          <div class="text-xs mt-1">
+            \( \mathrm{rms}(x)=\sqrt{\tfrac{1}{d}\sum_i x_i^2+\varepsilon},\quad
+            y=\gamma \cdot \tfrac{x}{\mathrm{rms}(x)} \)
+          </div>
+          <div class="text-[11px] text-slate-500 mt-1">Common in pre-norm Transformers.</div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Group Norm</div>
+          <div class="text-xs text-slate-600 mt-2">Normalize per sample, per channel groups.</div>
+          <div class="text-xs mt-1">\( y=\gamma \tfrac{x-\mu_G}{\sigma_G+\varepsilon} + \beta \)</div>
+          <div class="text-[11px] text-slate-500 mt-1">Robust with tiny batches (vision).</div>
+        </div>
       </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Group Norm</div>
-        <div class="text-xs text-slate-600 mt-2">Normalize per sample, per channel groups.</div>
-        <div class="text-xs mt-1">\( y=\gamma \tfrac{x-\mu_G}{\sigma_G+\varepsilon} + \beta \)</div>
-        <div class="text-[11px] text-slate-500 mt-1">Robust with tiny batches (vision).</div>
+
+      <!-- ========== Recurrent Networks (LSTM/GRU) ========== -->
+      <h3 class="mt-10 text-xl font-semibold text-slate-900">Recurrent Networks (LSTM / GRU)</h3>
+      <p class="text-sm text-slate-600 mt-1">Temporal dependencies in sequences; good baselines for time series, NLP,
+        control.</p>
+      <div class="mt-4 grid lg:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">LSTM Cell</div>
+          <div class="text-xs text-slate-600 mt-2 leading-6">
+            \( i=\sigma(W_i x_t+U_i h_{t-1}+b_i) \)<br />
+            \( f=\sigma(W_f x_t+U_f h_{t-1}+b_f) \)<br />
+            \( o=\sigma(W_o x_t+U_o h_{t-1}+b_o) \)<br />
+            \( \tilde{c}=\tanh(W_c x_t+U_c h_{t-1}+b_c) \)<br />
+            \( c_t=f\odot c_{t-1}+i\odot \tilde{c},\quad h_t=o\odot\tanh(c_t) \)
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">GRU Cell</div>
+          <div class="text-xs text-slate-600 mt-2 leading-6">
+            \( z=\sigma(W_z x_t+U_z h_{t-1}) \),\;
+            \( r=\sigma(W_r x_t+U_r h_{t-1}) \)<br />
+            \( \tilde{h}=\tanh(W_h x_t+U_h(r\odot h_{t-1})) \)<br />
+            \( h_t=(1-z)\odot h_{t-1}+z\odot \tilde{h} \)
+          </div>
+        </div>
+        <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow">
+          <h4 class="text-sm font-semibold">Recipe: Sequence Classification</h4>
+          <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
+            <li>Embed → BiLSTM(128) → Pool(max/last) → Dense(ℓ2) → Dense(C) softmax</li>
+            <li>Loss: CE; Optim: AdamW(1e-3); Dropout 0.3; Grad clip=1.0</li>
+          </ul>
+        </article>
+      </div>
+
+      <!-- ========== Convolutional Networks (CNN) ========== -->
+      <h3 class="mt-10 text-xl font-semibold text-slate-900">Convolutional Networks (CNN)</h3>
+      <p class="text-sm text-slate-600 mt-1">Local receptive fields; translation equivariance; fast on images/audio.</p>
+      <div class="mt-4 grid lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Conv 1D/2D</div>
+          <div class="text-xs text-slate-600 mt-2">
+            \( y_{i} = \sum_{k} w_k\,x_{i-k} \) (1D),
+            \( (K\!*X)(u,v)=\sum_{a,b}K(a,b)X(u-a,v-b) \) (2D)
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Depthwise Separable</div>
+          <div class="text-xs text-slate-600 mt-2">Depthwise conv + pointwise (1×1) conv → fewer params, fast.</div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Residual Block</div>
+          <div class="text-xs text-slate-600 mt-2">Skip connections for stable deep training.</div>
+          <div class="text-xs mt-1">\( y = F(x)+x \)</div>
+        </div>
+        <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow lg:col-span-1">
+          <h4 class="text-sm font-semibold">Recipe: Image Classification</h4>
+          <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
+            <li>[Conv(32,3)→BN→ReLU]×2 → Pool → [Conv(64,3)]×2 → Pool → GAP → Dense(C) softmax</li>
+            <li>Augment: flip/crop; Optim: AdamW(3e-4); Label smoothing 0.1</li>
+          </ul>
+        </article>
+      </div>
+
+      <!-- ========== Graph Neural Networks (GNN) ========== -->
+      <h3 class="mt-10 text-xl font-semibold text-slate-900">Graph Neural Networks (GNN)</h3>
+      <p class="text-sm text-slate-600 mt-1">Operate on nodes/edges; exploit topology via message passing.</p>
+      <div class="mt-4 grid lg:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">GCN Layer</div>
+          <div class="text-xs text-slate-600 mt-2">
+            \( \hat{A}=A+I,\; \hat{D}_{ii}=\sum_j \hat{A}_{ij} \)<br />
+            \( H^{(l+1)}=\sigma(\hat{D}^{-1/2}\hat{A}\hat{D}^{-1/2} H^{(l)} W^{(l)}) \)
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">GAT Layer</div>
+          <div class="text-xs text-slate-600 mt-2 leading-6">
+            \( e_{ij}=\text{LeakyReLU}(a^\top[W h_i \Vert W h_j]) \),\;
+            \( \alpha_{ij}=\text{softmax}_j(e_{ij}) \)<br />
+            \( h_i'=\sigma\!\big(\sum_{j\in \mathcal{N}(i)} \alpha_{ij} W h_j\big) \)
+          </div>
+        </div>
+        <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow">
+          <h4 class="text-sm font-semibold">Recipe: Node Classification</h4>
+          <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
+            <li>Input features → GCN(64) ReLU → Dropout(0.5) → GCN(C) → softmax</li>
+            <li>Loss: CE; Add self-loops; Use normalized adjacency</li>
+          </ul>
+        </article>
+      </div>
+
+      <!-- ========== Attention & Transformers ========== -->
+      <h3 class="mt-10 text-xl font-semibold text-slate-900">Attention & Transformers</h3>
+      <p class="text-sm text-slate-600 mt-1">Model long-range dependencies with content-based weighting.</p>
+      <div class="mt-4 grid lg:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Scaled Dot-Product Attn</div>
+          <div class="text-xs text-slate-600 mt-2">
+            \( \mathrm{Attn}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V \)
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="text-sm text-slate-500">Multi-Head Attention</div>
+          <div class="text-xs text-slate-600 mt-2 leading-6">
+            \( \mathrm{MHA}(X)=\mathrm{Concat}\big(\mathrm{Attn}(XW_Q^{(i)},XW_K^{(i)},XW_V^{(i)})\big)_{i=1}^h W_O \)
+          </div>
+          <div class="text-[11px] text-slate-500 mt-1">Use RMSNorm/LayerNorm + residuals.</div>
+        </div>
+        <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow">
+          <h4 class="text-sm font-semibold">Recipe: Transformer Encoder (Seq)</h4>
+          <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
+            <li>Embed + PosEnc → [RMSNorm → MHA → Resid] → [RMSNorm → FFN → Resid] × L</li>
+            <li>Pool (CLS/mean) → Dense(C) softmax; Optim: AdamW(2e-4); Warmup + cosine decay</li>
+          </ul>
+        </article>
+      </div>
+
+      <!-- ========== Classic Recipes ========== -->
+      <h3 class="mt-10 text-xl font-semibold text-slate-900">Classic Recipes</h3>
+      <div class="mt-4 grid lg:grid-cols-3 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h4 class="text-lg font-semibold">Binary Classification</h4>
+          <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li>Input → Dense(64) ReLU → Dense(64) ReLU → Dense(1) <span class="mono">sigmoid</span></li>
+            <li>Loss: BCE; Optim: AdamW(1e-3); Batch: 64; Track AUC</li>
+          </ul>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h4 class="text-lg font-semibold">Multi-class</h4>
+          <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li>Input → Dense(128) ReLU → Dropout(0.2) → Dense(64) ReLU → Dense(C) <span class="mono">softmax</span>
+            </li>
+            <li>Loss: CE; Metrics: accuracy, macro-F1; Label smoothing optional</li>
+          </ul>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h4 class="text-lg font-semibold">Regression</h4>
+          <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
+            <li>Input → Dense(128) ReLU → Dense(64) ReLU → Dense(1) (linear)</li>
+            <li>Loss: MSE/Huber; Scale targets; Report RMSE / \(R^2\)</li>
+          </ul>
+        </article>
       </div>
     </div>
-
-    <!-- ========== Recurrent Networks (LSTM/GRU) ========== -->
-    <h3 class="mt-10 text-xl font-semibold text-slate-900">Recurrent Networks (LSTM / GRU)</h3>
-    <p class="text-sm text-slate-600 mt-1">Temporal dependencies in sequences; good baselines for time series, NLP, control.</p>
-    <div class="mt-4 grid lg:grid-cols-3 gap-4">
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">LSTM Cell</div>
-        <div class="text-xs text-slate-600 mt-2 leading-6">
-          \( i=\sigma(W_i x_t+U_i h_{t-1}+b_i) \)<br/>
-          \( f=\sigma(W_f x_t+U_f h_{t-1}+b_f) \)<br/>
-          \( o=\sigma(W_o x_t+U_o h_{t-1}+b_o) \)<br/>
-          \( \tilde{c}=\tanh(W_c x_t+U_c h_{t-1}+b_c) \)<br/>
-          \( c_t=f\odot c_{t-1}+i\odot \tilde{c},\quad h_t=o\odot\tanh(c_t) \)
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">GRU Cell</div>
-        <div class="text-xs text-slate-600 mt-2 leading-6">
-          \( z=\sigma(W_z x_t+U_z h_{t-1}) \),\;
-          \( r=\sigma(W_r x_t+U_r h_{t-1}) \)<br/>
-          \( \tilde{h}=\tanh(W_h x_t+U_h(r\odot h_{t-1})) \)<br/>
-          \( h_t=(1-z)\odot h_{t-1}+z\odot \tilde{h} \)
-        </div>
-      </div>
-      <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow">
-        <h4 class="text-sm font-semibold">Recipe: Sequence Classification</h4>
-        <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
-          <li>Embed → BiLSTM(128) → Pool(max/last) → Dense(ℓ2) → Dense(C) softmax</li>
-          <li>Loss: CE; Optim: AdamW(1e-3); Dropout 0.3; Grad clip=1.0</li>
-        </ul>
-      </article>
-    </div>
-
-    <!-- ========== Convolutional Networks (CNN) ========== -->
-    <h3 class="mt-10 text-xl font-semibold text-slate-900">Convolutional Networks (CNN)</h3>
-    <p class="text-sm text-slate-600 mt-1">Local receptive fields; translation equivariance; fast on images/audio.</p>
-    <div class="mt-4 grid lg:grid-cols-4 gap-4">
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Conv 1D/2D</div>
-        <div class="text-xs text-slate-600 mt-2">
-          \( y_{i} = \sum_{k} w_k\,x_{i-k} \) (1D),
-          \( (K\!*X)(u,v)=\sum_{a,b}K(a,b)X(u-a,v-b) \) (2D)
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Depthwise Separable</div>
-        <div class="text-xs text-slate-600 mt-2">Depthwise conv + pointwise (1×1) conv → fewer params, fast.</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Residual Block</div>
-        <div class="text-xs text-slate-600 mt-2">Skip connections for stable deep training.</div>
-        <div class="text-xs mt-1">\( y = F(x)+x \)</div>
-      </div>
-      <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow lg:col-span-1">
-        <h4 class="text-sm font-semibold">Recipe: Image Classification</h4>
-        <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
-          <li>[Conv(32,3)→BN→ReLU]×2 → Pool → [Conv(64,3)]×2 → Pool → GAP → Dense(C) softmax</li>
-          <li>Augment: flip/crop; Optim: AdamW(3e-4); Label smoothing 0.1</li>
-        </ul>
-      </article>
-    </div>
-
-    <!-- ========== Graph Neural Networks (GNN) ========== -->
-    <h3 class="mt-10 text-xl font-semibold text-slate-900">Graph Neural Networks (GNN)</h3>
-    <p class="text-sm text-slate-600 mt-1">Operate on nodes/edges; exploit topology via message passing.</p>
-    <div class="mt-4 grid lg:grid-cols-3 gap-4">
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">GCN Layer</div>
-        <div class="text-xs text-slate-600 mt-2">
-          \( \hat{A}=A+I,\; \hat{D}_{ii}=\sum_j \hat{A}_{ij} \)<br/>
-          \( H^{(l+1)}=\sigma(\hat{D}^{-1/2}\hat{A}\hat{D}^{-1/2} H^{(l)} W^{(l)}) \)
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">GAT Layer</div>
-        <div class="text-xs text-slate-600 mt-2 leading-6">
-          \( e_{ij}=\text{LeakyReLU}(a^\top[W h_i \Vert W h_j]) \),\;
-          \( \alpha_{ij}=\text{softmax}_j(e_{ij}) \)<br/>
-          \( h_i'=\sigma\!\big(\sum_{j\in \mathcal{N}(i)} \alpha_{ij} W h_j\big) \)
-        </div>
-      </div>
-      <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow">
-        <h4 class="text-sm font-semibold">Recipe: Node Classification</h4>
-        <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
-          <li>Input features → GCN(64) ReLU → Dropout(0.5) → GCN(C) → softmax</li>
-          <li>Loss: CE; Add self-loops; Use normalized adjacency</li>
-        </ul>
-      </article>
-    </div>
-
-    <!-- ========== Attention & Transformers ========== -->
-    <h3 class="mt-10 text-xl font-semibold text-slate-900">Attention & Transformers</h3>
-    <p class="text-sm text-slate-600 mt-1">Model long-range dependencies with content-based weighting.</p>
-    <div class="mt-4 grid lg:grid-cols-3 gap-4">
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Scaled Dot-Product Attn</div>
-        <div class="text-xs text-slate-600 mt-2">
-          \( \mathrm{Attn}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V \)
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl shadow p-4 border">
-        <div class="text-sm text-slate-500">Multi-Head Attention</div>
-        <div class="text-xs text-slate-600 mt-2 leading-6">
-          \( \mathrm{MHA}(X)=\mathrm{Concat}\big(\mathrm{Attn}(XW_Q^{(i)},XW_K^{(i)},XW_V^{(i)})\big)_{i=1}^h W_O \)
-        </div>
-        <div class="text-[11px] text-slate-500 mt-1">Use RMSNorm/LayerNorm + residuals.</div>
-      </div>
-      <article class="bg-white border border-slate-200 rounded-2xl p-4 shadow">
-        <h4 class="text-sm font-semibold">Recipe: Transformer Encoder (Seq)</h4>
-        <ul class="mt-2 text-xs leading-6 text-slate-700 list-disc ml-5">
-          <li>Embed + PosEnc → [RMSNorm → MHA → Resid] → [RMSNorm → FFN → Resid] × L</li>
-          <li>Pool (CLS/mean) → Dense(C) softmax; Optim: AdamW(2e-4); Warmup + cosine decay</li>
-        </ul>
-      </article>
-    </div>
-
-    <!-- ========== Classic Recipes ========== -->
-    <h3 class="mt-10 text-xl font-semibold text-slate-900">Classic Recipes</h3>
-    <div class="mt-4 grid lg:grid-cols-3 gap-6">
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h4 class="text-lg font-semibold">Binary Classification</h4>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li>Input → Dense(64) ReLU → Dense(64) ReLU → Dense(1) <span class="mono">sigmoid</span></li>
-          <li>Loss: BCE; Optim: AdamW(1e-3); Batch: 64; Track AUC</li>
-        </ul>
-      </article>
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h4 class="text-lg font-semibold">Multi-class</h4>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li>Input → Dense(128) ReLU → Dropout(0.2) → Dense(64) ReLU → Dense(C) <span class="mono">softmax</span></li>
-          <li>Loss: CE; Metrics: accuracy, macro-F1; Label smoothing optional</li>
-        </ul>
-      </article>
-      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-        <h4 class="text-lg font-semibold">Regression</h4>
-        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc ml-5">
-          <li>Input → Dense(128) ReLU → Dense(64) ReLU → Dense(1) (linear)</li>
-          <li>Loss: MSE/Huber; Scale targets; Report RMSE / \(R^2\)</li>
-        </ul>
-      </article>
-    </div>
-  </div>
-</section>
+  </section>
 
   <!-- Best Practices / Debugging -->
   <section id="tips" class="py-12">
@@ -1444,6 +1992,13 @@ function nnAnim() {
             <li>Adam with <span>\( \text{lr}\approx 10^{-3} \)</span>, batch 32–128 as a safe default.</li>
             <li>Use early stopping; track train/val curves.</li>
           </ul>
+          <svg viewBox="0 0 640 80" class="w-full h-auto mt-3">
+  <rect x="10" y="20" width="260" height="30" rx="6" fill="#bfdbfe"/><text x="140" y="40" text-anchor="middle" font-size="12">Train (60%)</text>
+  <rect x="280" y="20" width="180" height="30" rx="6" fill="#fde68a"/><text x="370" y="40" text-anchor="middle" font-size="12">Validation (20%)</text>
+  <rect x="460" y="20" width="170" height="30" rx="6" fill="#fecaca"/><text x="545" y="40" text-anchor="middle" font-size="12">Test (20%)</text>
+</svg>
+<p class="text-xs text-slate-500 mt-2">For time series, use chronological splits (no shuffling) and a forward-rolling validation.</p>
+
         </article>
         <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
           <h3 class="text-xl font-semibold">Choose Your Metric</h3>
@@ -1492,7 +2047,7 @@ function nnAnim() {
       const N = 120;
       const loss = Array.from({ length: N }, (_, i) => 1.2 * Math.exp(-i / 35) + 0.06 * Math.sin(i / 5) + 0.06 * Math.max(0, Math.random() - 0.6));
       const lr = Array.from({ length: N }, (_, i) => 0.5 * (1 + Math.cos(Math.PI * i / N)));
-      new Chart(ctx.getContext('2d'), {
+      (new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
           labels: loss.map((_, i) => i + 1), datasets: [
@@ -1501,7 +2056,7 @@ function nnAnim() {
           ]
         },
         options: { responsive: true, scales: { y: { type: 'linear', position: 'left' }, y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } } }, plugins: { legend: { display: true } } }
-      });
+      }));
     })();
 
     // Activation mini-plots
@@ -1512,7 +2067,7 @@ function nnAnim() {
         const kind = el.getAttribute('data-act');
         const xs = []; const ys = [];
         for (let i = 0; i <= 120; i++) { const x = -4 + 8 * (i / 120); xs.push(+x.toFixed(2)); ys.push(act(kind, x)); }
-        new Chart(el.getContext('2d'), { type: 'line', data: { labels: xs, datasets: [{ data: ys }] }, options: { responsive: true, plugins: { legend: { display: false } }, elements: { point: { radius: 0 } }, scales: { x: { display: false }, y: { display: false } } } });
+        (new Chart(el.getContext('2d'), { type: 'line', data: { labels: xs, datasets: [{ data: ys }] }, options: { responsive: true, plugins: { legend: { display: false } }, elements: { point: { radius: 0 } }, scales: { x: { display: false }, y: { display: false } } } }));
       }
       function act(k, x) {
         if (k === 'relu') return Math.max(0, x);
@@ -1549,275 +2104,280 @@ function nnAnim() {
   </script>
 
   <script>
-function initDemo(){
-  return {
-    L: 6, fan: 128, scheme: 'he', kappa: 1.0,
-    ctx: null, data: [],
+    function initDemo() {
+      return {
+        L: 6, fan: 128, scheme: 'he', kappa: 1.0,
+        ctx: null, data: [],
 
-    mount(){
-      const c = document.getElementById('varChart');
-      this.ctx = c.getContext('2d', { alpha: false });
-      // initial compute + render and keep it sharp on resize
-      this.recompute();
-      window.addEventListener('resize', () => this.render(), { passive: true });
-    },
+        mount() {
+          const c = document.getElementById('varChart');
+          // keep context RAW so Alpine won't proxy it
+          this.ctx = Alpine.raw(c.getContext('2d', { alpha: false }));
 
-    varW(){
-      if (this.scheme === 'he')     return 2 / this.fan;   // ReLU
-      if (this.scheme === 'xavier') return 1 / this.fan;   // tanh/sigmoid
-      return this.kappa / this.fan;                        // custom
-    },
+          this.recompute();
+          // (optional) keep the listener function raw too
+          const onResize = () => this.render();
+          this._onResize = Alpine.raw(onResize);
+          window.addEventListener('resize', this._onResize, { passive: true });
+        },
 
-    recompute(){
-      const L = Math.max(1, Math.floor(this.L));
-      const rho = 0.5;            // ReLU gating E[ReLU^2]/Var ≈ 0.5
-      const vW  = this.varW();
-      const out = [];
-      let varA  = 1.0;            // Var[a^0] = 1
-      for (let l = 1; l <= L; l++){
-        const varZ = vW * this.fan * varA; // Var[z^l]
-        varA = rho * varZ;                 // Var[a^l]
-        out.push({ layer: l, std: Math.sqrt(varA), variance: varA });
+
+        varW() {
+          if (this.scheme === 'he') return 2 / this.fan;   // ReLU
+          if (this.scheme === 'xavier') return 1 / this.fan;   // tanh/sigmoid
+          return this.kappa / this.fan;                        // custom
+        },
+
+        recompute() {
+          const L = Math.max(1, Math.floor(this.L));
+          const rho = 0.5;            // ReLU gating E[ReLU^2]/Var ≈ 0.5
+          const vW = this.varW();
+          const out = [];
+          let varA = 1.0;            // Var[a^0] = 1
+          for (let l = 1; l <= L; l++) {
+            const varZ = vW * this.fan * varA; // Var[z^l]
+            varA = rho * varZ;                 // Var[a^l]
+            out.push({ layer: l, std: Math.sqrt(varA), variance: varA });
+          }
+          this.data = out;
+          this.render();
+        },
+
+        render() {
+          if (!this.ctx) return;
+          const ctx = this.ctx;
+          const c = ctx.canvas;
+
+          // Match canvas to CSS size and devicePixelRatio for crispness
+          const ratio = window.devicePixelRatio || 1;
+          const cssW = c.clientWidth || 480;
+          const cssH = c.clientHeight || 240;
+          const wantW = Math.floor(cssW * ratio);
+          const wantH = Math.floor(cssH * ratio);
+          if (c.width !== wantW || c.height !== wantH) {
+            c.width = wantW; c.height = wantH;
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0); // use CSS pixel space
+          }
+
+          // Clear background
+          ctx.clearRect(0, 0, cssW, cssH);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, cssW, cssH);
+
+          // Plot area
+          const pad = { l: 44, r: 12, t: 16, b: 34 };
+          const w = Math.max(10, cssW - pad.l - pad.r);
+          const h = Math.max(10, cssH - pad.t - pad.b);
+
+          // Axes
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pad.l, pad.t);
+          ctx.lineTo(pad.l, pad.t + h);
+          ctx.lineTo(pad.l + w, pad.t + h);
+          ctx.stroke();
+
+          if (this.data.length === 0) return;
+
+          // Y scale on std
+          const maxStd = Math.max(...this.data.map(d => d.std), 1e-9);
+          const niceMax = this._niceUpper(maxStd);
+          const y = (v) => pad.t + h - (v / niceMax) * h;
+
+          // Grid + ticks
+          ctx.fillStyle = '#64748b';
+          ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          const ticks = 4;
+          for (let i = 0; i <= ticks; i++) {
+            const tv = (niceMax * i) / ticks;
+            const yy = y(tv);
+            ctx.strokeStyle = i === 0 ? '#94a3b8' : '#e2e8f0';
+            ctx.beginPath();
+            ctx.moveTo(pad.l, yy);
+            ctx.lineTo(pad.l + w, yy);
+            ctx.stroke();
+            ctx.fillText(tv.toFixed(2), pad.l - 6, yy);
+          }
+
+          // Bars
+          const n = this.data.length;
+          const gap = Math.min(14, (w / n) * 0.2);
+          const barW = Math.max(2, (w / n) - gap);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+
+          this.data.forEach((d, i) => {
+            const x0 = pad.l + i * (barW + gap) + gap * 0.5;
+            const y0 = y(d.std);
+            const bh = (pad.t + h) - y0;
+
+            // bar
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(x0, y0, barW, bh);
+
+            // label
+            ctx.fillStyle = '#475569';
+            ctx.fillText(`L${d.layer}`, x0 + barW / 2, pad.t + h + 6);
+          });
+
+          // Title
+          ctx.fillStyle = '#0f172a';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.font = '600 14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+          const schemeLabel = this.scheme === 'custom' ? `custom (κ=${this.kappa})` : this.scheme;
+          ctx.fillText(`Activation std per layer — scheme: ${schemeLabel}, fan=${this.fan}`, pad.l, 14);
+        },
+
+        _niceUpper(v) {
+          if (v <= 0) return 1;
+          const exp = Math.floor(Math.log10(v));
+          const base = Math.pow(10, exp);
+          const m = v / base;
+          const step = (m <= 1) ? 1 : (m <= 2) ? 2 : (m <= 5) ? 5 : 10;
+          return step * base;
+        }
+      };
+    }
+  </script>
+  <script>
+    (function () {
+      const CANVAS_ID = 'genChart';
+
+      function genToyData(E = 50) {
+        const ep = Array.from({ length: E }, (_, i) => i + 1);
+        const nrm = ep.map(t => 1.1 * Math.exp(-t / 14) + 0.02 * Math.sin(t / 3));            // train (no WD)
+        const nrv = ep.map(t => 0.9 * Math.exp(-t / 22) + 0.25 * Math.max(0, (t - 18)) / E);     // val   (no WD) -> overfit
+        const wdt = ep.map(t => 1.25 * Math.exp(-t / 16) + 0.02 * Math.cos(t / 4));           // train (WD)
+        const wdv = ep.map(t => 0.85 * Math.exp(-t / 18) + 0.11 * Math.max(0, (t - 26)) / E);    // val   (WD)
+        return { ep, nrm, nrv, wdt, wdv };
       }
-      this.data = out;
-      this.render();
-    },
 
-    render(){
-      if (!this.ctx) return;
-      const ctx = this.ctx;
-      const c   = ctx.canvas;
-
-      // Match canvas to CSS size and devicePixelRatio for crispness
-      const ratio = window.devicePixelRatio || 1;
-      const cssW  = c.clientWidth  || 480;
-      const cssH  = c.clientHeight || 240;
-      const wantW = Math.floor(cssW * ratio);
-      const wantH = Math.floor(cssH * ratio);
-      if (c.width !== wantW || c.height !== wantH){
-        c.width = wantW; c.height = wantH;
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0); // use CSS pixel space
+      function setupCtx(c) {
+        const dpr = window.devicePixelRatio || 1;
+        const cssW = c.clientWidth || +c.getAttribute('width') || 480;
+        const cssH = c.clientHeight || +c.getAttribute('height') || 220;
+        const wantW = Math.floor(cssW * dpr), wantH = Math.floor(cssH * dpr);
+        if (c.width !== wantW || c.height !== wantH) {
+          c.width = wantW; c.height = wantH;
+        }
+        const ctx = c.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);  // back to CSS pixels
+        return { ctx, cssW, cssH };
       }
 
-      // Clear background
-      ctx.clearRect(0, 0, cssW, cssH);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, cssW, cssH);
+      function niceUpper(v) {
+        if (v <= 0) return 1;
+        const e = Math.floor(Math.log10(v)), b = 10 ** e, m = v / b;
+        return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * b;
+      }
 
-      // Plot area
-      const pad = { l: 44, r: 12, t: 16, b: 34 };
-      const w = Math.max(10, cssW - pad.l - pad.r);
-      const h = Math.max(10, cssH - pad.t - pad.b);
+      function render() {
+        const c = document.getElementById(CANVAS_ID);
+        if (!c) return;
+        const { ctx, cssW, cssH } = setupCtx(c);
 
-      // Axes
-      ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(pad.l, pad.t);
-      ctx.lineTo(pad.l, pad.t + h);
-      ctx.lineTo(pad.l + w, pad.t + h);
-      ctx.stroke();
+        // data
+        const { ep, nrm, nrv, wdt, wdv } = genToyData(50);
+        const series = [
+          { name: 'Train (no WD)', data: nrm, stroke: '#ef4444' },
+          { name: 'Val (no WD)', data: nrv, stroke: '#f59e0b' },
+          { name: 'Train (WD)', data: wdt, stroke: '#3b82f6' },
+          { name: 'Val (WD)', data: wdv, stroke: '#10b981' },
+        ];
 
-      if (this.data.length === 0) return;
+        // clear bg
+        ctx.clearRect(0, 0, cssW, cssH);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, cssW, cssH);
 
-      // Y scale on std
-      const maxStd  = Math.max(...this.data.map(d => d.std), 1e-9);
-      const niceMax = this._niceUpper(maxStd);
-      const y = (v) => pad.t + h - (v / niceMax) * h;
+        // layout
+        const pad = { l: 46, r: 14, t: 16, b: 30 };
+        const w = cssW - pad.l - pad.r;
+        const h = cssH - pad.t - pad.b;
 
-      // Grid + ticks
-      ctx.fillStyle = '#64748b';
-      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      const ticks = 4;
-      for (let i = 0; i <= ticks; i++){
-        const tv = (niceMax * i) / ticks;
-        const yy = y(tv);
-        ctx.strokeStyle = i === 0 ? '#94a3b8' : '#e2e8f0';
+        // scales
+        const xmax = ep[ep.length - 1];
+        const allY = series.flatMap(s => s.data);
+        const ymax = niceUpper(Math.max(...allY));
+        const x = t => pad.l + (t - 1) / (xmax - 1) * w;
+        const y = v => pad.t + h - (v / ymax) * h;
+
+        // grid + axes
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+
+        const yTicks = 4;
+        for (let i = 0; i <= yTicks; i++) {
+          const val = (ymax * i) / yTicks, yy = y(val);
+          ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(pad.l + w, yy); ctx.stroke();
+          ctx.fillText(val.toFixed(2), pad.l - 6, yy);
+        }
+        // x ticks at epochs
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        const xTicks = 5;
+        for (let i = 0; i <= xTicks; i++) {
+          const t = 1 + i * (xmax - 1) / xTicks, xt = x(t), e = Math.round(t);
+          ctx.strokeStyle = '#f1f5f9';
+          ctx.beginPath(); ctx.moveTo(xt, pad.t); ctx.lineTo(xt, pad.t + h); ctx.stroke();
+          ctx.fillStyle = '#64748b';
+          ctx.fillText(e, xt, pad.t + h + 6);
+        }
+        // axes frame
+        ctx.strokeStyle = '#94a3b8';
         ctx.beginPath();
-        ctx.moveTo(pad.l, yy);
-        ctx.lineTo(pad.l + w, yy);
+        ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + h); ctx.lineTo(pad.l + w, pad.t + h);
         ctx.stroke();
-        ctx.fillText(tv.toFixed(2), pad.l - 6, yy);
+
+        // lines
+        function drawLine(arr, stroke) {
+          ctx.beginPath();
+          ctx.moveTo(x(1), y(arr[0]));
+          for (let i = 1; i < arr.length; i++) ctx.lineTo(x(i + 1), y(arr[i]));
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        series.forEach(s => drawLine(s.data, s.stroke));
+
+        // legend
+        const items = series.map(s => s.name);
+        const lh = 18, lw = 20, gap = 10;
+        let lx = pad.l + 6, ly = pad.t + 6;
+        items.forEach((name, i) => {
+          const color = series[i].stroke;
+          ctx.fillStyle = color;
+          ctx.fillRect(lx, ly + 4, lw, 6);
+          ctx.fillStyle = '#0f172a';
+          ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+          ctx.fillText(name, lx + lw + 6, ly);
+          ly += lh;
+          // wrap if needed
+          if (ly > pad.t + 6 + 3 * lh) { ly = pad.t + 6; lx += 180 + gap; }
+        });
+
       }
 
-      // Bars
-      const n = this.data.length;
-      const gap  = Math.min(14, (w / n) * 0.2);
-      const barW = Math.max(2, (w / n) - gap);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
+      // render now and on resize
+      function boot() {
+        const c = document.getElementById(CANVAS_ID);
+        if (!c) return;
+        render();
+        window.addEventListener('resize', render, { passive: true });
+      }
 
-      this.data.forEach((d, i) => {
-        const x0 = pad.l + i * (barW + gap) + gap * 0.5;
-        const y0 = y(d.std);
-        const bh = (pad.t + h) - y0;
-
-        // bar
-        ctx.fillStyle = '#3b82f6';
-        ctx.fillRect(x0, y0, barW, bh);
-
-        // label
-        ctx.fillStyle = '#475569';
-        ctx.fillText(`L${d.layer}`, x0 + barW / 2, pad.t + h + 6);
-      });
-
-      // Title
-      ctx.fillStyle = '#0f172a';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-      ctx.font = '600 14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-      const schemeLabel = this.scheme === 'custom' ? `custom (κ=${this.kappa})` : this.scheme;
-      ctx.fillText(`Activation std per layer — scheme: ${schemeLabel}, fan=${this.fan}`, pad.l, 14);
-    },
-
-    _niceUpper(v){
-      if (v <= 0) return 1;
-      const exp  = Math.floor(Math.log10(v));
-      const base = Math.pow(10, exp);
-      const m    = v / base;
-      const step = (m <= 1) ? 1 : (m <= 2) ? 2 : (m <= 5) ? 5 : 10;
-      return step * base;
-    }
-  };
-}
-</script>
-<script>
-(function(){
-  const CANVAS_ID = 'genChart';
-
-  function genToyData(E=50){
-    const ep = Array.from({length:E}, (_,i)=>i+1);
-    const nrm = ep.map(t => 1.1*Math.exp(-t/14) + 0.02*Math.sin(t/3));            // train (no WD)
-    const nrv = ep.map(t => 0.9*Math.exp(-t/22) + 0.25*Math.max(0,(t-18))/E);     // val   (no WD) -> overfit
-    const wdt = ep.map(t => 1.25*Math.exp(-t/16) + 0.02*Math.cos(t/4));           // train (WD)
-    const wdv = ep.map(t => 0.85*Math.exp(-t/18) + 0.11*Math.max(0,(t-26))/E);    // val   (WD)
-    return {ep, nrm, nrv, wdt, wdv};
-  }
-
-  function setupCtx(c){
-    const dpr = window.devicePixelRatio || 1;
-    const cssW = c.clientWidth  || +c.getAttribute('width')  || 480;
-    const cssH = c.clientHeight || +c.getAttribute('height') || 220;
-    const wantW = Math.floor(cssW * dpr), wantH = Math.floor(cssH * dpr);
-    if (c.width !== wantW || c.height !== wantH) {
-      c.width = wantW; c.height = wantH;
-    }
-    const ctx = c.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);  // back to CSS pixels
-    return {ctx, cssW, cssH};
-  }
-
-  function niceUpper(v){
-    if (v<=0) return 1;
-    const e=Math.floor(Math.log10(v)), b=10**e, m=v/b;
-    return (m<=1?1:m<=2?2:m<=5?5:10)*b;
-  }
-
-  function render(){
-    const c = document.getElementById(CANVAS_ID);
-    if (!c) return;
-    const {ctx, cssW, cssH} = setupCtx(c);
-
-    // data
-    const {ep, nrm, nrv, wdt, wdv} = genToyData(50);
-    const series = [
-      {name:'Train (no WD)', data:nrm, stroke:'#ef4444'},
-      {name:'Val (no WD)',   data:nrv, stroke:'#f59e0b'},
-      {name:'Train (WD)',    data:wdt, stroke:'#3b82f6'},
-      {name:'Val (WD)',      data:wdv, stroke:'#10b981'},
-    ];
-
-    // clear bg
-    ctx.clearRect(0,0,cssW,cssH);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0,0,cssW,cssH);
-
-    // layout
-    const pad = {l:46,r:14,t:16,b:30};
-    const w = cssW - pad.l - pad.r;
-    const h = cssH - pad.t - pad.b;
-
-    // scales
-    const xmax = ep[ep.length-1];
-    const allY = series.flatMap(s=>s.data);
-    const ymax = niceUpper(Math.max(...allY));
-    const x = t => pad.l + (t-1)/(xmax-1) * w;
-    const y = v => pad.t + h - (v / ymax) * h;
-
-    // grid + axes
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 1;
-    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-    ctx.fillStyle = '#64748b';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-
-    const yTicks = 4;
-    for (let i=0; i<=yTicks; i++){
-      const val = (ymax*i)/yTicks, yy = y(val);
-      ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(pad.l+w, yy); ctx.stroke();
-      ctx.fillText(val.toFixed(2), pad.l-6, yy);
-    }
-    // x ticks at epochs
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const xTicks = 5;
-    for (let i=0; i<=xTicks; i++){
-      const t = 1 + i*(xmax-1)/xTicks, xt = x(t), e = Math.round(t);
-      ctx.strokeStyle = '#f1f5f9';
-      ctx.beginPath(); ctx.moveTo(xt, pad.t); ctx.lineTo(xt, pad.t+h); ctx.stroke();
-      ctx.fillStyle = '#64748b';
-      ctx.fillText(e, xt, pad.t+h+6);
-    }
-    // axes frame
-    ctx.strokeStyle = '#94a3b8';
-    ctx.beginPath();
-    ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t+h); ctx.lineTo(pad.l+w, pad.t+h);
-    ctx.stroke();
-
-    // lines
-    function drawLine(arr, stroke){
-      ctx.beginPath();
-      ctx.moveTo(x(1), y(arr[0]));
-      for (let i=1;i<arr.length;i++) ctx.lineTo(x(i+1), y(arr[i]));
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-    series.forEach(s => drawLine(s.data, s.stroke));
-
-    // legend
-    const items = series.map(s => s.name);
-    const lh = 18, lw = 20, gap = 10;
-    let lx = pad.l + 6, ly = pad.t + 6;
-    items.forEach((name, i) => {
-      const color = series[i].stroke;
-      ctx.fillStyle = color;
-      ctx.fillRect(lx, ly+4, lw, 6);
-      ctx.fillStyle = '#0f172a';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.fillText(name, lx + lw + 6, ly);
-      ly += lh;
-      // wrap if needed
-      if (ly > pad.t + 6 + 3*lh) { ly = pad.t + 6; lx += 180 + gap; }
-    });
-
-  }
-
-  // render now and on resize
-  function boot(){
-    const c = document.getElementById(CANVAS_ID);
-    if (!c) return;
-    render();
-    window.addEventListener('resize', render, {passive:true});
-  }
-
-  // If Alpine is present, wait until next tick; otherwise DOMContentLoaded
-  if (window.Alpine) { queueMicrotask(boot); }
-  else { window.addEventListener('DOMContentLoaded', boot, {once:true}); }
-})();
-</script>
+      // If Alpine is present, wait until next tick; otherwise DOMContentLoaded
+      if (window.Alpine) { queueMicrotask(boot); }
+      else { window.addEventListener('DOMContentLoaded', boot, { once: true }); }
+    })();
+  </script>
 
 
 </body>
