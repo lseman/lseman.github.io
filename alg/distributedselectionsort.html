@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Distributed Selection Sort — Interactive Visualizer (Vanilla JS + Tailwind)</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-800">
+  <div class="mx-auto max-w-7xl px-5 py-8">
+    <header>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Distributed Selection Sort — Interactive Visualizer</h1>
+      <p class="mt-2 text-slate-600 max-w-3xl">
+        We have <span class="font-mono">k</span> sites (arrays). Each round:
+        <span class="font-medium">every site finds its local minimum</span>, then a coordinator selects the
+        <span class="font-medium">global minimum</span> among those and removes it from that site, appending to the output.
+      </p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-16 mt-6">
+      <!-- Left: Visualization -->
+      <section class="lg:col-span-2 flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button id="btnPlay" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm font-medium">Play</button>
+            <button id="btnStep" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Step</button>
+            <button id="btnReset" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Reset</button>
+            <button id="btnShuffle" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Shuffle</button>
+
+            <div class="ml-auto flex flex-wrap items-center gap-3">
+              <label class="text-sm text-slate-600">Speed</label>
+              <input id="rangeSpeed" type="range" min="50" max="1500" value="400" class="w-40">
+              <label class="text-sm text-slate-600">Sites</label>
+              <input id="rangeSites" type="range" min="2" max="6" value="3" class="w-36">
+              <label class="text-sm text-slate-600">Size/Site</label>
+              <input id="rangeSize" type="range" min="4" max="24" value="8" class="w-40">
+            </div>
+          </div>
+
+          <!-- Sites container -->
+          <div id="sites" class="flex flex-col gap-4"></div>
+
+          <!-- Output -->
+          <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <div class="text-xs uppercase tracking-wide text-slate-500 mb-2">Output (sorted by distributed selection)</div>
+            <div id="output" class="flex items-end gap-1 p-2 rounded-xl bg-gradient-to-b from-white to-slate-100 border border-slate-200 h-28"></div>
+          </div>
+
+          <!-- Stats -->
+          <div class="mt-4 grid grid-cols-4 gap-3">
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Local Comparisons</div>
+              <div id="statLocal" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Global Comparisons</div>
+              <div id="statGlobal" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Moves</div>
+              <div id="statMoves" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Total Items</div>
+              <div id="statTotal" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="text-lg font-semibold mb-2">Pseudocode</h3>
+          <pre id="pseudocode" class="rounded-2xl p-4 bg-slate-900 text-slate-100 text-sm leading-6 overflow-auto"><code>
+<span data-line="1" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>for round t = 0 .. N-1:</span>
+<span data-line="2" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>  for each site s in {0..k-1}:</span>
+<span data-line="3" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>    if site s has remaining items:</span>
+<span data-line="4" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>      (idx_s, val_s) ← argmin over remaining items in site s</span>
+<span data-line="5" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>  g ← argmin over {val_s} across non-empty sites          // coordinator</span>
+<span data-line="6" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>  output.append(val_g)                                     // remove from site g</span>
+          </code></pre>
+          <p class="text-sm text-slate-600 mt-2">
+            This is a distributed, repeated selection: local scans + a global choice per round.
+            With heaps, you can reduce recomputation, but here we show the naïve local scanning to make the communication pattern visible.
+          </p>
+        </div>
+      </section>
+
+      <!-- Right: Theory & Experiments -->
+      <aside class="flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">What You’re Seeing</h3>
+          <ul class="mt-2 text-sm text-slate-700 list-disc pl-5 space-y-1">
+            <li><span class="font-medium text-amber-700">Amber</span> highlights the current scanned index inside one site.</li>
+            <li><span class="font-medium text-cyan-700">Cyan</span> marks each site’s <span class="font-mono">local min</span> candidate.</li>
+            <li><span class="font-medium text-rose-700">Rose</span> marks the <span class="font-mono">global winner</span> for the round.</li>
+            <li><span class="font-medium text-emerald-700">Emerald</span> marks items already moved to the output (sorted prefix).</li>
+          </ul>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Complexity (Naïve Local Scans)</h3>
+          <p class="mt-2 text-sm text-slate-600">
+            Each round scans remaining items at each non-empty site (local comparisons), plus ~<span class="font-mono">k−1</span> global comparisons.
+            Total is still \(O(N^2)\) in the worst case if you recompute minima each round. With local heaps + a global heap,
+            it can be reduced to \(O(N \log n_{\text{site}} + N \log k)\).
+          </p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Experiments</h3>
+          <ol class="mt-2 list-decimal pl-5 space-y-2 text-sm text-slate-700">
+            <li>Increase the number of sites and compare the cost split between Local vs Global comparisons.</li>
+            <li>Create skewed sizes (e.g., one large site, others tiny) to see how the coordinator behaves.</li>
+            <li>Discuss how heaps or incremental updates would reduce repeated local work.</li>
+          </ol>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="text-center text-xs text-slate-500 pb-4">Built for learning. Use sliders to explore behavior.</footer>
+  </div>
+
+  <script>
+    // ---------------- Utilities ----------------
+    function rngArray(n, min = 5, max = 100) {
+      return Array.from({ length: n }, () => Math.floor(min + Math.random() * (max - min + 1)));
+    }
+    function maxVal(a){ return a.length ? Math.max(...a) : 1; }
+
+    // ---------------- Step generator ----------------
+    // Emits steps:
+    // 'site-outer' (per site pass start), 'site-compare', 'site-update-min',
+    // 'global-compare', 'global-select', 'move', 'done'
+    function* distributedSelectionSteps(siteArrays) {
+      // Deep copy input arrays
+      const sites = siteArrays.map(a => [...a]);
+      const active = siteArrays.map(a => a.map(() => true)); // true => not yet removed
+      const S = sites.length;
+      const sizes = sites.map(a => a.length);
+      const totalN = sizes.reduce((x,y) => x + y, 0);
+
+      // A little helper to read remaining indices of a site
+      const remainingIdx = s => active[s].map((on,idx) => on ? idx : -1).filter(i => i !== -1);
+
+      // global rounds
+      for (let t = 0; t < totalN; t++) {
+        // 1) Each site computes local minimum over remaining items
+        const localMinIdx = Array(S).fill(null);
+        const localMinVal = Array(S).fill(null);
+
+        for (let s = 0; s < S; s++) {
+          const rem = remainingIdx(s);
+          if (rem.length === 0) continue;
+          // mark entering site scan
+          yield { type: 'site-outer', t, s, snapshot: snapshotAll(sites, active), line: 2 };
+
+          let mi = rem[0];
+          let mv = sites[s][mi];
+          // show first candidate as set-min (no comparison yet)
+          yield { type: 'site-update-min', t, s, j: mi, minIdx: mi, value: mv, snapshot: snapshotAll(sites, active), line: 4 };
+
+          for (let p = 1; p < rem.length; p++) {
+            const j = rem[p];
+            // compare j with current min
+            yield { type: 'site-compare', t, s, j, minIdx: mi, snapshot: snapshotAll(sites, active), line: 4 };
+            if (sites[s][j] < mv) {
+              mi = j;
+              mv = sites[s][j];
+              yield { type: 'site-update-min', t, s, j, minIdx: mi, value: mv, snapshot: snapshotAll(sites, active), line: 5 };
+            }
+          }
+          localMinIdx[s] = mi;
+          localMinVal[s] = mv;
+        }
+
+        // 2) Coordinator picks global min among sites that have a min
+        let gSite = null;
+        let gVal = null;
+        // first non-null
+        for (let s = 0; s < S; s++) {
+          if (localMinIdx[s] !== null) { gSite = s; gVal = localMinVal[s]; break; }
+        }
+        if (gSite === null) break; // nothing left
+
+        // show comparisons against current best
+        for (let s = gSite + 1; s < S; s++) {
+          if (localMinIdx[s] === null) continue;
+          yield { type: 'global-compare', t, s, bestSite: gSite, bestVal: gVal, candVal: localMinVal[s], snapshot: snapshotAll(sites, active), line: 5, localMinIdx };
+          // tie-breaker: lower site index wins (deterministic)
+          if (localMinVal[s] < gVal || (localMinVal[s] === gVal && s < gSite)) {
+            gSite = s; gVal = localMinVal[s];
+          }
+        }
+
+        // selected
+        const gIdx = localMinIdx[gSite];
+        yield { type: 'global-select', t, gSite, gIdx, value: gVal, localMinIdx, snapshot: snapshotAll(sites, active), line: 6 };
+
+        // 3) Remove from winning site
+        active[gSite][gIdx] = false;
+        yield { type: 'move', t, gSite, gIdx, value: gVal, snapshot: snapshotAll(sites, active), line: 6 };
+      }
+
+      yield { type: 'done', snapshot: null, line: 0 };
+    }
+
+    function snapshotAll(sites, active){
+      // Returns a structure mirroring sites with masked values for removed entries (null)
+      return sites.map((arr, s) => arr.map((v, i) => active[s][i] ? v : null));
+    }
+
+    // ---------------- State ----------------
+    const sitesEl = document.getElementById('sites');
+    const outEl = document.getElementById('output');
+    const statLocal = document.getElementById('statLocal');
+    const statGlobal = document.getElementById('statGlobal');
+    const statMoves = document.getElementById('statMoves');
+    const statTotal = document.getElementById('statTotal');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStep = document.getElementById('btnStep');
+    const btnReset = document.getElementById('btnReset');
+    const btnShuffle = document.getElementById('btnShuffle');
+    const rangeSpeed = document.getElementById('rangeSpeed');
+    const rangeSites = document.getElementById('rangeSites');
+    const rangeSize = document.getElementById('rangeSize');
+    const PSEUDO = document.getElementById('pseudocode');
+
+    let siteArrays = [];
+    let steps = [];
+    let stepIdx = 0;
+    let running = false;
+
+    // Visual flags
+    let currentSite = null;
+    let currentScanIndex = null;
+    let siteMinIndex = {};   // per-site current min
+    let globalBestSite = null;
+    let globalCompareSite = null;
+    let globalWinner = null;
+    let outputValues = [];
+
+    let localCmp = 0;
+    let globalCmp = 0;
+    let moves = 0;
+    let timer = null;
+
+    // ---------------- UI helpers ----------------
+    function makeSitesUI() {
+      sitesEl.innerHTML = '';
+      const S = siteArrays.length;
+      for (let s = 0; s < S; s++) {
+        const block = document.createElement('div');
+        block.className = 'rounded-2xl border border-slate-200 bg-white p-3 shadow-sm';
+
+        const head = document.createElement('div');
+        head.className = 'flex items-center justify-between mb-2';
+        head.innerHTML = `
+          <div class="text-sm font-semibold text-slate-700">Site ${s}</div>
+          <div class="text-xs text-slate-500">Size: ${siteArrays[s].length}</div>
+        `;
+        block.appendChild(head);
+
+        const bars = document.createElement('div');
+        bars.id = `sitebars-${s}`;
+        bars.className = 'relative w-full h-32 flex items-end gap-1 p-2 rounded-xl bg-gradient-to-b from-white to-slate-100 border border-slate-200';
+        block.appendChild(bars);
+
+        sitesEl.appendChild(block);
+      }
+    }
+
+    function renderAll() {
+      // Render each site row
+      const S = siteArrays.length;
+      for (let s = 0; s < S; s++) {
+        renderSiteBars(s);
+      }
+      renderOutput();
+    }
+
+    function renderSiteBars(s) {
+      const bars = document.getElementById(`sitebars-${s}`);
+      if (!bars) return;
+      bars.innerHTML = '';
+      const arr = siteArrays[s];
+      const M = maxVal(arr);
+      for (let i = 0; i < arr.length; i++) {
+        const v = arr[i];
+        if (v === null) continue; // should not happen (we keep null to show removed slots off)
+        const h = Math.max(4, (v / M) * 100);
+        let cls = 'bg-slate-400';
+
+        const isRemoved = (v === null);
+        // Determine if this item is still active by checking snapshot = null or not
+        // We’ll encode removed items as null in siteArrays during visualization
+        if (isRemoved) cls = 'bg-slate-200';
+
+        // highlight scanning
+        if (currentSite === s && currentScanIndex === i) cls = 'bg-amber-400';
+        // per-site min
+        if (siteMinIndex[s] === i) cls = 'bg-cyan-400';
+        // global winner for this round
+        if (globalWinner && globalWinner.gSite === s && globalWinner.gIdx === i) cls = 'bg-rose-400';
+
+        const d = document.createElement('div');
+        d.className = `w-full max-w-[18px] flex-1 rounded-t-lg transition-all duration-300 ease-out ${cls}`;
+        d.style.height = h + '%';
+        d.title = `Site ${s} — A[${i}] = ${v}`;
+        bars.appendChild(d);
+      }
+    }
+
+    function renderOutput() {
+      outEl.innerHTML = '';
+      const M = maxVal(outputValues);
+      outputValues.forEach((v, idx) => {
+        const h = Math.max(4, (v / (M || 1)) * 100);
+        const d = document.createElement('div');
+        d.className = `w-full max-w-[18px] flex-1 rounded-t-lg transition-all duration-300 ease-out bg-emerald-400`;
+        d.style.height = h + '%';
+        d.title = `out[${idx}] = ${v}`;
+        outEl.appendChild(d);
+      });
+    }
+
+    function setPseudoHighlight(line){
+      PSEUDO.querySelectorAll('[data-line]').forEach(x => {
+        x.classList.remove('bg-emerald-700/30');
+        x.querySelectorAll('span').forEach(s => s.classList.remove('text-emerald-300'));
+      });
+      if (line > 0){
+        const el = PSEUDO.querySelector(`[data-line="${line}"]`);
+        if (el){
+          el.classList.add('bg-emerald-700/30');
+          const spans = el.querySelectorAll('span');
+          if (spans.length) spans[spans.length-1].classList.add('text-emerald-300');
+        }
+      }
+    }
+
+    function maskFromSnapshot(snapshot){
+      // snapshot is nested arrays with null for removed
+      return snapshot.map(site => site.map(v => v !== null));
+    }
+
+    function applyStep(s){
+      setPseudoHighlight(s.line || 0);
+
+      if (s.type === 'done') {
+        running = false; btnPlay.textContent = 'Play';
+        clearInterval(timer); timer = null;
+        // clear highlights
+        currentSite = null; currentScanIndex = null;
+        globalBestSite = null; globalCompareSite = null;
+        globalWinner = null;
+        renderAll();
+        return;
+      }
+
+      // Reset ephemeral highlights
+      currentScanIndex = null;
+      globalBestSite = null;
+      globalCompareSite = null;
+      globalWinner = null;
+
+      if (s.snapshot) {
+        // Update siteArrays from snapshot (null marks removed)
+        siteArrays = s.snapshot.map(site => site.map(v => v));
+      }
+
+      switch (s.type) {
+        case 'site-outer':
+          currentSite = s.s;
+          siteMinIndex[s.s] = undefined; // will be set by update-min
+          break;
+
+        case 'site-compare':
+          currentSite = s.s;
+          currentScanIndex = s.j;
+          localCmp += 1; statLocal.textContent = String(localCmp);
+          break;
+
+        case 'site-update-min':
+          currentSite = s.s;
+          siteMinIndex[s.s] = s.minIdx;
+          currentScanIndex = s.j; // show the candidate that became min
+          break;
+
+        case 'global-compare':
+          globalBestSite = s.bestSite;
+          globalCompareSite = s.s;
+          globalCmp += 1; statGlobal.textContent = String(globalCmp);
+          // Also reflect known local mins:
+          siteMinIndex = s.localMinIdx ? Object.assign({}, s.localMinIdx) : siteMinIndex;
+          break;
+
+        case 'global-select':
+          globalWinner = { gSite: s.gSite, gIdx: s.gIdx };
+          // Keep per-site minima rendered:
+          siteMinIndex = s.localMinIdx ? Object.assign({}, s.localMinIdx) : siteMinIndex;
+          break;
+
+        case 'move':
+          // Append to output, and mark removed slot as null is already shown via snapshot
+          moves += 1; statMoves.textContent = String(moves);
+          outputValues.push(s.value);
+          break;
+      }
+
+      // Update totals
+      const totalN = siteArrays.reduce((sum, ar) => sum + ar.filter(v => v !== null).length, 0) + outputValues.length;
+      statTotal.textContent = String(totalN);
+
+      renderAll();
+    }
+
+    function stepOnce(){
+      if (stepIdx >= steps.length) return;
+      const s = steps[stepIdx];
+      applyStep(s);
+      stepIdx += 1;
+    }
+
+    function playLoop(){
+      clearInterval(timer);
+      const delay = Math.max(30, Number(rangeSpeed.max) - Number(rangeSpeed.value) + Number(rangeSpeed.min));
+      timer = setInterval(() => {
+        if (stepIdx >= steps.length){
+          running = false; btnPlay.textContent = 'Play'; clearInterval(timer); timer=null; return;
+        }
+        stepOnce();
+      }, delay);
+    }
+
+    function resetState(newSites){
+      siteArrays = newSites.map(a => [...a]);
+      makeSitesUI();
+      outputValues = [];
+      steps = Array.from(distributedSelectionSteps(siteArrays));
+      stepIdx = 0; running = false;
+
+      // Clear highlights and stats
+      currentSite = null; currentScanIndex = null;
+      siteMinIndex = {};
+      globalBestSite = null; globalCompareSite = null;
+      globalWinner = null;
+
+      localCmp = 0; globalCmp = 0; moves = 0;
+      statLocal.textContent = '0';
+      statGlobal.textContent = '0';
+      statMoves.textContent = '0';
+      statTotal.textContent = String(siteArrays.reduce((s,a) => s+a.length,0));
+      btnPlay.textContent = 'Play';
+      clearInterval(timer); timer = null;
+      setPseudoHighlight(0);
+
+      renderAll();
+    }
+
+    function buildRandomSites(S, n){
+      // For a nicer merged output, draw from the same value range across sites
+      const sites = [];
+      for (let s = 0; s < S; s++) sites.push(rngArray(n, 5, 100));
+      return sites;
+    }
+
+    // ---------------- Events ----------------
+    btnPlay.addEventListener('click', () => {
+      running = !running;
+      btnPlay.textContent = running ? 'Pause' : 'Play';
+      if (running) playLoop(); else { clearInterval(timer); timer = null; }
+    });
+
+    btnStep.addEventListener('click', () => { if (!running) stepOnce(); });
+
+    btnReset.addEventListener('click', () => { resetState(siteArrays); });
+
+    btnShuffle.addEventListener('click', () => {
+      const S = parseInt(rangeSites.value, 10);
+      const n = parseInt(rangeSize.value, 10);
+      resetState(buildRandomSites(S, n));
+    });
+
+    rangeSites.addEventListener('change', () => {
+      const S = parseInt(rangeSites.value, 10);
+      const n = parseInt(rangeSize.value, 10);
+      resetState(buildRandomSites(S, n));
+    });
+
+    rangeSize.addEventListener('input', () => {
+      // no-op except maybe display somewhere; stats already show totals
+    });
+
+    rangeSize.addEventListener('change', () => {
+      const S = parseInt(rangeSites.value, 10);
+      const n = parseInt(rangeSize.value, 10);
+      resetState(buildRandomSites(S, n));
+    });
+
+    rangeSpeed.addEventListener('change', () => {
+      if (running) playLoop();
+    });
+
+    // ---------------- Init ----------------
+    (function init(){
+      const S = parseInt(rangeSites.value, 10);
+      const n = parseInt(rangeSize.value, 10);
+      resetState(buildRandomSites(S, n));
+    })();
+  </script>
+</body>
+</html>

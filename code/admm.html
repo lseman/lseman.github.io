@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Federated ADMM — Illustrated Cheatsheet (Augmented Lagrangian → ADMM)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- MathJax (v3) -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [["$","$"],["\\(","\\)"]], displayMath: [["$$","$$"],["\\[","\\]"]] },
+      chtml: { linebreaks: { automatic: false }, matchFontHeight: true },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    html{scroll-behavior:smooth}
+    .card{backdrop-filter: blur(4px)}
+    .lbl{font-size:12px;fill:#334155;font-weight:600}
+    .wire{stroke:#64748b;stroke-width:2.5;fill:none}
+    .node{fill:#f8fafc;stroke:#3b82f6;stroke-width:2}
+    .center{fill:#f0fdf4;stroke:#16a34a;stroke-width:2}
+    .edge{stroke:#94a3b8;stroke-width:2;}
+    .math-nowrap{overflow-x:auto;white-space:nowrap}
+    .theorem{background:#f8fafc;border-left:4px solid #6366f1;padding:.75rem 1rem;border-radius:.5rem}
+    .def{background:#f0fdf4;border-left:4px solid #22c55e;padding:.75rem 1rem;border-radius:.5rem}
+    .warn{background:#fef2f2;border-left:4px solid #ef4444;padding:.75rem 1rem;border-radius:.5rem}
+    code{background:#f1f5f9;padding:.15rem .35rem;border-radius:.35rem}
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 bg-slate-50">
+
+<!-- ======= Header ======= -->
+<header class="bg-gradient-to-tr from-indigo-50 via-emerald-50 to-cyan-50 border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+    <div class="flex flex-col lg:flex-row items-start gap-8">
+      <div class="flex-1">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">Federated ADMM — <span class="text-indigo-600">Illustrated Cheatsheet</span></h1>
+        <p class="mt-3 text-lg md:text-xl text-slate-700 max-w-3xl">From the <b>Augmented Lagrangian</b> to <b>ADMM</b>, with server–client federated consensus and neighbor-only (graph) consensus. Single-file. MathJax + Tailwind + pure SVG.</p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a href="#aug" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Augmented Lagrangian</a>
+          <a href="#admm" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">ADMM Updates</a>
+          <a href="#federated" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Federated (Server)</a>
+          <a href="#graph" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Graph Consensus</a>
+          <a href="#tuning" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Over‑relax & ρ‑adapt</a>
+          <a href="#prox" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Prox Examples</a>
+          <a href="#pseudo" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Pseudocode</a>
+        </div>
+        <p class="mt-4 text-sm text-slate-500">MathJax • Tailwind • Pure SVG diagrams • No build step</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ======= Section: Augmented Lagrangian ======= -->
+<section id="aug" class="py-10">
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">From Constrained Problem → Augmented Lagrangian</h2>
+      <p class="text-sm text-slate-700 mt-2">Start with a separable form with a simple coupling constraint:</p>
+      <div class="math-nowrap mt-2">
+        $$\begin{aligned}
+        \min_{x,z}\; & f(x) + g(z) \\
+        \text{s.t. }\; & Ax + Bz = c.
+        \end{aligned}$$
+      </div>
+      <p class="text-sm text-slate-700 mt-3">The (unscaled) augmented Lagrangian with multiplier $y$ and penalty $\rho>0$ is</p>
+      <div class="math-nowrap mt-2">
+        $$\mathcal{L}_\rho(x,z,y) = f(x)+g(z)+ y^{\top}(Ax+Bz-c) + \tfrac{\rho}{2}\,\lVert Ax+Bz-c\rVert_2^2.$$
+      </div>
+      <div class="def mt-3 text-sm text-slate-700">
+        <b>Scaled form.</b> Define the scaled dual variable $u=\tfrac{1}{\rho}y$. Completing the square yields the equivalent form
+        $$\mathcal{L}_\rho(x,z,u) = f(x)+g(z)+ \tfrac{\rho}{2}\,\lVert Ax+Bz-c+u\rVert_2^2 - \tfrac{\rho}{2}\,\lVert u\rVert_2^2.$$
+      </div>
+    </article>
+
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+  <h3 class="text-xl font-semibold mb-2">Why the <em>Scaled</em> Form? — Step-by-Step</h3>
+  <p class="text-sm text-slate-700">Let <span class="font-mono">r(x,z)=Ax+Bz-c</span>. Start from the unscaled AL:</p>
+  <div class="math-nowrap mt-2">
+    $$\mathcal L_\rho(x,z,y)=f(x)+g(z)+y^\top r+\tfrac{\rho}{2}\|r\|_2^2.$$
+  </div>
+  <ol class="list-decimal ml-6 mt-3 text-sm text-slate-700 space-y-2">
+    <li><b>Scaled dual:</b> define \(u:=\tfrac{1}{\rho}y\).</li>
+    <li><b>Complete the square:</b>
+      <div class="math-nowrap mt-2">
+        $$y^\top r+\tfrac{\rho}{2}\|r\|^2=\tfrac{\rho}{2}\|\,r+u\,\|^2-\tfrac{\rho}{2}\|u\|^2.$$
+      </div>
+      <p class="text-xs text-slate-600 mt-1">Because \(\rho\langle r,u\rangle=y^\top r\).</p>
+    </li>
+    <li><b>Scaled AL:</b> drop the constant in \((x,z)\):
+      <div class="math-nowrap mt-2">
+        $$\mathcal L_\rho(x,z,u)=f(x)+g(z)+\tfrac{\rho}{2}\|Ax+Bz-c+u\|^2-\tfrac{\rho}{2}\|u\|^2.$$
+      </div>
+    </li>
+    <li><b>ADMM (scaled):</b>
+      <div class="math-nowrap mt-2">
+        $$\begin{aligned}
+          x^{k+1}&=\arg\min_x\, f(x)+\tfrac{\rho}{2}\|Ax+Bz^k-c+u^k\|^2,\\
+          z^{k+1}&=\arg\min_z\, g(z)+\tfrac{\rho}{2}\|A x^{k+1}+B z-c+u^k\|^2,\\
+          u^{k+1}&=u^k+(A x^{k+1}+B z^{k+1}-c).
+        \end{aligned}$$
+      </div>
+      <p class="text-xs text-slate-600 mt-1">From \(y^{k+1}=y^k+\rho r^{k+1}\) divided by \(\rho\).</p>
+    </li>
+    <li><b>Residuals:</b> \(r^k=Ax^k+Bz^k-c\), \(s^k=\rho A^\top B (z^k-z^{k-1})\) (consensus: \(s^k=\rho(z^k-z^{k-1})\)).</li>
+    <li><b>Why it helps:</b> cleaner subproblems; duals on residual scale; simple consensus updates.</li>
+  </ol>
+</article>
+
+
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h3 class="text-xl font-semibold mb-2">ADMM in 3 Lines (Scaled)</h3>
+      <p class="text-sm text-slate-700">Minimize alternately in $x$ and $z$, then ascend in $u$:</p>
+      <div class="math-nowrap mt-2">
+        $$\begin{aligned}
+        x^{k+1}&=\arg\min_x\; f(x)+ \tfrac{\rho}{2}\,\lVert Ax + Bz^k - c + u^k\rVert^2,\\
+        z^{k+1}&=\arg\min_z\; g(z)+ \tfrac{\rho}{2}\,\lVert A x^{k+1} + B z - c + u^k\rVert^2,\\
+        u^{k+1}&=u^k + (A x^{k+1}+B z^{k+1}-c).
+        \end{aligned}$$
+      </div>
+      <div class="theorem mt-3 text-sm text-slate-700">
+        <b>Residuals & stopping.</b> Primal residual $r^{k}=Ax^{k}+B z^{k}-c$; dual residual $s^{k}=\rho A^{\top}B\,(z^{k}-z^{k-1})$ (for $A=I,B=-I$, $s^k=\rho(z^{k}-z^{k-1})$). Stop when $\lVert r^k\rVert_2\le \varepsilon_{\text{pri}}$ and $\lVert s^k\rVert_2\le \varepsilon_{\text{dual}}$.
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ======= Section: ADMM Updates for Consensus ======= -->
+<section id="admm" class="py-10 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Consensus Form (Server–Client)</h2>
+      <p class="text-sm text-slate-700 mt-2">Let $K$ sites hold local variables $x_i$ and losses $f_i$. Enforce consensus via a global $z$:</p>
+      <div class="math-nowrap mt-2">
+        $$\min_{\{x_i\},\,z}\; \sum_{i=1}^K f_i(x_i) + g(z)\quad \text{s.t.}\; x_i=z\; (i=1,\dots,K).$$
+      </div>
+      <p class="text-sm text-slate-700 mt-3">Scaled ADMM (per-site dual $u_i$):</p>
+      <div class="math-nowrap mt-2">
+        $$\begin{aligned}
+        x_i^{k+1}&=\arg\min_{x}\; f_i(x)+\tfrac{\rho}{2}\,\lVert x - z^k + u_i^k\rVert^2,\\
+        z^{k+1}&=\operatorname{prox}_{g/ (K\rho)}\!\Big(\bar{x}^{k+1}+\bar{u}^k\Big),\quad \bar{x}=\tfrac{1}{K}\sum_i x_i,\; \bar{u}=\tfrac{1}{K}\sum_i u_i,\\
+        u_i^{k+1}&=u_i^k + (x_i^{k+1}-z^{k+1}).
+        \end{aligned}$$
+      </div>
+      <p class="text-xs text-slate-600 mt-2">If $g\equiv 0$, then $z^{k+1}=\bar{x}^{k+1}+\bar{u}^k$ (simple averaging).</p>
+    </article>
+
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h3 class="text-xl font-semibold mb-2">Diagram — Server Consensus</h3>
+      <svg viewBox="0 0 820 260" class="w-full h-auto">
+        <defs>
+          <marker id="arrC" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,8 L8,4 z" fill="#64748b"/>
+          </marker>
+        </defs>
+        <!-- center -->
+        <g>
+          <rect x="360" y="100" width="100" height="60" rx="14" class="center"/>
+          <text x="410" y="135" class="lbl" text-anchor="middle">global z</text>
+        </g>
+        <!-- clients -->
+        <g>
+          <rect x="80" y="20"  width="120" height="48" rx="12" class="node"/>
+          <rect x="80" y="190" width="120" height="48" rx="12" class="node"/>
+          <rect x="620" y="20"  width="120" height="48" rx="12" class="node"/>
+          <rect x="620" y="190" width="120" height="48" rx="12" class="node"/>
+          <text x="140" y="50"  class="lbl" text-anchor="middle">site 1 (x₁,u₁)</text>
+          <text x="140" y="220" class="lbl" text-anchor="middle">site 2 (x₂,u₂)</text>
+          <text x="680" y="50"  class="lbl" text-anchor="middle">site K−1</text>
+          <text x="680" y="220" class="lbl" text-anchor="middle">site K</text>
+        </g>
+        <!-- arrows -->
+        <g class="wire" marker-end="url(#arrC)">
+          <path d="M200,44 C300,60 320,120 360,120"/>
+          <path d="M200,214 C300,196 320,140 360,140"/>
+          <path d="M620,44 C540,60 520,120 460,120"/>
+          <path d="M620,214 C540,196 520,140 460,140"/>
+        </g>
+      </svg>
+      <p class="text-xs text-slate-600">Each site solves its <i>local</i> proximal subproblem; the server aggregates into $z$ (possibly via a prox for $g$).</p>
+    </article>
+  </div>
+</section>
+
+<!-- ======= Section: Graph (Neighbor-only) Consensus ======= -->
+<section id="graph" class="py-10">
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Neighbor-only Consensus (Graph ADMM)</h2>
+      <p class="text-sm text-slate-700 mt-2">Consensus over an undirected graph $G=(V,E)$:
+        $$\min_{\{x_i\}}\;\sum_{i\in V} f_i(x_i) \;\; \text{s.t.}\; x_i=x_j\;\forall (i,j)\in E.$$
+      </p>
+      <p class="text-sm text-slate-700 mt-3">Introduce edge copies $z_{ij}$ and duals $u_{ij}$; for each edge $(i,j)$:
+      $$\begin{aligned}
+        x_i^{k+1}&=\arg\min_x f_i(x)+\tfrac{\rho}{2}\!\sum_{j\in N(i)}\!\lVert x - z_{ij}^k + u_{ij}^k\rVert^2,\\
+        z_{ij}^{k+1}&=\tfrac{1}{2}\big(x_i^{k+1}+u_{ij}^k + x_j^{k+1}+u_{ji}^k\big),\\
+        u_{ij}^{k+1}&=u_{ij}^k + x_i^{k+1}-z_{ij}^{k+1}.
+      \end{aligned}$$
+      </p>
+      <p class="text-xs text-slate-600 mt-2">Matrix view with incidence $D$: primal residual $r=Dx$, dual residual $s=\rho D^{\top}D\,\Delta x$; $D^{\top}D$ is the graph Laplacian.</p>
+    </article>
+
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h3 class="text-xl font-semibold mb-2">Diagram — Neighbor Graph</h3>
+      <svg viewBox="0 0 820 260" class="w-full h-auto">
+        <!-- nodes -->
+        <g>
+          <circle cx="140" cy="130" r="18" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+          <circle cx="320" cy="70"  r="18" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+          <circle cx="320" cy="190" r="18" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+          <circle cx="500" cy="70"  r="18" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+          <circle cx="500" cy="190" r="18" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+          <circle cx="680" cy="130" r="18" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+        </g>
+        <!-- edges -->
+        <g class="edge">
+          <line x1="158" y1="124" x2="302" y2="78"/>
+          <line x1="158" y1="136" x2="302" y2="182"/>
+          <line x1="338" y1="70"  x2="482" y2="70"/>
+          <line x1="338" y1="190" x2="482" y2="190"/>
+          <line x1="518" y1="78"  x2="662" y2="124"/>
+          <line x1="518" y1="182" x2="662" y2="136"/>
+        </g>
+        <g>
+          <text x="140" y="162" class="lbl" text-anchor="middle">x₁</text>
+          <text x="320" y="42"  class="lbl" text-anchor="middle">x₂</text>
+          <text x="320" y="222" class="lbl" text-anchor="middle">x₃</text>
+          <text x="500" y="42"  class="lbl" text-anchor="middle">x₄</text>
+          <text x="500" y="222" class="lbl" text-anchor="middle">x₅</text>
+          <text x="680" y="162" class="lbl" text-anchor="middle">x₆</text>
+        </g>
+      </svg>
+      <p class="text-xs text-slate-600">Only neighbors exchange messages; no central server required.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ======= Section: Tuning (Over-relaxation & Adaptive rho) ======= -->
+<section id="tuning" class="py-10 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Over‑relaxation (\(\alpha\))</h2>
+      <p class="text-sm text-slate-700 mt-2">Replace $x^{k+1}$ by an affine combination $\tilde{x}^{k+1}=\alpha x^{k+1}+(1-\alpha)z^k$ (typically $\alpha\in[1,1.8]$) when forming the $z$‑update. For server consensus:</p>
+      <div class="math-nowrap mt-2">
+        $$z^{k+1}=\operatorname{prox}_{g/(K\rho)}\!\Big(\tfrac{1}{K}\sum_i (\tilde{x}_i^{k+1}+u_i^k)\Big),\;\; \tilde{x}_i^{k+1}=\alpha x_i^{k+1}+(1-\alpha)z^k.$$
+      </div>
+      <p class="text-xs text-slate-600 mt-2">Often improves convergence on ill‑conditioned problems.</p>
+    </article>
+
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Adaptive Penalty \(\rho\) (Boyd‑style)</h2>
+      <p class="text-sm text-slate-700 mt-2">Balance primal and dual residuals using thresholds $\mu>1$ and factor $\tau>1$:</p>
+      <div class="math-nowrap mt-2">
+        $$\rho\leftarrow\begin{cases}
+          \tau\rho & \text{if } \lVert r^k\rVert_2 > \mu\,\lVert s^k\rVert_2,\\
+          \rho/\tau & \text{if } \lVert s^k\rVert_2 > \mu\,\lVert r^k\rVert_2,\\
+          \rho & \text{otherwise.}
+        \end{cases}$$
+      </div>
+      <p class="text-xs text-slate-600 mt-2">Upon changing $\rho$, rescale duals: $u_i\leftarrow u_i/\tau$ (if $\rho\gets\tau\rho$) or $u_i\leftarrow u_i\tau$ (if $\rho\gets\rho/\tau$).</p>
+    </article>
+  </div>
+</section>
+
+<!-- ======= Section: Prox Examples ======= -->
+<section id="prox" class="py-10">
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Common Prox Operators</h2>
+      <ul class="list-disc ml-6 mt-3 text-sm text-slate-700 space-y-2">
+        <li><b>LASSO (\(g(z)=\lambda\lVert z\rVert_1\)):</b> $\operatorname{prox}_{\lambda/\gamma\,\lVert\cdot\rVert_1}(v)=\operatorname{sign}(v)\max(|v|-\lambda/\gamma,0)$ (soft‑threshold).</li>
+        <li><b>Ridge (\(g(z)=\tfrac{\lambda}{2}\lVert z\rVert_2^2\)):</b> $\operatorname{prox}_{\lambda/\gamma\,\lVert\cdot\rVert_2^2}(v)=\tfrac{1}{1+\lambda/\gamma}v$.</li>
+        <li><b>Indicator of set \(C\)</b> (constraints): $\operatorname{prox}_{\iota_C}(v)=\Pi_C(v)$ (Euclidean projection).</li>
+      </ul>
+      <p class="text-xs text-slate-600 mt-3">Here $\gamma$ is the quadratic coefficient from your subproblem (e.g., $K\rho$ in the server consensus $z$‑update).</p>
+    </article>
+
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Stopping Rules</h2>
+      <p class="text-sm text-slate-700 mt-2">With dimension $n$ and $K$ sites, one popular choice is</p>
+      <div class="math-nowrap mt-2">
+        $$\begin{aligned}
+          \varepsilon_{\text{pri}}&=\sqrt{Kn}\,\varepsilon_{\text{abs}} + \varepsilon_{\text{rel}}\max\{\lVert x\rVert_2,\sqrt{K}\,\lVert z\rVert_2\},\\
+          \varepsilon_{\text{dual}}&=\sqrt{Kn}\,\varepsilon_{\text{abs}} + \varepsilon_{\text{rel}}\,\rho\,\lVert \textstyle\sum_i u_i\rVert_2.
+        \end{aligned}$$
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ======= Section: Pseudocode ======= -->
+<section id="pseudo" class="py-10 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="text-3xl font-bold text-center mb-8">Server–Client ADMM (Consensus) — Pseudocode</h2>
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+<pre class="text-sm leading-6 overflow-x-auto"><code>// Problem:  min Σ_i f_i(x_i) + g(z)  s.t.  x_i = z
+initialize z, u_i = 0, ρ &gt; 0
+repeat k = 0,1,2,...
+  // Local (parallel over i)
+  for each site i:
+    x_i^{k+1} ← argmin_x f_i(x) + (ρ/2)||x - z^k + u_i^k||²
+
+  // Over-relax (optional)
+  x̃_i^{k+1} ← α x_i^{k+1} + (1-α) z^k   (α≈1.0–1.8)
+
+  // Global (aggregation + prox)
+  v ← (1/K) Σ_i (x̃_i^{k+1} + u_i^k)
+  z^{k+1} ← prox_{g/(Kρ)}(v)
+
+  // Dual update
+  for each site i:
+    u_i^{k+1} ← u_i^k + (x_i^{k+1} - z^{k+1})
+
+  // Residuals for diagnostics
+  r ← [x_1^{k+1}-z^{k+1}; …; x_K^{k+1}-z^{k+1}]     // primal
+  s ← ρ (z^{k+1} - z^k)                             // dual (consensus case)
+
+  // Boyd-style ρ adaptation
+  if ||r||₂ &gt; μ ||s||₂:      ρ ← τρ;   u_i ← u_i/τ
+  else if ||s||₂ &gt; μ ||r||₂: ρ ← ρ/τ; u_i ← u_i·τ
+until ||r||₂ ≤ ε_pri and ||s||₂ ≤ ε_dual</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ======= Section: Teaching Tips ======= -->
+<section id="tips" class="py-10">
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Mapping to Your Framework</h2>
+      <ul class="mt-3 text-sm text-slate-700 space-y-2 list-disc ml-6">
+        <li><b>Local step:</b> implement <code>_local_update(i, z-u_i)</code> for each block.</li>
+        <li><b>Global step:</b> average (or robust aggregate) then apply per-block prox.</li>
+        <li><b>Diagnostics:</b> compute $(r,s)$, objective, and log ρ changes.</li>
+        <li><b>Variants:</b> server consensus vs neighbor graph; add over‑relaxation.</li>
+      </ul>
+    </article>
+    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+      <h2 class="text-2xl font-bold">Common Pitfalls</h2>
+      <div class="warn mt-3 text-sm text-slate-700">
+        <b>Numerical scale matters.</b> If local objectives are badly scaled, tune ρ or precondition features; use over‑relaxation. Check NaNs after each step.
+      </div>
+      <ul class="mt-3 text-sm text-slate-700 space-y-2 list-disc ml-6">
+        <li>For $g\equiv 0$, don’t forget $z$ reduces to the (possibly weighted) average.</li>
+        <li>Always rescale duals when ρ changes (to keep KKT consistency).</li>
+        <li>Use <code>ε_abs</code> and <code>ε_rel</code> that reflect data scale.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<!-- ======= Footer ======= -->
+<footer class="py-10 bg-slate-900 text-slate-200">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="text-sm">© <span id="year"></span> Federated ADMM Cheatsheet — Visual & Mathematical Guide</p>
+      <div class="text-xs text-slate-400">Tailwind • MathJax • Pure SVG • Responsive Design</div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-700 text-center text-xs text-slate-400">
+      Includes: Augmented Lagrangian → ADMM derivation • Server consensus • Neighbor graph ADMM • Over‑relaxation • Adaptive ρ • Prox recipes
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear();
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); const t = document.querySelector(a.getAttribute('href')); if (t) t.scrollIntoView({behavior:'smooth', block:'start'}); });
+    });
+  });
+</script>
+
+</body>
+</html>

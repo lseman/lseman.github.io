@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stable Selection Sort — Interactive Visualizer (Vanilla JS + Tailwind)</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-800">
+  <div class="mx-auto max-w-6xl px-5 py-8">
+    <header>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Stable Selection Sort — Interactive Visualizer</h1>
+      <p class="mt-2 text-slate-600 max-w-3xl">
+        <span class="font-medium">Stable selection sort</span> finds the minimum in the unsorted suffix and
+        <span class="font-medium">inserts it at position <span class="font-mono">i</span> by shifting elements</span>
+        (instead of swapping). Equal keys keep their original relative order.
+      </p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-16 mt-6">
+      <!-- Left: Visualization -->
+      <section class="lg:col-span-2 flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button id="btnPlay" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm font-medium">Play</button>
+            <button id="btnStep" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Step</button>
+            <button id="btnReset" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Reset</button>
+            <button id="btnShuffle" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Shuffle</button>
+
+            <div class="ml-auto flex items-center gap-3">
+              <label class="text-sm text-slate-600">Speed</label>
+              <input id="rangeSpeed" type="range" min="50" max="1500" value="400" class="w-40">
+              <label class="text-sm text-slate-600">Size</label>
+              <input id="rangeSize" type="range" min="6" max="64" value="24" class="w-40">
+            </div>
+          </div>
+
+          <div id="bars" class="relative w-full h-64 md:h-72 lg:h-80 flex items-end gap-1 p-2 rounded-2xl bg-gradient-to-b from-white to-slate-100 border border-slate-200"></div>
+
+          <div class="mt-4 grid grid-cols-3 gap-3">
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Comparisons</div>
+              <div id="statComparisons" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Moves</div>
+              <div id="statMoves" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Array Size</div>
+              <div id="statSize" class="text-xl font-semibold tabular-nums text-slate-900">24</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="text-lg font-semibold mb-2">Pseudocode (Stable)</h3>
+          <pre id="pseudocode" class="rounded-2xl p-4 bg-slate-900 text-slate-100 text-sm leading-6 overflow-auto"><code>
+<span data-line="1" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>for i = 0 .. n-2:</span>
+<span data-line="2" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>  minIdx ← i</span>
+<span data-line="3" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  for j = i+1 .. n-1:</span>
+<span data-line="4" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>    if A[j] &lt; A[minIdx]:</span>
+<span data-line="5" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>      minIdx ← j</span>
+<span data-line="6" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>  x ← A[minIdx]</span>
+<span data-line="7" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">07</span>  while minIdx &gt; i:</span>
+<span data-line="8" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">08</span>    A[minIdx] ← A[minIdx - 1]   // shift right</span>
+<span data-line="9" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">09</span>    minIdx ← minIdx - 1</span>
+<span data-line="10" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">10</span>  A[i] ← x                     // insert</span>
+          </code></pre>
+          <p class="text-sm text-slate-600 mt-2">By shifting instead of swapping, equal keys never leapfrog each other &rarr; the algorithm is <span class="font-medium">stable</span>.</p>
+        </div>
+      </section>
+
+      <!-- Right: Theory & Complexity -->
+      <aside class="flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">How Stable Selection Sort Works</h3>
+          <p class="mt-2 text-sm leading-6 text-slate-600">
+            At pass <span class="font-mono">i</span>, find the minimum in <span class="font-mono">[i..n-1]</span>, store it, shift the block
+            <span class="font-mono">A[i..minIdx-1]</span> to the right by one, and insert the stored minimum at <span class="font-mono">i</span>.
+          </p>
+          <ul class="mt-3 text-sm text-slate-700 list-disc pl-5 space-y-1">
+            <li><span class="font-medium text-amber-700">Amber</span> marks the current scanned index <span class="font-mono">j</span>.</li>
+            <li><span class="font-medium text-cyan-700">Cyan</span> marks the current minimum candidate <span class="font-mono">minIdx</span> (value being extracted).</li>
+            <li><span class="font-medium text-rose-700">Rose</span> highlights shifts and the final insertion.</li>
+            <li><span class="font-medium text-emerald-700">Emerald</span> shows the sorted prefix.</li>
+          </ul>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Complexity</h3>
+          <div class="mt-2 grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+              <div class="text-slate-500 text-xs uppercase">Time</div>
+              <ul class="mt-1 space-y-1">
+                <li><span class="font-semibold">Worst:</span> O(n²)</li>
+                <li><span class="font-semibold">Average:</span> O(n²)</li>
+                <li><span class="font-semibold">Best:</span> O(n²) (no early exit)</li>
+              </ul>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+              <div class="text-slate-500 text-xs uppercase">Space</div>
+              <p class="mt-1">O(1) extra memory (in-place)</p>
+            </div>
+          </div>
+          <p class="mt-3 text-sm text-slate-600">
+            Comparisons still total ~<span class="font-mono">n(n−1)/2</span>. Moves count shifts + final inserts; in the worst case a pass can shift ~<span class="font-mono">i</span> elements.
+          </p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Experiments</h3>
+          <ol class="mt-2 list-decimal pl-5 space-y-2 text-sm text-slate-700">
+            <li>Construct arrays with equal keys (e.g., many 7s) and verify the order of equal elements is preserved.</li>
+            <li>Compare Moves vs Swaps from classic selection sort: stability costs extra moves.</li>
+            <li>Discuss when stability matters (e.g., sorting records by key while preserving a secondary order).</li>
+          </ol>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="text-center text-xs text-slate-500 pb-4">Built for learning. Use sliders to explore behavior.</footer>
+  </div>
+
+  <script>
+    // -------- Utilities --------
+    function rngArray(n, min = 5, max = 100) {
+      return Array.from({ length: n }, () => Math.floor(min + Math.random() * (max - min + 1)));
+    }
+
+    // Generator of step objects to drive the visualization (Stable Selection Sort)
+    // Steps emitted: 'outer', 'set-min', 'compare', 'update-min', 'extract', 'shift', 'insert', 'end-pass', 'done'
+    function* stableSelectionSortSteps(original) {
+      const a = [...original];
+      const n = a.length;
+      for (let i = 0; i < n - 1; i++) {
+        let minIdx = i;
+        // Enter pass
+        yield { type: 'outer', i, minIdx, j: null, snapshot: [...a], line: 1 };
+        yield { type: 'set-min', i, minIdx, j: null, snapshot: [...a], line: 2 };
+
+        // Find minimum in [i..n-1]
+        for (let j = i + 1; j < n; j++) {
+          yield { type: 'compare', i, minIdx, j, snapshot: [...a], line: 4 };
+          if (a[j] < a[minIdx]) {
+            minIdx = j;
+            yield { type: 'update-min', i, minIdx, j, snapshot: [...a], line: 5 };
+          }
+        }
+
+        // Extract + shift + insert (stable)
+        const x = a[minIdx];
+        yield { type: 'extract', i, minIdx, j: null, value: x, snapshot: [...a], line: 6 };
+
+        // Shift elements right: A[i..minIdx-1] -> A[i+1..minIdx]
+        for (let k = minIdx; k > i; k--) {
+          a[k] = a[k - 1];
+          yield { type: 'shift', i, minIdx: k, from: k - 1, to: k, j: null, snapshot: [...a], line: 8 };
+        }
+
+        // Insert x at A[i]
+        a[i] = x;
+        yield { type: 'insert', i, minIdx: i, j: null, value: x, snapshot: [...a], line: 10 };
+
+        // Pass done
+        yield { type: 'end-pass', i, minIdx: i, j: null, snapshot: [...a], line: 10 };
+      }
+      yield { type: 'done', i: null, minIdx: null, j: null, snapshot: [...a], line: 0 };
+    }
+
+    // -------- State --------
+    const barsEl = document.getElementById('bars');
+    const statComparisons = document.getElementById('statComparisons');
+    const statMoves = document.getElementById('statMoves');
+    const statSize = document.getElementById('statSize');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStep = document.getElementById('btnStep');
+    const btnReset = document.getElementById('btnReset');
+    const btnShuffle = document.getElementById('btnShuffle');
+    const rangeSpeed = document.getElementById('rangeSpeed');
+    const rangeSize = document.getElementById('rangeSize');
+    const PSEUDO = document.getElementById('pseudocode');
+
+    let arr = rngArray(parseInt(rangeSize.value, 10));
+    let steps = Array.from(stableSelectionSortSteps(arr));
+    let stepIdx = 0;
+    let running = false;
+
+    // Visual state
+    let iPass = 0;        // current pass i
+    let minIdx = null;    // current min index in this pass (or insertion position during shifts)
+    let jScan = null;     // current j being scanned
+    let sortedHead = 0;   // number of items at the head confirmed sorted (i elements done)
+    let movePhase = null; // 'extract' | 'shift' | 'insert' (for coloring)
+    let shiftFrom = null; // index moved from (during shift)
+    let shiftTo = null;   // index moved to   (during shift)
+
+    let comparisons = 0;
+    let moves = 0; // count shifts + inserts (each assignment as one move)
+    let timer = null;
+
+    function maxVal(a){ return a.length ? Math.max(...a) : 1; }
+
+    // -------- Rendering --------
+    function renderBars() {
+      const M = maxVal(arr);
+      barsEl.innerHTML = '';
+      arr.forEach((v, idx) => {
+        const h = Math.max(4, (v / M) * 100);
+        let cls = 'bg-slate-400';
+
+        const isSorted = idx < sortedHead;
+        const isMin = (minIdx === idx);
+        const isScan = (jScan === idx);
+        const isShiftTarget = (movePhase === 'shift' && (idx === shiftFrom || idx === shiftTo));
+        const isInsertAtI = (movePhase === 'insert' && idx === iPass);
+
+        // base: sorted
+        if (isSorted) cls = 'bg-emerald-400';
+        // scanning
+        if (isScan) cls = 'bg-amber-400';
+        // current min
+        if (isMin) cls = 'bg-cyan-400';
+        // shifting / insert coloring has priority
+        if (isShiftTarget || isInsertAtI || movePhase === 'extract') cls = 'bg-rose-400';
+
+        const d = document.createElement('div');
+        d.className = `w-full max-w-[18px] flex-1 rounded-t-lg transition-all duration-300 ease-out ${cls}`;
+        d.style.height = h + '%';
+        d.title = `A[${idx}] = ${v}`;
+        barsEl.appendChild(d);
+      });
+    }
+
+    function setPseudoHighlight(line){
+      PSEUDO.querySelectorAll('[data-line]').forEach(x => {
+        x.classList.remove('bg-emerald-700/30');
+        x.querySelectorAll('span').forEach(s => s.classList.remove('text-emerald-300'));
+      });
+      if (line > 0){
+        const el = PSEUDO.querySelector(`[data-line="${line}"]`);
+        if (el){
+          el.classList.add('bg-emerald-700/30');
+          const spans = el.querySelectorAll('span');
+          if (spans.length) spans[spans.length-1].classList.add('text-emerald-300');
+        }
+      }
+    }
+
+    function resetState(newArr){
+      arr = [...newArr];
+      steps = Array.from(stableSelectionSortSteps(arr));
+      stepIdx = 0; running = false;
+      iPass = 0; minIdx = null; jScan = null; sortedHead = 0;
+      movePhase = null; shiftFrom = null; shiftTo = null;
+      comparisons = 0; moves = 0;
+      statComparisons.textContent = '0';
+      statMoves.textContent = '0';
+      statSize.textContent = String(arr.length);
+      btnPlay.textContent = 'Play';
+      clearInterval(timer); timer = null;
+      setPseudoHighlight(0);
+      renderBars();
+    }
+
+    function applyStep(s){
+      setPseudoHighlight(s.line || 0);
+      // default visual flags
+      movePhase = null; shiftFrom = null; shiftTo = null;
+
+      switch (s.type) {
+        case 'outer':
+          iPass = s.i;
+          minIdx = s.minIdx;
+          jScan = null;
+          break;
+
+        case 'set-min':
+          iPass = s.i;
+          minIdx = s.minIdx; // equals i
+          jScan = null;
+          break;
+
+        case 'compare':
+          comparisons += 1;
+          statComparisons.textContent = String(comparisons);
+          iPass = s.i;
+          jScan = s.j;
+          arr = s.snapshot;
+          break;
+
+        case 'update-min':
+          iPass = s.i;
+          minIdx = s.minIdx;
+          jScan = s.j;
+          arr = s.snapshot;
+          break;
+
+        case 'extract':
+          // just highlight the element to be extracted
+          iPass = s.i;
+          minIdx = s.minIdx;
+          jScan = null;
+          arr = s.snapshot;
+          movePhase = 'extract';
+          break;
+
+        case 'shift':
+          // one assignment A[k] = A[k-1]
+          moves += 1; statMoves.textContent = String(moves);
+          iPass = s.i;
+          minIdx = s.minIdx; // using minIdx as "k" for highlight
+          jScan = null;
+          arr = s.snapshot;
+          movePhase = 'shift';
+          shiftFrom = s.from;
+          shiftTo = s.to;
+          break;
+
+        case 'insert':
+          // final insert A[i] = x
+          moves += 1; statMoves.textContent = String(moves);
+          iPass = s.i;
+          minIdx = s.minIdx; // now equals i
+          jScan = null;
+          arr = s.snapshot;
+          movePhase = 'insert';
+          sortedHead = s.i + 1;
+          break;
+
+        case 'end-pass':
+          iPass = s.i;
+          minIdx = s.minIdx;
+          jScan = null;
+          arr = s.snapshot;
+          sortedHead = s.i + 1;
+          break;
+
+        case 'done':
+          sortedHead = arr.length;
+          iPass = null; minIdx = null; jScan = null;
+          running = false; btnPlay.textContent = 'Play';
+          clearInterval(timer); timer = null;
+          break;
+
+        default:
+          arr = s.snapshot;
+      }
+      renderBars();
+    }
+
+    function stepOnce(){
+      if (stepIdx >= steps.length) return;
+      const s = steps[stepIdx];
+      applyStep(s);
+      stepIdx += 1;
+    }
+
+    function playLoop(){
+      clearInterval(timer);
+      // Inverted mapping: higher slider value -> smaller delay (faster)
+      const delay = Math.max(
+        30,
+        Number(rangeSpeed.max) - Number(rangeSpeed.value) + Number(rangeSpeed.min)
+      );
+      timer = setInterval(() => {
+        if (stepIdx >= steps.length){
+          running = false; btnPlay.textContent = 'Play'; clearInterval(timer); timer=null; return;
+        }
+        stepOnce();
+      }, delay);
+    }
+
+    // -------- Event bindings --------
+    btnPlay.addEventListener('click', () => {
+      running = !running;
+      btnPlay.textContent = running ? 'Pause' : 'Play';
+      if (running) playLoop(); else { clearInterval(timer); timer = null; }
+    });
+
+    btnStep.addEventListener('click', () => { if (!running) stepOnce(); });
+
+    btnReset.addEventListener('click', () => { resetState(arr); });
+
+    btnShuffle.addEventListener('click', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+
+    rangeSize.addEventListener('input', () => {
+      const n = parseInt(rangeSize.value,10);
+      statSize.textContent = String(n);
+    });
+
+    rangeSize.addEventListener('change', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+
+    rangeSpeed.addEventListener('change', () => {
+      if (running) playLoop();
+    });
+
+    // -------- Initial render --------
+    resetState(arr);
+  </script>
+</body>
+</html>
