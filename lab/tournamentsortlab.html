@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tournament Sort Lab — Pedagogical, Step-by-Step Visualizer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    :root { color-scheme: light; }
+    html { scroll-behavior: smooth; }
+    .bg-hero {
+      background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
+      background-size: 200% 200%;
+      animation: grad 18s ease infinite;
+    }
+    @keyframes grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .badge { border:1px solid rgba(0,0,0,.08); background: rgba(0,0,0,.03); }
+    .bar { transition: transform .15s ease, background-color .15s ease; }
+    .bar.highlight { outline: 2px solid #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.25) inset; }
+    .node { transition: transform .15s ease, background-color .15s ease; }
+    .node.sel { outline: 2px solid #22c55e; }
+    .node.path { outline: 2px dashed #f59e0b; }
+    .tiny { font-size: 11px; }
+  </style>
+  <style>
+    details > summary { list-style: none; cursor: pointer; }
+    details > summary::-webkit-details-marker { display: none; }
+    details pre { margin-top: 0.5rem; }
+    .treeGrid { display:grid; gap:10px; }
+    .treeRow { display:grid; gap:10px; justify-items:center; }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800" x-data="tournamentTeach()" x-init="init()">
+  <!-- Header -->
+  <header class="bg-hero">
+    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+      <div class="flex flex-col lg:flex-row items-center gap-10">
+        <div class="flex-1">
+          <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            Tournament Sort <span class="text-indigo-600">Lab</span>
+          </h1>
+          <p class="mt-3 text-lg md:text-xl text-slate-700">
+            Build a <span class="font-semibold">min-tournament tree</span> over the array. The root is the global minimum.
+            Remove it (set the winning leaf to <span class="font-mono">+∞</span>), then <span class="font-semibold">update only the path</span> back to the root.
+            Repeat to obtain a <span class="font-semibold">sorted prefix</span> — one micro-step at a time.
+          </p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a href="#sim" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open Simulator</a>
+            <a href="#guide" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Read the Guide</a>
+          </div>
+          <p class="mt-4 text-sm text-slate-500">Single-file. Tailwind + Alpine. No build step. Optimized for teaching: exact micro-ops, Back history, and responsive Play/Finish.</p>
+        </div>
+        <div class="flex-1 w-full">
+          <div class="bg-white/70 backdrop-blur rounded-2xl p-6 shadow border border-slate-100">
+            <p class="text-sm text-slate-700">Two phases: <span class="font-semibold">BUILD</span> (bottom-up mins with argmin), then <span class="font-semibold">EXTRACT</span> (pop root → invalidate leaf → path updates). Complexity: build <span class="font-mono">O(n)</span>, each extract <span class="font-mono">O(log n)</span>.</p>
+            <ul class="mt-3 text-sm text-slate-600 list-disc pl-6">
+              <li><span class="font-semibold">Step</span> does exactly one compare, copy, or pointer move.</li>
+              <li><span class="font-semibold">Back</span> restores a prior snapshot (bounded history).</li>
+              <li><span class="font-semibold">Finish</span> runs in chunks and yields for UI smoothness.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Simulator -->
+  <section id="sim" class="py-12">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Simulator</h2>
+          <p class="text-slate-600 mt-1">Generate data, <span class="font-semibold">BUILD</span> the tree, then <span class="font-semibold">EXTRACT</span> repeatedly to emit a sorted prefix.</p>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <label class="text-slate-600">N</label>
+          <input type="number" min="4" step="1" class="w-20 rounded-lg border-slate-300" x-model.number="N">
+          <label class="text-slate-600 ml-2">Range</label>
+          <input type="number" min="5" step="5" class="w-24 rounded-lg border-slate-300" x-model.number="rangeMax">
+          <label class="text-slate-600 ml-2">Pattern</label>
+          <select class="rounded-lg border-slate-300" x-model="pattern">
+            <option value="random">random</option>
+            <option value="nearly">nearly-sorted</option>
+            <option value="reversed">reversed</option>
+            <option value="dups">with duplicates</option>
+          </select>
+          <button class="ml-2 px-3 py-1.5 rounded-lg bg-slate-800 text-white" @click="regen()">Regenerate</button>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-5 gap-6">
+        <!-- Controls & Metrics -->
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <h3 class="font-semibold text-slate-800">Controls</h3>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="prepare()">Prepare</button>
+              <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white" @click="step()">Step</button>
+              <button class="px-3 py-1.5 rounded-lg bg-emerald-700 text-white" @click="play()" :disabled="playing">Play</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-700 text-white" @click="pause()" :disabled="!playing">Pause</button>
+              <button class="px-3 py-1.5 rounded-lg bg-amber-600 text-white" @click="finish()">Finish</button>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-500 text-white" @click="back()" :disabled="!canBack">Back</button>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div class="col-span-2 flex items-center gap-2">
+                <label class="text-slate-600">Speed</label>
+                <input type="range" min="20" max="800" step="20" class="w-40" x-model.number="speed">
+                <span class="text-slate-500">(<span x-text="speed"></span> ms/tick)</span>
+              </div>
+              <div><div class="text-xs text-slate-500">Phase</div><div class="text-xl font-semibold" x-text="engine.phase"></div></div>
+              <div><div class="text-xs text-slate-500">Substep</div><div class="text-xl font-semibold" x-text="engine.sub"></div></div>
+            </div>
+            <div class="mt-4 text-xs text-slate-600">
+              <p><span class="font-semibold">Pedagogy:</span> one micro-op per Step; BUILD uses bottom-up mins; EXTRACT touches only the winner's path.</p>
+            </div>
+          </div>
+
+          <div class="mt-6 bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <h3 class="font-semibold text-slate-800">Metrics</h3>
+            <div class="mt-3 grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <div class="text-xs text-slate-500">Comparisons</div>
+                <div class="text-xl font-semibold" x-text="metrics.cmps"></div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500">Node updates</div>
+                <div class="text-xl font-semibold" x-text="metrics.updates"></div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500">Extractions</div>
+                <div class="text-xl font-semibold" x-text="metrics.extracted"></div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500">Height</div>
+                <div class="text-xl font-semibold" x-text="engine.height"></div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500">Leaves</div>
+                <div class="text-xl font-semibold" x-text="engine.leafCount"></div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500">Done?</div>
+                <div class="text-xl font-semibold" x-text="engine.phase==='done' ? 'yes' : 'no'"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visualization & Log -->
+        <div class="lg:col-span-3">
+          <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-slate-800">Array</h3>
+              <div class="text-sm text-slate-600 flex gap-4">
+                <span>n: <span class="font-mono" x-text="A.length"></span></span>
+                <span>phase: <span class="font-mono" x-text="engine.phase"></span></span>
+                <span>sub: <span class="font-mono" x-text="engine.sub"></span></span>
+              </div>
+            </div>
+
+            <!-- Bars -->
+            <div class="mt-3 border rounded-xl p-3 overflow-x-auto">
+              <div class="flex items-end gap-1 min-w-full">
+                <template x-for="(v, idx) in A" :key="'a'+idx+renderKey">
+                  <div class="bar rounded-md w-6 sm:w-7 md:w-8 text-center" :style="barStyle(v, idx)" :class="barClass(idx)">
+                    <div class="text-[10px] select-none" x-text="v === INF ? '∞' : v"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Sorted prefix -->
+            <div class="mt-4">
+              <h4 class="font-semibold text-slate-800">Sorted prefix</h4>
+              <div class="mt-2 flex flex-wrap gap-1">
+                <template x-for="(v, i) in out" :key="'o'+i+renderKey">
+                  <span class="px-2 py-1 rounded-md text-xs font-mono badge" x-text="v"></span>
+                </template>
+                <template x-if="out.length===0"><span class="text-sm text-slate-500">(empty)</span></template>
+              </div>
+            </div>
+
+            <!-- Tournament tree -->
+            <div class="mt-6">
+              <h4 class="font-semibold text-slate-800">Tournament tree (min at root)</h4>
+              <div class="mt-2 treeGrid">
+                <template x-for="(row, r) in treeRows" :key="'r'+r+renderKey">
+                  <div class="treeRow" :style="`grid-template-columns: repeat(${row.length}, minmax(44px, 1fr));`">
+                    <template x-for="(node, c) in row" :key="'n'+r+'_'+c+renderKey">
+                      <div class="node rounded-lg px-2 py-1 text-xs font-mono text-center border"
+                           :class="nodeClass(node)"
+                           :style="nodeStyle(node)">
+                        <div x-text="nodeLabel(node)"></div>
+                        <div class="tiny text-slate-500" x-text="node.meta"></div>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+                <template x-if="treeRows.length===0"><div class="text-sm text-slate-500">(build not started)</div></template>
+              </div>
+            </div>
+
+            <!-- Teaching panel -->
+            <div class="mt-6 p-3 rounded-xl border bg-slate-50">
+              <div class="text-sm text-slate-700"><span class="font-semibold">Explanation:</span> <span x-text="explain"></span></div>
+            </div>
+
+            <!-- Log -->
+            <div class="mt-4">
+              <h4 class="font-semibold text-slate-800">Operation Log</h4>
+              <div id="logBox" class="mt-2 h-44 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
+                <template x-for="(line, i) in log" :key="'log'+i+renderKey">
+                  <div class="mb-0.5"><span class="text-slate-400">#</span> <span x-text="line"></span></div>
+                </template>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Guide -->
+  <section id="guide" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide (Step-by-Step)</h2>
+        <p class="mt-2 text-slate-600">We implement the classic tournament sorting scheme — identical to a selection tree / loser tree variant — in explicit micro-steps.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6 text-sm leading-7 text-slate-700">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">1) BUILD (bottom-up mins with argmin)</h3>
+          <p class="mt-2">Pad to a power-of-two leaf count with <span class="font-mono">+∞</span>. Each internal node stores <span class="font-mono">(value, leafIndex)</span> as the <em>min</em> of its two children (stability via left-bias on ties).</p>
+          <details class="mt-3"><summary class="cursor-pointer text-slate-800 font-medium">Pseudocode</summary>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto text-xs mt-2"><code>function BUILD(A):
+  L ← next_power_of_two(|A|)
+  leaves[0..L-1] ← A padded with +∞
+  for i in 0..L-1:
+    T[leaf(i)] ← (leaves[i], i)
+  for level from bottom-1 downto root:
+    for each node u with children (l, r):
+      T[u] ← min_pair(T[l], T[r])   // tie → pick left child
+</code></pre>
+          </details>
+          <ul class="mt-3 list-disc pl-5">
+            <li>Work: <span class="font-mono">O(n)</span>.</li>
+            <li>Why: enables <span class="font-mono">O(log n)</span> per extract.</li>
+          </ul>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">2) EXTRACT (pop root → invalidate leaf → path update)</h3>
+          <p class="mt-2">Root holds the global min. Emit it to the sorted prefix, set the winning <em>leaf</em> to <span class="font-mono">+∞</span>, then recompute only the nodes along that leaf-to-root path.</p>
+          <details class="mt-3"><summary class="cursor-pointer text-slate-800 font-medium">Pseudocode</summary>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto text-xs mt-2"><code>procedure EXTRACT_ONE(T):
+  (val, leaf) ← T[root]
+  output.append(val)
+  T[leaf_node(leaf)] ← (+∞, leaf)
+  u ← parent(leaf_node)
+  while u exists:
+    T[u] ← min_pair(T[left(u)], T[right(u)])
+    u ← parent(u)
+</code></pre>
+          </details>
+          <ul class="mt-3 list-disc pl-5">
+            <li>Each extract is <span class="font-mono">O(log n)</span> compares/updates.</li>
+            <li>After <span class="font-mono">k</span> extracts, the output holds the sorted prefix of size <span class="font-mono">k</span>.</li>
+          </ul>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow lg:col-span-2">
+          <h3 class="text-xl font-semibold">3) Stability & duplicates</h3>
+          <p class="mt-2">On ties, we prefer the left child (smaller leaf index). This keeps the tournament stable with respect to equal keys.</p>
+        </article>
+      </div>
+
+      <div class="mt-8 text-xs text-slate-500">
+        <p><span class="font-semibold">Tip:</span> Use <span class="font-mono">Step</span> during BUILD to see each internal node computed; during EXTRACT, watch the <span class="font-semibold">path</span> from the winning leaf light up as it updates back to the root.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lab Exercise -->
+  <section id="lab" class="py-12 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Lab Exercise: Implement Tournament Sort in Python</h2>
+        <p class="mt-2 text-slate-600">Now it's your turn! Use the simulator above to understand the algorithm, then implement your own version following these guidelines.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-6">
+        <!-- Phase 1: Data Structures -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+              <span class="text-indigo-700 font-bold text-sm">1</span>
+            </div>
+            <h3 class="text-xl font-semibold text-slate-900">Design Your Data Structures</h3>
+          </div>
+          
+<div class="space-y-4 text-sm text-slate-700">
+  <div>
+    <h4 class="font-semibold text-slate-800">🤔 Think About:</h4>
+    <ul class="mt-2 list-disc pl-5 space-y-1">
+      <li>How will you represent each tournament node?</li>
+      <li>What information does each node need to store?</li>
+      <li>How will you organize the tree as lists and tuples?</li>
+    </ul>
+  </div>
+  
+  <div>
+    <h4 class="font-semibold text-slate-800">💡 Data Structure Options:</h4>
+    <ul class="mt-2 list-disc pl-5 space-y-1">
+      <li><span class="font-mono">tuple: (value, leaf_index)</span> for each node</li>
+      <li><span class="font-mono">list</span> to store all tree nodes in array format</li>
+      <li>How to track which original leaf "won" at each node?</li>
+      <li>Use <span class="font-mono">float('inf')</span> for eliminated values</li>
+    </ul>
+  </div>
+
+  <div class="bg-indigo-50 p-3 rounded-lg">
+    <p class="text-xs text-indigo-800"><span class="font-semibold">Hint:</span> Each node can be a tuple <span class="font-mono">(min_value, winning_leaf_index)</span>. Store all nodes in a single list where node i has children at positions 2*i+1 and 2*i+2.</p>
+  </div>
+</div>
+        </article>
+
+        <!-- Phase 2: Tree Operations -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <span class="text-emerald-700 font-bold text-sm">2</span>
+            </div>
+            <h3 class="text-xl font-semibold text-slate-900">Implement Tree Navigation</h3>
+          </div>
+          
+          <div class="space-y-4 text-sm text-slate-700">
+            <div>
+              <h4 class="font-semibold text-slate-800">🤔 Think About:</h4>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                <li>How to calculate parent/child indices?</li>
+                <li>How to pad input to next power of 2?</li>
+                <li>How to map from leaf index to tree position?</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-semibold text-slate-800">🛠️ Helper Functions to Write:</h4>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                <li><span class="font-mono">next_power_of_two(n)</span></li>
+                <li><span class="font-mono">parent_index(i)</span></li>
+                <li><span class="font-mono">left_child(i)</span>, <span class="font-mono">right_child(i)</span></li>
+                <li><span class="font-mono">min_with_tiebreak(node1, node2)</span></li>
+              </ul>
+            </div>
+
+            <div class="bg-emerald-50 p-3 rounded-lg">
+              <p class="text-xs text-emerald-800"><span class="font-semibold">Tree Indexing:</span> If using an array, remember that for node at index i: left child = 2×i+1, right child = 2×i+2, parent = (i-1)//2</p>
+            </div>
+          </div>
+        </article>
+
+        <!-- Phase 3: Algorithm Implementation -->
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+              <span class="text-amber-700 font-bold text-sm">3</span>
+            </div>
+            <h3 class="text-xl font-semibold text-slate-900">Build the Algorithm</h3>
+          </div>
+          
+          <div class="space-y-4 text-sm text-slate-700">
+            <div>
+              <h4 class="font-semibold text-slate-800">🏗️ BUILD Phase:</h4>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                <li>Start from the bottom level (leaves)</li>
+                <li>Work your way up level by level</li>
+                <li>Each internal node = min of its two children</li>
+                <li>Handle ties by preferring left child (stability)</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-semibold text-slate-800">🎯 EXTRACT Phase:</h4>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                <li>Root contains global minimum</li>
+                <li>Find the winning leaf (stored in root)</li>
+                <li>Set that leaf to infinity</li>
+                <li>Update ONLY the path from leaf to root</li>
+              </ul>
+            </div>
+
+            <div class="bg-amber-50 p-3 rounded-lg">
+              <p class="text-xs text-amber-800"><span class="font-semibold">Key Insight:</span> During extract, you only need to recompute O(log n) nodes along the path from the invalidated leaf to the root.</p>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Implementation Strategy -->
+<div class="mt-8 bg-slate-900 rounded-2xl p-6 text-slate-100">
+ <h3 class="text-xl font-semibold mb-4">🎯 Implementation Strategy</h3>
+ <div class="grid md:grid-cols-2 gap-6 text-sm">
+ <div>
+ <h4 class="font-semibold text-slate-200 mb-2">Step-by-Step Approach:</h4>
+ <ol class="list-decimal pl-5 space-y-1">
+ <li>Write helper functions for tree navigation</li>
+ <li>Create a function to build the tournament tree</li>
+ <li>Implement one extraction (root → invalidate → update path)</li>
+ <li>Write the main sorting function that calls extract repeatedly</li>
+ <li>Test with simple arrays first</li>
+ <li>Handle edge cases and larger inputs</li>
+ </ol>
+ </div>
+ <div>
+ <h4 class="font-semibold text-slate-200 mb-2">Function Structure Suggestion:</h4>
+ <ul class="list-disc pl-5 space-y-1">
+ <li><span class="font-mono text-blue-300">build_tournament(arr)</span> → returns tree list</li>
+ <li><span class="font-mono text-blue-300">extract_min(tree)</span> → returns min, updates tree</li>
+ <li><span class="font-mono text-blue-300">tournament_sort(arr)</span> → main function</li>
+ <li>Use global variables or pass data between functions</li>
+ <li>Keep functions short and focused</li>
+ </ul>
+ </div>
+ </div>
+ </div>
+
+      <!-- Challenges -->
+      <div class="mt-8">
+        <h3 class="text-xl font-semibold text-slate-900 mb-4">🏆 Challenge Extensions</h3>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <h4 class="font-semibold text-blue-900 mb-2">📊 Add Metrics</h4>
+            <p class="text-sm text-blue-800">Track comparisons, updates, and memory usage. Compare with other O(n log n) sorts.</p>
+          </div>
+          <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+            <h4 class="font-semibold text-green-900 mb-2">🎮 Interactive Mode</h4>
+            <p class="text-sm text-green-800">Add a step-by-step mode that prints the tree state after each operation.</p>
+          </div>
+          <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+            <h4 class="font-semibold text-purple-900 mb-2">⚡ Partial Sorting</h4>
+            <p class="text-sm text-purple-800">Modify to return only the k smallest elements in O(n + k log n) time.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Common Pitfalls -->
+      <div class="mt-8 bg-red-50 border border-red-200 rounded-2xl p-6">
+        <h3 class="text-xl font-semibold text-red-900 mb-4">⚠️ Common Pitfalls to Avoid</h3>
+        <div class="grid md:grid-cols-2 gap-6 text-sm text-red-800">
+          <div>
+            <h4 class="font-semibold mb-2">🐛 Data Structure Issues:</h4>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Forgetting to pad to next power of 2</li>
+              <li>Wrong parent/child index calculations</li>
+              <li>Not handling list bounds properly</li>
+              <li>Mixing up leaf indices vs tree positions</li>
+              <li>Tuple indexing errors (value vs leaf_index)</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-2">🐛 Algorithm Logic Issues:</h4>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Not storing which leaf "won" in each tuple</li>
+              <li>Updating too many nodes during extract</li>
+              <li>Incorrect tie-breaking (affects stability)</li>
+              <li>Forgetting to set winning leaf to infinity</li>
+              <li>Off-by-one errors in tree navigation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 bg-slate-900 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">© <span id="year"></span> Tournament Sort Lab — Single-file, no build.</p>
+        <div class="text-xs text-slate-400">Tailwind • Alpine.js</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Logic -->
+  <script>
+  // ---------- colors & utils ----------
+  const COLORS = ["#ef4444","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316","#22c55e","#06b6d4"];
+  function colorFor(k){ return COLORS[k % COLORS.length]; }
+  function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+  const INF = Number.POSITIVE_INFINITY;
+  function nextPow2(x){ let p=1; while(p<x) p<<=1; return p; }
+  function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
+
+  // ---------- engine ----------
+  function makeEngine(A, metrics){
+    const n = A.length;
+    const leafCount = nextPow2(n);
+    const height = Math.log2(leafCount) + 1; // levels incl. leaves & root
+
+    // nodes in a full binary tree stored level-by-level, but we keep rows for rendering
+    // Each node: {val, idx (leaf index), level, pos, kind:'leaf'|'internal', meta:''}
+    const rows = Array.from({length: height}, (_,h)=>[]);
+
+    const engine = {
+      phase: 'idle', // 'build' | 'extract' | 'done'
+      sub: '-',
+      height,
+      leafCount,
+      rows,  // for render only
+      tree: [],
+      leaves: Array.from({length: leafCount}, (_,i)=> (i<n? A[i] : INF)),
+      // during build
+      build: { level: height-1, c: 0 },
+      // during extract
+      out: [],
+      lastWinnerLeaf: null,
+      path: [],
+      metrics,
+      explain: ''
+    };
+
+    // create leaf row
+    rows[height-1] = Array.from({length: leafCount}, (_,i)=>({
+      val: engine.leaves[i], idx: i, level: height-1, pos: i, kind:'leaf', meta:`i=${i}`
+    }));
+
+    // placeholder internal rows
+    for(let L=height-2; L>=0; --L){
+      const len = 1<<L;
+      rows[L] = Array.from({length: len}, (_,i)=>({
+        val: INF, idx: -1, level: L, pos: i, kind:'internal', meta:``
+      }));
+    }
+
+    function minPair(Lnode, Rnode){
+      engine.metrics.cmps++;
+      if (Lnode.val <= Rnode.val) return {val: Lnode.val, idx: Lnode.idx}; // left-bias for ties
+      return {val: Rnode.val, idx: Rnode.idx};
+    }
+
+    function setNode(L, i, val, idx){
+      const node = engine.rows[L][i];
+      node.val = val; node.idx = idx; engine.metrics.updates++;
+      node.meta = (node.kind==='internal') ? `← min(${2*i},${2*i+1})` : `i=${node.idx}`;
+    }
+
+    function buildStep(){
+      if (engine.build.level === height-1){
+        engine.sub = 'build:leaves'; engine.explain = 'Initialize leaf values (pad to power of two with +∞).';
+        engine.build.level = height-2; engine.build.c = 0; return 'leaves-ready';
+      }
+      if (engine.build.level >= 0){
+        const L = engine.build.level; const i = engine.build.c;
+        const left = engine.rows[L+1][2*i];
+        const right = engine.rows[L+1][2*i+1];
+        const m = minPair(left, right);
+        setNode(L, i, m.val, m.idx);
+        engine.sub = `build:L${L} i=${i}`;
+        engine.explain = `Compute parent from children at level ${L+1} positions ${2*i} and ${2*i+1}.`;
+        engine.build.c++;
+        if (engine.build.c >= engine.rows[L].length){ engine.build.level--; engine.build.c = 0; }
+        if (engine.build.level < 0){ engine.phase='extract'; engine.sub='extract:emit'; engine.explain='BUILD finished. Root has global min; begin EXTRACT.'; }
+        return `build(${L},${i})`;
+      }
+      return 'noop-build';
+    }
+
+    function extractStep(){
+      const root = engine.rows[0][0];
+      if (root.val === INF){ engine.phase='done'; engine.sub='-'; engine.explain='All values extracted.'; return 'done'; }
+      if (engine.sub === 'extract:emit'){
+        engine.out.push(root.val); engine.metrics.extracted++;
+        engine.lastWinnerLeaf = root.idx;
+        engine.explain = `Emit root=${root.val}. Winner leaf index = ${root.idx}.`;
+        engine.sub = 'extract:invalidate';
+        return `emit ${root.val}`;
+      }
+      if (engine.sub === 'extract:invalidate'){
+        const L = height-1; const i = engine.lastWinnerLeaf;
+        setNode(L, i, INF, i);
+        engine.explain = `Set leaf[${i}] = +∞ (winner invalidated).`;
+        engine.sub = 'extract:update-ascend';
+        engine.path = [];
+        return `invalidate leaf ${i}`;
+      }
+      if (engine.sub === 'extract:update-ascend'){
+        if (engine._cursor === undefined){
+          engine._cursor = { L: height-2, i: Math.floor(engine.lastWinnerLeaf/2) };
+        }
+        const cur = engine._cursor;
+        if (cur.L < 0){
+          delete engine._cursor; engine.path = []; engine.sub = 'extract:emit'; engine.explain = 'Path updated back to root. Next extract.'; return 'ascend-done';
+        }
+        const left = engine.rows[cur.L+1][2*cur.i];
+        const right = engine.rows[cur.L+1][2*cur.i+1];
+        const m = minPair(left, right);
+        setNode(cur.L, cur.i, m.val, m.idx);
+        engine.path.push({L:cur.L, i:cur.i});
+        engine.explain = `Update node (L=${cur.L}, i=${cur.i}) from its two children.`;
+        cur.i = Math.floor(cur.i/2); cur.L -= 1;
+        return `update L${cur.L+1}`;
+      }
+      return 'noop-extract';
+    }
+
+    // public API
+    engine.start = function(){ 
+      engine.metrics.cmps=0; 
+      engine.metrics.updates=0; 
+      engine.metrics.extracted=0; 
+      engine.phase='build'; 
+      engine.sub='build:leaves'; 
+      engine.explain='Start BUILD phase.';
+      // Reset build state
+      engine.build = { level: height-1, c: 0 };
+      // Reset extract state
+      engine.out = [];
+      engine.lastWinnerLeaf = null;
+      engine.path = [];
+      delete engine._cursor;
+    };
+    
+    engine.step = function(){ 
+      if (engine.phase==='build') return buildStep(); 
+      if (engine.phase==='extract') return extractStep(); 
+      if (engine.phase==='idle'){ engine.start(); return 'idle→build'; } 
+      return 'done'; 
+    };
+    
+    engine.snapshot = function(){
+      return {
+        phase: engine.phase, sub: engine.sub, explain: engine.explain,
+        rows: deepCopy(engine.rows), leaves: [...engine.leaves], height: engine.height, leafCount: engine.leafCount,
+        out: [...engine.out], lastWinnerLeaf: engine.lastWinnerLeaf, path: deepCopy(engine.path), 
+        _cursor: engine._cursor? {...engine._cursor}: undefined,
+        build: {...engine.build}
+      };
+    };
+    
+    engine.restore = function(S){
+      engine.phase=S.phase; engine.sub=S.sub; engine.explain=S.explain; 
+      engine.rows=deepCopy(S.rows); engine.leaves=[...S.leaves]; 
+      engine.height=S.height; engine.leafCount=S.leafCount;
+      engine.out=[...S.out]; engine.lastWinnerLeaf=S.lastWinnerLeaf; 
+      engine.path=deepCopy(S.path); 
+      engine._cursor = S._cursor? {...S._cursor}: undefined;
+      engine.build = S.build ? {...S.build} : { level: height-1, c: 0 };
+    };
+
+    return engine;
+  }
+
+  // ---------- alpine component ----------
+  function tournamentTeach(){
+    return {
+      N: 8, // Smaller default for easier testing
+      rangeMax: 50, // Smaller range for easier testing
+      pattern: 'random',
+      speed: 300, // Slower for easier observation
+      A: [], 
+      out: [],
+      engine: { phase:'idle', sub:'-', height:0, leafCount:0, rows:[] },
+      metrics: { cmps:0, updates:0, extracted:0 },
+      explain: '',
+      log: [],
+      playing: false, 
+      timer: null,
+      history: [], 
+      historyCap: 1500,
+      renderKey: 0,
+
+      // Add INF reference for template
+      get INF() { return INF; },
+
+      // render helpers
+      get treeRows(){ return this.engine.rows || []; },
+      nodeLabel(node){ return (node.val===INF? '∞' : node.val) + (node.kind==='internal' ? '' : ''); },
+      nodeClass(node){
+        const onPath = (this.engine.path||[]).some(p=>p.L===node.level && p.i===node.pos);
+        const sel = (node.level===0 && node.pos===0 && this.engine.phase!=='build');
+        return (sel? 'sel ' : '') + (onPath? 'path ' : '') + 'border-slate-300 bg-white';
+      },
+      nodeStyle(node){
+        return `background:${node.kind==='leaf'? '#eef2ff' : '#f8fafc'};`;
+      },
+      barStyle(v, idx){
+        const max = Math.max(1, ...this.A.filter(x=>x!==INF));
+        const h = Math.max(10, Math.round((v===INF? 0 : v)/max*120)+10);
+        return `height:${h}px;background:#60a5fa55`;
+      },
+      barClass(idx){ return ''; },
+
+      init(){ 
+        this.regen(); 
+        this.$nextTick(()=>this._autoScroll()); 
+        document.getElementById('year').textContent = new Date().getFullYear(); 
+      },
+
+      regen(){
+        const n = this.N; let arr = [];
+        if (this.pattern==='random') arr = Array.from({length:n}, ()=>randInt(0,this.rangeMax));
+        else if (this.pattern==='nearly') { 
+          arr = Array.from({length:n}, (_,i)=>i); 
+          const swaps = Math.max(1, Math.floor(n*0.15)); 
+          for(let s=0;s<swaps;s++){ 
+            const i=randInt(0,n-1), j=randInt(0,n-1); 
+            [arr[i],arr[j]]=[arr[j],arr[i]]; 
+          } 
+          arr = arr.map(x=>Math.round(x/Math.max(1,(n-1))*this.rangeMax)); 
+        }
+        else if (this.pattern==='reversed') arr = Array.from({length:n}, (_,i)=>n-1-i).map(x=>Math.round(x/Math.max(1,(n-1))*this.rangeMax));
+        else if (this.pattern==='dups') arr = Array.from({length:n}, ()=>[10,10,20,20,30,30,40,40][randInt(0,7)]);
+        
+        this.A = arr; 
+        this.prepare(); 
+        this.log = [`regen: n=${this.N}, pattern=${this.pattern}`];
+        this.renderKey++; // Force update after regen
+      },
+
+      prepare(){
+        this.pause();
+        // Reset metrics
+        this.metrics = { cmps:0, updates:0, extracted:0 };
+        this.engine = makeEngine([...this.A], this.metrics);
+        this.engine.start();
+        this.out = [...this.engine.out]; // Force reactive update
+        this.explain = this.engine.explain;
+        this.history = [];
+        this.renderKey++; // Force rerender
+        this.log.push(`prepare: leaves=${this.engine.leafCount}, height=${this.engine.height}`);
+        this.$nextTick(()=>{
+          this._autoScroll();
+          this.renderKey++; // Additional render trigger
+        });
+      },
+
+      step(){
+        if (this.engine.phase==='done'){ 
+          this.log.push('done.'); 
+          this.pause(); 
+          return; 
+        }
+        
+        if (this._historyEnabled()) this._pushHistory(this.engine.snapshot());
+        
+        const msg = this.engine.step();
+        
+        // Force reactive updates
+        this.out = [...this.engine.out]; 
+        this.explain = this.engine.explain; 
+        this.log.push(msg);
+        this.renderKey++; // Force rerender
+        
+        if (this.engine.phase==='done') this.pause();
+        
+        this.$nextTick(()=>{
+          this._autoScroll();
+          // Double-check render update
+          this.renderKey++;
+        });
+      },
+
+      play(){ 
+        this.pause(); 
+        this.playing = true; 
+        const tick = ()=>{ 
+          if(!this.playing) return; 
+          const CHUNK=1; 
+          for(let k=0;k<CHUNK && this.engine.phase!=='done';k++) this.step(); 
+          if (this.engine.phase!=='done') this.timer = setTimeout(tick, this.speed); 
+          else this.playing = false;
+        }; 
+        this.timer = setTimeout(tick, this.speed); 
+      },
+      
+      pause(){ 
+        if (this.timer) clearTimeout(this.timer); 
+        this.timer=null; 
+        this.playing=false; 
+      },
+      
+      finish(){ 
+        this.pause(); 
+        const tick = ()=>{ 
+          let ops=0, MAX=500; 
+          while(this.engine.phase!=='done' && ops<MAX){ 
+            this.step(); 
+            ops++; 
+          } 
+          if (this.engine.phase!=='done') setTimeout(tick, 0); 
+        }; 
+        tick(); 
+      },
+      
+      back(){
+        if (!this.canBack) return;
+        const S=this.history.pop();
+        this.engine.restore(S);
+        this.out=[...this.engine.out]; // Force reactive update
+        this.explain=this.engine.explain;
+        this.log.push('⟲ back');
+        this.renderKey++; // Force rerender
+        this.$nextTick(()=>this._autoScroll());
+      },
+      
+      get canBack(){ return this.history.length>0; },
+      _historyEnabled(){ return this.N <= 256; },
+      _pushHistory(S){ this.history.push(S); if (this.history.length>this.historyCap) this.history.shift(); },
+
+      _autoScroll(){ 
+        const box=document.getElementById('logBox'); 
+        if(box) box.scrollTop = box.scrollHeight; 
+      }
+    };
+  }
+
+  // Footer year
+  document.addEventListener('DOMContentLoaded', () => {
+    const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear();
+  });
+  </script>
+</body>
+</html>
