@@ -9,6 +9,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script>
+  window.MathJax = { tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer></script>
+
   <style>
     :root {
       color-scheme: light;
@@ -612,6 +617,212 @@
   </div>
 </div>
   </section>
+
+  <!-- =========================
+     Binary Tree Mathematics
+     ========================= -->
+<section id="bt-math" class="py-12">
+  <style>
+    /* --- Minimal styling; Tailwind optional --- */
+    #bt-math .card {
+      max-width: 960px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb;
+      border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,.04);
+    }
+    #bt-math h2 { margin: 0 0 6px; font-size: 1.75rem; font-weight: 800; color: #0f172a; }
+    #bt-math p, #bt-math li { color: #334155; line-height: 1.6; }
+    #bt-math .badge { display: inline-block; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2px 8px; font-size: 12px; color: #475569; }
+    #bt-math .grid2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 900px) { #bt-math .grid2 { grid-template-columns: 1.1fr .9fr; } }
+
+    /* --- CSS binary tree diagram --- */
+    .btree {
+      --node-bg: #ffffff;
+      --node-border: #cbd5e1;
+      --node-text: #0f172a;
+      --edge: #94a3b8;
+      --idx-bg: #eef2ff;
+      --idx-text: #1e293b;
+
+      display: grid;
+      grid-template-rows: repeat(3, auto);
+      gap: 26px;
+      justify-items: center;
+      padding: 8px 6px 2px;
+      border: 1px dashed #e2e8f0; border-radius: 12px;
+      background: #fcfcff;
+    }
+    .btrow { display: grid; gap: 18px; }
+    .btrow.l0 { grid-template-columns: repeat(1, 1fr); width: 100%; }
+    .btrow.l1 { grid-template-columns: repeat(2, 1fr); width: 100%; }
+    .btrow.l2 { grid-template-columns: repeat(4, 1fr); width: 100%; }
+
+    .btnode {
+      position: relative;
+      min-width: 90px;
+      background: var(--node-bg);
+      border: 1px solid var(--node-border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      text-align: center;
+      color: var(--node-text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      box-shadow: 0 1px 0 rgba(0,0,0,.02);
+    }
+    .btnode .label { font-weight: 700; }
+    .btnode .idx {
+      display: inline-block; margin-top: 4px; font-size: 12px;
+      background: var(--idx-bg); color: var(--idx-text);
+      border: 1px solid #dbeafe; border-radius: 999px; padding: 1px 7px;
+    }
+    /* edges: draw connector lines using CSS pseudo-elements */
+    .btnode::before, .btnode::after {
+      content: ""; position: absolute; width: 1px; background: var(--edge);
+      top: -22px; height: 22px; left: 50%;
+      transform: translateX(-50%);
+      display: none;
+    }
+    /* add an upper connector for all non-root nodes */
+    .btrow.l1 .btnode::before, .btrow.l2 .btnode::before { display: block; }
+
+    /* horizontal connectors between parent bottom and children tops */
+    .btrow.l0 .btnode { padding-bottom: 24px; }
+    .btrow.l0 .btnode::after {
+      content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+      width: 72%; height: 1px; background: var(--edge);
+    }
+    /* helper grid wrappers to draw short horizontals on level 1 */
+    .btrow.l1 .cell { position: relative; }
+    .btrow.l1 .cell::before, .btrow.l1 .cell::after {
+      content: ""; position: absolute; top: -22px; width: 14%; height: 1px; background: var(--edge);
+      display: block;
+    }
+    .btrow.l1 .cell:nth-child(1)::before { right: -7%; }
+    .btrow.l1 .cell:nth-child(2)::after  { left: -7%; }
+
+    /* index highlight colors */
+    .emph { background: #ecfeff; border-color: #06b6d4; }
+    .emph .idx { background: #cffafe; border-color: #a5f3fc; color: #0e7490; }
+  </style>
+
+  <div class="card">
+    <header style="margin-bottom: 12px;">
+      <h2>Binary Tree Mathematics</h2>
+      <p style="margin-top:6px;">
+        A complete binary tree can be stored in a flat array using simple index arithmetic.
+        With zero-based indices, the mapping is:
+      </p>
+      <ul style="margin: 10px 0 0 18px;">
+        <li><span class="badge">Children</span> of a node at index \(i\):
+          \[
+            \text{left}(i) = 2i + 1,\qquad \text{right}(i) = 2i + 2.
+          \]
+        </li>
+        <li style="margin-top:6px;"><span class="badge">Parent</span> of a node at index \(j>0\):
+          \[
+            \text{parent}(j) = \left\lfloor \frac{j-1}{2} \right\rfloor .
+          \]
+        </li>
+      </ul>
+    </header>
+
+    <div class="grid2">
+      <!-- Left: math + intuition -->
+      <div>
+        <h3 style="margin: 6px 0 8px; font-size: 1.125rem; font-weight: 700; color:#0f172a;">
+          Why do we multiply by 2?
+        </h3>
+        <p>
+          Each level of a complete binary tree has twice as many nodes as the previous level.
+          When moving from a node \(i\) down one level, there are \(2\) new slots “opened,”
+          so the children start at \(2i\) plus an offset: \(+1\) for the left child and \(+2\) for the right.
+        </p>
+
+        <div style="margin:12px 0; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">
+          <strong>Level index ranges.</strong>
+          If level \(\ell\) (root is \(\ell=0\)) has \(2^\ell\) nodes, then those nodes occupy the array indices:
+          \[
+            \big[\, 2^\ell - 1,\; 2^{\ell+1} - 2 \,\big].
+          \]
+          For example, \(\ell=0\) → \([0,0]\), \(\ell=1\) → \([1,2]\), \(\ell=2\) → \([3,6]\).
+        </div>
+
+        <div style="margin:12px 0; padding:10px 12px; background:#fffbeb; border:1px solid #fde68a; border-radius:12px;">
+          <strong>Leaf band & padding.</strong>
+          If a tree has \(L\) leaves, total nodes are \(2L-1\).
+          Leaves occupy indices \([\,2L-1 - L,\; 2L-2\,] = [\,L-1,\; 2L-2\,]\).
+          When \(n\) (array length) is not a power of two, we pad leaves with \(+\infty\) to reach \(L=\text{nextPow2}(n)\).
+        </div>
+      </div>
+
+      <!-- Right: CSS-based binary tree diagram with indices -->
+      <div>
+        <h3 style="margin: 6px 0 8px; font-size: 1.125rem; font-weight: 700; color:#0f172a;">
+          Array ↔ Tree (indices shown)
+        </h3>
+        <div class="btree" aria-label="CSS binary tree diagram with array indices">
+          <!-- Level 0 -->
+          <div class="btrow l0">
+            <div class="btnode emph">
+              <div class="label">root</div>
+              <div class="idx">index 0</div>
+            </div>
+          </div>
+          <!-- Level 1 -->
+          <div class="btrow l1">
+            <div class="cell">
+              <div class="btnode">
+                <div class="label">left(0)</div>
+                <div class="idx">index 1</div>
+              </div>
+            </div>
+            <div class="cell">
+              <div class="btnode">
+                <div class="label">right(0)</div>
+                <div class="idx">index 2</div>
+              </div>
+            </div>
+          </div>
+          <!-- Level 2 -->
+          <div class="btrow l2">
+            <div class="btnode">
+              <div class="label">left(1)</div>
+              <div class="idx">index 3</div>
+            </div>
+            <div class="btnode">
+              <div class="label">right(1)</div>
+              <div class="idx">index 4</div>
+            </div>
+            <div class="btnode">
+              <div class="label">left(2)</div>
+              <div class="idx">index 5</div>
+            </div>
+            <div class="btnode">
+              <div class="label">right(2)</div>
+              <div class="idx">index 6</div>
+            </div>
+          </div>
+        </div>
+
+        <ol style="margin: 12px 0 0 18px;">
+          <li>Children of \(i\): \(2i+1\), \(2i+2\) → e.g., \(i=0\) has children \(1,2\).</li>
+          <li>Parent of \(j>0\): \(\big\lfloor (j-1)/2 \big\rfloor\) → e.g., \(j=4\) has parent \(1\).</li>
+          <li>Level \(\ell=2\) occupies indices \(3\)–\(6\) as shown.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Quick self-checks -->
+    <div style="margin-top:16px; padding:10px 12px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:12px;">
+      <strong>Self-check exercises.</strong>
+      <ul style="margin: 8px 0 0 18px;">
+        <li>Compute \(\text{left}(3)\) and \(\text{right}(3)\). Which indices are they?</li>
+        <li>Find \(\text{parent}(6)\) and \(\text{parent}(1)\).</li>
+        <li>What index range does level \(\ell=3\) occupy?</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 
   <!-- Simulator -->
   <section id="sim" class="py-12">
