@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sorting Algorithms — Interactive Demos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html{scroll-behavior:smooth}
+    .card{backdrop-filter: blur(6px)}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-emerald-50 text-slate-800">
+  <!-- Header -->
+  <header class="border-b border-slate-200/70 bg-white/70 card">
+    <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-start md:items-center gap-6">
+      <div class="flex-1">
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Sorting Algorithms — <span class="text-indigo-600">Interactive Landing</span></h1>
+        <p class="mt-2 text-slate-600 max-w-3xl">
+          A clean hub for your algorithm demos. Search, filter, and launch each visualizer in a modal or a new tab.
+        </p>
+      </div>
+      <div class="w-full md:w-auto flex gap-2">
+        <a href="#gallery" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Explore</a>
+        <a href="#about" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">About</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Controls -->
+  <section class="py-6">
+    <div class="max-w-7xl mx-auto px-6 grid gap-3 md:grid-cols-3">
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium text-slate-500 mb-1">Search</label>
+        <input id="search" type="text" placeholder="Try: bubble, bidirectional, O(n^2)" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div class="">
+        <label class="block text-xs font-medium text-slate-500 mb-1">Complexity (worst)</label>
+        <select id="complexity" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">All</option>
+          <option>O(n)</option>
+          <option>O(n log n)</option>
+          <option>O(n^2)</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery -->
+  <section id="gallery" class="pb-14">
+    <div class="max-w-7xl mx-auto px-6">
+      <div id="cards" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="py-12 bg-white/70 border-t border-b border-slate-200/70">
+    <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-1 gap-8 items-start">
+      <div>
+        <h2 class="text-2xl font-bold mb-2">How this page works</h2>
+        <p class="text-sm text-slate-700">Algorithms are defined in a small JSON-like array below and rendered into pretty cards. Each card links to your existing demo page or opens it inline in a modal. Add new algorithms by pushing to <code>ALGS</code>.</p>
+        <ul class="text-sm list-disc pl-5 mt-3 text-slate-700 space-y-1">
+          <li>Built with Tailwind (CDN) — no build step.</li>
+          <li>Modal uses a simple <code>&lt;dialog&gt;</code>: lightweight and accessible.</li>
+          <li>Search filters over title, tags, and blurb; complexity filter narrows further.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 text-center text-slate-500 text-sm">
+    <div>© <span id="year"></span> Sorting Algorithms Demos • Crafted with ❤️</div>
+  </footer>
+
+  <!-- Modal -->
+  <dialog id="demoModal" class="w-full max-w-5xl rounded-2xl p-0 bg-white/95 backdrop:bg-black/40">
+    <form method="dialog">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <div>
+          <div id="modalTitle" class="font-semibold text-slate-900">Demo</div>
+          <div id="modalMeta" class="text-xs text-slate-500"></div>
+        </div>
+        <div class="flex gap-2">
+          <a id="openNewTab" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-sm hover:bg-black">Open in new tab ↗</a>
+          <button class="px-3 py-1.5 rounded-lg border text-sm">Close</button>
+        </div>
+      </div>
+      <div class="aspect-video w-full">
+        <iframe id="demoFrame" src="about:blank" class="w-full h-[70vh] md:h-[75vh]" loading="lazy"></iframe>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    // ---- 1) Data -----------------------------------------------------------
+    const ALGS = [
+      { id: 'bubble', title: 'Bubble Sort', blurb: 'Adjacent swaps; largest bubbles to the end each pass.', worst: 'O(n^2)', best: 'O(n)', space: 'O(1)', tags: ['stable','in-place','educational'], href: 'bubblesort.html' },
+      { id: 'cocktail', title: 'Cocktail Shaker Sort', blurb: 'Bidirectional bubble: shrink window from both ends.', worst: 'O(n^2)', best: 'O(n)', space: 'O(1)', tags: ['stable','bidirectional','in-place'], href: 'cocktail.html' },
+      { id: 'distributed', title: 'Distributed Selection Sort', blurb: 'k sites pick local mins; coordinator picks global min each round.', worst: 'O(n·k) naive', best: '—', space: 'O(1)', tags: ['distributed','selection'], href: 'distributedselectionsort.html' },
+      { id: 'double', title: 'Double Selection Sort', blurb: 'Each pass selects min and max to place at both ends.', worst: 'O(n^2)', best: 'O(n^2)', space: 'O(1)', tags: ['two-ended','in-place'], href: 'doubleselectionsort.html' },
+      { id: 'gnome', title: 'Gnome Sort', blurb: 'Walk forwards on success; swap and step back on inversion.', worst: 'O(n^2)', best: 'O(n)', space: 'O(1)', tags: ['simple','in-place'], href: 'gnome.html' },
+      { id: 'oddeven', title: 'Odd–Even Sort', blurb: 'Parallel-friendly bubble variant alternating odd/even pairs.', worst: 'O(n^2)', best: 'O(n)', space: 'O(1)', tags: ['parallel-ish','in-place'], href: 'oddeven.html' },
+      { id: 'selection', title: 'Selection Sort', blurb: 'Repeated min selection placed at i.', worst: 'O(n^2)', best: 'O(n^2)', space: 'O(1)', tags: ['in-place'], href: 'selectionsort.html' },
+      { id: 'selection_stable', title: 'Stable Selection Sort', blurb: 'Find min then insert by shifting to keep stability.', worst: 'O(n^2)', best: 'O(n^2)', space: 'O(1)', tags: ['stable'], href: 'stableselectionsort.html' },
+      { id: 'tournament', title: 'Tournament Sort', blurb: 'Min-tournament tree reveals the global min; update path only.', worst: 'O(n log n)', best: 'O(n log n)', space: 'O(n)', tags: ['tree','selection'], href: 'tournamentsort.html' },
+      { id: 'insertion', title: 'Insertion Sort', blurb: 'Builds the sorted list one element at a time by insertion.', worst: 'O(n^2)', best: 'O(n)', space: 'O(1)', tags: ['stable','in-place','simple'], href: 'insertionsort.html' },
+      { id: 'shell', title: 'Shell Sort', blurb: 'Gap-based insertion sort; gaps shrink to 1 (insertion).', worst: 'O(n log^2 n)', best: 'O(n)', space: 'O(1)', tags: ['in-place','gap-based'], href: 'shellsort.html' },
+      { id: 'binary_insertion', title: 'Binary Insertion Sort', blurb: 'Insertion sort using binary search to find insertion point.', worst: 'O(n^2)', best: 'O(n)', space: 'O(1)', tags: ['stable','in-place'], href: 'binaryinsertionsort.html' }
+    ];
+
+    // ---- 2) Render cards ---------------------------------------------------
+    const cards = document.getElementById('cards');
+    const search = document.getElementById('search');
+    const complexity = document.getElementById('complexity');
+
+    function tagPill(t){
+      return `<span class="px-2 py-0.5 rounded-full text-xs bg-slate-100 border border-slate-200">${t}</span>`;
+    }
+
+    function cardHTML(a){
+      return `
+        <article data-title="${a.title.toLowerCase()}" data-tags="${(a.tags||[]).join(' ').toLowerCase()}" data-worst="${a.worst}" class="group bg-white/70 border border-slate-200 rounded-2xl p-5 shadow-sm card hover:shadow-md transition-all">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-900">${a.title}</h3>
+              <p class="text-sm text-slate-600 mt-1">${a.blurb}</p>
+            </div>
+            <a href="${a.href}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-sm opacity-0 group-hover:opacity-100 transition">↗</a>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-xs mt-4">
+            <div class="rounded-xl bg-slate-50 p-2 border border-slate-200"><div class="text-slate-500 uppercase">Worst</div><div class="font-mono">${a.worst}</div></div>
+            <div class="rounded-xl bg-slate-50 p-2 border border-slate-200"><div class="text-slate-500 uppercase">Best</div><div class="font-mono">${a.best||'—'}</div></div>
+            <div class="rounded-xl bg-slate-50 p-2 border border-slate-200"><div class="text-slate-500 uppercase">Space</div><div class="font-mono">${a.space||'—'}</div></div>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-1">${(a.tags||[]).map(tagPill).join('')}</div>
+          <div class="mt-4 flex gap-2">
+            <button data-open="${a.id}" class="px-3 py-1.5 rounded-lg border bg-white hover:bg-slate-50 text-sm">Open demo</button>
+            <a href="${a.href}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">Open in new tab</a>
+          </div>
+        </article>`;
+    }
+
+    function render(list){
+      cards.innerHTML = list.map(cardHTML).join('');
+    }
+
+    function applyFilters(){
+      const q = (search.value || '').toLowerCase().trim();
+      const c = complexity.value;
+      let list = ALGS.slice();
+      if (q){
+        list = list.filter(a =>
+          a.title.toLowerCase().includes(q) ||
+          (a.blurb||'').toLowerCase().includes(q) ||
+          (a.tags||[]).join(' ').toLowerCase().includes(q)
+        );
+      }
+      if (c){ list = list.filter(a => a.worst === c); }
+      render(list);
+    }
+
+    search.addEventListener('input', applyFilters);
+    complexity.addEventListener('change', applyFilters);
+
+    // Initial render
+    render(ALGS);
+
+    // ---- 3) Modal wiring ----------------------------------------------------
+    const modal = document.getElementById('demoModal');
+    const frame = document.getElementById('demoFrame');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMeta = document.getElementById('modalMeta');
+    const openNewTab = document.getElementById('openNewTab');
+
+    function openDemo(id){
+      const a = ALGS.find(x => x.id === id);
+      if (!a) return;
+      modalTitle.textContent = a.title;
+      modalMeta.textContent = `${a.worst} • best ${a.best||'—'} • space ${a.space||'—'}`;
+      frame.src = a.href;
+      openNewTab.href = a.href;
+      if (typeof modal.showModal === 'function') modal.showModal();
+      else modal.setAttribute('open', '');
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-open]');
+      if (btn){ e.preventDefault(); openDemo(btn.getAttribute('data-open')); }
+    });
+
+    // ---- 4) Misc ------------------------------------------------------------
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

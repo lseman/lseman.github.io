@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Insertion Sort — Interactive Visualizer (Vanilla JS + Tailwind)</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-800">
+  <div class="mx-auto max-w-6xl px-5 py-8">
+    <header>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">Insertion Sort — Interactive Visualizer</h1>
+      <p class="mt-2 text-slate-600 max-w-3xl">
+        Insertion Sort grows a sorted prefix <span class="font-mono">[0..i]</span> by <b>inserting</b> the key <span class="font-mono">A[i]</span>
+        into its correct place among the previous elements, shifting larger items to the right.
+      </p>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-16 mt-6">
+      <!-- Left: Visualization -->
+      <section class="lg:col-span-2 flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button id="btnPlay" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm font-medium">Play</button>
+            <button id="btnStep" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Step</button>
+            <button id="btnReset" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Reset</button>
+            <button id="btnShuffle" class="px-3 py-2 rounded-xl shadow-sm border bg-white hover:bg-slate-50 text-sm">Shuffle</button>
+
+            <div class="ml-auto flex items-center gap-3">
+              <label class="text-sm text-slate-600">Speed</label>
+              <input id="rangeSpeed" type="range" min="50" max="1500" value="400" class="w-40">
+              <label class="text-sm text-slate-600">Size</label>
+              <input id="rangeSize" type="range" min="6" max="64" value="24" class="w-40">
+            </div>
+          </div>
+
+          <div id="bars" class="relative w-full h-64 md:h-72 lg:h-80 flex items-end gap-1 p-2 rounded-2xl bg-gradient-to-b from-white to-slate-100 border border-slate-200"></div>
+
+          <div class="mt-4 grid grid-cols-3 gap-3">
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Comparisons</div>
+              <div id="statComparisons" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Shifts</div>
+              <div id="statMoves" class="text-xl font-semibold tabular-nums text-slate-900">0</div>
+            </div>
+            <div class="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur p-3 shadow-sm">
+              <div class="text-xs uppercase tracking-wide text-slate-500">Array Size</div>
+              <div id="statSize" class="text-xl font-semibold tabular-nums text-slate-900">24</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="text-lg font-semibold mb-2">Pseudocode</h3>
+          <pre id="pseudocode" class="rounded-2xl p-4 bg-slate-900 text-slate-100 text-sm leading-6 overflow-auto"><code>
+<span data-line="1" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">01</span>for i = 1 .. n-1:</span>
+<span data-line="2" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">02</span>  key ← A[i]</span>
+<span data-line="3" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">03</span>  j ← i - 1</span>
+<span data-line="4" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">04</span>  while j ≥ 0 and A[j] &gt; key:</span>
+<span data-line="5" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">05</span>    A[j+1] ← A[j]     // shift right</span>
+<span data-line="6" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">06</span>    j ← j - 1</span>
+<span data-line="7" class="block px-2 rounded-md"><span class="text-slate-400 mr-3 select-none">07</span>  A[j+1] ← key        // insert</span>
+          </code></pre>
+        </div>
+      </section>
+
+      <!-- Right: Theory & Complexity -->
+      <aside class="flex flex-col gap-4">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">How Insertion Sort Works</h3>
+          <p class="mt-2 text-sm leading-6 text-slate-600">
+            At pass <span class="font-mono">i</span>, take <span class="font-mono">key = A[i]</span> (highlighted in <span class="font-medium text-cyan-700">cyan</span>) and scan left with <span class="font-mono">j</span>
+            (<span class="font-medium text-amber-700">amber</span>), shifting larger elements one position to the right (<span class="font-medium text-rose-700">rose</span>),
+            until the correct spot is found. Then insert the key. The sorted prefix is shown in <span class="font-medium text-emerald-700">emerald</span>.
+          </p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Complexity</h3>
+          <div class="mt-2 grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+              <div class="text-slate-500 text-xs uppercase">Time</div>
+              <ul class="mt-1 space-y-1">
+                <li><span class="font-semibold">Worst:</span> O(n²)</li>
+                <li><span class="font-semibold">Average:</span> O(n²)</li>
+                <li><span class="font-semibold">Best:</span> O(n) (already sorted)</li>
+              </ul>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3 border border-slate-200">
+              <div class="text-slate-500 text-xs uppercase">Space</div>
+              <p class="mt-1">O(1) extra memory (in-place)</p>
+            </div>
+          </div>
+          <p class="mt-3 text-sm text-slate-600">
+            Comparisons and shifts depend on initial order: nearly-sorted arrays are very fast (few shifts).
+          </p>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 class="text-lg font-semibold">Experiments</h3>
+          <ol class="mt-2 list-decimal pl-5 space-y-2 text-sm text-slate-700">
+            <li>Try increasing Size and observe how the number of shifts grows on random arrays.</li>
+            <li>Shuffle until you get duplicates — Insertion Sort is <b>stable</b> (equal keys keep order).</li>
+            <li>Compare with Selection Sort: Insertion often does fewer comparisons on partially sorted data.</li>
+          </ol>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="text-center text-xs text-slate-500 pb-4">Built for learning. Use sliders to explore behavior.</footer>
+  </div>
+
+  <script>
+    // -------- Utilities --------
+    function rngArray(n, min = 5, max = 100) {
+      return Array.from({ length: n }, () => Math.floor(min + Math.random() * (max - min + 1)));
+    }
+
+    // Generator of step objects to drive the visualization
+    function* insertionSortSteps(original) {
+      const a = [...original];
+      const n = a.length;
+      for (let i = 1; i < n; i++) {
+        const key = a[i];
+        let j = i - 1;
+        // highlight line 1..3
+        yield { type: 'outer', i, key, j, snapshot: [...a], line: 1 };
+        yield { type: 'key', i, key, j, snapshot: [...a], line: 2 };
+        yield { type: 'init-j', i, key, j, snapshot: [...a], line: 3 };
+
+        while (j >= 0 && a[j] > key) {
+          // compare a[j] vs key (true branch)
+          yield { type: 'compare', i, key, j, snapshot: [...a], line: 4 };
+          a[j + 1] = a[j];
+          yield { type: 'shift', i, key, j, snapshot: [...a], line: 5 };
+          j -= 1;
+          yield { type: 'dec-j', i, key, j, snapshot: [...a], line: 6 };
+        }
+        // Final compare that breaks the while (or j < 0)
+        yield { type: 'compare-end', i, key, j, snapshot: [...a], line: 4 };
+        a[j + 1] = key;
+        yield { type: 'insert', i, key, j, snapshot: [...a], line: 7 };
+      }
+      yield { type: 'done', i: null, key: null, j: null, snapshot: [...a], line: 0 };
+    }
+
+    // -------- State --------
+    const barsEl = document.getElementById('bars');
+    const statComparisons = document.getElementById('statComparisons');
+    const statMoves = document.getElementById('statMoves');
+    const statSize = document.getElementById('statSize');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStep = document.getElementById('btnStep');
+    const btnReset = document.getElementById('btnReset');
+    const btnShuffle = document.getElementById('btnShuffle');
+    const rangeSpeed = document.getElementById('rangeSpeed');
+    const rangeSize = document.getElementById('rangeSize');
+    const PSEUDO = document.getElementById('pseudocode');
+
+    let arr = rngArray(parseInt(rangeSize.value, 10));
+    let steps = Array.from(insertionSortSteps(arr));
+    let stepIdx = 0;
+    let running = false;
+
+    // Visual state
+    let iPass = 1;       // current pass i
+    let keyVal = null;   // current key value (cyan)
+    let jScan = null;    // current j being scanned (amber)
+    let sortedHead = 1;  // number of items at the head confirmed sorted (i elements done)
+    let shiftIdx = null; // index being shifted (rose)
+
+    let comparisons = 0;
+    let moves = 0;
+    let timer = null;
+
+    function maxVal(a){ return a.length ? Math.max(...a) : 1; }
+
+    // -------- Rendering --------
+    function renderBars() {
+      const M = maxVal(arr);
+      barsEl.innerHTML = '';
+      arr.forEach((v, idx) => {
+        const h = Math.max(4, (v / M) * 100);
+        let cls = 'bg-slate-400';
+        const isSorted = idx < sortedHead;
+        const isKeyPos = (keyVal !== null && arr[idx] === keyVal && (idx === jScan + 1 || idx < sortedHead));
+        const isScan = (jScan === idx);
+        const isShift = (shiftIdx === idx);
+        // color priority: key (cyan) > shift (rose) > scan (amber) > sorted (emerald)
+        if (isSorted) cls = 'bg-emerald-400';
+        if (isScan) cls = 'bg-amber-400';
+        if (isShift) cls = 'bg-rose-400';
+        if (isKeyPos) cls = 'bg-cyan-400';
+
+        const d = document.createElement('div');
+        d.className = `w-full max-w-[18px] flex-1 rounded-t-lg transition-all duration-300 ease-out ${cls}`;
+        d.style.height = h + '%';
+        d.title = `A[${idx}] = ${v}`;
+        barsEl.appendChild(d);
+      });
+    }
+
+    function setPseudoHighlight(line){
+      PSEUDO.querySelectorAll('[data-line]').forEach(x => {
+        x.classList.remove('bg-emerald-700/30');
+        x.querySelectorAll('span').forEach(s => s.classList.remove('text-emerald-300'));
+      });
+      if (line > 0){
+        const el = PSEUDO.querySelector(`[data-line="${line}"]`);
+        if (el){
+          el.classList.add('bg-emerald-700/30');
+          const spans = el.querySelectorAll('span');
+          if (spans.length) spans[spans.length-1].classList.add('text-emerald-300');
+        }
+      }
+    }
+
+    function resetState(newArr){
+      arr = [...newArr];
+      steps = Array.from(insertionSortSteps(arr));
+      stepIdx = 0; running = false;
+      iPass = 1; keyVal = null; jScan = null; sortedHead = 1; shiftIdx = null;
+      comparisons = 0; moves = 0;
+      statComparisons.textContent = '0';
+      statMoves.textContent = '0';
+      statSize.textContent = String(arr.length);
+      btnPlay.textContent = 'Play';
+      clearInterval(timer); timer = null;
+      setPseudoHighlight(0);
+      renderBars();
+    }
+
+    function applyStep(s){
+      setPseudoHighlight(s.line || 0);
+      shiftIdx = null; // default
+
+      switch (s.type) {
+        case 'outer':
+          iPass = s.i;
+          keyVal = s.key;
+          jScan = s.j;
+          sortedHead = Math.max(1, s.i); // at least first element is sorted
+          break;
+        case 'key':
+          keyVal = s.key;
+          break;
+        case 'init-j':
+          jScan = s.j;
+          break;
+        case 'compare':
+          comparisons += 1; statComparisons.textContent = String(comparisons);
+          jScan = s.j;
+          arr = s.snapshot;
+          break;
+        case 'shift':
+          moves += 1; statMoves.textContent = String(moves);
+          shiftIdx = s.j + 1; // the target of shift
+          arr = s.snapshot;
+          break;
+        case 'dec-j':
+          jScan = s.j;
+          break;
+        case 'compare-end':
+          // final failed compare or out-of-bounds
+          jScan = s.j;
+          break;
+        case 'insert':
+          arr = s.snapshot;
+          sortedHead = s.i + 1;
+          jScan = s.j; // j where key was inserted at j+1
+          // briefly emphasize the inserted key position as cyan via keyVal
+          break;
+        case 'done':
+          sortedHead = arr.length;
+          iPass = null; keyVal = null; jScan = null; shiftIdx = null;
+          running = false; btnPlay.textContent = 'Play';
+          clearInterval(timer); timer = null;
+          break;
+        default:
+          arr = s.snapshot;
+      }
+      renderBars();
+    }
+
+    function stepOnce(){
+      if (stepIdx >= steps.length) return;
+      const s = steps[stepIdx];
+      applyStep(s);
+      stepIdx += 1;
+    }
+
+    function playLoop(){
+      clearInterval(timer);
+      // Inverted mapping: higher slider value -> smaller delay (faster)
+      const delay = Math.max(
+        30,
+        Number(rangeSpeed.max) - Number(rangeSpeed.value) + Number(rangeSpeed.min)
+      );
+      timer = setInterval(() => {
+        if (stepIdx >= steps.length){
+          running = false; btnPlay.textContent = 'Play'; clearInterval(timer); timer=null; return;
+        }
+        stepOnce();
+      }, delay);
+    }
+
+    // -------- Event bindings --------
+    btnPlay.addEventListener('click', () => {
+      running = !running;
+      btnPlay.textContent = running ? 'Pause' : 'Play';
+      if (running) playLoop(); else { clearInterval(timer); timer = null; }
+    });
+
+    btnStep.addEventListener('click', () => { if (!running) stepOnce(); });
+
+    btnReset.addEventListener('click', () => { resetState(arr); });
+
+    btnShuffle.addEventListener('click', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+
+    rangeSize.addEventListener('input', () => {
+      const n = parseInt(rangeSize.value,10);
+      statSize.textContent = String(n);
+    });
+
+    rangeSize.addEventListener('change', () => {
+      const n = parseInt(rangeSize.value,10);
+      resetState(rngArray(n));
+    });
+
+    rangeSpeed.addEventListener('change', () => {
+      if (running) playLoop();
+    });
+
+    // -------- Initial render --------
+    resetState(arr);
+  </script>
+</body>
+</html>
