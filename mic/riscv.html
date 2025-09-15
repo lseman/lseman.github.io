@@ -1,0 +1,1843 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RISC-V Pipeline Explorer</title>
+  <!-- Tailwind CSS (no build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Chart.js for simple IPC chart in header -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"] } } } };
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Animated pale hero background */
+    .bg-hero {
+      background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
+      background-size: 200% 200%;
+      animation: grad 18s ease infinite;
+    }
+
+    @keyframes grad {
+      0% {
+        background-position: 0% 50%
+      }
+
+      50% {
+        background-position: 100% 50%
+      }
+
+      100% {
+        background-position: 0% 50%
+      }
+    }
+
+    /* Glass cards */
+    .card {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .bubble1 {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .bubble2 {
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .bubble3 {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .stage-highlight {
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5) inset;
+    }
+
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+    }
+  </style>
+
+</head>
+
+<body class="min-h-screen text-slate-800">
+  <!-- Header / Hero -->
+  <header class="bg-hero">
+    <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
+      <div class="flex flex-col lg:flex-row items-center gap-10">
+        <div class="flex-1">
+          <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">RISC-V Pipeline <span
+              class="text-emerald-600">Explorer</span></h1>
+          <p class="mt-3 text-lg md:text-xl text-slate-700">Interactive, single-file site to <span
+              class="font-semibold">step</span> through a 5-stage pipeline (IF-ID-EX-MEM-WB), watch hazards, and track
+            IPC/CPI. Built with vanilla JS, Tailwind, Alpine.js.</p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a href="#sim"
+              class="px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold shadow hover:bg-emerald-700">Open
+              Simulator</a>
+            <a href="#guide"
+              class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Read
+              the Guide</a>
+          </div>
+          <p class="mt-4 text-sm text-slate-500">Prof. Laio Oriel Seman — UFSC</p>
+        </div>
+        <div class="flex-1 w-full">
+          <div class="card rounded-2xl p-6 shadow">
+            <canvas id="ipcChart" height="220"></canvas>
+            <p class="mt-3 text-center text-sm text-slate-600">IPC (instructions per cycle) rolling average; dips
+              indicate bubbles or flushes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Simulator -->
+  <section id="sim" class="py-12">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Interactive Simulator</h2>
+          <p class="text-slate-600 mt-1">
+            Subset:
+            <span class="font-mono">
+              ADD SUB AND OR XOR SLT SLTU SLL SRL SRA |
+              ADDI ANDI ORI XORI SLTI SLTIU SLLI SRLI SRAI |
+              LW SW |
+              BEQ BNE BLT BGE BLTU BGEU |
+              LUI AUIPC JAL JALR |
+              NOP
+            </span>.
+            Forwarding, load-use stall, branch/jump flush.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-sm card rounded-xl px-3 py-2">
+          <span class="text-slate-600">Speed</span>
+          <input id="speed" type="range" min="50" max="1000" value="300" />
+          <span class="text-slate-500"><span id="speedVal">300</span> ms</span>
+          <span class="text-slate-400">Shortcuts: <span class="kbd">Space</span> run/pause • <span class="kbd">N</span>
+            step • <span class="kbd">R</span> reset</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-6">
+        <section class="card rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold">Program</h3>
+            <button id="btnApply"
+              class="px-3 py-1 rounded-lg bg-emerald-600 text-white text-sm shadow hover:bg-emerald-700">Apply</button>
+          </div>
+          <textarea id="progText"
+            class="w-full h-44 rounded-lg border border-slate-200 bg-white/70 p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+          <div id="parseErr" class="mt-2 text-sm text-rose-600 hidden"></div>
+        </section>
+
+                <section class="card rounded-2xl p-4">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-lg font-semibold">Mini C → RV32I (subset)</h3>
+    <button id="btnCompileC"
+      class="px-3 py-1 rounded-lg bg-slate-800 text-white text-sm shadow hover:bg-slate-900">
+      Compile to ASM
+    </button>
+  </div>
+  <textarea id="cText"
+    class="w-full h-44 rounded-lg border border-slate-200 bg-white/70 p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">int a = 0;
+int b = 3;
+while (a < 5) {
+  a = a + 1;
+  if (a >= b) {
+    b = b + 2;
+  }
+}
+return;</textarea>
+  <div id="cErr" class="mt-2 text-sm text-rose-600 hidden"></div>
+  <p class="mt-2 text-xs text-slate-500">Supported: <code>int</code> vars, <code>if/else</code>, <code>while</code>, <code>return;</code>, ops: <code>+</code>, <code>-</code>, comparisons <code>== != &lt; &lt;= &gt; &gt;=</code>. Up to 8 variables.</p>
+</section>
+
+</div>
+
+      <div class="grid grid-cols-2 gap-6">
+
+        <section class="card rounded-2xl p-4">
+          <h3 class="text-lg font-semibold mb-2">Registers</h3>
+          <div id="regs" class="grid grid-cols-4 gap-1 text-xs"></div>
+        </section>
+
+        <section class="card rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold">Memory (words)</h3>
+            <button id="btnZeroMem" class="text-xs px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300">Zero</button>
+          </div>
+          <div id="mem" class="grid grid-cols-4 gap-1 text-xs max-h-56 overflow-auto pr-1"></div>
+        </section>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Pipeline + panels -->
+        <section class="lg:col-span-3 card rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold">Pipeline</h3>
+            <div class="text-sm text-slate-500">Cycle: <span id="cycle" class="font-mono">0</span> • PC: <span id="pc"
+                class="font-mono">0</span> <span id="flushBadge"
+                class="ml-2 hidden px-2 py-0.5 rounded-full bubble2 text-xs">flush</span></div>
+          </div>
+
+          <div class="grid grid-cols-5 gap-3">
+            <div class="p-3 rounded-xl stage card" data-stage="IF">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold">IF</h4><span class="px-2 py-0.5 rounded-full bubble1 text-xs">Fetch</span>
+              </div>
+              <div class="font-mono text-sm" id="slotIF">·</div>
+            </div>
+            <div class="p-3 rounded-xl stage card" data-stage="ID">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold">ID</h4><span class="px-2 py-0.5 rounded-full bubble2 text-xs">Decode</span>
+              </div>
+              <div class="font-mono text-sm" id="slotID">·</div>
+            </div>
+            <div class="p-3 rounded-xl stage card" data-stage="EX">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold">EX</h4><span class="px-2 py-0.5 rounded-full bubble3 text-xs">Execute</span>
+              </div>
+              <div class="font-mono text-sm" id="slotEX">·</div>
+            </div>
+            <div class="p-3 rounded-xl stage card" data-stage="MEM">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold">MEM</h4><span class="px-2 py-0.5 rounded-full bubble1 text-xs">Memory</span>
+              </div>
+              <div class="font-mono text-sm" id="slotMEM">·</div>
+            </div>
+            <div class="p-3 rounded-xl stage card" data-stage="WB">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold">WB</h4><span class="px-2 py-0.5 rounded-full bubble2 text-xs">Writeback</span>
+              </div>
+              <div class="font-mono text-sm" id="slotWB">·</div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid md:grid-cols-3 gap-3 text-sm">
+            <div class="card rounded-xl p-3">
+              <div class="font-semibold mb-1">Hazards</div>
+              <div id="hazards">none</div>
+            </div>
+            <div class="card rounded-xl p-3">
+              <div class="font-semibold mb-1">Forwarding</div>
+              <div id="fwd">—</div>
+            </div>
+            <div class="card rounded-xl p-3">
+              <div class="font-semibold mb-1">Events</div>
+              <div id="events">—</div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex gap-2">
+            <button id="btnRun"
+              class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white shadow hover:bg-emerald-700">Run</button>
+            <button id="btnPause"
+              class="px-3 py-1.5 rounded-lg bg-sky-600 text-white shadow hover:bg-sky-700">Pause</button>
+            <button id="btnStep"
+              class="px-3 py-1.5 rounded-lg bg-amber-600 text-white shadow hover:bg-amber-700">Step</button>
+            <button id="btnReset"
+              class="px-3 py-1.5 rounded-lg bg-slate-800 text-white shadow hover:bg-slate-900">Reset</button>
+          </div>
+          <div align="center">
+            <svg viewBox="0 0 1040.2888 762.16351" version="1.1" id="svg89"
+              sodipodi:docname="riscv_pipeline_diagram.svg" inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
+              width="1040.2888" height="762.16351" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+              xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+              xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"
+              xmlns:svg="http://www.w3.org/2000/svg">
+              <sodipodi:namedview id="namedview89" pagecolor="#ffffff" bordercolor="#000000" borderopacity="0.25"
+                inkscape:showpageshadow="2" inkscape:pageopacity="0.0" inkscape:pagecheckerboard="0"
+                inkscape:deskcolor="#d1d1d1" inkscape:zoom="0.67030748" inkscape:cx="427.41579" inkscape:cy="471.42544"
+                inkscape:window-width="1800" inkscape:window-height="1039" inkscape:window-x="0" inkscape:window-y="44"
+                inkscape:window-maximized="1" inkscape:current-layer="svg89" />
+              <defs id="defs6">
+                <!-- Gradient for pipeline stages -->
+                <linearGradient id="stageGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1" id="stop1" />
+                  <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" id="stop2" />
+                </linearGradient>
+                <!-- Gradient for active components -->
+                <linearGradient id="activeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3" id="stop3" />
+                  <stop offset="100%" style="stop-color:#059669;stop-opacity:0.5" id="stop4" />
+                </linearGradient>
+                <!-- Arrow marker -->
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0,6 0,0 8,3 " fill="#475569" id="polygon4" />
+                </marker>
+                <!-- Forward arrow marker -->
+                <marker id="fwdArrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                  <polygon points="0,6 0,0 8,3 " fill="#dc2626" id="polygon5" />
+                </marker>
+                <!-- Control arrow marker -->
+                <marker id="ctrlArrow" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+                  <polygon points="0,5 0,0 6,2.5 " fill="#7c3aed" id="polygon6" />
+                </marker>
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient89" x1="418.97043"
+                  y1="175.90433" x2="418.97043" y2="266.33926" gradientTransform="scale(1.1793162,0.84794898)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient90" x1="182.81088"
+                  y1="91.373093" x2="182.81088" y2="126.19463" gradientTransform="scale(0.9258201,1.0801234)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient91" x1="23.588446"
+                  y1="123.07138" x2="23.588446" y2="180.73203" gradientTransform="scale(1.2400139,0.80644259)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient92" x1="131.25"
+                  y1="103.25" x2="131.25" y2="140.75" gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient93" x1="43.536018"
+                  y1="202.77606" x2="43.536018" y2="283.66025" gradientTransform="scale(1.1312472,0.88398007)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient94" x1="193.42383"
+                  y1="106.22043" x2="193.42383" y2="181.94856" gradientTransform="scale(1.3403209,0.74608997)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient95" x1="246.14799"
+                  y1="188.79115" x2="246.14799" y2="285.16153" gradientTransform="scale(1.0532282,0.94946186)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient96" x1="175.47379"
+                  y1="427.34625" x2="175.47379" y2="496.04669" gradientTransform="scale(1.4774287,0.67685159)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient97" x1="339.34055"
+                  y1="104.91839" x2="339.34055" y2="166.47932" gradientTransform="scale(1.3238913,0.75534902)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient98" x1="449.25"
+                  y1="158.78647" x2="449.25" y2="196.21353" gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient99" x1="449.25"
+                  y1="228.78647" x2="449.25" y2="266.21353" gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient100" x1="392.21497"
+                  y1="382.93555" x2="392.21497" y2="444.49649" gradientTransform="scale(1.3238913,0.75534902)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient101" x1="644.922"
+                  y1="188.79115" x2="644.922" y2="285.16153" gradientTransform="scale(1.0532282,0.94946186)"
+                  gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient102" x1="799.25"
+                  y1="158.78647" x2="799.25" y2="196.21353" gradientUnits="userSpaceOnUse" />
+                <linearGradient inkscape:collect="always" xlink:href="#stageGrad" id="linearGradient103" x1="714.83411"
+                  y1="225.49367" x2="714.83411" y2="290.27985" gradientTransform="scale(1.2579842,0.79492254)"
+                  gradientUnits="userSpaceOnUse" />
+              </defs>
+              <!-- Background -->
+              <!-- Title -->
+              <text x="536" y="28" text-anchor="middle" class="text-xl font-bold" fill="#0f172a" id="text6">RISC-V
+                5-Stage
+                Pipeline Architecture</text>
+              <!-- Pipeline Stage Boundaries -->
+              <g stroke="#94a3b8" stroke-width="2" stroke-dasharray="5, 5" opacity="0.5" id="g10"
+                transform="matrix(1,0,0,0.92408133,0,4.5551199)">
+                <line x1="230" y1="60" x2="230" y2="790" id="line6" />
+                <line x1="420" y1="60" x2="420" y2="790" id="line7" />
+                <line x1="640" y1="60" x2="640" y2="790" id="line8" />
+                <line x1="860" y1="60" x2="860" y2="790" id="line9" />
+              </g>
+              <!-- Stage Labels -->
+              <g class="text-sm font-semibold" fill="#475569" id="g14">
+                <text x="115" y="50" text-anchor="middle" id="text10">IF</text>
+                <text x="325" y="50" text-anchor="middle" id="text11">ID</text>
+                <text x="530" y="50" text-anchor="middle" id="text12">EX</text>
+                <text x="750" y="50" text-anchor="middle" id="text13">MEM</text>
+                <text x="970" y="50" text-anchor="middle" id="text14">WB</text>
+              </g>
+              <!-- IF Stage -->
+              <g id="if-stage">
+                <!-- PC -->
+                <rect x="30" y="100" width="70" height="45" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect14" style="fill:url(#linearGradient91)" ry="5" />
+                <text x="65" y="127" text-anchor="middle" class="text-xs font-medium" fill="#1e293b"
+                  id="text15">PC</text>
+                <!-- PC+4 Adder -->
+                <circle cx="150" cy="122" r="18" fill="url(#stageGrad)" stroke="#64748b" stroke-width="1.5"
+                  id="circle15" style="fill:url(#linearGradient92)" />
+                <text x="150" y="127" text-anchor="middle" class="text-xs" fill="#1e293b" id="text16">+4</text>
+                <!-- Instruction Memory -->
+                <rect x="50" y="180" width="90" height="70" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect16" style="fill:url(#linearGradient93)" ry="5" />
+                <text x="95" y="205" text-anchor="middle" class="text-xs font-medium" fill="#1e293b"
+                  id="text17">Instruction</text>
+                <text x="95" y="220" text-anchor="middle" class="text-xs font-medium" fill="#1e293b"
+                  id="text18">Memory</text>
+                <!-- PC Mux -->
+                <polygon points="200,117.5 170,135 170,100 " fill="url(#stageGrad)" stroke="#64748b" stroke-width="1.5"
+                  id="polygon18" style="fill:url(#linearGradient90)"
+                  transform="matrix(1.1543595,0,0,1.1543595,-10.125339,-27.040087)" />
+                <text x="198" y="112" text-anchor="middle" class="text-xs" fill="#1e293b" id="text19">MUX</text>
+              </g>
+              <!-- IF/ID Pipeline Register -->
+              <rect x="222" y="180" width="16" height="70" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"
+                id="rect19" />
+              <text x="230" y="170" text-anchor="middle" class="text-xs font-medium" fill="#92400e"
+                id="text20">IF/ID</text>
+              <!-- ID Stage -->
+              <g id="id-stage">
+                <!-- Control Unit -->
+                <rect x="260" y="80" width="100" height="55" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect20" style="fill:url(#linearGradient94)" ry="5" />
+                <text x="310" y="110" text-anchor="middle" class="text-xs font-medium" fill="#1e293b"
+                  id="text21">Control
+                  Unit</text>
+                <!-- Register File -->
+                <rect x="260" y="180" width="100" height="90" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect21" style="fill:url(#linearGradient95)" ry="5" />
+                <text x="310" y="205" text-anchor="middle" class="text-xs font-medium" fill="#1e293b"
+                  id="text22">Register
+                  File</text>
+                <text x="285" y="230" text-anchor="middle" class="text-xs" fill="#64748b" id="text23">Rs1</text>
+                <text x="335" y="230" text-anchor="middle" class="text-xs" fill="#64748b" id="text24">Rs2</text>
+                <text x="310" y="250" text-anchor="middle" class="text-xs" fill="#64748b" id="text25">Rd</text>
+                <!-- Sign Extend -->
+                <rect x="260" y="290" width="100" height="45" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect25" style="fill:url(#linearGradient96)" ry="5" />
+                <text x="310" y="317" text-anchor="middle" class="text-xs font-medium" fill="#1e293b" id="text26">Sign
+                  Extend</text>
+              </g>
+              <!-- ID/EX Pipeline Register -->
+              <rect x="412" y="80" width="16" height="255" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"
+                id="rect26" />
+              <text x="420" y="70" text-anchor="middle" class="text-xs font-medium" fill="#92400e"
+                id="text27">ID/EX</text>
+              <!-- EX Stage -->
+              <g id="ex-stage">
+                <!-- ALU Control -->
+                <rect x="450" y="80" width="80" height="45" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect27" style="fill:url(#linearGradient97)" ry="5" />
+                <text x="490" y="107" text-anchor="middle" class="text-xs font-medium" fill="#1e293b" id="text28">ALU
+                  Control</text>
+                <!-- ALU Mux A -->
+                <polygon points="485,177.5 450,195 450,160 " fill="url(#stageGrad)" stroke="#64748b" stroke-width="1.5"
+                  id="polygon28" style="fill:url(#linearGradient98)" />
+                <text x="465" y="182" text-anchor="middle" class="text-xs" fill="#1e293b" id="text29">MUX</text>
+                <text x="430" y="150" text-anchor="middle" class="text-xs" fill="#64748b" id="text30">OpA</text>
+                <!-- ALU -->
+                <polygon points="520,150 600,167.5 600,207.5 520,225 495,187.5 " fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="polygon30" style="fill:url(#linearGradient89)"
+                  transform="matrix(0.80074928,0,0,1.0023147,119.62054,-0.43400768)" />
+                <text x="555" y="192" text-anchor="middle" class="text-sm font-medium" fill="#1e293b"
+                  id="text31">ALU</text>
+                <!-- ALU Mux B -->
+                <polygon points="485,247.5 450,265 450,230 " fill="url(#stageGrad)" stroke="#64748b" stroke-width="1.5"
+                  id="polygon31" style="fill:url(#linearGradient99)" />
+                <text x="465" y="252" text-anchor="middle" class="text-xs" fill="#1e293b" id="text32">MUX</text>
+                <text x="430" y="275" text-anchor="middle" class="text-xs" fill="#64748b" id="text33">OpB</text>
+                <!-- Branch Unit -->
+                <rect x="520" y="290" width="80" height="45" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect33" style="fill:url(#linearGradient100)" ry="5" />
+                <text x="560" y="317" text-anchor="middle" class="text-xs font-medium" fill="#1e293b" id="text34">Branch
+                  Unit</text>
+              </g>
+              <!-- EX/MEM Pipeline Register -->
+              <rect x="632" y="150" width="16" height="185" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"
+                id="rect34" />
+              <text x="640" y="140" text-anchor="middle" class="text-xs font-medium" fill="#92400e"
+                id="text35">EX/MEM</text>
+              <!-- MEM Stage -->
+              <g id="mem-stage">
+                <!-- Data Memory -->
+                <rect x="680" y="180" width="100" height="90" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect35" style="fill:url(#linearGradient101)" ry="5" />
+                <text x="730" y="210" text-anchor="middle" class="text-xs font-medium" fill="#1e293b" id="text36">Data
+                  Memory</text>
+                <text x="730" y="235" text-anchor="middle" class="text-xs" fill="#64748b" id="text37">Read/Write</text>
+                <!-- MemToReg Mux -->
+                <polygon points="835,177.5 800,195 800,160 " fill="url(#stageGrad)" stroke="#64748b" stroke-width="1.5"
+                  id="polygon37" style="fill:url(#linearGradient102)" />
+                <text x="815" y="182" text-anchor="middle" class="text-xs" fill="#1e293b" id="text38">MUX</text>
+                <text x="815" y="145" text-anchor="middle" class="text-xs" fill="#64748b" id="text39">MemToReg</text>
+              </g>
+              <!-- MEM/WB Pipeline Register -->
+              <rect x="852" y="160" width="16" height="70" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"
+                id="rect39" />
+              <text x="860" y="150" text-anchor="middle" class="text-xs font-medium" fill="#92400e"
+                id="text40">MEM/WB</text>
+              <!-- WB Stage -->
+              <g id="wb-stage">
+                <!-- RegWrite Control -->
+                <rect x="900" y="180" width="80" height="50" rx="5" fill="url(#stageGrad)" stroke="#64748b"
+                  stroke-width="1.5" id="rect40" style="fill:url(#linearGradient103)" ry="5" />
+                <text x="940" y="210" text-anchor="middle" class="text-xs font-medium" fill="#1e293b"
+                  id="text41">RegWrite</text>
+              </g>
+              <!-- Main Data Path Connections (orthogonal) -->
+              <g stroke="#475569" stroke-width="2" fill="none" marker-end="url(#arrowhead)" id="g58">
+                <!-- PC to Instruction Memory -->
+                <path d="m 95,145 v 35" id="path41" sodipodi:nodetypes="cc" />
+                <!-- PC to PC+4 -->
+                <path d="m 100,122 h 32" id="path42" />
+                <!-- PC+4 to PC Mux -->
+                <path d="m 182,122 h 2" id="path43" />
+                <!-- Instruction Memory to IF/ID -->
+                <path d="m 140,215 h 82" id="path44" />
+                <!-- IF/ID to Register File instruction decode -->
+                <path d="m 238,200 h 22" id="path45" />
+                <!-- Register File Rs1 output -->
+                <path d="m 360,210 h 52" id="path46" />
+                <!-- Register File Rs2 output -->
+                <path d="m 360,230 h 52" id="path47" />
+                <!-- Sign Extend output -->
+                <path d="m 360,312 h 35 v -62 h 17" id="path48" />
+                <!-- ID/EX to OpA Mux -->
+                <path d="m 428,177 h 22" id="path49" />
+                <!-- ID/EX to OpB Mux -->
+                <path d="m 428,247 h 22" id="path50" />
+                <!-- OpA Mux to ALU -->
+                <path d="m 485,177 h 35" id="path51" />
+                <!-- OpB Mux to ALU -->
+                <path d="m 485,247 h 15 v -40 h 20" id="path52" />
+                <!-- ALU result to EX/MEM -->
+                <path d="m 600,187 h 32" id="path53" />
+                <!-- EX/MEM to Data Memory address -->
+                <path d="m 648,200 h 32" id="path54" />
+                <!-- EX/MEM to MemToReg Mux (ALU result) -->
+                <path d="M 648,165 H 800" id="path55" />
+                <!-- Data Memory to MemToReg Mux -->
+                <path d="m 780,225 h 10 v -35 h 10" id="path56" />
+                <!-- MemToReg Mux to MEM/WB -->
+                <path d="m 835,177 h 17" id="path57" />
+                <!-- MEM/WB to RegWrite -->
+                <path d="m 868,200 h 32" id="path58" />
+              </g>
+              <!-- Write-back path (routed below components) -->
+              <g stroke="#059669" stroke-width="2.5" fill="none" marker-end="url(#arrowhead)" id="g59">
+                <path d="m 980,205 h 20 V 420 H 60 V 255 h 200" id="path59"
+                  style="stroke-width:2.1;stroke-miterlimit:4;stroke-dasharray:none" />
+              </g>
+              <!-- Control Signals (routed through dedicated channels) -->
+              <g id="control-signals" stroke="#7c3aed" stroke-width="1.8" fill="none" marker-end="url(#ctrlArrow)"
+                opacity="0.8">
+                <!-- Control to ALU Control (above components) -->
+                <path d="m 360,103 h 20 V 56 h 110 v 20" id="path60" />
+                <!-- Control to OpB Mux (select immediate, routed around left side) -->
+                <path d="M 260,125 H 242 V 280 H 465" id="path61" sodipodi:nodetypes="cccc" />
+                <!-- Control to Data Memory (MemRead/MemWrite, bottom channel) -->
+                <path d="m 360,115 h 10 V 380 H 730 V 270" id="path62" />
+                <!-- Control to MemToReg Mux (bottom channel) -->
+                <path d="m 360,120 h 15 V 385 H 815 V 195" id="path63" />
+                <!-- Control to RegWrite (bottom channel) -->
+                <path d="m 360,125 h 25 V 390 H 940 V 230" id="path64" />
+                <!-- Branch taken to PC Mux (from Branch Unit bottom, routed around left) -->
+                <path d="m 560,335 v 65 H 20 V 96 h 164.03044" id="path65" sodipodi:nodetypes="ccccc" />
+              </g>
+              <!-- Forwarding Paths (routed around edges to avoid overlap) -->
+              <g id="forwarding-paths" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#fwdArrow)"
+                opacity="0">
+                <!-- EX/MEM to OpA Mux (top channel) -->
+                <path d="M 640,155 H 620 V 120 H 440 v 40" id="path66" />
+                <!-- EX/MEM to OpB Mux (bottom channel) -->
+                <path d="M 640,210 H 615 V 360 H 440 v -95" id="path67" />
+                <!-- MEM/WB to OpA Mux (very top channel) -->
+                <path d="m 860,165 h 20 V 100 H 435 v 60" id="path68" />
+                <!-- MEM/WB to OpB Mux (very bottom channel) -->
+                <path d="m 860,190 h 25 V 365 H 435 V 265" id="path69" />
+              </g>
+              <!-- Hazard Detection Unit -->
+              <g id="hazard-detection">
+                <rect x="300" y="450" width="100" height="50" rx="5" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"
+                  id="rect69" ry="5" />
+                <text x="350" y="470" text-anchor="middle" class="text-xs font-medium" fill="#92400e" id="text69">Hazard
+                  Detection</text>
+                <text x="350" y="485" text-anchor="middle" class="text-xs font-medium" fill="#92400e"
+                  id="text70">Unit</text>
+                <!-- Hazard detection connections -->
+                <g stroke="#f59e0b" stroke-width="1.5" fill="none" opacity="0.8" id="g72">
+                  <!-- Monitor ID/EX and IF/ID -->
+                  <path d="M 350,450 V 430 H 230 V 250" id="path70" />
+                  <path d="m 350,430 h 70 v -95" id="path71" />
+                  <!-- Control stall signals -->
+                  <path d="M 350,450 V 440 H 196 V 135" id="path72" sodipodi:nodetypes="cccc" />
+                </g>
+              </g>
+              <!-- Forwarding Unit -->
+              <g id="forwarding-unit">
+                <rect x="520" y="450" width="100" height="50" rx="5" fill="#ddd6fe" stroke="#8b5cf6" stroke-width="1.5"
+                  id="rect72" ry="5" />
+                <text x="570" y="470" text-anchor="middle" class="text-xs font-medium" fill="#5b21b6"
+                  id="text72">Forwarding Unit</text>
+                <!-- Forwarding unit connections -->
+                <g stroke="#8b5cf6" stroke-width="1.5" fill="none" opacity="0.8" id="g75">
+                  <!-- Monitor EX/MEM and MEM/WB -->
+                  <path d="m 570,450 v -15 h 70 V 335" id="path73" />
+                  <path d="M 570,435 H 860 V 230" id="path74" />
+                  <!-- Control forwarding muxes -->
+                  <path d="M 570,450 V 370 H 465 v -85" id="path75" />
+                </g>
+              </g>
+              <!-- Performance Monitor -->
+              <!-- Legend -->
+              <g id="legend" transform="translate(50,560)">
+                <rect x="0" y="0" width="400" height="160" rx="5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"
+                  id="rect77" ry="5" />
+                <text x="15" y="25" class="text-sm font-semibold" fill="#1e293b" id="text78">Pipeline Control and Data
+                  Paths</text>
+                <!-- Data path legend -->
+                <line x1="15" y1="45" x2="40" y2="45" stroke="#475569" stroke-width="2" marker-end="url(#arrowhead)"
+                  id="line78" />
+                <text x="45" y="50" class="text-xs" fill="#475569" id="text79">Main Data Path</text>
+                <line x1="15" y1="65" x2="40" y2="65" stroke="#059669" stroke-width="2.5" marker-end="url(#arrowhead)"
+                  id="line79" />
+                <text x="45" y="70" class="text-xs" fill="#059669" id="text80">Write-back Path</text>
+                <line x1="15" y1="85" x2="40" y2="85" stroke="#dc2626" stroke-width="3" stroke-dasharray="4, 2"
+                  marker-end="url(#fwdArrow)" id="line80" />
+                <text x="45" y="90" class="text-xs" fill="#dc2626" id="text81">Forwarding Paths</text>
+                <line x1="15" y1="105" x2="40" y2="105" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#ctrlArrow)"
+                  id="line81" />
+                <text x="45" y="110" class="text-xs" fill="#7c3aed" id="text82">Control Signals</text>
+                <line x1="15" y1="125" x2="40" y2="125" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5, 5"
+                  id="line82" />
+                <text x="45" y="130" class="text-xs" fill="#94a3b8" id="text83">Stage Boundaries</text>
+                <rect x="15" y="140" width="20" height="12" fill="#fbbf24" stroke="#f59e0b" id="rect83" />
+                <text x="40" y="149" class="text-xs" fill="#92400e" id="text84">Pipeline Registers</text>
+                <!-- Control units legend -->
+                <text x="220" y="50" class="text-xs" fill="#f59e0b" id="text85">⬢ Hazard Detection</text>
+                <text x="220" y="70" class="text-xs" fill="#8b5cf6" id="text86">⬢ Forwarding Control</text>
+                <text x="220" y="90" class="text-xs" fill="#0891b2" id="text87">⬢ Performance Monitor</text>
+                <text x="220" y="110" class="text-xs" fill="#64748b" id="text88">⬢ Pipeline Stages</text>
+                <text x="220" y="130" class="text-xs" fill="#1e293b" id="text89">⬢ Functional Units</text>
+              </g>
+              <!-- Component Highlighting Classes -->
+              <style id="style89">
+                .highlight-if {
+                  fill: url(#activeGrad) !important;
+                  stroke: #10b981 !important;
+                  stroke-width: 3px !important;
+                }
+
+                .highlight-id {
+                  fill: url(#activeGrad) !important;
+                  stroke: #10b981 !important;
+                  stroke-width: 3px !important;
+                }
+
+                .highlight-ex {
+                  fill: url(#activeGrad) !important;
+                  stroke: #10b981 !important;
+                  stroke-width: 3px !important;
+                }
+
+                .highlight-mem {
+                  fill: url(#activeGrad) !important;
+                  stroke: #10b981 !important;
+                  stroke-width: 3px !important;
+                }
+
+                .highlight-wb {
+                  fill: url(#activeGrad) !important;
+                  stroke: #10b981 !important;
+                  stroke-width: 3px !important;
+                }
+
+                .show-forwarding {
+                  opacity: 1 !important;
+                }
+
+                .highlight-control {
+                  opacity: 1 !important;
+                  stroke-width: 2.5px !important;
+                }
+
+                .component-highlight {
+                  fill: url(#activeGrad) !important;
+                  stroke: #10b981 !important;
+                  stroke-width: 3px !important;
+                }
+
+                .text-xs {
+                  font-size: 11px;
+                }
+
+                .text-sm {
+                  font-size: 13px;
+                }
+
+                .text-xl {
+                  font-size: 18px;
+                }
+
+                .font-bold {
+                  font-weight: bold;
+                }
+
+                .font-semibold {
+                  font-weight: 600;
+                }
+
+                .font-medium {
+                  font-weight: 500;
+                }
+
+                /* Wire highlighting */
+                .path-active {
+                  stroke: #10b981 !important;
+                  stroke-width: 4px !important;
+                  filter: drop-shadow(0 0 2px rgba(16, 185, 129, .7));
+                }
+
+                .path-ctrl {
+                  stroke: #7c3aed !important;
+                  stroke-width: 3px !important;
+                  filter: drop-shadow(0 0 2px rgba(124, 58, 237, .7));
+                }
+
+                .path-fwd {
+                  stroke: #dc2626 !important;
+                  stroke-width: 4px !important;
+                  stroke-dasharray: 4 2 !important;
+                  filter: drop-shadow(0 0 2px rgba(220, 38, 38, .7));
+                }
+
+                /* Pleasant pulse for 1 cycle */
+                @keyframes pulse {
+                  0% {
+                    opacity: .35;
+                  }
+
+                  25% {
+                    opacity: 1;
+                  }
+
+                  100% {
+                    opacity: .35;
+                  }
+                }
+
+                .pulse {
+                  animation: pulse 350ms ease-in-out 1;
+                }
+              </style>
+              <!-- JavaScript Interface -->
+              <script id="script89">< ![CDATA[
+                  function highlightStage(stage) {
+                    document.querySelectorAll('[class*="highlight-"]').forEach(el => {
+                      el.className = el.className.replace(/highlight-\w+/g, '');
+                    });
+
+                    if (stage) {
+                      const stageElement = document.getElementById(stage + '-stage');
+                      if (stageElement) {
+                        stageElement.classList.add('highlight-' + stage);
+                      }
+                    }
+                  }
+    
+    function showForwarding(show = true) {
+                  document.getElementById('forwarding-paths').style.opacity = show ? '1' : '0';
+                }
+    
+    function highlightControl(show = true) {
+                  const controlElement = document.getElementById('control-signals');
+                  controlElement.style.opacity = show ? '1' : '0.8';
+                  if (show) {
+                    controlElement.classList.add('highlight-control');
+                  } else {
+                    controlElement.classList.remove('highlight-control');
+                  }
+                }
+    
+    function highlightComponent(componentSelector) {
+                  document.querySelectorAll('.component-highlight').forEach(el => {
+                    el.classList.remove('component-highlight');
+                  });
+
+                  document.querySelectorAll(componentSelector).forEach(el => {
+                    el.classList.add('component-highlight');
+                  });
+                }
+    
+    window.pipelineDiagram = {
+                  highlightStage,
+                  showForwarding,
+                  highlightControl,
+                  highlightComponent,
+                  clearHighlights: () => {
+                    highlightStage(null);
+                    showForwarding(false);
+                    highlightControl(false);
+                    document.querySelectorAll('.component-highlight').forEach(el => {
+                      el.classList.remove('component-highlight');
+                    });
+                  }
+                };
+                ]]></script>
+              <script id="signal-map">< ![CDATA[
+  // Logical names → SVG path ids
+  const SIG = {
+                  pc_to_imem: 'path41',
+                  pc_to_adder: 'path42',
+                  adder_to_mux: 'path43',
+                  imem_to_ifid: 'path44',
+                  ifid_to_rf: 'path45',
+                  rf_rs1: 'path46',
+                  rf_rs2: 'path47',
+                  sext_to_muxB: 'path48',
+                  idex_to_muxA: 'path49',
+                  idex_to_muxB: 'path50',
+                  muxA_to_alu: 'path51',
+                  muxB_to_alu: 'path52',
+                  alu_to_exmem: 'path53',
+                  exmem_to_dmem: 'path54',
+                  exmem_to_memtoreg: 'path55',
+                  dmem_to_mux: 'path56',
+                  mux_to_memwb: 'path57',
+                  memwb_to_regwrite: 'path58',
+                  wb_bus: 'path59',
+                  branch_to_pcmux: 'path65',
+                  fwd_exmem_opa: 'path66',
+                  fwd_exmem_opb: 'path67',
+                  fwd_memwb_opa: 'path68',
+                  fwd_memwb_opb: 'path69',
+                };
+
+                // Internal registry of all path elements we may touch (once)
+                const _allWireEls = (() => {
+                  const ids = new Set(Object.values(SIG));
+                  // Also include all child paths of groups we might style wholesale
+                  ['g58', 'g59', 'control-signals', 'forwarding-paths'].forEach(gid => {
+                    const g = document.getElementById(gid);
+                    if (g) g.querySelectorAll('path').forEach(p => ids.add(p.id));
+                  });
+                  return Array.from(ids).map(id => document.getElementById(id)).filter(Boolean);
+                })();
+
+                function clearAllWireHighlights() {
+                  _allWireEls.forEach(el => {
+                    el.classList.remove('path-active', 'path-ctrl', 'path-fwd', 'pulse');
+                  });
+                }
+
+                // Activate lists like { data: [SIG.pc_to_imem, ...], ctrl: [...], fwd: [...] }
+                function applyWireHighlights(sets) {
+                  const add = (id, cls) => {
+                    const el = document.getElementById(id);
+                    if (el) { el.classList.add(cls, 'pulse'); }
+                  };
+                  (sets.data || []).forEach(id => add(id, 'path-active'));
+                  (sets.ctrl || []).forEach(id => add(id, 'path-ctrl'));
+                  (sets.fwd || []).forEach(id => add(id, 'path-fwd'));
+                }
+
+                // Export to outer page code
+                window._pipeHi = { SIG, clearAllWireHighlights, applyWireHighlights };
+]]></script>
+
+            </svg>
+          </div>
+
+        </section>
+
+      </div>
+
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card rounded-2xl p-4">
+          <div class="text-xs text-slate-500">IPC (rolling avg)</div>
+          <div class="text-2xl font-semibold" id="ipcNow">0.00</div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-xs text-slate-500">CPI (1/IPC)</div>
+          <div class="text-2xl font-semibold" id="cpiNow">—</div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-xs text-slate-500">Bubbles</div>
+          <div class="text-2xl font-semibold" id="bubbles">0</div>
+        </div>
+        <div class="card rounded-2xl p-4">
+          <div class="text-xs text-slate-500">Branch flushes</div>
+          <div class="text-2xl font-semibold" id="flushes">0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Guide -->
+  <section id="guide" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
+        <p class="mt-2 text-slate-600">How a classic 5-stage pipeline handles hazards and control flow.</p>
+      </div>
+      <div class="grid lg:grid-cols-3 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">Data Hazards</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">Forwarding from EX/MEM and MEM/WB reduces stalls. Load-use
+            still costs a bubble because the data arrives in MEM/WB.</p>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">Control Hazards</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">Branches and jumps resolve in EX. If taken, the freshly
+            fetched instruction is flushed from IF/ID.</p>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
+          <h3 class="text-xl font-semibold">Memory</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">Toy word-addressed memory with <span
+              class="font-mono">lw</span>/<span class="font-mono">sw</span>. Address = <span class="font-mono">rs1 +
+              imm</span>. x0 is hardwired to 0.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-10 bg-slate-900 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">© <span id="year"></span> RISC-V Pipeline Explorer — Single-file, no build.</p>
+        <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Logic -->
+  <script>
+    // ====================== Minimal RV32I Toy CPU (JS) ======================
+    const MEM_WORDS = 256;
+    const prettyReg = (r) => (r === undefined ? "" : r === 0 ? "x0" : `x${r}`);
+    const toUInt = (x) => (x >>> 0);
+    const toInt = (x) => (x | 0);
+    const maskShamt = (s) => (s & 31);
+
+    const defaultProgram = [
+      { op: "LUI", rd: 1, imm: 16 },                // x1 = 16
+      { op: "AUIPC", rd: 2, imm: 4 },                 // x2 = PC + 4 (pc-rel)
+      { op: "ADDI", rd: 3, rs1: 1, imm: 10 },         // x3 = x1 + 10
+      { op: "ANDI", rd: 4, rs1: 3, imm: 7 },          // x4 = x3 & 7
+      { op: "SLLI", rd: 5, rs1: 4, imm: 1 },          // x5 = x4 << 1
+      { op: "SW", rs1: 0, rs2: 5, imm: 0, asm: "sw x5, 0(x0)" },
+      { op: "LW", rd: 6, rs1: 0, imm: 0, asm: "lw x6, 0(x0)" }, // load-use after this (bubble if consumed)
+      { op: "ADD", rd: 7, rs1: 6, rs2: 5 },          // x7 = x6 + x5 (tests fwd + load-use)
+      { op: "BLT", rs1: 7, rs2: 0, imm: 2 },         // if x7 < 0 skip next two
+      { op: "ADDI", rd: 8, rs1: 8, imm: 1 },
+      { op: "JAL", rd: 9, imm: 2 },                 // jump forward; x9 = RA
+      { op: "ADDI", rd: 10, rs1: 10, imm: 1 },
+      { op: "JALR", rd: 11, rs1: 9, imm: 0 },         // return via x9 (make pc even)
+      { op: "NOP" },
+    ];
+
+    function renderAsm(i) {
+      if (!i) return "·";
+      if (i.asm) return i.asm;
+      const r3 = `${prettyReg(i.rd)}, ${prettyReg(i.rs1)}, ${prettyReg(i.rs2)}`;
+      const r2i = `${prettyReg(i.rd)}, ${prettyReg(i.rs1)}, ${i.imm ?? 0}`;
+      const sh = `${prettyReg(i.rd)}, ${prettyReg(i.rs1)}, ${i.imm ?? 0}`;
+      switch (i.op) {
+        // R
+        case "ADD": case "SUB": case "AND": case "OR": case "XOR":
+        case "SLT": case "SLTU": case "SLL": case "SRL": case "SRA":
+          return `${i.op.toLowerCase()} ${r3}`;
+        // I
+        case "ADDI": case "ANDI": case "ORI": case "XORI":
+        case "SLTI": case "SLTIU":
+          return `${i.op.toLowerCase()} ${r2i}`;
+        case "SLLI": case "SRLI": case "SRAI":
+          return `${i.op.toLowerCase()} ${sh}`;
+        // Loads/Stores
+        case "LW": return `lw ${prettyReg(i.rd)}, ${i.imm ?? 0}(${prettyReg(i.rs1)})`;
+        case "SW": return `sw ${prettyReg(i.rs2)}, ${i.imm ?? 0}(${prettyReg(i.rs1)})`;
+        // Branches
+        case "BEQ": case "BNE": case "BLT": case "BGE": case "BLTU": case "BGEU":
+          return `${i.op.toLowerCase()} ${prettyReg(i.rs1)}, ${prettyReg(i.rs2)}, ${i.imm ?? 0}`;
+        // Upper/PC
+        case "LUI": return `lui ${prettyReg(i.rd)}, ${i.imm ?? 0}`;
+        case "AUIPC": return `auipc ${prettyReg(i.rd)}, ${i.imm ?? 0}`;
+        // Jumps
+        case "JAL": return `jal ${prettyReg(i.rd)}, ${i.imm ?? 0}`;
+        case "JALR": return `jalr ${prettyReg(i.rd)}, ${i.imm ?? 0}(${prettyReg(i.rs1)})`;
+        case "NOP": return "nop";
+        default: return i.op.toLowerCase();
+      }
+    }
+    class CPU {
+      constructor(program) {
+        this.pc = 0; this.cycle = 0; this.halted = false; this.flushedThisCycle = false;
+        this.regs = new Int32Array(32);
+        this.mem = new Int32Array(MEM_WORDS);
+        this.prog = program.map((p, k) => ({ ...p, id: k }));
+        // demo memory
+        this.mem[0] = 7; this.mem[1] = 0;
+        // pipeline regs
+        this.IF_ID = null; this.ID_EX = null; this.EX_MEM = null; this.MEM_WB = null;
+        this.forwardNotes = ""; this.hazardNotes = ""; this.eventNotes = "";
+        // metrics
+        this.bubbles = 0; this.flushes = 0;
+        // per-cycle wire usage sets (filled each step)
+        this.paths = { data: new Set(), ctrl: new Set(), fwd: new Set() };
+
+        // ---- Built-in fallback map of SVG path IDs (safe if _pipeHi isn't ready) ----
+        this.SIG_FALLBACK = {
+          pc_to_imem: 'path41',
+          pc_to_adder: 'path42',
+          adder_to_mux: 'path43',
+          imem_to_ifid: 'path44',
+          ifid_to_rf: 'path45',
+          rf_rs1: 'path46',
+          rf_rs2: 'path47',
+          sext_to_muxB: 'path48',
+          idex_to_muxA: 'path49',
+          idex_to_muxB: 'path50',
+          muxA_to_alu: 'path51',
+          muxB_to_alu: 'path52',
+          alu_to_exmem: 'path53',
+          exmem_to_dmem: 'path54',
+          exmem_to_memtoreg: 'path55',
+          dmem_to_mux: 'path56',
+          mux_to_memwb: 'path57',
+          memwb_to_regwrite: 'path58',
+          wb_bus: 'path59',
+          branch_to_pcmux: 'path65',
+          fwd_exmem_opa: 'path66',
+          fwd_exmem_opb: 'path67',
+          fwd_memwb_opa: 'path68',
+          fwd_memwb_opb: 'path69',
+        };
+      }
+
+      // Utility to get a robust SIG map every step
+      _SIG() {
+        try {
+          if (window && window._pipeHi && window._pipeHi.SIG) return window._pipeHi.SIG;
+        } catch (_) { }
+        return this.SIG_FALLBACK;
+      }
+
+      fetch() {
+        if (this.pc < 0 || this.pc >= this.prog.length) return { op: "NOP", id: -1 };
+        return this.prog[this.pc];
+      }
+
+      forwardValue(reg, fallback) {
+        if (reg === undefined || reg === 0) return fallback;
+        if (this.EX_MEM && this.EX_MEM.rd === reg) {
+          if (this.EX_MEM.op !== "LW" && this.EX_MEM.alu !== undefined) {
+            this.forwardNotes = `EX/MEM -> x${reg}`;
+            return this.EX_MEM.alu;
+          }
+        }
+        if (this.MEM_WB && this.MEM_WB.rd === reg && this.MEM_WB.wb !== undefined) {
+          this.forwardNotes = `MEM/WB -> x${reg}`;
+          return this.MEM_WB.wb;
+        }
+        return fallback;
+      }
+
+      // Does the instruction in ID want a register that is the rd of a LW in EX?
+      needsStallForLoadUse(next) {
+        if (!next || !this.ID_EX) return false;
+        const isLoad = this.ID_EX.op === "LW" && this.ID_EX.rd !== undefined && this.ID_EX.rd !== 0;
+        if (!isLoad) return false;
+        const reads = [];
+        const op = next.op;
+        if (["ADD", "SUB", "AND", "OR", "XOR", "SLT", "SLTU", "SLL", "SRL", "SRA", "BEQ", "BNE", "BLT", "BGE", "BLTU", "BGEU"].includes(op)) {
+          reads.push(next.rs1, next.rs2);
+        }
+        if (["ADDI", "ANDI", "ORI", "XORI", "SLTI", "SLTIU", "SLLI", "SRLI", "SRAI", "LW", "AUIPC", "LUI", "JAL"].includes(op)) {
+          reads.push(next.rs1);
+        }
+        if (op === "SW") { reads.push(next.rs1, next.rs2); }
+        if (op === "JALR") { reads.push(next.rs1); }
+        return reads.some(r => r && r === this.ID_EX.rd);
+      }
+
+      step() {
+        if (this.halted) return;
+        this.forwardNotes = "—"; this.hazardNotes = ""; this.eventNotes = ""; this.flushedThisCycle = false;
+
+        // === reset per-cycle wire sets + helpers ===
+        this.paths = { data: new Set(), ctrl: new Set(), fwd: new Set() };
+        const SIG = this._SIG();
+        const addD = (id) => { if (id) this.paths.data.add(id); };
+        const addC = (id) => { if (id) this.paths.ctrl.add(id); };
+        const addF = (id) => { if (id) this.paths.fwd.add(id); };
+
+        // ===================== WB =====================
+        if (this.MEM_WB) {
+          const i = this.MEM_WB;
+          if (i.rd !== undefined && i.rd !== 0 && i.wb !== undefined) {
+            this.regs[i.rd] = toInt(i.wb);
+          }
+        }
+
+        // ===================== MEM =====================
+        let nextMEM_WB = null;
+        if (this.EX_MEM) {
+          const i = this.EX_MEM; nextMEM_WB = { ...i };
+          if (i.op === "LW") {
+            const word = (i.alu >> 2) | 0;
+            nextMEM_WB.wb = this.mem[word] || 0;
+            addD(SIG.dmem_to_mux);
+            addD(SIG.mux_to_memwb);
+            addD(SIG.memwb_to_regwrite);
+            addD(SIG.wb_bus);
+          } else if (i.op === "SW") {
+            const word = (i.alu >> 2) | 0;
+            this.mem[word] = i.v2 || 0;
+          } else {
+            if (!i.hasOwnProperty("wb")) nextMEM_WB.wb = i.alu;
+            addD(SIG.exmem_to_memtoreg);
+            addD(SIG.mux_to_memwb);
+            addD(SIG.memwb_to_regwrite);
+            addD(SIG.wb_bus);
+          }
+        }
+
+        // ===================== EX =====================
+        let nextEX_MEM = null;
+        if (this.ID_EX) {
+          const i = this.ID_EX; nextEX_MEM = { ...i };
+
+          const v1 = this.forwardValue(i.rs1, i.v1 || 0);
+          const v2R = this.forwardValue(i.rs2, i.v2 || 0);
+          const v2 = i.useImm ? (i.imm || 0) : v2R;
+
+          // Forwarding highlights
+          if (this.forwardNotes.startsWith("EX/MEM ->")) {
+            if (i.rs1 && this.EX_MEM && this.EX_MEM.rd === i.rs1) addF(SIG.fwd_exmem_opa);
+            if (i.rs2 && this.EX_MEM && this.EX_MEM.rd === i.rs2) addF(SIG.fwd_exmem_opb);
+          }
+          if (this.forwardNotes.startsWith("MEM/WB ->")) {
+            if (i.rs1 && this.MEM_WB && this.MEM_WB.rd === i.rs1) addF(SIG.fwd_memwb_opa);
+            if (i.rs2 && this.MEM_WB && this.MEM_WB.rd === i.rs2) addF(SIG.fwd_memwb_opb);
+          }
+
+          addD(SIG.muxA_to_alu);
+          addD(SIG.muxB_to_alu);
+
+          const ltS = (a, b) => (toInt(a) < toInt(b)) ? 1 : 0;
+          const ltU = (a, b) => (toUInt(a) < toUInt(b)) ? 1 : 0;
+          const geS = (a, b) => (toInt(a) >= toInt(b)) ? 1 : 0;
+          const geU = (a, b) => (toUInt(a) >= toUInt(b)) ? 1 : 0;
+
+          switch (i.op) {
+            // R
+            case "ADD": nextEX_MEM.alu = toInt(v1 + v2); break;
+            case "SUB": nextEX_MEM.alu = toInt(v1 - v2); break;
+            case "AND": nextEX_MEM.alu = toInt(v1 & v2); break;
+            case "OR": nextEX_MEM.alu = toInt(v1 | v2); break;
+            case "XOR": nextEX_MEM.alu = toInt(v1 ^ v2); break;
+            case "SLT": nextEX_MEM.alu = ltS(v1, v2); break;
+            case "SLTU": nextEX_MEM.alu = ltU(v1, v2); break;
+            case "SLL": nextEX_MEM.alu = toInt(v1 << (toUInt(v2) & 31)); break;
+            case "SRL": nextEX_MEM.alu = toInt(toUInt(v1) >>> (toUInt(v2) & 31)); break;
+            case "SRA": nextEX_MEM.alu = toInt(v1 >> (toUInt(v2) & 31)); break;
+
+            // I
+            case "ADDI": nextEX_MEM.alu = toInt(v1 + (i.imm || 0)); break;
+            case "ANDI": nextEX_MEM.alu = toInt(v1 & (i.imm || 0)); break;
+            case "ORI": nextEX_MEM.alu = toInt(v1 | (i.imm || 0)); break;
+            case "XORI": nextEX_MEM.alu = toInt(v1 ^ (i.imm || 0)); break;
+            case "SLTI": nextEX_MEM.alu = ltS(v1, (i.imm || 0)); break;
+            case "SLTIU": nextEX_MEM.alu = ltU(v1, (i.imm || 0)); break;
+            case "SLLI": nextEX_MEM.alu = toInt(v1 << (i.imm || 0 & 31)); break;
+            case "SRLI": nextEX_MEM.alu = toInt(toUInt(v1) >>> (i.imm || 0 & 31)); break;
+            case "SRAI": nextEX_MEM.alu = toInt(v1 >> (i.imm || 0 & 31)); break;
+
+            // Mem addr calc
+            case "LW": case "SW":
+              nextEX_MEM.alu = toInt(v1 + (i.imm || 0));
+              nextEX_MEM.v2 = this.forwardValue(i.rs2, i.v2 || 0); // store-data
+              break;
+
+            // Branches (resolve in EX)
+            case "BEQ": {
+              const taken = toInt(v1) === toInt(v2R);
+              nextEX_MEM.alu = taken ? 1 : 0;
+              if (taken) { this.pc = this.pc + (i.imm || 0); this.eventNotes = `BEQ taken → PC+=${i.imm || 0}`; this.flushes++; }
+            } break;
+            case "BNE": {
+              const taken = toInt(v1) !== toInt(v2R);
+              nextEX_MEM.alu = taken ? 1 : 0;
+              if (taken) { this.pc = this.pc + (i.imm || 0); this.eventNotes = `BNE taken → PC+=${i.imm || 0}`; this.flushes++; }
+            } break;
+            case "BLT": {
+              const taken = ltS(v1, v2R) === 1;
+              nextEX_MEM.alu = taken ? 1 : 0;
+              if (taken) { this.pc = this.pc + (i.imm || 0); this.eventNotes = `BLT taken → PC+=${i.imm || 0}`; this.flushes++; }
+            } break;
+            case "BGE": {
+              const taken = geS(v1, v2R) === 1;
+              nextEX_MEM.alu = taken ? 1 : 0;
+              if (taken) { this.pc = this.pc + (i.imm || 0); this.eventNotes = `BGE taken → PC+=${i.imm || 0}`; this.flushes++; }
+            } break;
+            case "BLTU": {
+              const taken = ltU(v1, v2R) === 1;
+              nextEX_MEM.alu = taken ? 1 : 0;
+              if (taken) { this.pc = this.pc + (i.imm || 0); this.eventNotes = `BLTU taken → PC+=${i.imm || 0}`; this.flushes++; }
+            } break;
+            case "BGEU": {
+              const taken = geU(v1, v2R) === 1;
+              nextEX_MEM.alu = taken ? 1 : 0;
+              if (taken) { this.pc = this.pc + (i.imm || 0); this.eventNotes = `BGEU taken → PC+=${i.imm || 0}`; this.flushes++; }
+            } break;
+
+            // Upper / PC-relative
+            case "LUI": nextEX_MEM.alu = toInt(i.imm || 0); break;
+            case "AUIPC": nextEX_MEM.alu = toInt((i.pc || 0) + (i.imm || 0)); break;
+
+            // Jumps (resolve in EX)
+            case "JAL": {
+              nextEX_MEM.wb = toInt(i.pcNext || 0);
+              const target = this.pc + (i.imm || 0);
+              this.pc = target;
+              this.eventNotes = `JAL → PC=${target} (rd=RA)`;
+              this.flushes++;
+            } break;
+            case "JALR": {
+              nextEX_MEM.wb = toInt(i.pcNext || 0);
+              let target = toInt(v1 + (i.imm || 0));
+              target = target & ~1;
+              this.pc = target;
+              this.eventNotes = `JALR → PC=${target} (rd=RA)`;
+              this.flushes++;
+            } break;
+          }
+
+          // EX result → EX/MEM latch
+          addD(SIG.alu_to_exmem);
+
+          // Control redirection when taken or any jump
+          if (["BEQ", "BNE", "BLT", "BGE", "BLTU", "BGEU"].includes(i.op)) {
+            if (nextEX_MEM && nextEX_MEM.alu === 1) addC(SIG.branch_to_pcmux);
+          }
+          if (["JAL", "JALR"].includes(i.op)) addC(SIG.branch_to_pcmux);
+
+          // Memory address leg for LW/SW (EX/MEM → DataMem)
+          if (i.op === "LW" || i.op === "SW") addD(SIG.exmem_to_dmem);
+
+          // ALU-result leg toward WB (via MemToReg) — remainder emphasized in MEM
+          if ([
+            "ADD", "SUB", "AND", "OR", "XOR", "SLT", "SLTU", "SLL", "SRL", "SRA",
+            "ADDI", "ANDI", "ORI", "XORI", "SLTI", "SLTIU", "SLLI", "SRLI", "SRAI",
+            "LUI", "AUIPC", "JAL", "JALR"
+          ].includes(i.op)) {
+            addD(SIG.exmem_to_memtoreg);
+          }
+        }
+
+        // ===================== ID =====================
+        let nextID_EX = null; let stall = false;
+        if (this.IF_ID) {
+          const i = this.IF_ID; stall = this.needsStallForLoadUse(i);
+          if (stall) { this.hazardNotes = "load-use: inserted bubble"; this.bubbles++; }
+          if (!stall) {
+            nextID_EX = { ...i };
+            nextID_EX.v1 = this.regs[i.rs1 || 0];
+            nextID_EX.v2 = this.regs[i.rs2 || 0];
+            nextID_EX.useImm = ["ADDI", "ANDI", "ORI", "XORI", "SLTI", "SLTIU", "SLLI", "SRLI", "SRAI", "LW", "SW"].includes(i.op);
+
+            addD(SIG.ifid_to_rf);
+            if (nextID_EX.rs1 !== undefined) {
+              addD(SIG.rf_rs1);
+              addD(SIG.idex_to_muxA);
+            }
+            if ((nextID_EX.rs2 !== undefined) || nextID_EX.useImm) {
+              if (nextID_EX.useImm) addD(SIG.sext_to_muxB);
+              addD(SIG.idex_to_muxB);
+            }
+            addC(SIG.branch_to_pcmux); // gentle control presence pulse
+          }
+        }
+
+        // ===================== IF =====================
+        let nextIF_ID = null;
+        if (!stall) {
+          const curPC = this.pc;
+          const f = this.fetch();
+          if (f) { nextIF_ID = { ...f, pc: curPC, pcNext: curPC + 1 }; }
+          this.pc = this.pc + 1;
+
+          addD(SIG.pc_to_imem);
+          addD(SIG.pc_to_adder);
+          addD(SIG.adder_to_mux);
+          if (nextIF_ID && nextIF_ID.op !== 'NOP') addD(SIG.imem_to_ifid);
+        }
+
+        // Flush freshly fetched on taken control in EX (branches/jumps)
+        if (this.ID_EX && ["BEQ", "BNE", "BLT", "BGE", "BLTU", "BGEU", "JAL", "JALR"].includes(this.ID_EX.op)) {
+          if (nextEX_MEM && (
+            (["BEQ", "BNE", "BLT", "BGE", "BLTU", "BGEU"].includes(this.ID_EX.op) && nextEX_MEM.alu === 1) ||
+            (["JAL", "JALR"].includes(this.ID_EX.op))
+          )) {
+            nextIF_ID = { op: "NOP", id: -2 };
+            this.flushedThisCycle = true;
+          }
+        }
+
+        // ===================== Latch advance =====================
+        this.MEM_WB = nextMEM_WB;
+        this.EX_MEM = nextEX_MEM;
+        this.ID_EX = stall ? null : nextID_EX;
+        this.IF_ID = nextIF_ID;
+
+        // halt when drained
+        const drained = this.pc >= this.prog.length + 8 && !this.IF_ID && !this.ID_EX && !this.EX_MEM && !this.MEM_WB;
+        if (drained) this.halted = true;
+        this.regs[0] = 0; this.cycle++;
+      }
+    }
+
+
+    // ====================== UI Wiring & Metrics ======================
+    const qs = (s) => document.querySelector(s);
+    const qsa = (s) => Array.from(document.querySelectorAll(s));
+    const el = {
+      run: qs('#btnRun'), pause: qs('#btnPause'), step: qs('#btnStep'), reset: qs('#btnReset'),
+      speed: qs('#speed'), speedVal: qs('#speedVal'),
+      cycle: qs('#cycle'), pc: qs('#pc'), flush: qs('#flushBadge'),
+      slotIF: qs('#slotIF'), slotID: qs('#slotID'), slotEX: qs('#slotEX'), slotMEM: qs('#slotMEM'), slotWB: qs('#slotWB'),
+      hazards: qs('#hazards'), fwd: qs('#fwd'), events: qs('#events'),
+      progText: qs('#progText'), parseErr: qs('#parseErr'), apply: qs('#btnApply'),
+      regs: qs('#regs'), mem: qs('#mem'), zeroMem: qs('#btnZeroMem'),
+      ipcNow: qs('#ipcNow'), cpiNow: qs('#cpiNow'), bubbles: qs('#bubbles'), flushes: qs('#flushes')
+    };
+
+    let cpu = null; let timer = null; let ipcChart = null; const ipcWin = []; // rolling IPC window
+
+    function setProgram(p) { cpu = new CPU(p); paintAll(); resetMetrics(); }
+
+    function paintPipeline() {
+      el.cycle.textContent = cpu.cycle; el.pc.textContent = cpu.pc;
+      el.flush.classList.toggle('hidden', !cpu.flushedThisCycle);
+      el.slotIF.textContent = renderAsm(cpu.IF_ID);
+      el.slotID.textContent = renderAsm(cpu.IF_ID);
+      el.slotEX.textContent = renderAsm(cpu.ID_EX);
+      el.slotMEM.textContent = renderAsm(cpu.EX_MEM);
+      el.slotWB.textContent = renderAsm(cpu.MEM_WB);
+      el.hazards.textContent = cpu.hazardNotes || 'none';
+      el.fwd.textContent = cpu.forwardNotes || '—';
+      el.events.textContent = cpu.eventNotes || '—';
+      if (cpu.flushedThisCycle) { qsa('.stage[data-stage="IF"]').forEach(d => { d.classList.add('stage-highlight'); setTimeout(() => d.classList.remove('stage-highlight'), 250); }); }
+
+      if (window._pipeHi) {
+        window._pipeHi.clearAllWireHighlights();
+        const s = cpu.paths;
+        // Convert Sets to arrays
+        window._pipeHi.applyWireHighlights({
+          data: Array.from(s.data),
+          ctrl: Array.from(s.ctrl),
+          fwd: Array.from(s.fwd),
+        });
+      }
+    }
+
+    function paintRegs() {
+      const frag = document.createDocumentFragment();
+      for (let r = 0; r < 32; r++) {
+        const d = document.createElement('div'); d.className = 'flex items-center justify-between px-2 py-1 rounded-lg bg-slate-50 border border-slate-200';
+        const a = document.createElement('span'); a.className = 'font-mono text-slate-500'; a.textContent = `x${r}`;
+        const b = document.createElement('span'); b.className = 'font-mono'; b.textContent = cpu.regs[r] | 0;
+        d.append(a, b); frag.append(d);
+      }
+      el.regs.innerHTML = ''; el.regs.append(frag);
+    }
+
+    function paintMem() {
+      const frag = document.createDocumentFragment();
+      for (let a = 0; a < MEM_WORDS; a++) {
+        const d = document.createElement('div'); d.className = 'flex items-center justify-between px-2 py-1 rounded-lg bg-slate-50 border border-slate-200';
+        const A = document.createElement('span'); A.className = 'font-mono text-slate-500'; A.textContent = `[${a}]`;
+        const B = document.createElement('span'); B.className = 'font-mono'; B.textContent = cpu.mem[a] | 0;
+        d.append(A, B); frag.append(d);
+      }
+      el.mem.innerHTML = ''; el.mem.append(frag);
+    }
+
+    function paintAll() { paintPipeline(); paintRegs(); paintMem(); updateMetrics(); }
+
+    // --- Parser (extended RV32I subset) ---
+    function parseLine(line) {
+      const t = line.trim(); if (!t || t.startsWith('#')) return { op: 'NOP' };
+      const seg = t.replace(/,/g, ' ').split(/\s+/); const op = (seg[0] || '').toUpperCase(); const rest = seg.slice(1);
+      const toReg = s => Number((s || '').replace(/x/i, ''));
+      const toImm = s => Number(s);
+
+      // helpers for addr pattern imm(xr)
+      const parseAddr = (addr) => {
+        const m = (addr || '').match(/(-?\d+)\((x\d+)\)/i);
+        if (!m) throw new Error('Bad addr; expected imm(xr)');
+        return { imm: Number(m[1]), rs1: toReg(m[2]) };
+      };
+
+      switch (op) {
+        // R
+        case 'ADD': case 'SUB': case 'AND': case 'OR': case 'XOR':
+        case 'SLT': case 'SLTU': case 'SLL': case 'SRL': case 'SRA':
+          return { op, rd: toReg(rest[0]), rs1: toReg(rest[1]), rs2: toReg(rest[2]) };
+
+        // I (arith)
+        case 'ADDI': case 'ANDI': case 'ORI': case 'XORI':
+        case 'SLTI': case 'SLTIU':
+          return { op, rd: toReg(rest[0]), rs1: toReg(rest[1]), imm: toImm(rest[2]) };
+
+        // I (shifts imm)
+        case 'SLLI': case 'SRLI': case 'SRAI':
+          return { op, rd: toReg(rest[0]), rs1: toReg(rest[1]), imm: toImm(rest[2]) };
+
+        // Loads/Stores
+        case 'LW': {
+          const [rd, addr] = rest; const { imm, rs1 } = parseAddr(addr);
+          return { op, rd: toReg(rd), rs1, imm };
+        }
+        case 'SW': {
+          const [rs2, addr] = rest; const { imm, rs1 } = parseAddr(addr);
+          return { op, rs2: toReg(rs2), rs1, imm };
+        }
+
+        // Branches
+        case 'BEQ': case 'BNE': case 'BLT': case 'BGE': case 'BLTU': case 'BGEU':
+          return { op, rs1: toReg(rest[0]), rs2: toReg(rest[1]), imm: toImm(rest[2]) };
+
+        // Upper / PC
+        case 'LUI': return { op, rd: toReg(rest[0]), imm: toImm(rest[1]) };
+        case 'AUIPC': return { op, rd: toReg(rest[0]), imm: toImm(rest[1]) };
+
+        // Jumps
+        case 'JAL': return { op, rd: toReg(rest[0]), imm: toImm(rest[1]) };
+        case 'JALR': {
+          const rd = toReg(rest[0]); const { imm, rs1 } = parseAddr(rest[1]);
+          return { op, rd, rs1, imm };
+        }
+
+        case 'NOP': return { op: 'NOP' };
+        default: throw new Error('Unsupported op: ' + op);
+      }
+    }
+
+    function applyProgramFromTextarea() {
+      const lines = el.progText.value.split(/\n+/).filter(l => l.length > 0);
+      try {
+        const parsed = lines.map(parseLine).map((p, k) => ({ ...p, id: k }));
+        el.parseErr.classList.add('hidden'); setProgram(parsed);
+      } catch (e) {
+        el.parseErr.textContent = e.message || String(e);
+        el.parseErr.classList.remove('hidden');
+      }
+    }
+
+    // --- Metrics & Chart ---
+    function resetMetrics() { ipcWin.length = 0; if (ipcChart) { ipcChart.data.labels = []; ipcChart.data.datasets[0].data = []; ipcChart.update(); } updateMetrics(true); }
+    function updateMetrics(force = false) {
+      const retiredThisCycle = (cpu && cpu.MEM_WB) ? 1 : 0;
+      if (force !== true) { ipcWin.push(retiredThisCycle); if (ipcWin.length > 64) ipcWin.shift(); }
+      const avg = ipcWin.length ? ipcWin.reduce((a, b) => a + b, 0) / ipcWin.length : 0;
+      el.ipcNow.textContent = avg.toFixed(2);
+      el.cpiNow.textContent = avg > 0 ? (1 / avg).toFixed(2) : '—';
+      el.bubbles.textContent = cpu.bubbles | 0; el.flushes.textContent = cpu.flushes | 0;
+      if (ipcChart) {
+        ipcChart.data.labels.push(cpu.cycle);
+        ipcChart.data.datasets[0].data.push(avg);
+        if (ipcChart.data.labels.length > 120) { ipcChart.data.labels.shift(); ipcChart.data.datasets[0].data.shift(); }
+        ipcChart.update();
+      }
+    }
+
+    // Controls
+    function runLoop() { if (timer) return; timer = setInterval(() => { cpu.step(); paintAll(); if (cpu.halted) { pause(); } }, Number(el.speed.value)); }
+    function pause() { if (timer) { clearInterval(timer); timer = null; } }
+    function step() { cpu.step(); paintAll(); }
+    function reset() { const prog = cpu ? cpu.prog.map(p => ({ ...p })) : defaultProgram; setProgram(prog); }
+
+    // Events
+    el.speed.addEventListener('input', () => { el.speedVal.textContent = el.speed.value; if (timer) { pause(); runLoop(); } });
+    el.run.addEventListener('click', runLoop); el.pause.addEventListener('click', pause); el.step.addEventListener('click', step); el.reset.addEventListener('click', reset);
+    el.apply.addEventListener('click', applyProgramFromTextarea);
+    el.zeroMem.addEventListener('click', () => { cpu.mem.fill(0); paintMem(); });
+    window.addEventListener('keydown', (ev) => { if (ev.code === 'Space') { ev.preventDefault(); if (timer) pause(); else runLoop(); } else if (ev.key === 'n' || ev.key === 'N') { step(); } else if (ev.key === 'r' || ev.key === 'R') { reset(); } });
+
+    // Chart init
+    function initChart() { const ctx = document.getElementById('ipcChart'); ipcChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: 'IPC', data: [], tension: 0.25, pointRadius: 0 }] }, options: { responsive: true, aspectRatio: 2.2, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { beginAtZero: true, suggestedMax: 1 } } } }); }
+
+    // Boot
+    function boot() {
+      document.getElementById('year').textContent = new Date().getFullYear();
+      document.getElementById('speedVal').textContent = document.getElementById('speed').value;
+      initChart();
+      document.getElementById('progText').value = defaultProgram.map(renderAsm).join('\n');
+      setProgram(defaultProgram);
+    }
+    boot();
+  </script>
+<script>
+/* ===================== Tiny C → RV32I Compiler (subset) =====================
+
+Grammar (informal):
+
+  program   := { decl | stmt }+
+  decl      := 'int' ident ( '=' expr )? ';'
+  stmt      := block | if | while | assign ';' | 'return' ';'
+  block     := '{' { stmt } '}'
+  if        := 'if' '(' bexpr ')' stmt [ 'else' stmt ]
+  while     := 'while' '(' bexpr ')' stmt
+  assign    := ident '=' expr
+  bexpr     := expr relop expr       // relop in {==,!=,<,<=,>,>=}
+  expr      := term (('+'|'-') term)*
+  term      := factor                // (easy mode: no * / for now)
+  factor    := number | ident | '(' expr ')'
+
+Registers:
+  - variables: x10..x17 (a0..a7-ish). Expand pool if you like.
+  - temps:     x20..x27 (t0..t7-ish).
+  - we never write x0.
+
+Control flow:
+  - we emit numeric immediate branch/jump and backpatch their offsets:
+      target_index = i_branch_fires_to
+      imm = target_index - (branch_index + 1)
+============================================================================= */
+
+(function () {
+  const elC = {
+    src: document.getElementById('cText'),
+    btn: document.getElementById('btnCompileC'),
+    err: document.getElementById('cErr'),
+    progText: document.getElementById('progText'),
+  };
+
+  if (!elC.btn) return; // UI not present
+
+  // ---------- Lexer ----------
+  function lex(src) {
+    const tokens = [];
+    const re = /\s+|\/\/.*|\/\*[\s\S]*?\*\/|([A-Za-z_]\w*)|(\d+)|([(){};=+\-]|==|!=|<=|>=|<|>)/gy;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      if (m[0].trim() === '' || m[0].startsWith('//') || m[0].startsWith('/*')) continue;
+      if (m[1]) tokens.push({ k: 'id', v: m[1] });
+      else if (m[2]) tokens.push({ k: 'num', v: Number(m[2]) });
+      else if (m[3]) tokens.push({ k: 'sym', v: m[3] });
+      else throw new Error('Lex error near: ' + src.slice(re.lastIndex - 10, re.lastIndex + 10));
+    }
+    tokens.push({ k: 'eof', v: '' });
+    return tokens;
+  }
+
+  // ---------- Parser (recursive descent) ----------
+  function Parser(tokens) {
+    this.t = tokens; this.i = 0;
+    this.peek = () => this.t[this.i];
+    this.eat = (k, v) => {
+      const tk = this.peek();
+      if (tk.k !== k || (v !== undefined && tk.v !== v)) {
+        throw new Error(`Parse error: expected ${k}${v ? ' "' + v + '"' : ''}, got ${tk.k} "${tk.v}"`);
+      }
+      this.i++; return tk;
+    };
+
+    // program := { decl | stmt }+
+    this.program = () => {
+      const items = [];
+      while (this.peek().k !== 'eof') {
+        if (this.peek().k === 'id' && this.peek().v === 'int') items.push(this.decl());
+        else items.push(this.stmt());
+      }
+      return { kind: 'program', items };
+    };
+
+    // decl := 'int' ident ( '=' expr )? ';'
+    this.decl = () => {
+      this.eat('id', 'int');
+      const id = this.eat('id').v;
+      let init = null;
+      if (this.peek().k === 'sym' && this.peek().v === '=') {
+        this.eat('sym', '=');
+        init = this.expr();
+      }
+      this.eat('sym', ';');
+      return { kind: 'decl', id, init };
+    };
+
+    // stmt := block | if | while | assign ';' | 'return' ';'
+    this.stmt = () => {
+      const tk = this.peek();
+      if (tk.k === 'sym' && tk.v === '{') return this.block();
+      if (tk.k === 'id' && tk.v === 'if') return this.ifstmt();
+      if (tk.k === 'id' && tk.v === 'while') return this.whilestmt();
+      if (tk.k === 'id' && tk.v === 'return') {
+        this.eat('id', 'return'); this.eat('sym', ';');
+        return { kind: 'return' };
+      }
+      // assign ';'
+      const as = this.assign();
+      this.eat('sym', ';');
+      return as;
+    };
+
+    this.block = () => {
+      this.eat('sym', '{');
+      const body = [];
+      while (!(this.peek().k === 'sym' && this.peek().v === '}')) {
+        body.push(this.stmt());
+      }
+      this.eat('sym', '}');
+      return { kind: 'block', body };
+    };
+
+    this.ifstmt = () => {
+      this.eat('id', 'if'); this.eat('sym', '(');
+      const cond = this.bexpr();
+      this.eat('sym', ')');
+      const thn = this.stmt();
+      let els = null;
+      if (this.peek().k === 'id' && this.peek().v === 'else') {
+        this.eat('id', 'else');
+        els = this.stmt();
+      }
+      return { kind: 'if', cond, thn, els };
+    };
+
+    this.whilestmt = () => {
+      this.eat('id', 'while'); this.eat('sym', '(');
+      const cond = this.bexpr();
+      this.eat('sym', ')');
+      const body = this.stmt();
+      return { kind: 'while', cond, body };
+    };
+
+    // assign := ident '=' expr
+    this.assign = () => {
+      const id = this.eat('id').v;
+      this.eat('sym', '=');
+      const rhs = this.expr();
+      return { kind: 'assign', id, rhs };
+    };
+
+    // bexpr := expr relop expr
+    this.bexpr = () => {
+      const a = this.expr();
+      const op = this.eat('sym').v; // one of == != < <= > >=
+      if (!['==', '!=', '<', '<=', '>', '>='].includes(op)) {
+        throw new Error('Bad relop: ' + op);
+      }
+      const b = this.expr();
+      return { kind: 'bexpr', op, a, b };
+    };
+
+    // expr := term (('+'|'-') term)*
+    this.expr = () => {
+      let node = this.term();
+      while (this.peek().k === 'sym' && (this.peek().v === '+' || this.peek().v === '-')) {
+        const op = this.eat('sym').v;
+        const b = this.term();
+        node = { kind: 'bin', op, a: node, b };
+      }
+      return node;
+    };
+
+    this.term = () => this.factor(); // (no * / for now)
+
+    this.factor = () => {
+      const tk = this.peek();
+      if (tk.k === 'num') { this.eat('num'); return { kind: 'num', v: tk.v }; }
+      if (tk.k === 'id')  { this.eat('id'); return { kind: 'id',  v: tk.v }; }
+      if (tk.k === 'sym' && tk.v === '(') {
+        this.eat('sym', '('); const e = this.expr(); this.eat('sym', ')'); return e;
+      }
+      throw new Error('Bad factor near ' + tk.v);
+    };
+  }
+
+  // ---------- Codegen to your RV32I-subset text ----------
+  function compileC(src) {
+    const toks = lex(src);
+    const ast = new Parser(toks).program();
+
+    // reg pools
+    const varPool = Array.from({ length: 8 }, (_, i) => 10 + i);  // x10..x17
+    const tmpPool = Array.from({ length: 8 }, (_, i) => 20 + i);  // x20..x27
+    const varMap = new Map(); // name -> x#
+    let nextVar = 0;
+
+    const code = []; // array of asm text lines your parseLine understands
+    const backpatch = []; // { atIndex, kind:'Bxx'|'JAL', toIndexCalc: ()=>number }
+
+    const emit = (s) => { code.push(s); return code.length - 1; };
+
+    const getVarReg = (name) => {
+      if (!varMap.has(name)) {
+        if (nextVar >= varPool.length) throw new Error('Too many variables; expand pool.');
+        varMap.set(name, varPool[nextVar++]);
+      }
+      return varMap.get(name);
+    };
+
+    const withTmp = (fn) => {
+      if (tmpPool.length === 0) throw new Error('Out of temporaries; simplify expression.');
+      const r = tmpPool.pop();
+      const out = fn(r);
+      tmpPool.push(r);
+      return { reg: r, ...out };
+    };
+
+    // expr → returns a register holding result
+    function genExpr(node) {
+      if (node.kind === 'num') {
+        return withTmp((rd) => { emit(`addi x${rd}, x0, ${node.v|0}`); return { rd }; }).reg;
+      }
+      if (node.kind === 'id') {
+        return getVarReg(node.v);
+      }
+      if (node.kind === 'bin') {
+        const ra = genExpr(node.a);
+        const rb = genExpr(node.b);
+        return withTmp((rd) => {
+          if (node.op === '+') emit(`add x${rd}, x${ra}, x${rb}`);
+          else if (node.op === '-') emit(`sub x${rd}, x${ra}, x${rb}`);
+          else throw new Error('Unsupported op: ' + node.op);
+          return { rd };
+        }).reg;
+      }
+      throw new Error('Bad expr node: ' + node.kind);
+    }
+
+    // bexpr → produce branch that jumps when condition is FALSE to a later index
+    // returns function that, when called, backpatches the branch to the given target index
+    function genBranchIfFalse(bnode, fromIndexArr) {
+      const ra = genExpr(bnode.a);
+      const rb = genExpr(bnode.b);
+
+      // choose inverse branch (branch to ELSE when condition is false)
+      let op; // one of BEQ,BNE,BLT,BGE
+      let lhs = ra, rhs = rb;
+
+      switch (bnode.op) {
+        case '==': op = 'BNE'; break; // false if a!=b
+        case '!=': op = 'BEQ'; break; // false if a==b
+        case '<':  op = 'BGE'; break; // false if a>=b
+        case '<=': // false if a>b  => !(a<=b) == a>b == b<a
+          op = 'BLT'; lhs = rb; rhs = ra; break;
+        case '>':  // false if a<=b => !(a>b) == a<=b == a<b or a==b ⇒ use BGE with swapped?
+          op = 'BGE'; lhs = rb; rhs = ra; break; // a>b false if b>=a
+        case '>=': // false if a<b
+          op = 'BLT'; break;
+        default: throw new Error('Bad relop: ' + bnode.op);
+      }
+
+      const idx = emit(`${op.toLowerCase()} x${lhs}, x${rhs}, 0`); // imm to be patched
+      fromIndexArr.push(idx);
+      return (targetIndex) => {
+        const imm = targetIndex - (idx + 1);
+        code[idx] = `${op.toLowerCase()} x${lhs}, x${rhs}, ${imm}`;
+      };
+    }
+
+    // stmts
+    function genStmt(node) {
+      switch (node.kind) {
+        case 'decl': {
+          const rd = getVarReg(node.id);
+          if (node.init) {
+            const rr = genExpr(node.init);
+            if (rr === rd) break;
+            emit(`add x${rd}, x${rr}, x0`);
+          } else {
+            emit(`addi x${rd}, x0, 0`);
+          }
+        } break;
+
+        case 'assign': {
+          const rd = getVarReg(node.id);
+          const rr = genExpr(node.rhs);
+          if (rr === rd) break;
+          emit(`add x${rd}, x${rr}, x0`);
+        } break;
+
+        case 'block':
+          node.body.forEach(genStmt);
+          break;
+
+        case 'if': {
+          const branchSites = [];
+          const patchFalse = genBranchIfFalse(node.cond, branchSites);
+          genStmt(node.thn);
+          if (node.els) {
+            const jumpOverElse = emit(`jal x0, 0`); // patch to end
+            const elseStart = code.length;
+            patchFalse(elseStart);
+            genStmt(node.els);
+            const end = code.length;
+            const immEnd = end - (jumpOverElse + 1);
+            code[jumpOverElse] = `jal x0, ${immEnd}`;
+          } else {
+            const end = code.length;
+            patchFalse(end);
+          }
+        } break;
+
+        case 'while': {
+          const loopTop = code.length;
+          const branchSites = [];
+          const patchFalse = genBranchIfFalse(node.cond, branchSites);
+          genStmt(node.body);
+          // jump back to loopTop
+          const back = loopTop - (code.length + 1);
+          emit(`jal x0, ${back}`);
+          const loopEnd = code.length;
+          patchFalse(loopEnd);
+        } break;
+
+        case 'return':
+          // simple: jump to program end marker; we’ll add a trailing NOP
+          backpatch.push({
+            at: emit(`jal x0, 0`),
+            calc: () => code.length - (/*at*/this.at + 1)
+          });
+          break;
+
+        default:
+          throw new Error('Unknown stmt kind: ' + node.kind);
+      }
+    }
+
+    // generate
+    ast.items.forEach(genStmt);
+
+    // trailing NOP for safety
+    emit(`nop`);
+
+    // backpatch any returns
+    backpatch.forEach(bp => {
+      const imm = code.length - (bp.at + 1);
+      code[bp.at] = `jal x0, ${imm}`;
+    });
+
+    return code;
+  }
+
+  // ---------- Wire the button ----------
+  elC.btn.addEventListener('click', () => {
+    try {
+      const asmLines = compileC(elC.src.value);
+      elC.err.classList.add('hidden');
+      elC.err.textContent = '';
+      // Inject into your existing Program textarea and parse it
+      elC.progText.value = asmLines.join('\n');
+      // Reuse your existing hook:
+      const applyBtn = document.getElementById('btnApply');
+      if (applyBtn) applyBtn.click();
+    } catch (e) {
+      elC.err.textContent = e.message || String(e);
+      elC.err.classList.remove('hidden');
+    }
+  });
+})();
+</script>
+
+</body>
+
+</html>
