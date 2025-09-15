@@ -687,8 +687,8 @@ return;</textarea>
 
                 /* Wire highlighting */
                 .path-active {
-                  stroke: #10b981 !important;
-                  stroke-width: 4px !important;
+                  stroke: #107eb9 !important;
+                  stroke-width: 3px !important;
                   filter: drop-shadow(0 0 2px rgba(16, 185, 129, .7));
                 }
 
@@ -894,6 +894,272 @@ return;</textarea>
       </div>
     </div>
   </section>
+
+  <!-- =========================
+     Instruction Bitfields — Beautiful Table
+     Requires Tailwind (already on your page)
+     ========================= -->
+<section class="max-w-6xl mx-auto mt-10 mb-16 px-4">
+  <header class="mb-4">
+    <h2 class="text-xl font-semibold text-slate-800">RISC-V Instructions & Bitfields</h2>
+    <p class="text-sm text-slate-600">
+      Each row shows the instruction, its format, the bit slices (MSB→LSB), and what each field means. Click a format chip to filter.
+    </p>
+  </header>
+
+  <!-- Filters -->
+  <div id="fmtFilters" class="flex flex-wrap gap-2 mb-4"></div>
+
+  <div class="overflow-x-auto rounded-2xl ring-1 ring-slate-200 bg-white">
+    <table class="min-w-full text-left text-sm">
+      <thead class="bg-slate-50 text-slate-700">
+        <tr>
+          <th class="px-4 py-3 font-semibold">Instruction</th>
+          <th class="px-4 py-3 font-semibold">Format</th>
+          <th class="px-4 py-3 font-semibold">Bit Slices (31 … 0)</th>
+          <th class="px-4 py-3 font-semibold">Fields & Purpose</th>
+          <th class="px-4 py-3 font-semibold">Opcode / Functs</th>
+        </tr>
+      </thead>
+      <tbody id="instrBody" class="divide-y divide-slate-100">
+        <!-- rows injected by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mt-3 text-xs text-slate-500">
+    Notes: Bit slices are shown MSB→LSB. Immediate encodings follow the RISC-V spec (B/J split fields are shown as concatenated).
+  </p>
+</section>
+
+<script>
+  // Palette helpers
+  const tagBase = "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium";
+  const chip = (label, active) =>
+    `<button data-chip="${label}"
+       class="${tagBase} ${active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-700 border-slate-200'} hover:bg-emerald-50 hover:text-emerald-700 transition">
+       ${label}
+     </button>`;
+
+  // Bitfield badge
+  const bf = (txt) =>
+    `<span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 px-1.5 py-0.5 text-[11px] font-mono">${txt}</span>`;
+
+  // Field label
+  const fld = (name, role) =>
+    `<div class="flex items-start gap-2">
+       <span class="font-mono text-[11px] text-slate-700">${name}</span>
+       <span class="text-[11px] text-slate-500">— ${role}</span>
+     </div>`;
+
+  // Core instruction data (RV32I highlights). Extend freely.
+  const INSTRS = [
+    // R-type
+    {
+      name: "ADD", fmt: "R",
+      bits: ["funct7[31:25]","rs2[24:20]","rs1[19:15]","funct3[14:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["rd","destination register"],
+        ["rs1","source register 1"],
+        ["rs2","source register 2"],
+        ["funct3","ALU sub-op (000=ADD/SUB)"],
+        ["funct7","0000000 for ADD"],
+      ],
+      code: "opcode=0110011, funct3=000, funct7=0000000"
+    },
+    {
+      name: "SUB", fmt: "R",
+      bits: ["funct7[31:25]","rs2[24:20]","rs1[19:15]","funct3[14:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["rd","destination register"],
+        ["rs1","source register 1"],
+        ["rs2","source register 2"],
+        ["funct3","ALU sub-op (000=ADD/SUB)"],
+        ["funct7","0100000 for SUB"],
+      ],
+      code: "opcode=0110011, funct3=000, funct7=0100000"
+    },
+    {
+      name: "AND/OR/XOR/SLL/SRL/SRA/SLT/SLTU", fmt: "R",
+      bits: ["funct7[31:25]","rs2[24:20]","rs1[19:15]","funct3[14:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["rd","destination register"],
+        ["rs1","source register 1"],
+        ["rs2","source register 2"],
+        ["funct3","selects operation (e.g., 111=AND, 110=OR, 100=XOR, 001=SLL, 101=SRL/SRA, 010=SLT, 011=SLTU)"],
+        ["funct7","0000000 for SRL; 0100000 for SRA; 0000000 for others"],
+      ],
+      code: "opcode=0110011, funct3 varies, funct7 varies"
+    },
+
+    // I-type (ALU-imms, loads, JALR)
+    {
+      name: "ADDI", fmt: "I",
+      bits: ["imm[11:0] [31:20]","rs1[19:15]","funct3[14:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["imm[11:0]","sign-extended immediate"],
+        ["rs1","source register"],
+        ["rd","destination register"],
+        ["funct3","000 for ADDI"],
+      ],
+      code: "opcode=0010011, funct3=000"
+    },
+    {
+      name: "ANDI/ORI/XORI/SLTI/SLTIU/SLLI/SRLI/SRAI", fmt: "I",
+      bits: ["imm[11:0] [31:20]","rs1[19:15]","funct3[14:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["imm","sign-extended (shift uses shamt in imm[4:0])"],
+        ["rs1","source"],
+        ["rd","dest"],
+        ["funct3","selects op (e.g., 111=ANDI, 110=ORI, 100=XORI, 010=SLTI, 011=SLTIU, 001=SLLI, 101=SRLI/SRAI)"],
+      ],
+      code: "opcode=0010011, funct3 varies; SRLI/SRAI use funct7 0000000/0100000"
+    },
+    {
+      name: "LW", fmt: "I",
+      bits: ["imm[11:0] [31:20]","rs1[19:15]","funct3[14:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["imm","byte offset (sign-extended)"],
+        ["rs1","base address"],
+        ["rd","loaded word"],
+        ["funct3","010 for LW"],
+      ],
+      code: "opcode=0000011, funct3=010"
+    },
+    {
+      name: "JALR", fmt: "I",
+      bits: ["imm[11:0] [31:20]","rs1[19:15]","funct3[14:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["imm","target offset (LSB forced 0)"],
+        ["rs1","base (usually register containing return base)"],
+        ["rd","link register (return addr)"],
+        ["funct3","000 for JALR"],
+      ],
+      code: "opcode=1100111, funct3=000"
+    },
+
+    // S-type (stores)
+    {
+      name: "SW", fmt: "S",
+      bits: ["imm[11:5] [31:25]","rs2[24:20]","rs1[19:15]","funct3[14:12]","imm[4:0] [11:7]","opcode[6:0]"],
+      fields: [
+        ["imm[11:5]·imm[4:0]","store offset (sign-extended)"],
+        ["rs1","base address"],
+        ["rs2","value to store"],
+        ["funct3","010 for SW"],
+      ],
+      code: "opcode=0100011, funct3=010"
+    },
+
+    // B-type (branches)
+    {
+      name: "BEQ/BNE/BLT/BGE/BLTU/BGEU", fmt: "B",
+      bits: ["imm[12] [31]","imm[10:5] [30:25]","rs2[24:20]","rs1[19:15]","funct3[14:12]","imm[4:1] [11:8]","imm[11] [7]","opcode[6:0]"],
+      fields: [
+        ["imm","branch offset = {imm[12],imm[10:5],imm[4:1],imm[11],0} (sign-extended)"],
+        ["rs1, rs2","compare registers"],
+        ["funct3","000=BEQ, 001=BNE, 100=BLT, 101=BGE, 110=BLTU, 111=BGEU"],
+      ],
+      code: "opcode=1100011, funct3 varies"
+    },
+
+    // U-type (upper immediates)
+    {
+      name: "LUI", fmt: "U",
+      bits: ["imm[31:12] [31:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["imm[31:12]","loaded into upper bits (low 12 bits zero)"],
+        ["rd","destination"],
+      ],
+      code: "opcode=0110111"
+    },
+    {
+      name: "AUIPC", fmt: "U",
+      bits: ["imm[31:12] [31:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["imm[31:12]","added to PC (upper immediate)"],
+        ["rd","destination"],
+      ],
+      code: "opcode=0010111"
+    },
+
+    // J-type (jump)
+    {
+      name: "JAL", fmt: "J",
+      bits: ["imm[20] [31]","imm[10:1] [30:21]","imm[11] [20]","imm[19:12] [19:12]","rd[11:7]","opcode[6:0]"],
+      fields: [
+        ["imm","target offset = {imm[20],imm[10:1],imm[11],imm[19:12],0} (sign-extended)"],
+        ["rd","link register (return addr)"],
+      ],
+      code: "opcode=1101111"
+    },
+  ];
+
+  // Format → concise bit layout reference (top row chip tooltip)
+  const FMT_LAYOUT = {
+    "R":  "31:25 funct7 | 24:20 rs2 | 19:15 rs1 | 14:12 funct3 | 11:7 rd | 6:0 opcode",
+    "I":  "31:20 imm[11:0] | 19:15 rs1 | 14:12 funct3 | 11:7 rd | 6:0 opcode",
+    "S":  "31:25 imm[11:5] | 24:20 rs2 | 19:15 rs1 | 14:12 funct3 | 11:7 imm[4:0] | 6:0 opcode",
+    "B":  "31 imm[12] | 30:25 imm[10:5] | 24:20 rs2 | 19:15 rs1 | 14:12 funct3 | 11:8 imm[4:1] | 7 imm[11] | 6:0 opcode",
+    "U":  "31:12 imm[31:12] | 11:7 rd | 6:0 opcode",
+    "J":  "31 imm[20] | 30:21 imm[10:1] | 20 imm[11] | 19:12 imm[19:12] | 11:7 rd | 6:0 opcode",
+  };
+
+  // Build chips
+  const formats = ["R","I","S","B","U","J","ALL"];
+  let activeFmt = "ALL";
+  const $chips = document.getElementById("fmtFilters");
+  $chips.innerHTML = formats.map(f => chip(f, f==="ALL")).join("");
+
+  // Render table
+  function render() {
+    const rows = INSTRS
+      .filter(x => activeFmt==="ALL" ? true : x.fmt===activeFmt)
+      .map(x => {
+        const bits = x.bits.map(bf).join(" ");
+        const fields = x.fields.map(([n,r]) => fld(n, r)).join("");
+        const fmtBadge = `
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center rounded-md bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-2 py-0.5 text-[11px] font-semibold">${x.fmt}</span>
+            <span class="text-[10px] text-slate-500 hidden sm:inline" title="${FMT_LAYOUT[x.fmt] ?? ''}">
+              ${FMT_LAYOUT[x.fmt] ?? ''}
+            </span>
+          </div>`;
+        return `
+          <tr class="align-top hover:bg-emerald-50/40">
+            <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-800">${x.name}</td>
+            <td class="px-4 py-3">${fmtBadge}</td>
+            <td class="px-4 py-3 font-mono text-[12px] leading-6">${bits}</td>
+            <td class="px-4 py-3">${fields}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 px-2 py-0.5 text-[11px] font-mono">${x.code}</span>
+            </td>
+          </tr>`;
+      }).join("");
+    document.getElementById("instrBody").innerHTML = rows;
+    // Attach tooltips to chips
+    document.querySelectorAll('[data-chip]').forEach(btn => {
+      const f = btn.getAttribute('data-chip');
+      btn.title = f==="ALL" ? "Show all formats" : FMT_LAYOUT[f] || "";
+    });
+  }
+
+  // Chip interactions
+  $chips.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-chip]");
+    if (!b) return;
+    activeFmt = b.getAttribute("data-chip");
+    // update chip styles
+    document.querySelectorAll("[data-chip]").forEach(el => {
+      const on = el.getAttribute("data-chip") === activeFmt;
+      el.className = `${tagBase} ${on ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-700 border-slate-200'}`;
+    });
+    render();
+  });
+
+  render();
+</script>
+
 
   <!-- Footer -->
   <footer class="py-10 bg-slate-900 text-slate-200">
