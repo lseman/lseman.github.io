@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ForeBlocks — Animated Guide to the Attention Mechanism</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Prism.js (CSS + core + autoloader + line-numbers) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.css">
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.js" defer></script>
+
+  <!-- MathJax (v3) -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]] },
+      chtml: { linebreaks: { automatic: false }, matchFontHeight: true },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <!-- Page styles -->
+  <style>
+    html { scroll-behavior: smooth }
+    .card { backdrop-filter: blur(4px) }
+    .theorem { background:#eff6ff;border-left:4px solid #3b82f6;padding:.75rem 1rem;border-radius:.5rem }
+    .def { background:#f0fdf4;border-left:4px solid #22c55e;padding:.75rem 1rem;border-radius:.5rem }
+    .warn { background:#fef2f2;border-left:4px solid #ef4444;padding:.75rem 1rem;border-radius:.5rem }
+    .insight { background:#fefce8;border-left:4px solid #eab308;padding:.75rem 1rem;border-radius:.5rem }
+    .step { background:#f8fafc;border:2px solid #e2e8f0;padding:1rem;border-radius:.75rem;margin:1rem 0 }
+    code { background:#f1f5f9;padding:.15rem .35rem;border-radius:.35rem }
+    pre code { background:transparent;padding:0 }
+    .step-number { background:#0284c7;color:#fff;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px }
+    .math-nowrap { overflow-x:auto;white-space:nowrap }
+    .kbd { border:1px solid #cbd5e1;background:#f8fafc;border-radius:.375rem;padding:.125rem .375rem;font-size:.75rem }
+    /* Landing grid backdrop */
+    .bg-grid{background-image:linear-gradient(to right,rgba(15,23,42,.06) 1px,transparent 1px),linear-gradient(to bottom,rgba(15,23,42,.06) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse at 50% 20%,rgba(0,0,0,.9),rgba(0,0,0,.15) 60%,transparent 75%)}
+    /* Soft gradient glow */
+    .glow{position:absolute;inset:-20% -10% auto -10%;height:55vh;background:radial-gradient(60% 60% at 50% 40%, rgba(30,64,175,.20), rgba(8,145,178,.16) 40%, rgba(13,148,136,.12) 70%, transparent 75%);filter:blur(40px);pointer-events:none}
+    /* Fade-in and up */
+    .fade-up{opacity:0;transform:translateY(12px);animation:fadeUp .7s ease forwards .1s}
+    @keyframes fadeUp{to{opacity:1;transform:none}}
+    /* Nav active state */
+    .nav-link{position:relative}
+    .nav-link.active{color:rgb(15 23 42);font-weight:700}
+    .nav-link.active::after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:2px;background:rgb(15 23 42);border-radius:9999px}
+  </style>
+  <style>
+    :root { --nav-h:72px; }
+    .alt-section { scroll-margin-top: calc(var(--nav-h) + 12px); }
+  </style>
+
+  <!-- ATTENTION DEMO styles (scoped) -->
+  <style>
+    /* Academic, muted palette for the simulator */
+    :root {
+      --brand-blue-1: #0f172a;   /* slate-900 */
+      --brand-blue-2: #0b3b5e;   /* muted deep blue */
+      --brand-blue-3: #0e7490;   /* cyan-700 */
+      --brand-blue-4: #14b8a6;   /* teal-500 */
+      --brand-blue-5: #38bdf8;   /* sky-400 */
+      --brand-ink:    #0b1020;
+      --gold:         #eab308;   /* amber-500 (softened) */
+      --gold-weak:    rgba(234, 179, 8, .65);
+      --glass:        rgba(255,255,255,.055);
+      --ink-weak:     rgba(255,255,255,.14);
+    }
+
+    /* Scoped container */
+    #attention-demo {
+      --grad-a: linear-gradient(135deg, var(--brand-blue-2) 0%, #174d7a 100%);
+      --glass: var(--glass);
+    }
+    #attention-demo .demo-wrap { background: var(--grad-a); border-radius: 20px; }
+    #attention-demo .container { max-width: 1500px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24); }
+    #attention-demo h1 { text-align: center; margin-bottom: 10px; font-size: 2rem; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); }
+    #attention-demo .subtitle { text-align: center; margin-bottom: 22px; font-size: 1rem; opacity: 0.95; }
+
+    #attention-demo .step-counter { text-align: center; margin: 16px 0; font-size: 1.05rem; font-weight: 800; background: linear-gradient(45deg, #0062ff, #8abefd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; min-height: 28px; }
+
+    #attention-demo .architecture { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
+    #attention-demo .encoder-section, #attention-demo .decoder-section { background: rgba(255,255,255,0.07); border-radius: 15px; padding: 20px; border: 2px solid rgba(255, 255, 255, 0.09); position: relative; }
+    #attention-demo .encoder-section { border-left: 4px solid #60a5fa; }
+    #attention-demo .decoder-section { border-left: 4px solid #f59e0b; }
+    #attention-demo .section-title { font-size: 1.05rem; margin-bottom: 14px; text-align: center; font-weight: 800; letter-spacing: .2px; }
+    #attention-demo .encoder-title { color: #dbeafe; }
+    #attention-demo .decoder-title { color: #ffedd5; }
+
+    #attention-demo .time-series-data { display: flex; justify-content: center; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+    #attention-demo .data-point { width: 60px; height: 60px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; transition: all .35s ease; border: 2px solid rgba(255, 255, 255, 0.22); cursor: pointer; position: relative; overflow: hidden; font-size: 12px; }
+    /* Muted gradients for data */
+    #attention-demo .input-data  { background: linear-gradient(135deg, #334155, #0f4c81); }
+    #attention-demo .target-data { background: linear-gradient(135deg, #e2e8f0, #cbd5e1); color: #0f172a; }
+    #attention-demo .target-data.predicted { background: linear-gradient(135deg, #0ea5a9, #0f766e); color: #e6fffb; animation: newPrediction .8s ease; }
+    #attention-demo .target-data.generating { background: linear-gradient(135deg, #155e75, #0e7490); color: #e6fffb; animation: generating 1s infinite; border: 3px solid #f59e0b; }
+    #attention-demo .target-data.masked { background: linear-gradient(135deg, #334155, #0f172a); color: #cbd5e1; opacity: .8; }
+
+    @keyframes newPrediction { 0% { transform: scale(1); } 50% { transform: scale(1.18); box-shadow: 0 0 22px rgba(14, 165, 233, .70); } 100% { transform: scale(1); } }
+    @keyframes generating { 0%,100% { transform: scale(1); } 50% { transform: scale(1.09); box-shadow: 0 0 18px rgba(14, 116, 144, .65); } }
+
+    #attention-demo .kqv-section { margin: 14px 0; padding: 16px; background: rgba(2, 6, 23, 0.32); border-radius: 12px; }
+    #attention-demo .kqv-title { font-size: 1rem; margin-bottom: 12px; text-align: center; font-weight: 800; }
+    #attention-demo .kqv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 10px 0; }
+    #attention-demo .kqv-item { text-align: center; padding: 10px; border-radius: 10px; transition: all .3s ease; position: relative; font-weight: 700; color: #f8fafc; }
+    #attention-demo .kqv-item.active { transform: scale(1.04); box-shadow: 0 0 14px rgba(255,255,255,.25); }
+    /* Muted K/Q/V blocks */
+    #attention-demo .key-item   { background: linear-gradient(135deg, #1f3a5f, #0b3b5e); }
+    #attention-demo .query-item { background: linear-gradient(135deg, #614051, #3f2d40); }
+    #attention-demo .value-item { background: linear-gradient(135deg, #1b5f4a, #0c3e33); }
+
+    #attention-demo .attention-matrix { margin: 12px 0; text-align: center; }
+    #attention-demo .matrix-container { display: inline-block; background: rgba(2, 6, 23, 0.40); padding: 12px; border-radius: 12px; margin: 8px; }
+    #attention-demo .matrix-grid { display: grid; gap: 1px; margin-top: 6px; }
+    #attention-demo .self-attention-grid { grid-template-columns: repeat(6, 33px); grid-template-rows: repeat(6, 33px); }
+    #attention-demo .cross-attention-grid { grid-template-columns: repeat(6, 33px); grid-template-rows: repeat(3, 33px); }
+    #attention-demo .decoder-self-attention-grid { grid-template-columns: repeat(3, 33px); grid-template-rows: repeat(3, 33px); }
+    #attention-demo .matrix-cell { width: 33px; height: 33px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; border-radius: 4px; transition: all .25s ease; border: 1px solid rgba(255,255,255,.14); cursor: pointer; color: var(--brand-ink); background: rgba(255,255,255,.10); }
+    #attention-demo .matrix-cell.highlighted { animation: cellPulse .8s ease; border: 2px solid var(--gold); }
+    @keyframes cellPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); box-shadow: 0 0 12px var(--gold-weak); } }
+
+    #attention-demo .controls { display: flex; justify-content: center; gap: 12px; margin: 22px 0; flex-wrap: wrap; }
+    #attention-demo button { padding: 12px 18px; font-size: 15px; border: none; border-radius: 26px; cursor: pointer; font-weight: 900; letter-spacing:.3px; transition: all .28s ease; color: white; box-shadow: 0 4px 15px rgba(0,0,0,.22); position: relative; overflow: hidden; }
+    /* Muted button gradients */
+    #attention-demo .btn-primary { background: linear-gradient(45deg, #155e75, #0e7490); }
+    #attention-demo .btn-step    { background: linear-gradient(45deg, #334155, #0f4c81); }
+    #attention-demo .btn-auto    { background: linear-gradient(45deg, #1b5f4a, #0c3e33); }
+    #attention-demo .btn-reset   { background: linear-gradient(45deg, #4b5563, #1f2937); }
+    #attention-demo button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.28); }
+    #attention-demo button:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+
+    #attention-demo .step-details { background: rgba(2,6,23,.38); padding: 16px; border-radius: 12px; margin: 14px 0; border-left: 4px solid var(--gold); min-height: 72px; }
+    #attention-demo .step-details h4 { margin: 0 0 8px 0; color: var(--gold); }
+    #attention-demo .attention-flow { display: flex; justify-content: center; align-items: center; margin: 18px 0; flex-wrap: wrap; gap: 12px; }
+    #attention-demo .flow-step { padding: 10px 16px; border-radius: 16px; font-weight: 900; text-align: center; min-width: 92px; transition: all .35s ease; position: relative; font-size: 13px; color: #f8fafc; }
+    #attention-demo .flow-step.active { transform: scale(1.06); box-shadow: 0 0 16px rgba(250, 204, 21, .40); border: 2px solid var(--gold); }
+    #attention-demo .flow-arrow { font-size: 18px; color: var(--gold); transition: all .3s ease; }
+    #attention-demo .flow-arrow.active { animation: flowPulse 1s infinite; }
+    @keyframes flowPulse { 0%,100% { transform: scale(1); opacity: .75; } 50% { transform: scale(1.12); opacity: 1; } }
+
+    #attention-demo .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,.18); border-radius: 4px; overflow: hidden; margin: 16px 0; }
+    #attention-demo .progress-fill { height: 100%; background: linear-gradient(90deg, #0ea5a9, #38bdf8); width: 0%; transition: width .3s ease; border-radius: 4px; }
+    #attention-demo .decoder-steps { display: flex; justify-content: center; gap: 8px; margin: 12px 0; }
+    #attention-demo .step-indicator { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px; border: 2px solid rgba(255,255,255,.26); background: rgba(255,255,255,.10); transition: all .25s ease; }
+    #attention-demo .step-indicator.completed { background: linear-gradient(45deg, #0ea5a9, #0f766e); border-color: #0f766e; color: #04221a; }
+    #attention-demo .step-indicator.current { background: linear-gradient(45deg, #334155, #0f4c81); border-color: #0f4c81; animation: currentStep 1s infinite; color: #f8fafc; }
+    @keyframes currentStep { 0%,100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+
+    #attention-demo .connection-line { position: absolute; background: linear-gradient(90deg, transparent, var(--gold), transparent); height: 3px; border-radius: 2px; z-index: 100; animation: connectionFlow 1.2s ease-in-out; }
+    @keyframes connectionFlow { 0% { opacity: 0; transform: scaleX(0); } 50% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(0); } }
+
+    #attention-demo .hidden { display: none !important; }
+
+    @media (max-width: 1200px) {
+      #attention-demo .architecture { grid-template-columns: 1fr; }
+      #attention-demo .kqv-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      #attention-demo .data-point { width: 50px; height: 50px; font-size: 11px; }
+      #attention-demo .matrix-cell { width: 25px; height: 25px; font-size: 8px; }
+    }
+  </style>
+  <style>
+
+    /* === Pale palette override — paste AFTER the existing styles === */
+:root {
+  --ink-strong: #334155;    /* slate-ish text on pale */
+  --ink-soft:   #64748b;
+  --gold:       #f2d68e;    /* soft highlight */
+  --gold-weak:  rgba(242, 214, 142, .65);
+
+  /* pale swatches */
+  --p-lav-a:  #efe9ff;
+  --p-lav-b:  #e3ddff;
+  --p-blue-a: #e3f2ff;
+  --p-blue-b: #d6ecff;
+  --p-sky-a:  #e9f6ff;
+  --p-sky-b:  #cfeaf6;
+  --p-mint-a: #def9ef;
+  --p-mint-b: #ccf1e6;
+  --p-peach-a:#fff2e6;
+  --p-peach-b:#ffe9d9;
+  --p-rose-a: #ffeaf3;
+  --p-rose-b: #ffd9ea;
+  --p-butter: #fff6cc;
+}
+
+/* Hero glow softened */
+.glow{
+  background: radial-gradient(60% 60% at 50% 40%,
+    rgba(180, 200, 255, .28),
+    rgba(200, 240, 255, .20) 40%,
+    rgba(210, 255, 240, .16) 70%,
+    transparent 75%);
+}
+
+/* Demo container gradient (very light) */
+#attention-demo {
+  --grad-a: linear-gradient(135deg, #eef5ff 0%, #f8fbff 100%);
+}
+
+/* Encoder/Decoder card accents (pale) */
+#attention-demo .encoder-section { border-left-color: #a3d8ff; }
+#attention-demo .decoder-section { border-left-color: #f8d9a6; }
+#attention-demo .encoder-title { color: #2b3a55; opacity:.9; }
+#attention-demo .decoder-title { color: #5b4636; opacity:.9; }
+
+/* Data tiles */
+#attention-demo .input-data  { background: linear-gradient(135deg, var(--p-blue-a), var(--p-blue-b)); }
+#attention-demo .target-data { background: linear-gradient(135deg, #fffdf8, var(--p-peach-a)); color: var(--ink-strong); }
+#attention-demo .target-data.predicted  { background: linear-gradient(135deg, var(--p-mint-a), var(--p-mint-b)); color: #0f2e2a; }
+#attention-demo .target-data.generating { background: linear-gradient(135deg, var(--p-sky-b), var(--p-sky-a)); color: #0f2e3a; border-color: var(--p-butter); }
+#attention-demo .target-data.masked     { background: linear-gradient(135deg, #f3f6fa, #eef2f7); color: var(--ink-soft); opacity:.95; }
+
+/* K/Q/V blocks in pale */
+#attention-demo .key-item   { background: linear-gradient(135deg, #e6f0ff, #d8e5ff); color:#1f2a44; }
+#attention-demo .query-item { background: linear-gradient(135deg, var(--p-rose-a), var(--p-rose-b)); color:#412a3a; }
+#attention-demo .value-item { background: linear-gradient(135deg, var(--p-mint-a), var(--p-mint-b)); color:#193a33; }
+
+/* Matrices */
+#attention-demo .matrix-container { background: rgba(255,255,255,.65); }
+#attention-demo .matrix-cell{
+  background: #f7f9fc;
+  border-color: #e6ecf3;
+  color: var(--ink-strong);
+}
+#attention-demo .matrix-cell.highlighted{
+  border-color: var(--gold);
+  box-shadow: 0 0 10px var(--gold-weak);
+}
+
+/* Flow pills */
+#attention-demo #flow-embed     { background: linear-gradient(45deg, var(--p-lav-a), var(--p-lav-b)); color:#2b2b3b; }
+#attention-demo #flow-similarity{ background: linear-gradient(45deg, var(--p-rose-a), var(--p-rose-b)); color:#3a2a35; }
+#attention-demo #flow-softmax   { background: linear-gradient(45deg, #fff8dc, var(--p-butter)); color:#3c3213; }
+#attention-demo #flow-output    { background: linear-gradient(45deg, var(--p-mint-a), var(--p-mint-b)); color:#14312b; }
+
+/* Buttons (pale gradients) */
+#attention-demo .btn-primary { background: linear-gradient(45deg, var(--p-sky-a), var(--p-blue-b)); color:#163a4a; }
+#attention-demo .btn-step    { background: linear-gradient(45deg, var(--p-lav-a), var(--p-lav-b)); color:#2d2a42; }
+#attention-demo .btn-auto    { background: linear-gradient(45deg, var(--p-mint-a), var(--p-mint-b)); color:#123a2f; }
+#attention-demo .btn-reset   { background: linear-gradient(45deg, #f5f7fb, #ebeff6); color:#374151; }
+
+/* Progress */
+#attention-demo .progress-bar  { background: rgba(0,0,0,.06); }
+#attention-demo .progress-fill { background: linear-gradient(90deg, var(--p-mint-b), var(--p-blue-b)); }
+
+/* Step indicators */
+#attention-demo .step-indicator{
+  background:#f6f8fc;border-color:#e7ecf4;color:#475569;
+}
+#attention-demo .step-indicator.completed{
+  background: linear-gradient(45deg, var(--p-mint-a), var(--p-mint-b));
+  border-color:#bde7d8; color:#0f2e2a;
+}
+#attention-demo .step-indicator.current{
+  background: linear-gradient(45deg, var(--p-sky-a), var(--p-blue-b));
+  border-color:#b7dbff; color:#0f2e3a;
+}
+
+/* Headings and accents inside the demo */
+#attention-demo .step-details { background: rgba(255,255,255,.6); border-left-color: var(--gold); color:#334155; }
+#attention-demo .step-details h4 { color:#6b5b2e; }
+
+/* Cross/causal mask muted */
+#attention-demo .decoder-self-attention-grid .matrix-cell{
+  background:#f7f9fc;
+}
+#attention-demo .decoder-self-attention-grid .matrix-cell:not(.highlighted)[style*="0,0,0"]{
+  /* masked cells you draw dark — tint them softly instead */
+  background:#edf0f5 !important; color:#94a3b8 !important;
+}
+
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-800 bg-gradient-to-br from-slate-50 to-sky-50">
+
+  <!-- ======= Sticky Nav ======= -->
+  <nav id="topnav" class="fixed top-0 inset-x-0 z-50 transition-colors">
+    <div class="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2">
+        <span class="font-extrabold tracking-tight text-slate-900">ForeBlocks</span>
+        <span class="text-xs font-semibold text-slate-500">Attention Guide</span>
+      </a>
+      <div class="hidden md:flex items-center gap-5 text-sm">
+        <a class="nav-link hover:text-slate-900 text-slate-600" href="#intro">Intro</a>
+        <a class="nav-link hover:text-slate-900 text-slate-600" href="#interactive">Interactive</a>
+        <a class="nav-link hover:text-slate-900 text-slate-600" href="#math">Math</a>
+        <a class="nav-link hover:text-slate-900 text-slate-600" href="#code">Code</a>
+        <a class="nav-link hover:text-slate-900 text-slate-600" href="#faq">FAQ</a>
+        <a target="_blank" rel="noopener" href="https://github.com/lseman/foreblocks" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-black">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ======= Full-Viewport Hero ======= -->
+  <header class="relative h-[100svh] flex items-center" id="intro">
+    <div aria-hidden="true" class="absolute inset-0 bg-grid"></div>
+    <div aria-hidden="true" class="glow"></div>
+
+    <div class="relative mx-auto max-w-7xl px-6 w-full">
+      <div class="flex items-center gap-3 mb-6">
+        <div>
+          <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.05]">
+            An <span class="text-sky-700">Animated Guide</span> to Attention
+          </h1>
+          <p class="mt-2 text-base tracking-wide text-slate-600 max-w-2xl">Step through Query–Key–Value, softmax weights, and autoregressive decoding. Visual, interactive, and classroom-ready.</p>
+        </div>
+      </div>
+      <div class="grid lg:grid-cols-[1.2fr_.8fr] gap-10 items-center">
+        <!-- Hero copy -->
+        <div class="fade-up">
+          <ul class="list-disc ml-6 text-slate-700 space-y-2">
+            <li>Self-attention vs. cross-attention, side by side</li>
+            <li>Decoder masking and step-by-step generation</li>
+            <li>Multi-Head intuition and scaling $\tfrac{1}{\sqrt{d_k}}$</li>
+          </ul>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="#interactive" class="px-5 py-3 rounded-xl bg-sky-700 text-white font-semibold shadow hover:bg-sky-800">Try the Interactive Demo</a>
+            <a href="#math" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">See the Math</a>
+          </div>
+        </div>
+
+        <!-- Hero side card -->
+        <aside class="fade-up w-full lg:w-auto">
+          <div class="bg-white/70 border border-slate-200 rounded-2xl p-5 shadow card">
+            <h3 class="text-lg font-semibold mb-2">What you'll learn</h3>
+            <ul class="list-disc ml-6 text-slate-700 space-y-1 text-sm">
+              <li>How Q, K, V are formed and used</li>
+              <li>How softmax turns similarity into attention</li>
+              <li>How predictions are generated step-by-step</li>
+            </ul>
+            <p class="text-xs text-slate-500 mt-3">Bonus: A PyTorch-style snippet to compute attention.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Scroll cue -->
+    <a href="#interactive" class="absolute bottom-6 left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-1 text-slate-500 hover:text-slate-700" aria-label="Scroll to Interactive section">
+      <span class="text-xs tracking-wide">Scroll</span>
+      <svg class="w-5 h-5 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </a>
+  </header>
+
+  <!-- ======= INTERACTIVE DEMO ======= -->
+  <section id="interactive" class="alt-section py-14">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center mb-8">Interactive Attention Demo</h2>
+      <div id="attention-demo" class="demo-wrap p-1">
+        <div class="container text-white">
+          <h1 class="text-black" >Step-by-Step Attention</h1>
+          <div class="subtitle text-black">Autoregressive Decoding with Key-Query-Value Mechanism</div>
+
+          <div class="step-counter" id="stepCounter">Ready to start step-by-step generation…</div>
+
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+          <div class="decoder-steps">
+            <div class="step-indicator" id="step-0">1</div>
+            <div class="step-indicator" id="step-1">2</div>
+            <div class="step-indicator" id="step-2">3</div>
+          </div>
+
+          <!-- Mode switch -->
+          <div class="mt-3 mb-2 flex flex-wrap items-center justify-center gap-3 text-slate-900">
+            <span class="text-white/90 font-semibold">Mode:</span>
+            <label class="inline-flex items-center gap-2 bg-white/15 px-3 py-2 rounded-xl border border-white/20">
+              <input type="radio" name="attnMode" value="cross" checked>
+              <span class="text-black">Cross-Attention (Dec → Enc)</span>
+            </label>
+            <label class="inline-flex items-center gap-2 bg-white/15 px-3 py-2 rounded-xl border border-white/20">
+              <input type="radio" name="attnMode" value="dec-self">
+              <span class="text-black">Decoder Self-Attention (causal)</span>
+            </label>
+            <label class="inline-flex items-center gap-2 bg-white/15 px-3 py-2 rounded-xl border border-white/20">
+              <input type="radio" name="attnMode" value="enc-self">
+              <span class="text-black">Encoder Self-Attention</span>
+            </label>
+          </div>
+
+          <div class="architecture">
+            <!-- Encoder Section -->
+            <div class="encoder-section">
+              <div class="section-title encoder-title">ENCODER (Static)</div>
+              <div class="text-black" style="text-align:center;margin-bottom:10px;font-weight:800;">Historical Time Series [t-6 … t-1]</div>
+              <div class="time-series-data text-black" id="encoderInput"></div>
+
+              <div class="kqv-section">
+                <div class="kqv-title">Self-Attention (Computed Once)</div>
+                <div class="kqv-grid">
+                  <div class="kqv-item key-item" id="encoder-keys">
+                    <div style="font-weight: 900; margin-bottom: 5px;">Keys (K)</div>
+                    <div style="font-size: 11px;">Historical patterns</div>
+                  </div>
+                  <div class="kqv-item query-item" id="encoder-queries">
+                    <div style="font-weight: 900; margin-bottom: 5px;">Queries (Q)</div>
+                    <div style="font-size: 11px;">Self-relationships</div>
+                  </div>
+                  <div class="kqv-item value-item" id="encoder-values">
+                    <div style="font-weight: 900; margin-bottom: 5px;">Values (V)</div>
+                    <div style="font-size: 11px;">Encoded information</div>
+                  </div>
+                </div>
+                <div class="attention-matrix">
+                  <div style="margin-bottom: 8px; font-weight: 900; font-size: 13px;">Self-Attention Matrix</div>
+                  <div class="matrix-container">
+                    <div class="matrix-grid self-attention-grid" id="selfAttentionMatrix"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Decoder Section -->
+            <div class="decoder-section">
+              <div class="section-title decoder-title">DECODER (Step-by-Step)</div>
+              <div class="text-black" style="text-align:center;margin-bottom:10px;font-weight:800;">Target Sequence [t+1 … t+3]</div>
+              <div class="time-series-data text-black" id="decoderInput"></div>
+
+              <div class="kqv-section">
+                <div class="kqv-title" id="decoderAttnTitle">Cross-Attention (Current Step)</div>
+                <div class="kqv-grid">
+                  <div class="kqv-item key-item" id="decoder-keys">
+                    <div style="font-weight: 900; margin-bottom: 5px;">Keys (K)</div>
+                    <div style="font-size: 11px;">From encoder</div>
+                  </div>
+                  <div class="kqv-item query-item" id="decoder-queries">
+                    <div style="font-weight: 900; margin-bottom: 5px;">Queries (Q)</div>
+                    <div style="font-size: 11px;">Current position</div>
+                  </div>
+                  <div class="kqv-item value-item" id="decoder-values">
+                    <div style="font-weight: 900; margin-bottom: 5px;">Values (V)</div>
+                    <div style="font-size: 11px;">From encoder</div>
+                  </div>
+                </div>
+                <div class="attention-matrix">
+                  <div id="decoderMatrixTitle" style="margin-bottom: 8px; font-weight: 900; font-size: 13px;">
+                    Cross-Attention (1 Query → All Encoder Keys)
+                  </div>
+                  <div class="matrix-container">
+                    <div class="matrix-grid cross-attention-grid" id="decoderMatrix"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="attention-flow" id="attentionFlow">
+            <div class="flow-step text-white" id="flow-embed">Query<br>Embedding</div>
+            <div class="flow-arrow" id="arrow-1">→</div>
+            <div class="flow-step text-white" id="flow-similarity">Q·K<sup>T</sup><br>Similarity</div>
+            <div class="flow-arrow" id="arrow-2">→</div>
+            <div class="flow-step" id="flow-softmax">Softmax<br>Weights</div>
+            <div class="flow-arrow" id="arrow-3">→</div>
+            <div class="flow-step text-white" id="flow-output"">Weighted<br>Sum</div>
+          </div>
+
+          <div class="step-details" id="stepDetails">
+            <h4>Instructions</h4>
+            <p>Click <b>Next Step</b> to see how each decoder position generates its prediction. Switch modes to visualize cross-attention, decoder self-attention (causal), or highlight rows in encoder self-attention.</p>
+          </div>
+
+          <div class="controls">
+            <button class="btn-step" id="nextStepBtn" onclick="nextStep()">Next Step</button>
+            <button class="btn-auto" id="autoStepBtn" onclick="toggleAutoStep()">Auto Step</button>
+            <button class="btn-primary" onclick="runFullDemo()">Full Demo</button>
+            <button class="btn-reset" onclick="resetAnimation()">Reset</button>
+          </div>
+
+          <div style="background: rgba(0, 0, 0, 0.50); padding: 16px; border-radius: 15px; margin-top: 16px;">
+            <h3 style="color: var(--blue); margin-bottom: 10px;">Autoregressive Generation Process</h3>
+            <div id="autoLegend" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: 14px;">
+              <div><strong style="color: #60a5fa;">Step 1:</strong> Query for t+1 attends to all encoder outputs (t-6 … t-1)</div>
+              <div><strong style="color: #eab308;">Step 2:</strong> Query for t+2 attends to encoder + previous decoder outputs</div>
+              <div><strong style="color: #0ea5a9;">Step 3:</strong> Query for t+3 uses all previous context for final prediction</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center text-sm text-slate-500 mt-4">Tip: Hover matrix cells and history boxes to see where the model focuses per step.</p>
+    </div>
+  </section>
+
+  <!-- ======= MATH ======= -->
+  <section id="math" class="alt-section py-14">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center mb-8">The Math (Scaled Dot-Product)</h2>
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold mb-3">Definition</h3>
+          <div class="theorem text-sm">
+            $$\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
+          </div>
+          <p class="mt-3 text-slate-700 text-sm">Here $Q \in \mathbb{R}^{n_q\times d_k},\ K \in \mathbb{R}^{n_k\times d_k},\ V \in \mathbb{R}^{n_k\times d_v}$. The $\tfrac{1}{\sqrt{d_k}}$ factor keeps gradients well-scaled.</p>
+        </article>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold mb-3">Masking</h3>
+          <div class="def text-sm">
+            $$\mathrm{MaskedSoftmax}(X) = \mathrm{softmax}(X + M)\quad\text{with}\quad M_{ij}=\begin{cases}0,&\text{allowed}\\-\infty,&\text{masked}\end{cases}$$
+          </div>
+          <p class="mt-3 text-slate-700 text-sm">Causal decoding uses a triangular mask to forbid peeking into the future.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= CODE ======= -->
+  <section id="code" class="alt-section py-14">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center mb-8">Minimal PyTorch-style Snippet</h2>
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+        <div class="relative">
+          <button class="copy-btn absolute right-2 top-2 text-xs px-2 py-1 rounded-md bg-slate-800 text-white">Copy</button>
+<pre class="line-numbers text-sm leading-6 overflow-x-auto p-4 rounded-lg border border-slate-200 bg-slate-50"><code class="language-python">import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(q, k, v, mask=None):
+    d_k = q.size(-1)
+    scores = q @ k.transpose(-2, -1) / (d_k ** 0.5)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, float('-inf'))
+    attn = F.softmax(scores, dim=-1)
+    out = attn @ v
+    return out, attn</code></pre>
+        </div>
+        <p class="text-xs text-slate-500 mt-3">This mirrors the interactive demo: <code>scores = QK^T / sqrt(d_k)</code> → <code>softmax</code> → weighted sum of <code>V</code>.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ======= FAQ ======= -->
+  <section id="faq" class="alt-section py-14">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center mb-8">FAQ</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="font-semibold mb-1">Self vs. Cross Attention?</h3>
+          <p class="text-sm text-slate-700">Self-attention uses $Q,K,V$ from the same sequence; cross-attention queries the encoder keys/values from decoder queries.</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="font-semibold mb-1">Why scaling by $\sqrt{d_k}$?</h3>
+          <p class="text-sm text-slate-700">To stabilize gradients: dot products grow with dimension; scaling keeps logits in a softmax-friendly range.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= Footer ======= -->
+  <footer class="py-10 bg-slate-900 text-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-sm">© <span id="year"></span> ForeBlocks — Attention Guide</p>
+        <div class="text-xs text-slate-400">Self-Attention • Cross-Attention • Softmax • Autoregressive Decoding</div>
+      </div>
+      <div class="mt-4 pt-4 border-t border-slate-700 text-center text-xs text-slate-400">Research-friendly • Single-file • Works offline</div>
+    </div>
+  </footer>
+
+  <!-- ======= UTIL SCRIPTS (copy buttons, nav, etc.) ======= -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Copy buttons
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pre = btn.nextElementSibling;
+          const code = pre && pre.querySelector('code');
+          if (!code) return;
+          const text = code.innerText;
+          navigator.clipboard.writeText(text).then(() => {
+            const old = btn.textContent; btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = old, 1000);
+          });
+        });
+      });
+
+      // Ensure line numbers on any <pre>
+      document.querySelectorAll('pre').forEach(pre => pre.classList.add('line-numbers'));
+
+      // Update year
+      const y = document.getElementById('year');
+      if (y) y.textContent = new Date().getFullYear();
+
+      // Sticky nav styling
+      const nav = document.getElementById('topnav');
+      const solid = () => nav && nav.classList.add('backdrop-blur','bg-white/80','border-b','border-slate-200');
+      solid();
+
+      // Smooth anchor scroll
+      document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', (e) => {
+          const href = a.getAttribute('href');
+          if (!href || href === '#') return;
+          const t = document.querySelector(href);
+          if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        });
+      });
+
+      // Active nav highlight using IntersectionObserver
+      const links = Array.from(document.querySelectorAll('.nav-link'));
+      const linkById = new Map(links.filter(a => a.hash).map(a => [a.hash.slice(1), a]));
+      const sections = Array.from(document.querySelectorAll('.alt-section'));
+      const navH = 72; const thresholds = Array.from({ length: 11 }, (_, i) => i / 10);
+      const vis = new Map();
+      const setActive = (id) => { links.forEach(a => a.classList.remove('active')); const el = linkById.get(id); if (el) el.classList.add('active'); };
+      const chooseAndSetActive = () => {
+        let bestId = null, bestRatio = 0, bestDist = Infinity; const headerY = navH + 8;
+        sections.forEach(sec => {
+          const id = sec.id; const ratio = vis.get(id) || 0; if (ratio > 0) {
+            const rect = sec.getBoundingClientRect(); const dist = Math.abs(rect.top - headerY);
+            if (ratio > bestRatio || (ratio === bestRatio && dist < bestDist)) { bestRatio = ratio; bestDist = dist; bestId = id; }
+          }
+        });
+        if (!bestId && sections.length) bestId = sections[0].id;
+        if (bestId) setActive(bestId);
+      };
+      const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => { vis.set(entry.target.id, entry.intersectionRatio); });
+        chooseAndSetActive();
+      }, { rootMargin: `-${navH + 8}px 0px -55% 0px`, threshold: thresholds });
+      sections.forEach(s => sectionObserver.observe(s));
+    });
+  </script>
+
+  <!-- ======= INTERACTIVE ATTENTION LOGIC ======= -->
+  <script>
+    // Demo state
+    let currentDecoderStep = 0;
+    let isAnimating = false;
+    let autoStepping = false;
+    let autoStepInterval;
+
+    // Mode: 'cross' | 'dec-self' | 'enc-self'
+    let attentionMode = 'cross';
+
+    // Sample time series data
+    const historicalData = [12, 18, 24, 31, 28, 35];
+    const targetData = ['?', '?', '?'];
+    const predictedValues = [42, 47, 53];
+
+    // Pre-computed attention weights for demonstration (rows = steps t+1..t+3)
+    const attentionWeights = [
+      [0.10, 0.15, 0.20, 0.25, 0.20, 0.10],
+      [0.08, 0.12, 0.18, 0.22, 0.25, 0.15],
+      [0.05, 0.10, 0.15, 0.30, 0.25, 0.15]
+    ];
+
+    // Helpers
+    const softmax = (arr) => {
+      const max = Math.max(...arr);
+      const exps = arr.map(x => Math.exp(x - max));
+      const s = exps.reduce((a,b)=>a+b, 0);
+      return exps.map(x => x / s);
+    };
+    const randn = () => {
+      let u = 0, v = 0;
+      while(u === 0) u = Math.random();
+      while(v === 0) v = Math.random();
+      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    };
+
+    function initializeData() {
+      // Encoder input (historical)
+      const encoderContainer = document.getElementById('encoderInput');
+      encoderContainer.innerHTML = '';
+      historicalData.forEach((value, index) => {
+        const dataPoint = document.createElement('div');
+        dataPoint.className = 'data-point input-data';
+        dataPoint.innerHTML = `<div style="font-size:10px;">t-${historicalData.length - index}</div><div style="font-size:14px;">${value}</div>`;
+        dataPoint.id = `encoder-${index}`;
+        encoderContainer.appendChild(dataPoint);
+      });
+
+      // Decoder placeholders
+      const decoderContainer = document.getElementById('decoderInput');
+      decoderContainer.innerHTML = '';
+      targetData.forEach((value, index) => {
+        const dataPoint = document.createElement('div');
+        dataPoint.className = 'data-point target-data masked';
+        dataPoint.innerHTML = `<div style="font-size:10px;">t+${index + 1}</div><div style="font-size:14px;">${value}</div>`;
+        dataPoint.id = `decoder-${index}`;
+        decoderContainer.appendChild(dataPoint);
+      });
+
+      initializeMatrices();
+      updateProgress();
+      updateStepIndicators();
+      updateStepCounter('Ready to start step-by-step generation…');
+      const btn = document.getElementById('nextStepBtn'); if (btn) { btn.disabled = false; btn.textContent = 'Next Step'; }
+    }
+
+    function initializeMatrices() {
+      // Always rebuild encoder 6x6 self-attention (static visualization)
+      const selfMatrix = document.getElementById('selfAttentionMatrix');
+      selfMatrix.innerHTML = '';
+      const encN = 6;
+      const encRows = [];
+      for (let r = 0; r < encN; r++) {
+        const row = Array.from({length: encN}, () => 0.6*randn() + 0.4*Math.random());
+        const w = softmax(row);
+        encRows.push(w);
+      }
+      for (let r = 0; r < encN; r++) {
+        for (let c = 0; c < encN; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'matrix-cell';
+          const w = encRows[r][c];
+          cell.style.background = `rgba(116, 185, 255, ${Math.max(.12, w * 1.2)})`;
+          cell.textContent = w.toFixed(2);
+          cell.id = `encSelf-${r}-${c}`;
+          selfMatrix.appendChild(cell);
+        }
+      }
+
+      // Decoder matrix depends on mode
+      const grid = document.getElementById('decoderMatrix');
+      const title = document.getElementById('decoderMatrixTitle');
+      const kqvTitle = document.getElementById('decoderAttnTitle');
+
+      grid.innerHTML = '';
+      grid.classList.remove('cross-attention-grid', 'decoder-self-attention-grid');
+
+      if (attentionMode === 'cross') {
+        kqvTitle.textContent = 'Cross-Attention (Current Step)';
+        title.textContent = 'Cross-Attention (1 Query → All Encoder Keys)';
+        grid.classList.add('cross-attention-grid');
+
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 6; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'matrix-cell';
+            cell.style.background = 'rgba(255,255,255,0.12)';
+            cell.textContent = '0.00';
+            cell.id = `decCross-${row}-${col}`;
+            grid.appendChild(cell);
+          }
+        }
+      } else if (attentionMode === 'dec-self') {
+        kqvTitle.textContent = 'Decoder Self-Attention (Causal, Current Step)';
+        title.textContent = 'Decoder Self-Attention (Query t+i → Keys ≤ t+i)';
+        grid.classList.add('decoder-self-attention-grid');
+
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 3; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'matrix-cell';
+            const isAllowed = col <= row;
+            cell.style.background = isAllowed ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.35)';
+            cell.textContent = isAllowed ? '0.00' : '—';
+            cell.id = `decSelf-${row}-${col}`;
+            grid.appendChild(cell);
+          }
+        }
+      } else { // enc-self
+        kqvTitle.textContent = 'Encoder Self-Attention (Animating Query Rows)';
+        title.textContent = 'Encoder Self-Attention Highlight (Row = Query, Col = Key)';
+        grid.classList.add('decoder-self-attention-grid');
+
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 3; col++) {
+            const cell = document.createElement('div');
+            cell.className = 'matrix-cell';
+            cell.style.background = col === 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)';
+            cell.textContent = row === currentDecoderStep ? '●' : '·';
+            cell.id = `encLegend-${row}-${col}`;
+            grid.appendChild(cell);
+          }
+        }
+      }
+    }
+
+    function updateStepCounter(message) {
+      const el = document.getElementById('stepCounter');
+      if (el) el.textContent = message;
+    }
+
+    function updateProgress() {
+      const progress = (currentDecoderStep / 3) * 100;
+      const el = document.getElementById('progressFill');
+      if (el) el.style.width = `${progress}%`;
+    }
+
+    function updateStepIndicators() {
+      for (let i = 0; i < 3; i++) {
+        const indicator = document.getElementById(`step-${i}`);
+        if (!indicator) continue;
+        indicator.classList.remove('completed', 'current');
+        if (i < currentDecoderStep) indicator.classList.add('completed');
+        else if (i === currentDecoderStep) indicator.classList.add('current');
+      }
+    }
+
+    async function nextStep() {
+      if (isAnimating || currentDecoderStep >= 3) return;
+      isAnimating = true;
+      const btn = document.getElementById('nextStepBtn'); if (btn) btn.disabled = true;
+
+      await executeDecoderStep(currentDecoderStep);
+      currentDecoderStep++;
+      updateProgress();
+      updateStepIndicators();
+
+      if (currentDecoderStep >= 3) {
+        updateStepCounter('All predictions generated. Reset to start over.');
+        if (btn) btn.textContent = 'Complete';
+      } else {
+        if (btn) btn.disabled = false; else {}
+      }
+      isAnimating = false;
+    }
+
+    async function executeDecoderStep(step) {
+      const stepDetails = document.getElementById('stepDetails');
+
+      if (attentionMode === 'enc-self') {
+        const queryRow = [1, 3, 5][step]; // pick interpretable rows
+        updateStepCounter(`Encoder Self-Attention — highlighting query at encoder position ${queryRow+1}`);
+        stepDetails.innerHTML = `
+          <h4>Encoder Self-Attention — Step ${step + 1}</h4>
+          <p><strong>Query (encoder token):</strong> position ${queryRow + 1}</p>
+          <p>We highlight how this token attends over all other encoder tokens.</p>
+        `;
+        await animateEncoderSelfAttentionRow(queryRow);
+        await sleep(450);
+        return;
+      }
+
+      // Otherwise, show decoder box and generate a value (cross or dec-self)
+      const currentDecoder = document.getElementById(`decoder-${step}`);
+      currentDecoder.classList.remove('masked');
+      currentDecoder.classList.add('generating');
+
+      if (attentionMode === 'cross') {
+        updateStepCounter(`Cross-Attention — generating t+${step + 1} from encoder context…`);
+        stepDetails.innerHTML = `
+          <h4>Cross-Attention — Step ${step + 1}</h4>
+          <p><strong>Query:</strong> decoder position t+${step + 1}</p>
+          <p><strong>Keys/Values:</strong> all encoder outputs (historical context)</p>
+          <p>Computing attention weights to focus on relevant history…</p>
+        `;
+        document.getElementById('decoder-queries').classList.add('active');
+        await sleep(450);
+        await animateAttentionFlow();
+        await animateCrossAttentionRow(step);
+      } else {
+        updateStepCounter(`Decoder Self-Attention — generating t+${step + 1} using previous decoder tokens…`);
+        stepDetails.innerHTML = `
+          <h4>Decoder Self-Attention — Step ${step + 1}</h4>
+          <p><strong>Query:</strong> decoder position t+${step + 1}</p>
+          <p><strong>Keys/Values:</strong> decoder positions ≤ t+${step + 1} (causal mask)</p>
+          <p>Computing masked attention weights over previously generated targets…</p>
+        `;
+        document.getElementById('decoder-queries').classList.add('active');
+        await sleep(450);
+        await animateAttentionFlow();
+        await animateDecoderSelfAttentionRow(step);
+      }
+
+      // Reveal a fake prediction
+      await sleep(650);
+      currentDecoder.classList.remove('generating');
+      currentDecoder.classList.add('predicted');
+      currentDecoder.innerHTML = `<div style="font-size:10px;">t+${step + 1}</div><div style="font-size:14px;">${predictedValues[step]}</div>`;
+
+      // Step recap text
+      const recap = (attentionMode === 'cross')
+        ? `<p><strong>Key Focus:</strong> ${getKeyFocusDescription(step)}</p>`
+        : `<p><strong>Mask:</strong> only columns ≤ row are allowed (causal).</p>`;
+      stepDetails.innerHTML = `
+        <h4>Step ${step + 1} Complete</h4>
+        <p><strong>Prediction:</strong> t+${step + 1} = ${predictedValues[step]}</p>
+        ${recap}
+        <p>This prediction becomes part of the context for the next step.</p>
+      `;
+
+      document.getElementById('decoder-queries').classList.remove('active');
+      await sleep(350);
+    }
+
+    async function animateAttentionFlow() {
+      const flowSteps = ['flow-embed', 'flow-similarity', 'flow-softmax', 'flow-output'];
+      const arrows = ['arrow-1', 'arrow-2', 'arrow-3'];
+      for (let i = 0; i < flowSteps.length; i++) {
+        document.getElementById(flowSteps[i]).classList.add('active');
+        if (i < arrows.length) document.getElementById(arrows[i]).classList.add('active');
+        await sleep(340);
+      }
+      await sleep(520);
+      flowSteps.forEach(id => document.getElementById(id).classList.remove('active'));
+      arrows.forEach(id => document.getElementById(id).classList.remove('active'));
+    }
+
+    async function animateCrossAttentionRow(step) {
+      const weights = attentionWeights[step];
+      for (let col = 0; col < 6; col++) {
+        const cell = document.getElementById(`decCross-${step}-${col}`);
+        const w = weights[col];
+        if (cell) {
+          cell.style.background = `rgba(250, 204, 21, ${Math.max(.15, w * 1.2)})`;
+          cell.textContent = w.toFixed(2);
+          cell.classList.add('highlighted');
+        }
+
+        // highlight corresponding encoder point
+        const enc = document.getElementById(`encoder-${col}`);
+        if (enc) {
+          enc.style.transform = `scale(${1 + w * 0.42})`;
+          enc.style.boxShadow = `0 0 ${8 + w * 20}px rgba(250, 204, 21, .60)`;
+        }
+        await sleep(170);
+
+        setTimeout(() => {
+          if (enc) { enc.style.transform = ''; enc.style.boxShadow = ''; }
+          if (cell) cell.classList.remove('highlighted');
+        }, 800);
+      }
+    }
+
+    async function animateEncoderSelfAttentionRow(queryRow) {
+      const encN = 6;
+      const base = Array.from({length: encN}, (_, j) => 0.8*Math.exp(-0.5*Math.abs(j - queryRow)) + 0.2*Math.random());
+      const w = softmax(base);
+
+      for (let col = 0; col < encN; col++) {
+        const cell = document.getElementById(`encSelf-${queryRow}-${col}`);
+        const encBox = document.getElementById(`encoder-${col}`);
+        const val = w[col];
+
+        if (cell) {
+          cell.style.background = `rgba(250, 204, 21, ${Math.max(.15, val * 1.22)})`;
+          cell.textContent = val.toFixed(2);
+          cell.classList.add('highlighted');
+        }
+        if (encBox) {
+          encBox.style.transform = `scale(${1 + val * 0.32})`;
+          encBox.style.boxShadow = `0 0 ${8 + val * 18}px rgba(250, 204, 21, .58)`;
+        }
+        await sleep(150);
+
+        setTimeout(() => {
+          if (cell) cell.classList.remove('highlighted');
+          if (encBox) { encBox.style.transform = ''; encBox.style.boxShadow = ''; }
+        }, 900);
+      }
+    }
+
+    async function animateDecoderSelfAttentionRow(step) {
+      const allowed = step + 1;
+      const raw = Array.from({length: allowed}, () => 0.6*randn() + 0.7*Math.random());
+      const weights = softmax(raw);
+
+      for (let col = 0; col < 3; col++) {
+        const cell = document.getElementById(`decSelf-${step}-${col}`);
+        if (!cell) continue;
+        if (col < allowed) {
+          const w = weights[col];
+          cell.style.background = `rgba(250, 204, 21, ${Math.max(.15, w * 1.22)})`;
+          cell.textContent = w.toFixed(2);
+          cell.classList.add('highlighted');
+
+          const decBox = document.getElementById(`decoder-${col}`);
+          if (decBox) {
+            decBox.style.transform = `scale(${1 + w * 0.32})`;
+            decBox.style.boxShadow = `0 0 ${8 + w * 16}px rgba(250, 204, 21, .56)`;
+          }
+
+          await sleep(150);
+
+          setTimeout(() => {
+            cell.classList.remove('highlighted');
+            if (decBox) { decBox.style.transform = ''; decBox.style.boxShadow = ''; }
+          }, 900);
+        } else {
+          cell.style.background = 'rgba(0,0,0,0.35)';
+          cell.textContent = '—';
+        }
+      }
+    }
+
+    function getKeyFocusDescription(step) {
+      if (step === 0) return 'Early-middle history (t-4 to t-2) receives most weight.';
+      if (step === 1) return 'Later history (t-2 to t-1) gains prominence as context grows.';
+      return 'Strong focus around a salient timestep (near t-3) with supportive neighbors.';
+    }
+
+    function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+    function toggleAutoStep() {
+      autoStepping = !autoStepping;
+      const btn = document.getElementById('autoStepBtn');
+      btn.textContent = autoStepping ? 'Pause Auto' : 'Auto Step';
+      if (autoStepping) {
+        autoStepInterval = setInterval(async () => {
+          if (!isAnimating && currentDecoderStep < 3) await nextStep();
+          if (currentDecoderStep >= 3) toggleAutoStep();
+        }, 1100);
+      } else if (autoStepInterval) {
+        clearInterval(autoStepInterval);
+      }
+    }
+
+    function runFullDemo() {
+      resetAnimation().then(async () => {
+        for (let i = 0; i < 3; i++) { await nextStep(); }
+      });
+    }
+
+    async function resetAnimation() {
+      if (autoStepping) toggleAutoStep();
+      currentDecoderStep = 0; isAnimating = false;
+      initializeData();
+      updateLegendForMode();
+    }
+
+    function updateLegendForMode() {
+      const el = document.getElementById('autoLegend');
+      if (!el) return;
+      if (attentionMode === 'cross') {
+        el.innerHTML = `
+          <div><strong style="color: #60a5fa;">Step 1:</strong> Query for t+1 attends to all encoder outputs (t-6 … t-1)</div>
+          <div><strong style="color: #eab308;">Step 2:</strong> Query for t+2 attends to encoder + previous decoder outputs</div>
+          <div><strong style="color: #0ea5a9;">Step 3:</strong> Query for t+3 uses all previous context for final prediction</div>
+        `;
+      } else if (attentionMode === 'dec-self') {
+        el.innerHTML = `
+          <div><strong style="color: #60a5fa;">Step 1:</strong> Decoder query t+1 can only attend to itself (mask future)</div>
+          <div><strong style="color: #eab308;">Step 2:</strong> Decoder query t+2 attends to {t+1, t+2}</div>
+          <div><strong style="color: #0ea5a9;">Step 3:</strong> Decoder query t+3 attends to {t+1, t+2, t+3}</div>
+        `;
+      } else {
+        el.innerHTML = `
+          <div><strong style="color: #60a5fa;">Step 1:</strong> Highlight a query row in the encoder’s 6×6 self-attention</div>
+          <div><strong style="color: #eab308;">Step 2:</strong> Highlight another encoder token’s attention pattern</div>
+          <div><strong style="color: #0ea5a9;">Step 3:</strong> Highlight a third encoder token’s attention pattern</div>
+        `;
+      }
+    }
+
+    // Bind radios and kickoff
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('input[name="attnMode"]').forEach(r => {
+        r.addEventListener('change', (e) => {
+          attentionMode = e.target.value;
+          resetAnimation();
+        });
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') nextStep();
+      });
+      // initial render
+      initializeData();
+      updateLegendForMode();
+    });
+  </script>
+</body>
+</html>
