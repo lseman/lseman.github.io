@@ -993,10 +993,9 @@
     </div>
   </div>
 </section>
-
 <script>
-(function(){
-  // Simple 2D wireframe-style visualization without Three.js
+(function () {
+  // ----------- grab elements -----------
   const canT = document.getElementById('pwl2_true');
   const canA = document.getElementById('pwl2_approx');
   if (!canT || !canA) return;
@@ -1012,314 +1011,413 @@
   const fpV = document.getElementById('pwl2_fp'), fhV = document.getElementById('pwl2_fh'), feV = document.getElementById('pwl2_fe');
   const emaxV = document.getElementById('pwl2_emax'), emeanV = document.getElementById('pwl2_emean');
 
+  // ----------- canvas + DPR scaling -----------
   const ctxT = canT.getContext('2d');
   const ctxA = canA.getContext('2d');
-  const W = canT.width, H = canT.height;
+  function fitCanvas(canvas, ctx) {
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const { width, height } = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.floor(width * dpr));
+    canvas.height = Math.max(1, Math.floor(height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function fitAll() { fitCanvas(canT, ctxT); fitCanvas(canA, ctxA); }
+  fitAll();
+  window.addEventListener('resize', () => { fitAll(); rebuild(); });
 
-  // 3D projection parameters
+  // ----------- projection state (interactive) -----------
   const proj = {
-    scale: 80,
-    offsetX: W/2,
-    offsetY: H/2,
-    angle: Math.PI/6, // 30 degrees
-    tilt: Math.PI/4   // 45 degrees
+    scale: 350,
+    angle: 0.55,  // yaw (around z)
+    tilt: 2.25,   // pitch (around x')
+    offsetX: () => canT.getBoundingClientRect().width / 2,
+    offsetY: () => canT.getBoundingClientRect().height / 2,
+    zScale: 1,           // adaptive, set per rebuild
   };
 
-  function fFactory(kind){
+  // mouse drag to rotate; wheel to zoom (both canvases)
+  let dragging = false, lastX = 0, lastY = 0;
+  function attachInteractions(canvas) {
+    canvas.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('mouseup', () => dragging = false);
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      proj.angle += dx * 0.005;
+      console.log(proj.angle);
+      proj.tilt = Math.max(0.1, Math.min(Math.PI - 0.1, proj.tilt - dy * 0.005));
+      console.log(proj.tilt);
+      rebuild();
+    });
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const k = Math.exp(-e.deltaY * 0.001);
+      proj.scale = Math.max(20, Math.min(600, proj.scale * k));
+      rebuild();
+    }, { passive: false });
+  }
+  attachInteractions(canT);
+  attachInteractions(canA);
+
+  // ----------- functions -----------
+  function fFactory(kind) {
     if (kind === 'peaks') {
       return (x, y) => {
         const sx = (x - Math.PI/2), sy = (y - Math.PI/2);
-        return 0.3 * Math.sin(2*x) * Math.cos(2*y) + 0.2 * Math.sin(4*x + 4*y);
+        return 0.3 * Math.sin(2*x) * Math.cos(2*y) + 0.2 * Math.sin(4*x + 4*y)
+             + 0.15 * Math.exp(-(sx*sx + sy*sy));
       };
     }
     if (kind === 'saddle') return (x,y) => 0.5 * (x - Math.PI/2) * (y - Math.PI/2);
     return (x,y) => Math.sin(x) * Math.cos(y);
   }
-
-  function linspace(a, b, n){
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function linspace(a, b, n) {
     if (n <= 1) return [a];
-    const out = new Array(n);
-    const h = (b - a) / (n - 1);
-    for(let i = 0; i < n; i++) out[i] = a + h * i;
+    const out = new Array(n), h = (b - a) / (n - 1);
+    for (let i = 0; i < n; i++) out[i] = a + h * i;
     return out;
   }
-
-  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
-
-  function bilinearEval(x, y, xs, ys, F){
-    let i = 0;
-    while (i < xs.length - 2 && x > xs[i + 1]) i++;
-    i = clamp(i, 0, xs.length - 2);
-    
-    let j = 0;
-    while (j < ys.length - 2 && y > ys[j + 1]) j++;
-    j = clamp(j, 0, ys.length - 2);
-
-    const x0 = xs[i], x1 = xs[i + 1];
-    const y0 = ys[j], y1 = ys[j + 1];
-    
+  function bilinearEval(x, y, xs, ys, F) {
+    let i = 0; while (i < xs.length - 2 && x > xs[i + 1]) i++;
+    let j = 0; while (j < ys.length - 2 && y > ys[j + 1]) j++;
+    i = clamp(i, 0, xs.length - 2); j = clamp(j, 0, ys.length - 2);
+    const x0 = xs[i], x1 = xs[i + 1], y0 = ys[j], y1 = ys[j + 1];
     const u = clamp((x - x0) / (x1 - x0), 0, 1);
     const v = clamp((y - y0) / (y1 - y0), 0, 1);
-
-    const f00 = F[i][j], f10 = F[i + 1][j];
-    const f01 = F[i][j + 1], f11 = F[i + 1][j + 1];
-
-    return (1 - u) * (1 - v) * f00 + u * (1 - v) * f10 + (1 - u) * v * f01 + u * v * f11;
+    const f00 = F[i][j], f10 = F[i+1][j], f01 = F[i][j+1], f11 = F[i+1][j+1];
+    return (1-u)*(1-v)*f00 + u*(1-v)*f10 + (1-u)*v*f01 + u*v*f11;
   }
 
-  // 3D to 2D projection
-  function project3D(x, y, z, ax, bx, ay, by) {
-    // Normalize coordinates
+  // sample z-range for auto zScale (keeps shapes nice)
+  function sampleZRange(evalFn, ax, bx, ay, by) {
+    const S = 32;
+    let zmin = +Infinity, zmax = -Infinity;
+    for (let j = 0; j < S; j++) {
+      const y = ay + (by - ay) * j / (S - 1);
+      for (let i = 0; i < S; i++) {
+        const x = ax + (bx - ax) * i / (S - 1);
+        const z = evalFn(x, y);
+        if (Number.isFinite(z)) { if (z < zmin) zmin = z; if (z > zmax) zmax = z; }
+      }
+    }
+    if (!isFinite(zmin) || !isFinite(zmax)) zmin = -1, zmax = 1;
+    return { zmin, zmax, span: Math.max(1e-9, zmax - zmin) };
+  }
+
+  // 3D -> 2D projection (isometric-ish with tilt & yaw)
+  function project3D(x, y, z, ax, bx, ay, by, zmin, span, canvas) {
+    const W = canvas.getBoundingClientRect().width;
+    const H = canvas.getBoundingClientRect().height;
+
     const nx = (x - ax) / (bx - ax) - 0.5;
     const ny = (y - ay) / (by - ay) - 0.5;
-    const nz = z;
+    const nz = (z - zmin) / span - 0.5; // normalize z to [0,1] then center
 
-    // Isometric projection
-    const screenX = proj.offsetX + proj.scale * (nx * Math.cos(proj.angle) - ny * Math.sin(proj.angle));
-    const screenY = proj.offsetY - proj.scale * (nz + (nx * Math.sin(proj.angle) + ny * Math.cos(proj.angle)) * Math.sin(proj.tilt));
-    
-    return { x: screenX, y: screenY };
+    // rotate around z (yaw), then apply tilt (pitch). Keep it simple.
+    const ca = Math.cos(proj.angle), sa = Math.sin(proj.angle);
+    const cx = nx * ca - ny * sa;
+    const cy = nx * sa + ny * ca;
+
+    const st = Math.sin(proj.tilt), ct = Math.cos(proj.tilt);
+    const cy2 = cy * ct - nz * st;
+    const z2  = cy * st + nz * ct;
+
+    const sx = proj.offsetX() + proj.scale * cx;
+    const sy = proj.offsetY() - proj.scale * (cy2 + proj.zScale * z2);
+    return { x: sx, y: sy, depth: z2 }; // depth for sorting
   }
 
-  function drawWireframeSurface(ctx, evalFn, ax, bx, ay, by, resolution, color, lineWidth = 1) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    
-    const step = resolution - 1;
-    const dx = (bx - ax) / step;
-    const dy = (by - ay) / step;
+  // generate line segments for a wire grid, then sort by depth (painter)
+  function drawWireframe(ctx, evalFn, ax, bx, ay, by, res, color, lw, contour=false, canvas=canT) {
+    const { zmin, span } = sampleZRange(evalFn, ax, bx, ay, by);
+    const step = Math.max(2, res);
+    const dx = (bx - ax) / (step - 1);
+    const dy = (by - ay) / (step - 1);
 
-    // Draw grid lines in x direction
-    for (let i = 0; i <= step; i++) {
-      ctx.beginPath();
+    // Build segments
+    const segs = [];
+
+    // x-direction lines
+    for (let i = 0; i < step; i++) {
       const x = ax + i * dx;
-      let first = true;
-      for (let j = 0; j <= step; j++) {
+      let prev = null;
+      for (let j = 0; j < step; j++) {
         const y = ay + j * dy;
         const z = evalFn(x, y);
-        const p = project3D(x, y, z, ax, bx, ay, by);
-        
-        if (first) {
-          ctx.moveTo(p.x, p.y);
-          first = false;
-        } else {
-          ctx.lineTo(p.x, p.y);
-        }
+        const p = project3D(x, y, z, ax, bx, ay, by, zmin, span, canvas);
+        if (prev) segs.push([prev, p]);
+        prev = p;
       }
-      ctx.stroke();
     }
-
-    // Draw grid lines in y direction  
-    for (let j = 0; j <= step; j++) {
-      ctx.beginPath();
+    // y-direction lines
+    for (let j = 0; j < step; j++) {
       const y = ay + j * dy;
-      let first = true;
-      for (let i = 0; i <= step; i++) {
+      let prev = null;
+      for (let i = 0; i < step; i++) {
         const x = ax + i * dx;
         const z = evalFn(x, y);
-        const p = project3D(x, y, z, ax, bx, ay, by);
-        
-        if (first) {
-          ctx.moveTo(p.x, p.y);
-          first = false;
-        } else {
-          ctx.lineTo(p.x, p.y);
-        }
+        const p = project3D(x, y, z, ax, bx, ay, by, zmin, span, canvas);
+        if (prev) segs.push([prev, p]);
+        prev = p;
       }
+    }
+
+    // depth sort (back to front)
+    segs.sort((a, b) => ((a[0].depth + a[1].depth) - (b[0].depth + b[1].depth)));
+
+    ctx.lineWidth = lw;
+    for (const [p0, p1] of segs) {
+      const depthAvg = (p0.depth + p1.depth) * 0.5; // ~[-?, ?]
+      const alpha = clamp(0.35 + 0.65 * (depthAvg + 0.5), 0.2, 1.0);
+      ctx.strokeStyle = colorWithAlpha(color, alpha);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
       ctx.stroke();
     }
+
+    // optional contours (equally spaced)
+    if (contour) {
+      const levels = 8;
+      ctx.lineWidth = Math.max(1, lw - 0.5);
+      for (let k = 1; k < levels; k++) {
+        const zlev = zmin + (span * k) / levels;
+        ctx.strokeStyle = colorWithAlpha('#0f172a', 0.25);
+        // marching-squares-ish sampling along rows
+        for (let j = 0; j < step - 1; j++) {
+          for (let i = 0; i < step - 1; i++) {
+            const x0 = ax + i * dx, x1 = ax + (i + 1) * dx;
+            const y0 = ay + j * dy, y1 = ay + (j + 1) * dy;
+            const z00 = evalFn(x0, y0), z10 = evalFn(x1, y0);
+            const z01 = evalFn(x0, y1), z11 = evalFn(x1, y1);
+            const edges = [];
+            function interpX(yc, za, zb) {
+              const t = (zlev - za) / (zb - za);
+              return clamp(x0 + t * (x1 - x0), x0, x1);
+            }
+            function interpY(xc, za, zb) {
+              const t = (zlev - za) / (zb - za);
+              return clamp(y0 + t * (y1 - y0), y0, y1);
+            }
+            if ((z00 - zlev) * (z10 - zlev) < 0) edges.push({ x: interpX(y0, z00, z10), y: y0 });
+            if ((z01 - zlev) * (z11 - zlev) < 0) edges.push({ x: interpX(y1, z01, z11), y: y1 });
+            if ((z00 - zlev) * (z01 - zlev) < 0) edges.push({ x: x0, y: interpY(x0, z00, z01) });
+            if ((z10 - zlev) * (z11 - zlev) < 0) edges.push({ x: x1, y: interpY(x1, z10, z11) });
+            if (edges.length === 2) {
+              const P0 = project3D(edges[0].x, edges[0].y, zlev, ax, bx, ay, by, zmin, span, canvas);
+              const P1 = project3D(edges[1].x, edges[1].y, zlev, ax, bx, ay, by, zmin, span, canvas);
+              ctx.beginPath(); ctx.moveTo(P0.x, P0.y); ctx.lineTo(P1.x, P1.y); ctx.stroke();
+            }
+          }
+        }
+      }
+    }
+
+    return { zmin, span };
   }
 
-  function drawGridPoints(ctx, xs, ys, F, ax, bx, ay, by, color = '#ff0000', size = 4) {
-    ctx.fillStyle = color;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
-    
-    for (let i = 0; i < xs.length; i++) {
-      for (let j = 0; j < ys.length; j++) {
-        const p = project3D(xs[i], ys[j], F[i][j], ax, bx, ay, by);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, size, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-      }
+  function colorWithAlpha(hex, a) {
+    // accepts '#rrggbb'
+    const c = hex.startsWith('#') ? hex.slice(1) : hex;
+    const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function drawAxes(ctx, ax, bx, ay, by, evalFn, canvas) {
+    const { zmin, span } = sampleZRange(evalFn, ax, bx, ay, by);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+
+    // draw 3 axes crossing domain center at median z
+    const cx = (ax + bx) / 2, cy = (ay + by) / 2, cz = zmin + span * 0.5;
+
+    const X0 = project3D(ax, cy, cz, ax, bx, ay, by, zmin, span, canvas);
+    const X1 = project3D(bx, cy, cz, ax, bx, ay, by, zmin, span, canvas);
+    const Y0 = project3D(cx, ay, cz, ax, bx, ay, by, zmin, span, canvas);
+    const Y1 = project3D(cx, by, cz, ax, bx, ay, by, zmin, span, canvas);
+    const Z0 = project3D(cx, cy, zmin, ax, bx, ay, by, zmin, span, canvas);
+    const Z1 = project3D(cx, cy, zmin + span, ax, bx, ay, by, zmin, span, canvas);
+
+    ctx.beginPath(); ctx.moveTo(X0.x, X0.y); ctx.lineTo(X1.x, X1.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(Y0.x, Y0.y); ctx.lineTo(Y1.x, Y1.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(Z0.x, Z0.y); ctx.lineTo(Z1.x, Z1.y); ctx.stroke();
+
+    // ticks + labels
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, monospace';
+    const T = 4, xt = 4, yt = 4, zt = 4;
+
+    for (let i = 0; i <= xt; i++) {
+      const x = ax + (bx - ax) * (i / xt);
+      const P = project3D(x, cy, cz, ax, bx, ay, by, zmin, span, canvas);
+      ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x + 4, P.y + 4); ctx.stroke();
+      ctx.fillText(x.toFixed(2), P.x + 6, P.y + 6);
+    }
+    for (let i = 0; i <= yt; i++) {
+      const y = ay + (by - ay) * (i / yt);
+      const P = project3D(cx, y, cz, ax, bx, ay, by, zmin, span, canvas);
+      ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x + 4, P.y + 4); ctx.stroke();
+      ctx.fillText(y.toFixed(2), P.x + 6, P.y + 6);
+    }
+    for (let i = 0; i <= zt; i++) {
+      const z = zmin + span * (i / zt);
+      const P = project3D(cx, cy, z, ax, bx, ay, by, zmin, span, canvas);
+      ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x + 4, P.y + 4); ctx.stroke();
+      ctx.fillText(z.toExponential(1), P.x + 6, P.y + 6);
     }
   }
 
-  function drawAxes(ctx, ax, bx, ay, by) {
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    
-    // X axis
-    ctx.beginPath();
-    const x1 = project3D(ax, (ay+by)/2, 0, ax, bx, ay, by);
-    const x2 = project3D(bx, (ay+by)/2, 0, ax, bx, ay, by);
-    ctx.moveTo(x1.x, x1.y);
-    ctx.lineTo(x2.x, x2.y);
-    ctx.stroke();
-    
-    // Y axis  
-    ctx.beginPath();
-    const y1 = project3D((ax+bx)/2, ay, 0, ax, bx, ay, by);
-    const y2 = project3D((ax+bx)/2, by, 0, ax, bx, ay, by);
-    ctx.moveTo(y1.x, y1.y);
-    ctx.lineTo(y2.x, y2.y);
-    ctx.stroke();
-    
-    // Z axis
-    ctx.beginPath();
-    const z1 = project3D((ax+bx)/2, (ay+by)/2, -1, ax, bx, ay, by);
-    const z2 = project3D((ax+bx)/2, (ay+by)/2, 1, ax, bx, ay, by);
-    ctx.moveTo(z1.x, z1.y);
-    ctx.lineTo(z2.x, z2.y);
-    ctx.stroke();
-  }
-
-  function drawProbe(ctx, x, y, z, ax, bx, ay, by) {
-    const p = project3D(x, y, z, ax, bx, ay, by);
-    
-    ctx.fillStyle = '#ff4444';
+  function drawGridPoints(ctx, xs, ys, F, ax, bx, ay, by, evalFn, canvas) {
+    const { zmin, span } = sampleZRange(evalFn, ax, bx, ay, by);
+    ctx.fillStyle = '#ef4444';
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
+    ctx.lineWidth = 1;
+    for (let i = 0; i < xs.length; i++) for (let j = 0; j < ys.length; j++) {
+      const p = project3D(xs[i], ys[j], F[i][j], ax, bx, ay, by, zmin, span, canvas);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
   }
 
+  // state + probe
   const state = {
     ax: parseFloat(axIn.value) || 0,
     bx: parseFloat(bxIn.value) || Math.PI,
     ay: parseFloat(ayIn.value) || 0,
     by: parseFloat(byIn.value) || Math.PI,
-    nx: parseInt(nxIn.value, 10) || 5,
-    ny: parseInt(nyIn.value, 10) || 5,
-    probe: { x: Math.PI/2, y: Math.PI/2 }
+    nx: Math.max(2, parseInt(nxIn.value, 10) || 5),
+    ny: Math.max(2, parseInt(nyIn.value, 10) || 5),
+    probe: { x: Math.PI / 2, y: Math.PI / 2 },
   };
-
-  function updateDerived(){
-    nxV.textContent = state.nx;
-    nyV.textContent = state.ny;
+  function updateDerived() {
+    nxV.textContent = state.nx; nyV.textContent = state.ny;
     cellsV.textContent = (state.nx - 1) * (state.ny - 1);
   }
 
-  function rebuild(){
-    const f = fFactory(funSel.value);
-    const {ax, bx, ay, by, nx, ny} = state;
+  // smarter probe mapping: invert the normalized plane approximately
+  function screenToDomain(canvas, x, y) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = x - rect.left - proj.offsetX();
+    const sy = (y - rect.top - proj.offsetY());
+    // approximate inverse: ignore z; invert rotation and tilt on (nx, ny)
+    const cx = sx / proj.scale;
+    const cy2 = -sy / proj.scale;
 
-    // Create grid
+    const st = Math.sin(proj.tilt), ct = Math.cos(proj.tilt);
+    const cy = cy2 / ct; // ignore nz contribution -> good enough for probe
+
+    const ca = Math.cos(proj.angle), sa = Math.sin(proj.angle);
+    const nx = cx * ca + cy * sa;
+    const ny = -cx * sa + cy * ca;
+
+    const u = nx + 0.5, v = ny + 0.5;
+    const xi = clamp(u, 0, 1), yi = clamp(v, 0, 1);
+    const xdom = state.ax + xi * (state.bx - state.ax);
+    const ydom = state.ay + yi * (state.by - state.ay);
+    return { x: xdom, y: ydom };
+  }
+
+  function rebuild() {
+    const f = fFactory(funSel.value);
+    const { ax, bx, ay, by, nx, ny } = state;
+
+    // grid + samples
     const xs = linspace(ax, bx, nx);
     const ys = linspace(ay, by, ny);
-    const F = Array.from({length: nx}, () => new Array(ny));
-    
-    for (let i = 0; i < nx; i++) {
-      for (let j = 0; j < ny; j++) {
-        F[i][j] = f(xs[i], ys[j]);
-      }
+    const F = Array.from({ length: nx }, () => new Array(ny));
+    for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) F[i][j] = f(xs[i], ys[j]);
+
+    // clear + bg
+    for (const ctx of [ctxT, ctxA]) {
+      const canvas = ctx.canvas;
+      const { width, height } = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, width, height);
+      // soft vignette
+      ctx.save();
+      const grd = ctx.createRadialGradient(width/2, height/2, Math.min(width, height)/4, width/2, height/2, Math.max(width, height)/1.2);
+      grd.addColorStop(0, 'rgba(255,255,255,0)');
+      grd.addColorStop(1, 'rgba(15,23,42,0.08)');
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, width, height);
+      ctx.restore();
     }
 
-    // Clear canvases
-    ctxT.clearRect(0, 0, W, H);
-    ctxA.clearRect(0, 0, W, H);
+    // axes
+    drawAxes(ctxT, ax, bx, ay, by, (x,y)=>f(x,y), canT);
+    drawAxes(ctxA, ax, bx, ay, by, (x,y)=>bilinearEval(x,y,xs,ys,F), canA);
 
-    // Draw background
-    ctxT.fillStyle = '#f8fafc';
-    ctxT.fillRect(0, 0, W, H);
-    ctxA.fillStyle = '#f8fafc';  
-    ctxA.fillRect(0, 0, W, H);
+    // surfaces (depth-sorted wireframe + contours)
+    drawWireframe(ctxT, (x,y)=>f(x,y), ax, bx, ay, by, 28, '#4338ca', 1.4, true, canT);
+    drawWireframe(ctxA, (x,y)=>bilinearEval(x,y,xs,ys,F), ax, bx, ay, by, 28, '#059669', 1.4, true, canA);
 
-    // Draw axes
-    drawAxes(ctxT, ax, bx, ay, by);
-    drawAxes(ctxA, ax, bx, ay, by);
-
-    // Draw surfaces
-    drawWireframeSurface(ctxT, (x,y) => f(x,y), ax, bx, ay, by, 20, '#4338ca', 1.5);
-    drawWireframeSurface(ctxA, (x,y) => bilinearEval(x, y, xs, ys, F), ax, bx, ay, by, 20, '#059669', 1.5);
-
-    // Draw grid if enabled
-    if (showGrid.checked) {
-      drawGridPoints(ctxT, xs, ys, F, ax, bx, ay, by, '#ff0000', 4);
-      drawGridPoints(ctxA, xs, ys, F, ax, bx, ay, by, '#ff0000', 4);
-      
-      // Draw coarser grid wireframe over approximation
-      drawWireframeSurface(ctxA, (x,y) => bilinearEval(x, y, xs, ys, F), ax, bx, ay, by, nx-1, '#333333', 2);
+    // optional coarse grid overlay + points
+    if (showGrid && showGrid.checked) {
+      drawGridPoints(ctxT, xs, ys, F, ax, bx, ay, by, (x,y)=>f(x,y), canT);
+      drawGridPoints(ctxA, xs, ys, F, ax, bx, ay, by, (x,y)=>bilinearEval(x,y,xs,ys,F), canA);
+      drawWireframe(ctxA, (x,y)=>bilinearEval(x,y,xs,ys,F), ax, bx, ay, by, Math.max(3, nx), '#111827', 1.6, false, canA);
     }
 
-    // Draw probe point
+    // probe + readouts
     const fx = f(state.probe.x, state.probe.y);
     const fh = bilinearEval(state.probe.x, state.probe.y, xs, ys, F);
-    drawProbe(ctxT, state.probe.x, state.probe.y, fx, ax, bx, ay, by);
-    drawProbe(ctxA, state.probe.x, state.probe.y, fh, ax, bx, ay, by);
 
-    // Update probe values
+    const { zmin: ztMin, span: ztSpan } = sampleZRange((x,y)=>f(x,y), ax, bx, ay, by);
+    const { zmin: zaMin, span: zaSpan } = sampleZRange((x,y)=>bilinearEval(x,y,xs,ys,F), ax, bx, ay, by);
+
+    function drawProbe(ctx, canvas, zmin, span, zval, color) {
+      const p = project3D(state.probe.x, state.probe.y, zval, ax, bx, ay, by, zmin, span, canvas);
+      ctx.fillStyle = color; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, 2*Math.PI); ctx.fill(); ctx.stroke();
+    }
+    drawProbe(ctxT, canT, ztMin, ztSpan, fx, '#ef4444');
+    drawProbe(ctxA, canA, zaMin, zaSpan, fh, '#ef4444');
+
+    // error stats
+    const sampleRes = 50;
+    let maxErr = 0, sumErr = 0, count = 0;
+    for (let j = 0; j < sampleRes; j++) {
+      const y = ay + j / (sampleRes - 1) * (by - ay);
+      for (let i = 0; i < sampleRes; i++) {
+        const x = ax + i / (sampleRes - 1) * (bx - ax);
+        const e = Math.abs(f(x, y) - bilinearEval(x, y, xs, ys, F));
+        if (Number.isFinite(e)) { maxErr = Math.max(maxErr, e); sumErr += e; count++; }
+      }
+    }
     const err = Math.abs(fx - fh);
     xpV.textContent = state.probe.x.toFixed(3);
     ypV.textContent = state.probe.y.toFixed(3);
     fpV.textContent = fx.toExponential(3);
     fhV.textContent = fh.toExponential(3);
     feV.textContent = err.toExponential(3);
-
-    // Calculate error statistics
-    const sampleRes = 50;
-    let maxErr = 0, sumErr = 0, count = 0;
-    
-    for (let j = 0; j < sampleRes; j++){
-      const y = ay + j / (sampleRes - 1) * (by - ay);
-      for (let i = 0; i < sampleRes; i++){
-        const x = ax + i / (sampleRes - 1) * (bx - ax);
-        const trueVal = f(x, y);
-        const approxVal = bilinearEval(x, y, xs, ys, F);
-        const error = Math.abs(trueVal - approxVal);
-        
-        if (Number.isFinite(error)) {
-          maxErr = Math.max(maxErr, error);
-          sumErr += error;
-          count++;
-        }
-      }
-    }
-    
     emaxV.textContent = maxErr.toExponential(3);
     emeanV.textContent = count > 0 ? (sumErr / count).toExponential(3) : '0.000e+0';
   }
 
-  // Mouse interaction for probe
-  function handleProbeMove(e, canvas) {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    
-    // Simple mapping from screen to domain (approximate)
-    const u = (mouseX - 50) / (W - 100);
-    const v = (mouseY - 50) / (H - 100);
-    
-    state.probe.x = state.ax + clamp(u, 0, 1) * (state.bx - state.ax);
-    state.probe.y = state.ay + clamp(1-v, 0, 1) * (state.by - state.ay);
-    
+  // click to move probe (both canvases)
+  function handleProbeClick(e) {
+    const canvas = e.currentTarget;
+    const pt = screenToDomain(canvas, e.clientX, e.clientY);
+    state.probe.x = pt.x; state.probe.y = pt.y;
     rebuild();
   }
+  canT.addEventListener('click', handleProbeClick);
+  canA.addEventListener('click', handleProbeClick);
 
-  canT.addEventListener('click', (e) => handleProbeMove(e, canT));
-  canA.addEventListener('click', (e) => handleProbeMove(e, canA));
-
-  // Event listeners
+  // inputs -> state
+  function pullInputs() {
+    state.ax = parseFloat(axIn.value) || 0;
+    state.bx = parseFloat(bxIn.value) || Math.PI;
+    state.ay = parseFloat(ayIn.value) || 0;
+    state.by = parseFloat(byIn.value) || Math.PI;
+    state.nx = Math.max(2, parseInt(nxIn.value, 10) || 2);
+    state.ny = Math.max(2, parseInt(nyIn.value, 10) || 2);
+    if (state.bx <= state.ax) state.bx = state.ax + 1e-6;
+    if (state.by <= state.ay) state.by = state.ay + 1e-6;
+  }
   ['input', 'change'].forEach(evt => {
     [funSel, axIn, bxIn, ayIn, byIn, nxIn, nyIn, showGrid].forEach(el => {
-      el.addEventListener(evt, () => {
-        state.ax = parseFloat(axIn.value) || 0;
-        state.bx = parseFloat(bxIn.value) || Math.PI;
-        state.ay = parseFloat(ayIn.value) || 0;
-        state.by = parseFloat(byIn.value) || Math.PI;
-        state.nx = Math.max(2, parseInt(nxIn.value, 10) || 2);
-        state.ny = Math.max(2, parseInt(nyIn.value, 10) || 2);
-        
-        if (state.bx <= state.ax) state.bx = state.ax + 1e-6;
-        if (state.by <= state.ay) state.by = state.ay + 1e-6;
-        
-        updateDerived();
-        rebuild();
-      });
+      el.addEventListener(evt, () => { pullInputs(); updateDerived(); rebuild(); });
     });
   });
 
