@@ -5,20 +5,22 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Robin Hood Hash Table Lab</title>
-  <!-- Tailwind CSS CDN -->
+
+  <!-- Tailwind CSS CDN (ok for this single-file demo; use CLI/PostCSS in prod) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <!-- Chart.js (for simple histograms/metrics) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- FIX: avoid “Not allowed to load local resource: favicon.ico” -->
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 
   <style>
     :root { color-scheme: light; }
     html { scroll-behavior: smooth; }
-
-    /* nice animated bg */
     .bg-hero {
       background: linear-gradient(120deg, #eef2ff, #f0fdf4, #ecfeff);
       background-size: 200% 200%;
@@ -28,7 +30,6 @@
 
     .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
-    /* cell colors */
     .cell-empty   { background: #ffffff; }
     .cell-full    { background: #e0f2fe; }   /* sky-100 */
     .cell-tomb    { background: #fee2e2; }   /* rose-200 */
@@ -36,6 +37,18 @@
 
     .fade-in { animation: fade .25s ease-in; }
     @keyframes fade { from {opacity:.2} to {opacity:1} }
+    /* Make all Prism code blocks smaller */
+pre[class*="language-"] code {
+  font-size: 0.75rem;   /* Tailwind’s text-sm ~ 0.875rem, this is smaller */
+  line-height: 1.25rem; /* tighten line spacing */
+}
+
+/* Alternatively, target just the section */
+#algos pre code {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
   </style>
 </head>
 
@@ -49,7 +62,7 @@
             Robin Hood Hash Table <span class="text-indigo-600">Lab</span>
           </h1>
           <p class="mt-3 text-lg md:text-xl text-slate-700">
-            Interactive, single‑file site to <span class="font-semibold">insert</span>, <span class="font-semibold">find</span>, and <span class="font-semibold">delete</span> while visualizing probe distances, conflicts, and <span class="font-semibold">rehash</span> growth. Built with vanilla JS, Tailwind, Alpine.js.
+            Interactive, single-file site to <span class="font-semibold">insert</span>, <span class="font-semibold">find</span>, and <span class="font-semibold">delete</span> while visualizing probe distances, conflicts, and <span class="font-semibold">rehash</span> growth. Built with vanilla JS, Tailwind, Alpine.js.
           </p>
           <div class="mt-5 flex flex-wrap gap-3">
             <a href="#sim" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open Simulator</a>
@@ -66,6 +79,649 @@
       </div>
     </div>
   </header>
+
+  <!-- Hash 101 -->
+  <section id="hash101" class="py-12">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Hash 101</h2>
+        <p class="mt-2 text-slate-600">Quick definitions with teaching-grade intuition.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">What’s a Hash?</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            A hash function maps arbitrary keys to fixed-size integers (e.g., 32 or 64 bits).
+            For hash tables, we take <span class="code">h(key) mod M</span> to pick a bucket.
+            Good table hashing wants: fast evaluation, uniform bucket spread, stability across inputs, and resistance to clustering.
+          </p>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">What’s a Collision?</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            Two different keys <span class="code">k1 ≠ k2</span> collide if they land in the same bucket
+            (<span class="code">h(k1) mod M == h(k2) mod M</span>). Collisions are inevitable—pigeonhole principle.
+            Open addressing strategies (linear/quadratic/Robin Hood) decide how we probe to find free slots or the target key.
+          </p>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">What’s Avalanche?</h3>
+          <p class="mt-2 text-sm leading-7 text-slate-700">
+            Avalanche measures how much the output bits change when a single input bit flips.
+            A strong non-crypto hash shows ~50% output bits flipped on average, evenly across bit positions.
+            Poor avalanche causes patterns, clustering, and performance regressions under structured keys.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Collision Handling Strategies — Illustrated -->
+<section id="strategies" class="py-12 bg-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Collision Handling Strategies (Illustrated)</h2>
+      <p class="mt-2 text-slate-600">Each card shows buckets on a ring and the first few probe positions for a single colliding key. Home bucket is highlighted; arrows show the probe path.</p>
+      <div class="mt-3 text-xs text-slate-500 flex flex-wrap gap-4">
+        <span><span class="inline-block w-3 h-3 align-[-2px] rounded-full bg-indigo-500 mr-1"></span>Home</span>
+        <span><span class="inline-block w-3 h-3 align-[-2px] rounded-full bg-emerald-500 mr-1"></span>Visited</span>
+        <span><span class="inline-block w-3 h-3 align-[-2px] rounded-full bg-rose-500 mr-1"></span>Swap / Evict</span>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      <!-- Linear Probing -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Linear Probing</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">Probes advance one step at a time: <span class="code">i, i+1, i+2, …</span></p>
+        <div class="mt-4">
+          <svg viewBox="0 0 360 220" class="w-full">
+            <!-- ring of M=12 buckets -->
+            <g transform="translate(180,90)">
+              <circle r="70" fill="none" stroke="#cbd5e1"/>
+              <!-- buckets -->
+              <g id="buckets-linear">
+                <!-- draw 12 nodes -->
+                <script type="application/ecmascript"><![CDATA[
+                  (function(){
+                    const g=document.getElementById('buckets-linear'), M=12, R=70;
+                    const home=0, seq=[0,1,2,3,4].map(k=>(home+k)%M);
+                    for(let i=0;i<M;i++){
+                      const a = (i/M)*2*Math.PI - Math.PI/2, x=R*Math.cos(a), y=R*Math.sin(a);
+                      const fill = i===home? '#6366f1' : (seq.includes(i)? '#10b981' : '#e2e8f0');
+                      const st = i===home? 'white' : '#334155';
+                      const n = document.createElementNS('http://www.w3.org/2000/svg','circle');
+                      n.setAttribute('cx',x); n.setAttribute('cy',y); n.setAttribute('r',10); n.setAttribute('fill',fill);
+                      g.appendChild(n);
+                      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+                      t.setAttribute('x',x); t.setAttribute('y',y+3); t.setAttribute('font-size','8'); t.setAttribute('fill',st); t.setAttribute('text-anchor','middle');
+                      t.textContent=i;
+                      g.appendChild(t);
+                    }
+                    // arrows between visited nodes
+                    const arrow = (x1,y1,x2,y2)=>{
+                      const aG=document.createElementNS('http://www.w3.org/2000/svg','g');
+                      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+                      l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+                      l.setAttribute('stroke','#0ea5e9'); l.setAttribute('stroke-width','2'); aG.appendChild(l);
+                      const ang=Math.atan2(y2-y1,x2-x1);
+                      const ah=document.createElementNS('http://www.w3.org/2000/svg','path');
+                      ah.setAttribute('d','M0,0 L-6,3 L-6,-3 Z'); ah.setAttribute('fill','#0ea5e9');
+                      ah.setAttribute('transform',`translate(${x2},${y2}) rotate(${ang*180/Math.PI})`);
+                      aG.appendChild(ah);
+                      g.appendChild(aG);
+                    };
+                    const pos=(i)=>{ const a=(i/M)*2*Math.PI - Math.PI/2; return [R*Math.cos(a), R*Math.sin(a)]; };
+                    for(let k=0;k<seq.length-1;k++){
+                      const [x1,y1]=pos(seq[k]), [x2,y2]=pos(seq[k+1]); arrow(x1,y1,x2,y2);
+                    }
+                  })();
+                ]]></script>
+              </g>
+            </g>
+            <text x="180" y="200" text-anchor="middle" font-size="11" fill="#475569">Cache-friendly but prone to primary clustering</text>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Quadratic / Triangular Probing -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Quadratic / Triangular</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">Gaps grow: <span class="code">+1, +3, +6, +10, …</span> — spreads probes.</p>
+        <div class="mt-4">
+          <svg viewBox="0 0 360 220" class="w-full">
+            <g transform="translate(180,90)">
+              <circle r="70" fill="none" stroke="#cbd5e1"/>
+              <g id="buckets-quad">
+                <script type="application/ecmascript"><![CDATA[
+                  (function(){
+                    const g=document.getElementById('buckets-quad'), M=12, R=70;
+                    const home=0, jumps=[0,1,3,6,10], seq=jumps.map(j=> (home+j)%M);
+                    for(let i=0;i<M;i++){
+                      const a = (i/M)*2*Math.PI - Math.PI/2, x=R*Math.cos(a), y=R*Math.sin(a);
+                      const fill = i===home? '#6366f1' : (seq.includes(i)? '#10b981' : '#e2e8f0');
+                      const st = i===home? 'white' : '#334155';
+                      const n = document.createElementNS('http://www.w3.org/2000/svg','circle');
+                      n.setAttribute('cx',x); n.setAttribute('cy',y); n.setAttribute('r',10); n.setAttribute('fill',fill); g.appendChild(n);
+                      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+                      t.setAttribute('x',x); t.setAttribute('y',y+3); t.setAttribute('font-size','8'); t.setAttribute('fill',st); t.setAttribute('text-anchor','middle'); t.textContent=i; g.appendChild(t);
+                    }
+                    const arrow=(x1,y1,x2,y2)=>{
+                      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+                      l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+                      l.setAttribute('stroke','#0ea5e9'); l.setAttribute('stroke-width','2'); g.appendChild(l);
+                      const ang=Math.atan2(y2-y1,x2-x1);
+                      const ah=document.createElementNS('http://www.w3.org/2000/svg','path');
+                      ah.setAttribute('d','M0,0 L-6,3 L-6,-3 Z'); ah.setAttribute('fill','#0ea5e9');
+                      ah.setAttribute('transform',`translate(${x2},${y2}) rotate(${ang*180/Math.PI})`); g.appendChild(ah);
+                    };
+                    const pos=(i)=>{ const a=(i/M)*2*Math.PI - Math.PI/2; return [R*Math.cos(a), R*Math.sin(a)]; };
+                    for(let k=0;k<seq.length-1;k++){ const [x1,y1]=pos(seq[k]), [x2,y2]=pos(seq[k+1]); arrow(x1,y1,x2,y2); }
+                  })();
+                ]]></script>
+              </g>
+            </g>
+            <text x="180" y="200" text-anchor="middle" font-size="11" fill="#475569">Reduces primary clustering with minimal complexity</text>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Double Hashing -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Double Hashing</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">Use a second hash as step size: <span class="code">+h₂(k)</span>.</p>
+        <div class="mt-4">
+          <svg viewBox="0 0 360 220" class="w-full">
+            <g transform="translate(180,90)">
+              <circle r="70" fill="none" stroke="#cbd5e1"/>
+              <g id="buckets-double">
+                <script type="application/ecmascript"><![CDATA[
+                  (function(){
+                    const g=document.getElementById('buckets-double'), M=12, R=70;
+                    const home=0, step=5; // example h2(k)=5 co-prime to M
+                    const seq=[0, (0+step)%M, (0+2*step)%M, (0+3*step)%M, (0+4*step)%M];
+                    for(let i=0;i<M;i++){
+                      const a=(i/M)*2*Math.PI - Math.PI/2, x=R*Math.cos(a), y=R*Math.sin(a);
+                      const fill = i===home? '#6366f1' : (seq.includes(i)? '#10b981' : '#e2e8f0');
+                      const st = i===home? 'white' : '#334155';
+                      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+                      c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',10); c.setAttribute('fill',fill); g.appendChild(c);
+                      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+                      t.setAttribute('x',x); t.setAttribute('y',y+3); t.setAttribute('font-size','8'); t.setAttribute('fill',st); t.setAttribute('text-anchor','middle'); t.textContent=i; g.appendChild(t);
+                    }
+                    const arrow=(x1,y1,x2,y2)=>{
+                      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+                      l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+                      l.setAttribute('stroke','#0ea5e9'); l.setAttribute('stroke-width','2'); g.appendChild(l);
+                      const ang=Math.atan2(y2-y1,x2-x1);
+                      const ah=document.createElementNS('http://www.w3.org/2000/svg','path');
+                      ah.setAttribute('d','M0,0 L-6,3 L-6,-3 Z'); ah.setAttribute('fill','#0ea5e9');
+                      ah.setAttribute('transform',`translate(${x2},${y2}) rotate(${ang*180/Math.PI})`); g.appendChild(ah);
+                    };
+                    const pos=(i)=>{ const a=(i/M)*2*Math.PI - Math.PI/2; return [R*Math.cos(a), R*Math.sin(a)]; };
+                    for(let k=0;k<seq.length-1;k++){ const [x1,y1]=pos(seq[k]), [x2,y2]=pos(seq[k+1]); arrow(x1,y1,x2,y2); }
+                  })();
+                ]]></script>
+              </g>
+            </g>
+            <text x="180" y="200" text-anchor="middle" font-size="11" fill="#475569">Dispersed probes; needs suitable step and capacity</text>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Robin Hood -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Robin Hood</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">If the newcomer’s distance <span class="code">d</span> is larger, swap with resident (steal the slot).</p>
+        <div class="mt-4">
+          <svg viewBox="0 0 360 220" class="w-full">
+            <g transform="translate(180,90)">
+              <circle r="70" fill="none" stroke="#cbd5e1"/>
+              <g id="buckets-rh">
+                <script type="application/ecmascript"><![CDATA[
+                  (function(){
+                    const g=document.getElementById('buckets-rh'), M=12, R=70;
+                    const home=0, seq=[0,1,2,3]; // linear path for illustration
+                    const swapAt=2; // show a swap at bucket 2
+                    for(let i=0;i<M;i++){
+                      const a=(i/M)*2*Math.PI - Math.PI/2, x=R*Math.cos(a), y=R*Math.sin(a);
+                      let fill='#e2e8f0';
+                      if(i===home) fill='#6366f1';
+                      else if (seq.includes(i)) fill='#10b981';
+                      if(i===swapAt) fill='#f43f5e'; // swap marker
+                      const st = (i===home||i===swapAt)? 'white' : '#334155';
+                      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+                      c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',10); c.setAttribute('fill',fill); g.appendChild(c);
+                      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+                      t.setAttribute('x',x); t.setAttribute('y',y+3); t.setAttribute('font-size','8'); t.setAttribute('fill',st); t.setAttribute('text-anchor','middle'); t.textContent=i; g.appendChild(t);
+                    }
+                    const arrow=(x1,y1,x2,y2,col)=>{
+                      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+                      l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+                      l.setAttribute('stroke',col||'#0ea5e9'); l.setAttribute('stroke-width','2'); g.appendChild(l);
+                      const ang=Math.atan2(y2-y1,x2-x1);
+                      const ah=document.createElementNS('http://www.w3.org/2000/svg','path');
+                      ah.setAttribute('d','M0,0 L-6,3 L-6,-3 Z'); ah.setAttribute('fill',col||'#0ea5e9');
+                      ah.setAttribute('transform',`translate(${x2},${y2}) rotate(${ang*180/Math.PI})`); g.appendChild(ah);
+                    };
+                    const pos=(i)=>{ const a=(i/M)*2*Math.PI - Math.PI/2; return [R*Math.cos(a), R*Math.sin(a)]; };
+                    for(let k=0;k<seq.length-1;k++){
+                      const [x1,y1]=pos(seq[k]), [x2,y2]=pos(seq[k+1]);
+                      arrow(x1,y1,x2,y2, k+1===swapAt? '#f43f5e' : '#0ea5e9');
+                    }
+                  })();
+                ]]></script>
+              </g>
+            </g>
+            <text x="180" y="200" text-anchor="middle" font-size="11" fill="#475569">Flattens probe-length variance via local swaps</text>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Hopscotch Hashing -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Hopscotch Hashing</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">Keep elements within a small neighborhood of their home; swap locally.</p>
+        <div class="mt-4">
+          <svg viewBox="0 0 360 220" class="w-full">
+            <g transform="translate(180,90)">
+              <circle r="70" fill="none" stroke="#cbd5e1"/>
+              <g id="buckets-hop">
+                <script type="application/ecmascript"><![CDATA[
+                  (function(){
+                    const g=document.getElementById('buckets-hop'), M=12, R=70;
+                    const home=0, window=4; // neighborhood size
+                    const neighborhood=[0,1,2,3].map(i=>(home+i)%M);
+                    const path=[0,5,4,3]; // hop via local swaps back into neighborhood
+                    for(let i=0;i<M;i++){
+                      const a=(i/M)*2*Math.PI - Math.PI/2, x=R*Math.cos(a), y=R*Math.sin(a);
+                      let fill = neighborhood.includes(i)? '#d1fae5' : '#e2e8f0';
+                      if(i===home) fill='#6366f1';
+                      if(path.includes(i) && !neighborhood.includes(i) && i!==home) fill='#10b981';
+                      const st = (i===home)? 'white' : '#334155';
+                      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+                      c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',10); c.setAttribute('fill',fill); g.appendChild(c);
+                      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+                      t.setAttribute('x',x); t.setAttribute('y',y+3); t.setAttribute('font-size','8'); t.setAttribute('fill',st); t.setAttribute('text-anchor','middle'); t.textContent=i; g.appendChild(t);
+                    }
+                    const arrow=(x1,y1,x2,y2,col)=>{
+                      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+                      l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+                      l.setAttribute('stroke',col||'#0ea5e9'); l.setAttribute('stroke-width','2'); g.appendChild(l);
+                      const ang=Math.atan2(y2-y1,x2-x1);
+                      const ah=document.createElementNS('http://www.w3.org/2000/svg','path');
+                      ah.setAttribute('d','M0,0 L-6,3 L-6,-3 Z'); ah.setAttribute('fill',col||'#0ea5e9');
+                      ah.setAttribute('transform',`translate(${x2},${y2}) rotate(${ang*180/Math.PI})`); g.appendChild(ah);
+                    };
+                    const pos=(i)=>{ const a=(i/M)*2*Math.PI - Math.PI/2; return [R*Math.cos(a), R*Math.sin(a)]; };
+                    for(let k=0;k<path.length-1;k++){ const [x1,y1]=pos(path[k]), [x2,y2]=pos(path[k+1]); arrow(x1,y1,x2,y2); }
+                  })();
+                ]]></script>
+              </g>
+            </g>
+            <text x="180" y="200" text-anchor="middle" font-size="11" fill="#475569">Local neighborhood (green halo) keeps lookups bounded</text>
+          </svg>
+        </div>
+      </article>
+
+      <!-- Cuckoo Hashing -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Cuckoo Hashing</h3>
+        <p class="mt-2 text-sm leading-7 text-slate-700">Two homes; insert may evict the resident to its alternate home.</p>
+        <div class="mt-4">
+          <svg viewBox="0 0 360 240" class="w-full">
+            <!-- two rows = two tables -->
+            <g transform="translate(30,30)">
+              <!-- Table A -->
+              <text x="0" y="-8" font-size="11" fill="#475569">Table A (h₁)</text>
+              <g id="cuckooA">
+                <rect x="0" y="0" width="300" height="40" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+                <!-- slots -->
+                <script type="application/ecmascript"><![CDATA[
+                  (function(){
+                    const g=document.getElementById('cuckooA'), slots=10, w=300/slots;
+                    const aHome=2; // h1(k)
+                    for(let i=0;i<slots;i++){
+                      const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+                      r.setAttribute('x',i*w); r.setAttribute('y',0); r.setAttribute('width',w); r.setAttribute('height',40);
+                      r.setAttribute('fill', i===aHome? '#6366f1':'none');
+                      r.setAttribute('opacity', i===aHome? '1':'1'); r.setAttribute('stroke','#e2e8f0');
+                      g.appendChild(r);
+                    }
+                  })();
+                ]]></script>
+              </g>
+
+              <!-- Table B -->
+              <g transform="translate(0,90)">
+                <text x="0" y="-8" font-size="11" fill="#475569">Table B (h₂)</text>
+                <g id="cuckooB">
+                  <rect x="0" y="0" width="300" height="40" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+                  <script type="application/ecmascript"><![CDATA[
+                    (function(){
+                      const g=document.getElementById('cuckooB'), slots=10, w=300/slots;
+                      const bHome=6; // h2(k)
+                      for(let i=0;i<slots;i++){
+                        const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+                        r.setAttribute('x',i*w); r.setAttribute('y',0); r.setAttribute('width',w); r.setAttribute('height',40);
+                        r.setAttribute('fill', i===bHome? '#10b981':'none');
+                        r.setAttribute('stroke','#e2e8f0'); g.appendChild(r);
+                      }
+                    })();
+                  ]]></script>
+                </g>
+              </g>
+
+              <!-- eviction arrow A→B -->
+              <g transform="translate(0,0)">
+                <path d="M 90 40 C 90 70, 180 70, 180 90" fill="none" stroke="#f43f5e" stroke-width="2"/>
+                <path d="M 0 0 L -6 3 L -6 -3 Z" fill="#f43f5e" transform="translate(180,90)"/>
+                <text x="95" y="62" font-size="11" fill="#f43f5e">evict → alternate home</text>
+              </g>
+            </g>
+            <text x="180" y="230" text-anchor="middle" font-size="11" fill="#475569">Lookups check A and B; inserts may trigger relocation chains</text>
+          </svg>
+        </div>
+      </article>
+    </div>
+
+    <p class="mt-6 text-xs text-slate-600">These schematics are conceptual: actual probe order depends on capacity, hash functions, and load.</p>
+  </div>
+</section>
+
+<!-- Add these to <head> (Prism.js for syntax highlighting) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-c.min.js"></script>
+
+<!-- Hashing Algorithms (Pseudocode with Prism) -->
+<section id="algos" class="py-12 bg-slate-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900">Hashing Algorithms — Pseudocode</h2>
+      <p class="mt-2 text-slate-600">
+        Compact, teaching-grade sketches of common non-crypto and crypto-leaning hashes. These are simplified for clarity; refer to the official specs for production code.
+      </p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      <!-- Murmur3-32 -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Murmur3-32 (teaching sketch)</h3>
+        <p class="mt-2 text-sm text-slate-700">Block mix with rotations and fmix finalizer; fast, non-crypto.</p>
+<pre class="mt-3 rounded-xl"><code class="language-c">// murmur3_32(key, seed)
+uint32 murmur3_32(bytes key, uint32 seed) {
+  uint32 h = seed ^ len(key);
+  for (byte k : key) {
+    uint32 k1 = k;
+    k1 *= 0xcc9e2d51; k1 = rotl32(k1,15); k1 *= 0x1b873593;
+    h  ^= k1;
+    h   = rotl32(h,13); h = h*5 + 0xe6546b64;
+  }
+  // fmix
+  h ^= h >> 16; h *= 0x85ebca6b;
+  h ^= h >> 13; h *= 0xc2b2ae35;
+  h ^= h >> 16;
+  return h;
+}</code></pre>
+      </article>
+
+      <!-- FNV-1a -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">FNV-1a 32-bit</h3>
+        <p class="mt-2 text-sm text-slate-700">Tiny, classic; decent for small keys, weaker avalanche than modern hashes.</p>
+<pre class="mt-3 rounded-xl"><code class="language-c">// fnv1a_32(key)
+uint32 fnv1a_32(bytes key) {
+  uint32 h = 0x811C9DC5;            // offset basis
+  for (byte b : key) {
+    h ^= b;
+    h *= 0x01000193;                 // FNV prime
+  }
+  return h;
+}</code></pre>
+      </article>
+
+      <!-- Jenkins OAAT -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">Jenkins OAAT</h3>
+        <p class="mt-2 text-sm text-slate-700">One-at-a-time mixing; simple, widely shown in textbooks.</p>
+<pre class="mt-3 rounded-xl"><code class="language-c">// jenkins_oaat(key)
+uint32 jenkins_oaat(bytes key) {
+  uint32 h = 0;
+  for (byte b : key) {
+    h += b; h += (h << 10); h ^= (h >> 6);
+  }
+  h += (h << 3); h ^= (h >> 11); h += (h << 15);
+  return h;
+}</code></pre>
+      </article>
+
+      <!-- SplitMix (32 from 64) -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">SplitMix (32-bit from 64-bit state)</h3>
+        <p class="mt-2 text-sm text-slate-700">Great mixer / seeding primitive; not a table hash by itself.</p>
+<pre class="mt-3 rounded-xl"><code class="language-c">// splitmix_next(x) -> (x', z)
+uint64 mix64(uint64 x) {
+  x += 0x9E3779B97F4A7C15ULL;
+  uint64 z = x;
+  z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+  z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+  z =  z ^ (z >> 31);
+  return z;
+}
+// 32-bit output by folding
+uint32 splitmix32(uint64* state) {
+  uint64 z = mix64(*state); *state += 0x9E3779B97F4A7C15ULL;
+  return (uint32)(z ^ (z >> 32));
+}</code></pre>
+      </article>
+
+      <!-- xxHash32 (very simplified) -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">xxHash32 (simplified idea)</h3>
+        <p class="mt-2 text-sm text-slate-700">Vector-friendly design in real impl; here we show the flavor.</p>
+<pre class="mt-3 rounded-xl"><code class="language-c">// xxh32(key, seed) — highly simplified
+uint32 rotl(uint32 x, int r){ return (x << r) | (x >> (32 - r)); }
+
+uint32 xxh32(bytes key, uint32 seed) {
+  uint32 h = seed + 0x9E3779B1 + (uint32)len(key);
+  for (byte b : key) {
+    h += (uint32)b * 0x85EBCA77; h = rotl(h, 13); h = h*0xC2B2AE3D + 0x165667B1;
+  }
+  // avalanche
+  h ^= h >> 15; h *= 0x85EBCA77;
+  h ^= h >> 13; h *= 0xC2B2AE3D;
+  h ^= h >> 16;
+  return h;
+}</code></pre>
+      </article>
+
+      <!-- SipHash 2-4 (high-level sketch) -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-xl font-semibold">SipHash-2-4 (keyed)</h3>
+        <p class="mt-2 text-sm text-slate-700">Use a secret key; excellent for hash-table DoS resistance.</p>
+<pre class="mt-3 rounded-xl"><code class="language-c">// siphash24(key, msg) — structure only (not constant-time)
+uint64 v0 = k0 ^ 0x736f6d6570736575ULL;
+uint64 v1 = k1 ^ 0x646f72616e646f6dULL;
+uint64 v2 = k0 ^ 0x6c7967656e657261ULL;
+uint64 v3 = k1 ^ 0x7465646279746573ULL;
+
+for each 8-byte m in msg_chunks:
+  v3 ^= m;  // SipRound x2
+  for i in 1..2: SIPROUND(v0,v1,v2,v3);
+  v0 ^= m;
+
+v2 ^= 0xff; // finalization
+for i in 1..4: SIPROUND(v0,v1,v2,v3);
+
+return v0 ^ v1 ^ v2 ^ v3;</code></pre>
+      </article>
+    </div>
+
+    <div class="mt-8 bg-white border border-slate-200 rounded-2xl p-6 shadow">
+      <h3 class="text-lg font-semibold text-slate-900">Which one should I use?</h3>
+      <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc pl-5">
+        <li><span class="font-semibold">Table hashing (trusted inputs):</span> xxHash (xxh3) or wyhash are strong, modern defaults; Murmur3 is fine for teaching.</li>
+        <li><span class="font-semibold">Untrusted inputs / DoS safety:</span> a keyed function like <span class="font-semibold">SipHash-2-4</span>.</li>
+        <li><span class="font-semibold">Seeds & PRNG seeding:</span> use <span class="font-semibold">SplitMix</span> to expand seeds with good mixing.</li>
+      </ul>
+      <p class="mt-3 text-xs text-slate-600">These are schematic — real implementations have careful block handling, endianness, and vectorized paths.</p>
+    </div>
+  </div>
+</section>
+
+
+  <!-- Collision Lab -->
+  <section id="collision" class="py-12 bg-slate-50" x-data="collisionLab()" x-init="init()">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Collision Lab</h2>
+          <p class="text-slate-600 mt-1">
+            Explore the birthday-style math and simulate bucket occupancy.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+          <label class="text-slate-600">Buckets (M)</label>
+          <input type="number" class="w-28 rounded-lg border-slate-300" x-model.number="M" min="8" step="1">
+          <label class="text-slate-600">Keys (N)</label>
+          <input type="number" class="w-28 rounded-lg border-slate-300" x-model.number="N" min="0" step="1">
+          <label class="text-slate-600">Trials</label>
+          <input type="number" class="w-24 rounded-lg border-slate-300" x-model.number="trials" min="1" step="1">
+          <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-white" @click="run()">Run</button>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl shadow p-5 border border-slate-200 lg:col-span-2">
+          <h3 class="font-semibold text-slate-800 mb-2">Occupancy Histogram (last trial)</h3>
+          <canvas id="occChart" height="160"></canvas>
+          <p class="mt-2 text-xs text-slate-600">Shows how many buckets have 0,1,2,… keys (balls-into-bins view).</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+          <h3 class="font-semibold text-slate-800">Estimates</h3>
+          <ul class="mt-3 text-sm space-y-1 text-slate-700">
+            <li>Load factor: <span class="font-mono" x-text="(N/M).toFixed(3)"></span></li>
+            <li>Expected occupied buckets: <span class="font-mono" x-text="expOcc.toFixed(1)"></span></li>
+            <li>Expected collisions (N − occupied): <span class="font-mono" x-text="expCollisions.toFixed(1)"></span></li>
+            <li>P(at least one collision) ≈ <span class="font-mono" x-text="(pAny * 100).toFixed(1) + '%'"></span></li>
+            <li>Mean collisions from simulation: <span class="font-mono" x-text="meanSim.toFixed(2)"></span></li>
+          </ul>
+          <p class="mt-3 text-xs text-slate-600">
+            Approximations:
+            <span class="code">E[occupied] = M * (1 - (1 - 1/M)^N)</span>,
+            <span class="code">P(any) ≈ 1 - exp(-N(N-1)/(2M))</span>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Avalanche Lab -->
+  <section id="avalanche" class="py-12" x-data="avalancheLab()" x-init="init()">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Avalanche Lab</h2>
+          <p class="text-slate-600 mt-1">
+            Flip one input bit and measure how many output bits change. ~50% is ideal for non-crypto hashing.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+          <label class="text-slate-600">Hash</label>
+          <select class="rounded-lg border-slate-300" x-model="algo">
+            <option value="murmur3_32">Murmur3-32 (teaching)</option>
+            <option value="fnv1a_32">FNV-1a 32</option>
+            <option value="jenkins_oaat_32">Jenkins OAAT 32</option>
+            <option value="splitmix_32">SplitMix-derived 32</option>
+          </select>
+          <label class="text-slate-600">Samples</label>
+          <input type="number" class="w-24 rounded-lg border-slate-300" x-model.number="samples" min="32" step="32">
+          <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white" @click="run()">Measure</button>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+          <h3 class="font-semibold text-slate-800 mb-2">Bit-Flip Distribution</h3>
+          <canvas id="avalChart" height="160"></canvas>
+          <p class="mt-2 text-xs text-slate-600">Histogram of “# of output bits changed” over all samples.</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+          <h3 class="font-semibold text-slate-800">Summary</h3>
+          <ul class="mt-3 text-sm space-y-1 text-slate-700">
+            <li>Mean flipped bits: <span class="font-mono" x-text="mean.toFixed(2)"></span> / 32</li>
+            <li>Std dev: <span class="font-mono" x-text="stdev.toFixed(2)"></span></li>
+            <li>Mean fraction: <span class="font-mono" x-text="(mean/32).toFixed(3)"></span></li>
+          </ul>
+          <p class="mt-3 text-xs text-slate-600">
+            Ideal mean ≈ 16 for 32-bit hashes (50%). Real-world, expect ~15–17 if mixing is decent.
+          </p>
+        </div>
+        <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+          <h3 class="font-semibold text-slate-800">Per-bit Bias (heat)</h3>
+          <canvas id="bitHeat" height="160"></canvas>
+          <p class="mt-2 text-xs text-slate-600">
+            Shows flip rate per output bit (0..31). Flat ~0.5 across bits is desirable.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hash Zoo (SOTA overview) -->
+  <section id="functions" class="py-12 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Hash Zoo — Modern Families</h2>
+        <p class="mt-2 text-slate-600">
+          Non-cryptographic (fast, table-friendly) vs cryptographic (slow, adversarial-safe). Pick per workload.
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Non-cryptographic (fast)</h3>
+          <ul class="mt-3 text-sm leading-7 text-slate-700 list-disc pl-5">
+            <li><span class="font-semibold">xxHash (xxh3)</span>: very fast, great avalanche; widely used in storage/analytics.</li>
+            <li><span class="font-semibold">wyhash</span>: speed-focused with strong statistical quality.</li>
+            <li><span class="font-semibold">FarmHash</span> / <span class="font-semibold">HighwayHash</span>: Google family, vectorized variants.</li>
+            <li><span class="font-semibold">Murmur3</span>: classic, still decent for pedagogy (what we use above).</li>
+            <li><span class="font-semibold">FNV-1a</span> / <span class="font-semibold">Jenkins OAAT</span>: simple classics; OK but weaker than modern choices.</li>
+            <li><span class="font-semibold">SplitMix</span>: great as a <em>mixing</em> primitive/seed generator.</li>
+          </ul>
+          <p class="mt-3 text-xs text-slate-600">
+            Use these for in-memory hash tables, Bloom filters, sketches, unless adversaries can choose inputs.
+          </p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+          <h3 class="text-xl font-semibold">Cryptographic (robust)</h3>
+          <ul class="mt-3 text-sm leading-7 text-slate-700 list-disc pl-5">
+            <li><span class="font-semibold">BLAKE3</span>: very fast modern crypto hash (parallel friendly).</li>
+            <li><span class="font-semibold">SHA-256 / SHA-512</span>: NIST standards, widely available.</li>
+            <li><span class="font-semibold">SipHash</span>: keyed, DoS-resistant hash for hash tables (protects against collision floods).</li>
+          </ul>
+          <p class="mt-3 text-xs text-slate-600">
+            Prefer for untrusted inputs or when DoS resistance matters. Typically 3–20× slower than non-crypto.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 bg-white border border-slate-200 rounded-2xl p-6 shadow">
+        <h3 class="text-lg font-semibold">Takeaways</h3>
+        <ul class="mt-2 text-sm leading-7 text-slate-700 list-disc pl-5">
+          <li>For a teaching table: Murmur3-32 is fine. In production, consider xxh3/wyhash or SipHash if adversarial.</li>
+          <li>Measure avalanche & collisions under your real key distributions (usernames, IDs, composite tuples).</li>
+          <li>Open addressing strategy (Robin Hood) complements good hashing by flattening probe distances.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
 
   <!-- Simulator -->
   <section id="sim" class="py-12" x-data="hashLab()" x-init="init()">
@@ -111,7 +767,7 @@
             </div>
 
             <div class="mt-4 text-xs text-slate-600">
-              <p><span class="font-semibold">Hash family:</span> 32‑bit Murmur3‑like (JS) → index = h(key) mod capacity.</p>
+              <p><span class="font-semibold">Hash family:</span> 32-bit Murmur3-like (JS) → index = h(key) mod capacity.</p>
               <p class="mt-1">Probing: i, i+1, i+3, i+6, ... (triangular numbers) 
                 <span class="text-slate-500">— good locality + avoids primary clustering.</span></p>
             </div>
@@ -215,7 +871,7 @@
     <div class="max-w-7xl mx-auto px-6">
       <div class="mb-8">
         <h2 class="text-3xl font-bold tracking-tight text-slate-900">Illustrated Guide</h2>
-        <p class="mt-2 text-slate-600">What does “Robin Hood” mean, why tombstones, and when do we rebuild?</p>
+      <p class="mt-2 text-slate-600">What does “Robin Hood” mean, why tombstones, and when do we rebuild?</p>
       </div>
       <div class="grid lg:grid-cols-3 gap-6">
         <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow hover:shadow-md transition-shadow">
@@ -247,394 +903,564 @@
   <footer class="py-10 bg-slate-900 text-slate-200">
     <div class="max-w-7xl mx-auto px-6">
       <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-        <p class="text-sm">© <span id="year"></span> Hash Table Lab — Single‑file, no build.</p>
+        <p class="text-sm">© <span id="year"></span> Hash Table Lab — Single-file, no build.</p>
         <div class="text-xs text-slate-400">Tailwind • Alpine.js • Chart.js</div>
       </div>
     </div>
   </footer>
 
-  <!-- Logic -->
-  <script>
-  // ---------- Small hash helpers ----------
-  function murmur3_32_gc(key) {
-    // Simple Murmur3-ish for teaching (stringified input)
-    let str = String(key);
-    let seed = 0x9747b28c >>> 0;
-    let h1 = seed ^ (str.length);
-    for (let i = 0; i < str.length; i++) {
-      let k1 = str.charCodeAt(i);
-      k1 = Math.imul(k1, 0xcc9e2d51);
-      k1 = (k1 << 15) | (k1 >>> 17);
-      k1 = Math.imul(k1, 0x1b873593);
-      h1 ^= k1;
-      h1 = (h1 << 13) | (h1 >>> 19);
-      h1 = (Math.imul(h1, 5) + 0xe6546b64) >>> 0;
+<script>
+// ----------------------------- Hash helpers ------------------------------
+function murmur3_32_gc(key) {
+  let str = String(key);
+  let seed = 0x9747b28c >>> 0;
+  let h1 = seed ^ (str.length);
+  for (let i = 0; i < str.length; i++) {
+    let k1 = str.charCodeAt(i);
+    k1 = Math.imul(k1, 0xcc9e2d51);
+    k1 = (k1 << 15) | (k1 >>> 17);
+    k1 = Math.imul(k1, 0x1b873593);
+    h1 ^= k1;
+    h1 = (h1 << 13) | (h1 >>> 19);
+    h1 = (Math.imul(h1, 5) + 0xe6546b64) >>> 0;
+  }
+  h1 ^= h1 >>> 16; h1 = Math.imul(h1, 0x85ebca6b) >>> 0;
+  h1 ^= h1 >>> 13; h1 = Math.imul(h1, 0xc2b2ae35) >>> 0;
+  h1 ^= h1 >>> 16;
+  return h1 >>> 0;
+}
+function probeIndex(home, k, cap) {
+  const t = (k * (k + 1)) >>> 1;
+  return (home + t) % cap;
+}
+
+// ------------------------ Robin Hood Hash Table --------------------------
+class RHTable {
+  constructor(capacity = 17, maxLoad = 0.8) {
+    this.capacity = Math.max(4, capacity|0);
+    this.maxLoad = maxLoad;
+    this.buckets = Array(this.capacity).fill(null);
+    this.size = 0;
+    this.tombstones = 0;
+    this.maxD = 0;
+    this.swaps = 0;
+    this.onEvent = null; // (evt)=>void
+  }
+  load() { return this.size / this.capacity; }
+  _homeIdx(hash) { return hash % this.capacity; }
+  _emit(evt) { try { this.onEvent && this.onEvent(evt); } catch(_){} }
+
+  _maybeGrow() {
+    if (this.load() > this.maxLoad) {
+      const newCap = this._nextCapacity(this.capacity);
+      this._emit({type:'grow_trigger', from:this.capacity, to:newCap, load:this.load().toFixed(3)});
+      this._rehash(newCap);
     }
-    h1 ^= h1 >>> 16; h1 = Math.imul(h1, 0x85ebca6b) >>> 0;
-    h1 ^= h1 >>> 13; h1 = Math.imul(h1, 0xc2b2ae35) >>> 0;
-    h1 ^= h1 >>> 16;
-    return h1 >>> 0; // unsigned
+  }
+  _nextCapacity(cur) { return cur * 2 + 1; }
+
+  _rehash(newCapacity) {
+    const old = this.buckets;
+    const prev = {cap:this.capacity, size:this.size, tombs:this.tombstones};
+    this._emit({type:'rehash_start', from:this.capacity, to:Math.max(4, newCapacity|0), prev});
+    this.capacity = Math.max(4, newCapacity|0);
+    this.buckets = Array(this.capacity).fill(null);
+    this.size = 0; this.tombstones = 0; this.maxD = 0; this.swaps = 0;
+    for (const cell of old) {
+      if (!cell || cell.tomb) continue;
+      this.insert(cell.key, cell.value, /*allowRehash*/ false);
+    }
+    this._emit({type:'rehash_done', capacity:this.capacity});
   }
 
-  // Triangular probing: 0,1,3,6,10,... (t(k) = k*(k+1)/2)
-  function probeIndex(home, k, cap) {
-    const t = (k * (k + 1)) >>> 1; // triangular
-    return (home + t) % cap;
-  }
+  insert(key, value, allowRehash=true, onStep=null) {
+    if (allowRehash) this._maybeGrow();
+    const hash = murmur3_32_gc(key) >>> 0;
+    let home = this._homeIdx(hash);
+    let k = 0;
+    let cur = { key, value, hash, home, d: 0, tomb: false };
 
-  // ---------- Robin Hood Hash Table (teaching-grade) ----------
-  class RHTable {
-    constructor(capacity = 17, maxLoad = 0.8) {
-      this.capacity = Math.max(4, capacity|0);
-      this.maxLoad = maxLoad;
-      this.buckets = Array(this.capacity).fill(null); // {key, value, hash, home, d, tomb}
-      this.size = 0;            // live items
-      this.tombstones = 0;      // tomb count
-      this.maxD = 0;            // max probe distance observed
-      this.swaps = 0;           // displacements during insert
-      // optional event sink set by UI: (evt)=>void
-      this.onEvent = null;
-    }
+    while (true) {
+      const idx = probeIndex(home, k, this.capacity);
+      const cell = this.buckets[idx];
+      if (onStep) onStep({type:'probe', idx, k, d: cur.d});
 
-    load() { return this.size / this.capacity; }
-    _homeIdx(hash) { return hash % this.capacity; }
-    _emit(evt) { try { this.onEvent && this.onEvent(evt); } catch(_){} }
-
-    _maybeGrow() {
-      if (this.load() > this.maxLoad) {
-        const newCap = this._nextCapacity(this.capacity);
-        this._emit({type:'grow_trigger', from:this.capacity, to:newCap, load:this.load().toFixed(3)});
-        this._rehash(newCap);
+      if (cell === null || (cell && cell.tomb)) {
+        const prevTomb = cell && cell.tomb;
+        this.buckets[idx] = { ...cur, d: cur.d, tomb: false };
+        if (prevTomb) { this.tombstones--; this._emit({type:'reuse_tomb', idx}); }
+        else { this.size++; }
+        this.maxD = Math.max(this.maxD, cur.d);
+        this._emit({type:'place', idx, cell: this.buckets[idx]});
+        if (onStep) onStep({type:'place', idx, cell: this.buckets[idx]});
+        return {idx, placed:true, probes:k+1};
       }
-    }
 
-    _nextCapacity(cur) {
-      // simple growth policy: next odd ~2x + 1
-      return cur * 2 + 1;
-    }
-
-    _rehash(newCapacity) {
-      const old = this.buckets;
-      const prev = {cap:this.capacity, size:this.size, tombs:this.tombstones};
-      this._emit({type:'rehash_start', from:this.capacity, to:Math.max(4, newCapacity|0), prev});
-      this.capacity = Math.max(4, newCapacity|0);
-      this.buckets = Array(this.capacity).fill(null);
-      this.size = 0;
-      this.tombstones = 0;
-      this.maxD = 0;
-      this.swaps = 0;
-      for (const cell of old) {
-        if (!cell || cell.tomb) continue;
-        this.insert(cell.key, cell.value, /*allowRehash*/ false);
+      if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
+        this.buckets[idx] = { ...cell, value };
+        this._emit({type:'update', idx});
+        if (onStep) onStep({type:'update', idx});
+        return {idx, placed:false, updated:true, probes:k+1};
       }
-      this._emit({type:'rehash_done', capacity:this.capacity});
-    }
 
-    insert(key, value, allowRehash=true, onStep=null) {
-      if (allowRehash) this._maybeGrow();
-      const hash = murmur3_32_gc(key) >>> 0;
-      let home = this._homeIdx(hash);
-      let k = 0;
+      this._emit({type:'conflict', idx, curD:cur.d, resD:cell.d});
+      if (onStep) onStep({type:'conflict', idx, curD:cur.d, resD:cell.d});
 
-      let cur = { key, value, hash, home, d: 0, tomb: false };
-
-      while (true) {
-        const idx = probeIndex(home, k, this.capacity);
-        const cell = this.buckets[idx];
-        if (onStep) onStep({type:'probe', idx, k, d: cur.d});
-
-        if (cell === null || (cell && cell.tomb)) {
-          // place here
-          const prevTomb = cell && cell.tomb;
-          this.buckets[idx] = { ...cur, d: cur.d, tomb: false };
-          if (prevTomb) { this.tombstones--; this._emit({type:'reuse_tomb', idx}); }
-          else { this.size++; }
-          this.maxD = Math.max(this.maxD, cur.d);
-          this._emit({type:'place', idx, cell: this.buckets[idx]});
-          if (onStep) onStep({type:'place', idx, cell: this.buckets[idx]});
-          return {idx, placed:true, probes:k+1};
-        }
-
-        // key match → update
-        if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
-          this.buckets[idx] = { ...cell, value };
-          this._emit({type:'update', idx});
-          if (onStep) onStep({type:'update', idx});
-          return {idx, placed:false, updated:true, probes:k+1};
-        }
-
-        // conflict: occupied by different key
-        this._emit({type:'conflict', idx, curD:cur.d, resD:cell.d});
-        if (onStep) onStep({type:'conflict', idx, curD:cur.d, resD:cell.d});
-
-        // Robin Hood: if current item's distance is greater than resident's, swap
-        if (cur.d > cell.d) {
-          this.swaps++;
-          this._emit({type:'swap', idx, reason:'cur.d > res.d', curD:cur.d, resD:cell.d});
-          // swap: cur takes this spot; bumped item continues with increased d
-          this.buckets[idx] = { ...cur, d: cur.d };
-          cur = { ...cell, d: cell.d };
-        } else {
-          this._emit({type:'skip', idx, reason:'res.d >= cur.d'});
-        }
-
-        // advance probe for whichever item is now "carried" in cur
-        k++;
-        cur.d++;
-        if (k > this.capacity) throw new Error('Table full or probe cycle');
+      if (cur.d > cell.d) {
+        this.swaps++;
+        this._emit({type:'swap', idx, reason:'cur.d > res.d', curD:cur.d, resD:cell.d});
+        this.buckets[idx] = { ...cur, d: cur.d };
+        cur = { ...cell, d: cell.d };
+      } else {
+        this._emit({type:'skip', idx, reason:'res.d >= cur.d'});
       }
-    }
 
-    find(key, onStep=null) {
-      const hash = murmur3_32_gc(key) >>> 0;
-      const home = this._homeIdx(hash);
-      let k = 0;
-      let d = 0;
-      while (k <= this.capacity) {
-        const idx = probeIndex(home, k, this.capacity);
-        const cell = this.buckets[idx];
-        if (onStep) onStep({type:'probe', idx, k, d});
-        if (cell === null) {
-          if (onStep) onStep({type:'miss', idx});
-          return {found:false, probes:k+1};
-        }
-        if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
-          if (onStep) onStep({type:'hit', idx});
-          return {found:true, value:cell.value, idx, probes:k+1};
-        }
-        if (!cell.tomb && cell.d < d) {
-          if (onStep) onStep({type:'miss-early', idx});
-          return {found:false, probes:k+1};
-        }
-        k++; d++;
-      }
-      return {found:false, probes:k};
-    }
-
-    delete(key, onStep=null) {
-      const hash = murmur3_32_gc(key) >>> 0;
-      const home = this._homeIdx(hash);
-      let k = 0, d=0;
-      while (k <= this.capacity) {
-        const idx = probeIndex(home, k, this.capacity);
-        const cell = this.buckets[idx];
-        if (onStep) onStep({type:'probe', idx, k, d});
-        if (cell === null) return {deleted:false, probes:k+1};
-        if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
-          // mark tomb
-          this.buckets[idx] = { ...cell, tomb: true };
-          this.size--; this.tombstones++;
-          if (onStep) onStep({type:'tomb', idx});
-          this._emit({type:'tomb', idx});
-          return {deleted:true, probes:k+1};
-        }
-        if (!cell.tomb && cell.d < d) return {deleted:false, probes:k+1};
-        k++; d++;
-      }
-      return {deleted:false, probes:k};
+      k++; cur.d++;
+      if (k > this.capacity) throw new Error('Table full or probe cycle');
     }
   }
 
-  // ---------- Alpine component ----------
-  function hashLab() {
-    return {
-      // UI state
-      capacityInput: 17,
-      maxLoad: 0.8,
-      table: null,
-      key: '',
-      value: '',
-      log: [],
-      metrics: { meanD: 0, stdD: 0, swaps: 0, lastProbes: 0 },
-      chart: null,
+  find(key, onStep=null) {
+    const hash = murmur3_32_gc(key) >>> 0;
+    const home = this._homeIdx(hash);
+    let k = 0, d = 0;
+    while (k <= this.capacity) {
+      const idx = probeIndex(home, k, this.capacity);
+      const cell = this.buckets[idx];
+      if (onStep) onStep({type:'probe', idx, k, d});
+      if (cell === null) { if (onStep) onStep({type:'miss', idx}); return {found:false, probes:k+1}; }
+      if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
+        if (onStep) onStep({type:'hit', idx});
+        return {found:true, value:cell.value, idx, probes:k+1};
+      }
+      if (!cell.tomb && cell.d < d) { if (onStep) onStep({type:'miss-early', idx}); return {found:false, probes:k+1}; }
+      k++; d++;
+    }
+    return {found:false, probes:k};
+  }
 
-      init() {
-        this.table = new RHTable(this.capacityInput, this.maxLoad);
-        // wire event sink into UI log
-        this.table.onEvent = (e) => this.log.push(this.formatEvent(e));
+  delete(key, onStep=null) {
+    const hash = murmur3_32_gc(key) >>> 0;
+    const home = this._homeIdx(hash);
+    let k = 0, d=0;
+    while (k <= this.capacity) {
+      const idx = probeIndex(home, k, this.capacity);
+      const cell = this.buckets[idx];
+      if (onStep) onStep({type:'probe', idx, k, d});
+      if (cell === null) return {deleted:false, probes:k+1};
+      if (!cell.tomb && cell.hash === hash && String(cell.key) === String(key)) {
+        this.buckets[idx] = { ...cell, tomb: true };
+        this.size--; this.tombstones++;
+        if (onStep) onStep({type:'tomb', idx});
+        this._emit({type:'tomb', idx});
+        return {deleted:true, probes:k+1};
+      }
+      if (!cell.tomb && cell.d < d) return {deleted:false, probes:k+1};
+      k++; d++;
+    }
+    return {deleted:false, probes:k};
+  }
+}
 
-                // wire event sink into UI log + autoscroll after DOM update
-        this.table.onEvent = (e) => {
-          this.log.push(this.formatEvent(e));
-          this.$nextTick(() => this._autoScroll());
-        };
-        this.updateMetrics();
-        this.initChart();
+// ---------------------- Global Chart refs (safe) ------------------------
+let _histChart = null;
+let _occChart  = null;
+let _avalChart = null;
+let _bitHeatChart = null;
 
-        
-      },
+// FIX: helper to safely (re)create a chart on a canvas
+function createOrReplaceChart(canvas, config) {
+  if (!canvas) return null;
+  // Chart.js v4: get existing instance by canvas element
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+  return new Chart(canvas, config);
+}
 
-      reset() {
-        this.table = new RHTable(this.capacityInput, this.maxLoad);
-        this.table.onEvent = (e) => this.log.push(this.formatEvent(e));
-        this.log = [];
-        this.updateMetrics();
-        this.updateChart();
-      },
+// --------------------------- Alpine: hashLab ------------------------------
+function hashLab() {
+  return {
+    _booted: false, // FIX: guard double init
+    capacityInput: 17,
+    maxLoad: 0.8,
+    table: null,
+    key: '',
+    value: '',
+    log: [],
+    metrics: { meanD: 0, stdD: 0, swaps: 0, lastProbes: 0 },
 
-      rebuild(newCap) {
-        const cap = Math.max(4, Number(newCap) || this.table.capacity);
-        this.table._rehash(cap);
-        this.log.push(`manual rebuild → capacity=${cap}`);
-        this.updateMetrics();
-        this.updateChart();
+    init() {
+      if (this._booted) return; // FIX
+      this._booted = true;
+
+      this.table = new RHTable(this.capacityInput, this.maxLoad);
+
+      // SINGLE, consistent event sink
+      this.table.onEvent = (e) => {
+        const msg = this.formatEvent(e);
+        if (msg) this.log.push(msg);
         this.$nextTick(() => this._autoScroll());
-      },
+      };
 
-      opInsert() {
-        if (this.key === '') { this.log.push('insert: missing key'); return; }
+      this.updateMetrics();
+      this._initChart();     // creates _histChart (safe)
+      this._updateChart();
+    },
+
+    reset() {
+      this.table = new RHTable(this.capacityInput, this.maxLoad);
+      this.table.onEvent = (e) => {
+        const msg = this.formatEvent(e);
+        if (msg) this.log.push(msg);
+        this.$nextTick(() => this._autoScroll());
+      };
+      this.log = [];
+      this.updateMetrics();
+      this._updateChart();
+    },
+
+    rebuild(newCap) {
+      const cap = Math.max(4, Number(newCap) || this.table.capacity);
+      this.table._rehash(cap);
+      this.log.push(`manual rebuild → capacity=${cap}`);
+      this.updateMetrics();
+      this._updateChart();
+      this.$nextTick(() => this._autoScroll());
+    },
+
+    opInsert() {
+      if (this.key === '') { this.log.push('insert: missing key'); return; }
+      const steps = [];
+      const res = this.table.insert(this.key, this.value, true, s=>steps.push(s));
+      this.metrics.lastProbes = res.probes || 0;
+      this._logInsertSteps(steps);
+      this.updateMetrics();
+      this._updateChart();
+      this._highlightSteps(steps);
+      this.$nextTick(() => this._autoScroll());
+    },
+
+    opFind() {
+      if (this.key === '') { this.log.push('find: missing key'); return; }
+      const steps = [];
+      const res = this.table.find(this.key, s=>steps.push(s));
+      this.metrics.lastProbes = res.probes || 0;
+      if (res.found) this.log.push(`find(${this.key}) → idx=${res.idx}, val=${res.value}, probes=${res.probes}`);
+      else this.log.push(`find(${this.key}) → not found, probes=${res.probes}`);
+      this._highlightSteps(steps);
+      this.$nextTick(() => this._autoScroll());
+    },
+
+    opDelete() {
+      if (this.key === '') { this.log.push('delete: missing key'); return; }
+      const steps = [];
+      const res = this.table.delete(this.key, s=>steps.push(s));
+      this.metrics.lastProbes = res.probes || 0;
+      this.log.push(`delete(${this.key}) → ${res.deleted?'ok':'miss'}, probes=${res.probes}`);
+      this.updateMetrics();
+      this._updateChart();
+      this._highlightSteps(steps);
+      this.$nextTick(() => this._autoScroll());
+    },
+
+    randomInsert(n=1) {
+      for (let i=0;i<n;i++) {
+        const k = `k${Math.floor(Math.random()*9999)}`;
+        const v = `v${Math.floor(Math.random()*9999)}`;
         const steps = [];
-        const res = this.table.insert(this.key, this.value, true, s=>steps.push(s));
+        const res = this.table.insert(k, v, true, s=>steps.push(s));
         this.metrics.lastProbes = res.probes || 0;
-        this.logInsertSteps(steps);
-        this.updateMetrics();
-        this.updateChart();
-        this.highlightSteps(steps);
-        this.$nextTick(() => this._autoScroll());
-      },
+        this.log.push(`insert(${k}) → probes=${res.probes}`);
+      }
+      this.updateMetrics();
+      this._updateChart();
+      this.$nextTick(() => this._autoScroll());
+    },
 
-      opFind() {
-        if (this.key === '') { this.log.push('find: missing key'); return; }
-        const steps = [];
-        const res = this.table.find(this.key, s=>steps.push(s));
-        this.metrics.lastProbes = res.probes || 0;
-        if (res.found) this.log.push(`find(${this.key}) → idx=${res.idx}, val=${res.value}, probes=${res.probes}`);
-        else this.log.push(`find(${this.key}) → not found, probes=${res.probes}`);
-        this.highlightSteps(steps);
-        this.$nextTick(() => this._autoScroll());
-      },
+    rowClass(idx, cell) {
+      if (cell === null) return 'cell-empty';
+      if (cell.tomb) return 'cell-tomb';
+      return 'cell-full';
+    },
+    cellClass(cell) {
+      if (cell === null) return 'bg-slate-200 text-slate-700';
+      if (cell.tomb) return 'bg-rose-100 text-rose-700';
+      return 'bg-sky-100 text-sky-800';
+    },
+    cellState(cell) {
+      if (cell === null) return 'empty';
+      if (cell.tomb) return 'tomb';
+      return 'full';
+    },
 
-      opDelete() {
-        if (this.key === '') { this.log.push('delete: missing key'); return; }
-        const steps = [];
-        const res = this.table.delete(this.key, s=>steps.push(s));
-        this.metrics.lastProbes = res.probes || 0;
-        this.log.push(`delete(${this.key}) → ${res.deleted?'ok':'miss'}, probes=${res.probes}`);
-        this.updateMetrics();
-        this.updateChart();
-        this.highlightSteps(steps);
-      },
+    async _highlightSteps(steps) {
+      const rows = document.querySelectorAll('tbody tr');
+      for (const s of steps) {
+        if (s.idx == null) continue;
+        const tr = rows[s.idx];
+        if (!tr) continue;
+        tr.classList.add('cell-highlight');
+        await new Promise(r => setTimeout(r, 120));
+        tr.classList.remove('cell-highlight');
+      }
+    },
 
-      randomInsert(n=1) {
-        for (let i=0;i<n;i++) {
-          const k = `k${Math.floor(Math.random()*9999)}`;
-          const v = `v${Math.floor(Math.random()*9999)}`;
-          const steps = [];
-          const res = this.table.insert(k, v, true, s=>steps.push(s));
-          this.metrics.lastProbes = res.probes || 0;
-          this.log.push(`insert(${k}) → probes=${res.probes}`);
+    _logInsertSteps(steps) {
+      for (const s of steps) {
+        if (s.type === 'probe') {
+          this.log.push(`probe → idx=${s.idx} d=${s.d}`);
+        } else if (s.type === 'conflict') {
+          const relation = s.curD > s.resD ? 'swap (cur farther)' : 'keep (resident farther/equal)';
+          this.log.push(`conflict at idx=${s.idx}: cur.d=${s.curD}, res.d=${s.resD} → ${relation}`);
+        } else if (s.type === 'swap') {
+          this.log.push(`swap at idx=${s.idx} because cur.d>res.d`);
+        } else if (s.type === 'place') {
+          this.log.push(`place at idx=${s.idx}`);
+        } else if (s.type === 'update') {
+          this.log.push(`update at idx=${s.idx}`);
         }
-        this.updateMetrics();
-        this.updateChart();
-        this.$nextTick(() => this._autoScroll());
-      },
+      }
+      this.$nextTick(() => this._autoScroll());
+    },
 
-      // ---- visuals & logging ----
-      rowClass(idx, cell) {
-        if (cell === null) return 'cell-empty';
-        if (cell.tomb) return 'cell-tomb';
-        return 'cell-full';
-      },
-      cellClass(cell) {
-        if (cell === null) return 'bg-slate-200 text-slate-700';
-        if (cell.tomb) return 'bg-rose-100 text-rose-700';
-        return 'bg-sky-100 text-sky-800';
-      },
-      cellState(cell) {
-        if (cell === null) return 'empty';
-        if (cell.tomb) return 'tomb';
-        return 'full';
-      },
+    updateMetrics() {
+      const ds = this.table.buckets.filter(c=>c && !c.tomb).map(c=>c.d);
+      const mean = ds.length? ds.reduce((a,b)=>a+b,0)/ds.length : 0;
+      const varc = ds.length? ds.reduce((a,b)=>a+(b-mean)*(b-mean),0)/ds.length : 0;
+      this.metrics.meanD = mean; this.metrics.stdD = Math.sqrt(varc);
+      this.metrics.swaps = this.table.swaps;
+    },
 
-      async highlightSteps(steps) {
-        // add transient highlight to probed/affected rows
-        const rows = document.querySelectorAll('tbody tr');
-        for (const s of steps) {
-          if (s.idx == null) continue;
-          const tr = rows[s.idx];
-          if (!tr) continue;
-          tr.classList.add('cell-highlight');
-          await new Promise(r => setTimeout(r, 120));
-          tr.classList.remove('cell-highlight');
+    _initChart() {
+      const canvas = document.getElementById('histChart');
+      _histChart = createOrReplaceChart(canvas, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'count', data: [] }] },
+        options: {
+          responsive: true, aspectRatio: 2.2,
+          plugins:{legend:{display:false}},
+          scales:{x:{title:{display:true, text:'probe distance d'}}, y:{beginAtZero:true}}
         }
-      },
+      });
+    },
+    _updateChart() {
+      if (!_histChart) return;
+      const ds = this.table.buckets.filter(c=>c && !c.tomb).map(c=>c.d);
+      const freq = new Map();
+      for (const d of ds) freq.set(d, (freq.get(d)||0)+1);
+      const labels = Array.from(freq.keys()).sort((a,b)=>a-b);
+      const data = labels.map(k=>freq.get(k));
+      _histChart.data.labels = labels;
+      _histChart.data.datasets[0].data = data;
+      _histChart.update();
+    },
 
-      logInsertSteps(steps) {
-        for (const s of steps) {
-          if (s.type === 'probe') {
-            this.log.push(`probe → idx=${s.idx} d=${s.d}`);
-          } else if (s.type === 'conflict') {
-            const relation = s.curD > s.resD ? 'swap (cur farther)' : 'keep (resident farther/equal)';
-            this.log.push(`conflict at idx=${s.idx}: cur.d=${s.curD}, res.d=${s.resD} → ${relation}`);
-          } else if (s.type === 'swap') {
-            this.log.push(`swap at idx=${s.idx} because cur.d>res.d`);
-          } else if (s.type === 'place') {
-            this.log.push(`place at idx=${s.idx}`);
-          } else if (s.type === 'update') {
-            this.log.push(`update at idx=${s.idx}`);
-          }
-        }
-        this.$nextTick(() => this._autoScroll());
-      },
-
-      updateMetrics() {
-        const ds = this.table.buckets.filter(c=>c && !c.tomb).map(c=>c.d);
-        const mean = ds.length? ds.reduce((a,b)=>a+b,0)/ds.length : 0;
-        const varc = ds.length? ds.reduce((a,b)=>a+(b-mean)*(b-mean),0)/ds.length : 0;
-        this.metrics.meanD = mean; this.metrics.stdD = Math.sqrt(varc);
-        this.metrics.swaps = this.table.swaps;
-      },
-
-      initChart() {
-        const ctx = document.getElementById('histChart');
-        this.chart = new Chart(ctx, {
-          type: 'bar',
-          data: { labels: [], datasets: [{ label: 'count', data: [] }] },
-          options: { responsive: true, aspectRatio: 2.2, plugins:{legend:{display:false}}, scales:{x:{title:{display:true, text:'probe distance d'}}, y:{beginAtZero:true}} }
-        });
-        this.updateChart();
-      },
-
-      updateChart() {
-        const ds = this.table.buckets.filter(c=>c && !c.tomb).map(c=>c.d);
-        const freq = new Map();
-        for (const d of ds) freq.set(d, (freq.get(d)||0)+1);
-        const labels = Array.from(freq.keys()).sort((a,b)=>a-b);
-        const data = labels.map(k=>freq.get(k));
-        this.chart.data.labels = labels;
-        this.chart.data.datasets[0].data = data;
-        this.chart.update();
-      },
-
-      // human-friendly event messages
-      formatEvent(e) {
-        if (!e || !e.type) return '';
-        switch(e.type) {
-          case 'grow_trigger': return `grow-trigger: load=${e.load} → rehash ${e.from}→${e.to}`;
-          case 'rehash_start': return `rehash-start: ${e.from}→${e.to} (prev size=${e.prev.size}, tombs=${e.prev.tombs})`;
-          case 'rehash_done':  return `rehash-done: capacity=${e.capacity}`;
-          case 'reuse_tomb':   return `reuse tomb at idx=${e.idx}`;
-          case 'place':        return `place at idx=${e.idx}`;
-          case 'update':       return `update at idx=${e.idx}`;
-          case 'conflict':     return `conflict at idx=${e.idx} (cur.d=${e.curD}, res.d=${e.resD})`;
-          case 'swap':         return `swap at idx=${e.idx} (${e.reason})`;
-          case 'skip':         return `skip at idx=${e.idx} (${e.reason})`;
-          case 'tomb':         return `delete → tomb at idx=${e.idx}`;
-          default:             return `${e.type}`;
-        }
-      },
+    formatEvent(e) {
+      if (!e || !e.type) return '';
+      switch(e.type) {
+        case 'grow_trigger': return `grow-trigger: load=${e.load} → rehash ${e.from}→${e.to}`;
+        case 'rehash_start': return `rehash-start: ${e.from}→${e.to} (prev size=${e.prev.size}, tombs=${e.prev.tombs})`;
+        case 'rehash_done':  return `rehash-done: capacity=${e.capacity}`;
+        case 'reuse_tomb':   return `reuse tomb at idx=${e.idx}`;
+        case 'place':        return `place at idx=${e.idx}`;
+        case 'update':       return `update at idx=${e.idx}`;
+        case 'conflict':     return `conflict at idx=${e.idx} (cur.d=${e.curD}, res.d=${e.resD})`;
+        case 'swap':         return `swap at idx=${e.idx} (${e.reason})`;
+        case 'skip':         return `skip at idx=${e.idx} (${e.reason})`;
+        case 'tomb':         return `delete → tomb at idx=${e.idx}`;
+        default:             return `${e.type}`;
+      }
+    },
 
     _autoScroll(){ const box=document.getElementById('logBox'); if(box) box.scrollTop = box.scrollHeight; }
+  };
+}
 
-    }
+// ----------------------- Utilities used by Avalanche ----------------------
+function popcount32(x) {
+  x = x >>> 0;
+  x = x - ((x >>> 1) & 0x55555555);
+  x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+  return ((((x + (x >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24) >>> 0;
+}
+function rand32() { return (Math.random() * 0x100000000) >>> 0; }
+function fnv1a_32(str) {
+  const s = String(str);
+  let h = 0x811c9dc5 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h >>> 0;
+}
+function jenkins_oaat_32(str) {
+  const s = String(str);
+  let h = 0 >>> 0;
+  for (let i = 0; i < s.length; i++) { h = (h + s.charCodeAt(i)) >>> 0; h = (h + (h << 10)) >>> 0; h ^= (h >>> 6); }
+  h = (h + (h << 3)) >>> 0; h ^= (h >>> 11); h = (h + (h << 15)) >>> 0;
+  return h >>> 0;
+}
+function splitmix64_next(x) {
+  x = (x + 0x9E3779B97F4A7C15n) & 0xFFFFFFFFFFFFFFFFn;
+  let z = x;
+  z = (z ^ (z >> 30n)) * 0xBF58476D1CE4E5B9n & 0xFFFFFFFFFFFFFFFFn;
+  z = (z ^ (z >> 27n)) * 0x94D049BB133111EBn & 0xFFFFFFFFFFFFFFFFn;
+  z = z ^ (z >> 31n);
+  return {x, z};
+}
+function splitmix_32(str) {
+  let state = 0x9E3779B97F4A7C15n;
+  const s = String(str);
+  for (let i = 0; i < s.length; i++) {
+    state = (state + BigInt(s.charCodeAt(i))) & 0xFFFFFFFFFFFFFFFFn;
+    const step = splitmix64_next(state); state = step.x;
   }
+  const {z} = splitmix64_next(state);
+  const lo = Number(z & 0xFFFFFFFFn) >>> 0;
+  const hi = Number((z >> 32n) & 0xFFFFFFFFn) >>> 0;
+  return (lo ^ hi) >>> 0;
+}
+const HASHES_32 = {
+  'murmur3_32': (s)=>murmur3_32_gc(s),
+  'fnv1a_32': (s)=>fnv1a_32(s),
+  'jenkins_oaat_32': (s)=>jenkins_oaat_32(s),
+  'splitmix_32': (s)=>splitmix_32(s),
+};
 
-  // Footer year
-  document.addEventListener('DOMContentLoaded', () => {
-    const y = document.getElementById('year');
-    if (y) y.textContent = new Date().getFullYear();
-  });
+// ------------------------ Alpine: collisionLab ---------------------------
+function collisionLab() {
+  return {
+    _booted: false, // FIX: guard
+    M: 257, N: 180, trials: 10,
+    expOcc: 0, expCollisions: 0, pAny: 0, meanSim: 0,
 
-  </script>
+    init() {
+      if (this._booted) return; this._booted = true; // FIX
+      const canvas = document.getElementById('occChart');
+      _occChart = createOrReplaceChart(canvas, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ data: [], label: 'buckets with k items' }] },
+        options: {
+          responsive: true, aspectRatio: 2.2, plugins:{legend:{display:false}},
+          scales:{ x:{ title:{display:true, text:'#items in bucket'} }, y:{ beginAtZero:true } }
+        }
+      });
+      this._updateEstimates();
+      this.run();
+    },
+
+    _updateEstimates() {
+      const M = this.M, N = this.N;
+      const expOcc = M * (1 - Math.pow(1 - 1/M, N));
+      const expColl = N - expOcc;
+      const pAny = 1 - Math.exp(-(N*(N-1))/(2*M));
+      this.expOcc = expOcc; this.expCollisions = expColl; this.pAny = Math.max(0, Math.min(1, pAny));
+    },
+
+    _oneTrial() {
+      const bins = new Uint16Array(this.M);
+      for (let i=0;i<this.N;i++) bins[(Math.random()*this.M)|0]++;
+      const maxc = bins.reduce((a,b)=>Math.max(a,b),0);
+      const hist = new Array(maxc+1).fill(0);
+      for (let b of bins) hist[b]++;
+      let coll = 0; for (let b of bins) if (b>1) coll += (b-1);
+      return {hist, collisions: coll};
+    },
+
+    run() {
+      this._updateEstimates();
+      let sum = 0, last = null;
+      for (let t=0;t<this.trials;t++) { const res = this._oneTrial(); sum += res.collisions; if (t === this.trials-1) last = res; }
+      this.meanSim = sum / this.trials;
+      if (last && _occChart) {
+        const labels = last.hist.map((_,i)=>String(i));
+        _occChart.data.labels = labels;
+        _occChart.data.datasets[0].data = last.hist;
+        _occChart.update();
+      }
+    }
+  };
+}
+
+// ------------------------ Alpine: avalancheLab ---------------------------
+function avalancheLab() {
+  return {
+    _booted: false, // FIX: guard
+    algo: 'murmur3_32', samples: 1024, mean: 0, stdev: 0,
+
+    init() {
+      if (this._booted) return; this._booted = true; // FIX
+
+      const ctx1 = document.getElementById('avalChart');
+      _avalChart = createOrReplaceChart(ctx1, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ data: [], label: 'count' }] },
+        options: {
+          responsive: true, aspectRatio: 2.2, plugins:{legend:{display:false}},
+          scales:{ x:{ title:{display:true, text:'#bits flipped'} }, y:{ beginAtZero:true } }
+        }
+      });
+
+      const ctx2 = document.getElementById('bitHeat');
+      _bitHeatChart = createOrReplaceChart(ctx2, {
+        type: 'bar',
+        data: { labels: Array.from({length:32}, (_,i)=>String(i)), datasets: [{ data: [], label: 'flip rate' }] },
+        options: {
+          responsive: true, aspectRatio: 2.2, plugins:{legend:{display:false}},
+          scales:{ x:{ title:{display:true, text:'output bit index (0..31)'} },
+                  y:{ min:0, max:1, ticks:{ stepSize:0.1 } } }
+        }
+      });
+
+      this.run();
+    },
+
+    run() {
+      const H = HASHES_32[this.algo] || HASHES_32['murmur3_32'];
+      const counts = new Array(33).fill(0);
+      const bitFlipCount = new Array(32).fill(0);
+      const S = Math.max(32, this.samples|0);
+
+      for (let i=0;i<S;i++) {
+        const k = rand32() >>> 0;
+        const bit = i % 32;
+        const base = String(k);
+        const baseHash = H(base) >>> 0;
+
+        // simple single-byte flip to vary one input bit
+        let c0 = (k & 0xFF);
+        const flipped = c0 ^ (1 << (bit % 8));
+        const perturbed = String((k & 0xFFFFFF00) | flipped);
+
+        const altHash = H(perturbed) >>> 0;
+        const diff = (baseHash ^ altHash) >>> 0;
+        const flippedBits = popcount32(diff);
+        counts[flippedBits]++;
+        for (let b=0;b<32;b++) if ((diff >>> b) & 1) bitFlipCount[b]++;
+      }
+
+      let total = 0, sum = 0, sum2 = 0;
+      for (let n=0;n<=32;n++) { total += counts[n]; sum += n*counts[n]; sum2 += n*n*counts[n]; }
+      const mean = sum / total; const varc = Math.max(0, (sum2/total) - mean*mean);
+      this.mean = mean; this.stdev = Math.sqrt(varc);
+
+      if (_avalChart) {
+        _avalChart.data.labels = counts.map((_,i)=>String(i));
+        _avalChart.data.datasets[0].data = counts;
+        _avalChart.update();
+      }
+      if (_bitHeatChart) {
+        const bitRates = bitFlipCount.map(c => c / S);
+        _bitHeatChart.data.datasets[0].data = bitRates;
+        _bitHeatChart.update();
+      }
+    }
+  };
+}
+
+// ------------------------------ Footer year ------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const y = document.getElementById('year');
+  if (y) y.textContent = new Date().getFullYear();
+});
+</script>
+
 </body>
 </html>
