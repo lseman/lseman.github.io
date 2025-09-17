@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Robin Hood Hash Table Lab</title>
+  <title>Hash Table Lab</title>
 
   <!-- Tailwind CSS CDN (ok for this single-file demo; use CLI/PostCSS in prod) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -59,7 +59,7 @@ pre[class*="language-"] code {
       <div class="flex flex-col lg:flex-row items-center gap-10">
         <div class="flex-1">
           <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-            Robin Hood Hash Table <span class="text-indigo-600">Lab</span>
+            Hash Table <span class="text-indigo-600">Lab</span>
           </h1>
           <p class="mt-3 text-lg md:text-xl text-slate-700">
             Interactive, single-file site to <span class="font-semibold">insert</span>, <span class="font-semibold">find</span>, and <span class="font-semibold">delete</span> while visualizing probe distances, conflicts, and <span class="font-semibold">rehash</span> growth. Built with vanilla JS, Tailwind, Alpine.js.
@@ -133,6 +133,131 @@ pre[class*="language-"] code {
     </div>
 
     <div class="grid lg:grid-cols-2 gap-6">
+      <!-- Separate Chaining -->
+<article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
+  <h3 class="text-xl font-semibold">Separate Chaining</h3>
+  <p class="mt-2 text-sm leading-7 text-slate-700">
+    Each bucket stores a short linked list (or small vector) of entries that hash to the same index. Avoids primary/secondary clustering and is robust near high load factors, at the cost of extra pointer chasing and cache misses.
+  </p>
+  <div class="mt-4">
+    <svg viewBox="0 0 360 240" class="w-full">
+      <!-- Buckets row -->
+      <g id="chainBuckets" transform="translate(30,40)">
+        <text x="0" y="-12" font-size="11" fill="#475569">Buckets (h(k) mod M)</text>
+        <rect x="0" y="0" width="300" height="40" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+        <script type="application/ecmascript"><![CDATA[
+          (function(){
+            const g = document.getElementById('chainBuckets');
+            const slots = 10, W = 300, H = 40, w = W/slots;
+            const homes = [3,7]; // buckets that will have chains
+            for(let i=0;i<slots;i++){
+              const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+              r.setAttribute('x', i*w); r.setAttribute('y', 0);
+              r.setAttribute('width', w); r.setAttribute('height', H);
+              r.setAttribute('fill', homes.includes(i) ? '#6366f1' : 'none');
+              r.setAttribute('opacity', homes.includes(i) ? '1' : '1');
+              r.setAttribute('stroke', '#e2e8f0');
+              g.appendChild(r);
+
+              const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+              t.setAttribute('x', i*w + w/2);
+              t.setAttribute('y', H + 12);
+              t.setAttribute('font-size','10');
+              t.setAttribute('fill','#64748b');
+              t.setAttribute('text-anchor','middle');
+              t.textContent = i;
+              g.appendChild(t);
+            }
+          })();
+        ]]></script>
+      </g>
+
+      <!-- Chains for buckets 3 and 7 -->
+      <g id="chains" transform="translate(30,40)">
+        <script type="application/ecmascript"><![CDATA[
+          (function(){
+            const g = document.getElementById('chains');
+            const slots = 10, W = 300, w = W/slots;
+            const nodeW = 58, nodeH = 22, gap = 10;
+
+            function node(x,y,label,fill){
+              const grp = document.createElementNS('http://www.w3.org/2000/svg','g');
+              const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+              r.setAttribute('x',x); r.setAttribute('y',y);
+              r.setAttribute('width',nodeW); r.setAttribute('height',nodeH);
+              r.setAttribute('rx',6); r.setAttribute('fill',fill||'#10b981');
+              r.setAttribute('stroke','#065f46'); r.setAttribute('opacity','0.95');
+              grp.appendChild(r);
+              const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+              t.setAttribute('x',x+nodeW/2); t.setAttribute('y',y+nodeH/2+3);
+              t.setAttribute('font-size','10'); t.setAttribute('fill','white');
+              t.setAttribute('text-anchor','middle'); t.textContent = label;
+              grp.appendChild(t);
+              return grp;
+            }
+
+            function arrow(x1,y1,x2,y2){
+              const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+              l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+              l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+              l.setAttribute('stroke','#0ea5e9'); l.setAttribute('stroke-width','2');
+              g.appendChild(l);
+              const ang = Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+              const ah = document.createElementNS('http://www.w3.org/2000/svg','path');
+              ah.setAttribute('d','M0,0 L-6,3 L-6,-3 Z');
+              ah.setAttribute('fill','#0ea5e9');
+              ah.setAttribute('transform',`translate(${x2},${y2}) rotate(${ang})`);
+              g.appendChild(ah);
+            }
+
+            // Chain 1 at bucket 3
+            const b3x = 3*w + w/2, bTop = 0;
+            const c1y = bTop + 60;
+            const n1x = b3x - nodeW/2, n1y = c1y;
+            const n2x = n1x + nodeW + gap, n2y = c1y;
+            const n3x = n2x + nodeW + gap, n3y = c1y;
+
+            // arrow from bucket 3 to first node
+            arrow(b3x, bTop+40, n1x, n1y+nodeH/2);
+            g.appendChild(node(n1x, n1y, 'k₁', '#10b981'));
+            // link nodes
+            arrow(n1x+nodeW, n1y+nodeH/2, n2x, n2y+nodeH/2);
+            g.appendChild(node(n2x, n2y, 'k₂', '#34d399'));
+            arrow(n2x+nodeW, n2y+nodeH/2, n3x, n3y+nodeH/2);
+            g.appendChild(node(n3x, n3y, 'k₃', '#6ee7b7'));
+
+            // Chain 2 at bucket 7 (shorter)
+            const b7x = 7*w + w/2;
+            const c2y = bTop + 120;
+            const m1x = b7x - nodeW/2, m1y = c2y;
+            const m2x = m1x + nodeW + gap, m2y = c2y;
+
+            arrow(b7x, bTop+40, m1x, m1y+nodeH/2);
+            g.appendChild(node(m1x, m1y, 'q₁', '#10b981'));
+            arrow(m1x+nodeW, m1y+nodeH/2, m2x, m2y+nodeH/2);
+            g.appendChild(node(m2x, m2y, 'q₂', '#34d399'));
+
+            // Tail (null) markers
+            function nullMarker(x,y){
+              const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+              t.setAttribute('x',x); t.setAttribute('y',y);
+              t.setAttribute('font-size','10'); t.setAttribute('fill','#94a3b8');
+              t.textContent = '∅';
+              g.appendChild(t);
+            }
+            nullMarker(n3x + nodeW + 8, n3y + nodeH/2 + 3);
+            nullMarker(m2x + nodeW + 8, m2y + nodeH/2 + 3);
+          })();
+        ]]></script>
+      </g>
+
+      <text x="180" y="225" text-anchor="middle" font-size="11" fill="#475569">
+        Expected O(1) with good hashing; tolerant to high load but less cache-friendly
+      </text>
+    </svg>
+  </div>
+</article>
+
       <!-- Linear Probing -->
       <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
         <h3 class="text-xl font-semibold">Linear Probing</h3>
