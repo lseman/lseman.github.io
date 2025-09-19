@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hash Table Lab — Separate Chaining & Robin Hood (pseudocode-first)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js for interactivity -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Prism.js for code/pseudocode highlighting -->
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js"></script>
+
+    <style>
+        :root {
+            color-scheme: light;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .bucket {
+            transition: transform .12s ease, background-color .12s ease;
+        }
+
+        .cell {
+            transition: transform .12s ease, background-color .12s ease;
+        }
+
+        details>summary {
+            cursor: pointer;
+            list-style: none;
+        }
+
+        details>summary::-webkit-details-marker {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800 bg-white" x-data="hashLab()" x-init="init()">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-indigo-50 via-emerald-50 to-cyan-50 py-12">
+        <div class="max-w-6xl mx-auto px-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">
+                Hash Table <span class="text-indigo-600">Lab</span>
+            </h1>
+            <p class="mt-3 text-lg text-slate-700">
+                Start with <strong>separate (sequential) chaining</strong> — implement it yourself from pseudocode only.
+                Then tackle the challenge: <strong>Robin Hood hashing</strong> (open addressing).
+            </p>
+            <div class="mt-5 flex flex-wrap gap-3">
+                <a href="#sim"
+                    class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Open
+                    Simulator</a>
+                <a href="#guide"
+                    class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Read
+                    the Guide</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Intro / Modulo -->
+    <section id="intro" class="py-12">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-2xl font-bold text-slate-900">Hashing & the Mod Operation</h2>
+            <p class="mt-2 text-slate-700">
+                We map a key <span class="font-mono">k</span> to a bucket via an integer hash <span
+                    class="font-mono">h(k)</span> and modulo with table size <span class="font-mono">m</span>:
+            </p>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto"><code class="language-python">bucket = h(key) % m  # remainder after integer division
+# Example: h(key) = 29, m = 8  ⇒  29 = 3×8 + 5  ⇒  bucket = 5</code></pre>
+            <ul class="mt-3 list-disc pl-6 text-sm text-slate-700">
+                <li><strong>Tip:</strong> Choose <span class="font-mono">m</span> suitable for your hash (often
+                    odd/prime; avoid weak bit-mixing with powers of two).</li>
+                <li><strong>Load factor:</strong> <span class="font-mono">α = n/m</span> (items per bucket on average).
+                    Resize when α gets high.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Phase 1: Separate Chaining (ASSIGNMENT) -->
+    <section id="sequential" class="py-12 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-2xl font-bold text-slate-900">Phase 1: Separate Chaining (Sequential) — You implement</h2>
+            <p class="mt-2 text-slate-700">
+                Each bucket stores a small container (e.g., list/linked list) of entries. On a collision, attach to that
+                container.
+                Lookups/deletes touch only that bucket’s container.
+            </p>
+            <div class="grid md:grid-cols-2 gap-6 mt-4">
+                <div>
+                    <details open>
+                        <summary class="font-semibold text-indigo-700">Pseudocode (structure only)</summary>
+                        <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto"><code class="language-none">DATA:
+  table: array size m
+  table[i]: container of (key, value)
+
+INSERT(key, value):
+  i ← h(key) mod m
+  // if key already present in table[i], replace value
+  // otherwise append (key, value) to table[i]
+  // (Container choice is part of the exercise)
+
+SEARCH(key) → value?:
+  i ← h(key) mod m
+  // scan only table[i] for key; return value if found; else "not found"
+
+DELETE(key) → bool:
+  i ← h(key) mod m
+  // locate key inside table[i]; remove if present; return true/false
+
+RESIZE(new_m):
+  // allocate new array size new_m
+  // re-insert (rehash) all (key, value) pairs into new table
+  // (decide when to trigger by load factor α = n/m)</code></pre>
+                    </details>
+                </div>
+                <div class="text-sm text-slate-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>Average:</strong> ~<span class="font-mono">O(1)</span> under modest <span
+                                class="font-mono">α</span>.</li>
+                        <li><strong>Worst-case:</strong> <span class="font-mono">O(n)</span> if many keys collide to one
+                            bucket.</li>
+                        <li><strong>Design choices:</strong> container type (dynamic array vs linked list), update
+                            policy, resize thresholds.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="seq-svg" class="py-12 bg-white">
+        <div class="max-w-6xl mx-auto px-6" x-data="seqSVG()">
+            <h2 class="text-2xl font-bold text-slate-900">Sequential Chaining — Illustrated</h2>
+            <p class="mt-2 text-slate-700">Click through the steps to see how the pseudocode manipulates buckets and
+                chains. Colors: <span class="text-indigo-600 font-semibold">home bucket</span>, <span
+                    class="text-emerald-600 font-semibold">found/updated</span>, <span
+                    class="text-rose-600 font-semibold">removed</span>.</p>
+
+            <div class="mt-6 grid lg:grid-cols-3 gap-6">
+
+                <!-- INSERT -->
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-semibold text-slate-800">INSERT(key, value)</h3>
+                        <div class="text-sm text-slate-500">Step <span class="font-mono"
+                                x-text="ins.step+1"></span>/<span class="font-mono" x-text="ins.frames.length"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 flex gap-2">
+                        <button class="px-2 py-1 rounded bg-white ring-1 ring-slate-200 hover:bg-slate-100"
+                            @click="ins.prev()">◀</button>
+                        <button class="px-2 py-1 rounded bg-white ring-1 ring-slate-200 hover:bg-slate-100"
+                            @click="ins.next()">▶</button>
+                        <div class="ml-auto text-xs text-slate-500">
+                            key=<span class="font-mono" x-text="ins.key"></span>, i=<span class="font-mono"
+                                x-text="ins.home"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 text-xs bg-white border border-slate-200 rounded p-2 code">
+                        <div :class="ins.hl(0)">i ← h(key) mod m</div>
+                        <div :class="ins.hl(1)">scan table[i]</div>
+                        <div :class="ins.hl(2)">if present → replace value</div>
+                        <div :class="ins.hl(3)">else append (key, value)</div>
+                    </div>
+
+                    <div class="mt-3 bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        <div x-ref="insSvg"></div>
+                    </div>
+                </div>
+
+                <!-- SEARCH -->
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-semibold text-slate-800">SEARCH(key)</h3>
+                        <div class="text-sm text-slate-500">Step <span class="font-mono"
+                                x-text="sr.step+1"></span>/<span class="font-mono" x-text="sr.frames.length"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 flex gap-2">
+                        <button class="px-2 py-1 rounded bg-white ring-1 ring-slate-200 hover:bg-slate-100"
+                            @click="sr.prev()">◀</button>
+                        <button class="px-2 py-1 rounded bg-white ring-1 ring-slate-200 hover:bg-slate-100"
+                            @click="sr.next()">▶</button>
+                        <div class="ml-auto text-xs text-slate-500">key=<span class="font-mono" x-text="sr.key"></span>,
+                            i=<span class="font-mono" x-text="sr.home"></span></div>
+                    </div>
+
+                    <div class="mt-2 text-xs bg-white border border-slate-200 rounded p-2 code">
+                        <div :class="sr.hl(0)">i ← h(key) mod m</div>
+                        <div :class="sr.hl(1)">for each (k,v) in table[i]</div>
+                        <div :class="sr.hl(2)">if k == key → return v</div>
+                        <div :class="sr.hl(3)">return NOT FOUND</div>
+                    </div>
+
+                    <div class="mt-3 bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        <div x-ref="srSvg"></div>
+                    </div>
+                </div>
+
+                <!-- DELETE -->
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-semibold text-slate-800">DELETE(key)</h3>
+                        <div class="text-sm text-slate-500">Step <span class="font-mono"
+                                x-text="del.step+1"></span>/<span class="font-mono" x-text="del.frames.length"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 flex gap-2">
+                        <button class="px-2 py-1 rounded bg-white ring-1 ring-slate-200 hover:bg-slate-100"
+                            @click="del.prev()">◀</button>
+                        <button class="px-2 py-1 rounded bg-white ring-1 ring-slate-200 hover:bg-slate-100"
+                            @click="del.next()">▶</button>
+                        <div class="ml-auto text-xs text-slate-500">key=<span class="font-mono"
+                                x-text="del.key"></span>, i=<span class="font-mono" x-text="del.home"></span></div>
+                    </div>
+
+                    <div class="mt-2 text-xs bg-white border border-slate-200 rounded p-2 code">
+                        <div :class="del.hl(0)">i ← h(key) mod m</div>
+                        <div :class="del.hl(1)">scan table[i]</div>
+                        <div :class="del.hl(2)">if k == key → remove</div>
+                        <div :class="del.hl(3)">return true/false</div>
+                    </div>
+
+                    <div class="mt-3 bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        <div x-ref="delSvg"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function seqSVG() {
+            const M = 8;
+            const buckets = Array.from({ length: M }, (_, i) => i);
+
+            const fillFor = tag => ({ normal: '#ffffff', home: '#eef2ff', found: '#ecfdf5', remove: '#fee2e2' }[tag] || '#ffffff');
+            const strokeFor = tag => ({ normal: '#cbd5e1', home: '#818cf8', found: '#10b981', remove: '#f43f5e' }[tag] || '#cbd5e1');
+            const textFor = tag => ({ normal: '#0f172a', home: '#1e293b', found: '#065f46', remove: '#7f1d1d' }[tag] || '#0f172a');
+
+            const frame = (chains, note, hl = 0) => ({ chains, note, hl });
+            const clone = arr => arr.map(col => col.map(n => ({ ...n })));
+            const markHome = (chains, b) => { chains[b] = chains[b].map(n => ({ ...n, tag: (n.tag === 'found' || n.tag === 'remove') ? n.tag : 'home' })); return chains; };
+            const markScan = (chains, b, upto) => { chains[b] = chains[b].map((n, i) => ({ ...n, tag: i <= upto ? (n.tag === 'found' ? 'found' : 'home') : n.tag })); return chains; };
+            const markFocus = (chains, b, idx, as = 'home') => { chains[b] = chains[b].map((n, i) => ({ ...n, tag: i === idx ? (as === 'found' ? 'found' : as === 'remove' ? 'remove' : 'home') : n.tag })); return chains; };
+            const appendAt = (chains, b, node) => { chains[b] = [...chains[b], node]; return chains; };
+            const removeAt = (chains, b, idx) => { chains[b] = chains[b].filter((_, i) => i !== idx); return chains; };
+
+            // INSERT: insert "p7" into bucket 5
+            const insertFrames = (() => {
+                const home = 5, key = 'p7';
+                const base = Array.from({ length: M }, () => []);
+                base[2] = [{ label: 'aa:2', tag: 'normal' }];
+                base[5] = [{ label: 'x1:9', tag: 'normal' }, { label: 'y2:4', tag: 'normal' }];
+                return [
+                    frame(markHome(clone(base), home), 'Compute i = h(key) % m → highlight home bucket', 0),
+                    frame(markScan(clone(base), home, 0), 'Scan bucket i; check existing keys for update', 1),
+                    frame(markScan(clone(base), home, 1), 'Key not present → will append at the end', 3),
+                    frame(appendAt(clone(base), home, { label: `${key}:42`, tag: 'found' }), 'Append (key,value) at bucket i', 3),
+                ];
+            })();
+
+            // SEARCH: search "y2" at bucket 5
+            const searchFrames = (() => {
+                const home = 5;
+                const base = Array.from({ length: M }, () => []);
+                base[2] = [{ label: 'aa:2', tag: 'normal' }];
+                base[5] = [{ label: 'x1:9', tag: 'normal' }, { label: 'y2:4', tag: 'found' }];
+                return [
+                    frame(markHome(clone(base), home), 'Compute i = h(key) % m', 0),
+                    frame(markFocus(clone(base), home, 0), 'Scan table[i]: compare first node', 1),
+                    frame(markFocus(clone(base), home, 1, 'found'), 'Match found → return value', 2),
+                ];
+            })();
+
+            // DELETE: delete "x1" at bucket 5
+            const deleteFrames = (() => {
+                const home = 5;
+                const base = Array.from({ length: M }, () => []);
+                base[5] = [{ label: 'x1:9', tag: 'remove' }, { label: 'y2:4', tag: 'normal' }];
+                return [
+                    frame(markHome(clone(base), home), 'Compute i = h(key) % m', 0),
+                    frame(markFocus(clone(base), home, 0, 'remove'), 'Scan table[i] until key matches', 1),
+                    frame(removeAt(clone(base), home, 0), 'Remove matching node; list compacts', 2),
+                    frame(clone(base), 'Return true if removed; else false', 3),
+                ];
+            })();
+
+            const renderSVG = (vm, container) => {
+                const frame = vm.frames[vm.step];
+
+                let svg = '<svg viewBox="0 0 640 220" class="w-full h-auto">';
+
+                // Buckets (row)
+                svg += '<g transform="translate(20,20)">';
+                for (let b = 0; b < M; b++) {
+                    const x = b * 76;
+                    svg += `<g transform="translate(${x}, 0)">`;
+                    svg += `<rect fill="${vm.bucketFill(b)}" stroke="${vm.bucketStroke(b)}" stroke-width="2" rx="8" width="68" height="40"></rect>`;
+                    svg += `<text x="34" y="26" text-anchor="middle" style="font: 12px ui-monospace; fill: #374151;">b=${b}</text>`;
+                    svg += '</g>';
+                }
+                svg += '</g>';
+
+                // Chains (vertical stacks per bucket)
+                svg += '<g transform="translate(20,70)">';
+                for (let b = 0; b < M; b++) {
+                    const x = b * 76;
+                    svg += `<g transform="translate(${x}, 0)">`;
+
+                    const chain = frame.chains[b] || [];
+                    for (let idx = 0; idx < chain.length; idx++) {
+                        const node = chain[idx];
+                        const y = idx * 34;
+
+                        svg += `<g transform="translate(0, ${y})">`;
+                        svg += `<rect fill="${fillFor(node.tag)}" stroke="${strokeFor(node.tag)}" stroke-width="2" rx="8" width="68" height="28"></rect>`;
+                        svg += `<text x="34" y="19" text-anchor="middle" style="font: 12px ui-monospace; fill: ${textFor(node.tag)};">${node.label}</text>`;
+
+                        // arrow to next
+                        if (idx < chain.length - 1) {
+                            svg += '<line x1="34" y1="28" x2="34" y2="34" stroke="#94a3b8" stroke-width="2"></line>';
+                            svg += '<polygon points="34,34 30,30 38,30" fill="#94a3b8"></polygon>';
+                        }
+                        svg += '</g>';
+                    }
+                    svg += '</g>';
+                }
+                svg += '</g>';
+
+                // Annotation
+                svg += '<g transform="translate(20, 190)">';
+                svg += `<text style="font: 12px ui-monospace; fill: #64748b;">${frame.note}</text>`;
+                svg += '</g>';
+
+                svg += '</svg>';
+                container.innerHTML = svg;
+            };
+
+            const mkVM = (frames, key, home) => ({
+                frames, key, home, step: 0,
+                next() {
+                    this.step = (this.step + 1) % this.frames.length;
+                    this.updateSVG();
+                },
+                prev() {
+                    this.step = (this.step - 1 + this.frames.length) % this.frames.length;
+                    this.updateSVG();
+                },
+                hl(line) { return this.frames[this.step].hl === line ? 'text-indigo-700 font-semibold' : '' },
+                bucketFill(b) { return b === this.home ? '#eef2ff' : '#ffffff'; },
+                bucketStroke(b) { return b === this.home ? '#818cf8' : '#cbd5e1'; },
+                updateSVG() {
+                    // This will be set by the main component
+                }
+            });
+
+            return {
+                M, buckets,
+                ins: null,
+                sr: null,
+                del: null,
+                nodeFill: n => fillFor(n.tag),
+                nodeStroke: n => strokeFor(n.tag),
+                nodeText: n => textFor(n.tag),
+
+                init() {
+                    this.ins = mkVM(insertFrames, 'p7', 5);
+                    this.sr = mkVM(searchFrames, 'y2', 5);
+                    this.del = mkVM(deleteFrames, 'x1', 5);
+
+                    this.ins.updateSVG = () => renderSVG(this.ins, this.$refs.insSvg);
+                    this.sr.updateSVG = () => renderSVG(this.sr, this.$refs.srSvg);
+                    this.del.updateSVG = () => renderSVG(this.del, this.$refs.delSvg);
+
+                    // Initial render
+                    this.$nextTick(() => {
+                        renderSVG(this.ins, this.$refs.insSvg);
+                        renderSVG(this.sr, this.$refs.srSvg);
+                        renderSVG(this.del, this.$refs.delSvg);
+                    });
+                }
+            };
+        }
+    </script>
+    <!-- Phase 2: Robin Hood Hashing (ASSIGNMENT) -->
+    <section id="robinhood" class="py-12">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-2xl font-bold text-slate-900">Phase 2 (Challenge): Robin Hood Hashing — You implement</h2>
+            <p class="mt-2 text-slate-700">
+                <strong>Open addressing</strong>: items live directly in table slots; collisions probe forward.
+                <em>Robin Hood principle</em>: entries with <em>larger displacement</em> (farther from home) are allowed
+                to steal earlier slots from those with smaller displacement,
+                reducing variance of probe lengths.
+            </p>
+            <div class="grid md:grid-cols-2 gap-6 mt-4">
+                <div>
+                    <details open>
+                        <summary class="font-semibold text-purple-700">Insert — high level</summary>
+                        <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto"><code class="language-none">DATA:
+  slot: either EMPTY or (key, value, home_index, dfb)
+
+RH_INSERT(key, value):
+  b ← h(key) mod m
+  cur ← (key, value, home=b, dfb=0)
+  i ← b
+  LOOP:
+    if slot[i] is EMPTY:
+       place cur at i; STOP
+    if slot[i].key == cur.key:
+       update value in place; STOP
+    // Robin Hood swap rule:
+    if slot[i].dfb &lt; cur.dfb:
+       swap(cur, slot[i])  // cur continues with larger dfb
+    i ← (i+1) mod m
+    cur.dfb ← cur.dfb + 1
+    // Decide what to do if table appears full (resize policy)</code></pre>
+                    </details>
+                </div>
+                <div>
+                    <details open>
+                        <summary class="font-semibold text-purple-700">Search &amp; Delete — high level</summary>
+                        <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto"><code class="language-none">RH_FIND(key) → value?:
+  b ← h(key) mod m; i ← b; d ← 0
+  WHILE slot[i] not EMPTY:
+     if slot[i].key == key: return slot[i].value
+     if slot[i].dfb &lt; d:    return NOT FOUND  // early stop
+     i ← (i+1) mod m; d ← d+1
+  return NOT FOUND
+
+RH_DELETE(key) → bool:
+  // Use backward-shift deletion to avoid tombstones:
+  // - Find key position i (as in RH_FIND).
+  // - Remove it, then shift subsequent contiguous entries one step left
+  //   while their dfb &gt; 0, decreasing their dfb by 1 as they move.
+  // - Stop when an EMPTY slot is encountered.</code></pre>
+                    </details>
+                </div>
+            </div>
+            <div class="mt-4 text-sm text-slate-700">
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><strong>DFB (distance-from-bucket):</strong> for home <span class="font-mono">b</span> and slot
+                        <span class="font-mono">s</span>, <span class="font-mono">dfb = (s - b) mod m</span>.</li>
+                    <li><strong>Early stop rule:</strong> during search, if current probe distance <span
+                            class="font-mono">d</span> exceeds resident’s <span class="font-mono">dfb</span>, the key
+                        cannot be further in this cluster.</li>
+                    <li><strong>Resizing:</strong> practical resize threshold: <span class="font-mono">α ≈
+                            0.85–0.90</span>.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Python Hash Utilities (copy/paste OK) -->
+    <section id="hashfuncs" class="py-12 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-2xl font-bold text-slate-900">Python Hash Utilities (copy/paste)</h2>
+            <p class="mt-2 text-slate-700">Deterministic, seedable 64-bit hashers for experiments. Compute <span
+                    class="font-mono">h(k)</span> then take <span class="font-mono">% m</span>.</p>
+            <pre class="code bg-slate-900 text-slate-100 p-3 rounded-lg overflow-x-auto"><code class="language-python">from __future__ import annotations
+from typing import Union
+
+IntLike = Union[int, bytes, str]
+
+# --- SplitMix64 (seedable, fast) ---
+def _to_u64(x: int) -> int:
+    return x & 0xFFFFFFFFFFFFFFFF
+
+def splitmix64(x: int) -> int:
+    x = _to_u64(x + 0x9E3779B97F4A7C15)
+    z = x
+    z = _to_u64((z ^ (z >> 30)) * 0xBF58476D1CE4E5B9)
+    z = _to_u64((z ^ (z >> 27)) * 0x94D049BB133111EB)
+    z = z ^ (z >> 31)
+    return _to_u64(z)
+
+class SplitMix64:
+    def __init__(self, seed: int = 0xDEADBEEFCAFEBABE):
+        self.state = _to_u64(seed)
+    def next(self) -> int:
+        self.state = _to_u64(self.state + 0x9E3779B97F4A7C15)
+        return splitmix64(self.state)
+    def hash(self, x: IntLike) -> int:
+        h = self._to_int(x)
+        return splitmix64(h ^ self.state)
+    @staticmethod
+    def _to_int(x: IntLike) -> int:
+        if isinstance(x, int): return x
+        if isinstance(x, (bytes, bytearray)):
+            v = 0
+            for b in x: v = ((v << 8) ^ b) & 0xFFFFFFFFFFFFFFFF
+            return v
+        if isinstance(x, str): return SplitMix64._to_int(x.encode('utf-8'))
+        raise TypeError('Unsupported type for hashing')
+
+# --- FNV-1a 64-bit ---
+FNV64_OFFSET = 0xcbf29ce484222325
+FNV64_PRIME  = 0x100000001b3
+
+def fnv1a64(x: IntLike) -> int:
+    if isinstance(x, int):
+        x = x.to_bytes(8, 'little', signed=False)
+    elif isinstance(x, str):
+        x = x.encode('utf-8')
+    h = FNV64_OFFSET
+    for b in x:
+        h ^= b
+        h = (h * FNV64_PRIME) & 0xFFFFFFFFFFFFFFFF
+    return h
+
+def hash_index(key: IntLike, m: int, seed: int = 0x1234ABCD) -> int:
+    return SplitMix64(seed).hash(key) % m</code></pre>
+        </div>
+    </section>
+
+    <!-- Guide / What to hand in -->
+    <section id="guide" class="py-12">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-2xl font-bold text-slate-900">What to implement & hand in</h2>
+            <ol class="list-decimal pl-6 mt-2 space-y-2 text-slate-700">
+                <li><strong>Separate Chaining:</strong> full implementation (insert/search/delete/resize). Document
+                    container choice and complexity.</li>
+                <li><strong>Robin Hood:</strong> full implementation (insert/search/delete/resize) with DFB tracking and
+                    early-stop rule.</li>
+                <li><strong>Experiment:</strong> compare average probe/chain length vs load factor for both strategies
+                    using the hash utilities.</li>
+                <li><strong>Writeup:</strong> justify resize thresholds and discuss variance reduction in Robin Hood.
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- Interactive Simulator (logic minified) -->
+    <section id="sim" class="py-12">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Interactive Simulator</h2>
+                    <p class="text-slate-600 mt-1">Operate on the table and see chains (separate) or clusters & DFB
+                        (Robin Hood). <span class="italic">Implementation is intentionally minified to discourage
+                            copy-paste.</span></p>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <label class="text-slate-600">m (buckets)</label>
+                    <input type="number" min="3" step="1" class="w-20 rounded-lg border-slate-300" x-model.number="M">
+                    <label class="text-slate-600 ml-2">mode</label>
+                    <select class="rounded-lg border-slate-300" x-model="mode">
+                        <option value="seq">separate-chaining</option>
+                        <option value="rh">robin-hood (open addressing)</option>
+                    </select>
+                    <label class="text-slate-600 ml-2">seed</label>
+                    <input type="number" class="w-28 rounded-lg border-slate-300" x-model.number="seed">
+                    <button class="ml-2 px-3 py-1.5 rounded-lg bg-slate-800 text-white"
+                        @click="resetTable()">Reset</button>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-5 gap-6">
+                <!-- Controls & Metrics -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+                        <h3 class="font-semibold text-slate-800">Operations</h3>
+                        <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                            <input class="rounded-lg border-slate-300 col-span-1" placeholder="key (string/int)"
+                                x-model="keyIn">
+                            <input class="rounded-lg border-slate-300 col-span-1" placeholder="value" x-model="valIn">
+                            <button class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white"
+                                @click="opInsert()">Insert</button>
+                            <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white"
+                                @click="opFind()">Find</button>
+                            <button class="px-3 py-1.5 rounded-lg bg-rose-600 text-white"
+                                @click="opDelete()">Delete</button>
+                            <button class="px-3 py-1.5 rounded-lg bg-slate-700 text-white" @click="opRandom()">Random
+                                Batch</button>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-600">
+                            <p><span class="font-semibold">Indexing:</span> <span class="font-mono">b = h(key) %
+                                    m</span>.
+                                In Robin Hood, each resident displays <span class="font-mono">home</span> and <span
+                                    class="font-mono">dfb</span>.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-white rounded-2xl shadow p-5 border border-slate-200">
+                        <h3 class="font-semibold text-slate-800">Metrics</h3>
+                        <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <div class="text-xs text-slate-500">Load factor α = n/m</div>
+                                <div class="text-xl font-semibold" x-text="alpha().toFixed(2)"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-slate-500"
+                                    x-text="mode==='seq' ? 'Longest chain' : 'Longest cluster'"></div>
+                                <div class="text-xl font-semibold" x-text="longestChain"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-slate-500">Last op cost (cells touched)</div>
+                                <div class="text-xl font-semibold" x-text="lastCost"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-slate-500">Total ops</div>
+                                <div class="text-xl font-semibold" x-text="ops"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization & Log -->
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-2xl shadow p-5 border border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-slate-800">Buckets (0 .. m-1)</h3>
+                            <div class="text-sm text-slate-600">mode: <span class="font-mono" x-text="mode"></span>
+                            </div>
+                        </div>
+
+                        <!-- Buckets grid -->
+                        <div class="mt-3 grid"
+                            :style="`grid-template-columns: repeat(${M}, minmax(44px, 1fr)); gap: 8px;`">
+                            <template x-for="b in M" :key="'b'+b">
+                                <div class="bucket border border-slate-200 rounded-lg p-2 bg-slate-50">
+                                    <div class="text-[11px] text-slate-500">b=<span x-text="b-1"></span></div>
+                                    <div class="mt-1 flex flex-col gap-1 min-h-[34px]">
+                                        <!-- Separate chaining view (renders data only) -->
+                                        <template x-if="mode==='seq'">
+                                            <template x-for="(cell, i) in table[b-1]" :key="'sc'+b+'_'+i">
+                                                <div
+                                                    class="cell rounded bg-white border border-slate-200 px-2 py-1 text-xs">
+                                                    <span class="font-mono" x-text="cell.key"></span>
+                                                    <span class="text-slate-400">→</span>
+                                                    <span class="font-mono" x-text="cell.val"></span>
+                                                </div>
+                                            </template>
+                                        </template>
+                                        <!-- Robin Hood view (one resident per slot) -->
+                                        <template x-if="mode==='rh'">
+                                            <template x-for="slot in [b-1]" :key="'rh'+b">
+                                                <div
+                                                    class="cell rounded bg-white border border-slate-200 px-2 py-1 text-[11px]">
+                                                    <template x-if="rhTable[slot]===null">
+                                                        <span class="text-slate-300">(empty)</span>
+                                                    </template>
+                                                    <template x-if="rhTable[slot]!==null">
+                                                        <div>
+                                                            <span class="font-mono" x-text="rhTable[slot].key"></span>
+                                                            <span class="text-slate-400">→</span>
+                                                            <span class="font-mono" x-text="rhTable[slot].val"></span>
+                                                            <div class="text-[10px] text-slate-400">
+                                                                home=<span x-text="rhTable[slot].home"></span> •
+                                                                dfb=<span x-text="rhTable[slot].dfb"></span>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Log -->
+                        <div class="mt-5">
+                            <h4 class="font-semibold text-slate-800">Operation Log</h4>
+                            <div id="logBox"
+                                class="mt-2 h-48 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] code">
+                                <template x-for="(line, i) in log" :key="'log'+i">
+                                    <div class="mb-0.5"><span class="text-slate-400">#</span> <span
+                                            x-text="line"></span></div>
+                                </template>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-10 bg-slate-900 text-slate-200">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm">© <span id="year"></span> Hash Table Lab</p>
+                <div class="text-xs text-slate-400">Tailwind • Alpine • Prism</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Logic (minified/compact) -->
+    <script>
+        /* simple 64-bit-ish hash (for UI), and a compact simulator impl (not classroom solution!) */
+        function U(n) { return BigInt.asUintN(64, n) }
+        function SM(x) { x = U(x + 0x9E3779B97F4A7C15n); let z = x; z = U((z ^ (z >> 30n)) * 0xBF58476D1CE4E5B9n); z = U((z ^ (z >> 27n)) * 0x94D049BB133111EBn); return U(z ^ (z >> 31n)) }
+        function HANY(x, s = 0x1234ABCDn) { let a = BigInt(s); if (typeof x === "number") { a ^= BigInt(x) } else { const t = String(x); for (let i = 0; i < t.length; i++)a = U((a << 5n) ^ BigInt(t.charCodeAt(i))) } return SM(a) }
+        function hashLab() { return { M: 8, mode: "seq", seed: 0x1234ABCD, keyIn: "", valIn: "", table: [], rhTable: [], rhCount: 0, longestChain: 0, lastCost: 0, ops: 0, log: [], init() { this.resetTable(); const y = document.getElementById("year"); if (y) y.textContent = new Date().getFullYear() }, resetTable() { this.table = Array.from({ length: this.M }, () => []); this.rhTable = Array.from({ length: this.M }, () => null); this.rhCount = 0; this.longestChain = 0; this.lastCost = 0; this.ops = 0; this.log = ["reset m=" + this.M + " mode=" + this.mode]; this.$nextTick(() => { const b = document.getElementById("logBox"); if (b) b.scrollTop = b.scrollHeight }) }, alpha() { return this.mode === "seq" ? this.table.reduce((s, b) => s + b.length, 0) / this.M : this.rhCount / this.M }, bucketOf(k) { return Number(HANY(k, BigInt(this.seed)) % BigInt(this.M)) }, seq_insert(k, v) { const b = this.bucketOf(k); let c = 1, L = this.table[b]; for (let i = 0; i < L.length; i++) { c++; if (L[i].key === k) { L[i].val = v; this.lastCost = c; this.log.push("update key=" + k + " in b=" + b); return } } L.push({ key: k, val: v }); this.lastCost = c; this.longestChain = Math.max(this.longestChain, L.length); this.log.push("insert key=" + k + " → b=" + b) }, seq_find(k) { const b = this.bucketOf(k), L = this.table[b]; let c = 1; for (let i = 0; i < L.length; i++) { c++; if (L[i].key === k) { this.lastCost = c; this.log.push("find key=" + k + " in b=" + b + " ✓ val=" + L[i].val); return L[i].val } } this.lastCost = c; this.log.push("find key=" + k + " in b=" + b + " ✗"); return null }, seq_delete(k) { const b = this.bucketOf(k), L = this.table[b]; let c = 1; for (let i = 0; i < L.length; i++) { c++; if (L[i].key === k) { L.splice(i, 1); this.lastCost = c; this.log.push("delete key=" + k + " from b=" + b + " ✓"); return true } } this.lastCost = c; this.log.push("delete key=" + k + " from b=" + b + " ✗"); return false }, rh_insert(k, v) { if (this.rhCount >= this.M) { this.log.push("rh-insert: table full (resize)"); return } let h = this.bucketOf(k), K = k, V = v, B = h, D = 0, i = h, c = 0; for (; ;) { c++; const e = this.rhTable[i]; if (e === null) { this.rhTable[i] = { key: K, val: V, home: B, dfb: D }; this.rhCount++; this.lastCost = c; this.ops++; this.log.push(`rh-insert key=${k} home=${h} @${i} dfb=${D}`); this.recluster(); return } if (e.key === K) { this.rhTable[i].val = V; this.lastCost = c; this.ops++; this.log.push(`rh-update key=${k} @${i}`); return } if (e.dfb < D) { this.rhTable[i] = { key: K, val: V, home: B, dfb: D }; K = e.key; V = e.val; B = e.home; D = e.dfb } i = (i + 1) % this.M; D++; if (D >= this.M) { this.lastCost = c; this.log.push("rh-insert: full loop (resize)"); return } } }, rh_find(k) { const h = this.bucketOf(k); let i = h, d = 0, c = 0; for (; ;) { c++; const e = this.rhTable[i]; if (e === null) { this.lastCost = c; this.ops++; this.log.push(`rh-find key=${k} ✗ (empty @${i})`); return null } if (e.key === k) { this.lastCost = c; this.ops++; this.log.push(`rh-find key=${k} ✓ val=${e.val} @${i}`); return e.val } if (e.dfb < d) { this.lastCost = c; this.ops++; this.log.push(`rh-find key=${k} ✗ (early stop @${i})`); return null } i = (i + 1) % this.M; d++; if (d >= this.M) { this.lastCost = c; this.log.push("rh-find: full loop, not found"); return null } } }, rh_delete(k) { const h = this.bucketOf(k); let i = h, d = 0, c = 0; for (; ;) { c++; const e = this.rhTable[i]; if (e === null) { this.lastCost = c; this.ops++; this.log.push(`rh-delete key=${k} ✗ (empty @${i})`); return false } if (e.key === k) { let j = (i + 1) % this.M; while (this.rhTable[j] !== null && this.rhTable[j].dfb > 0) { const q = this.rhTable[j]; this.rhTable[i] = { key: q.key, val: q.val, home: q.home, dfb: q.dfb - 1 }; i = j; j = (j + 1) % this.M } this.rhTable[i] = null; this.rhCount--; this.lastCost = c; this.ops++; this.log.push(`rh-delete key=${k} ✓`); this.recluster(); return true } if (e.dfb < d) { this.lastCost = c; this.ops++; this.log.push(`rh-delete key=${k} ✗ (early stop @${i})`); return false } i = (i + 1) % this.M; d++; if (d >= this.M) { this.lastCost = c; this.log.push("rh-delete: full loop, not found"); return false } } }, recluster() { let b = 0, a = 0; for (let k = 0; k < this.M * 2; k++) { const e = this.rhTable[k % this.M]; if (e !== null) { a++; b = Math.max(b, a) } else a = 0 } this.longestChain = b }, opInsert() { if (!this.keyIn) return; if (this.mode === "seq") this.seq_insert(this.keyIn, this.valIn); else this.rh_insert(this.keyIn, this.valIn); this.ops++ }, opFind() { if (!this.keyIn) return; if (this.mode === "seq") this.seq_find(this.keyIn); else this.rh_find(this.keyIn); this.ops++ }, opDelete() { if (!this.keyIn) return; if (this.mode === "seq") this.seq_delete(this.keyIn); else this.rh_delete(this.keyIn); this.ops++ }, opRandom() { const ks = ["aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh", "ii", "jj", "kk", "ll", "mm", "nn", "oo"]; for (let i = 0; i < 6; i++) { const k = ks[Math.floor(Math.random() * ks.length)] + Math.floor(Math.random() * 10), v = Math.floor(Math.random() * 100); if (this.mode === "seq") this.seq_insert(k, v); else this.rh_insert(k, v) } this.ops += 6 } } }
+    </script>
+</body>
+
+</html>
