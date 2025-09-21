@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Python OOP + Stacks & Queues — DAS‑410049</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81'
+            },
+            emerald: {
+              50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7',
+              400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857'
+            },
+            amber: { 50: '#fffbeb', 200: '#fde68a', 600: '#d97706' },
+            rose: { 50: '#fff1f2', 200: '#fecdd3', 600: '#e11d48' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- MathJax (v3) for Big-O and symbols -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]] },
+      chtml: { linebreaks: { automatic: false }, matchFontHeight: true },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer></script>
+
+  <!-- Prism (core + Python + line-numbers) -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css"></noscript>
+  <script>window.Prism = window.Prism || {}; Prism.manual = false;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.js" defer></script>
+
+  <!-- Theme styles -->
+  <style>
+    :root {
+      --bg-soft: #f8fafc; --bg-card: rgba(255, 255, 255, .78);
+      --ink-strong: #0f172a; --ink-soft: #475569; --ring: #e2e8f0; --grid-stroke: rgba(15,23,42,.06);
+      --pri-50: #eef2ff; --pri-100:#e0e7ff; --pri-200:#c7d2fe; --pri-300:#a5b4fc; --pri-400:#818cf8; --pri-500:#6366f1;
+      --ok-50:#ecfdf5; --ok-200:#a7f3d0; --ok-600:#059669; --warn-50:#fffbeb; --warn-200:#fde68a; --warn-600:#d97706; --err-50:#fff1f2; --err-200:#fecdd3; --err-600:#e11d48;
+    }
+    html { scroll-behavior:smooth; }
+    body { color:var(--ink-strong); background:linear-gradient(135deg,#f8fafc 0%, #eef2ff 60%, #ecfeff 100%); }
+    .card { background:var(--bg-card); backdrop-filter:saturate(120%) blur(6px); border:1px solid var(--ring); border-radius:1rem; }
+    .theorem,.def,.warn,.insight { padding:.75rem 1rem; border-radius:.65rem; border:1px solid var(--ring); box-shadow:0 1px 0 rgba(15,23,42,.03); }
+    .theorem{ background:var(--pri-50); border-left:4px solid var(--pri-400);} 
+    .def{ background:var(--ok-50); border-left:4px solid var(--ok-600);} 
+    .warn{ background:var(--err-50); border-left:4px solid var(--err-600);} 
+    .insight{ background:var(--warn-50); border-left:4px solid var(--warn-600);}    
+    .bg-grid{ background-image:linear-gradient(to right, var(--grid-stroke) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-stroke) 1px, transparent 1px); background-size:24px 24px; mask-image: radial-gradient(ellipse at 50% 28%, rgba(0,0,0,.9), rgba(0,0,0,.16) 60%, transparent 76%);} 
+    .glow{ position:absolute; inset:-15% -10% auto -10%; height:52vh; background: radial-gradient(60% 60% at 50% 40%, rgba(99,102,241,.22), rgba(129,140,248,.14) 42%, rgba(203,213,225,.10) 70%, transparent 75%); filter: blur(42px); pointer-events:none; }
+    .fade-up{ opacity:0; transform:translateY(12px); animation:fadeUp .7s ease forwards .1s;} @keyframes fadeUp{to{opacity:1; transform:none;}}
+
+    /* Prism small font & line numbers theme harmony */
+    pre[class*="language-"] { font-size: 12.5px; line-height: 1.45; }
+    pre[class*="language-"].line-numbers { position:relative; padding-left:3.5em; background:#0b1220; border:1px solid #1f2937; border-radius:.75rem; }
+    .line-numbers .line-numbers-rows{ position:absolute; top:0; left:0; width:3em; border-right:1px solid #334155; }
+    .line-numbers-rows>span:before{ content:counter(linenumber); color:#64748b; display:block; padding-right:.6em; text-align:right; font-variant-numeric:tabular-nums; }
+    pre code { color:#e5e7eb; }
+
+    /* Print */
+    @media print { @page { size:A4; margin:10mm; } .no-print{ display:none!important;} .print-grid{ columns:2; column-gap:12mm;} section{ break-inside:avoid; } .tip{ break-inside:avoid; border:1px solid var(--ring);} }
+
+    /* Hero helpers */
+    .formula-container{ animation: float 20s ease-in-out infinite; }
+    .formula-container:nth-child(odd){ animation-delay:-10s; }
+    .formula-container:nth-child(3n){ animation-delay:-5s; }
+    @keyframes float{ 0%,100%{ transform:translateY(0) rotate(0); } 25%{ transform:translateY(-10px) rotate(1deg);} 50%{ transform:translateY(5px) rotate(-.5deg);} 75%{ transform:translateY(-5px) rotate(.5deg);} }
+    .gradient-text{ background:linear-gradient(135deg,#667eea 0%, #06b6d4 50%, #10b981 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+    code[class*=language-], pre[class*=language-] {
+color: #fff;
+background: 0 0;
+text-shadow: none;
+font-family: Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-800">
+  <!-- ======= Hero ======= -->
+  <header class="relative h-[64svh] flex items-center bg-gradient-to-tr from-indigo-50 via-emerald-50 to-cyan-50 border-b border-slate-200">
+    <div aria-hidden="true" class="absolute inset-0 bg-grid"></div>
+    <div aria-hidden="true" class="glow"></div>
+
+    <div class="relative mx-auto max-w-7xl px-6 py-12 lg:py-16">
+      <div class="grid lg:grid-cols-1 gap-10 items-start">
+        <div class="fade-up">
+          <header>
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.05]">
+              Python OOP + Stacks & Queues
+            </h1>
+            <p class="mt-3 text-lg text-slate-700 max-w-3xl">
+              A colorful, step‑by‑step guide to <span class="font-semibold">Classes</span>, <span class="font-semibold">Objects</span>, <span class="font-semibold">Inheritance</span>, and <span class="font-semibold">Magic Methods</span> — followed by clean Python implementations of <strong>LIFO</strong> and <strong>FIFO</strong> structures.
+            </p>
+          </header>
+
+          <!-- TOC -->
+          <nav class="mt-6 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+            <a href="#oop-intro" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition">Classes & Objects</a>
+            <a href="#oop-core" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition">OOP Principles</a>
+            <a href="#magic" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition">Magic Methods</a>
+            <a href="#patterns" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition">Design Patterns</a>
+            <a href="#advanced" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition">Advanced</a>
+            <a href="#stack" class="px-4 py-2 rounded-xl bg-brand-600 text-white shadow hover:bg-brand-700">Stacks/Queues</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <!-- Watermark words -->
+    <div class="pointer-events-none select-none text-slate-900/5 font-bold tracking-tight">
+      <div class="formula-container absolute top-[12%] left-[6%] text-2xl md:text-4xl"><span class="gradient-text">Class · Object</span></div>
+      <div class="formula-container absolute top-[10%] right-[10%] text-3xl md:text-5xl rotate-[-8deg] opacity-80"><span>__init__ · __repr__</span></div>
+      <div class="formula-container absolute top-[28%] left-[35%] text-xl md:text-3xl rotate-[5deg]"><span>Encapsulation</span></div>
+      <div class="formula-container absolute top-[46%] left-[12%] text-3xl md:text-5xl rotate-[-3deg]"><span>Inheritance</span></div>
+      <div class="formula-container absolute top-[40%] left-[55%] text-lg md:text-2xl opacity-60"><span>Polymorphism</span></div>
+      <div class="formula-container absolute top-[30%] right-[12%] text-2xl md:text-4xl rotate-[12deg]"><span>Context Managers</span></div>
+    </div>
+  </header>
+
+<!-- ======= OOP INTRO ======= -->
+<section id="oop-intro" class="py-12 bg-gradient-to-tr from-slate-50 via-brand-50 to-slate-100 border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-6">Classes & Objects — The Blueprint</h2>
+
+    <!-- Intro cards stacked in a column -->
+    <div class="grid grid-cols-2 gap-6">
+      <article class="card p-5">
+        <h3 class="text-xl font-semibold mb-3">What is a <em>class</em>?</h3>
+        <p class="text-slate-700">A <strong>class</strong> is a blueprint that defines data (<em>attributes</em>) and behavior (<em>methods</em>). An <strong>object</strong> is an instance built from that blueprint.</p>
+<pre class="line-numbers language-python mt-3"><code class="language-python">class Car:
+    def __init__(self, brand, model, year, color):
+        self.brand = brand
+        self.model = model
+        self.year = year
+        self.color = color
+
+    def start(self):
+        return f"{self.brand} {self.model} is starting!"
+
+    def honk(self):
+        return "Beep beep!"
+
+# Instantiation
+my_car = Car('Toyota', 'Camry', 2020, 'Blue')
+friend_car = Car('Honda', 'Civic', 2019, 'Red')
+print(my_car.start())  # Toyota Camry is starting!
+</code></pre>
+        <div class="insight text-sm mt-3">
+          <strong>Instance vs class:</strong> Each object has its own data; methods are shared by all instances.
+        </div>
+      </article>
+
+      <article class="card p-5">
+        <h3 class="text-xl font-semibold mb-3">Inheritance in one minute</h3>
+        <p class="text-slate-700">A <em>child</em> class reuses and extends a <em>parent</em> class. Override methods to specialize behavior.</p>
+<pre class="line-numbers language-python mt-3"><code class="language-python">class Animal:
+    def speak(self):
+        return "(silence)"
+
+class Dog(Animal):
+    def speak(self):  # override
+        return "Woof!"
+
+class Cat(Animal):
+    def speak(self):
+        return "Meow!"
+
+pets = [Dog(), Cat()]
+for p in pets:
+    print(p.speak())  # polymorphism: same interface, different results
+</code></pre>
+        <div class="theorem text-sm mt-3">
+          <strong>Four pillars:</strong> Encapsulation • Inheritance • Polymorphism • Abstraction
+        </div>
+      </article>
+    </div>
+
+    <!-- Spacer between column items and the simulator -->
+    <div class="my-8"></div>
+
+    <!-- OOP Blueprint SVG Demo (simulator) -->
+    <article class="card p-5 mb-6">
+      <h3 class="text-xl font-semibold mb-3">Visual intuition — Class blueprint and objects</h3>
+
+      <!-- Controls -->
+      <div class="grid md:grid-cols-3 gap-3 mb-4">
+        <label class="text-sm">
+          <span class="block text-slate-600 mb-1">Class name</span>
+          <input id="clsName" class="w-full px-2 py-1 border rounded-md" value="Car">
+        </label>
+        <label class="text-sm">
+          <span class="block text-slate-600 mb-1">Attributes (comma-sep.)</span>
+          <input id="clsAttrs" class="w-full px-2 py-1 border rounded-md" value="brand, model, year, color">
+        </label>
+        <label class="text-sm">
+          <span class="block text-slate-600 mb-1">Methods (comma-sep.)</span>
+          <input id="clsMethods" class="w-full px-2 py-1 border rounded-md" value="start(), honk()">
+        </label>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex flex-wrap gap-3 text-xs mb-3">
+        <span class="theorem">Blueprint = <strong>class</strong></span>
+        <span class="def">Built items = <strong>objects (instances)</strong></span>
+        <span class="insight">Solid arrows: “instantiation” → making an object from the class</span>
+      </div>
+
+      <!-- SVG -->
+      <div class="overflow-x-auto">
+        <svg id="oopSvg" viewBox="0 0 980 360" class="w-[980px] max-w-full border border-slate-200 rounded-xl bg-white">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"></path>
+            </marker>
+            <linearGradient id="classGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#eef2ff"></stop>
+              <stop offset="100%" stop-color="#e0f2fe"></stop>
+            </linearGradient>
+          </defs>
+
+          <!-- Class (UML-ish: name | attributes | methods) -->
+          <g id="classBox" transform="translate(40,36)">
+            <rect x="0" y="0" width="300" height="220" rx="12" fill="url(#classGrad)" stroke="#6366f1" stroke-width="2"></rect>
+            <line x1="0" y1="56" x2="300" y2="56" stroke="#c7d2fe"></line>
+            <line x1="0" y1="150" x2="300" y2="150" stroke="#c7d2fe"></line>
+            <text id="tClassName" x="150" y="32" text-anchor="middle" font-weight="700" font-size="18" fill="#111827">Car</text>
+
+            <!-- Attributes block -->
+            <g id="tAttrs" transform="translate(16,76)"></g>
+
+            <!-- Methods block -->
+            <g id="tMethods" transform="translate(16,170)"></g>
+          </g>
+
+          <!-- Instances (cards) -->
+          <g transform="translate(400,26)">
+            <!-- Object 1 -->
+            <rect x="0" y="0" width="250" height="120" rx="10" fill="#ecfeff" stroke="#06b6d4" stroke-width="1.5"></rect>
+            <text x="12" y="22" font-size="14" font-weight="700" fill="#0f172a" id="o1Title">my_car : Car</text>
+            <text x="12" y="46" font-size="13" fill="#334155" id="o1Attrs">brand='Toyota', model='Camry', year=2020, color='Blue'</text>
+            <text x="12" y="70" font-size="13" fill="#475569">my_car.start() → "Toyota Camry is starting!"</text>
+            <text x="12" y="92" font-size="13" fill="#475569">my_car.honk() → "Beep beep!"</text>
+          </g>
+
+          <g transform="translate(400,176)">
+            <!-- Object 2 -->
+            <rect x="0" y="0" width="250" height="120" rx="10" fill="#ecfeff" stroke="#06b6d4" stroke-width="1.5"></rect>
+            <text x="12" y="22" font-size="14" font-weight="700" fill="#0f172a" id="o2Title">friend_car : Car</text>
+            <text x="12" y="46" font-size="13" fill="#334155" id="o2Attrs">brand='Honda', model='Civic', year=2019, color='Red'</text>
+            <text x="12" y="70" font-size="13" fill="#475569">friend_car.start() → "Honda Civic is starting!"</text>
+            <text x="12" y="92" font-size="13" fill="#475569">friend_car.honk() → "Beep beep!"</text>
+          </g>
+
+          <!-- Arrows -->
+          <line x1="340" y1="96"  x2="400" y2="66"  stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="340" y1="170" x2="400" y2="206" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"></line>
+
+          <!-- Inheritance mini sketch -->
+          <g transform="translate(700,26)">
+            <rect x="0" y="0" width="250" height="70" rx="10" fill="#f1f5f9" stroke="#94a3b8"></rect>
+            <text x="125" y="28" text-anchor="middle" font-weight="700" font-size="16" fill="#111827">Animal</text>
+            <text x="125" y="50" text-anchor="middle" font-size="12" fill="#475569">speak()</text>
+
+            <rect x="0" y="120" width="110" height="70" rx="10" fill="#eef2ff" stroke="#818cf8"></rect>
+            <text x="55" y="148" text-anchor="middle" font-weight="700" font-size="14" fill="#111827">Dog</text>
+            <text x="55" y="168" text-anchor="middle" font-size="12" fill="#475569">speak() → Woof</text>
+
+            <rect x="140" y="120" width="110" height="70" rx="10" fill="#eef2ff" stroke="#818cf8"></rect>
+            <text x="195" y="148" text-anchor="middle" font-weight="700" font-size="14" fill="#111827">Cat</text>
+            <text x="195" y="168" text-anchor="middle" font-size="12" fill="#475569">speak() → Meow</text>
+
+            <!-- hollow triangle (UML generalization) -->
+            <polygon points="125,88 115,108 135,108" fill="white" stroke="#334155"></polygon>
+            <line x1="125" y1="70" x2="125" y2="88" stroke="#334155"></line>
+            <line x1="125" y1="108" x2="55"  y2="120" stroke="#334155"></line>
+            <line x1="125" y1="108" x2="195" y2="120" stroke="#334155"></line>
+          </g>
+        </svg>
+      </div>
+
+      <p class="text-sm text-slate-600 mt-3">
+        The <strong>class</strong> defines the structure (attributes) and behavior (methods). Each <strong>object</strong> holds its own data but reuses the class’s code.
+      </p>
+    </article>
+  </div>
+</section>
+
+  <script>
+  (function(){
+    const $ = (id)=>document.getElementById(id);
+    const clsName = $('clsName'), clsAttrs = $('clsAttrs'), clsMethods = $('clsMethods');
+
+    const tClassName = $('tClassName');
+    const gAttrs = document.querySelector('#tAttrs');
+    const gMethods = document.querySelector('#tMethods');
+
+    function setLines(group, lines){
+      // Clear
+      while(group.firstChild) group.removeChild(group.firstChild);
+      // Draw lines (stack vertically)
+      const lineH = 18, baseY = 0;
+      lines.forEach((txt, i) => {
+        const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+        t.setAttribute('x','0'); t.setAttribute('y', (baseY + (i+1)*lineH).toString());
+        t.setAttribute('font-size','13'); t.setAttribute('fill','#334155');
+        t.textContent = txt.trim();
+        group.appendChild(t);
+      });
+    }
+
+    function titleCase(s){
+      if(!s) return s;
+      return s.replace(/\w+/g, w => w[0].toUpperCase()+w.slice(1));
+    }
+
+    function update(){
+      const name = (clsName.value || 'Class').trim();
+      const attrs = (clsAttrs.value || '').split(',').map(x=>x.trim()).filter(Boolean);
+      const methods = (clsMethods.value || '').split(',').map(x=>x.trim()).filter(Boolean);
+
+      tClassName.textContent = titleCase(name);
+
+      // prefix attributes/methods in UML-ish style
+      setLines(gAttrs, attrs.map(a => a.replace(/^\+|^\-|\#/, '')).map(a => `- ${a}`));
+      setLines(gMethods, methods.map(m => m.replace(/^\+|^\-|\#/, '')).map(m => `+ ${m}`));
+
+      // also echo into objects (simple heuristics)
+      const o1Title = document.getElementById('o1Title');
+      const o2Title = document.getElementById('o2Title');
+      o1Title.textContent = `my_${name.toLowerCase()} : ${titleCase(name)}`;
+      o2Title.textContent = `friend_${name.toLowerCase()} : ${titleCase(name)}`;
+    }
+
+    ['input','change'].forEach(ev=>{
+      clsName.addEventListener(ev, update);
+      clsAttrs.addEventListener(ev, update);
+      clsMethods.addEventListener(ev, update);
+    });
+
+    update();
+  })();
+</script>
+
+  <!-- ======= CLASS CONCEPTS ======= -->
+<section id="oop-scope" class="py-12 bg-gradient-to-tr from-emerald-50 via-white to-indigo-50 border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-6">
+    <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-6">Understanding Scope and <code>self</code></h2>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Local vs Global Scope -->
+      <article class="card p-5">
+        <h3 class="text-xl font-semibold mb-3">Local vs Global Scope</h3>
+        <p class="text-slate-700 mb-2">Python distinguishes between variables defined inside a function (local) and those defined outside (global). Local variables “shadow” global ones of the same name inside their scope.</p>
+<pre class="line-numbers language-python"><code class="language-python">x = 10  # global
+
+def foo():
+    x = 5      # local
+    print(x)   # prints 5
+
+foo()
+print(x)       # prints 10
+</code></pre>
+        <div class="insight text-sm mt-3">
+          <strong>Tip:</strong> Use <code>global</code> (rarely recommended) or <code>nonlocal</code> to modify variables from outer scopes.
+        </div>
+      </article>
+
+      <!-- self keyword -->
+      <article class="card p-5">
+        <h3 class="text-xl font-semibold mb-3">The <code>self</code> keyword</h3>
+        <p class="text-slate-700 mb-2"><code>self</code> is the reference to the current object (instance) on which a method is being called. It lets each object keep its own data.</p>
+<pre class="line-numbers language-python"><code class="language-python">class Dog:
+    def __init__(self, name):
+        self.name = name   # stored in the instance
+
+    def bark(self):
+        return f"{self.name} says woof!"
+
+a = Dog("Rex")
+b = Dog("Luna")
+print(a.bark())  # Rex says woof!
+print(b.bark())  # Luna says woof!
+</code></pre>
+        <div class="theorem text-sm mt-3">
+          <strong>Rule of thumb:</strong> Always include <code>self</code> as the first parameter of instance methods.
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+
+  <!-- ======= CORE OOP PRINCIPLES ======= -->
+  <section id="oop-core" class="py-12 bg-gradient-to-tr from-emerald-50 via-white to-indigo-50 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-6">Core OOP Principles</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-emerald-700 mb-1">Encapsulation</h3>
+          <p class="text-sm text-slate-700">Hide internals; expose a clean interface. Use properties and naming conventions.</p>
+<pre class="line-numbers language-python mt-2"><code class="language-python">class Account:
+    def __init__(self):
+        self._balance = 0.0  # protected by convention
+
+    @property
+    def balance(self):
+        return self._balance
+
+    def deposit(self, amount: float):
+        if amount &lt; 0: raise ValueError("negative")
+        self._balance += amount
+</code></pre>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-indigo-700 mb-1">Inheritance</h3>
+          <p class="text-sm text-slate-700">Reuse and specialize. Call <code>super()</code> to extend base behavior.</p>
+<pre class="line-numbers language-python mt-2"><code class="language-python">class Rectangle:
+    def __init__(self, w, h):
+        self.w, self.h = w, h
+    def area(self):
+        return self.w * self.h
+
+class Square(Rectangle):
+    def __init__(self, s):
+        super().__init__(s, s)
+</code></pre>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-purple-700 mb-1">Polymorphism</h3>
+          <p class="text-sm text-slate-700">Same interface; different implementations.</p>
+<pre class="line-numbers language-python mt-2"><code class="language-python">def total_area(shapes):
+    return sum(s.area() for s in shapes)  # duck typing
+</code></pre>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-amber-700 mb-1">Abstraction</h3>
+          <p class="text-sm text-slate-700">Expose essentials, hide details. Use ABCs for interfaces.</p>
+<pre class="line-numbers language-python mt-2"><code class="language-python">from abc import ABC, abstractmethod
+class Model(ABC):
+    @abstractmethod
+    def fit(self, X, y): ...
+    @abstractmethod
+    def predict(self, X): ...
+</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= MAGIC METHODS ======= -->
+  <section id="magic" class="py-12 bg-gradient-to-tr from-slate-50 via-amber-50 to-slate-100 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-6">Special (Magic) Methods</h2>
+
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-2">Construction & string representation</h3>
+<pre class="line-numbers language-python"><code class="language-python">class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+    def __str__(self):
+        return f"({self.x}, {self.y})"  # human-friendly
+    def __repr__(self):
+        return f"Point({self.x}, {self.y})"  # developer-friendly
+
+print(Point(3,4))           # (3, 4)
+print(repr(Point(3,4)))     # Point(3, 4)
+</code></pre>
+          <div class="insight text-sm mt-3">
+            <strong>Tip:</strong> Prefer <code>__repr__</code> that recreates the object (when feasible).
+          </div>
+        </article>
+
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-2">Operator overloading (vector)</h3>
+<pre class="line-numbers language-python"><code class="language-python">class Vector:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+    def __sub__(self, other):
+        return Vector(self.x - other.x, self.y - other.y)
+    def __mul__(self, scalar):
+        return Vector(self.x * scalar, self.y * scalar)
+    def __eq__(self, other):
+        return (self.x, self.y) == (other.x, other.y)
+    def __str__(self):
+        return f"⟨{self.x}, {self.y}⟩"
+</code></pre>
+          <div class="theorem text-sm mt-3">
+            <strong>Equality & ordering:</strong> Implement <code>__eq__</code> and optionally <code>__lt__</code>, or use <code>functools.total_ordering</code>.
+          </div>
+        </article>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6 mt-6">
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-2">Container protocol</h3>
+<pre class="line-numbers language-python"><code class="language-python">class CustomList:
+    def __init__(self):
+        self._items = []
+    def __len__(self):
+        return len(self._items)
+    def __getitem__(self, i):
+        return self._items[i]
+    def __setitem__(self, i, v):
+        self._items[i] = v
+    def __contains__(self, x):
+        return x in self._items
+    def __iter__(self):
+        return iter(self._items)
+</code></pre>
+          <div class="insight text-sm mt-3">
+            <strong>Iterable vs iterator:</strong> <code>__iter__</code> should return an <em>iterator</em> (with <code>__next__</code>) — <code>iter(list)</code> is the simplest way.
+          </div>
+        </article>
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-2">Context managers</h3>
+<pre class="line-numbers language-python"><code class="language-python">class FileManager:
+    def __init__(self, filename, mode):
+        self.filename, self.mode = filename, mode
+        self.file = None
+    def __enter__(self):
+        self.file = open(self.filename, self.mode)
+        return self.file
+    def __exit__(self, exc_type, exc, tb):
+        if self.file: self.file.close()
+        return False  # don't suppress exceptions
+
+# Usage
+with FileManager('test.txt', 'w') as f:
+    f.write('Hello!')
+</code></pre>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= DESIGN PATTERNS ======= -->
+  <section id="patterns" class="py-12 bg-gradient-to-tr from-indigo-50 via-white to-emerald-50 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-6">Design Patterns (mini)</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-indigo-700">Singleton</h3>
+<pre class="line-numbers language-python mt-2"><code class="language-python">class Singleton:
+    _instance = None
+    _initialized = False
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    def __init__(self):
+        if not self._initialized:
+            self.value = 0
+            self._initialized = True
+</code></pre>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-emerald-700">Factory</h3>
+<pre class="line-numbers language-python mt-2"><code class="language-python">from abc import ABC, abstractmethod
+class Animal(ABC):
+    @abstractmethod
+    def speak(self): ...
+class Dog(Animal):
+    def speak(self): return 'Woof!'
+class Cat(Animal):
+    def speak(self): return 'Meow!'
+class AnimalFactory:
+    @staticmethod
+    def create(kind):
+        return {'dog': Dog, 'cat': Cat}[kind]()
+</code></pre>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-amber-700">Observer</h3>
+<pre class="line-numbers language-python mt-2"><code class="language-python">class Subject:
+    def __init__(self):
+        self._observers, self._state = [], None
+    def attach(self, obs): self._observers.append(obs)
+    def detach(self, obs): self._observers.remove(obs)
+    def notify(self):
+        for o in self._observers: o.update(self)
+    def set_state(self, s):
+        self._state = s; self.notify()
+    @property
+    def state(self): return self._state
+</code></pre>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 class="font-semibold text-rose-700">Decorator</h3>
+<pre class="line-numbers language-python mt-2"><code class="language-python">from abc import ABC, abstractmethod
+class Coffee(ABC):
+    @abstractmethod
+    def cost(self): ...
+    @abstractmethod
+    def description(self): ...
+class SimpleCoffee(Coffee):
+    def cost(self): return 2.0
+    def description(self): return 'Simple coffee'
+class CoffeeDecorator(Coffee):
+    def __init__(self, coffee): self._c = coffee
+class MilkDecorator(CoffeeDecorator):
+    def cost(self): return self._c.cost() + 0.5
+    def description(self): return self._c.description() + ', milk'
+</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= ADVANCED ======= -->
+  <section id="advanced" class="py-12 bg-gradient-to-tr from-slate-50 via-fuchsia-50 to-slate-100 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-6">Advanced OOP</h2>
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-2">Dataclasses & Descriptors</h3>
+<pre class="line-numbers language-python"><code class="language-python">from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class Person:
+    name: str
+    age: int
+    email: str = ''
+    hobbies: List[str] = field(default_factory=list)
+    def __post_init__(self):
+        if self.age &lt; 0: raise ValueError('Age cannot be negative')
+</code></pre>
+<pre class="line-numbers language-python mt-3"><code class="language-python">class ValidatedAttribute:
+    def __init__(self, validator):
+        self.validator, self.name = validator, None
+    def __set_name__(self, owner, name): self.name = name
+    def __get__(self, obj, objtype=None):
+        if obj is None: return self
+        return obj.__dict__.get(self.name)
+    def __set__(self, obj, value):
+        if self.validator(value): obj.__dict__[self.name] = value
+        else: raise ValueError(f'Invalid value for {self.name}')
+
+class Student:
+    age = ValidatedAttribute(lambda x: isinstance(x, int) and x &gt;= 0)
+    def __init__(self, name, age):
+        self.name, self.age = name, age
+</code></pre>
+        </article>
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-2">Metaclasses & Context Managers</h3>
+<pre class="line-numbers language-python"><code class="language-python">class SingletonMeta(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class Database(metaclass=SingletonMeta):
+    def __init__(self):
+        self.conn = 'Connected'
+
+# db1 is db2
+</code></pre>
+<pre class="line-numbers language-python mt-3"><code class="language-python">class FileManager:
+    def __init__(self, filename, mode):
+        self.filename, self.mode = filename, mode
+        self.file = None
+    def __enter__(self):
+        self.file = open(self.filename, self.mode)
+        return self.file
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.file: self.file.close()
+        return False
+</code></pre>
+        </article>
+      </div>
+
+      <div class="theorem text-sm mt-6">
+        <strong>Best practices:</strong> Prefer composition over inheritance; keep methods small; use type hints; implement <code>__repr__</code>; follow PEP 8; hide internals with properties.
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= STACK ======= -->
+  <section id="stack" class="py-12 bg-gradient-to-tr from-slate-50 via-brand-50 to-slate-100 border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-4">Stack — Python Class</h2>
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-3">Implementation using <code>list</code></h3>
+          <pre class="line-numbers language-python"><code class="language-python">class Stack:
+    def __init__(self):
+        self._data = []  # top at the end
+    def push(self, x):
+        self._data.append(x)        # O(1) amortized
+    def pop(self):
+        if not self._data:
+            raise IndexError("pop from empty stack")
+        return self._data.pop()      # O(1)
+    def peek(self):
+        if not self._data:
+            raise IndexError("peek from empty stack")
+        return self._data[-1]
+    def is_empty(self):
+        return len(self._data) == 0
+    def size(self):
+        return len(self._data)
+</code></pre>
+          <div class="insight text-sm mt-3">
+            <strong>Why keep the top at the end?</strong> <code>list.append</code> and <code>list.pop()</code> are $O(1)$ amortized. Avoid <code>insert(0, x)</code>/<code>pop(0)</code> ($O(n)$).
+          </div>
+        </article>
+
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-3">Fixed‑capacity stack (array)</h3>
+          <pre class="line-numbers language-python"><code class="language-python">class FixedStack:
+    def __init__(self, cap):
+        self._a = [None] * cap
+        self._top = 0
+    def push(self, x):
+        if self._top == len(self._a):
+            raise OverflowError("stack overflow")
+        self._a[self._top] = x
+        self._top += 1
+    def pop(self):
+        if self._top == 0:
+            raise IndexError("pop from empty stack")
+        self._top -= 1
+        x = self._a[self._top]
+        self._a[self._top] = None
+        return x
+    def peek(self):
+        if self._top == 0:
+            raise IndexError("peek from empty stack")
+        return self._a[self._top - 1]
+    def size(self):
+        return self._top
+</code></pre>
+          <div class="theorem text-sm mt-3">
+            <strong>Summary:</strong> <span class="font-mono">push/pop/peek</span> $\Rightarrow O(1)$; size $\Rightarrow O(1)$; memory $\Rightarrow O(n)$.
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= QUEUE ======= -->
+  <section id="queue" class="py-12 bg-gradient-to-tr from-slate-50 via-brand-50 to-slate-100 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-4">Queue — Python Class</h2>
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-3">Using <code>collections.deque</code> (recommended)</h3>
+          <pre class="line-numbers language-python"><code class="language-python">from collections import deque
+class Queue:
+    def __init__(self):
+        self._q = deque()
+    def enqueue(self, x):
+        self._q.append(x)          # O(1)
+    def dequeue(self):
+        if not self._q:
+            raise IndexError("dequeue from empty queue")
+        return self._q.popleft()   # O(1)
+    def front(self):
+        if not self._q:
+            raise IndexError("front from empty queue")
+        return self._q[0]
+    def is_empty(self):
+        return len(self._q) == 0
+    def size(self):
+        return len(self._q)
+</code></pre>
+          <div class="insight text-sm mt-3">
+            <strong>Why <code>deque</code>?</strong> $O(1)$ operations at both ends; with <code>list</code>, <code>pop(0)</code> is $O(n)$.
+          </div>
+        </article>
+
+        <article class="card p-5">
+          <h3 class="text-xl font-semibold mb-3">Circular queue (fixed array)</h3>
+          <pre class="line-numbers language-python"><code class="language-python">class CircularQueue:
+    def __init__(self, cap):
+        self._a = [None] * cap
+        self._head = 0
+        self._tail = 0
+        self._size = 0
+    def enqueue(self, x):
+        if self._size == len(self._a):
+            raise OverflowError("queue overflow")
+        self._a[self._tail] = x
+        self._tail = (self._tail + 1) % len(self._a)
+        self._size += 1
+    def dequeue(self):
+        if self._size == 0:
+            raise IndexError("dequeue from empty queue")
+        x = self._a[self._head]
+        self._a[self._head] = None
+        self._head = (self._head + 1) % len(self._a)
+        self._size -= 1
+        return x
+    def front(self):
+        if self._size == 0:
+            raise IndexError("front from empty queue")
+        return self._a[self._head]
+    def size(self):
+        return self._size
+    def is_empty(self):
+        return self._size == 0
+</code></pre>
+          <div class="theorem text-sm mt-3">
+            <strong>Summary:</strong> <span class="font-mono">enqueue/dequeue/front</span> $\Rightarrow O(1)$; size $\Rightarrow O(1)$; memory $\Rightarrow O(n)$.
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= COMPLEXITY ======= -->
+  <section id="complexity" class="py-12 bg-gradient-to-tr from-slate-50 via-brand-50 to-slate-100 border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-4">Time & Space Complexity</h2>
+      <div class="card p-5">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left border-b border-slate-200">
+                <th class="py-2 pr-4">Structure</th>
+                <th class="py-2 pr-4">Operation</th>
+                <th class="py-2 pr-4">Time</th>
+                <th class="py-2 pr-4">Space</th>
+                <th class="py-2">Notes</th>
+              </tr>
+            </thead>
+            <tbody class="align-top">
+              <tr class="border-b border-slate-100"><td class="py-2 pr-4">Stack (list)</td><td class="py-2 pr-4">push / pop / peek</td><td class="py-2 pr-4">$O(1)$ amort.</td><td class="py-2 pr-4">$O(n)$</td><td class="py-2">Avoid <code>pop(0)</code> / <code>insert(0,·)</code>.</td></tr>
+              <tr class="border-b border-slate-100"><td class="py-2 pr-4">FixedStack</td><td class="py-2 pr-4">push / pop / peek</td><td class="py-2 pr-4">$O(1)$</td><td class="py-2 pr-4">$O(n)$</td><td class="py-2">May overflow if full.</td></tr>
+              <tr class="border-b border-slate-100"><td class="py-2 pr-4">Queue (deque)</td><td class="py-2 pr-4">enqueue / dequeue / front</td><td class="py-2 pr-4">$O(1)$</td><td class="py-2 pr-4">$O(n)$</td><td class="py-2">Double-ended queue.</td></tr>
+              <tr><td class="py-2 pr-4">CircularQueue</td><td class="py-2 pr-4">enqueue / dequeue / front</td><td class="py-2 pr-4">$O(1)$</td><td class="py-2 pr-4">$O(n)$</td><td class="py-2">Index wrap-around with %.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= TINY VISUALIZATIONS ======= -->
+  <section id="viz" class="py-12 bg-gradient-to-tr from-slate-50 via-brand-50 to-slate-100 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-4">Interactive intuition</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Stack Visual -->
+        <div class="card p-5">
+          <h3 class="text-xl font-semibold mb-3">Stack (LIFO)</h3>
+          <div class="flex flex-wrap gap-2 mb-3">
+            <input id="stackInput" class="px-2 py-1 border rounded-md w-32" placeholder="value">
+            <button id="stackPush" class="px-3 py-1.5 rounded-md bg-brand-600 text-white">push</button>
+            <button id="stackPop" class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">pop</button>
+            <button id="stackPeek" class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">peek</button>
+          </div>
+          <div id="stackViz" class="min-h-[140px] grid grid-cols-6 gap-2"></div>
+          <div class="text-xs text-slate-600 mt-2">Top is on the right. <span id="stackMsg"></span></div>
+        </div>
+
+        <!-- Queue Visual -->
+        <div class="card p-5">
+          <h3 class="text-xl font-semibold mb-3">Queue (FIFO)</h3>
+          <div class="flex flex-wrap gap-2 mb-3">
+            <input id="queueInput" class="px-2 py-1 border rounded-md w-32" placeholder="value">
+            <button id="queueEnq" class="px-3 py-1.5 rounded-md bg-brand-600 text-white">enqueue</button>
+            <button id="queueDeq" class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">dequeue</button>
+            <button id="queueFront" class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">front</button>
+          </div>
+          <div id="queueViz" class="min-h-[140px] grid grid-cols-6 gap-2"></div>
+          <div class="text-xs text-slate-600 mt-2">Front is on the left. <span id="queueMsg"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= EXERCISES ======= -->
+  <section id="exercises" class="py-12 bg-gradient-to-tr from-slate-50 via-brand-50 to-slate-100">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-extrabold tracking-tight text-slate-900 mb-4">Exercises</h2>
+      <div class="grid lg:grid-cols-2 gap-6 text-sm">
+        <article class="card p-5">
+          <h3 class="text-lg font-semibold mb-2">1) Parentheses checker using a stack</h3>
+          <p>Write <code>is_balanced(s: str) -&gt; bool</code> that returns whether all brackets in <code>s</code> are balanced: <code>() [] {}</code>.</p>
+          <details class="def mt-3">
+            <summary class="font-semibold cursor-pointer">Hint</summary>
+            <div class="mt-2">Push opening brackets. On closing, check the top matches. Empty stack at the end ⇒ balanced.</div>
+          </details>
+        </article>
+        <article class="card p-5">
+          <h3 class="text-lg font-semibold mb-2">2) Hot‑potato game (Josephus‑style) with a queue</h3>
+          <p>Simulate names in a queue; every $k$‑th dequeue re‑enqueues until one remains.</p>
+          <details class="def mt-3">
+            <summary class="font-semibold cursor-pointer">Hint</summary>
+            <div class="mt-2">Perform $k-1$ dequeues + enqueue, then eliminate the $k$‑th (dequeue without re‑enqueue).</div>
+          </details>
+        </article>
+        <article class="card p-5">
+          <h3 class="text-lg font-semibold mb-2">3) Two stacks make a queue</h3>
+          <p>Implement <code>Queue2Stacks</code> using two stacks with amortized $O(1)$ operations.</p>
+        </article>
+        <article class="card p-5">
+          <h3 class="text-lg font-semibold mb-2">4) Min‑stack</h3>
+          <p>Design a <code>MinStack</code> class that supports <code>push</code>, <code>pop</code>, <code>top</code>, and <code>get_min</code> in $O(1)$.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scripts: printing + tiny visualizations -->
+  <script>
+    // Minimal DOM helpers
+    function el(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+
+    // Stack viz
+    const stack = [];
+    const stackViz = document.getElementById('stackViz');
+    const stackMsg = document.getElementById('stackMsg');
+    function renderStack(){
+      stackViz.innerHTML='';
+      for (let i=0;i<stack.length;i++){
+        const box = el('div','rounded-xl border border-slate-300 bg-white p-2 text-center');
+        box.textContent = stack[i];
+        stackViz.appendChild(box);
+      }
+      stackMsg.textContent = stack.length?`size=${stack.length}, top=${stack[stack.length-1]}`:'(empty)';
+    }
+    document.getElementById('stackPush').onclick = () => {
+      const v = document.getElementById('stackInput').value; if(v==='') return; stack.push(v); renderStack(); };
+    document.getElementById('stackPop').onclick = () => { if(stack.length){ stack.pop(); renderStack(); } };
+    document.getElementById('stackPeek').onclick = () => { stackMsg.textContent = stack.length?`peek=${stack[stack.length-1]}`:'(empty)'; };
+    renderStack();
+
+    // Queue viz
+    const queue = [];
+    const queueViz = document.getElementById('queueViz');
+    const queueMsg = document.getElementById('queueMsg');
+    function renderQueue(){
+      queueViz.innerHTML='';
+      for (let i=0;i<queue.length;i++){
+        const box = el('div','rounded-xl border border-slate-300 bg-white p-2 text-center');
+        box.textContent = queue[i];
+        queueViz.appendChild(box);
+      }
+      queueMsg.textContent = queue.length?`size=${queue.length}, front=${queue[0]}`:'(empty)';
+    }
+    document.getElementById('queueEnq').onclick = () => { const v = document.getElementById('queueInput').value; if(v==='') return; queue.push(v); renderQueue(); };
+    document.getElementById('queueDeq').onclick = () => { if(queue.length){ queue.shift(); renderQueue(); } };
+    document.getElementById('queueFront').onclick = () => { queueMsg.textContent = queue.length?`front=${queue[0]}`:'(empty)'; };
+    renderQueue();
+  </script>
+</body>
+</html>
