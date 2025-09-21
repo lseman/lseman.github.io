@@ -48,6 +48,7 @@
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/pyodide@0.24.1/pyodide.js"></script>
 
   <!-- Theme styles -->
   <style>
@@ -93,6 +94,55 @@ text-shadow: none;
 font-family: Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace;
     }
   </style>
+   <style>
+        .code-editor {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #1a202c;
+            color: #e2e8f0;
+            resize: vertical;
+            min-height: 200px;
+        }
+        .output-area {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            border-radius: 8px;
+            border: 1px solid #374151;
+            min-height: 120px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .step-highlight {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            animation: pulse 1s;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .exercise-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+            border: 1px solid #c7d2fe;
+            border-radius: 12px;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .debug-step { 
+            background: #fef3c7; 
+            border-left: 4px solid #f59e0b;
+            margin: 2px 0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 
 <body class="min-h-screen text-slate-800">
@@ -926,6 +976,508 @@ class Queue:
         </article>
       </div>
     </div>
+  </section>
+
+  <section>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Python OOP Code Playground</h1>
+            <p class="text-lg text-gray-600">Interactive learning environment with runnable examples and debugging tools</p>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Loading Python environment...</p>
+        </div>
+
+        <!-- Main Playground -->
+        <div id="playground" class="hidden">
+            <!-- Exercise Selector -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Choose an Exercise:</label>
+                <select id="exerciseSelect" class="w-full p-3 border border-gray-300 rounded-lg bg-white">
+                    <option value="basic-class">Basic Class Definition</option>
+                    <option value="inheritance">Inheritance Example</option>
+                    <option value="magic-methods">Magic Methods</option>
+                    <option value="stack-implementation">Stack Implementation</option>
+                    <option value="queue-implementation">Queue Implementation</option>
+                    <option value="encapsulation">Encapsulation & Properties</option>
+                    <option value="polymorphism">Polymorphism Demo</option>
+                    <option value="debugging-exercise">Debugging Challenge</option>
+                </select>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Code Editor Panel -->
+                <div class="space-y-4">
+                    <div class="exercise-card p-4">
+                        <h3 id="exerciseTitle" class="text-xl font-semibold mb-2">Basic Class Definition</h3>
+                        <p id="exerciseDescription" class="text-gray-700 mb-4">Create a simple class and instantiate objects from it.</p>
+                        
+                        <!-- Debug Controls -->
+                        <div class="flex gap-2 mb-4">
+                            <button id="runBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                Run Code
+                            </button>
+                            <button id="debugBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                                Step Debug
+                            </button>
+                            <button id="resetBtn" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <textarea id="codeEditor" class="code-editor w-full p-4" placeholder="Write your Python code here..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Output and Debugging Panel -->
+                <div class="space-y-4">
+                    <!-- Output Area -->
+                    <div>
+                        <h4 class="text-lg font-semibold mb-2">Output</h4>
+                        <div id="output" class="output-area p-4">Ready to run code...</div>
+                    </div>
+
+                    <!-- Debug Steps -->
+                    <div id="debugPanel" class="hidden">
+                        <h4 class="text-lg font-semibold mb-2">Debug Steps</h4>
+                        <div id="debugSteps" class="bg-white border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto"></div>
+                        <div class="mt-2 flex gap-2">
+                            <button id="nextStepBtn" class="px-3 py-1 bg-blue-500 text-white rounded text-sm">Next Step</button>
+                            <button id="prevStepBtn" class="px-3 py-1 bg-gray-500 text-white rounded text-sm">Previous</button>
+                            <span id="stepCounter" class="text-sm text-gray-600 py-1">Step 0/0</span>
+                        </div>
+                    </div>
+
+                    <!-- Hints -->
+                    <div id="hintsPanel" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold mb-2">Hints & Tips</h4>
+                        <div id="hints" class="text-sm text-gray-700"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pyodide;
+        let currentDebugSteps = [];
+        let currentStepIndex = 0;
+
+        // Exercise definitions
+        const exercises = {
+            'basic-class': {
+                title: 'Basic Class Definition',
+                description: 'Create a simple class and instantiate objects from it.',
+                code: `class Car:
+    def __init__(self, brand, model, year):
+        self.brand = brand
+        self.model = model
+        self.year = year
+    
+    def start(self):
+        return f"{self.brand} {self.model} is starting!"
+    
+    def get_info(self):
+        return f"{self.year} {self.brand} {self.model}"
+
+# Create instances
+my_car = Car("Toyota", "Camry", 2020)
+friend_car = Car("Honda", "Civic", 2019)
+
+# Test the methods
+print(my_car.start())
+print(friend_car.get_info())
+print(f"My car brand: {my_car.brand}")`,
+                hints: `• The __init__ method is the constructor
+• self refers to the instance being created
+• Instance variables are created with self.variable_name
+• Methods can access instance variables through self`,
+                debugSteps: [
+                    "Class Car is defined with __init__ and methods",
+                    "my_car = Car('Toyota', 'Camry', 2020) calls __init__",
+                    "self.brand = 'Toyota' sets instance variable",
+                    "self.model = 'Camry' sets instance variable", 
+                    "self.year = 2020 sets instance variable",
+                    "friend_car instance created similarly",
+                    "my_car.start() calls method on my_car instance",
+                    "Method returns formatted string using self.brand and self.model"
+                ]
+            },
+            'inheritance': {
+                title: 'Inheritance Example',
+                description: 'Explore how child classes inherit from parent classes.',
+                code: `class Animal:
+    def __init__(self, name, species):
+        self.name = name
+        self.species = species
+    
+    def speak(self):
+        return f"{self.name} makes a sound"
+    
+    def info(self):
+        return f"{self.name} is a {self.species}"
+
+class Dog(Animal):
+    def __init__(self, name, breed):
+        super().__init__(name, "Dog")
+        self.breed = breed
+    
+    def speak(self):  # Override parent method
+        return f"{self.name} says Woof!"
+    
+    def fetch(self):  # New method
+        return f"{self.name} fetches the ball!"
+
+class Cat(Animal):
+    def __init__(self, name, breed):
+        super().__init__(name, "Cat")
+        self.breed = breed
+    
+    def speak(self):
+        return f"{self.name} says Meow!"
+
+# Create instances
+my_dog = Dog("Rex", "Golden Retriever")
+my_cat = Cat("Whiskers", "Persian")
+
+print(my_dog.speak())  # Overridden method
+print(my_cat.speak())  # Overridden method
+print(my_dog.info())   # Inherited method
+print(my_dog.fetch())  # Dog-specific method`,
+                hints: `• super() calls the parent class constructor
+• Child classes can override parent methods
+• Child classes inherit all parent methods they don't override
+• Use isinstance() to check object types`,
+                debugSteps: [
+                    "Animal base class defined with __init__, speak, and info methods",
+                    "Dog class inherits from Animal",
+                    "Dog.__init__ calls super().__init__ to initialize Animal part",
+                    "Dog.speak overrides Animal.speak method",
+                    "my_dog = Dog('Rex', 'Golden Retriever') creates instance",
+                    "my_dog.speak() calls Dog's overridden method",
+                    "my_dog.info() calls inherited Animal.info method"
+                ]
+            },
+            'magic-methods': {
+                title: 'Magic Methods',
+                description: 'Learn about special methods that enable operator overloading.',
+                code: `class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __str__(self):
+        return f"Vector({self.x}, {self.y})"
+    
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+    
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+    
+    def __sub__(self, other):
+        return Vector(self.x - other.x, self.y - other.y)
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def __len__(self):
+        return int((self.x**2 + self.y**2)**0.5)
+
+# Create vectors
+v1 = Vector(3, 4)
+v2 = Vector(1, 2)
+
+print(f"v1: {v1}")  # Uses __str__
+print(f"v2: {v2}")
+print(f"v1 + v2 = {v1 + v2}")  # Uses __add__
+print(f"v1 - v2 = {v1 - v2}")  # Uses __sub__
+print(f"v1 == v2: {v1 == v2}")  # Uses __eq__
+print(f"Length of v1: {len(v1)}")  # Uses __len__`,
+                hints: `• __str__ provides human-readable string representation
+• __repr__ provides unambiguous representation
+• __add__ enables the + operator
+• __eq__ enables the == operator
+• Magic methods make objects behave like built-in types`,
+                debugSteps: [
+                    "Vector class defined with x, y coordinates",
+                    "__str__ method provides friendly string representation",
+                    "__add__ method enables v1 + v2 syntax",
+                    "v1 + v2 calls v1.__add__(v2)",
+                    "New Vector object created with summed coordinates",
+                    "__eq__ method enables equality comparison",
+                    "__len__ method enables len() function call"
+                ]
+            },
+            'stack-implementation': {
+                title: 'Stack Implementation',
+                description: 'Implement a stack data structure with LIFO behavior.',
+                code: `class Stack:
+    def __init__(self):
+        self._data = []
+    
+    def push(self, item):
+        """Add item to top of stack"""
+        self._data.append(item)
+        print(f"Pushed {item}, stack: {self._data}")
+    
+    def pop(self):
+        """Remove and return top item"""
+        if self.is_empty():
+            raise IndexError("pop from empty stack")
+        item = self._data.pop()
+        print(f"Popped {item}, stack: {self._data}")
+        return item
+    
+    def peek(self):
+        """Return top item without removing"""
+        if self.is_empty():
+            raise IndexError("peek from empty stack")
+        return self._data[-1]
+    
+    def is_empty(self):
+        return len(self._data) == 0
+    
+    def size(self):
+        return len(self._data)
+    
+    def __str__(self):
+        return f"Stack({self._data})"
+
+# Test the stack
+stack = Stack()
+print(f"Empty stack: {stack}")
+print(f"Is empty: {stack.is_empty()}")
+
+stack.push(10)
+stack.push(20)
+stack.push(30)
+print(f"Size: {stack.size()}")
+print(f"Peek: {stack.peek()}")
+
+popped = stack.pop()
+print(f"Final stack: {stack}")`,
+                hints: `• Use list.append() for O(1) push operation
+• Use list.pop() for O(1) pop operation  
+• Keep track of the "top" with the last element
+• Always check for empty stack before pop/peek
+• LIFO = Last In, First Out`,
+                debugSteps: [
+                    "Stack class uses internal list _data",
+                    "push() appends to end of list (top of stack)",
+                    "pop() removes from end of list",
+                    "peek() returns last element without removing",
+                    "Stack follows LIFO principle",
+                    "Error handling prevents operations on empty stack"
+                ]
+            },
+            'debugging-exercise': {
+                title: 'Debugging Challenge',
+                description: 'Find and fix the bugs in this code!',
+                code: `class BankAccount:
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+    
+    def deposit(self, amount):
+        if amount > 0:
+            self.balance += amount
+            return True
+        return False
+    
+    def withdraw(self, amount):
+        if amount <= self.balance:
+            self.balance -= amount
+            return True
+        return False
+    
+    def __str__(self):
+        return f"{self.owner}: ${self.balance}"
+
+# This code has some bugs - can you find them?
+account = BankAccount("Alice", 100)
+print(account)
+
+# Bug 1: What happens with negative deposits?
+account.deposit(-50)  # Should this be allowed?
+print(f"After negative deposit: {account}")
+
+# Bug 2: What about withdrawing more than balance?
+account.withdraw(200)  # Should this work?
+print(f"After large withdrawal: {account}")
+
+# Bug 3: What about invalid types?
+try:
+    account.deposit("fifty")  # What happens here?
+    print("Deposited string successfully!")
+except Exception as e:
+    print(f"Error: {e}")`,
+                hints: `Bugs to look for:
+• Input validation for amount types
+• Proper error handling for invalid operations
+• Edge cases with zero amounts
+• Thread safety considerations
+• What should happen with invalid inputs?`,
+                debugSteps: [
+                    "BankAccount class allows any numeric input",
+                    "deposit(-50) passes the > 0 check... wait, it doesn't!",
+                    "withdraw(200) checks if 200 <= 100 (false)",
+                    "No type checking on inputs",
+                    "Consider adding TypeError for non-numeric inputs",
+                    "Consider raising exceptions instead of returning False"
+                ]
+            }
+        };
+
+        // Initialize Pyodide
+        async function initPyodide() {
+            try {
+                pyodide = await loadPyodide();
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('playground').classList.remove('hidden');
+                loadExercise('basic-class');
+            } catch (error) {
+                document.getElementById('loading').innerHTML = 
+                    `<div class="text-red-600">Failed to load Python environment: ${error.message}</div>`;
+            }
+        }
+
+        // Load exercise
+        function loadExercise(exerciseKey) {
+            const exercise = exercises[exerciseKey];
+            document.getElementById('exerciseTitle').textContent = exercise.title;
+            document.getElementById('exerciseDescription').textContent = exercise.description;
+            document.getElementById('codeEditor').value = exercise.code;
+            document.getElementById('hints').innerHTML = exercise.hints.replace(/\n/g, '<br>');
+            currentDebugSteps = exercise.debugSteps;
+            currentStepIndex = 0;
+            document.getElementById('debugPanel').classList.add('hidden');
+            clearOutput();
+        }
+
+        // Run code
+        async function runCode() {
+            const code = document.getElementById('codeEditor').value;
+            const output = document.getElementById('output');
+            
+            try {
+                output.textContent = 'Running...\n';
+                
+                // Capture print output
+                pyodide.runPython(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+sys.stderr = StringIO()
+                `);
+                
+                // Run user code
+                pyodide.runPython(code);
+                
+                // Get output
+                const stdout = pyodide.runPython('sys.stdout.getvalue()');
+                const stderr = pyodide.runPython('sys.stderr.getvalue()');
+                
+                output.innerHTML = '';
+                if (stdout) {
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'success';
+                    successDiv.textContent = stdout;
+                    output.appendChild(successDiv);
+                }
+                if (stderr) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error';
+                    errorDiv.textContent = stderr;
+                    output.appendChild(errorDiv);
+                }
+                
+                // Reset stdout/stderr
+                pyodide.runPython(`
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+                `);
+                
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Debug mode
+        function startDebug() {
+            document.getElementById('debugPanel').classList.remove('hidden');
+            showDebugStep(0);
+        }
+
+        function showDebugStep(stepIndex) {
+            currentStepIndex = stepIndex;
+            const stepsContainer = document.getElementById('debugSteps');
+            stepsContainer.innerHTML = '';
+            
+            currentDebugSteps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = index === stepIndex ? 'debug-step step-highlight' : 'debug-step';
+                stepDiv.textContent = `${index + 1}. ${step}`;
+                stepsContainer.appendChild(stepDiv);
+            });
+            
+            document.getElementById('stepCounter').textContent = 
+                `Step ${stepIndex + 1}/${currentDebugSteps.length}`;
+            
+            document.getElementById('prevStepBtn').disabled = stepIndex === 0;
+            document.getElementById('nextStepBtn').disabled = stepIndex === currentDebugSteps.length - 1;
+        }
+
+        function nextStep() {
+            if (currentStepIndex < currentDebugSteps.length - 1) {
+                showDebugStep(currentStepIndex + 1);
+            }
+        }
+
+        function prevStep() {
+            if (currentStepIndex > 0) {
+                showDebugStep(currentStepIndex - 1);
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = 'Ready to run code...';
+        }
+
+        function resetExercise() {
+            const currentExercise = document.getElementById('exerciseSelect').value;
+            loadExercise(currentExercise);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('exerciseSelect').addEventListener('change', (e) => {
+                loadExercise(e.target.value);
+            });
+            
+            document.getElementById('runBtn').addEventListener('click', runCode);
+            document.getElementById('debugBtn').addEventListener('click', startDebug);
+            document.getElementById('resetBtn').addEventListener('click', resetExercise);
+            document.getElementById('nextStepBtn').addEventListener('click', nextStep);
+            document.getElementById('prevStepBtn').addEventListener('click', prevStep);
+            
+            // Keyboard shortcuts
+            document.getElementById('codeEditor').addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    runCode();
+                }
+            });
+            
+            initPyodide();
+        });
+    </script>
   </section>
 
 
