@@ -1,404 +1,885 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Autoencoders — Illustrated Cheatsheet (AE · VAE · ELBO · KL)</title>
+  <title>Autoencoders — Pedagogical Guide (AE · Linear AE=PCA · VAE · ELBO · Latent Geometry · Imputation · Outliers)</title>
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- MathJax (v3) -->
-  <script>
-    window.MathJax = {
-      tex: { inlineMath: [["$","$"],["\\(","\\)"]], displayMath: [["$$","$$"],["\\[","\\]"]] },
-      chtml: { linebreaks: { automatic: false }, matchFontHeight: true },
-      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] },
-      svg: { fontCache: 'global' }
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  <!-- Base styles (no build step) -->
   <style>
+    :root{
+      --ink-900:#0b1320; --ink-800:#111827; --ink-700:#334155; --ink-600:#475569; --ink-500:#64748b;
+      --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-600:#4f46e5; --brand-700:#4338ca;
+      --accent-50:#ecfeff; --accent-100:#cffafe; --accent-600:#0891b2;
+      --ok-50:#ecfdf5; --ok-100:#d1fae5; --ok-600:#059669;
+      --rose-50:#fff1f2; --rose-600:#e11d48;
+    }
     html{scroll-behavior:smooth}
+    .card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:1.25rem}
+    .chip{font-size:11px;padding:2px 8px;border-radius:999px}
+    .shadow-soft{box-shadow:0 6px 16px rgba(2,6,23,.06)}
+    .section-head{scroll-margin-top:96px}
+    .toc a.active{color:var(--brand-700);font-weight:700}
+    .kbd{font-variant-numeric:tabular-nums;border:1px solid #e5e7eb;border-bottom-width:2px;padding:.1rem .4rem;border-radius:.4rem}
+    details > summary { cursor: pointer; }
+
+    /* Keep your original visual classes */
     .lbl{font-size:13px; fill:#374151; font-weight:500}
     .tip{font-size:12px;color:#64748b}
-    .card{backdrop-filter: blur(4px)}
     .box{fill:#f8fafc;stroke:#6366f1;stroke-width:2;rx:12}
     .gate{fill:#ffffff;stroke:#0ea5e9;stroke-width:2;rx:12}
     .wire{stroke:#64748b;stroke-width:2.5;fill:none}
-    .rail{stroke:#1e293b;stroke-width:3;fill:none}
-    .inDot{fill:#dbeafe;stroke:#3b82f6;stroke-width:2}
-    .stateDot{fill:#dcfce7;stroke:#22c55e;stroke-width:2}
     .dash{stroke-dasharray:6 4}
     .code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    mjx-container{overflow-x:auto;overflow-y:hidden}
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 600; display:inline-block }
   </style>
-</head>
-<body class="min-h-screen text-slate-800 bg-slate-50">
 
-<!-- ======= Header ======= -->
-<header class="bg-gradient-to-tr from-indigo-50 via-emerald-50 to-cyan-50 border-b border-slate-200">
-  <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16">
-    <div class="flex flex-col lg:flex-row items-center gap-8">
-      <div class="flex-1">
-        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-          Autoencoders — <span class="text-indigo-600">Illustrated Cheatsheet</span>
-        </h1>
-        <p class="mt-3 text-lg md:text-xl text-slate-700 max-w-3xl">
-          Single-file reference for <b>Autoencoders</b>, <b>Variational Autoencoders</b>,
-          the <b>ELBO</b>, and <b>KL divergence</b>. Compact schematics + equations + practical recipes.
-        </p>
-        <div class="mt-5 flex flex-wrap gap-3">
-          <a href="#ae" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Autoencoder</a>
-          <a href="#variants" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Variants</a>
-          <a href="#vae" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">VAE</a>
-          <a href="#elbo" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">ELBO & KL</a>
-          <a href="#tricks" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Tricks</a>
-          <a href="#recipes" class="px-5 py-3 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Recipes</a>
-        </div>
-        <p class="mt-4 text-sm text-slate-500">MathJax • Tailwind • Pure SVG diagrams • No build step</p>
-      </div>
+  <!-- MathJax v3 -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["$$","$$"], ["\\[","\\]"]],
+        processEscapes: true,
+        packages: {'[+]': ['ams']}
+      },
+      chtml: { linebreaks: { automatic: false }, matchFontHeight: true },
+      options: {
+        skipHtmlTags: ['script','noscript','style','textarea','pre'],
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-800">
+
+<!-- ===== Top Bar ===== -->
+<header class="sticky top-0 z-30 border-b border-slate-200 bg-gradient-to-tr from-indigo-50 via-teal-50 to-cyan-50/70 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <button id="openNav" class="md:hidden rounded-lg border border-slate-300 px-2 py-1 bg-white">☰</button>
+      <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900">
+        Autoencoders — <span class="text-indigo-700">A Pedagogical Guide</span>
+      </h1>
     </div>
+    <nav class="hidden md:flex items-center gap-2 text-sm">
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#intro">Intro</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#kinds">Kinds</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#deterministic">Deterministic</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#probabilistic">Probabilistic</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#geometry">Latent Geometry</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#kl">KL</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#vae">VAE + ELBO</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#imputation">Imputation</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#outliers">Outliers</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#matrix">Matrix</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#tricks">Tricks</a>
+      <a class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50" href="#appendix">Appendix</a>
+    </nav>
   </div>
 </header>
 
-<!-- ======= Autoencoder Basics ======= -->
-<section id="ae" class="py-10">
-  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h2 class="text-2xl font-bold">What is an Autoencoder?</h2>
-      <p class="text-sm text-slate-700 mt-2">
-        An <b>autoencoder (AE)</b> learns to compress data to a latent code $z$ with an <em>encoder</em>
-        and reconstruct it with a <em>decoder</em>. Training objective is reconstruction:
-      </p>
-      <div class="text-sm text-slate-700 leading-7 mt-2">
-        $$\begin{aligned}
-        z &= f_\phi(x) \quad\text{(encoder)}\\
-        \hat{x} &= g_\theta(z) \quad\text{(decoder)}\\[2mm]
-        \mathcal{L}_{\text{AE}}(\phi,\theta)
-        &= \mathbb{E}_{x\sim p_{\text{data}}}\big[\ell(x,\hat{x})\big],
-        \end{aligned}$$
-        where $\ell$ is typically MSE (Gaussian) or BCE (Bernoulli).
+<!-- ===== Layout: Sidebar + Content ===== -->
+<div class="max-w-7xl mx-auto px-4 md:px-6 py-6 grid grid-cols-12 gap-6">
+  <!-- Sidebar / TOC -->
+  <aside id="side" class="col-span-12 md:col-span-3 lg:col-span-3 md:sticky md:top-[88px] md:self-start hidden md:block">
+    <div class="card shadow-soft">
+      <h3 class="font-semibold text-slate-900 mb-3">On this page</h3>
+      <div class="toc text-sm space-y-2">
+        <a class="block hover:underline" href="#intro">Introduction</a>
+        <a class="block hover:underline" href="#kinds">Kinds of Autoencoders</a>
+        <a class="block hover:underline" href="#ae">Autoencoder Basics</a>
+        <a class="block hover:underline" href="#linear-pca">Linear AE = PCA</a>
+        <a class="block hover:underline" href="#expressivity">Expressivity</a>
+        <a class="block hover:underline" href="#geometry">Latent Geometry</a>
+        <a class="block hover:underline" href="#kl">KL Divergence</a>
+        <a class="block hover:underline" href="#vae">VAE + ELBO</a>
+        <a class="block hover:underline" href="#imputation">Imputation</a>
+        <a class="block hover:underline" href="#outliers">Outliers</a>
+        <a class="block hover:underline" href="#tricks">Tricks & Diagnostics</a>
+        <a class="block hover:underline" href="#matrix">Comparison Matrix</a>
+        <a class="block hover:underline" href="#recipes">Quick Recipes</a>
+        <a class="block hover:underline" href="#appendix">Appendix</a>
       </div>
-      <ul class="mt-3 text-sm text-slate-700 list-disc ml-5">
-        <li><b>Undercomplete</b>: $\dim(z) \ll \dim(x)$ forces compression (acts like nonlinear PCA).</li>
-        <li><b>Overcomplete</b>: needs regularization (denoising, sparsity, contractive) to avoid identity mapping.</li>
-      </ul>
-    </article>
+    </div>
+    <div class="mt-4 text-xs text-slate-500">
+      Tip: press <span class="kbd">/</span> to focus browser search.
+    </div>
+  </aside>
 
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold mb-2">AE — Bottleneck Schematic</h3>
-      <svg viewBox="0 0 900 260" class="w-full h-auto">
-        <defs>
-          <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,8 L8,4 z" fill="#64748b"/>
-          </marker>
-          <linearGradient id="encG" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#e0e7ff"/><stop offset="100%" style="stop-color:#c7d2fe"/>
-          </linearGradient>
-          <linearGradient id="decG" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#d1fae5"/><stop offset="100%" style="stop-color:#a7f3d0"/>
-          </linearGradient>
-        </defs>
+  <!-- Content -->
+  <main class="col-span-12 md:col-span-9 lg:col-span-9 space-y-10">
 
-        <!-- Input x -->
-        <g class="inDot">
-          <circle cx="60" cy="130" r="10"/>
-        </g>
-        <text x="60" y="155" class="lbl" text-anchor="middle">x</text>
+    <!-- ======= Intro ======= -->
+    <section id="intro" class="section-head">
+      <div class="card shadow-soft">
+        <h2 class="text-2xl md:text-3xl font-bold">Introduction</h2>
+        <p class="mt-2 text-[15px] leading-7">
+          From foundations and proofs (linear AE = PCA) to latent geometry, the VAE/ELBO, and practical recipes for
+          missing data imputation and outlier detection.
+        </p>
+        <p class="mt-2 text-sm text-slate-500">MathJax • Tailwind • Pure SVG diagrams • Single file</p>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <a href="#ae" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700">Autoencoder</a>
+          <a href="#linear-pca" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Linear AE = PCA</a>
+          <a href="#expressivity" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Expressivity</a>
+          <a href="#geometry" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Latent Geometry</a>
+          <a href="#kl" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">KL Divergence</a>
+          <a href="#vae" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">VAE + ELBO</a>
+          <a href="#imputation" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Imputation</a>
+          <a href="#outliers" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Outliers</a>
+          <a href="#recipes" class="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 shadow-sm font-semibold hover:bg-slate-50">Recipes</a>
+        </div>
+      </div>
+    </section>
 
-        <!-- Encoder blocks -->
-        <rect x="100" y="80" width="150" height="100" fill="url(#encG)" stroke="#6366f1" stroke-width="2" rx="12"/>
-        <text x="175" y="135" class="lbl" text-anchor="middle">Encoder f_φ</text>
+    <!-- ======= Kinds + Legend ======= -->
+    <section id="kinds" class="section-head">
+      <div class="space-y-4">
+        <h2 class="text-2xl md:text-3xl font-bold">Kinds of Autoencoders</h2>
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+          <span class="chip bg-slate-100 text-slate-700">Deterministic</span>
+          <span class="chip bg-emerald-50 text-emerald-700">Probabilistic</span>
+          <span class="chip bg-indigo-50 text-indigo-700">Undercomplete</span>
+          <span class="chip bg-cyan-50 text-cyan-700">Regularized</span>
+        </div>
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <article class="card hover:shadow-lg transition">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">Plain AE</h3>
+              <span class="chip bg-slate-100 text-slate-700">Deterministic</span>
+            </div>
+            <p class="mt-2 text-sm">MSE/BCE reconstruction. Linear AE ≈ PCA on centered data.</p>
+            <a href="#det-plain" class="mt-3 inline-block text-indigo-700 hover:underline text-sm">Learn more →</a>
+          </article>
+          <article class="card hover:shadow-lg transition">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">Denoising AE</h3>
+              <span class="chip bg-slate-100 text-slate-700">Deterministic</span>
+            </div>
+            <p class="mt-2 text-sm">Trains with corrupted inputs; links to score matching (small noise).</p>
+            <a href="#det-dae" class="mt-3 inline-block text-indigo-700 hover:underline text-sm">Learn more →</a>
+          </article>
+          <article class="card hover:shadow-lg transition">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">Sparse AE</h3>
+              <span class="chip bg-slate-100 text-slate-700">Deterministic</span>
+            </div>
+            <p class="mt-2 text-sm">L1/KL on activations; localized, interpretable features.</p>
+            <a href="#det-sparse" class="mt-3 inline-block text-indigo-700 hover:underline text-sm">Learn more →</a>
+          </article>
+          <article class="card hover:shadow-lg transition">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">Contractive AE</h3>
+              <span class="chip bg-slate-100 text-slate-700">Deterministic</span>
+            </div>
+            <p class="mt-2 text-sm">Encoder Jacobian penalty for invariance & stability.</p>
+            <a href="#det-contractive" class="mt-3 inline-block text-indigo-700 hover:underline text-sm">Learn more →</a>
+          </article>
+          <article class="card hover:shadow-lg transition">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">VAE</h3>
+              <span class="chip bg-emerald-50 text-emerald-700">Probabilistic</span>
+            </div>
+            <p class="mt-2 text-sm">Latent posterior \(q_\phi(z|x)\), prior \(p(z)\), optimizes ELBO.</p>
+            <a href="#prob-vae" class="mt-3 inline-block text-indigo-700 hover:underline text-sm">Learn more →</a>
+          </article>
+          <article class="card hover:shadow-lg transition">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold">β-VAE / IWAE</h3>
+              <span class="chip bg-emerald-50 text-emerald-700">Probabilistic</span>
+            </div>
+            <p class="mt-2 text-sm">β tightens bottleneck; IWAE tightens the bound with K samples.</p>
+            <a href="#prob-variants" class="mt-3 inline-block text-indigo-700 hover:underline text-sm">Learn more →</a>
+          </article>
+        </div>
+      </div>
+    </section>
 
-        <path class="wire" marker-end="url(#arr)" d="M70,130 H100"/>
+    <!-- ======= 1) Autoencoder Basics (original) ======= -->
+    <section id="ae" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">Definition</h2>
+          <p class="text-sm text-slate-700 mt-2">
+            An autoencoder (AE) learns an encoder \( f_\phi:\mathbb{R}^D \to \mathbb{R}^d \) and a decoder
+            \( g_\theta:\mathbb{R}^d \to \mathbb{R}^D \) to minimize reconstruction:
+          </p>
+          <div class="text-sm text-slate-700 leading-7 mt-2">
+\[
+z = f_\phi(x),\qquad \hat{x}=g_\theta(z),\qquad
+\mathcal{L}(\phi,\theta)=\mathbb{E}_{x\sim p_{\text{data}}}\big[\ell(x,\hat{x})\big].
+\]
+Common choices: \( \ell=\|x-\hat{x}\|_2^2 \) (Gaussian), BCE (Bernoulli), or Gaussian NLL with learned variance.
+          </div>
+          <ul class="mt-3 text-sm text-slate-700 list-disc ml-5">
+            <li><b>Undercomplete</b> (\( d\ll D \)): forces compression; behaves like nonlinear PCA.</li>
+            <li><b>Overcomplete</b> (\( d\ge D \)): add regularization (denoising, sparsity, contractive) to avoid identity.</li>
+          </ul>
+          <h3 class="text-lg font-semibold mt-4">Plain AE training (PyTorch-like)</h3>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># encoder fφ, decoder gθ, optimizer opt, loss ℓ (e.g., MSE)
+for x in loader:                  # x ∈ ℝ^{B×D}
+    z = fφ(x)
+    xhat = gθ(z)
+    loss = ℓ(x, xhat)
+    opt.zero_grad(); loss.backward(); opt.step()</code></pre>
+        </article>
 
-        <!-- Narrow latent -->
-        <rect x="280" y="100" width="100" height="60" class="box"/>
-        <text x="330" y="135" class="lbl" text-anchor="middle">z</text>
-        <path class="wire" marker-end="url(#arr)" d="M250,130 H280"/>
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card tex2jax_ignore">
+          <h3 class="text-xl font-semibold mb-2">Bottleneck picture</h3>
+          <svg viewBox="0 0 900 260" class="w-full h-auto">
+            <defs>
+              <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,8 L8,4 z" fill="#64748b"/>
+              </marker>
+              <linearGradient id="encG" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#e0e7ff"/><stop offset="100%" style="stop-color:#c7d2fe"/>
+              </linearGradient>
+              <linearGradient id="decG" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#d1fae5"/><stop offset="100%" style="stop-color:#a7f3d0"/>
+              </linearGradient>
+            </defs>
+            <g><circle cx="60" cy="130" r="10"/></g>
+            <text x="60" y="155" class="lbl" text-anchor="middle">x</text>
+            <rect x="100" y="80" width="150" height="100" fill="url(#encG)" stroke="#6366f1" stroke-width="2" rx="12"/>
+            <text x="175" y="135" class="lbl" text-anchor="middle">Encoder fφ</text>
+            <path class="wire" marker-end="url(#arr)" d="M70,130 H100"/>
+            <rect x="280" y="100" width="100" height="60" class="box"/>
+            <text x="330" y="135" class="lbl" text-anchor="middle">z ∈ R^d</text>
+            <path class="wire" marker-end="url(#arr)" d="M250,130 H280"/>
+            <rect x="420" y="80" width="150" height="100" fill="url(#decG)" stroke="#10b981" stroke-width="2" rx="12"/>
+            <text x="495" y="135" class="lbl" text-anchor="middle">Decoder gθ</text>
+            <path class="wire" marker-end="url(#arr)" d="M380,130 H420"/>
+            <g><circle cx="610" cy="130" r="10"/></g>
+            <text x="610" y="155" class="lbl" text-anchor="middle">x̂</text>
+            <path class="wire dash" marker-end="url(#arr)" d="M600,120 C700,60 780,60 820,110"/>
+            <text x="820" y="120" class="lbl" text-anchor="start">reconstruction loss</text>
+            <path class="wire" marker-end="url(#arr)" d="M80,120 C180,60 260,60 820,110"/>
+          </svg>
+          <p class="tip mt-2">Undercomplete + suitable loss → meaningful compression; otherwise add regularization.</p>
+        </article>
+      </div>
+    </section>
 
-        <!-- Decoder blocks -->
-        <rect x="420" y="80" width="150" height="100" fill="url(#decG)" stroke="#10b981" stroke-width="2" rx="12"/>
-        <text x="495" y="135" class="lbl" text-anchor="middle">Decoder g_θ</text>
-        <path class="wire" marker-end="url(#arr)" d="M380,130 H420"/>
+    <!-- Deterministic group marker -->
+    <section id="deterministic" class="section-head">
+      <h2 class="text-2xl md:text-3xl font-bold">Deterministic Autoencoders</h2>
+    </section>
 
-        <!-- Output xhat -->
-        <g class="stateDot">
-          <circle cx="610" cy="130" r="10"/>
-        </g>
-        <text x="610" y="155" class="lbl" text-anchor="middle">ŝ = \hat{x}</text>
+    <!-- ======= 2) Linear AE = PCA (original) ======= -->
+    <section id="linear-pca" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card" id="det-plain">
+          <h2 class="text-2xl font-bold">Theorem: Linear AE recovers PCA</h2>
+          <p class="text-sm text-slate-700 mt-2">
+            Consider a <b>linear</b> AE with \( f(x)=W_e x \), \( g(z)=W_d z \), bottleneck \( d \), and MSE on zero-mean data with covariance
+            \( \Sigma=\mathbb{E}[xx^\top] \). With tied or untied weights, any global minimizer spans the top-\( d \) principal subspace.
+          </p>
+          <details class="mt-3">
+            <summary class="text-sm font-semibold text-indigo-700">Detailed proof</summary>
+            <div class="text-sm text-slate-700 mt-2 space-y-3">
+              <p><b>(1)</b> Let \( P=W_dW_e \) with \( \mathrm{rank}(P)\le d \). Objective
+              \( J(P)=\operatorname{tr}(\Sigma)-2\operatorname{tr}(\Sigma P)+\operatorname{tr}(P\Sigma P^\top) \).</p>
+              <p><b>(2)</b> Diagonalize \( \Sigma=Q\Lambda Q^\top \), write \( P=Q R Q^\top \). The optimum over rank-\( d \) matrices is
+              the projector onto the top-\( d \) eigenvectors \( U \): \( P=UU^\top \).</p>
+              <p><b>(3)</b> Factor \( UU^\top=W_dW_e \) by \( W_e=U^\top \), \( W_d=U \) (or with an invertible \( S \), \( W_e=U^\top S \), \( W_d=S^{-1}U \)).</p>
+            </div>
+          </details>
+          <p class="tip mt-3">Nonlinear AEs generalize PCA by learning curved manifolds, not just subspaces.</p>
 
-        <!-- Loss arrow -->
-        <path class="wire dash" marker-end="url(#arr)" d="M600,120 C700,60 780,60 820,110"/>
-        <text x="820" y="120" class="lbl" text-anchor="start">reconstruction loss</text>
-        <path class="wire" marker-end="url(#arr)" d="M80,120 C180,60 260,60 820,110"/>
-      </svg>
-      <p class="tip mt-2">Undercomplete latent $z$ + proper loss → meaningful compression; otherwise impose regularization.</p>
-    </article>
+          <h4 class="text-lg font-semibold mt-4">Centered AE pseudocode</h4>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># Center: x ← x − μ
+z = W_e @ x
+xhat = W_d @ z
+loss = ||x - xhat||²         # optionally tie W_d = W_eᵀ</code></pre>
+
+          <h4 class="text-lg font-semibold mt-4">PyTorch: Minimal Linear AE = PCA</h4>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>import torch, torch.nn as nn
+
+class LinearAE(nn.Module):
+    def __init__(self, D, d, tied=True):
+        super().__init__()
+        self.enc = nn.Linear(D, d, bias=False)
+        self.dec = nn.Linear(d, D, bias=False)
+        self.tied = tied
+    def forward(self, x):
+        z = self.enc(x)
+        if self.tied:
+            xhat = torch.functional.F.linear(z, self.enc.weight.t())
+        else:
+            xhat = self.dec(z)
+        return z, xhat
+
+# training loop
+model = LinearAE(D=128, d=16, tied=True)
+opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+for x in loader:
+    _, xhat = model(x - x.mean(0, keepdim=True))
+    loss = ((x - xhat)**2).mean()
+    opt.zero_grad(); loss.backward(); opt.step()</code></pre>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card" id="det-dae">
+          <h3 class="text-xl font-semibold">Denoising AE (DAE)</h3>
+          <p class="mt-2 text-sm leading-7">
+            For small Gaussian noise, the optimal denoiser satisfies
+            \( \mathbb{E}[x \mid \tilde{x}] = \tilde{x} + \sigma^2 \nabla_{\tilde{x}} \log p(\tilde{x}) \).
+          </p>
+          <h4 class="text-lg font-semibold mt-2">PyTorch: DAE</h4>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>class MLP_AE(nn.Module):
+    def __init__(self, D, d=32):
+        super().__init__()
+        self.f = nn.Sequential(nn.Linear(D,256), nn.ReLU(),
+                               nn.Linear(256,128), nn.ReLU(),
+                               nn.Linear(128,d))
+        self.g = nn.Sequential(nn.Linear(d,128), nn.ReLU(),
+                               nn.Linear(128,256), nn.ReLU(),
+                               nn.Linear(256,D))
+    def forward(self, x): z = self.f(x); return z, self.g(z)
+
+def train_dae(model, loader, sigma=0.2, lam=0.0):
+    opt = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=1e-5)
+    for x in loader:
+        x_tilde = x + sigma*torch.randn_like(x)
+        z, xhat = model(x_tilde)
+        loss = ((x - xhat)**2).mean() + lam*sum((p**2).sum() for p in model.parameters())*0.0
+        opt.zero_grad(); loss.backward(); opt.step()</code></pre>
+
+          <h4 class="text-lg font-semibold mt-4" id="det-sparse">Sparse AE</h4>
+          <p class="text-sm">Encourage sparse activations via \( L_1 \) or KL to a target sparsity \( \rho \).</p>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>def sparsity_loss(a, rho=0.05, eps=1e-8):
+    # KL( Bernoulli(rho) || Bernoulli(ā) ) per unit
+    a_bar = a.mean(dim=0)
+    kl = rho*torch.log((rho+eps)/(a_bar+eps)) + (1-rho)*torch.log((1-rho+eps)/(1-a_bar+eps))
+    return kl.sum()
+
+# usage inside training step:
+z = enc(x); a = torch.relu(hiddens)  # keep access to hidden activations
+xhat = dec(z)
+loss = mse(x, xhat) + 1e-3 * sparsity_loss(a)</code></pre>
+
+          <h4 class="text-lg font-semibold mt-4" id="det-contractive">Contractive AE</h4>
+          <p class="text-sm">Penalize \( \| J_f(x) \|_F^2 \). With autograd:</p>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>def contractive_penalty(encoder, x):
+    x = x.requires_grad_(True)
+    z = encoder(x)
+    # sum of squared gradients of each latent dim wrt x
+    pen = 0.0
+    for j in range(z.shape[1]):
+        g = torch.autograd.grad(z[:,j].sum(), x, create_graph=True)[0]
+        pen = pen + (g**2).sum(dim=1)
+    return pen.mean()
+
+# training:
+z = enc(x); xhat = dec(z)
+loss = ((x-xhat)**2).mean() + 1e-3*contractive_penalty(enc, x)</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= 3) Expressivity (original) ======= -->
+    <section id="expressivity" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">Universal approximation perspective</h2>
+          <div class="text-sm leading-8 mt-2">
+            <b>Decoder expressivity.</b> With nonpolynomial activations, \( g_\theta \) approximates any continuous
+            \( h:\mathbb{R}^d \to \mathbb{R}^D \) on compacts. <i>⇒ powerful manifold modeling.</i><br/><br/>
+            <b>Manifold charts.</b> If data live near a \( k \)-manifold \( \mathcal{M} \), then for \( d \ge k \) there exist \( f,g \)
+            s.t. \( g\!\circ\! f \approx \mathrm{id} \) on \( \mathcal{M} \) and \( \mathrm{rank}\,J_f(x)=k \) locally.
+          </div>
+          <details class="mt-3">
+            <summary class="text-sm font-semibold text-indigo-700">Why a bottleneck still works</summary>
+            <div class="text-sm mt-2 space-y-2">
+              Charts ⇒ local coordinates; pick \( f \) with full-rank Jacobian; approximate inverse with \( g \).
+            </div>
+          </details>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold">Regularization ⇒ identifiability &amp; generalization</h3>
+          <ul class="mt-2 text-sm space-y-2">
+            <li><b>Denoising AE</b>: \( \tilde{x}=x+\varepsilon \) → predict \( x \). For small Gaussian noise,
+              \( \mathbb{E}[x|\tilde{x}] = \tilde{x} + \sigma^2 \nabla_{\tilde{x}}\log p(\tilde{x}) \).</li>
+            <li><b>Contractive AE</b>: penalize \( \|J_f(x)\|_F^2 \) for invariance/smoothness.</li>
+            <li><b>Sparse AE</b>: \( L_1 \)/KL on activations → localized codes, feature selection.</li>
+          </ul>
+          <h4 class="text-lg font-semibold mt-4">DAE training snippet</h4>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># corruption: x̃ = x + ε (Gaussian) or feature dropout
+z = fφ(x̃);  xhat = gθ(z)
+loss = ||x - xhat||² + λ⋅regularizers
+loss.backward()</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= 4) Latent Geometry (original) ======= -->
+    <section id="geometry" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">Decoder Jacobian induces a metric</h2>
+          <div class="text-sm leading-8 mt-2">
+\[
+G(z) = J_g(z)^\top J_g(z), \qquad \|\delta x\|^2 \approx \delta z^\top G(z)\,\delta z .
+\]
+          </div>
+          <ul class="mt-3 text-sm list-disc ml-5">
+            <li><b>Tangent space</b> at \( x \): \( \mathcal{T}_x\mathcal{M}=\mathrm{colspan}(J_g(z)) \).</li>
+            <li><b>Geodesics</b>: minimize \( \int \dot{z}^\top G(z)\dot{z}\,dt \).</li>
+            <li><b>Interpolation</b>: linear in \( z \) ≠ geodesic in general; use \( G \)-aware interpolation.</li>
+          </ul>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold">Latent distances &amp; clustering</h3>
+          <ul class="mt-2 text-sm space-y-2">
+            <li>Euclidean in \( z \) works if \( G(z)\approx I \) (well-conditioned Jacobian).</li>
+            <li>\( \|J_g(z)\| \) large signals warped regions / holes.</li>
+            <li>In VAEs, priors regularize geometry; isotropic priors encourage spherical aggregates.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= 4.5) KL Divergence (original) ======= -->
+    <section id="kl" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">What is KL divergence?</h2>
+          <div class="text-sm leading-8 mt-2">
+\[
+D_{\mathrm{KL}}(Q\|P)=\int q(x)\log\!\frac{q(x)}{p(x)}\,dx
+= \mathbb{E}_{x\sim Q}\big[\log q(x)-\log p(x)\big] \ge 0,
+\]
+with equality iff \( Q=P \) a.e. (Gibbs’ inequality).
+          </div>
+          <ul class="mt-3 text-sm list-disc ml-5">
+            <li><b>Asymmetry:</b> \( D_{\mathrm{KL}}(Q\|P)\neq D_{\mathrm{KL}}(P\|Q) \).</li>
+            <li><b>Information view:</b> expected extra code length using \( P \) to encode from \( Q \).</li>
+            <li><b>Pinsker:</b> \( \|Q-P\|_{\mathrm{TV}}\le \sqrt{\tfrac12 D_{\mathrm{KL}}(Q\|P)} \).</li>
+            <li><b>Gaussian:</b> for diagonal \( Q=\mathcal{N}(\mu,\sigma^2) \), \( P=\mathcal{N}(0,1) \): \( \tfrac12\sum_j(\mu_j^2+\sigma_j^2-\log\sigma_j^2-1) \).</li>
+          </ul>
+          <p class="tip mt-2">In VAEs, we use \( D_{\mathrm{KL}}(q_\phi(z|x)\|p(z)) \) to pull posteriors toward \( \mathcal{N}(0,I) \).</p>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold">KL in VAEs: two perspectives</h3>
+          <ul class="mt-2 text-sm space-y-2">
+            <li><b>Per-sample regularizer:</b> encodings near the prior → smoother latent space.</li>
+            <li><b>Information bound:</b> average KL bounds \( I_q(X;Z) \). β-TCVAE splits KL into mean matching &amp; total correlation.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- Probabilistic group marker -->
+    <section id="probabilistic" class="section-head">
+      <h2 class="text-2xl md:text-3xl font-bold">Probabilistic Autoencoders (VAE family)</h2>
+    </section>
+
+    <!-- ======= 5) VAE + ELBO (original + expanded code) ======= -->
+    <section id="vae" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card" id="prob-vae">
+          <h2 class="text-2xl font-bold">Variational Autoencoder (VAE)</h2>
+          <p class="text-sm mt-2">
+            Encoder outputs \( q_\phi(z|x)=\mathcal{N}(\mu(x),\mathrm{diag}(\sigma^2(x))) \). Decoder defines \( p_\theta(x|z) \).
+          </p>
+          <div class="text-sm leading-8 mt-2">
+\[
+\mathcal{L}_{\text{ELBO}}=\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]-D_{\mathrm{KL}}(q_\phi(z|x)\,\|\,p(z)).
+\]
+Reparameterize \( z=\mu+\sigma\odot\varepsilon \), \( \varepsilon\sim\mathcal{N}(0,I) \).
+          </div>
+
+          <div align="center" class="mt-4 tex2jax_ignore">
+            <svg viewBox="0 0 900 300" class="w-full h-auto" aria-label="VAE architecture diagram">
+              <defs>
+                <linearGradient id="encG2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#e0e7ff"/><stop offset="100%" style="stop-color:#c7d2fe"/>
+                </linearGradient>
+                <linearGradient id="decG2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#d1fae5"/><stop offset="100%" style="stop-color:#a7f3d0"/>
+                </linearGradient>
+              </defs>
+              <rect x="100" y="60" width="150" height="120" fill="url(#encG2)" stroke="#6366f1" stroke-width="2" rx="12"/>
+              <text x="175" y="120" class="lbl" text-anchor="middle">Encoder qφ(z|x)</text>
+              <rect x="280" y="80" width="120" height="60" class="box"/>
+              <text x="340" y="115" class="lbl" text-anchor="middle">z ~ N(μ, σ²)</text>
+              <rect x="460" y="60" width="150" height="120" fill="url(#decG2)" stroke="#10b981" stroke-width="2" rx="12"/>
+              <text x="535" y="120" class="lbl" text-anchor="middle">Decoder pθ(x|z)</text>
+            </svg>
+          </div>
+
+          <details class="mt-3">
+            <summary class="text-sm font-semibold text-indigo-700">Deriving the ELBO (Jensen)</summary>
+            <div class="text-sm mt-2 space-y-2">
+\[
+\log p_\theta(x)=\log\!\int q_\phi(z|x)\frac{p_\theta(x,z)}{q_\phi(z|x)}\,dz
+\ge \mathbb{E}_{q_\phi}\!\Big[\log \tfrac{p_\theta(x,z)}{q_\phi(z|x)}\Big].
+\]
+            </div>
+          </details>
+
+          <h4 class="text-lg font-semibold mt-4">PyTorch: VAE (Gaussian decoder)</h4>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>class VAE(nn.Module):
+    def __init__(self, D, d=16):
+        super().__init__()
+        self.enc = nn.Sequential(nn.Linear(D,256), nn.ReLU(), nn.Linear(256,128), nn.ReLU())
+        self.mu = nn.Linear(128, d); self.logvar = nn.Linear(128, d)
+        self.dec = nn.Sequential(nn.Linear(d,128), nn.ReLU(), nn.Linear(128,256), nn.ReLU())
+        self.out_mean = nn.Linear(256, D); self.out_logvar = nn.Linear(256, D)
+    def encode(self, x):
+        h = self.enc(x); return self.mu(h), self.logvar(h)
+    def reparam(self, mu, logvar):
+        eps = torch.randn_like(mu); return mu + torch.exp(0.5*logvar)*eps
+    def decode(self, z):
+        h = self.dec(z); return self.out_mean(h), self.out_logvar(h)
+    def forward(self, x):
+        mu, lv = self.encode(x); z = self.reparam(mu, lv)
+        m, lvx = self.decode(z); return (m, lvx), (mu, lv)
+
+def gaussian_nll(x, mean, logvar):
+    return 0.5 * (logvar + (x-mean)**2 * torch.exp(-logvar))
+
+vae = VAE(D=784, d=16); opt = torch.optim.Adam(vae.parameters(), 1e-3)
+for x,_ in loader:
+    (m,lvx),(mu,lv) = vae(x)
+    recon = gaussian_nll(x, m, lvx).sum(1).mean()
+    kl = 0.5 * (mu.pow(2) + lv.exp() - lv - 1).sum(1).mean()
+    loss = recon + kl
+    opt.zero_grad(); loss.backward(); opt.step()</code></pre>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card" id="prob-variants">
+          <h3 class="text-xl font-semibold">β-VAE, Free Bits, IWAE</h3>
+          <ul class="mt-2 text-sm space-y-2">
+            <li><b>β-VAE:</b> replace KL by \( \beta\cdot\mathrm{KL} \) (\( \beta\ge 1 \)).</li>
+            <li><b>Free bits:</b> floor per-dim KL at \( \lambda \) to prevent collapse.</li>
+            <li><b>IWAE:</b> K-sample tighter bound with importance weighting.</li>
+          </ul>
+
+          <h4 class="text-lg font-semibold mt-3">PyTorch: β-VAE</h4>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>beta = 4.0
+(m,lvx),(mu,lv) = vae(x)
+recon = gaussian_nll(x, m, lvx).sum(1).mean()
+kl = 0.5 * (mu.pow(2) + lv.exp() - lv - 1).sum(1).mean()
+loss = recon + beta * kl</code></pre>
+
+          <h4 class="text-lg font-semibold mt-3">PyTorch: IWAE (skeleton)</h4>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>K = 5
+mu, lv = vae.encode(x)
+eps = torch.randn(K, *mu.shape, device=mu.device)
+z = mu.unsqueeze(0) + torch.exp(0.5*lv).unsqueeze(0) * eps
+m, lvx = [], []
+for k in range(K):
+    mk, lvxk = vae.decode(z[k]); m.append(mk); lvx.append(lvxk)
+m = torch.stack(m); lvx = torch.stack(lvx)  # (K,B,D)
+# log p(x|z): Gaussian
+log_pxz = (-0.5*(lvx + (x.unsqueeze(0)-m)**2*torch.exp(-lvx))).sum(-1)  # (K,B)
+# log p(z) - log q(z|x)
+log_pz = (-0.5*(z**2).sum(-1))           # std normal prior
+log_q = (-0.5*(lv + ((z-mu)**2)*torch.exp(-lv)).sum(-1))  # diag posterior
+log_w = log_pxz + log_pz - log_q         # (K,B)
+# IWAE loss = - E[ log( 1/K sum_k exp(log_w) ) ]
+loss = -(torch.logsumexp(log_w, dim=0) - torch.log(torch.tensor(K, device=x.device))).mean()</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= 6) Missing Data (original + expanded code) ======= -->
+    <section id="imputation" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">Autoencoders for Missing Data</h2>
+          <p class="text-sm mt-2">
+            Let \( m\in\{0,1\}^D \) be a mask (1=observed). Train with a masked loss:
+          </p>
+          <div class="text-sm leading-8 mt-2">
+\[
+\mathcal{L}_{\text{mask}}=\mathbb{E}\big[\|m\odot(x-\hat{x})\|_2^2\big].
+\]
+          </div>
+          <ul class="mt-3 text-sm list-disc ml-5">
+            <li><b>DAE dropout:</b> random entry drop during training → robustness to MCAR/MAR.</li>
+            <li><b>Iterative refinement:</b> \( x^{(t+1)} \leftarrow m\odot x + (1-m)\odot \hat{x}^{(t)} \).</li>
+            <li><b>VAE conditional:</b> use \( q_\phi(z|x_{\text{obs}}) \) and decode conditionals for uncertainty.</li>
+          </ul>
+          <details class="mt-3">
+            <summary class="text-sm font-semibold text-indigo-700">Caveat: MNAR</summary>
+            <div class="text-sm mt-2">
+              For Missing-Not-At-Random, model \( p(m|x) \) or add an auxiliary head to predict \( m \).
+            </div>
+          </details>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold">PyTorch: Masked loss &amp; refinement</h3>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code>def masked_mse(x, xhat, m, eps=1e-8):
+    num = ((m * (x - xhat))**2).sum(dim=1)
+    den = m.sum(dim=1).clamp_min(eps)
+    return (num / den).mean()
+
+# Train step
+x_fill = x.masked_fill(m == 0, 0.0)  # or feature means
+z = encoder(x_fill); xhat = decoder(z)
+loss = masked_mse(x, xhat, m); loss.backward()
+
+# Test-time iterative refinement
+x_imp = x_fill.clone()
+for _ in range(T):
+    z = encoder(x_imp); xhat = decoder(z)
+    x_imp = m * x + (1 - m) * xhat</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= 7) Outlier / Anomaly Detection (original + expanded code) ======= -->
+    <section id="outliers" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">Reconstruction-error scoring</h2>
+          <p class="text-sm mt-2">
+            Fit an AE on mostly clean data. Score new \( x \) by residual \( r=\|x-\hat{x}\| \) (or standardized per-feature residuals).
+          </p>
+          <details class="mt-3">
+            <summary class="text-sm font-semibold text-indigo-700">Statistical calibration (Gaussian residuals)</summary>
+            <div class="text-sm mt-2">
+If residuals are approx. Gaussian with variances \( \sigma_j^2 \),
+\[
+T(x)=\sum_j \frac{(x_j-\hat{x}_j)^2}{\sigma_j^2}\ \approx\ \chi^2_D.
+\]
+Threshold via a \( \chi^2 \) quantile (e.g., 0.99) or fit an empirical null.
+            </div>
+          </details>
+          <ul class="mt-3 text-sm list-disc ml-5">
+            <li>Robust losses (Huber) + DAEs help at train time.</li>
+            <li>In VAEs, low ELBO / low \( p_\theta(x) \) can flag anomalies.</li>
+          </ul>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold">PyTorch: Residual &amp; ELBO scores</h3>
+          <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># Residual score
+with torch.no_grad():
+    z = enc(x); xhat = dec(z)
+    resid = ((x - xhat)**2).sum(dim=1)
+
+# VAE negative ELBO (approx)
+with torch.no_grad():
+    (m,lvx),(mu,lv) = vae(x)
+    recon = gaussian_nll(x, m, lvx).sum(1)
+    kl = 0.5 * (mu.pow(2) + lv.exp() - lv - 1).sum(1)
+    score = recon + kl  # higher = more anomalous</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= 8) Tricks & Diagnostics (original) ======= -->
+    <section id="tricks" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">Training tricks</h2>
+          <ul class="mt-3 text-sm space-y-2">
+            <li><b>Likelihood:</b> prefer Gaussian NLL with learned log-variance for heteroscedastic data.</li>
+            <li><b>KL annealing / free bits:</b> mitigate posterior collapse in VAEs.</li>
+            <li><b>Normalization:</b> LayerNorm/BatchNorm in encoder; weight decay \( 10^{-4}\!-\!10^{-5} \).</li>
+            <li><b>DAE noise schedule:</b> start small \( \sigma\in[0.1,0.3] \), ramp gradually.</li>
+            <li><b>Diagnostics:</b> latent traversals, \( \|J_g\| \) stats, prior–posterior mismatch (MMD/W2), sample quality.</li>
+          </ul>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold">Identifiability caveats</h3>
+          <ul class="mt-3 text-sm space-y-2">
+            <li>Many equivalent parameterizations in AEs (non-identifiable).</li>
+            <li>β-VAE &amp; prior structure add preferences but don’t guarantee semantic factors without inductive bias.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= 9) Comparison Matrix (kept) ======= -->
+    <section id="matrix" class="section-head">
+      <div class="card shadow-soft">
+        <h2 class="text-2xl md:text-3xl font-bold">Comparison Matrix</h2>
+        <div class="mt-3 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-100 text-slate-700">
+              <tr>
+                <th class="text-left p-2">Model</th>
+                <th class="text-left p-2">Loss / Likelihood</th>
+                <th class="text-left p-2">Noise / Regularizer</th>
+                <th class="text-left p-2">Stochastic?</th>
+                <th class="text-left p-2">Typical Use</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr><td class="p-2">Plain AE</td><td class="p-2">MSE / BCE</td><td class="p-2">—</td><td class="p-2">No</td><td class="p-2">Compression, nonlinear PCA</td></tr>
+              <tr><td class="p-2">DAE</td><td class="p-2">MSE / BCE</td><td class="p-2">Input noise</td><td class="p-2">No</td><td class="p-2">Robust features, imputation</td></tr>
+              <tr><td class="p-2">Sparse AE</td><td class="p-2">MSE + L1/KL</td><td class="p-2">Sparsity on activations</td><td class="p-2">No</td><td class="p-2">Feature selection, interpretability</td></tr>
+              <tr><td class="p-2">Contractive AE</td><td class="p-2">MSE + \( \|J_f\|_F^2 \)</td><td class="p-2">Jacobian penalty</td><td class="p-2">No</td><td class="p-2">Invariance, stability</td></tr>
+              <tr><td class="p-2">VAE</td><td class="p-2">ELBO (likelihood + KL)</td><td class="p-2">Prior regularization</td><td class="p-2">Yes (reparam)</td><td class="p-2">Generation, uncertainty</td></tr>
+              <tr><td class="p-2">β-VAE</td><td class="p-2">ELBO with β⋅KL</td><td class="p-2">Stronger bottleneck</td><td class="p-2">Yes</td><td class="p-2">Simpler latents, disentanglement</td></tr>
+              <tr><td class="p-2">IWAE</td><td class="p-2">Importance-weighted ELBO</td><td class="p-2">Tighter bound</td><td class="p-2">Yes</td><td class="p-2">Better likelihoods</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= 10) Quick Recipes (original) ======= -->
+    <section id="recipes" class="section-head">
+      <div class="grid md:grid-cols-3 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-lg font-semibold flex items-center gap-2">
+            <div class="w-4 h-4 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded"></div>
+            MLP AE (Tabular: Imputation + Outliers)
+          </h3>
+          <ul class="mt-3 text-sm space-y-2">
+            <li><b>Arch:</b> \( D\to256\to128\to\mathbf{d=32}\to128\to256\to D \) (ReLU + LayerNorm)</li>
+            <li><b>Train:</b> masked loss + random feature dropout (DAE)</li>
+            <li><b>Use:</b> \( \hat{x} \) for imputation; residual norm for outliers</li>
+          </ul>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-lg font-semibold flex items-center gap-2">
+            <div class="w-4 h-4 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded"></div>
+            Conv VAE (Images)
+          </h3>
+          <ul class="mt-3 text-sm space-y-2">
+            <li><b>Heads:</b> \( \mu(x) \), \( \log\sigma^2(x) \) for \( q(z|x) \)</li>
+            <li><b>Loss:</b> discretized logistic / Gaussian NLL or BCE + KL; β∈{1,2,4}</li>
+            <li><b>Diag:</b> traversals; FID/IS for sample quality</li>
+          </ul>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-lg font-semibold flex items-center gap-2">
+            <div class="w-4 h-4 bg-gradient-to-br from-rose-400 to-rose-600 rounded"></div>
+            Sequence VAE (Text/Time-series)
+          </h3>
+          <ul class="mt-3 text-sm space-y-2">
+            <li><b>Arch:</b> BiGRU encoder → \( \mu,\log\sigma^2 \); GRU/Transformer decoder</li>
+            <li><b>Tips:</b> scheduled sampling; KL warm-up; token drop as DAE</li>
+            <li><b>Use:</b> anomaly detection with sequence-level negative ELBO</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= Appendix (original) ======= -->
+    <section id="appendix" class="section-head">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h2 class="text-2xl font-bold">DAE ⇄ Score matching (intuition)</h2>
+          <p class="text-sm mt-2">
+            For \( \tilde{x}=x+\varepsilon \), \( \varepsilon\sim\mathcal{N}(0,\sigma^2 I) \), the Bayes-optimal denoiser is
+            \( \hat{x}(\tilde{x})=\tilde{x}+\sigma^2\nabla_{\tilde{x}} \log p(\tilde{x}) \).
+            Thus DAEs learn a vector field pointing toward high-density regions (manifold projection).
+          </p>
+        </article>
+
+        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+          <h3 class="text-xl font-semibold">Local invertibility of the encoder</h3>
+          <p class="text-sm mt-2">
+            If \( \mathrm{rank}\,J_f(x)=k \) on a \( k \)-dimensional manifold and \( d\ge k \), then by the inverse function theorem,
+            \( f \) is locally invertible along tangent directions, ensuring \( g\!\circ\! f \approx \mathrm{id} \) near \( \mathcal{M} \).
+          </p>
+        </article>
+      </div>
+      <div class="text-center text-xs text-slate-500 py-2">
+        MathJax • Tailwind • Single file
+      </div>
+      <div class="text-center text-xs text-slate-500 pb-2">
+        Linear AE=PCA • Universal Approximation • Latent Riemannian Metric • Imputation • Outliers • KL • ELBO
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Back to top -->
+<a href="#intro" class="fixed bottom-6 right-6 rounded-full border bg-white border-slate-200 px-3 py-2 shadow-soft hover:bg-slate-50 text-sm" aria-label="Back to top">↑ Top</a>
+
+<!-- Mobile drawer -->
+<div id="drawer" class="fixed inset-0 z-40 hidden" aria-hidden="true">
+  <div class="absolute inset-0 bg-black/30" id="drawerBackdrop"></div>
+  <div class="absolute left-0 top-0 bottom-0 w-72 bg-white p-4 shadow-xl overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 class="font-semibold">On this page</h3>
+      <button id="closeNav" class="rounded-lg border px-2 py-1 bg-white">✕</button>
+    </div>
+    <div class="mt-3 text-sm space-y-2">
+      <a class="block py-1 hover:underline" href="#intro">Introduction</a>
+      <a class="block py-1 hover:underline" href="#kinds">Kinds of Autoencoders</a>
+      <a class="block py-1 hover:underline" href="#ae">Autoencoder Basics</a>
+      <a class="block py-1 hover:underline" href="#linear-pca">Linear AE = PCA</a>
+      <a class="block py-1 hover:underline" href="#expressivity">Expressivity</a>
+      <a class="block py-1 hover:underline" href="#geometry">Latent Geometry</a>
+      <a class="block py-1 hover:underline" href="#kl">KL Divergence</a>
+      <a class="block py-1 hover:underline" href="#vae">VAE + ELBO</a>
+      <a class="block py-1 hover:underline" href="#imputation">Imputation</a>
+      <a class="block py-1 hover:underline" href="#outliers">Outliers</a>
+      <a class="block py-1 hover:underline" href="#tricks">Tricks & Diagnostics</a>
+      <a class="block py-1 hover:underline" href="#matrix">Comparison Matrix</a>
+      <a class="block py-1 hover:underline" href="#recipes">Quick Recipes</a>
+      <a class="block py-1 hover:underline" href="#appendix">Appendix</a>
+    </div>
   </div>
-</section>
+</div>
 
-<!-- ======= AE Variants ======= -->
-<section id="variants" class="py-10 bg-slate-50">
-  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-3 gap-6">
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold">Denoising AE (DAE)</h3>
-      <p class="text-sm text-slate-700 mt-2">
-        Corrupt input $\tilde{x}\!\sim\!q(\tilde{x}|x)$, reconstruct the clean $x$:
-      </p>
-      <div class="text-sm text-slate-700 leading-7 mt-2">
-        $$\mathcal{L}_{\text{DAE}}=\mathbb{E}_{x}\,\mathbb{E}_{\tilde{x}\sim q(\tilde{x}|x)}[\ell(x, g_\theta(f_\phi(\tilde{x})))]$$
-      </div>
-      <p class="tip">Acts as a score-matching regularizer; improves robustness.</p>
-    </article>
-
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold">Sparse / Contractive AE</h3>
-      <div class="text-sm text-slate-700 leading-7 mt-2">
-        <b>Sparse:</b> add penalty on hidden activations (e.g., $L_1$ or KL to a small target $\rho$).<br/>
-        <b>Contractive:</b> penalize encoder Jacobian to resist perturbations:
-        $$\mathcal{R}_{\text{contr}}=\left\|\frac{\partial f_\phi(x)}{\partial x}\right\|_F^2.$$
-      </div>
-      <p class="tip">Both prevent trivial identity mapping in overcomplete setups.</p>
-    </article>
-
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold">CAE for Manifolds</h3>
-      <p class="text-sm text-slate-700 mt-2">
-        With proper regularization, AEs learn low-dimensional manifolds, giving
-        nonlinear generalizations of PCA (useful for visualization and denoising).
-      </p>
-      <svg viewBox="0 0 360 120" class="w-full h-auto mt-3">
-        <path d="M10,80 C80,10 180,10 250,80 S340,90 350,60" fill="none" stroke="#64748b" stroke-width="2"/>
-        <circle cx="120" cy="60" r="4" fill="#3b82f6"/>
-        <circle cx="180" cy="45" r="4" fill="#3b82f6"/>
-        <circle cx="220" cy="65" r="4" fill="#3b82f6"/>
-        <text x="180" y="110" class="lbl" text-anchor="middle">Data on a curved manifold</text>
-      </svg>
-    </article>
-  </div>
-</section>
-
-<!-- ======= VAE ======= -->
-<section id="vae" class="py-10">
-  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h2 class="text-2xl font-bold">Variational Autoencoder (VAE)</h2>
-      <p class="text-sm text-slate-700 mt-2">
-        A VAE turns the AE latent into a <b>probabilistic</b> one: the encoder outputs a distribution
-        $q_\phi(z|x)$ (typically diagonal Gaussian) and the decoder defines a likelihood $p_\theta(x|z)$.
-      </p>
-      <div class="text-sm text-slate-700 leading-7 mt-2">
-        $$\begin{aligned}
-        q_\phi(z|x) &= \mathcal{N}\!\big(z;\,\mu_\phi(x), \mathrm{diag}(\sigma_\phi^2(x))\big),\\
-        p_\theta(x|z) &\ \text{(e.g., Gaussian or Bernoulli pixel model)}.
-        \end{aligned}$$
-      </div>
-      <p class="text-sm text-slate-700 mt-2">
-        Train by maximizing the evidence lower bound (ELBO); sample with the <b>reparameterization trick</b>:
-        $$z=\mu_\phi(x)+\sigma_\phi(x)\odot\varepsilon,\quad \varepsilon\sim\mathcal{N}(0,I).$$
-      </p>
-    </article>
-
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold mb-2">VAE — Probabilistic Diagram</h3>
-      <svg viewBox="0 0 900 280" class="w-full h-auto">
-        <defs>
-          <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,8 L8,4 z" fill="#64748b"/>
-          </marker>
-        </defs>
-
-        <!-- x -->
-        <g class="inDot"><circle cx="70" cy="140" r="10"/></g>
-        <text x="70" y="165" class="lbl" text-anchor="middle">x</text>
-
-        <!-- Encoder to mu/sigma -->
-        <rect x="110" y="90" width="180" height="100" class="box"/>
-        <text x="200" y="145" class="lbl" text-anchor="middle">Encoder</text>
-        <path class="wire" marker-end="url(#arr2)" d="M80,140 H110"/>
-
-        <rect x="320" y="70" width="110" height="50" class="gate"/>
-        <text x="375" y="100" class="lbl" text-anchor="middle">μ(x)</text>
-
-        <rect x="320" y="150" width="110" height="50" class="gate"/>
-        <text x="375" y="180" class="lbl" text-anchor="middle">σ(x)</text>
-
-        <path class="wire" marker-end="url(#arr2)" d="M290,120 C310,110 320,110 320,110"/>
-        <path class="wire" marker-end="url(#arr2)" d="M290,160 C310,170 320,170 320,170"/>
-
-        <!-- Reparameterization -->
-        <rect x="460" y="100" width="140" height="80" class="box"/>
-        <text x="530" y="145" class="lbl" text-anchor="middle">z = μ + σ ⊙ ε</text>
-        <text x="530" y="165" class="lbl" text-anchor="middle">ε~N(0,I)</text>
-        <path class="wire" marker-end="url(#arr2)" d="M430,95 C450,110 460,120 460,120"/>
-        <path class="wire" marker-end="url(#arr2)" d="M430,185 C450,170 460,160 460,160"/>
-
-        <!-- Decoder -->
-        <rect x="640" y="90" width="180" height="100" class="box"/>
-        <text x="730" y="145" class="lbl" text-anchor="middle">Decoder: p_θ(x|z)</text>
-        <path class="wire" marker-end="url(#arr2)" d="M600,140 H640"/>
-
-        <!-- xhat -->
-        <g class="stateDot"><circle cx="850" cy="140" r="10"/></g>
-        <text x="850" y="165" class="lbl" text-anchor="middle">\hat{x}</text>
-      </svg>
-      <p class="tip mt-2">Encoder outputs a <i>distribution</i>; the latent is sampled (differentiably) before decoding.</p>
-    </article>
-  </div>
-</section>
-
-<!-- ======= ELBO & KL ======= -->
-<section id="elbo" class="py-10 bg-slate-50">
-  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h2 class="text-2xl font-bold">ELBO — Derivation (compact)</h2>
-      <div class="text-sm text-slate-700 leading-8 mt-2 math-nowrap">
-        $$\begin{aligned}
-        \log p_\theta(x)
-        &= \log \int p_\theta(x,z)\,dz
-        = \log \int \frac{p_\theta(x,z)}{q_\phi(z|x)} q_\phi(z|x)\,dz\\
-        &\ge \mathbb{E}_{q_\phi(z|x)}\!\left[\log p_\theta(x,z) - \log q_\phi(z|x)\right]
-        = \underbrace{\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]}_{\text{reconstruction}}
-          - \underbrace{D_{\mathrm{KL}}(q_\phi(z|x)\,\|\,p(z))}_{\text{regularizer}}\\
-        &:= \mathcal{L}_{\text{ELBO}}(\theta,\phi;x).
-        \end{aligned}$$
-      </div>
-      <ul class="mt-3 text-sm text-slate-700 list-disc ml-5">
-        <li>Prior $p(z)$ usually $\mathcal{N}(0,I)$.</li>
-        <li>Maximizing ELBO ≈ balancing reconstruction fidelity and latent regularity.</li>
-      </ul>
-    </article>
-
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold">Closed-Form KL for Diagonal Gaussians</h3>
-      <p class="text-sm text-slate-700 mt-2">
-        For $q_\phi(z|x)=\mathcal{N}(\mu,\mathrm{diag}(\sigma^2))$ and $p(z)=\mathcal{N}(0,I)$:
-      </p>
-      <div class="text-sm text-slate-700 leading-7 mt-2">
-        $$D_{\mathrm{KL}}(q\,\|\,p)=\tfrac{1}{2}\sum_{j=1}^d\left(\mu_j^2+\sigma_j^2-\log\sigma_j^2-1\right).$$
-      </div>
-      <p class="tip">In practice, predict $\log\sigma^2$ for numerical stability.</p>
-
-      <h4 class="text-lg font-semibold mt-4">β-VAE</h4>
-      <div class="text-sm text-slate-700 leading-7 mt-1">
-        $$\mathcal{L}_{\beta\text{-VAE}}=\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]-\beta\,D_{\mathrm{KL}}(q_\phi(z|x)\|p(z)),$$
-        with $\beta&gt;1$ encouraging disentanglement at the cost of reconstruction.
-      </div>
-    </article>
-  </div>
-</section>
-
-<!-- ======= Tricks & Diagnostics ======= -->
-<section id="tricks" class="py-10">
-  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h2 class="text-2xl font-bold">Training Tricks</h2>
-      <ul class="mt-3 text-sm text-slate-700 space-y-2">
-        <li><b>Likelihood model:</b> Use BCE for Bernoulli pixels; Gaussian (MSE) with learned variance for continuous data.</li>
-        <li><b>KL annealing / free bits:</b> Warm up the KL weight or enforce a minimum per-dim KL to avoid posterior collapse.</li>
-        <li><b>Latent size:</b> Small $d$ → compression; larger $d$ with stronger regularization (β-VAE, sparsity) for structure.</li>
-        <li><b>Stability:</b> Predict $\log\sigma^2$, clip to a range (e.g., [-6, 2]) to avoid extreme scales.</li>
-        <li><b>Recon metric:</b> Monitor PSNR/SSIM (images) or task metrics (downstream) besides raw loss.</li>
-      </ul>
-    </article>
-
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold">Diagnostics & Latent Geometry</h3>
-      <ul class="mt-3 text-sm text-slate-700 space-y-2">
-        <li><b>Latent interpolation:</b> Linearly interpolate $z$ between two examples; smooth changes indicate meaningful manifold.</li>
-        <li><b>Prior–posterior gap:</b> Compare $q_\phi(z)$ aggregated posterior with $p(z)$ (e.g., MMD/2-Wasserstein).</li>
-        <li><b>Over-regularization:</b> Too large KL (or β) → blurry reconstructions; too small → overfitting/poor sampling.</li>
-        <li><b>Posterior collapse:</b> Decoder ignores $z$ (KL→0). Fix with KL warmup, stronger bottleneck, or weaker decoder.</li>
-      </ul>
-    </article>
-  </div>
-</section>
-
-<!-- ======= Quick Recipes ======= -->
-<section id="recipes" class="py-10 bg-slate-50">
-  <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-6">
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-lg font-semibold flex items-center gap-2">
-        <div class="w-4 h-4 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded"></div>
-        MLP Autoencoder (Tabular)
-      </h3>
-      <ul class="mt-3 text-sm text-slate-700 space-y-2">
-        <li><b>Arch:</b> d→256→128→<b>32</b>→128→256→d with ReLU + LayerNorm</li>
-        <li><b>Loss:</b> MSE (standardize inputs); weight decay 1e-4</li>
-        <li><b>Use:</b> Dimensionality reduction, anomaly detection (recon error)</li>
-      </ul>
-    </article>
-
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-lg font-semibold flex items-center gap-2">
-        <div class="w-4 h-4 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded"></div>
-        Conv VAE (Images)
-      </h3>
-      <ul class="mt-3 text-sm text-slate-700 space-y-2">
-        <li><b>Arch:</b> Conv encoder → μ, logσ² heads; Conv-Transpose decoder</li>
-        <li><b>Loss:</b> BCE for binarized MNIST; Gaussian NLL for natural images</li>
-        <li><b>Tricks:</b> KL anneal for 50–100 epochs; β-VAE sweep {1,2,4}</li>
-      </ul>
-    </article>
-
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-lg font-semibold flex items-center gap-2">
-        <div class="w-4 h-4 bg-gradient-to-br from-rose-400 to-rose-600 rounded"></div>
-        Sequence VAE
-      </h3>
-      <ul class="mt-3 text-sm text-slate-700 space-y-2">
-        <li><b>Arch:</b> BiGRU encoder → μ, logσ²; GRU decoder with teacher forcing</li>
-        <li><b>Loss:</b> Token-wise cross-entropy + KL; schedule sampling later</li>
-        <li><b>Note:</b> Watch for posterior collapse with strong decoders</li>
-      </ul>
-    </article>
-  </div>
-</section>
-
-<!-- ======= KL Reference (Optional) ======= -->
-<section id="kl-ref" class="py-10">
-  <div class="max-w-7xl mx-auto px-6">
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h2 class="text-2xl font-bold">KL Divergence — Quick Reference</h2>
-      <div class="text-sm text-slate-700 leading-7 mt-2">
-        For general Gaussians $q=\mathcal{N}(\mu_q,\Sigma_q)$ and $p=\mathcal{N}(\mu_p,\Sigma_p)$ in $\mathbb{R}^d$:
-        $$D_{\mathrm{KL}}(q\,\|\,p)=\tfrac{1}{2}\left(
-          \log\frac{|\Sigma_p|}{|\Sigma_q|}
-          - d
-          + \mathrm{tr}\!\left(\Sigma_p^{-1}\Sigma_q\right)
-          + (\mu_p-\mu_q)^\top \Sigma_p^{-1} (\mu_p-\mu_q)
-        \right).$$
-        With $p=\mathcal{N}(0,I)$ and $\Sigma_q=\mathrm{diag}(\sigma^2)$, this reduces to the VAE formula above.
-      </div>
-    </article>
-  </div>
-</section>
-
-<!-- ======= Footer ======= -->
+<!-- Footer -->
 <footer class="py-10 bg-slate-900 text-slate-200">
   <div class="max-w-7xl mx-auto px-6">
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-      <p class="text-sm">© <span id="year"></span> Autoencoders Cheatsheet — Compact Visual & Math Reference</p>
-      <div class="text-xs text-slate-400">Tailwind • MathJax • Pure SVG • Responsive Design</div>
-    </div>
-    <div class="mt-4 pt-4 border-t border-slate-700 text-center text-xs text-slate-400">
-      Covers AE variants, VAE, ELBO, and KL with concise derivations and practical training guidance
+      <p class="text-sm">© <span id="year"></span> Autoencoders — Pedagogical Guide</p>
+      <div class="text-xs text-slate-400">MathJax • Tailwind • Pure SVG • No build step</div>
     </div>
   </div>
 </footer>
 
 <script>
-  // Footer year & smooth anchors
-  document.addEventListener('DOMContentLoaded', () => {
-    const y = document.getElementById('year'); 
-    if (y) y.textContent = new Date().getFullYear();
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        const t = document.querySelector(a.getAttribute('href'));
-        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+  // year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // smooth anchor + close mobile drawer after click
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const href = a.getAttribute('href'); if (!href || href === '#') return;
+      const t = document.querySelector(href); if (!t) return;  // avoid broken links
+      e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const drawer = document.getElementById('drawer');
+      if (drawer && !drawer.classList.contains('hidden')) drawer.classList.add('hidden');
     });
   });
+
+  // mobile drawer
+  const drawer = document.getElementById('drawer');
+  document.getElementById('openNav')?.addEventListener('click', ()=> drawer.classList.remove('hidden'));
+  document.getElementById('closeNav')?.addEventListener('click', ()=> drawer.classList.add('hidden'));
+  document.getElementById('drawerBackdrop')?.addEventListener('click', ()=> drawer.classList.add('hidden'));
+
+  // scroll spy (only mark links that exist in DOM)
+  const sections = [...document.querySelectorAll('main .section-head, #ae, #linear-pca, #expressivity, #geometry, #kl, #vae, #imputation, #outliers, #tricks, #matrix, #recipes, #appendix')];
+  const links = [...document.querySelectorAll('.toc a')];
+  const existing = new Set(sections.map(s => '#'+s.id));
+  links.forEach(a => { if(!existing.has(a.getAttribute('href'))) a.classList.add('line-through','text-slate-400'); });
+
+  const onScroll = () => {
+    let activeId = sections[0]?.id; const top = window.scrollY + 120;
+    for (const s of sections) if (s.offsetTop <= top) activeId = s.id;
+    links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#'+activeId));
+  };
+  document.addEventListener('scroll', onScroll, {passive:true}); onScroll();
 </script>
 
 </body>

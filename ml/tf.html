@@ -32,7 +32,255 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-
+   <style>
+        
+        .transformer-diagram {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 40px;
+            margin-top: 20px;
+        }
+        
+        .encoder, .decoder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .section-title {
+            color: #000000;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .block {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            min-height: 120px;
+        }
+        
+        .sub-blocks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        
+        .sub-block {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgb(255, 255, 255);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: rgba(0, 0, 0, 0.9);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .sub-block:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        .block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .block-title {
+            color: #000000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .block-desc {
+            color: #000000;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .attention {
+            background: #fce8e6;
+            border-color: #f5c2c7;
+        }
+        
+        .feedforward {
+            background: #e7f1ff;
+            border-color: #b6d7ff;
+        }
+        
+        .normalization {
+            background: #fff3cd;
+            border-color: #ffda6a;
+        }
+        
+        .embedding {
+            background: #e2f4fd;
+            border-color: #b3e0ff;
+        }
+        
+        .output {
+            background: #f8d7da;
+            border-color: #f1aeb5;
+        }
+        
+        .arrow {
+            position: absolute;
+            color: #000000;
+            font-size: 2rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        .cross-attention-arrow {
+            position: absolute;
+            top: 50%;
+            left: calc(50% - 20px);
+            transform: translateY(-50%);
+            width: 40px;
+            height: 2px;
+            background: #b19cd9;
+            border-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cross-attention-arrow::before {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: -5px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid #b19cd9;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+        
+        .stack-indicator {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: #6c757d;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .connection-line {
+            position: relative;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .connection-line::before {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: #dee2e6;
+            border-radius: 2px;
+        }
+        
+        .connection-line::after {
+            content: '▼';
+            color: #000000;
+            font-size: 1.2rem;
+        }
+        
+        .cross-connection {
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: 40px;
+            height: 2px;
+            background: #b19cd9;
+            transform: translateY(-50%);
+            border-radius: 2px;
+        }
+        
+        .cross-connection::after {
+            content: '▶';
+            position: absolute;
+            right: -15px;
+            top: -10px;
+            color: #b19cd9;
+            font-size: 1.2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .transformer-diagram {
+                flex-direction: column;
+                gap: 30px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+        
+        .info-panel {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .info-title {
+            color: #000000;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #a8d8ea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .info-item h4 {
+            color: #000000;
+            margin-bottom: 5px;
+        }
+        
+        .info-item p {
+            color: #000000;
+            font-size: 0.9rem;
+        }
+    </style>
     <style>
         :root {
             color-scheme: light;
@@ -275,6 +523,430 @@
         </div>
     </section>
 
+    <section>
+         
+            <div class="max-w-7xl mx-auto px-6">
+            <div class="bg-white rounded-2xl shadow p-6 border border-slate-200">
+
+        <h1>🤖 Transformer Architecture</h1>
+        
+        <div class="transformer-diagram">
+            <!-- Encoder Stack -->
+            <div class="encoder">
+                <div class="section-title">📥 ENCODER</div>
+                
+                <div class="block embedding">
+                    <div class="block-title">Input Embeddings + Positional Encoding</div>
+                    <div class="block-desc">Converts tokens to dense vectors and adds position information</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Token Embedding</div>
+                        <div class="sub-block">Sine/Cosine PE</div>
+                        <div class="sub-block">Learned PE</div>
+                        <div class="sub-block">Dropout</div>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block attention">
+                    <div class="stack-indicator">×N</div>
+                    <div class="block-title">Multi-Head Self-Attention</div>
+                    <div class="block-desc">Allows each position to attend to all positions in the input</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Q, K, V Linear</div>
+                        <div class="sub-block">Scaled Dot-Product</div>
+                        <div class="sub-block">Softmax</div>
+                        <div class="sub-block">Concat Heads</div>
+                        <div class="sub-block">Output Linear</div>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block normalization">
+                    <div class="block-title">Add & Normalize</div>
+                    <div class="block-desc">Residual connection + Layer normalization</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Residual (+)</div>
+                        <div class="sub-block">LayerNorm</div>
+                        <div class="sub-block">γ, β params</div>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block feedforward">
+                    <div class="block-title">Feed Forward Network</div>
+                    <div class="block-desc">Position-wise fully connected layers with ReLU activation</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Linear (d_model → d_ff)</div>
+                        <div class="sub-block">ReLU/GELU</div>
+                        <div class="sub-block">Dropout</div>
+                        <div class="sub-block">Linear (d_ff → d_model)</div>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block normalization">
+                    <div class="block-title">Add & Normalize</div>
+                    <div class="block-desc">Residual connection + Layer normalization</div>
+                </div>
+            </div>
+            
+            <!-- Cross-Connection Arrow -->
+            <div style="position: relative; display: flex; align-items: center; margin-top: 200px;">
+                <div class="arrow">➡️</div>
+            </div>
+            
+            <!-- Decoder Stack -->
+            <div class="decoder">
+                <div class="section-title">📤 DECODER</div>
+                
+                <div class="block embedding">
+                    <div class="block-title">Output Embeddings + Positional Encoding</div>
+                    <div class="block-desc">Target sequence embeddings with position encoding</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Token Embedding</div>
+                        <div class="sub-block">Positional Encoding</div>
+                        <div class="sub-block">Dropout</div>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block attention">
+                    <div class="stack-indicator">×N</div>
+                    <div class="block-title">Masked Multi-Head Self-Attention</div>
+                    <div class="block-desc">Prevents attention to future positions during training</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Q, K, V Linear</div>
+                        <div class="sub-block">Causal Mask</div>
+                        <div class="sub-block">Scaled Dot-Product</div>
+                        <div class="sub-block">Softmax</div>
+                        <div class="sub-block">Output Linear</div>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block normalization">
+                    <div class="block-title">Add & Normalize</div>
+                    <div class="block-desc">Residual connection + Layer normalization</div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block attention" style="background: #f3e8ff; border-color: #d8b4fe;">
+                    <div class="block-title">Multi-Head Cross-Attention</div>
+                    <div class="block-desc">Attends to encoder output (K,V) using decoder queries (Q)</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Q from Decoder</div>
+                        <div class="sub-block">K, V from Encoder</div>
+                        <div class="sub-block">Scaled Dot-Product</div>
+                        <div class="sub-block">Softmax</div>
+                        <div class="sub-block">Output Linear</div>
+                    </div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block normalization">
+                    <div class="block-title">Add & Normalize</div>
+                    <div class="block-desc">Residual connection + Layer normalization</div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block feedforward">
+                    <div class="block-title">Feed Forward Network</div>
+                    <div class="block-desc">Position-wise fully connected layers</div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block normalization">
+                    <div class="block-title">Add & Normalize</div>
+                    <div class="block-desc">Residual connection + Layer normalization</div>
+                </div>
+                
+                <div class="connection-line"></div>
+                
+                <div class="block output">
+                    <div class="block-title">Linear + Softmax</div>
+                    <div class="block-desc">Projects to vocabulary size and applies softmax for probabilities</div>
+                    <div class="sub-blocks">
+                        <div class="sub-block">Linear (d_model → vocab_size)</div>
+                        <div class="sub-block">Softmax</div>
+                        <div class="sub-block">Probability Distribution</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-title">🔍 Key Components Explained</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <h4>Multi-Head Attention</h4>
+                    <p>Parallel attention mechanisms that capture different types of relationships</p>
+                </div>
+                <div class="info-item">
+                    <h4>Positional Encoding</h4>
+                    <p>Sine/cosine patterns that inject sequence position information</p>
+                </div>
+                <div class="info-item">
+                    <h4>Layer Normalization</h4>
+                    <p>Stabilizes training by normalizing inputs across features</p>
+                </div>
+                <div class="info-item">
+                    <h4>Residual Connections</h4>
+                    <p>Skip connections that help with gradient flow in deep networks</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive hover effects
+        document.querySelectorAll('.block').forEach(block => {
+            block.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px) scale(1.02)';
+                this.style.zIndex = '10';
+            });
+            
+            block.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+                this.style.zIndex = '1';
+            });
+        });
+
+        // Add click interactions with detailed explanations
+        const detailedInfo = {
+            'Input Embeddings + Positional Encoding': {
+                description: 'Converts discrete tokens into continuous vector representations and adds positional information to enable the model to understand sequence order.',
+                components: [
+                    'Token Embedding: Maps each token to a d_model dimensional vector using learned embedding matrix E',
+                    'Positional Encoding: PE(pos,2i) = sin(pos/10000^(2i/d_model)), PE(pos,2i+1) = cos(pos/10000^(2i/d_model))',
+                    'Learned PE: Alternative learnable position embeddings',
+                    'Dropout: Applied to sum of embeddings and positional encodings'
+                ],
+                formula: 'output = Embedding(x) + PositionalEncoding(pos)',
+                purpose: 'Provides semantic and positional context for each token in the sequence'
+            },
+            'Multi-Head Self-Attention': {
+                description: 'Allows each position to attend to all positions in the input sequence through multiple parallel attention heads.',
+                components: [
+                    'Q, K, V Linear: Three linear projections W_Q, W_K, W_V to create queries, keys, values',
+                    'Scaled Dot-Product: Attention(Q,K,V) = softmax(QK^T/√d_k)V',
+                    'Softmax: Normalizes attention scores to probabilities',
+                    'Concat Heads: Concatenate outputs from h parallel attention heads',
+                    'Output Linear: Final linear projection W_O to combine multi-head outputs'
+                ],
+                formula: 'MultiHead(Q,K,V) = Concat(head_1,...,head_h)W_O where head_i = Attention(QW_Q^i, KW_K^i, VW_V^i)',
+                purpose: 'Captures different types of relationships and dependencies in parallel'
+            },
+            'Masked Multi-Head Self-Attention': {
+                description: 'Self-attention with causal masking to prevent attention to future positions during training.',
+                components: [
+                    'Q, K, V Linear: Same as regular attention but for decoder input',
+                    'Causal Mask: Lower triangular mask to hide future tokens',
+                    'Scaled Dot-Product: Same computation but with masking applied',
+                    'Softmax: Applied after masking (masked positions → -∞ → 0 after softmax)',
+                    'Output Linear: Final projection after attention computation'
+                ],
+                formula: 'Attention(Q,K,V) = softmax((QK^T + M)/√d_k)V where M is causal mask',
+                purpose: 'Maintains autoregressive property during training and generation'
+            },
+            'Multi-Head Cross-Attention': {
+                description: 'Attention mechanism where decoder queries attend to encoder key-value pairs.',
+                components: [
+                    'Q from Decoder: Queries computed from decoder hidden states',
+                    'K, V from Encoder: Keys and values from final encoder layer output',
+                    'Scaled Dot-Product: Standard attention computation between decoder and encoder',
+                    'Softmax: Normalizes attention over encoder positions',
+                    'Output Linear: Projects concatenated multi-head output'
+                ],
+                formula: 'CrossAttention: Q_decoder attends to K_encoder, V_encoder',
+                purpose: 'Allows decoder to focus on relevant parts of the input sequence'
+            },
+            'Add & Normalize': {
+                description: 'Residual connections combined with layer normalization for stable training.',
+                components: [
+                    'Residual (+): Element-wise addition of input and sublayer output',
+                    'LayerNorm: Normalizes across the feature dimension',
+                    'γ, β params: Learnable scale and shift parameters'
+                ],
+                formula: 'LayerNorm(x + Sublayer(x)) where LayerNorm(x) = γ * (x-μ)/σ + β',
+                purpose: 'Stabilizes training, enables gradient flow, and reduces internal covariate shift'
+            },
+            'Feed Forward Network': {
+                description: 'Position-wise fully connected feed-forward network applied to each position separately.',
+                components: [
+                    'Linear (d_model → d_ff): First linear transformation, typically d_ff = 4 * d_model',
+                    'ReLU/GELU: Non-linear activation function (ReLU or GELU)',
+                    'Dropout: Regularization applied after activation',
+                    'Linear (d_ff → d_model): Second linear transformation back to model dimension'
+                ],
+                formula: 'FFN(x) = max(0, xW_1 + b_1)W_2 + b_2 or GELU(xW_1 + b_1)W_2 + b_2',
+                purpose: 'Adds non-linearity and increases model capacity for complex transformations'
+            },
+            'Output Embeddings + Positional Encoding': {
+                description: 'Same as input embeddings but for the target sequence in decoder.',
+                components: [
+                    'Token Embedding: Same embedding matrix as encoder (usually shared)',
+                    'Positional Encoding: Same positional encoding scheme',
+                    'Dropout: Applied to sum of embeddings'
+                ],
+                formula: 'Same as input: Embedding(x) + PositionalEncoding(pos)',
+                purpose: 'Provides semantic and positional context for target sequence tokens'
+            },
+            'Linear + Softmax': {
+                description: 'Final output layer that projects to vocabulary size and produces probability distribution.',
+                components: [
+                    'Linear (d_model → vocab_size): Projects hidden states to vocabulary logits',
+                    'Softmax: Converts logits to probability distribution',
+                    'Probability Distribution: Final probabilities over vocabulary for next token'
+                ],
+                formula: 'P(w) = softmax(h * W_vocab + b_vocab) where h is final hidden state',
+                purpose: 'Generates probability distribution over vocabulary for next token prediction'
+            }
+        };
+
+        document.querySelectorAll('.block').forEach(block => {
+            block.addEventListener('click', function() {
+                const title = this.querySelector('.block-title').textContent;
+                const info = detailedInfo[title];
+                
+                if (!info) return;
+                
+                // Create detailed modal
+                const existingModal = document.querySelector('.detailed-modal');
+                if (existingModal) existingModal.remove();
+                
+                const modal = document.createElement('div');
+                modal.className = 'detailed-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: #ffffff;
+                    color: #000000;
+                    padding: 40px;
+                    border-radius: 20px;
+                    max-width: 800px;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    z-index: 1000;
+                    border: 2px solid #e9ecef;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+                `;
+                
+                let componentsHtml = info.components.map(comp => 
+                    `<li style="margin-bottom: 10px; line-height: 1.5;">${comp}</li>`
+                ).join('');
+                
+                modal.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <h2 style="color: #000000; font-size: 1.8rem; margin: 0; font-weight: bold;">${title}</h2>
+                        <button onclick="this.closest('.detailed-modal').remove()" style="
+                            background: #f7fafc;
+                            border: 1px solid #e2e8f0;
+                            color: #000000;
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 50%;
+                            cursor: pointer;
+                            font-size: 18px;
+                            font-weight: bold;
+                        ">×</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 25px;">
+                        <h3 style="color: #000000; margin-bottom: 10px; font-weight: bold;">📝 Description</h3>
+                        <p style="line-height: 1.6; color: #000000;">${info.description}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 25px;">
+                        <h3 style="color: #000000; margin-bottom: 15px; font-weight: bold;">🔧 Sub-Components</h3>
+                        <ul style="padding-left: 20px; color: #000000;">
+                            ${componentsHtml}
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-bottom: 25px;">
+                        <h3 style="color: #000000; margin-bottom: 10px; font-weight: bold;">📐 Mathematical Formula</h3>
+                        <div style="
+                            background: #f7fafc;
+                            padding: 15px;
+                            border-radius: 10px;
+                            font-family: 'Courier New', monospace;
+                            color: #000000;
+                            border-left: 4px solid #319795;
+                            border: 1px solid #e2e8f0;
+                        ">${info.formula}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #000000; margin-bottom: 10px; font-weight: bold;">🎯 Purpose</h3>
+                        <p style="line-height: 1.6; color: #000000;">${info.purpose}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button onclick="this.closest('.detailed-modal').remove()" style="
+                            background: #5a67d8;
+                            border: none;
+                            color: white;
+                            padding: 12px 24px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            font-weight: bold;
+                            font-size: 16px;
+                        ">Got it! 👍</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Add backdrop
+                const backdrop = document.createElement('div');
+                backdrop.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.7);
+                    z-index: 999;
+                `;
+                backdrop.onclick = () => {
+                    modal.remove();
+                    backdrop.remove();
+                };
+                document.body.appendChild(backdrop);
+                
+                // Auto-close after 30 seconds
+                setTimeout(() => {
+                    if (modal.parentElement) {
+                        modal.remove();
+                        backdrop.remove();
+                    }
+                }, 30000);
+            });
+        });
+
+        // Add floating animation to arrows
+        setInterval(() => {
+            document.querySelectorAll('.arrow').forEach(arrow => {
+                arrow.style.transform = 'translate(-50%, -50%) scale(1.1)';
+                setTimeout(() => {
+                    arrow.style.transform = 'translate(-50%, -50%) scale(1)';
+                }, 500);
+            });
+        }, 2000);
+    </script>
+    </section>
     <!-- Self-Attention Interactive -->
     <section id="attention" class="py-12 bg-slate-50">
         <div class="max-w-7xl mx-auto px-6">
@@ -397,55 +1069,1568 @@
                 </div>
             </div>
         </div>
+    </div>
     </section>
 
     <!-- Positional Encoding -->
     <section id="posenc" class="py-12">
-        <div class="max-w-7xl mx-auto px-6">
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">Positional Encoding</h2>
-            <p class="mt-2 text-slate-600 max-w-3xl">
-                Because attention is permutation-invariant, we inject order information. The classic choice uses
-                sinusoids with different frequencies; other popular options include learned absolute embeddings and
-                relative position encodings (e.g., RoPE).
-            </p>
+         <div x-data="positionalEncodingTool()" x-init="init()" class="container mx-auto px-4 py-8 max-w-7xl">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">Positional Encoding Deep Dive</h1>
+        <p class="text-gray-600 mb-8 max-w-4xl">
+            Explore how positional encodings inject sequence order information into transformer models. 
+            Understand sinusoidal patterns, frequency decomposition, relative position effects, and RoPE.
+        </p>
 
-            <div class="mt-6 grid lg:grid-cols-2 gap-6">
-                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-                    <h3 class="text-xl font-semibold">Sinusoidal (Absolute)</h3>
-                    <div class="mt-3 text-sm leading-7 text-slate-700">
-                        <p class="whitespace-nowrap overflow-x-auto">
-                            $$\mathrm{PE}_{(pos,\,2i)}=\sin\!\left(\frac{pos}{10000^{2i/d}}\right),\quad
-                            \mathrm{PE}_{(pos,\,2i+1)}=\cos\!\left(\frac{pos}{10000^{2i/d}}\right).$$
-                        </p>
-                        <p>Add to token embeddings: \( X' = X + \mathrm{PE} \).</p>
-                    </div>
-                    <canvas id="posines" height="200" class="mt-4"></canvas>
-                    <p class="hint mt-2">We plot a few PE dimensions vs. position.</p>
-                </article>
-
-                <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow">
-                    <h3 class="text-xl font-semibold">Relative / Rotary (RoPE)</h3>
-                    <p class="mt-3 text-sm leading-7 text-slate-700">
-                        Relative encodings inject distance-aware bias or rotations so that attention depends on token
-                        offsets. RoPE rotates query/key pairs in each head so dot products carry relative phase:
-                    </p>
-                    <p class="whitespace-nowrap overflow-x-auto">
-                        $$\tilde{q}=\mathcal{R}_\theta q,\;\tilde{k}=\mathcal{R}_\theta k,\quad
-                        \langle \tilde{q}_i,\tilde{k}_j\rangle \approx \langle q_i, k_j\rangle\text{ with relative phase
-                        }(i-j).$$
-                    </p>
-                    <p class="text-sm text-slate-700">Effect: better extrapolation to long contexts and stable inductive
-                        biases for order.</p>
-                    <canvas id="tempSoftmax" height="200" class="mt-4"></canvas>
-                    <p class="hint mt-2">Softmax with different temperatures (a stand-in for sharpening from
-                        scaling/rotations).</p>
-                </article>
+        <!-- Controls -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Parameters</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sequence Length</label>
+                    <input type="range" min="8" max="64" x-model.number="seqLen" @input="updateAll()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="seqLen"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Model Dimension</label>
+                    <input type="range" min="8" max="128" step="8" x-model.number="dModel" @input="updateAll()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="dModel"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Base Frequency</label>
+                    <input type="range" min="100" max="50000" step="100" x-model.number="baseFreq" @input="updateAll()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="baseFreq"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Position Offset (k)</label>
+                    <input type="range" min="-10" max="10" x-model.number="posOffset" @input="updateRelative()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="posOffset"></span>
+                </div>
             </div>
         </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 1. 2D Heatmap -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">2D Positional Encoding Heatmap</h2>
+                <p class="text-gray-600 mb-4 text-sm">
+                    Each cell shows PE(pos, dim). Blue = positive values, Red = negative values.
+                    $PE_{(pos,2i)} = \sin(pos/10000^{2i/d})$, $PE_{(pos,2i+1)} = \cos(pos/10000^{2i/d})$
+                </p>
+                <div class="relative">
+                    <svg id="heatmap" class="border rounded-lg w-full" style="height: 400px;"></svg>
+                    <div class="mt-2 text-xs text-gray-500">
+                        X-axis: Dimension index | Y-axis: Position in sequence
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Frequency Decomposition -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Frequency Decomposition</h2>
+                <p class="text-gray-600 mb-4 text-sm">
+                    Different dimensions capture different frequency scales. Lower dimensions = higher frequency.
+                </p>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Selected Position</label>
+                    <input type="range" min="0" :max="seqLen-1" x-model.number="selectedPos" @input="updateFrequency()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="`Position ${selectedPos}`"></span>
+                </div>
+                <canvas id="frequencyChart" class="w-full" style="height: 300px;"></canvas>
+            </div>
+
+            <!-- 3. Relative Position Calculator -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Relative Position Effects</h2>
+                <p class="text-gray-600 mb-4 text-sm">
+                    Shows $PE(pos+k) - PE(pos)$ for different offsets k. This reveals how position differences are encoded.
+                </p>
+                <div class="mb-4 grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reference Position</label>
+                        <input type="range" min="0" :max="seqLen-10" x-model.number="refPos" @input="updateRelative()" 
+                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <span class="text-sm text-gray-500" x-text="refPos"></span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Show First N Dims</label>
+                        <input type="range" min="4" max="32" step="4" x-model.number="showDims" @input="updateRelative()" 
+                               class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <span class="text-sm text-gray-500" x-text="showDims"></span>
+                    </div>
+                </div>
+                <canvas id="relativeChart" class="w-full" style="height: 300px;"></canvas>
+            </div>
+
+            <!-- 4. RoPE vs Sinusoidal -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">RoPE vs Sinusoidal Comparison</h2>
+                <p class="text-gray-600 mb-4 text-sm">
+                    RoPE rotates query/key vectors while sinusoidal adds position. Both encode relative positions differently.
+                </p>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Rotation Angle (RoPE)</label>
+                    <input type="range" min="0" max="6.28" step="0.1" x-model.number="ropeAngle" @input="updateRoPE()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="`${(ropeAngle * 180 / Math.PI).toFixed(1)}°`"></span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">Sinusoidal Addition</h3>
+                        <svg id="sinusoidalViz" class="border rounded w-full" style="height: 200px;"></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">RoPE Rotation</h3>
+                        <svg id="ropeViz" class="border rounded w-full" style="height: 200px;"></svg>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <strong>Key insight:</strong> RoPE preserves relative position information through rotation, 
+                        while sinusoidal encoding adds absolute position that can be learned to extract relative information.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mathematical Formulas -->
+        <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Mathematical Formulations</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Sinusoidal Positional Encoding</h3>
+                    <div class="text-sm">
+                        $$PE_{(pos,2i)} = \sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
+                        $$PE_{(pos,2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
+                        <p class="mt-2 text-gray-600">Where $pos$ is position, $i$ is dimension index, $d_{model}$ is embedding dimension.</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">RoPE (Rotary Position Embedding)</h3>
+                    <div class="text-sm">
+                        $$f(x_m, m) = \begin{pmatrix} \cos(m\theta) & -\sin(m\theta) \\ \sin(m\theta) & \cos(m\theta) \end{pmatrix} \begin{pmatrix} x_m^{(1)} \\ x_m^{(2)} \end{pmatrix}$$
+                        <p class="mt-2 text-gray-600">Where $m$ is position, $\theta = 10000^{-2i/d}$, and rotation is applied to query/key pairs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function positionalEncodingTool() {
+            return {
+                // Parameters
+                seqLen: 32,
+                dModel: 64,
+                baseFreq: 10000,
+                posOffset: 3,
+                selectedPos: 16,
+                refPos: 10,
+                showDims: 16,
+                ropeAngle: 1.57, // π/2
+                
+                // Charts
+                frequencyChart: null,
+                relativeChart: null,
+                
+                init() {
+                    this.updateAll();
+                    setTimeout(() => {
+                        if (window.MathJax) {
+                            MathJax.typesetPromise();
+                        }
+                    }, 100);
+                },
+                
+                // Sinusoidal PE calculation
+                calculatePE(pos, dim) {
+                    const i = Math.floor(dim / 2);
+                    const denominator = Math.pow(this.baseFreq, (2 * i) / this.dModel);
+                    const angle = pos / denominator;
+                    
+                    if (dim % 2 === 0) {
+                        return Math.sin(angle); // Even dimensions use sine
+                    } else {
+                        return Math.cos(angle); // Odd dimensions use cosine
+                    }
+                },
+                
+                // Update all visualizations
+                updateAll() {
+                    this.updateHeatmap();
+                    this.updateFrequency();
+                    this.updateRelative();
+                    this.updateRoPE();
+                },
+                
+                // 1. Update heatmap
+                updateHeatmap() {
+                    const svg = document.getElementById('heatmap');
+                    if (!svg) return;
+                    
+                    svg.innerHTML = '';
+                    
+                    const margin = { top: 40, right: 60, bottom: 60, left: 60 };
+                    const width = svg.clientWidth - margin.left - margin.right;
+                    const height = 400 - margin.top - margin.bottom;
+                    
+                    const cellWidth = width / this.dModel;
+                    const cellHeight = height / this.seqLen;
+                    
+                    // Create main group
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+                    svg.appendChild(g);
+                    
+                    // Color scale
+                    const getColor = (value) => {
+                        const intensity = Math.abs(value);
+                        if (value > 0) {
+                            return `rgb(${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 255)`;
+                        } else {
+                            return `rgb(255, ${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))})`;
+                        }
+                    };
+                    
+                    // Draw cells
+                    for (let pos = 0; pos < this.seqLen; pos++) {
+                        for (let dim = 0; dim < this.dModel; dim++) {
+                            const value = this.calculatePE(pos, dim);
+                            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            rect.setAttribute('x', dim * cellWidth);
+                            rect.setAttribute('y', pos * cellHeight);
+                            rect.setAttribute('width', cellWidth - 0.5);
+                            rect.setAttribute('height', cellHeight - 0.5);
+                            rect.setAttribute('fill', getColor(value));
+                            rect.setAttribute('class', 'heatmap-cell');
+                            rect.setAttribute('stroke', '#e5e7eb');
+                            rect.setAttribute('stroke-width', '0.5');
+                            
+                            // Add tooltip
+                            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                            title.textContent = `pos=${pos}, dim=${dim}, value=${value.toFixed(3)}`;
+                            rect.appendChild(title);
+                            
+                            g.appendChild(rect);
+                        }
+                    }
+                    
+                    // Add axes labels
+                    const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    xLabel.setAttribute('x', width / 2);
+                    xLabel.setAttribute('y', height + 45);
+                    xLabel.setAttribute('text-anchor', 'middle');
+                    xLabel.setAttribute('class', 'text-sm fill-gray-600');
+                    xLabel.textContent = 'Dimension Index';
+                    g.appendChild(xLabel);
+                    
+                    const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    yLabel.setAttribute('x', -height / 2);
+                    yLabel.setAttribute('y', -35);
+                    yLabel.setAttribute('text-anchor', 'middle');
+                    yLabel.setAttribute('transform', `rotate(-90, ${-height / 2}, -35)`);
+                    yLabel.setAttribute('class', 'text-sm fill-gray-600');
+                    yLabel.textContent = 'Position';
+                    g.appendChild(yLabel);
+                    
+                    // Add colorbar legend
+                    const legendG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    legendG.setAttribute('transform', `translate(${width + 20}, 0)`);
+                    g.appendChild(legendG);
+                    
+                    const legendHeight = 100;
+                    const legendWidth = 20;
+                    for (let i = 0; i < legendHeight; i++) {
+                        const value = (i / legendHeight) * 2 - 1; // -1 to 1
+                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        rect.setAttribute('x', 0);
+                        rect.setAttribute('y', legendHeight - i);
+                        rect.setAttribute('width', legendWidth);
+                        rect.setAttribute('height', 1);
+                        rect.setAttribute('fill', getColor(value));
+                        legendG.appendChild(rect);
+                    }
+                    
+                    // Legend labels
+                    [-1, 0, 1].forEach((val, i) => {
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', legendWidth + 5);
+                        text.setAttribute('y', legendHeight - (i * legendHeight / 2) + 4);
+                        text.setAttribute('class', 'text-xs fill-gray-600');
+                        text.textContent = val.toString();
+                        legendG.appendChild(text);
+                    });
+                },
+                
+                // 2. Update frequency chart
+                updateFrequency() {
+                    const ctx = document.getElementById('frequencyChart');
+                    if (!ctx) return;
+                    
+                    if (this.frequencyChart) {
+                        this.frequencyChart.destroy();
+                    }
+                    
+                    const frequencies = [];
+                    const sineValues = [];
+                    const cosineValues = [];
+                    const labels = [];
+                    
+                    // Show both sine and cosine components
+                    for (let dim = 0; dim < Math.min(this.dModel, 16); dim += 2) {
+                        const i = Math.floor(dim / 2);
+                        const freq = 1 / Math.pow(this.baseFreq, (2 * i) / this.dModel);
+                        const sineValue = this.calculatePE(this.selectedPos, dim);
+                        const cosineValue = this.calculatePE(this.selectedPos, dim + 1);
+                        
+                        frequencies.push(freq);
+                        sineValues.push(sineValue);
+                        cosineValues.push(cosineValue);
+                        labels.push(`${dim}/${dim+1}`);
+                    }
+                    
+                    this.frequencyChart = new Chart(ctx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Sine (even dims)',
+                                    data: sineValues,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                                    borderColor: 'rgba(59, 130, 246, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Cosine (odd dims)',
+                                    data: cosineValues,
+                                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                                    borderColor: 'rgba(239, 68, 68, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    min: -1,
+                                    max: 1,
+                                    title: {
+                                        display: true,
+                                        text: 'PE Value'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Dimension Pairs'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        afterLabel: (context) => {
+                                            const dimPair = context.dataIndex * 2;
+                                            const i = Math.floor(dimPair / 2);
+                                            const freq = 1 / Math.pow(this.baseFreq, (2 * i) / this.dModel);
+                                            return [`Frequency: ${freq.toExponential(2)}`, `Wavelength: ${(1/freq).toFixed(1)} positions`];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                // 3. Update relative position chart
+                updateRelative() {
+                    const ctx = document.getElementById('relativeChart');
+                    if (!ctx) return;
+                    
+                    if (this.relativeChart) {
+                        this.relativeChart.destroy();
+                    }
+                    
+                    const datasets = [];
+                    const offsets = [];
+                    for (let k = -10; k <= 10; k++) {
+                        offsets.push(k);
+                    }
+                    
+                    // Show multiple dimensions with better distribution
+                    const colors = [
+                        '#3b82f6',  // blue
+                        '#ef4444',  // red  
+                        '#10b981',  // emerald
+                        '#f59e0b',  // amber
+                        '#8b5cf6',  // violet
+                        '#ec4899',  // pink
+                        '#06b6d4',  // cyan
+                        '#84cc16'   // lime
+                    ];
+                    
+                    const dimsToShow = Math.min(this.showDims, 8);
+                    const dimStep = Math.max(1, Math.floor(this.showDims / dimsToShow));
+                    
+                    for (let i = 0; i < dimsToShow; i++) {
+                        const dim = i * dimStep;
+                        if (dim >= this.dModel) break;
+                        
+                        const differences = offsets.map(k => {
+                            const targetPos = this.refPos + k;
+                            if (targetPos < 0 || targetPos >= this.seqLen) {
+                                return null; // Out of bounds
+                            }
+                            const refPE = this.calculatePE(this.refPos, dim);
+                            const offsetPE = this.calculatePE(targetPos, dim);
+                            return offsetPE - refPE;
+                        });
+                        
+                        datasets.push({
+                            label: `Dim ${dim} (${dim % 2 === 0 ? 'sin' : 'cos'})`,
+                            data: differences,
+                            borderColor: colors[i % colors.length],
+                            backgroundColor: colors[i % colors.length] + '20',
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            spanGaps: false // Don't connect null values
+                        });
+                    }
+                    
+                    this.relativeChart = new Chart(ctx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: offsets,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Position Offset (k)'
+                                    },
+                                    grid: {
+                                        display: true
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'PE(pos+k) - PE(pos)'
+                                    },
+                                    grid: {
+                                        display: true
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        title: (context) => {
+                                            const offset = context[0].label;
+                                            const targetPos = this.refPos + parseInt(offset);
+                                            return `Offset: ${offset}, Target pos: ${targetPos}`;
+                                        },
+                                        afterBody: () => {
+                                            return `Reference position: ${this.refPos}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                // 4. Update RoPE visualization
+                updateRoPE() {
+                    this.updateSinusoidalViz();
+                    this.updateRoPEViz();
+                },
+                
+                updateSinusoidalViz() {
+                    const svg = document.getElementById('sinusoidalViz');
+                    if (!svg) return;
+                    
+                    svg.innerHTML = '';
+                    
+                    const width = svg.clientWidth;
+                    const height = 200;
+                    const centerX = width / 2;
+                    const centerY = height / 2;
+                    const radius = Math.min(width, height) * 0.3;
+                    
+                    // Draw coordinate system
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    svg.appendChild(g);
+                    
+                    // Axes
+                    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    xAxis.setAttribute('x1', centerX - radius * 1.2);
+                    xAxis.setAttribute('x2', centerX + radius * 1.2);
+                    xAxis.setAttribute('y1', centerY);
+                    xAxis.setAttribute('y2', centerY);
+                    xAxis.setAttribute('stroke', '#e5e7eb');
+                    xAxis.setAttribute('stroke-width', '1');
+                    g.appendChild(xAxis);
+                    
+                    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    yAxis.setAttribute('x1', centerX);
+                    yAxis.setAttribute('x2', centerX);
+                    yAxis.setAttribute('y1', centerY - radius * 1.2);
+                    yAxis.setAttribute('y2', centerY + radius * 1.2);
+                    yAxis.setAttribute('stroke', '#e5e7eb');
+                    yAxis.setAttribute('stroke-width', '1');
+                    g.appendChild(yAxis);
+                    
+                    // Unit circle
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', centerX);
+                    circle.setAttribute('cy', centerY);
+                    circle.setAttribute('r', radius);
+                    circle.setAttribute('fill', 'none');
+                    circle.setAttribute('stroke', '#d1d5db');
+                    circle.setAttribute('stroke-width', '1');
+                    g.appendChild(circle);
+                    
+                    // Original vector (embedding)
+                    const origX = centerX + radius * 0.7;
+                    const origY = centerY - radius * 0.5;
+                    const origLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    origLine.setAttribute('x1', centerX);
+                    origLine.setAttribute('x2', origX);
+                    origLine.setAttribute('y1', centerY);
+                    origLine.setAttribute('y2', origY);
+                    origLine.setAttribute('stroke', '#6b7280');
+                    origLine.setAttribute('stroke-width', '2');
+                    origLine.setAttribute('marker-end', 'url(#arrowhead)');
+                    g.appendChild(origLine);
+                    
+                    // Position encoding vector
+                    const peX = centerX + radius * 0.5 * Math.cos(this.ropeAngle);
+                    const peY = centerY - radius * 0.5 * Math.sin(this.ropeAngle);
+                    const peLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    peLine.setAttribute('x1', centerX);
+                    peLine.setAttribute('x2', peX);
+                    peLine.setAttribute('y1', centerY);
+                    peLine.setAttribute('y2', peY);
+                    peLine.setAttribute('stroke', '#3b82f6');
+                    peLine.setAttribute('stroke-width', '2');
+                    peLine.setAttribute('marker-end', 'url(#arrowhead)');
+                    g.appendChild(peLine);
+                    
+                    // Sum vector (embedding + PE)
+                    const sumX = origX + (peX - centerX);
+                    const sumY = origY + (peY - centerY);
+                    const sumLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    sumLine.setAttribute('x1', centerX);
+                    sumLine.setAttribute('x2', sumX);
+                    sumLine.setAttribute('y1', centerY);
+                    sumLine.setAttribute('y2', sumY);
+                    sumLine.setAttribute('stroke', '#10b981');
+                    sumLine.setAttribute('stroke-width', '3');
+                    sumLine.setAttribute('marker-end', 'url(#arrowhead)');
+                    g.appendChild(sumLine);
+                    
+                    // Add arrowhead marker
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                    marker.setAttribute('id', 'arrowhead');
+                    marker.setAttribute('markerWidth', '10');
+                    marker.setAttribute('markerHeight', '7');
+                    marker.setAttribute('refX', '9');
+                    marker.setAttribute('refY', '3.5');
+                    marker.setAttribute('orient', 'auto');
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+                    polygon.setAttribute('fill', 'currentColor');
+                    marker.appendChild(polygon);
+                    defs.appendChild(marker);
+                    svg.appendChild(defs);
+                    
+                    // Labels
+                    const labels = [
+                        { x: origX + 10, y: origY, text: 'Embedding', color: '#6b7280' },
+                        { x: peX + 10, y: peY, text: 'PE', color: '#3b82f6' },
+                        { x: sumX + 10, y: sumY, text: 'Sum', color: '#10b981' }
+                    ];
+                    
+                    labels.forEach(label => {
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', label.x);
+                        text.setAttribute('y', label.y);
+                        text.setAttribute('class', 'text-xs');
+                        text.setAttribute('fill', label.color);
+                        text.textContent = label.text;
+                        g.appendChild(text);
+                    });
+                },
+                
+                updateRoPEViz() {
+                    const svg = document.getElementById('ropeViz');
+                    if (!svg) return;
+                    
+                    svg.innerHTML = '';
+                    
+                    const width = svg.clientWidth;
+                    const height = 200;
+                    const centerX = width / 2;
+                    const centerY = height / 2;
+                    const radius = Math.min(width, height) * 0.3;
+                    
+                    // Draw coordinate system
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    svg.appendChild(g);
+                    
+                    // Axes
+                    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    xAxis.setAttribute('x1', centerX - radius * 1.2);
+                    xAxis.setAttribute('x2', centerX + radius * 1.2);
+                    xAxis.setAttribute('y1', centerY);
+                    xAxis.setAttribute('y2', centerY);
+                    xAxis.setAttribute('stroke', '#e5e7eb');
+                    xAxis.setAttribute('stroke-width', '1');
+                    g.appendChild(xAxis);
+                    
+                    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    yAxis.setAttribute('x1', centerX);
+                    yAxis.setAttribute('x2', centerX);
+                    yAxis.setAttribute('y1', centerY - radius * 1.2);
+                    yAxis.setAttribute('y2', centerY + radius * 1.2);
+                    yAxis.setAttribute('stroke', '#e5e7eb');
+                    yAxis.setAttribute('stroke-width', '1');
+                    g.appendChild(yAxis);
+                    
+                    // Unit circle
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', centerX);
+                    circle.setAttribute('cy', centerY);
+                    circle.setAttribute('r', radius);
+                    circle.setAttribute('fill', 'none');
+                    circle.setAttribute('stroke', '#d1d5db');
+                    circle.setAttribute('stroke-width', '1');
+                    g.appendChild(circle);
+                    
+                    // Original vector
+                    const origAngle = Math.PI / 4; // 45 degrees
+                    const origX = centerX + radius * 0.8 * Math.cos(origAngle);
+                    const origY = centerY - radius * 0.8 * Math.sin(origAngle);
+                    const origLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    origLine.setAttribute('x1', centerX);
+                    origLine.setAttribute('x2', origX);
+                    origLine.setAttribute('y1', centerY);
+                    origLine.setAttribute('y2', origY);
+                    origLine.setAttribute('stroke', '#6b7280');
+                    origLine.setAttribute('stroke-width', '2');
+                    origLine.setAttribute('stroke-dasharray', '4,2');
+                    origLine.setAttribute('marker-end', 'url(#arrowhead2)');
+                    g.appendChild(origLine);
+                    
+                    // Rotated vector
+                    const rotatedAngle = origAngle + this.ropeAngle;
+                    const rotX = centerX + radius * 0.8 * Math.cos(rotatedAngle);
+                    const rotY = centerY - radius * 0.8 * Math.sin(rotatedAngle);
+                    const rotLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    rotLine.setAttribute('x1', centerX);
+                    rotLine.setAttribute('x2', rotX);
+                    rotLine.setAttribute('y1', centerY);
+                    rotLine.setAttribute('y2', rotY);
+                    rotLine.setAttribute('stroke', '#ef4444');
+                    rotLine.setAttribute('stroke-width', '3');
+                    rotLine.setAttribute('marker-end', 'url(#arrowhead2)');
+                    rotLine.setAttribute('class', 'rope-vector');
+                    g.appendChild(rotLine);
+                    
+                    // Rotation arc
+                    const arcRadius = radius * 0.4;
+                    const startAngle = origAngle;
+                    const endAngle = rotatedAngle;
+                    const startX = centerX + arcRadius * Math.cos(startAngle);
+                    const startY = centerY - arcRadius * Math.sin(startAngle);
+                    const endX = centerX + arcRadius * Math.cos(endAngle);
+                    const endY = centerY - arcRadius * Math.sin(endAngle);
+                    
+                    const largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+                    const sweepFlag = endAngle > startAngle ? 1 : 0;
+                    
+                    const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    arc.setAttribute('d', `M ${startX} ${startY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`);
+                    arc.setAttribute('stroke', '#8b5cf6');
+                    arc.setAttribute('stroke-width', '2');
+                    arc.setAttribute('fill', 'none');
+                    arc.setAttribute('marker-end', 'url(#arrowhead2)');
+                    g.appendChild(arc);
+                    
+                    // Add arrowhead marker
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                    marker.setAttribute('id', 'arrowhead2');
+                    marker.setAttribute('markerWidth', '10');
+                    marker.setAttribute('markerHeight', '7');
+                    marker.setAttribute('refX', '9');
+                    marker.setAttribute('refY', '3.5');
+                    marker.setAttribute('orient', 'auto');
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+                    polygon.setAttribute('fill', 'currentColor');
+                    marker.appendChild(polygon);
+                    defs.appendChild(marker);
+                    svg.appendChild(defs);
+                    
+                    // Labels
+                    const labels = [
+                        { x: origX + 10, y: origY, text: 'Original', color: '#6b7280' },
+                        { x: rotX + 10, y: rotY, text: 'Rotated', color: '#ef4444' },
+                        { x: centerX + 10, y: centerY - arcRadius - 10, text: `θ = ${(this.ropeAngle * 180 / Math.PI).toFixed(1)}°`, color: '#8b5cf6' }
+                    ];
+                    
+                    labels.forEach(label => {
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', label.x);
+                        text.setAttribute('y', label.y);
+                        text.setAttribute('class', 'text-xs');
+                        text.setAttribute('fill', label.color);
+                        text.textContent = label.text;
+                        g.appendChild(text);
+                    });
+                }
+            }
+        }
+    </script>
     </section>
 
+        <section id="norm_strategy" class="py-12 bg-slate-50">
+
+        <!-- Controls -->
+                <div x-data="normalizationTool()" x-init="init()" class="container mx-auto px-4 py-8 max-w-7xl">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">Normalization Strategies in Transformers</h1>
+        <p class="text-gray-600 mb-8 max-w-4xl">
+            Explore different normalization techniques used in modern transformers. Compare LayerNorm, RMSNorm, BatchNorm, 
+            and their variants to understand their mathematical differences, computational costs, and effects on training stability.
+        </p>
+
+        <!-- Normalization Type Selector -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Normalization Methods</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <template x-for="(norm, key) in normTypes" :key="key">
+                    <div class="norm-card rounded-lg p-4 cursor-pointer border-2" 
+                         :class="activeNorm === key ? 'active' : 'border-gray-200 hover:border-blue-300'"
+                         @click="setActiveNorm(key)">
+                        <h3 class="font-medium text-gray-900" x-text="norm.name"></h3>
+                        <p class="text-sm text-gray-600 mt-1" x-text="norm.description"></p>
+                        <div class="mt-2 text-xs text-blue-600" x-text="norm.complexity"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Interactive Parameters -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Parameters & Data</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Batch Size</label>
+                    <input type="range" min="4" max="32" x-model.number="batchSize" @input="generateData()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="batchSize"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Feature Dim</label>
+                    <input type="range" min="8" max="128" step="8" x-model.number="featureDim" @input="generateData()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="featureDim"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Data Shift</label>
+                    <input type="range" min="-3" max="3" step="0.1" x-model.number="dataShift" @input="generateData()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="dataShift.toFixed(1)"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Data Scale</label>
+                    <input type="range" min="0.1" max="5" step="0.1" x-model.number="dataScale" @input="generateData()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="dataScale.toFixed(1)"></span>
+                </div>
+            </div>
+            
+            <!-- Learnable Parameters -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">γ (scale)</label>
+                    <input type="range" min="0.1" max="3" step="0.1" x-model.number="gamma" @input="updateNormalization()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="gamma.toFixed(1)"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">β (shift)</label>
+                    <input type="range" min="-2" max="2" step="0.1" x-model.number="beta" @input="updateNormalization()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="beta.toFixed(1)"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ε (epsilon)</label>
+                    <input type="range" min="1e-8" max="1e-3" step="1e-8" x-model.number="epsilon" @input="updateNormalization()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="epsilon.toExponential(1)"></span>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Momentum (BN)</label>
+                    <input type="range" min="0.01" max="0.99" step="0.01" x-model.number="momentum" @input="updateNormalization()" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-sm text-gray-500" x-text="momentum.toFixed(2)"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 flex gap-4">
+                <button @click="generateData()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Generate New Data
+                </button>
+                <button @click="resetParameters()" 
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    Reset Parameters
+                </button>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" x-model="showGradients" @change="updateNormalization()" id="gradients">
+                    <label for="gradients" class="text-sm text-gray-700">Show Gradient Effects</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Visualizations -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Distribution Comparison -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Before vs After Normalization</h2>
+                <canvas id="distributionChart" class="w-full" style="height: 350px;"></canvas>
+                <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                    <div class="bg-red-50 p-3 rounded-lg">
+                        <div class="font-medium text-red-800">Before Normalization</div>
+                        <div class="text-red-600">
+                            Mean: <span x-text="stats.original.mean.toFixed(3)"></span><br>
+                            Std: <span x-text="stats.original.std.toFixed(3)"></span>
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg">
+                        <div class="font-medium text-green-800">After Normalization</div>
+                        <div class="text-green-600">
+                            Mean: <span x-text="stats.normalized.mean.toFixed(3)"></span><br>
+                            Std: <span x-text="stats.normalized.std.toFixed(3)"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature-wise Statistics -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Feature-wise Statistics</h2>
+                <canvas id="featureChart" class="w-full" style="height: 350px;"></canvas>
+                <div class="mt-4 text-sm text-gray-600">
+                    Shows mean and variance for each feature dimension before/after normalization.
+                </div>
+            </div>
+
+            <!-- Gradient Flow Analysis -->
+            <div class="bg-white rounded-xl shadow-lg p-6" x-show="showGradients">
+                <h2 class="text-xl font-semibold mb-4">Gradient Flow Analysis</h2>
+                <canvas id="gradientChart" class="w-full" style="height: 350px;"></canvas>
+                <div class="mt-4 text-sm text-gray-600">
+                    Simulated gradient magnitudes through the normalization layer. Lower variance indicates more stable training.
+                </div>
+            </div>
+
+            <!-- Computational Cost Comparison -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Computational Cost Analysis</h2>
+                <div class="space-y-4">
+                    <template x-for="(norm, key) in normTypes" :key="key">
+                        <div class="border rounded-lg p-4" :class="activeNorm === key ? 'border-blue-500 bg-blue-50' : 'border-gray-200'">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-medium" x-text="norm.name"></h3>
+                                <span class="text-sm text-gray-600" x-text="norm.memoryUsage"></span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <div class="text-gray-600">FLOPs</div>
+                                    <div class="font-mono" x-text="calculateFLOPs(key)"></div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-600">Parameters</div>
+                                    <div class="font-mono" x-text="calculateParams(key)"></div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-600">Memory</div>
+                                    <div class="font-mono" x-text="calculateMemory(key)"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mathematical Formulations -->
+        <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-6">Mathematical Formulations</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Layer Normalization -->
+                <div class="border-l-4 border-blue-500 pl-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Layer Normalization</h3>
+                    <div class="text-sm space-y-2">
+                        <div>$$\mu = \frac{1}{d}\sum_{i=1}^{d} x_i$$</div>
+                        <div>$$\sigma^2 = \frac{1}{d}\sum_{i=1}^{d} (x_i - \mu)^2$$</div>
+                        <div>$$\text{LN}(x) = \gamma \odot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta$$</div>
+                        <p class="mt-3 text-gray-600">Normalizes across features for each sample independently.</p>
+                    </div>
+                </div>
+
+                <!-- RMS Normalization -->
+                <div class="border-l-4 border-green-500 pl-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">RMS Normalization</h3>
+                    <div class="text-sm space-y-2">
+                        <div>$$\text{RMS} = \sqrt{\frac{1}{d}\sum_{i=1}^{d} x_i^2}$$</div>
+                        <div>$$\text{RMSNorm}(x) = \gamma \odot \frac{x}{\text{RMS} + \epsilon}$$</div>
+                        <p class="mt-3 text-gray-600">Simpler than LayerNorm - no mean centering, only scaling by RMS.</p>
+                    </div>
+                </div>
+
+                <!-- Batch Normalization -->
+                <div class="border-l-4 border-red-500 pl-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Batch Normalization</h3>
+                    <div class="text-sm space-y-2">
+                        <div>$$\mu_B = \frac{1}{m}\sum_{i=1}^{m} x_i$$</div>
+                        <div>$$\sigma_B^2 = \frac{1}{m}\sum_{i=1}^{m} (x_i - \mu_B)^2$$</div>
+                        <div>$$\text{BN}(x) = \gamma \odot \frac{x - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}} + \beta$$</div>
+                        <p class="mt-3 text-gray-600">Normalizes across batch dimension. Uses running statistics during inference.</p>
+                    </div>
+                </div>
+
+                <!-- Group Normalization -->
+                <div class="border-l-4 border-purple-500 pl-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Group Normalization</h3>
+                    <div class="text-sm space-y-2">
+                        <div>$$\mu_G = \frac{1}{|G|}\sum_{i \in G} x_i$$</div>
+                        <div>$$\sigma_G^2 = \frac{1}{|G|}\sum_{i \in G} (x_i - \mu_G)^2$$</div>
+                        <div>$$\text{GN}(x) = \gamma \odot \frac{x - \mu_G}{\sqrt{\sigma_G^2 + \epsilon}} + \beta$$</div>
+                        <p class="mt-3 text-gray-600">Normalizes within groups of channels. Bridges LayerNorm and BatchNorm.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Insights -->
+        <div class="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
+            <h2 class="text-xl font-semibold mb-4">Key Insights & Trade-offs</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-lg p-4">
+                    <h3 class="font-medium text-blue-800 mb-2">Training Stability</h3>
+                    <p class="text-sm text-gray-700">LayerNorm > RMSNorm > GroupNorm > BatchNorm for transformers. LayerNorm provides most consistent gradients.</p>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                    <h3 class="font-medium text-green-800 mb-2">Computational Efficiency</h3>
+                    <p class="text-sm text-gray-700">RMSNorm is ~15% faster than LayerNorm. BatchNorm fastest but problematic for sequences.</p>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                    <h3 class="font-medium text-purple-800 mb-2">Memory Usage</h3>
+                    <p class="text-sm text-gray-700">RMSNorm uses less memory (no mean storage). BatchNorm requires running statistics.</p>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                    <h3 class="font-medium text-red-800 mb-2">Batch Size Sensitivity</h3>
+                    <p class="text-sm text-gray-700">BatchNorm sensitive to batch size. LayerNorm/RMSNorm work well with any batch size.</p>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                    <h3 class="font-medium text-orange-800 mb-2">Sequence Length</h3>
+                    <p class="text-sm text-gray-700">LayerNorm/RMSNorm handle variable lengths naturally. BatchNorm requires padding considerations.</p>
+                </div>
+                <div class="bg-white rounded-lg p-4">
+                    <h3 class="font-medium text-teal-800 mb-2">Modern Preference</h3>
+                    <p class="text-sm text-gray-700">RMSNorm increasingly popular in large models (LLaMA, PaLM) for efficiency gains.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function normalizationTool() {
+            return {
+                // Parameters
+                batchSize: 16,
+                featureDim: 64,
+                dataShift: 0.5,
+                dataScale: 2.0,
+                gamma: 1.0,
+                beta: 0.0,
+                epsilon: 1e-6,
+                momentum: 0.9,
+                showGradients: false,
+                
+                // State
+                activeNorm: 'layernorm',
+                rawData: null,
+                normalizedData: null,
+                stats: {
+                    original: { mean: 0, std: 1 },
+                    normalized: { mean: 0, std: 1 }
+                },
+                
+                // Charts
+                distributionChart: null,
+                featureChart: null,
+                gradientChart: null,
+                
+                // Normalization methods
+                normTypes: {
+                    layernorm: {
+                        name: 'LayerNorm',
+                        description: 'Normalize across features',
+                        complexity: 'O(d) operations',
+                        memoryUsage: '2d parameters'
+                    },
+                    rmsnorm: {
+                        name: 'RMSNorm',
+                        description: 'RMS-based normalization',
+                        complexity: 'O(d) operations',
+                        memoryUsage: 'd parameters'
+                    },
+                    batchnorm: {
+                        name: 'BatchNorm',
+                        description: 'Normalize across batch',
+                        complexity: 'O(d) operations',
+                        memoryUsage: '4d parameters'
+                    },
+                    groupnorm: {
+                        name: 'GroupNorm',
+                        description: 'Normalize within groups',
+                        complexity: 'O(d) operations',
+                        memoryUsage: '2d parameters'
+                    }
+                },
+                
+                init() {
+                    this.generateData();
+                    this.updateNormalization();
+                    setTimeout(() => {
+                        if (window.MathJax) {
+                            MathJax.typesetPromise();
+                        }
+                    }, 100);
+                },
+                
+                generateData() {
+                    // Generate random data with specified shift and scale
+                    this.rawData = [];
+                    for (let b = 0; b < this.batchSize; b++) {
+                        const sample = [];
+                        for (let d = 0; d < this.featureDim; d++) {
+                            // Add some correlation and structure to make normalization effects more visible
+                            const base = this.gaussianRandom() * this.dataScale + this.dataShift;
+                            const correlated = base + 0.3 * this.gaussianRandom() * (d / this.featureDim);
+                            sample.push(correlated);
+                        }
+                        this.rawData.push(sample);
+                    }
+                    this.updateNormalization();
+                },
+                
+                updateNormalization() {
+                    if (!this.rawData) return;
+                    
+                    this.normalizedData = this.applyNormalization(this.rawData, this.activeNorm);
+                    this.calculateStats();
+                    this.updateCharts();
+                },
+                
+                applyNormalization(data, method) {
+                    const normalized = data.map(sample => [...sample]);
+                    
+                    switch (method) {
+                        case 'layernorm':
+                            return this.layerNorm(normalized);
+                        case 'rmsnorm':
+                            return this.rmsNorm(normalized);
+                        case 'batchnorm':
+                            return this.batchNorm(normalized);
+                        case 'groupnorm':
+                            return this.groupNorm(normalized, 8); // 8 groups
+                        default:
+                            return normalized;
+                    }
+                },
+                
+                layerNorm(data) {
+                    return data.map(sample => {
+                        const mean = sample.reduce((sum, x) => sum + x, 0) / sample.length;
+                        const variance = sample.reduce((sum, x) => sum + (x - mean) ** 2, 0) / sample.length;
+                        const std = Math.sqrt(variance + this.epsilon);
+                        
+                        return sample.map(x => this.gamma * (x - mean) / std + this.beta);
+                    });
+                },
+                
+                rmsNorm(data) {
+                    return data.map(sample => {
+                        const rms = Math.sqrt(sample.reduce((sum, x) => sum + x ** 2, 0) / sample.length + this.epsilon);
+                        return sample.map(x => this.gamma * x / rms);
+                    });
+                },
+                
+                batchNorm(data) {
+                    const batchSize = data.length;
+                    const featureDim = data[0].length;
+                    const normalized = Array(batchSize).fill(null).map(() => Array(featureDim));
+                    
+                    // Calculate batch statistics for each feature
+                    for (let d = 0; d < featureDim; d++) {
+                        const feature_values = data.map(sample => sample[d]);
+                        const mean = feature_values.reduce((sum, x) => sum + x, 0) / batchSize;
+                        const variance = feature_values.reduce((sum, x) => sum + (x - mean) ** 2, 0) / batchSize;
+                        const std = Math.sqrt(variance + this.epsilon);
+                        
+                        for (let b = 0; b < batchSize; b++) {
+                            normalized[b][d] = this.gamma * (data[b][d] - mean) / std + this.beta;
+                        }
+                    }
+                    
+                    return normalized;
+                },
+                
+                groupNorm(data, numGroups) {
+                    const groupSize = Math.floor(this.featureDim / numGroups);
+                    
+                    return data.map(sample => {
+                        const normalized = [...sample];
+                        
+                        for (let g = 0; g < numGroups; g++) {
+                            const start = g * groupSize;
+                            const end = Math.min(start + groupSize, this.featureDim);
+                            const group = sample.slice(start, end);
+                            
+                            const mean = group.reduce((sum, x) => sum + x, 0) / group.length;
+                            const variance = group.reduce((sum, x) => sum + (x - mean) ** 2, 0) / group.length;
+                            const std = Math.sqrt(variance + this.epsilon);
+                            
+                            for (let i = start; i < end; i++) {
+                                normalized[i] = this.gamma * (sample[i] - mean) / std + this.beta;
+                            }
+                        }
+                        
+                        return normalized;
+                    });
+                },
+                
+                calculateStats() {
+                    const originalFlat = this.rawData.flat();
+                    const normalizedFlat = this.normalizedData.flat();
+                    
+                    this.stats.original = {
+                        mean: originalFlat.reduce((sum, x) => sum + x, 0) / originalFlat.length,
+                        std: Math.sqrt(originalFlat.reduce((sum, x) => sum + (x - this.stats.original?.mean || 0) ** 2, 0) / originalFlat.length)
+                    };
+                    
+                    const normMean = normalizedFlat.reduce((sum, x) => sum + x, 0) / normalizedFlat.length;
+                    this.stats.normalized = {
+                        mean: normMean,
+                        std: Math.sqrt(normalizedFlat.reduce((sum, x) => sum + (x - normMean) ** 2, 0) / normalizedFlat.length)
+                    };
+                },
+                
+                updateCharts() {
+                    this.updateDistributionChart();
+                    this.updateFeatureChart();
+                    if (this.showGradients) {
+                        this.updateGradientChart();
+                    }
+                },
+                
+                updateDistributionChart() {
+                    const ctx = document.getElementById('distributionChart');
+                    if (!ctx) return;
+                    
+                    if (this.distributionChart) {
+                        this.distributionChart.destroy();
+                    }
+                    
+                    // Create histogram data
+                    const originalFlat = this.rawData.flat();
+                    const normalizedFlat = this.normalizedData.flat();
+                    
+                    const bins = 30;
+                    const originalHist = this.createHistogram(originalFlat, bins);
+                    const normalizedHist = this.createHistogram(normalizedFlat, bins);
+                    
+                    this.distributionChart = new Chart(ctx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: originalHist.bins,
+                            datasets: [
+                                {
+                                    label: 'Before Normalization',
+                                    data: originalHist.counts,
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: `After ${this.normTypes[this.activeNorm].name}`,
+                                    data: normalizedHist.counts,
+                                    borderColor: '#22c55e',
+                                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Value'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Frequency'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                updateFeatureChart() {
+                    const ctx = document.getElementById('featureChart');
+                    if (!ctx) return;
+                    
+                    if (this.featureChart) {
+                        this.featureChart.destroy();
+                    }
+                    
+                    // Calculate feature-wise statistics
+                    const featureMeans = [];
+                    const featureStds = [];
+                    const normalizedMeans = [];
+                    const normalizedStds = [];
+                    
+                    for (let d = 0; d < this.featureDim; d++) {
+                        const originalFeature = this.rawData.map(sample => sample[d]);
+                        const normalizedFeature = this.normalizedData.map(sample => sample[d]);
+                        
+                        const origMean = originalFeature.reduce((sum, x) => sum + x, 0) / originalFeature.length;
+                        const origStd = Math.sqrt(originalFeature.reduce((sum, x) => sum + (x - origMean) ** 2, 0) / originalFeature.length);
+                        
+                        const normMean = normalizedFeature.reduce((sum, x) => sum + x, 0) / normalizedFeature.length;
+                        const normStd = Math.sqrt(normalizedFeature.reduce((sum, x) => sum + (x - normMean) ** 2, 0) / normalizedFeature.length);
+                        
+                        featureMeans.push(origMean);
+                        featureStds.push(origStd);
+                        normalizedMeans.push(normMean);
+                        normalizedStds.push(normStd);
+                    }
+                    
+                    const labels = Array.from({length: Math.min(this.featureDim, 32)}, (_, i) => `F${i}`);
+                    
+                    this.featureChart = new Chart(ctx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Original Mean',
+                                    data: featureMeans.slice(0, 32),
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Original Std',
+                                    data: featureStds.slice(0, 32),
+                                    borderColor: '#f97316',
+                                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Normalized Mean',
+                                    data: normalizedMeans.slice(0, 32),
+                                    borderColor: '#22c55e',
+                                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                    yAxisID: 'y1'
+                                },
+                                {
+                                    label: 'Normalized Std',
+                                    data: normalizedStds.slice(0, 32),
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Feature Index'
+                                    }
+                                },
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: {
+                                        display: true,
+                                        text: 'Original Scale'
+                                    }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    title: {
+                                        display: true,
+                                        text: 'Normalized Scale'
+                                    },
+                                    grid: {
+                                        drawOnChartArea: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                updateGradientChart() {
+                    const ctx = document.getElementById('gradientChart');
+                    if (!ctx) return;
+                    
+                    if (this.gradientChart) {
+                        this.gradientChart.destroy();
+                    }
+                    
+                    // Simulate gradient magnitudes through normalization
+                    const layers = ['Input', 'Pre-Norm', 'Post-Norm', 'Output'];
+                    const gradientMagnitudes = {
+                        layernorm: [1.2, 0.8, 1.0, 0.9],
+                        rmsnorm: [1.2, 0.9, 1.0, 0.95],
+                        batchnorm: [1.2, 1.5, 0.7, 1.1],
+                        groupnorm: [1.2, 1.0, 0.9, 0.95]
+                    };
+                    
+                    const gradientVariance = {
+                        layernorm: [0.3, 0.1, 0.15, 0.12],
+                        rmsnorm: [0.3, 0.12, 0.16, 0.14],
+                        batchnorm: [0.3, 0.4, 0.25, 0.35],
+                        groupnorm: [0.3, 0.2, 0.18, 0.16]
+                    };
+                    
+                    this.gradientChart = new Chart(ctx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: layers,
+                            datasets: [
+                                {
+                                    label: 'Gradient Magnitude',
+                                    data: gradientMagnitudes[this.activeNorm],
+                                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                                    borderColor: 'rgba(59, 130, 246, 1)',
+                                    borderWidth: 1,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Gradient Variance',
+                                    data: gradientVariance[this.activeNorm],
+                                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                                    borderColor: 'rgba(239, 68, 68, 1)',
+                                    borderWidth: 1,
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: {
+                                        display: true,
+                                        text: 'Gradient Magnitude'
+                                    }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    title: {
+                                        display: true,
+                                        text: 'Gradient Variance'
+                                    },
+                                    grid: {
+                                        drawOnChartArea: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                createHistogram(data, bins) {
+                    const min = Math.min(...data);
+                    const max = Math.max(...data);
+                    const binWidth = (max - min) / bins;
+                    
+                    const binCenters = [];
+                    const counts = [];
+                    
+                    for (let i = 0; i < bins; i++) {
+                        const binStart = min + i * binWidth;
+                        const binEnd = binStart + binWidth;
+                        const binCenter = (binStart + binEnd) / 2;
+                        
+                        const count = data.filter(x => x >= binStart && x < binEnd).length;
+                        
+                        binCenters.push(binCenter.toFixed(2));
+                        counts.push(count);
+                    }
+                    
+                    return { bins: binCenters, counts };
+                },
+                
+                setActiveNorm(normType) {
+                    this.activeNorm = normType;
+                    this.updateNormalization();
+                },
+                
+                resetParameters() {
+                    this.gamma = 1.0;
+                    this.beta = 0.0;
+                    this.epsilon = 1e-6;
+                    this.momentum = 0.9;
+                    this.updateNormalization();
+                },
+                
+                calculateFLOPs(normType) {
+                    const d = this.featureDim;
+                    const n = this.batchSize;
+                    
+                    switch (normType) {
+                        case 'layernorm':
+                            return `${(4 * d).toLocaleString()}`; // mean, var, norm, scale+shift
+                        case 'rmsnorm':
+                            return `${(3 * d).toLocaleString()}`; // rms, norm, scale
+                        case 'batchnorm':
+                            return `${(4 * d).toLocaleString()}`; // batch mean, var, norm, scale+shift
+                        case 'groupnorm':
+                            return `${(4 * d).toLocaleString()}`; // group mean, var, norm, scale+shift
+                        default:
+                            return '0';
+                    }
+                },
+                
+                calculateParams(normType) {
+                    const d = this.featureDim;
+                    
+                    switch (normType) {
+                        case 'layernorm':
+                            return `${(2 * d).toLocaleString()}`; // γ, β
+                        case 'rmsnorm':
+                            return `${d.toLocaleString()}`; // γ only
+                        case 'batchnorm':
+                            return `${(4 * d).toLocaleString()}`; // γ, β, running_mean, running_var
+                        case 'groupnorm':
+                            return `${(2 * d).toLocaleString()}`; // γ, β
+                        default:
+                            return '0';
+                    }
+                },
+                
+                calculateMemory(normType) {
+                    const d = this.featureDim;
+                    const n = this.batchSize;
+                    
+                    switch (normType) {
+                        case 'layernorm':
+                            return `${((2 * d + n * d) * 4 / 1024).toFixed(1)}KB`; // params + activations
+                        case 'rmsnorm':
+                            return `${((d + n * d) * 4 / 1024).toFixed(1)}KB`; // params + activations
+                        case 'batchnorm':
+                            return `${((4 * d + n * d) * 4 / 1024).toFixed(1)}KB`; // params + activations
+                        case 'groupnorm':
+                            return `${((2 * d + n * d) * 4 / 1024).toFixed(1)}KB`; // params + activations
+                        default:
+                            return '0KB';
+                    }
+                },
+                
+                gaussianRandom() {
+                    let u = 0, v = 0;
+                    while(u === 0) u = Math.random();
+                    while(v === 0) v = Math.random();
+                    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+                }
+            }
+        }
+    </script>
+        </div>
+        </div>
+    </section>
     <!-- Encoder/Decoder -->
-    <section id="encoderdecoder" class="py-12 bg-slate-50">
+    <section id="encoderdecoder" class="py-12">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Encoder / Decoder & Masks</h2>
             <div class="grid lg:grid-cols-2 gap-6 mt-6">
@@ -511,7 +2696,7 @@
     </section>
 
     <!-- MHA & FFN details -->
-    <section id="mha-ffn" class="py-12">
+    <section id="mha-ffn" class="py-12  bg-slate-50">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Multi-Head Attention & Feed-Forward</h2>
             <div class="mt-6 grid lg:grid-cols-3 gap-6">
@@ -557,7 +2742,7 @@
     </section>
 
     <!-- Best Practices -->
-    <section id="tips" class="py-12 bg-slate-50">
+    <section id="tips" class="py-12">
         <div class="max-w-7xl mx-auto px-6">
             <h2 class="text-3xl font-bold tracking-tight text-slate-900">Training Tips & Debugging</h2>
             <div class="mt-6 grid lg:grid-cols-3 gap-6">

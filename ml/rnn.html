@@ -221,7 +221,7 @@
 
           <!-- output y_{t-1} -->
           <circle class="io" cx="330" cy="130" r="26" />
-          <text class="label" x="330" y="134" text-anchor="middle">y<tspan baseline-shift="sub">t−1</tspan></text>
+          <text class="label" x="330" y="134" text-anchor="middle">y<tspan baseline-shift="sub">t</tspan></text>
 
           <!-- arrows: x_{t-1} -> cell, cell -> y_{t-1} -->
           <line class="heavy" x1="26" y1="130" x2="120" y2="130" marker-end="url(#arrow)" />
@@ -245,7 +245,7 @@
 
           <!-- output y_t -->
           <circle class="io" cx="750" cy="130" r="26" />
-          <text class="label" x="750" y="134" text-anchor="middle">y<tspan baseline-shift="sub">t</tspan></text>
+          <text class="label" x="750" y="134" text-anchor="middle">y<tspan baseline-shift="sub">t+1</tspan></text>
 
           <!-- arrows: x_t -> cell, cell -> y_t -->
           <line class="heavy" x1="446" y1="130" x2="540" y2="130" marker-end="url(#arrow)" />
@@ -302,6 +302,175 @@
           <text class="legend" x="214" y="1">RNN cell (updates h<tspan baseline-shift="sub">t</tspan>)</text>
         </g>
       </svg>
+    <svg viewBox="0 0 1250 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="gradflow-title gradflow-desc">
+  <title id="gradflow-title">Exploding vs. Vanishing Gradients in RNNs</title>
+  <desc id="gradflow-desc">
+    Forward pass flows left to right through time steps. Backpropagated gradients flow right to left.
+    The top path shows vanishing gradients (thinner, lighter, cooler). The bottom path shows exploding gradients (thicker, darker, warmer).
+  </desc>
+
+  <!-- ================= Styles ================= -->
+  <style>
+    :root { color-scheme: light; }
+    .bg { fill: #f8fafc; }                         /* slate-50 */
+    .panel { fill: #ffffff; stroke: #cbd5e1; }     /* white / slate-300 */
+    .cell { fill: #e0f2fe; stroke: #0369a1; }      /* sky-100 / sky-700 */
+    .io { fill: #e2e8f0; stroke: #334155; }        /* slate-200 / slate-700 */
+    .wire { stroke: #334155; stroke-width: 2; fill: none; }
+    .fw { stroke: #0f172a; stroke-width: 2.6; fill: none; }       /* forward hidden path */
+    .lbl { font: 14px/1.2 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; fill: #0f172a; }
+    .small { font-size: 12px; fill: #334155; }
+    .muted { fill: #475569; }
+    .sup { baseline-shift: super; font-size: 75%; }
+    .sub { baseline-shift: sub; font-size: 75%; }
+    .k { font-weight: 600; }
+
+    /* Backprop gradient styles (right->left) */
+    .van1, .van2, .van3, .van4, .van5 { fill: none; stroke: #2563eb; }   /* blue-600 */
+    .van1 { stroke-width: 5;  opacity: 0.95; }
+    .van2 { stroke-width: 4;  opacity: 0.75; }
+    .van3 { stroke-width: 3;  opacity: 0.55; }
+    .van4 { stroke-width: 2;  opacity: 0.38; }
+    .van5 { stroke-width: 1.5;opacity: 0.22; }
+
+    .exp1, .exp2, .exp3, .exp4, .exp5 { fill: none; stroke: #dc2626; }   /* red-600 */
+    .exp1 { stroke-width: 1.5; opacity: 0.22; }
+    .exp2 { stroke-width: 2.5; opacity: 0.38; }
+    .exp3 { stroke-width: 4;   opacity: 0.55; }
+    .exp4 { stroke-width: 6;   opacity: 0.75; }
+    .exp5 { stroke-width: 8;   opacity: 0.95; }
+
+    .yaxis { stroke: #94a3b8; stroke-width: 1.5; stroke-dasharray: 3 3; }
+    .note { font-size: 12px; fill: #1f2937; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  </style>
+
+  <!-- ================= Markers ================= -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <!-- ================= Background ================= -->
+  <rect class="bg" x="10" y="10" width="1160" height="500" rx="16"/>
+
+  <!-- ================= Main panel ================= -->
+  <g transform="translate(24,24)">
+    <rect class="panel" x="0" y="0" width="820" height="472" rx="12"/>
+
+    <!-- Timeline ticks & labels -->
+    <!-- columns at x: 80, 220, 360, 500, 640 -->
+    <g class="muted">
+      <line class="yaxis" x1="80"  y1="40" x2="80"  y2="430"/>
+      <line class="yaxis" x1="220" y1="40" x2="220" y2="430"/>
+      <line class="yaxis" x1="360" y1="40" x2="360" y2="430"/>
+      <line class="yaxis" x1="500" y1="40" x2="500" y2="430"/>
+      <line class="yaxis" x1="640" y1="40" x2="640" y2="430"/>
+      <text class="lbl small" x="80"  y="34" text-anchor="middle">t<tspan class="sub">−2</tspan></text>
+      <text class="lbl small" x="220" y="34" text-anchor="middle">t<tspan class="sub">−1</tspan></text>
+      <text class="lbl small" x="360" y="34" text-anchor="middle">t</text>
+      <text class="lbl small" x="500" y="34" text-anchor="middle">t<tspan class="sup">+1</tspan></text>
+      <text class="lbl small" x="640" y="34" text-anchor="middle">t<tspan class="sup">+2</tspan></text>
+    </g>
+
+    <!-- ===== Forward chain (top row) ===== -->
+    <g aria-label="Forward pass" transform="translate(0,60)">
+      <!-- Inputs -->
+      <circle class="io" cx="30"  cy="40" r="20"/><text class="lbl small" x="30"  y="44" text-anchor="middle">x<tspan class="sub">t−3</tspan></text>
+      <circle class="io" cx="80"  cy="40" r="20"/><text class="lbl small" x="80"  y="44" text-anchor="middle">x<tspan class="sub">t−2</tspan></text>
+      <circle class="io" cx="220" cy="40" r="20"/><text class="lbl small" x="220" y="44" text-anchor="middle">x<tspan class="sub">t−1</tspan></text>
+      <circle class="io" cx="360" cy="40" r="20"/><text class="lbl small" x="360" y="44" text-anchor="middle">x<tspan class="sub">t</tspan></text>
+      <circle class="io" cx="500" cy="40" r="20"/><text class="lbl small" x="500" y="44" text-anchor="middle">x<tspan class="sub">t+1</tspan></text>
+      <circle class="io" cx="640" cy="40" r="20"/><text class="lbl small" x="640" y="44" text-anchor="middle">x<tspan class="sub">t+2</tspan></text>
+
+      <!-- Cells -->
+      <rect class="cell" x="60"  y="0" width="40" height="80" rx="8"/>
+      <rect class="cell" x="200" y="0" width="40" height="80" rx="8"/>
+      <rect class="cell" x="340" y="0" width="40" height="80" rx="8"/>
+      <rect class="cell" x="480" y="0" width="40" height="80" rx="8"/>
+      <rect class="cell" x="620" y="0" width="40" height="80" rx="8"/>
+
+      <!-- Wires inputs->cells -->
+      <path class="wire" d="M 50 40 H 60" marker-end="url(#arrow)"/>
+      <path class="wire" d="M 190 40 H 200" marker-end="url(#arrow)"/>
+      <path class="wire" d="M 330 40 H 340" marker-end="url(#arrow)"/>
+      <path class="wire" d="M 470 40 H 480" marker-end="url(#arrow)"/>
+      <path class="wire" d="M 610 40 H 620" marker-end="url(#arrow)"/>
+
+      <!-- Hidden forward connections -->
+      <path class="fw" d="M 100 40 H 200" marker-end="url(#arrow)"/>
+      <path class="fw" d="M 240 40 H 340" marker-end="url(#arrow)"/>
+      <path class="fw" d="M 380 40 H 480" marker-end="url(#arrow)"/>
+      <path class="fw" d="M 520 40 H 620" marker-end="url(#arrow)"/>
+
+      <text class="lbl small" x="360" y="-12" text-anchor="middle">Forward (inference) flow</text>
+    </g>
+
+    <!-- ===== Backprop: Vanishing (top middle path) ===== -->
+    <!-- Draw as segmented right->left with decreasing width/opacity -->
+    <g aria-label="Vanishing gradients" transform="translate(0,170)">
+      <text class="lbl k" x="360" y="-10" text-anchor="middle" fill="#2563eb">Vanishing gradients</text>
+      <path class="van1" d="M 640 30 H 520" marker-end="url(#arrow-blue)"/>
+      <path class="van2" d="M 520 30 H 400" marker-end="url(#arrow-blue)"/>
+      <path class="van3" d="M 400 30 H 280" marker-end="url(#arrow-blue)"/>
+      <path class="van4" d="M 280 30 H 160" marker-end="url(#arrow-blue)"/>
+      <path class="van5" d="M 160 30 H 40"  marker-end="url(#arrow-blue)"/>
+      <text class="lbl small" x="40" y="50" text-anchor="start" fill="#2563eb">‖∂L/∂h‖ → 0</text>
+    </g>
+
+    <!-- ===== Backprop: Exploding (bottom path) ===== -->
+    <g aria-label="Exploding gradients" transform="translate(0,300)">
+      <text class="lbl k" x="360" y="-10" text-anchor="middle" fill="#dc2626">Exploding gradients</text>
+      <path class="exp1" d="M 160 30 H 280" marker-end="url(#arrow-red)"/>
+      <path class="exp2" d="M 280 30 H 400" marker-end="url(#arrow-red)"/>
+      <path class="exp3" d="M 400 30 H 520" marker-end="url(#arrow-red)"/>
+      <path class="exp4" d="M 520 30 H 640" marker-end="url(#arrow-red)"/>
+      <path class="exp5" d="M 640 30 H 760" marker-end="url(#arrow-red)"/>
+      <text class="lbl small" x="760" y="50" text-anchor="end" fill="#dc2626">‖∂L/∂h‖ → ∞</text>
+    </g>
+
+    <!-- ===== Output / loss node (right side) ===== -->
+    <g transform="translate(0,60)">
+      <circle class="out io" cx="730" cy="40" r="22"/>
+      <text class="lbl small" x="730" y="44" text-anchor="middle">L</text>
+      <text class="lbl small" x="760" y="44">loss at t<tspan class="sup">+2</tspan></text>
+    </g>
+
+  </g>
+
+  <!-- ================= Side mini-cards ================= -->
+  <g transform="translate(870,24)">
+    <!-- Formula card -->
+    <rect class="panel" x="0" y="0" width="350" height="190" rx="12"/>
+    <text class="lbl k" x="16" y="28">Why it happens</text>
+    <text class="note code" x="16" y="56">∂L/∂h_t = (Π_{k=t..T−1} J_k) · ∂L/∂h_T</text>
+    <text class="note" x="16" y="84">If spectral radius ρ(J)<1 ⇒ product shrinks (vanishing).</text>
+    <text class="note" x="16" y="104">If ρ(J)>1 ⇒ product grows (exploding).</text>
+    <text class="note" x="16" y="132">J_k ≈ Wᵀ·diag(φ′(·)) + …</text>
+    <text class="note" x="16" y="160">Depends on weights, activation slopes, and sequence length.</text>
+
+    <!-- Mitigation card -->
+    <g transform="translate(0,210)">
+      <rect class="panel" x="0" y="0" width="290" height="262" rx="12"/>
+      <text class="lbl k" x="16" y="28">Mitigations</text>
+      <text class="note" x="16" y="56">• Use gating (LSTM/GRU) or residual connections.</text>
+      <text class="note" x="16" y="82">• Gradient clipping (norm/value).</text>
+      <text class="note" x="16" y="108">• Orthogonal/identity initialization for recurrent W.</text>
+      <text class="note" x="16" y="134">• Proper activation choices (tanh, ReLU variants).</text>
+      <text class="note" x="16" y="160">• Layer norm / RMSNorm.</text>
+      <text class="note" x="16" y="186">• Shorter BPTT (truncated) or skip connections.</text>
+      <text class="note" x="16" y="212">• Learning rate schedules; optimizer choice.</text>
+    </g>
+  </g>
+</svg>
+
     </div>
   </section>
 
@@ -448,8 +617,11 @@
           <li>Prefer gated RNNs (LSTM/GRU): gates learn effective eigenvalues near 1 along memory paths.</li>
         </ul>
       </article>
+
     </div>
+
   </section>
+
 
 
   <!-- ======= LSTM ======= -->
@@ -563,642 +735,923 @@
   <!-- ======= GRU ======= -->
   <section id="gru" class="py-10">
     <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-1 gap-6">
-        <div class="flex items-center gap-3">
-          <div class="w-2 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded"></div>
-          <hq class="text-2xl font-bold text-slate-900">GRU</h2>
-        </div>
-
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-          <h2 class="text-2xl font-bold">GRU — Equations</h2>
-          <div class="text-sm text-slate-700 leading-7 mt-2 math-nowrap">
-            $$\begin{aligned}
-            z_t &= \sigma(W_z x_t + U_z h_{t-1}), & r_t &= \sigma(W_r x_t + U_r h_{t-1}) \\
-            \tilde h_t &= \tanh(W_h x_t + U_h (r_t \odot h_{t-1})), & h_t &= (1-z_t)\odot h_{t-1} + z_t\odot\tilde h_t
-            \end{aligned}$$
-          </div>
-          <ul class="mt-3 text-sm text-slate-700 list-disc ml-5">
-            <li>No explicit cell state; a single hidden state $h_t$.</li>
-            <li>Often trains faster than LSTM with similar quality for many tasks.</li>
-          </ul>
-        </article>
-
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-          <h3 class="text-xl font-semibold mb-2">GRU — Fully Wired Cell</h3>
-          <img src="gru_cell_diagram.svg" alt="LSTM Fully Wired Cell Diagram" class="w-full h-auto">
-          <p class="tip mt-2">Reset gate controls how much past information to use; update gate balances old vs new
-            information.</p>
-        </article>
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded"></div>
+        <hq class="text-2xl font-bold text-slate-900">GRU</h2>
       </div>
+
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+        <h2 class="text-2xl font-bold">GRU — Equations</h2>
+        <div class="text-sm text-slate-700 leading-7 mt-2 math-nowrap">
+          $$\begin{aligned}
+          z_t &= \sigma(W_z x_t + U_z h_{t-1}), & r_t &= \sigma(W_r x_t + U_r h_{t-1}) \\
+          \tilde h_t &= \tanh(W_h x_t + U_h (r_t \odot h_{t-1})), & h_t &= (1-z_t)\odot h_{t-1} + z_t\odot\tilde h_t
+          \end{aligned}$$
+        </div>
+        <ul class="mt-3 text-sm text-slate-700 list-disc ml-5">
+          <li>No explicit cell state; a single hidden state $h_t$.</li>
+          <li>Often trains faster than LSTM with similar quality for many tasks.</li>
+        </ul>
+      </article>
+
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+        <h3 class="text-xl font-semibold mb-2">GRU — Fully Wired Cell</h3>
+        <img src="gru_cell_diagram.svg" alt="LSTM Fully Wired Cell Diagram" class="w-full h-auto">
+        <p class="tip mt-2">Reset gate controls how much past information to use; update gate balances old vs new
+          information.</p>
+      </article>
+    </div>
   </section>
 
   <!-- ======= Encoder / Decoder (Upgraded) ======= -->
   <section id="encdec" class="py-10 bg-slate-50">
     <div class="max-w-7xl mx-auto px-6 grid xl:grid-cols-1 lg:grid-cols-1 gap-6">
-        <div class="flex items-center gap-3">
-          <div class="w-2 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded"></div>
-          <hq class="text-2xl font-bold text-slate-900">Architectures</h2>
-        </div>
-
-        <!-- ========== 1) Vanilla Seq2Seq ========== -->
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-          <h2 class="text-2xl font-bold">Encoder→Decoder (Vanilla)</h2>
-          <p class="text-sm text-slate-700 mt-2">
-            Fixed-length context vector (bottleneck) passed from encoder to decoder.
-          </p>
-          <svg viewBox="0 0 820 300" class="w-full h-auto mt-4">
-            <defs>
-              <marker id="arrC" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
-                markerUnits="strokeWidth">
-                <path d="M0,0 L0,8 L8,4 z" fill="#64748b" />
-              </marker>
-              <linearGradient id="encGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#fef3c7" />
-                <stop offset="100%" style="stop-color:#fde68a" />
-              </linearGradient>
-              <linearGradient id="decGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#dbeafe" />
-                <stop offset="100%" style="stop-color:#bfdbfe" />
-              </linearGradient>
-            </defs>
-
-            <!-- Inputs -->
-            <g class="inDot">
-              <circle cx="80" cy="36" r="10" />
-              <circle cx="200" cy="36" r="10" />
-              <circle cx="320" cy="36" r="10" />
-            </g>
-            <text x="100" y="56" class="lbl" text-anchor="middle">x₁</text>
-            <text x="220" y="56" class="lbl" text-anchor="middle">x₂</text>
-            <text x="340" y="56" class="lbl" text-anchor="middle">x₃</text>
-
-            <!-- Encoder cells -->
-            <g>
-              <rect x="40" y="72" width="80" height="52" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
-                rx="10" />
-              <rect x="160" y="72" width="80" height="52" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
-                rx="10" />
-              <rect x="280" y="72" width="80" height="52" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
-                rx="10" />
-              <text x="80" y="103" class="lbl" text-anchor="middle">Enc</text>
-              <text x="200" y="103" class="lbl" text-anchor="middle">Enc</text>
-              <text x="320" y="103" class="lbl" text-anchor="middle">Enc</text>
-            </g>
-
-            <!-- Encoder wiring -->
-            <g class="wire" marker-end="url(#arrC)">
-              <path d="M80,46 V72" />
-              <path d="M200,46 V72" />
-              <path d="M320,46 V72" />
-              <path d="M120,98 H160" />
-              <path d="M240,98 H280" />
-            </g>
-
-            <!-- Context -->
-            <rect x="430" y="72" width="110" height="52" class="gate" rx="10" />
-            <text x="485" y="103" class="lbl" text-anchor="middle">Context</text>
-            <path class="wire" marker-end="url(#arrC)" d="M360,98 H430" />
-
-            <!-- Decoder cells (right-to-left for time) -->
-            <g>
-              <rect x="690" y="160" width="80" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <rect x="570" y="160" width="80" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <rect x="450" y="160" width="80" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <text x="730" y="191" class="lbl" text-anchor="middle">Dec</text>
-              <text x="610" y="191" class="lbl" text-anchor="middle">Dec</text>
-              <text x="490" y="191" class="lbl" text-anchor="middle">Dec</text>
-            </g>
-
-            <!-- Decoder wiring -->
-            <g class="wire" marker-end="url(#arrC)">
-              <path d="M485,124 V160" />
-              <path d="M530,186 H570" />
-              <path d="M650,186 H690" />
-              <path d="M770,186 H790" />
-            </g>
-
-            <!-- Output token -->
-            <g class="stateDot">
-              <circle cx="800" cy="186" r="10" />
-            </g>
-            <text x="800" y="206" class="lbl" text-anchor="middle">ŷ</text>
-
-            <!-- Labels -->
-            <text x="200" y="140" class="text-sm font-semibold" text-anchor="middle" fill="#f59e0b">ENCODER</text>
-            <text x="610" y="230" class="text-sm font-semibold" text-anchor="middle" fill="#3b82f6">DECODER</text>
-          </svg>
-          <p class="tip mt-2">Bottleneck risk: long inputs must compress into a single vector.</p>
-        </article>
-
-              <!-- ========== 3) Decoder Input Modes: Teacher Forcing vs Free-Running ========== -->
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-          <h2 class="text-2xl font-bold">Decoder Input Modes</h2>
-          <p class="text-sm text-slate-700 mt-2">Training with <b>teacher forcing</b> vs inference with
-            <b>free-running</b> (autoregressive).
-          </p>
-
-          <!-- Teacher Forcing -->
-          <h3 class="text-lg font-semibold mt-4">Teacher Forcing (Training)</h3>
-          <svg viewBox="0 0 820 200" class="w-full h-auto mt-2">
-            <defs>
-              <marker id="arrTF" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
-                markerUnits="strokeWidth">
-                <path d="M0,0 L0,8 L8,4 z" fill="#fb923c" />
-              </marker>
-              <marker id="arrDec" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
-                markerUnits="strokeWidth">
-                <path d="M0,0 L0,8 L8,4 z" fill="#64748b" />
-              </marker>
-            </defs>
-
-            <!-- Ground-truth tokens -->
-            <g>
-              <circle cx="150" cy="36" r="10" fill="#fb923c" /><text x="150" y="56" class="lbl"
-                text-anchor="middle">y₀</text>
-              <circle cx="270" cy="36" r="10" fill="#fb923c" /><text x="270" y="56" class="lbl"
-                text-anchor="middle">y₁</text>
-              <circle cx="390" cy="36" r="10" fill="#fb923c" /><text x="390" y="56" class="lbl"
-                text-anchor="middle">y₂</text>
-            </g>
-
-            <!-- Decoder cells -->
-            <g>
-              <rect x="240" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <rect x="360" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <rect x="480" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <text x="290" y="121" class="lbl" text-anchor="middle">Dec t=1</text>
-              <text x="410" y="121" class="lbl" text-anchor="middle">Dec t=2</text>
-              <text x="530" y="121" class="lbl" text-anchor="middle">Dec t=3</text>
-            </g>
-
-            <!-- Teacher forcing arrows (dashed orange from y_{t-1}) -->
-            <g class="wire dash" marker-end="url(#arrTF)" stroke="#fb923c">
-              <path d="M150,46 C190,70 260,70 290,90" />
-              <path d="M270,46 C310,70 380,70 410,90" />
-              <path d="M390,46 C430,70 500,70 530,90" />
-            </g>
-
-            <!-- Outputs -->
-            <g class="lbl">
-              <text x="350" y="136" text-anchor="middle">ŷ₁</text>
-              <text x="470" y="136" text-anchor="middle">ŷ₂</text>
-              <text x="590" y="136" text-anchor="middle">ŷ₃</text>
-            </g>
-
-            <!-- Forward decode connections -->
-            <g class="wire" marker-end="url(#arrDec)">
-              <path d="M340,116 H360" />
-              <path d="M460,116 H480" />
-              <path d="M580,116 H600" />
-            </g>
-
-            <text x="410" y="180" class="text-sm font-medium" text-anchor="middle" fill="#fb923c">
-              Use ground-truth previous token as decoder input → faster/steadier training.
-            </text>
-          </svg>
-
-          <!-- Free-Running -->
-          <h3 class="text-lg font-semibold mt-6">Free-Running (Inference)</h3>
-          <svg viewBox="0 0 820 200" class="w-full h-auto mt-2">
-            <defs>
-              <marker id="arrFR" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
-                markerUnits="strokeWidth">
-                <path d="M0,0 L0,8 L8,4 z" fill="#3b82f6" />
-              </marker>
-            </defs>
-
-            <!-- Start token -->
-            <g>
-              <circle cx="150" cy="36" r="10" fill="#0ea5e9" /><text x="150" y="56" class="lbl"
-                text-anchor="middle">&lt;bos&gt;</text>
-            </g>
-
-            <!-- Decoder cells -->
-            <g>
-              <rect x="240" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <rect x="360" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <rect x="480" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
-                rx="10" />
-              <text x="290" y="121" class="lbl" text-anchor="middle">Dec t=1</text>
-              <text x="410" y="121" class="lbl" text-anchor="middle">Dec t=2</text>
-              <text x="530" y="121" class="lbl" text-anchor="middle">Dec t=3</text>
-            </g>
-
-            <!-- Autoregressive feedback (solid blue from previous prediction) -->
-            <g class="wire" marker-end="url(#arrFR)" stroke="#3b82f6">
-              <path d="M150,6 C190,70 260,70 290,90" />
-              <path d="M340,120 C350,116 360,106 350,76" />
-              <path d="M460,116 C470,116 480,106 470,76" />
-            </g>
-
-            <!-- Predictions -->
-            <g class="lbl">
-              <text x="350" y="66" text-anchor="middle">ŷ₁</text>
-              <text x="470" y="66" text-anchor="middle">ŷ₂</text>
-              <text x="600" y="96" text-anchor="middle">ŷ₃</text>
-            </g>
-
-            <!-- Forward connections -->
-            <g class="wire" marker-end="url(#arrFR)">
-              <path d="M340,116 H360" />
-              <path d="M460,116 H480" />
-              <path d="M580,116 H600" />
-            </g>
-
-            <text x="410" y="180" class="text-sm font-medium" text-anchor="middle" fill="#3b82f6">
-              Feed previous prediction back as next input → exposure bias may appear.
-            </text>
-          </svg>
-
-          <!-- Legend -->
-          <div class="mt-4 text-xs text-slate-600 grid grid-cols-2 gap-3">
-            <div class="flex items-center gap-2">
-              <span class="inline-block w-4 h-2 rounded" style="background:#fde68a"></span>
-              <span>Encoder / hₜ</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="inline-block w-4 h-2 rounded" style="background:#bfdbfe"></span>
-              <span>Decoder / sₜ</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="inline-block w-4 h-0.5 bg-orange-400 border-b border-orange-400"
-                style="border-style:dashed"></span>
-              <span>Teacher-forcing input</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="inline-block w-4 h-0.5 bg-blue-500"></span>
-              <span>Autoregressive feedback</span>
-            </div>
-          </div>
-        </article>
-
-        <!-- ========== 2) Attention (Improved) ========== -->
-         
-
-<section id="attention" class="py-10 bg-slate-50">
-  <div class="max-w-7xl mx-auto px-10 grid lg:grid-cols-1 gap-10">
-    <!-- Subtitle Block -->
       <div class="flex items-center gap-3">
-        <div class="w-2 h-8 bg-gradient-to-b from-purple-400 to-purple-600 rounded"></div>
-        <h2 class="text-2xl font-bold text-slate-900">Attention Mechanism</h2>
+        <div class="w-2 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded"></div>
+        <hq class="text-2xl font-bold text-slate-900">Architectures</h2>
       </div>
-    <!-- Block 1: Attention Overview -->
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold mb-2">1. Attention Overview</h3>
-      <p class="text-sm text-slate-700 mt-2">Attention allows the decoder to focus on relevant encoder states by computing a weighted sum of values \( V \) based on a query \( q_t \) and keys \( K \). The result is a context vector \( c_t \) used for decoding.</p>
-      <div class="text-sm text-slate-700 mt-2">
-        <strong>Key Equation:</strong>
-        \[ \mathrm{Attn}(q_t, K, V) = \mathrm{softmax}\left(\frac{q_t K^\top}{\sqrt{d}}\right) V \]
-      </div>
-      <svg viewBox="0 0 700 250" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="attn-overview-title attn-overview-desc">
-        <title id="attn-overview-title">Attention Mechanism Overview</title>
-        <desc id="attn-overview-desc">Diagram showing the flow of query, keys, and values through attention to produce a context vector.</desc>
-        <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
-          </marker>
-          <linearGradient id="encGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#fef3c7"/><stop offset="100%" style="stop-color:#fde68a"/>
-          </linearGradient>
-          <linearGradient id="decGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#e9d5ff"/><stop offset="100%" style="stop-color:#c4b5fd"/>
-          </linearGradient>
-        </defs>
-        <!-- Encoder states (keys/values) -->
-        <g>
-          <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <text x="80" y="65" class="lbl" text-anchor="middle">k₁, v₁</text>
-          <text x="180" y="65" class="lbl" text-anchor="middle">k₂, v₂</text>
-          <text x="280" y="65" class="lbl" text-anchor="middle">k₃, v₃</text>
-        </g>
-        <!-- Query -->
-        <rect x="150" y="150" width="60" height="40" fill="url(#decGrad)" stroke="#a855f7" stroke-width="2" rx="10"/>
-        <text x="180" y="175" class="lbl" text-anchor="middle">q₍t₎</text>
-        <!-- Attention computation -->
-        <rect x="350" y="90" width="80" height="60" class="op"/>
-        <text x="390" y="125" class="lbl" text-anchor="middle">Attention</text>
-        <!-- Context vector -->
-        <rect x="500" y="90" width="60" height="40" class="op"/>
-        <text x="530" y="115" class="lbl" text-anchor="middle">c₍t₎</text>
-        <!-- Connections -->
-        <g class="wire" marker-end="url(#arrow)">
-          <path d="M 110 60 C 180 60 300 90 350 90"/>
-          <path d="M 210 60 C 280 60 320 90 350 90"/>
-          <path d="M 310 60 C 330 60 340 80 350 90"/>
-          <path d="M 180 190 C 250 190 300 150 350 150"/>
-          <path d="M 430 120 H 500"/>
-        </g>
-        <text x="390" y="200" class="tip" text-anchor="middle">Weighted sum of vᵢ based on q₍t₎ and kᵢ</text>
-      </svg>
-      <p class="tip mt-2">Attention dynamically selects relevant encoder states, avoiding the bottleneck of fixed context vectors.</p>
-    </article>
-    <!-- Block 2: Scoring and Softmax -->
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold mb-2">2. Scoring and Softmax</h3>
-      <p class="text-sm text-slate-700 mt-2">The attention mechanism computes scores by comparing the query \( q_t \) with each key \( k_i \), then applies softmax to get weights \( \alpha_{t,i} \).</p>
-      <div class="text-sm text-slate-700 mt-2">
-        <strong>Dot-Product Score:</strong>
-        \[ \alpha_{t,i} = \mathrm{softmax}_i\left(\frac{q_t^\top k_i}{\sqrt{d}}\right) \]
-      </div>
-      <svg viewBox="0 0 700 200" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="attn-score-title attn-score-desc">
-        <title id="attn-score-title">Attention Scoring and Softmax</title>
-        <desc id="attn-score-desc">Diagram showing the computation of attention scores and softmax weights.</desc>
-        <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
-          </marker>
-          <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#fee2e2"/><stop offset="100%" style="stop-color:#f87171"/>
-          </linearGradient>
-        </defs>
-        <!-- Query and Keys -->
-        <rect x="50" y="150" width="60" height="40" fill="url(#decGrad)" stroke="#a855f7" stroke-width="2" rx="10"/>
-        <text x="80" y="175" class="lbl" text-anchor="middle">q₍t₎</text>
-        <g>
-          <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <text x="80" y="65" class="lbl" text-anchor="middle">k₁</text>
-          <text x="180" y="65" class="lbl" text-anchor="middle">k₂</text>
-          <text x="280" y="65" class="lbl" text-anchor="middle">k₃</text>
-        </g>
-        <!-- Scoring operation -->
-        <rect x="350" y="90" width="60" height="40" class="op"/>
-        <text x="380" y="115" class="lbl" text-anchor="middle">q₍t₎·kᵢ</text>
-        <!-- Softmax -->
-        <rect x="450" y="90" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2" rx="10"/>
-        <text x="480" y="115" class="lbl" text-anchor="middle">softmax</text>
-        <!-- Weights -->
-        <rect x="550" y="90" width="60" height="40" class="op"/>
-        <text x="580" y="115" class="lbl" text-anchor="middle">α₍t,i₎</text>
-        <!-- Connections -->
-        <g class="wire" marker-end="url(#arrow)">
-          <path d="M 110 60 C 180 60 300 90 350 90"/>
-          <path d="M 210 60 C 280 60 320 90 350 90"/>
-          <path d="M 310 60 C 330 60 340 80 350 90"/>
-          <path d="M 80 190 C 150 190 300 150 350 130"/>
-          <path d="M 410 110 H 450"/>
-          <path d="M 510 110 H 550"/>
-        </g>
-        <text x="380" y="180" class="tip" text-anchor="middle">Scores scaled by 1/√d, then normalized</text>
-      </svg>
-      <p class="tip mt-2">The dot product measures similarity between query and keys; softmax ensures weights sum to 1.</p>
-    </article>
-    <!-- Block 3: Context Vector Computation -->
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold mb-2">3. Context Vector Computation</h3>
-      <p class="text-sm text-slate-700 mt-2">The attention weights \( \alpha_{t,i} \) are used to compute a weighted sum of values \( v_i \), producing the context vector \( c_t \).</p>
-      <div class="text-sm text-slate-700 mt-2">
-        <strong>Context Equation:</strong>
-        \[ c_t = \sum_i \alpha_{t,i} v_i \]
-      </div>
-      <svg viewBox="0 0 700 250" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="attn-context-title attn-context-desc">
-        <title id="attn-context-title">Context Vector Computation</title>
-        <desc id="attn-context-desc">Diagram showing the weighted sum of values using attention weights to produce the context vector.</desc>
-        <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
-          </marker>
-        </defs>
-        <!-- Values and Weights -->
-        <g>
-          <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <text x="80" y="65" class="lbl" text-anchor="middle">v₁</text>
-          <text x="180" y="65" class="lbl" text-anchor="middle">v₂</text>
-          <text x="280" y="65" class="lbl" text-anchor="middle">v₃</text>
-        </g>
-        <g>
-          <rect x="50" y="150" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2" rx="10"/>
-          <rect x="150" y="150" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2" rx="10"/>
-          <rect x="250" y="150" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2" rx="10"/>
-          <text x="80" y="175" class="lbl" text-anchor="middle">α₍t,₁₎</text>
-          <text x="180" y="175" class="lbl" text-anchor="middle">α₍t,₂₎</text>
-          <text x="280" y="175" class="lbl" text-anchor="middle">α₍t,₃₎</text>
-        </g>
-        <!-- Weighted sum -->
-        <circle cx="380" cy="100" r="20" class="add"/>
-        <text x="380" y="105" class="lbl" text-anchor="middle">+</text>
-        <!-- Context vector -->
-        <rect x="500" y="80" width="60" height="40" class="op"/>
-        <text x="530" y="105" class="lbl" text-anchor="middle">c₍t₎</text>
-        <!-- Connections -->
-        <g class="wire" marker-end="url(#arrow)">
-          <path d="M 110 60 C 200 60 320 80 360 90"/>
-          <path d="M 210 60 C 280 60 330 80 360 90"/>
-          <path d="M 310 60 C 340 60 350 80 360 90"/>
-          <path d="M 110 170 C 200 170 320 120 360 110"/>
-          <path d="M 210 170 C 280 170 330 120 360 110"/>
-          <path d="M 310 170 C 340 170 350 120 360 110"/>
-          <path d="M 400 100 H 500"/>
-        </g>
-        <text x="380" y="180" class="tip" text-anchor="middle">Weighted sum of values</text>
-      </svg>
-      <p class="tip mt-2">The context vector \( c_t \) combines relevant information from encoder states, guided by attention weights.</p>
-    </article>
 
-      <!-- Block 4: Animated Attention Demonstration -->
-    <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-      <h3 class="text-xl font-semibold mb-2">4. Animated Attention Demonstration</h3>
-      <p class="text-sm text-slate-700 mt-2">Watch how attention flows: The query interacts with keys to compute scores, which are normalized via softmax to form weights, and then used to weight the values for the context vector.</p>
-      <svg viewBox="0 0 600 400" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="attn-animated-title attn-animated-desc">
-        <title id="attn-animated-title">Animated Attention Demonstration</title>
-        <desc id="attn-animated-desc">Animated diagram demonstrating the flow of attention computation from query and keys to context vector.</desc>
-        <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
-          </marker>
-          <linearGradient id="encGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#fef3c7"/><stop offset="100%" style="stop-color:#fde68a"/>
-          </linearGradient>
-          <linearGradient id="decGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#e9d5ff"/><stop offset="100%" style="stop-color:#c4b5fd"/>
-          </linearGradient>
-          <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#fee2e2"/><stop offset="100%" style="stop-color:#f87171"/>
-          </linearGradient>
-        </defs>
-        <!-- Encoder states (keys/values) -->
-        <g>
-          <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10"/>
-          <text x="80" y="65" class="lbl" text-anchor="middle">k₁, v₁</text>
-          <text x="180" y="65" class="lbl" text-anchor="middle">k₂, v₂</text>
-          <text x="280" y="65" class="lbl" text-anchor="middle">k₃, v₃</text>
-        </g>
-        <!-- Query -->
-        <rect x="150" y="200" width="60" height="40" fill="url(#decGrad)" stroke="#a855f7" stroke-width="2" rx="10"/>
-        <text x="180" y="225" class="lbl" text-anchor="middle">q₍t₎</text>
-        <!-- Scoring operation -->
-        <rect x="350" y="80" width="60" height="40" class="op"/>
-        <text x="380" y="105" class="lbl" text-anchor="middle">Scores</text>
-        <!-- Softmax -->
-        <rect x="450" y="80" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2" rx="10"/>
-        <text x="480" y="105" class="lbl" text-anchor="middle">softmax</text>
-        <!-- Weights (animated opacity) -->
-        <g opacity="0">
-          <animate attributeName="opacity" values="0;1" dur="3s" repeatCount="indefinite" />
-          <rect x="450" y="160" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2" rx="10"/>
-          <text x="480" y="185" class="lbl" text-anchor="middle">α₍t,i₎</text>
-        </g>
-        <!-- Weighted sum -->
-        <circle cx="380" cy="280" r="20" class="add"/>
-        <text x="380" y="285" class="lbl" text-anchor="middle">+</text>
-        <!-- Context vector -->
-        <rect x="500" y="260" width="60" height="40" class="op"/>
-        <text x="530" y="285" class="lbl" text-anchor="middle">c₍t₎</text>
-        <!-- Animated connections from keys to scores -->
-        <g class="wire" marker-end="url(#arrow)">
-          <path d="M 110 60 C 180 60 300 80 350 90" stroke-dasharray="5 5">
-            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
-          </path>
-          <path d="M 210 60 C 280 60 320 80 350 90" stroke-dasharray="5 5">
-            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
-          </path>
-          <path d="M 310 60 C 340 60 350 80 350 90" stroke-dasharray="5 5">
-            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
-          </path>
-        </g>
-        <!-- Animated connection from query to scores -->
-        <path class="wire" marker-end="url(#arrow)" d="M 180 240 C 250 240 300 200 350 130" stroke-dasharray="5 5">
-          <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
-        </path>
-        <!-- Connection from scores to softmax -->
-        <path class="wire" marker-end="url(#arrow)" d="M 410 100 H 450"/>
-        <!-- Animated connection from softmax to weights -->
-        <path class="wire" marker-end="url(#arrow)" d="M 510 100 V 180" stroke-dasharray="5 5">
-          <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" begin="1s" />
-        </path>
-        <!-- Animated connections from weights and values to sum -->
-        <g class="wire" marker-end="url(#arrow)">
-          <path d="M 110 60 C 200 60 320 240 360 270" stroke-dasharray="5 5">
-            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" begin="2s" />
-          </path>
-          <path d="M 210 60 C 280 60 330 240 360 270" stroke-dasharray="5 5">
-            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" begin="2s" />
-          </path>
-          <path d="M 310 60 C 340 60 350 240 360 270" stroke-dasharray="5 5">
-            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" begin="2s" />
-          </path>
-          <path d="M 480 200 C 420 240 380 260 360 270" stroke-dasharray="5 5">
-            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" begin="2s" />
-          </path>
-        </g>
-        <!-- Connection from sum to context -->
-        <path class="wire" marker-end="url(#arrow)" d="M 400 280 H 500"/>
-        <text x="300" y="350" class="tip" text-anchor="middle">Animation shows flow: Query/keys → Scores → Weights → Context</text>
-      </svg>
-      <p class="tip mt-2">The animation illustrates the sequential computation in attention, highlighting data flow over time.</p>
-    </article>
-    
-  </div>
-</section>
+      <section id="birnn" class="py-10 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-1 gap-6">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-8 bg-gradient-to-b from-blue-400 to-blue-600 rounded"></div>
+            <h2 class="text-2xl font-bold text-slate-900">Bidirectional RNN</h2>
+          </div>
+          <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+            <h3 class="text-xl font-semibold mb-2">Bidirectional RNN — Overview</h3>
+            <p class="text-sm text-slate-700 mt-2">Processes sequences in both forward and backward directions,
+              concatenating hidden states for richer context.</p>
+            <div class="text-sm text-slate-700 mt-2">
+              <strong>Equations:</strong>
+              \[
+              h_t^f = \phi(W_h^f h_{t-1}^f + W_x^f x_t + b^f), \quad h_t^b = \phi(W_h^b h_{t+1}^b + W_x^b x_t + b^b),
+              \quad h_t = [h_t^f; h_t^b]
+              \]
+            </div>
+            <p class="tip mt-2">Useful for tasks like POS tagging or NER where context from both directions improves
+              performance.</p>
+          </article>
+          <svg viewBox="0 0 1250 460" xmlns="http://www.w3.org/2000/svg" role="img"
+            aria-labelledby="birnn-title birnn-desc">
+            <title id="birnn-title">Bidirectional RNN — Per-timestep Concatenation</title>
+            <desc id="birnn-desc">Forward (top) flows left→right, backward (bottom) flows right→left. Each timestep
+              concatenates h^f and h^b to produce y_t.</desc>
+
+            <!-- Styles -->
+            <style>
+              :root {
+                color-scheme: light;
+              }
+
+              .bg {
+                fill: #f8fafc;
+              }
+
+              /* slate-50 */
+              .io {
+                fill: #e2e8f0;
+                stroke: #334155;
+              }
+
+              /* slate-200 / slate-700 */
+              .cell {
+                fill: #e0f2fe;
+                stroke: #0369a1;
+              }
+
+              /* sky-100 / sky-700 */
+              .cell.bw {
+                fill: #eef2ff;
+                stroke: #4338ca;
+              }
+
+              /* indigo-50 / indigo-700 */
+              .op {
+                fill: #fef9c3;
+                stroke: #ca8a04;
+              }
+
+              /* amber-50 / amber-600 */
+              .out {
+                fill: #dcfce7;
+                stroke: #15803d;
+              }
+
+              /* green-100 / green-700 */
+              .wire {
+                stroke: #334155;
+                stroke-width: 2;
+                fill: none;
+              }
+
+              .heavy {
+                stroke: #0f172a;
+                stroke-width: 2.6;
+                fill: none;
+              }
+
+              .lbl {
+                font: 14px/1.2 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+                fill: #0f172a;
+              }
+
+              .small {
+                font-size: 12px;
+                fill: #334155;
+              }
+
+              .sup {
+                baseline-shift: super;
+                font-size: 75%;
+              }
+
+              .sub {
+                baseline-shift: sub;
+                font-size: 75%;
+              }
+
+              .k {
+                font-weight: 600;
+              }
+            </style>
+
+            <!-- Arrow marker -->
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+                orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              </marker>
+            </defs>
+
+            <!-- Soft background -->
+            <rect class="bg" x="10" y="10" width="1230" height="440" rx="12" />
+
+            <!-- Column anchors: t-1 (180), t (500), t+1 (820) -->
+            <!-- Rows: forward y=140, backward y=300, concat centerline y=220 -->
+
+            <!-- Timestep labels -->
+            <text class="lbl small" x="180" y="56" text-anchor="middle">t<tspan class="sub">−1</tspan></text>
+            <text class="lbl small" x="500" y="56" text-anchor="middle">t</text>
+            <text class="lbl small" x="820" y="56" text-anchor="middle">t<tspan class="sup">+1</tspan></text>
+
+            <!-- Forward cells -->
+            <rect class="cell" x="130" y="100" width="100" height="80" rx="10" />
+            <rect class="cell" x="450" y="100" width="100" height="80" rx="10" />
+            <rect class="cell" x="770" y="100" width="100" height="80" rx="10" />
+            <text class="lbl small" x="180" y="92" text-anchor="middle">Forward RNN</text>
+            <text class="lbl small" x="500" y="92" text-anchor="middle">Forward RNN</text>
+            <text class="lbl small" x="820" y="92" text-anchor="middle">Forward RNN</text>
+
+            <!-- Backward cells -->
+            <rect class="cell bw" x="130" y="260" width="100" height="80" rx="10" />
+            <rect class="cell bw" x="450" y="260" width="100" height="80" rx="10" />
+            <rect class="cell bw" x="770" y="260" width="100" height="80" rx="10" />
+            <text class="lbl small" x="180" y="356" text-anchor="middle">Backward RNN</text>
+            <text class="lbl small" x="500" y="356" text-anchor="middle">Backward RNN</text>
+            <text class="lbl small" x="820" y="356" text-anchor="middle">Backward RNN</text>
+
+            <!-- Inputs (top and bottom, aligned per column) -->
+            <circle class="io" cx="90" cy="140" r="22" /><text class="lbl" x="90" y="144" text-anchor="middle">x<tspan
+                class="sub">t−1</tspan></text>
+            <circle class="io" cx="410" cy="140" r="22" /><text class="lbl" x="410" y="144" text-anchor="middle">x<tspan
+                class="sub">t</tspan></text>
+            <circle class="io" cx="730" cy="140" r="22" /><text class="lbl" x="730" y="144" text-anchor="middle">x<tspan
+                class="sub">t+1</tspan></text>
+            <path class="wire" d="M 112 140 H 130" marker-end="url(#arrow)" />
+            <path class="wire" d="M 432 140 H 450" marker-end="url(#arrow)" />
+            <path class="wire" d="M 752 140 H 770" marker-end="url(#arrow)" />
+
+            <circle class="io" cx="90" cy="300" r="22" /><text class="lbl" x="90" y="304" text-anchor="middle">x<tspan
+                class="sub">t−1</tspan></text>
+            <circle class="io" cx="410" cy="300" r="22" /><text class="lbl" x="410" y="304" text-anchor="middle">x<tspan
+                class="sub">t</tspan></text>
+            <circle class="io" cx="730" cy="300" r="22" /><text class="lbl" x="730" y="304" text-anchor="middle">x<tspan
+                class="sub">t+1</tspan></text>
+            <path class="wire" d="M 112 300 H 130" marker-end="url(#arrow)" />
+            <path class="wire" d="M 432 300 H 450" marker-end="url(#arrow)" />
+            <path class="wire" d="M 752 300 H 770" marker-end="url(#arrow)" />
+
+            <!-- Forward hidden flow (left→right) -->
+            <path class="heavy" d="M 230 140 H 450" marker-end="url(#arrow)" />
+            <path class="heavy" d="M 550 140 H 770" marker-end="url(#arrow)" />
+
+            <!-- Backward hidden flow (right→left) -->
+            <path class="heavy" d="M 770 300 H 550" marker-end="url(#arrow)" />
+            <path class="heavy" d="M 450 300 H 230" marker-end="url(#arrow)" />
+
+            <!-- Per-timestep Concat boxes (centered at y=220) -->
+            <!-- t-1 -->
+            <rect class="op" x="250" y="190" width="80" height="60" rx="10" />
+            <text class="lbl k" x="290" y="205" text-anchor="middle">Concat</text>
+            <text class="lbl small" x="290" y="224" text-anchor="middle">[h<tspan class="sub">t−1</tspan>
+              <tspan class="sup">f</tspan>; h<tspan class="sub">t−1</tspan>
+              <tspan class="sup">b</tspan>]
+            </text>
+            <!-- taps from forward/backward cells of t-1 -->
+            <path class="wire" d="M 230 140 C 245 160, 255 175, 250 190" />
+            <path class="wire" d="M 230 300 C 245 280, 255 265, 250 250" />
+            <!-- output y_{t-1} -->
+            <circle class="out" cx="360" cy="220" r="20" />
+            <text class="lbl" x="360" y="224" text-anchor="middle">y<tspan class="sub">t−1</tspan></text>
+            <path class="wire" d="M 330 220 H 340" marker-end="url(#arrow)" />
+
+            <!-- t -->
+            <rect class="op" x="570" y="190" width="80" height="60" rx="10" />
+            <text class="lbl k" x="610" y="205" text-anchor="middle">Concat</text>
+            <text class="lbl small" x="610" y="224" text-anchor="middle">[h<tspan class="sub">t</tspan>
+              <tspan class="sup">f</tspan>; h<tspan class="sub">t</tspan>
+              <tspan class="sup">b</tspan>]
+            </text>
+            <path class="wire" d="M 550 140 C 565 160, 575 175, 570 190" />
+            <path class="wire" d="M 550 300 C 565 280, 575 265, 570 250" />
+            <circle class="out" cx="680" cy="220" r="20" />
+            <text class="lbl" x="680" y="224" text-anchor="middle">y<tspan class="sub">t</tspan></text>
+            <path class="wire" d="M 650 220 H 660" marker-end="url(#arrow)" />
+
+            <!-- t+1 -->
+            <rect class="op" x="890" y="190" width="80" height="60" rx="10" />
+            <text class="lbl k" x="930" y="205" text-anchor="middle">Concat</text>
+            <text class="lbl small" x="930" y="224" text-anchor="middle">[h<tspan class="sub">t+1</tspan>
+              <tspan class="sup">f</tspan>; h<tspan class="sub">t+1</tspan>
+              <tspan class="sup">b</tspan>]
+            </text>
+            <path class="wire" d="M 870 140 C 885 160, 895 175, 890 190" />
+            <path class="wire" d="M 870 300 C 885 280, 895 265, 890 250" />
+            <circle class="out" cx="1000" cy="220" r="20" />
+            <text class="lbl" x="1000" y="224" text-anchor="middle">y<tspan class="sub">t+1</tspan></text>
+            <path class="wire" d="M 970 220 H 980" marker-end="url(#arrow)" />
+
+            <!-- Legend -->
+            <g>
+              <rect x="24" y="24" width="262" height="84" rx="8" fill="#ffffff" stroke="#cbd5e1" />
+              <rect class="cell" x="36" y="36" width="26" height="18" rx="4" />
+              <text class="lbl small" x="70" y="50">Forward cell h<tspan class="sub">·</tspan>
+                <tspan class="sup">f</tspan>
+              </text>
+              <rect class="cell bw" x="36" y="62" width="26" height="18" rx="4" />
+              <text class="lbl small" x="70" y="76">Backward cell h<tspan class="sub">·</tspan>
+                <tspan class="sup">b</tspan>
+              </text>
+            </g>
+          </svg>
+
+        </div>
+      </section>
+
+      <!-- ========== 1) Vanilla Seq2Seq ========== -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+        <h2 class="text-2xl font-bold">Encoder→Decoder (Vanilla)</h2>
+        <p class="text-sm text-slate-700 mt-2">
+          Fixed-length context vector (bottleneck) passed from encoder to decoder.
+        </p>
+        <svg viewBox="0 0 820 300" class="w-full h-auto mt-4">
+          <defs>
+            <marker id="arrC" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
+              markerUnits="strokeWidth">
+              <path d="M0,0 L0,8 L8,4 z" fill="#64748b" />
+            </marker>
+            <linearGradient id="encGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#fef3c7" />
+              <stop offset="100%" style="stop-color:#fde68a" />
+            </linearGradient>
+            <linearGradient id="decGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#dbeafe" />
+              <stop offset="100%" style="stop-color:#bfdbfe" />
+            </linearGradient>
+          </defs>
+
+          <!-- Inputs -->
+          <g class="inDot">
+            <circle cx="80" cy="36" r="10" />
+            <circle cx="200" cy="36" r="10" />
+            <circle cx="320" cy="36" r="10" />
+          </g>
+          <text x="100" y="56" class="lbl" text-anchor="middle">x₁</text>
+          <text x="220" y="56" class="lbl" text-anchor="middle">x₂</text>
+          <text x="340" y="56" class="lbl" text-anchor="middle">x₃</text>
+
+          <!-- Encoder cells -->
+          <g>
+            <rect x="40" y="72" width="80" height="52" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2" rx="10" />
+            <rect x="160" y="72" width="80" height="52" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+              rx="10" />
+            <rect x="280" y="72" width="80" height="52" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+              rx="10" />
+            <text x="80" y="103" class="lbl" text-anchor="middle">Enc</text>
+            <text x="200" y="103" class="lbl" text-anchor="middle">Enc</text>
+            <text x="320" y="103" class="lbl" text-anchor="middle">Enc</text>
+          </g>
+
+          <!-- Encoder wiring -->
+          <g class="wire" marker-end="url(#arrC)">
+            <path d="M80,46 V72" />
+            <path d="M200,46 V72" />
+            <path d="M320,46 V72" />
+            <path d="M120,98 H160" />
+            <path d="M240,98 H280" />
+          </g>
+
+          <!-- Context -->
+          <rect x="430" y="72" width="110" height="52" class="gate" rx="10" />
+          <text x="485" y="103" class="lbl" text-anchor="middle">Context</text>
+          <path class="wire" marker-end="url(#arrC)" d="M360,98 H430" />
+
+          <!-- Decoder cells (right-to-left for time) -->
+          <g>
+            <rect x="690" y="160" width="80" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <rect x="570" y="160" width="80" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <rect x="450" y="160" width="80" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <text x="730" y="191" class="lbl" text-anchor="middle">Dec</text>
+            <text x="610" y="191" class="lbl" text-anchor="middle">Dec</text>
+            <text x="490" y="191" class="lbl" text-anchor="middle">Dec</text>
+          </g>
+
+          <!-- Decoder wiring -->
+          <g class="wire" marker-end="url(#arrC)">
+            <path d="M485,124 V160" />
+            <path d="M530,186 H570" />
+            <path d="M650,186 H690" />
+            <path d="M770,186 H790" />
+          </g>
+
+          <!-- Output token -->
+          <g class="stateDot">
+            <circle cx="800" cy="186" r="10" />
+          </g>
+          <text x="800" y="206" class="lbl" text-anchor="middle">ŷ</text>
+
+          <!-- Labels -->
+          <text x="200" y="140" class="text-sm font-semibold" text-anchor="middle" fill="#f59e0b">ENCODER</text>
+          <text x="610" y="230" class="text-sm font-semibold" text-anchor="middle" fill="#3b82f6">DECODER</text>
+        </svg>
+        <p class="tip mt-2">Bottleneck risk: long inputs must compress into a single vector.</p>
+      </article>
+
+      <!-- ========== 3) Decoder Input Modes: Teacher Forcing vs Free-Running ========== -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+        <h2 class="text-2xl font-bold">Decoder Input Modes</h2>
+        <p class="text-sm text-slate-700 mt-2">Training with <b>teacher forcing</b> vs inference with
+          <b>free-running</b> (autoregressive).
+        </p>
+
+        <!-- Teacher Forcing -->
+        <h3 class="text-lg font-semibold mt-4">Teacher Forcing (Training)</h3>
+        <svg viewBox="0 0 820 200" class="w-full h-auto mt-2">
+          <defs>
+            <marker id="arrTF" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
+              markerUnits="strokeWidth">
+              <path d="M0,0 L0,8 L8,4 z" fill="#fb923c" />
+            </marker>
+            <marker id="arrDec" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
+              markerUnits="strokeWidth">
+              <path d="M0,0 L0,8 L8,4 z" fill="#64748b" />
+            </marker>
+          </defs>
+
+          <!-- Ground-truth tokens -->
+          <g>
+            <circle cx="150" cy="36" r="10" fill="#fb923c" /><text x="150" y="56" class="lbl"
+              text-anchor="middle">y₀</text>
+            <circle cx="270" cy="36" r="10" fill="#fb923c" /><text x="270" y="56" class="lbl"
+              text-anchor="middle">y₁</text>
+            <circle cx="390" cy="36" r="10" fill="#fb923c" /><text x="390" y="56" class="lbl"
+              text-anchor="middle">y₂</text>
+          </g>
+
+          <!-- Decoder cells -->
+          <g>
+            <rect x="240" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <rect x="360" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <rect x="480" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <text x="290" y="121" class="lbl" text-anchor="middle">Dec t=1</text>
+            <text x="410" y="121" class="lbl" text-anchor="middle">Dec t=2</text>
+            <text x="530" y="121" class="lbl" text-anchor="middle">Dec t=3</text>
+          </g>
+
+          <!-- Teacher forcing arrows (dashed orange from y_{t-1}) -->
+          <g class="wire dash" marker-end="url(#arrTF)" stroke="#fb923c">
+            <path d="M150,46 C190,70 260,70 290,90" />
+            <path d="M270,46 C310,70 380,70 410,90" />
+            <path d="M390,46 C430,70 500,70 530,90" />
+          </g>
+
+          <!-- Outputs -->
+          <g class="lbl">
+            <text x="350" y="136" text-anchor="middle">ŷ₁</text>
+            <text x="470" y="136" text-anchor="middle">ŷ₂</text>
+            <text x="590" y="136" text-anchor="middle">ŷ₃</text>
+          </g>
+
+          <!-- Forward decode connections -->
+          <g class="wire" marker-end="url(#arrDec)">
+            <path d="M340,116 H360" />
+            <path d="M460,116 H480" />
+            <path d="M580,116 H600" />
+          </g>
+
+          <text x="410" y="180" class="text-sm font-medium" text-anchor="middle" fill="#fb923c">
+            Use ground-truth previous token as decoder input → faster/steadier training.
+          </text>
+        </svg>
+
+        <!-- Free-Running -->
+        <h3 class="text-lg font-semibold mt-6">Free-Running (Inference)</h3>
+        <svg viewBox="0 0 820 200" class="w-full h-auto mt-2">
+          <defs>
+            <marker id="arrFR" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"
+              markerUnits="strokeWidth">
+              <path d="M0,0 L0,8 L8,4 z" fill="#3b82f6" />
+            </marker>
+          </defs>
+
+          <!-- Start token -->
+          <g>
+            <circle cx="150" cy="36" r="10" fill="#0ea5e9" /><text x="150" y="56" class="lbl"
+              text-anchor="middle">&lt;bos&gt;</text>
+          </g>
+
+          <!-- Decoder cells -->
+          <g>
+            <rect x="240" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <rect x="360" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <rect x="480" y="90" width="100" height="52" fill="url(#decGrad)" stroke="#3b82f6" stroke-width="2"
+              rx="10" />
+            <text x="290" y="121" class="lbl" text-anchor="middle">Dec t=1</text>
+            <text x="410" y="121" class="lbl" text-anchor="middle">Dec t=2</text>
+            <text x="530" y="121" class="lbl" text-anchor="middle">Dec t=3</text>
+          </g>
+
+          <!-- Autoregressive feedback (solid blue from previous prediction) -->
+          <g class="wire" marker-end="url(#arrFR)" stroke="#3b82f6">
+            <path d="M150,6 C190,70 260,70 290,90" />
+            <path d="M340,120 C350,116 360,106 350,76" />
+            <path d="M460,116 C470,116 480,106 470,76" />
+          </g>
+
+          <!-- Predictions -->
+          <g class="lbl">
+            <text x="350" y="66" text-anchor="middle">ŷ₁</text>
+            <text x="470" y="66" text-anchor="middle">ŷ₂</text>
+            <text x="600" y="96" text-anchor="middle">ŷ₃</text>
+          </g>
+
+          <!-- Forward connections -->
+          <g class="wire" marker-end="url(#arrFR)">
+            <path d="M340,116 H360" />
+            <path d="M460,116 H480" />
+            <path d="M580,116 H600" />
+          </g>
+
+          <text x="410" y="180" class="text-sm font-medium" text-anchor="middle" fill="#3b82f6">
+            Feed previous prediction back as next input → exposure bias may appear.
+          </text>
+        </svg>
+
+        <!-- Legend -->
+        <div class="mt-4 text-xs text-slate-600 grid grid-cols-2 gap-3">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-2 rounded" style="background:#fde68a"></span>
+            <span>Encoder / hₜ</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-2 rounded" style="background:#bfdbfe"></span>
+            <span>Decoder / sₜ</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-0.5 bg-orange-400 border-b border-orange-400"
+              style="border-style:dashed"></span>
+            <span>Teacher-forcing input</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-0.5 bg-blue-500"></span>
+            <span>Autoregressive feedback</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- ========== 2) Attention (Improved) ========== -->
 
 
-        <section id="attention" class="py-10 bg-slate-50">
-          <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
-            <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-              <h2 class="text-2xl font-bold">Encoder→Decoder with Attention</h2>
-              <div class="text-sm text-slate-700 leading-7 mt-2">
-                <b>Dot (Luong):</b> $\alpha_{t,i}=\operatorname{softmax}_i\big(\tfrac{q_t^\top k_i}{\sqrt{d}}\big)$,
-                $c_t=\sum_i \alpha_{t,i} v_i$, $y_t=g([s_t;c_t])$.<br />
-                <b>Additive (Bahdanau):</b> $e_{t,i}=v^\top\tanh(W_q q_t + W_k k_i)$,
-                $\alpha=\operatorname{softmax}(e)$.
-                <div class="mt-2">
-                  <i>Masking for variable lengths:</i> set scores of pad positions to $-\infty$ before softmax:
-                  \[
-                  \alpha_{t}=\mathrm{softmax}\big(e_t + \log m\big),\quad
-                  m_i=\begin{cases}0&\text{pad}\\1&\text{valid}\end{cases}
-                  \]
-                </div>
+      <section id="attention" class="py-10 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-10 grid lg:grid-cols-1 gap-10">
+          <!-- Subtitle Block -->
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-8 bg-gradient-to-b from-purple-400 to-purple-600 rounded"></div>
+            <h2 class="text-2xl font-bold text-slate-900">Attention Mechanism</h2>
+          </div>
+          <!-- Block 1: Attention Overview -->
+          <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+            <h3 class="text-xl font-semibold mb-2">1. Attention Overview</h3>
+            <p class="text-sm text-slate-700 mt-2">Attention allows the decoder to focus on relevant encoder states by
+              computing a weighted sum of values \( V \) based on a query \( q_t \) and keys \( K \). The result is a
+              context vector \( c_t \) used for decoding.</p>
+            <div class="text-sm text-slate-700 mt-2">
+              <strong>Key Equation:</strong>
+              \[ \mathrm{Attn}(q_t, K, V) = \mathrm{softmax}\left(\frac{q_t K^\top}{\sqrt{d}}\right) V \]
+            </div>
+            <svg viewBox="0 0 700 250" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-labelledby="attn-overview-title attn-overview-desc">
+              <title id="attn-overview-title">Attention Mechanism Overview</title>
+              <desc id="attn-overview-desc">Diagram showing the flow of query, keys, and values through attention to
+                produce a context vector.</desc>
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+                  orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+                </marker>
+                <linearGradient id="encGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#fef3c7" />
+                  <stop offset="100%" style="stop-color:#fde68a" />
+                </linearGradient>
+                <linearGradient id="decGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#e9d5ff" />
+                  <stop offset="100%" style="stop-color:#c4b5fd" />
+                </linearGradient>
+              </defs>
+              <!-- Encoder states (keys/values) -->
+              <g>
+                <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <text x="80" y="65" class="lbl" text-anchor="middle">k₁, v₁</text>
+                <text x="180" y="65" class="lbl" text-anchor="middle">k₂, v₂</text>
+                <text x="280" y="65" class="lbl" text-anchor="middle">k₃, v₃</text>
+              </g>
+              <!-- Query -->
+              <rect x="150" y="150" width="60" height="40" fill="url(#decGrad)" stroke="#a855f7" stroke-width="2"
+                rx="10" />
+              <text x="180" y="175" class="lbl" text-anchor="middle">q₍t₎</text>
+              <!-- Attention computation -->
+              <rect x="350" y="90" width="80" height="60" class="op" />
+              <text x="390" y="125" class="lbl" text-anchor="middle">Attention</text>
+              <!-- Context vector -->
+              <rect x="500" y="90" width="60" height="40" class="op" />
+              <text x="530" y="115" class="lbl" text-anchor="middle">c₍t₎</text>
+              <!-- Connections -->
+              <g class="wire" marker-end="url(#arrow)">
+                <path d="M 110 60 C 180 60 300 90 350 90" />
+                <path d="M 210 60 C 280 60 320 90 350 90" />
+                <path d="M 310 60 C 330 60 340 80 350 90" />
+                <path d="M 180 190 C 250 190 300 150 350 150" />
+                <path d="M 430 120 H 500" />
+              </g>
+              <text x="390" y="200" class="tip" text-anchor="middle">Weighted sum of vᵢ based on q₍t₎ and kᵢ</text>
+            </svg>
+            <p class="tip mt-2">Attention dynamically selects relevant encoder states, avoiding the bottleneck of fixed
+              context vectors.</p>
+          </article>
+          <!-- Block 2: Scoring and Softmax -->
+          <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+            <h3 class="text-xl font-semibold mb-2">2. Scoring and Softmax</h3>
+            <p class="text-sm text-slate-700 mt-2">The attention mechanism computes scores by comparing the query \( q_t
+              \) with each key \( k_i \), then applies softmax to get weights \( \alpha_{t,i} \).</p>
+            <div class="text-sm text-slate-700 mt-2">
+              <strong>Dot-Product Score:</strong>
+              \[ \alpha_{t,i} = \mathrm{softmax}_i\left(\frac{q_t^\top k_i}{\sqrt{d}}\right) \]
+            </div>
+            <svg viewBox="0 0 700 200" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-labelledby="attn-score-title attn-score-desc">
+              <title id="attn-score-title">Attention Scoring and Softmax</title>
+              <desc id="attn-score-desc">Diagram showing the computation of attention scores and softmax weights.</desc>
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+                  orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+                </marker>
+                <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#fee2e2" />
+                  <stop offset="100%" style="stop-color:#f87171" />
+                </linearGradient>
+              </defs>
+              <!-- Query and Keys -->
+              <rect x="50" y="150" width="60" height="40" fill="url(#decGrad)" stroke="#a855f7" stroke-width="2"
+                rx="10" />
+              <text x="80" y="175" class="lbl" text-anchor="middle">q₍t₎</text>
+              <g>
+                <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <text x="80" y="65" class="lbl" text-anchor="middle">k₁</text>
+                <text x="180" y="65" class="lbl" text-anchor="middle">k₂</text>
+                <text x="280" y="65" class="lbl" text-anchor="middle">k₃</text>
+              </g>
+              <!-- Scoring operation -->
+              <rect x="350" y="90" width="60" height="40" class="op" />
+              <text x="380" y="115" class="lbl" text-anchor="middle">q₍t₎·kᵢ</text>
+              <!-- Softmax -->
+              <rect x="450" y="90" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2"
+                rx="10" />
+              <text x="480" y="115" class="lbl" text-anchor="middle">softmax</text>
+              <!-- Weights -->
+              <rect x="550" y="90" width="60" height="40" class="op" />
+              <text x="580" y="115" class="lbl" text-anchor="middle">α₍t,i₎</text>
+              <!-- Connections -->
+              <g class="wire" marker-end="url(#arrow)">
+                <path d="M 110 60 C 180 60 300 90 350 90" />
+                <path d="M 210 60 C 280 60 320 90 350 90" />
+                <path d="M 310 60 C 330 60 340 80 350 90" />
+                <path d="M 80 190 C 150 190 300 150 350 130" />
+                <path d="M 410 110 H 450" />
+                <path d="M 510 110 H 550" />
+              </g>
+              <text x="380" y="180" class="tip" text-anchor="middle">Scores scaled by 1/√d, then normalized</text>
+            </svg>
+            <p class="tip mt-2">The dot product measures similarity between query and keys; softmax ensures weights sum
+              to 1.</p>
+          </article>
+          <!-- Block 3: Context Vector Computation -->
+          <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+            <h3 class="text-xl font-semibold mb-2">3. Context Vector Computation</h3>
+            <p class="text-sm text-slate-700 mt-2">The attention weights \( \alpha_{t,i} \) are used to compute a
+              weighted sum of values \( v_i \), producing the context vector \( c_t \).</p>
+            <div class="text-sm text-slate-700 mt-2">
+              <strong>Context Equation:</strong>
+              \[ c_t = \sum_i \alpha_{t,i} v_i \]
+            </div>
+            <svg viewBox="0 0 700 250" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-labelledby="attn-context-title attn-context-desc">
+              <title id="attn-context-title">Context Vector Computation</title>
+              <desc id="attn-context-desc">Diagram showing the weighted sum of values using attention weights to produce
+                the context vector.</desc>
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+                  orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+                </marker>
+              </defs>
+              <!-- Values and Weights -->
+              <g>
+                <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <text x="80" y="65" class="lbl" text-anchor="middle">v₁</text>
+                <text x="180" y="65" class="lbl" text-anchor="middle">v₂</text>
+                <text x="280" y="65" class="lbl" text-anchor="middle">v₃</text>
+              </g>
+              <g>
+                <rect x="50" y="150" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2"
+                  rx="10" />
+                <rect x="150" y="150" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2"
+                  rx="10" />
+                <rect x="250" y="150" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2"
+                  rx="10" />
+                <text x="80" y="175" class="lbl" text-anchor="middle">α₍t,₁₎</text>
+                <text x="180" y="175" class="lbl" text-anchor="middle">α₍t,₂₎</text>
+                <text x="280" y="175" class="lbl" text-anchor="middle">α₍t,₃₎</text>
+              </g>
+              <!-- Weighted sum -->
+              <circle cx="380" cy="100" r="20" class="add" />
+              <text x="380" y="105" class="lbl" text-anchor="middle">+</text>
+              <!-- Context vector -->
+              <rect x="500" y="80" width="60" height="40" class="op" />
+              <text x="530" y="105" class="lbl" text-anchor="middle">c₍t₎</text>
+              <!-- Connections -->
+              <g class="wire" marker-end="url(#arrow)">
+                <path d="M 110 60 C 200 60 320 80 360 90" />
+                <path d="M 210 60 C 280 60 330 80 360 90" />
+                <path d="M 310 60 C 340 60 350 80 360 90" />
+                <path d="M 110 170 C 200 170 320 120 360 110" />
+                <path d="M 210 170 C 280 170 330 120 360 110" />
+                <path d="M 310 170 C 340 170 350 120 360 110" />
+                <path d="M 400 100 H 500" />
+              </g>
+              <text x="380" y="180" class="tip" text-anchor="middle">Weighted sum of values</text>
+            </svg>
+            <p class="tip mt-2">The context vector \( c_t \) combines relevant information from encoder states, guided
+              by attention weights.</p>
+          </article>
+
+          <!-- Block 4: Animated Attention Demonstration -->
+          <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+            <h3 class="text-xl font-semibold mb-2">4. Animated Attention Demonstration</h3>
+            <p class="text-sm text-slate-700 mt-2">Watch how attention flows: The query interacts with keys to compute
+              scores, which are normalized via softmax to form weights, and then used to weight the values for the
+              context vector.</p>
+            <svg viewBox="0 0 600 400" class="w-full h-auto mt-4 tex2jax_ignore" xmlns="http://www.w3.org/2000/svg"
+              role="img" aria-labelledby="attn-animated-title attn-animated-desc">
+              <title id="attn-animated-title">Animated Attention Demonstration</title>
+              <desc id="attn-animated-desc">Animated diagram demonstrating the flow of attention computation from query
+                and keys to context vector.</desc>
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8"
+                  orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+                </marker>
+                <linearGradient id="encGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#fef3c7" />
+                  <stop offset="100%" style="stop-color:#fde68a" />
+                </linearGradient>
+                <linearGradient id="decGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#e9d5ff" />
+                  <stop offset="100%" style="stop-color:#c4b5fd" />
+                </linearGradient>
+                <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#fee2e2" />
+                  <stop offset="100%" style="stop-color:#f87171" />
+                </linearGradient>
+              </defs>
+              <!-- Encoder states (keys/values) -->
+              <g>
+                <rect x="50" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="150" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <rect x="250" y="40" width="60" height="40" fill="url(#encGrad)" stroke="#f59e0b" stroke-width="2"
+                  rx="10" />
+                <text x="80" y="65" class="lbl" text-anchor="middle">k₁, v₁</text>
+                <text x="180" y="65" class="lbl" text-anchor="middle">k₂, v₂</text>
+                <text x="280" y="65" class="lbl" text-anchor="middle">k₃, v₃</text>
+              </g>
+              <!-- Query -->
+              <rect x="150" y="200" width="60" height="40" fill="url(#decGrad)" stroke="#a855f7" stroke-width="2"
+                rx="10" />
+              <text x="180" y="225" class="lbl" text-anchor="middle">q₍t₎</text>
+              <!-- Scoring operation -->
+              <rect x="350" y="80" width="60" height="40" class="op" />
+              <text x="380" y="105" class="lbl" text-anchor="middle">Scores</text>
+              <!-- Softmax -->
+              <rect x="450" y="80" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2"
+                rx="10" />
+              <text x="480" y="105" class="lbl" text-anchor="middle">softmax</text>
+              <!-- Weights (animated opacity) -->
+              <g opacity="0">
+                <animate attributeName="opacity" values="0;1" dur="3s" repeatCount="indefinite" />
+                <rect x="450" y="160" width="60" height="40" fill="url(#scoreGrad)" stroke="#ef4444" stroke-width="2"
+                  rx="10" />
+                <text x="480" y="185" class="lbl" text-anchor="middle">α₍t,i₎</text>
+              </g>
+              <!-- Weighted sum -->
+              <circle cx="380" cy="280" r="20" class="add" />
+              <text x="380" y="285" class="lbl" text-anchor="middle">+</text>
+              <!-- Context vector -->
+              <rect x="500" y="260" width="60" height="40" class="op" />
+              <text x="530" y="285" class="lbl" text-anchor="middle">c₍t₎</text>
+              <!-- Animated connections from keys to scores -->
+              <g class="wire" marker-end="url(#arrow)">
+                <path d="M 110 60 C 180 60 300 80 350 90" stroke-dasharray="5 5">
+                  <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
+                </path>
+                <path d="M 210 60 C 280 60 320 80 350 90" stroke-dasharray="5 5">
+                  <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
+                </path>
+                <path d="M 310 60 C 340 60 350 80 350 90" stroke-dasharray="5 5">
+                  <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
+                </path>
+              </g>
+              <!-- Animated connection from query to scores -->
+              <path class="wire" marker-end="url(#arrow)" d="M 180 240 C 250 240 300 200 350 130"
+                stroke-dasharray="5 5">
+                <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" />
+              </path>
+              <!-- Connection from scores to softmax -->
+              <path class="wire" marker-end="url(#arrow)" d="M 410 100 H 450" />
+              <!-- Animated connection from softmax to weights -->
+              <path class="wire" marker-end="url(#arrow)" d="M 510 100 V 180" stroke-dasharray="5 5">
+                <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite" begin="1s" />
+              </path>
+              <!-- Animated connections from weights and values to sum -->
+              <g class="wire" marker-end="url(#arrow)">
+                <path d="M 110 60 C 200 60 320 240 360 270" stroke-dasharray="5 5">
+                  <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite"
+                    begin="2s" />
+                </path>
+                <path d="M 210 60 C 280 60 330 240 360 270" stroke-dasharray="5 5">
+                  <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite"
+                    begin="2s" />
+                </path>
+                <path d="M 310 60 C 340 60 350 240 360 270" stroke-dasharray="5 5">
+                  <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite"
+                    begin="2s" />
+                </path>
+                <path d="M 480 200 C 420 240 380 260 360 270" stroke-dasharray="5 5">
+                  <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite"
+                    begin="2s" />
+                </path>
+              </g>
+              <!-- Connection from sum to context -->
+              <path class="wire" marker-end="url(#arrow)" d="M 400 280 H 500" />
+              <text x="300" y="350" class="tip" text-anchor="middle">Animation shows flow: Query/keys → Scores → Weights
+                → Context</text>
+            </svg>
+            <p class="tip mt-2">The animation illustrates the sequential computation in attention, highlighting data
+              flow over time.</p>
+          </article>
+
+        </div>
+      </section>
+
+
+      <section id="attention" class="py-10 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-6">
+          <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+            <h2 class="text-2xl font-bold">Encoder→Decoder with Attention</h2>
+            <div class="text-sm text-slate-700 leading-7 mt-2">
+              <b>Dot (Luong):</b> $\alpha_{t,i}=\operatorname{softmax}_i\big(\tfrac{q_t^\top k_i}{\sqrt{d}}\big)$,
+              $c_t=\sum_i \alpha_{t,i} v_i$, $y_t=g([s_t;c_t])$.<br />
+              <b>Additive (Bahdanau):</b> $e_{t,i}=v^\top\tanh(W_q q_t + W_k k_i)$,
+              $\alpha=\operatorname{softmax}(e)$.
+              <div class="mt-2">
+                <i>Masking for variable lengths:</i> set scores of pad positions to $-\infty$ before softmax:
+                \[
+                \alpha_{t}=\mathrm{softmax}\big(e_t + \log m\big),\quad
+                m_i=\begin{cases}0&\text{pad}\\1&\text{valid}\end{cases}
+                \]
               </div>
-              <h3 class="text-lg font-semibold mt-4">Tiny heatmap schematic</h3>
-              <svg viewBox="0 0 360 160" class="w-full h-auto tex2jax_ignore">
-                <defs>
-                  <linearGradient id="gradA" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#fee2e2" />
-                    <stop offset="100%" stop-color="#ef4444" />
-                  </linearGradient>
-                </defs>
-                <!-- axes -->
-                <text x="20" y="20" class="lbl">keys k₁…k₆</text>
-                <text x="300" y="140" class="lbl" text-anchor="end">query qₜ</text>
-                <!-- heat blocks -->
-                <g transform="translate(20,30)">
-                  <!-- 6 cells -->
-                  <rect x="0" y="0" width="40" height="20" fill="#fee2e2" />
-                  <rect x="40" y="0" width="40" height="20" fill="#fecaca" />
-                  <rect x="80" y="0" width="40" height="20" fill="#fca5a5" />
-                  <rect x="120" y="0" width="40" height="20" fill="#fb7185" />
-                  <rect x="160" y="0" width="40" height="20" fill="url(#gradA)" />
-                  <rect x="200" y="0" width="40" height="20" fill="#fee2e2" />
-                </g>
-                <!-- arrows combining -->
-                <g class="wire" stroke="#64748b">
-                  <path d="M40,70 C60,110 220,110 240,70" />
-                  <path d="M80,70 C90,105 220,105 240,70" />
-                  <path d="M160,70 C160,100 220,100 240,70" />
-                </g>
-                <rect x="250" y="55" width="70" height="30" class="op"></rect>
-                <text x="285" y="74" class="lbl" text-anchor="middle">cₜ</text>
-              </svg>
-              <p class="tip mt-2">Line thickness ≈ weight; attention creates a content-based, step-wise read from
-                encoder
-                states.</p>
-            </article>
+            </div>
+            <h3 class="text-lg font-semibold mt-4">Tiny heatmap schematic</h3>
+            <svg viewBox="0 0 360 160" class="w-full h-auto tex2jax_ignore">
+              <defs>
+                <linearGradient id="gradA" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fee2e2" />
+                  <stop offset="100%" stop-color="#ef4444" />
+                </linearGradient>
+              </defs>
+              <!-- axes -->
+              <text x="20" y="20" class="lbl">keys k₁…k₆</text>
+              <text x="300" y="140" class="lbl" text-anchor="end">query qₜ</text>
+              <!-- heat blocks -->
+              <g transform="translate(20,30)">
+                <!-- 6 cells -->
+                <rect x="0" y="0" width="40" height="20" fill="#fee2e2" />
+                <rect x="40" y="0" width="40" height="20" fill="#fecaca" />
+                <rect x="80" y="0" width="40" height="20" fill="#fca5a5" />
+                <rect x="120" y="0" width="40" height="20" fill="#fb7185" />
+                <rect x="160" y="0" width="40" height="20" fill="url(#gradA)" />
+                <rect x="200" y="0" width="40" height="20" fill="#fee2e2" />
+              </g>
+              <!-- arrows combining -->
+              <g class="wire" stroke="#64748b">
+                <path d="M40,70 C60,110 220,110 240,70" />
+                <path d="M80,70 C90,105 220,105 240,70" />
+                <path d="M160,70 C160,100 220,100 240,70" />
+              </g>
+              <rect x="250" y="55" width="70" height="30" class="op"></rect>
+              <text x="285" y="74" class="lbl" text-anchor="middle">cₜ</text>
+            </svg>
+            <p class="tip mt-2">Line thickness ≈ weight; attention creates a content-based, step-wise read from
+              encoder
+              states.</p>
+          </article>
 
-            <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-              <h3 class="text-xl font-semibold">Training & Inference</h3>
-              <h4 class="font-semibold mt-2">Teacher forcing vs free-running</h4>
-              <ul class="text-sm text-slate-700 space-y-2 mt-1">
-                <li><b>Teacher forcing</b>: feed $y_{t-1}$ (gold) during training → faster/steady.</li>
-                <li><b>Exposure bias</b>: at test time you feed $\hat y_{t-1}$. Mitigate via <i>scheduled sampling</i>:
-                  with prob $p_t$ use gold else prediction; anneal $p_t\downarrow$.</li>
-              </ul>
-              <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># Scheduled sampling
+          <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+            <h3 class="text-xl font-semibold">Training & Inference</h3>
+            <h4 class="font-semibold mt-2">Teacher forcing vs free-running</h4>
+            <ul class="text-sm text-slate-700 space-y-2 mt-1">
+              <li><b>Teacher forcing</b>: feed $y_{t-1}$ (gold) during training → faster/steady.</li>
+              <li><b>Exposure bias</b>: at test time you feed $\hat y_{t-1}$. Mitigate via <i>scheduled sampling</i>:
+                with prob $p_t$ use gold else prediction; anneal $p_t\downarrow$.</li>
+            </ul>
+            <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># Scheduled sampling
 use_gold = torch.rand(()) &lt; p_t
 inp_t = gold_{t-1} if use_gold else yhat_{t-1}
 p_t *= 0.995  # or linear/cosine schedule per epoch</code></pre>
 
-              <h4 class="font-semibold mt-4">Beam search (length norm)</h4>
-              <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># score = (sum logp) / ( (5+L)^α / (5+1)^α ), α≈0.6
+            <h4 class="font-semibold mt-4">Beam search (length norm)</h4>
+            <pre class="text-sm code bg-slate-900 text-slate-100 p-4 rounded-xl overflow-x-auto"><code># score = (sum logp) / ( (5+L)^α / (5+1)^α ), α≈0.6
 # keep top-K partial hypotheses; stop when all beams hit &lt;eos&gt; or max_len
 </code></pre>
 
-              <h4 class="font-semibold mt-4">Coverage/monotonicity (optional)</h4>
-              <ul class="text-sm text-slate-700 space-y-1">
-                <li>Coverage penalty: discourage repeatedly attending same positions.</li>
-                <li>Monotonic or local attention for speech/TS: simplifies alignment & reduces quadratic cost.</li>
-              </ul>
-            </article>
-          </div>
-        </section>
+            <h4 class="font-semibold mt-4">Coverage/monotonicity (optional)</h4>
+            <ul class="text-sm text-slate-700 space-y-1">
+              <li>Coverage penalty: discourage repeatedly attending same positions.</li>
+              <li>Monotonic or local attention for speech/TS: simplifies alignment & reduces quadratic cost.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
 
-        <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
-          <h2 class="text-2xl font-bold">Encoder→Decoder with Attention</h2>
-          <p class="text-sm text-slate-700 mt-2">Decoder forms a per-step weighted sum of encoder states via
-            <em>q•K</em>,
-            softmax weights, and V.</p>
-          <img src="attention.svg">
-          <div class="text-sm text-slate-700 leading-7 mt-3">
-            \( \mathrm{Attn}(q,K,V)=\mathrm{softmax}\!\big(\tfrac{qK^\top}{\sqrt{d}}\big)V \) &nbsp; (shown as mini
-            heatmap → weighted sum).
-          </div>
-          <p class="tip mt-2">Line thickness encodes attention weight; here the middle state (h₂) dominates.</p>
-        </article>
-  
-      </div>
+      <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow card">
+        <h2 class="text-2xl font-bold">Encoder→Decoder with Attention</h2>
+        <p class="text-sm text-slate-700 mt-2">Decoder forms a per-step weighted sum of encoder states via
+          <em>q•K</em>,
+          softmax weights, and V.
+        </p>
+        <img src="attention.svg">
+        <div class="text-sm text-slate-700 leading-7 mt-3">
+          \( \mathrm{Attn}(q,K,V)=\mathrm{softmax}\!\big(\tfrac{qK^\top}{\sqrt{d}}\big)V \) &nbsp; (shown as mini
+          heatmap → weighted sum).
+        </div>
+        <p class="tip mt-2">Line thickness encodes attention weight; here the middle state (h₂) dominates.</p>
+      </article>
+
+    </div>
   </section>
 
 
