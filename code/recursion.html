@@ -1,0 +1,1717 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recursion & Partitioning — Interactive Quicksort Lab</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
+                        cyan: { 50: '#ecfeff', 200: '#a5f3fc', 600: '#0891b2' },
+                        emerald: { 50: '#ecfdf5', 200: '#a7f3d0', 600: '#059669' },
+                        amber: { 50: '#fffbeb', 200: '#fde68a', 600: '#d97706' },
+                        rose: { 50: '#fff1f2', 200: '#fecdd3', 600: '#e11d48' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Prism (theme + core + deps BEFORE language) -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css">
+    </noscript>
+    <script>window.Prism = window.Prism || {}; Prism.manual = false;</script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-clike.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/line-numbers/prism-line-numbers.min.js" defer></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [["$", "$"]] },
+            chtml: {},
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                ignoreHtmlClass: 'no-math',
+                processHtmlClass: 'mathjax'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer></script>
+
+    <style>
+        :root {
+            --ring: #e2e8f0;
+            --grid: rgba(15, 23, 42, .06);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, .78);
+            backdrop-filter: saturate(120%) blur(6px);
+            border: 1px solid var(--ring);
+            border-radius: 1rem;
+        }
+
+        .bg-grid {
+            background-image: linear-gradient(to right, var(--grid) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .pill {
+            border-radius: 9999px;
+            padding: .25rem .55rem;
+            border: 1px solid #cbd5e1;
+            font-size: .75rem
+        }
+
+        /* Smaller, tidy code blocks */
+        pre[class*="language-"] {
+            font-size: 12px;
+            line-height: 1.45
+        }
+
+        /* Viz helpers */
+        .box {
+            transition: transform .12s ease, background-color .12s ease
+        }
+
+        .box.swap {
+            transform: scale(1.06)
+        }
+
+        .pointer {
+            position: absolute;
+            transform: translate(-50%, -120%);
+            font-size: 12px;
+            background: #0ea5e9;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 9999px
+        }
+
+        .pointer.red {
+            background: #ef4444
+        }
+
+        .pointer.green {
+            background: #10b981
+        }
+
+        .pointer.gold {
+            background: #d97706
+        }
+
+        .badge {
+            font-variant-numeric: tabular-nums
+        }
+    </style>
+
+    <!-- Optional: Utility classes -->
+<style>
+  .nav-pill {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-radius: 0.75rem;
+    background-color: #fff;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    border: 1px solid #e2e8f0;
+    transition: background-color 0.2s;
+  }
+  .nav-pill:hover {
+    background-color: #f1f5f9;
+  }
+  .nav-pill.active {
+    background-color: #6366f1;
+    color: #fff;
+    box-shadow: 0 2px 8px 0 rgb(99 102 241 / 0.15);
+    border: none;
+  }
+  .pill {
+    display: inline-block;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #4338ca;
+    background-color: #eef2ff;
+    border-radius: 0.375rem;
+  }
+</style>
+
+</head>
+
+<body class="min-h-screen bg-gradient-to-tr from-slate-50 via-brand-50 to-cyan-50 text-slate-800">
+<!-- ===== Hero Section ===== -->
+<header class="relative flex items-center min-h-[60svh] border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white overflow-hidden">
+  <!-- Background grid / decoration -->
+  <div aria-hidden="true" class="absolute inset-0 bg-grid opacity-30"></div>
+
+  <div class="relative mx-auto max-w-7xl px-6 py-12 grid lg:grid-cols-2 gap-10 items-center">
+    <!-- Left: Intro & Navigation -->
+    <div class="z-10">
+      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight tracking-tight text-slate-900">
+        Recursion & Partitioning <br />
+        <span class="text-brand-600">Playbook</span>
+      </h1>
+
+      <p class="mt-4 text-lg text-slate-700 max-w-xl">
+        A visual intuition guide to recursion trees and partition schemes:
+        <strong>Lomuto</strong>, <strong>Hoare</strong>, <strong>3-way (Dutch)</strong>,
+        <strong>Alexandrescu</strong>, and <strong>Dual-Pivot</strong>.
+        Includes an interactive stepper and proofs.
+      </p>
+
+      <nav class="mt-6 flex flex-wrap gap-2 text-sm">
+        <a href="#recursion" class="nav-pill">Recursion</a>
+        <a href="#partition" class="nav-pill active">Partitioning</a>
+        <a href="#pivoting" class="nav-pill">Pivoting</a>
+        <a href="#simulator" class="nav-pill">Simulator</a>
+        <a href="#extras" class="nav-pill">Extras</a>
+        <a href="#exercises" class="nav-pill">Exercises</a>
+      </nav>
+    </div>
+
+    <!-- Right: Quick notes card -->
+    <div class="relative card p-6 shadow-lg rounded-2xl bg-white/90 backdrop-blur-sm">
+      <h3 class="font-semibold mb-3 text-slate-900 text-lg">Quick Notes</h3>
+      <ul class="text-sm text-slate-700 space-y-1">
+        <li><span class="pill">Lomuto</span> — simplest, but more swaps.</li>
+        <li><span class="pill">Hoare</span> — two pointers, fewer swaps.</li>
+        <li><span class="pill">3-way</span> — ideal for duplicates.</li>
+        <li><span class="pill">Alexandrescu</span> — cache-friendly; “= left”.</li>
+        <li><span class="pill">Dual-Pivot</span> — Java-style, 3 partitions, often fastest.</li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+
+
+
+
+    <!-- ===== Master Theorem ===== -->
+    <section id="master" class="mathjax"
+        class="py-12 border-b border-slate-200 bg-gradient-to-tr from-sky-50 via-white to-emerald-50">
+        <div class="max-w-7xl mx-auto px-6 py-6">
+            <h2 class="text-3xl font-extrabold mb-4">Master Theorem (quick reference)</h2>
+            <div class="card p-5">
+                <p class="text-slate-700">For $T(n)=a\,T(n/b)+f(n)$ with $a\ge1$, $b>1$ and regularity conditions:</p>
+                <ul class="list-disc ml-6 mt-2 space-y-1">
+                    <li><strong>Case 1</strong>: if $f(n)=O(n^{\log_b a-\varepsilon})$ → $T(n)=\Theta(n^{\log_b a})$.
+                    </li>
+                    <li><strong>Case 2</strong>: if $f(n)=\Theta(n^{\log_b a}\log^k n)$ → $T(n)=\Theta(n^{\log_b
+                        a}\log^{k+1}n)$.</li>
+                    <li><strong>Case 3</strong>: if $f(n)=\Omega(n^{\log_b a+\varepsilon})$ and regular →
+                        $T(n)=\Theta(f(n))$.</li>
+                </ul>
+            </div>
+
+            <article class="card p-5">
+                <h3 class="text-xl font-semibold mb-2">Recursion Tree (T(n)=aT(n/b)+f(n))</h3>
+                <div class="grid sm:grid-cols-5 gap-2 text-sm mb-2">
+                    <label> a<input id="rtA" type="number" value="2" class="w-full px-2 py-1 border rounded-md"></label>
+                    <label> b<input id="rtB" type="number" value="2" class="w-full px-2 py-1 border rounded-md"></label>
+                    <label> n<input id="rtN" type="number" value="16"
+                            class="w-full px-2 py-1 border rounded-md"></label>
+                    <label> f(n)
+                        <select id="rtF" class="w-full px-2 py-1 border rounded-md">
+                            <option value="n">n</option>
+                            <option value="1">1</option>
+                            <option value="nlogn">n log n</option>
+                        </select>
+                    </label>
+                    <button id="rtDraw" class="px-3 py-1.5 rounded-md bg-brand-600 text-white">draw</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <svg id="rtSvg" viewBox="0 0 860 360"
+                        class="w-[860px] max-w-full border border-slate-200 rounded-xl bg-white"></svg>
+                </div>
+                <p class="text-xs text-slate-600 mt-2">Leaves ≈ $a^{\log_b n}$, work per level depends on $f(n)$.
+                    Total ≈ sum over levels.</p>
+            </article>
+        </div>
+    </section>
+
+    <!-- ===== Recursion: Call Stack & Tree ===== -->
+    <!-- ===== Recursion Basics ===== -->
+    <section id="recursion" class="mathjax"
+        class="py-12 border-b border-slate-200 bg-gradient-to-tr from-emerald-50 via-white to-indigo-50">
+        <div class="max-w-7xl mx-auto px-6 py-6">
+            <h2 class="text-3xl font-extrabold mb-6">Recursion: Call Stack &amp; Tree</h2>
+            <div class="grid lg:grid-cols-2 gap-6">
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Call Stack Visualizer</h3>
+                    <!-- Make sure these EXACT IDs exist in your Recursion section -->
+                    <div class="flex flex-wrap gap-2 mb-3 text-sm">
+                        <button id="csFactorial"
+                            class="px-3 py-1.5 rounded-md bg-brand-600 text-white">factorial(5)</button>
+                        <button id="csFib" class="px-3 py-1.5 rounded-md bg-emerald-600 text-white">fib(5)</button>
+                        <button id="csClear"
+                            class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">clear</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <svg id="csSvg" width="620" height="300" viewBox="0 0 600 300"
+                            class="border border-slate-200 rounded-xl bg-white"></svg>
+                    </div>
+
+                    <div id="csMsg" class="text-xs text-slate-600 mt-2"></div>
+
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Recursion Tree</h3>
+                    <div class="grid sm:grid-cols-5 gap-2 text-sm mb-3">
+                        <label class="sm:col-span-2"> Function
+                            <select id="treeFunc" class="w-full px-2 py-1 border rounded-md">
+                                <option value="factorial" selected>factorial(n)</option>
+                                <option value="fib">fib(n)</option>
+                            </select>
+                        </label>
+                        <label> n
+                            <input id="treeN" type="number" min="0" max="12" value="5"
+                                class="w-full px-2 py-1 border rounded-md">
+                        </label>
+                        <div class="sm:col-span-2 flex gap-2 items-end">
+                            <button id="treeBuild" class="px-3 py-1.5 rounded-md bg-brand-600 text-white">build</button>
+                            <button id="treeClear"
+                                class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">clear</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <svg id="treeSvg" viewBox="0 0 900 520"
+                            class="w-[900px] max-w-full border border-slate-200 rounded-xl bg-white"></svg>
+                    </div>
+                    <p class="text-xs text-slate-600 mt-2">
+                        Nodes show the call argument. For <code>fib</code>, the node footer shows the return value
+                        (computed with memoization).
+                    </p>
+                </article>
+
+                <!-- Recursion Tree -->
+
+                <script>
+                    /* ------- Recursion Tree Builder & Layout ------- */
+                    (function () {
+                        const svg = document.getElementById('treeSvg');
+                        const sel = document.getElementById('treeFunc');
+                        const nInp = document.getElementById('treeN');
+                        const btnBuild = document.getElementById('treeBuild');
+                        const btnClear = document.getElementById('treeClear');
+
+                        const W0 = 900, H0 = 520, LVH = 90, PADX = 24, PADY = 20, NODE_W = 84, NODE_H = 40;
+
+                        function clearSvg() {
+                            while (svg.firstChild) svg.removeChild(svg.firstChild);
+                            svg.setAttribute('viewBox', `0 0 ${W0} ${H0}`);
+                        }
+
+                        function nodeBox(x, y, label, sub) {
+                            const g = s('g');
+                            const r = s('rect', { x: x - NODE_W / 2, y: y - NODE_H / 2, width: NODE_W, height: NODE_H, rx: 10, fill: '#f8fafc', stroke: '#94a3b8' });
+                            const t = s('text', { x, y: y - 2, 'text-anchor': 'middle', fill: '#0f172a', 'font-size': '13', 'font-weight': '700' });
+                            t.textContent = label;
+                            g.appendChild(r); g.appendChild(t);
+                            if (sub != null) {
+                                const t2 = s('text', { x, y: y + 14, 'text-anchor': 'middle', fill: '#334155', 'font-size': '11' });
+                                t2.textContent = sub;
+                                g.appendChild(t2);
+                            }
+                            return g;
+                        }
+                        function edge(x1, y1, x2, y2) {
+                            const line = s('path', { d: `M ${x1} ${y1} C ${x1} ${(y1 + y2) / 2}, ${x2} ${(y1 + y2) / 2}, ${x2} ${y2}`, stroke: '#64748b', 'stroke-width': '1.2', fill: 'none' });
+                            return line;
+                        }
+                        function s(tag, attrs = {}) { const e = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+
+                        // Build abstract trees
+                        function buildFactorial(n) {
+                            // Linear chain: n -> n-1 -> ... -> 1
+                            const root = { fn: 'fact', arg: n, children: [] };
+                            let cur = root;
+                            for (let k = n; k > 1; k--) {
+                                const child = { fn: 'fact', arg: k - 1, children: [] };
+                                cur.children.push(child);
+                                cur = child;
+                            }
+                            return root;
+                        }
+                        function buildFib(n) {
+                            const memo = new Map();
+                            function fibTree(k) {
+                                const node = { fn: 'fib', arg: k, children: [] };
+                                if (k <= 1) { memo.set(k, k); node.val = k; return node; }
+                                const L = fibTree(k - 1);
+                                const R = fibTree(k - 2);
+                                node.children.push(L, R);
+                                node.val = (memo.get(k - 1) ?? L.val) + (memo.get(k - 2) ?? R.val);
+                                memo.set(k, node.val);
+                                return node;
+                            }
+                            return fibTree(n);
+                        }
+
+                        // Layout: layered / tidy-ish
+                        function layout(root) {
+                            // Compute nodes per depth
+                            const levels = [];
+                            function dfs(node, depth) {
+                                if (!levels[depth]) levels[depth] = [];
+                                levels[depth].push(node);
+                                node.depth = depth;
+                                node.children.forEach(ch => dfs(ch, depth + 1));
+                            }
+                            dfs(root, 0);
+                            const depthCount = levels.length;
+
+                            // Assign x positions by in-order traversal for nicer spacing on trees (works well for Fibonacci)
+                            let cursor = 0;
+                            function inorder(node) {
+                                if (!node.children || node.children.length === 0) {
+                                    node.xOrder = cursor++;
+                                    return;
+                                }
+                                if (node.children.length === 2) {
+                                    inorder(node.children[0]);
+                                    node.xOrder = cursor++;
+                                    inorder(node.children[1]);
+                                } else {
+                                    inorder(node.children[0]);
+                                    node.xOrder = cursor++;
+                                }
+                            }
+                            inorder(root);
+
+                            // Normalize x positions per level width
+                            const totalLeaves = Math.max(1, cursor);
+                            const hGap = Math.max(80, Math.min(160, (W0 - 2 * PADX) / totalLeaves));
+                            const w = Math.max(W0, totalLeaves * hGap + 2 * PADX);
+                            const h = Math.max(H0, depthCount * LVH + 2 * PADY);
+                            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+                            const nodes = [];
+                            function assign(node) {
+                                const x = PADX + node.xOrder * hGap + hGap / 2;
+                                const y = PADY + node.depth * LVH + NODE_H;
+                                node.x = x; node.y = y;
+                                nodes.push(node);
+                                node.children.forEach(assign);
+                            }
+                            assign(root);
+
+                            return { nodes, w, h };
+                        }
+
+                        function render(root) {
+                            clearSvg();
+                            const { nodes } = layout(root);
+
+                            // Draw edges first
+                            nodes.forEach(n => {
+                                n.children.forEach(ch => svg.appendChild(edge(n.x, n.y + NODE_H / 2, ch.x, ch.y - NODE_H / 2)));
+                            });
+
+                            // Draw nodes
+                            nodes.forEach(n => {
+                                const label = `${n.fn}(${n.arg})`;
+                                const sub = n.val != null ? `= ${n.val}` : null;
+                                svg.appendChild(nodeBox(n.x, n.y, label, sub));
+                            });
+                        }
+
+                        function buildAndRender() {
+                            const n = Math.max(0, Math.min(32, parseInt(nInp.value || '0', 10)));
+                            if (sel.value === 'factorial') {
+                                render(buildFactorial(Math.min(n, 14))); // keep tree manageable
+                            } else {
+                                render(buildFib(Math.min(n, 10)));       // fib grows fast!
+                            }
+                        }
+
+                        btnBuild && (btnBuild.onclick = buildAndRender);
+                        btnClear && (btnClear.onclick = clearSvg);
+
+                        // Initial tree
+                        buildAndRender();
+                    })();
+                </script>
+
+            </div>
+        </div>
+    </section>
+    <script>
+        /* ------- Recursion Tree Builder & Layout ------- */
+        ; (function () {
+            const svg = document.getElementById('rtSvg');
+            function s(tag, attrs = {}) {
+                const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+                for (const k in attrs) e.setAttribute(k, attrs[k]);
+                return e;
+            }
+
+            function draw() {
+                const a = +document.getElementById('rtA').value || 2;
+                const b = +document.getElementById('rtB').value || 2;
+                const n = +document.getElementById('rtN').value || 16;
+                const f = document.getElementById('rtF').value; // (unused here, kept for compatibility)
+
+                svg.innerHTML = '';
+                const W = 840, H = 360;
+                svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+                const levels = Math.max(0, Math.floor(Math.log(Math.max(1, n)) / Math.log(b)));
+                let nodes = [{ x: W / 2, y: 24, n: n }];
+
+                const g = s('g');
+
+                // Tuning for horizontal spacing
+                const BASE_SPREAD = 240;   // wider base spread than before (was ~160)
+                const DECAY = 1.35;        // gentler decay (was 1.5)
+
+                for (let d = 0; d <= levels; d++) {
+                    // Draw current row
+                    const row = nodes.filter(v => Math.floor(Math.log(Math.max(1, v.n)) / Math.log(b)) === levels - d);
+                    row.forEach(v => {
+                        const box = s('rect', {
+                            x: v.x - 40, y: v.y - 14, width: 80, height: 28, rx: 8,
+                            fill: '#ecfeff', stroke: '#06b6d4'
+                        });
+                        const text = s('text', {
+                            x: v.x, y: v.y + 4, 'text-anchor': 'middle', 'font-size': 12, fill: '#0f172a'
+                        });
+                        text.textContent = `n=${Math.max(1, Math.floor(v.n))}`;
+                        g.appendChild(box); g.appendChild(text);
+                    });
+
+                    // Expand children for the *next* row
+                    const next = [];
+                    nodes.forEach(v => {
+                        // ---- IMPORTANT: Do not "leave" from n=1 (no outgoing edges / no expansion)
+                        if (v.n <= 1) return;
+
+                        const childN = Math.max(1, Math.floor(v.n / b));
+                        const spread = BASE_SPREAD / Math.pow(DECAY, d + 1);
+                        const childY = v.y + 64;
+
+                        for (let k = 0; k < a; k++) {
+                            const childX = v.x + (k - (a - 1) / 2) * spread;
+
+                            // Add child (can be n=1). We still want a node there.
+                            next.push({ x: childX, y: childY, n: childN });
+
+                            // Draw connection INTO the child (even if it's n=1)
+                            const line = s('line', {
+                                x1: v.x, y1: v.y + 14,
+                                x2: childX, y2: childY - 14,
+                                stroke: '#94a3b8'
+                            });
+                            g.appendChild(line);
+                        }
+                    });
+
+                    nodes = next;
+                }
+
+                svg.appendChild(g);
+            }
+
+            document.getElementById('rtDraw').onclick = draw;
+            draw();
+        })();
+    </script>
+
+    <!-- ===== Partitioning ===== -->
+    <section id="partition"
+        class="py-12 border-b border-slate-200 bg-gradient-to-tr from-amber-50 via-white to-indigo-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-extrabold mb-6">Partitioning Schemes</h2>
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Lomuto -->
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Lomuto (single pointer)</h3>
+                    <p class="text-sm text-slate-700">Pivot at end; track a tail <em>i</em> of “&lt;= pivot”.</p>
+                    <pre class="line-numbers language-python"><code>def lomuto(A, lo, hi):
+    p = A[hi]
+    i = lo - 1
+    for j in range(lo, hi):
+        if A[j] <= p:
+            i += 1
+            A[i], A[j] = A[j], A[i]
+    A[i+1], A[hi] = A[hi], A[i+1]
+    return i + 1</code></pre>
+                    <div class="text-xs mt-2">Pros: simple. Cons: more swaps; not great with many duplicates.</div>
+                </article>
+
+                <!-- Hoare -->
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Hoare (two pointers)</h3>
+                    <p class="text-sm text-slate-700">Pivot at start; move <em>i</em>↑ until ≥p, <em>j</em>↓ until ≤p,
+                        swap; stop when i ≥ j.</p>
+                    <pre class="line-numbers language-python"><code>def hoare(A, lo, hi):
+    p = A[lo]
+    i, j = lo - 1, hi + 1
+    while True:
+        while True:
+            i += 1
+            if A[i] >= p: break
+        while True:
+            j -= 1
+            if A[j] <= p: break
+        if i >= j:
+            return j
+        A[i], A[j] = A[j], A[i]</code></pre>
+                    <div class="text-xs mt-2">Pros: fewer swaps. Note: returns split index (not final pivot pos).</div>
+                </article>
+
+                <!-- 3-way -->
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">3-way (Dutch National Flag)</h3>
+                    <p class="text-sm text-slate-700">Maintains regions &lt;p, =p, &gt;p (lt / i / gt).</p>
+                    <pre class="line-numbers language-python"><code>def three_way(A, lo, hi):
+    p = A[lo]
+    lt, i, gt = lo, lo + 1, hi
+    while i <= gt:
+        if A[i] &lt; p:
+            A[lt], A[i] = A[i], A[lt]
+            lt += 1; i += 1
+        elif A[i] &gt; p:
+            A[i], A[gt] = A[gt], A[i]
+            gt -= 1
+        else:
+            i += 1
+    return lt, gt</code></pre>
+                    <div class="text-xs mt-2">Great when many duplicates are present.</div>
+                </article>
+            </div>
+
+            <!-- New schemes row -->
+            <div class="grid lg:grid-cols-2 gap-6 mt-6">
+                <!-- Alexandrescu -->
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Alexandrescu’s Partitioning (strict “= left”)</h3>
+                    <p class="text-sm text-slate-700">
+                        Uses a sentinel (pivot copy at end + one greater) to minimize bounds checks, a
+                        “vacancy” to move elements (fewer full swaps), and cleans up by placing the pivot.
+                        Strict partition: equals go to the left side.
+                    </p>
+                    <pre class="line-numbers language-python"><code>def alexandrescu(A, lo, hi):
+    \"\"\"Variant optimized for cache/bounds; equals go LEFT of pivot.
+    Simplified Python sketch (no UB tricks / pointer sentinels).\"\"\"
+    p = A[hi]                       # pivot at end
+    i = lo                          # write position for &lt;= pivot
+    # Vacancy-style walk (avoid extra swaps when A[j] already in place)
+    for j in range(lo, hi):
+        if A[j] <= p:               # strict partition rule: '=' left
+            if i != j:
+                A[i] = A[j]         # move into vacancy
+            i += 1
+    # After pass, put pivot into first 'greater' slot
+    A[i], A[hi] = A[hi], A[i]
+    return i</code></pre>
+                    <div class="text-xs mt-2">
+                        Notes: In low-level versions, a sentinel allows unchecked increments; vacancy moves cut swap
+                        traffic.
+                    </div>
+                </article>
+
+                <!-- Dual Pivot -->
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Dual-Pivot Partitioning (Java-style)</h3>
+                    <p class="text-sm text-slate-700">
+                        Two pivots split the array into three parts: &lt;p<sub>lo</sub>, between pivots,
+                        &gt;p<sub>hi</sub>.
+                        Often ~15–20% faster on random data for primitives.
+                    </p>
+                    <pre class="line-numbers language-python"><code>def dual_pivot(A, lo, hi):
+    # Choose two pivots; enforce p_lo <= p_hi
+    p_lo, p_hi = A[lo], A[hi]
+    if p_lo &gt; p_hi:
+        A[lo], A[hi] = A[hi], A[lo]
+        p_lo, p_hi = A[lo], A[hi]
+
+    lt = lo + 1        # next slot for &lt; p_lo
+    gt = hi - 1        # next slot for &gt; p_hi
+    i  = lt            # scan pointer
+
+    while i <= gt:
+        if A[i] &lt; p_lo:
+            A[i], A[lt] = A[lt], A[i]; lt += 1; i += 1
+        elif A[i] &gt; p_hi:
+            A[i], A[gt] = A[gt], A[i]; gt -= 1
+        else:
+            i += 1
+
+    # place pivots
+    A[lo], A[lt-1] = A[lt-1], A[lo]
+    A[hi], A[gt+1] = A[gt+1], A[hi]
+    return lt-1, gt+1  # final pivot positions</code></pre>
+                    <div class="text-xs mt-2">
+                        Java uses a refined version with sampling, cutoffs, and tuned constants.
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Partitioning: Complexity & Trade-offs ===== -->
+    <section id="partition-complexity" class="py-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <h3 class="text-2xl font-extrabold mb-3">Complexity & Trade-offs</h3>
+            <div class="card p-4">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left border-b border-slate-200">
+                                <th class="py-2 pr-4">Scheme</th>
+                                <th class="py-2 pr-4">Avg. Time<br><span class="text-xs text-slate-500">(quicksort
+                                        overall)</span></th>
+                                <th class="py-2 pr-4">Worst Time</th>
+                                <th class="py-2 pr-4">Best Time</th>
+                                <th class="py-2 pr-4">Comparisons (≈)</th>
+                                <th class="py-2 pr-4">Swaps/Moves (≈)</th>
+                                <th class="py-2 pr-4">Extra Space</th>
+                                <th class="py-2 pr-4">Stable?</th>
+                                <th class="py-2">Notes / When to use</th>
+                            </tr>
+                        </thead>
+                        <tbody class="align-top">
+                            <!-- Lomuto -->
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4 font-medium">Lomuto</td>
+                                <td class="py-2 pr-4">Θ(n log n)</td>
+                                <td class="py-2 pr-4">Θ(n²) <span class="text-xs text-slate-500">(e.g., sorted + bad
+                                        pivot)</span></td>
+                                <td class="py-2 pr-4">Θ(n log n)</td>
+                                <td class="py-2 pr-4">~ 2·n·log n</td>
+                                <td class="py-2 pr-4">~ n/2 per partition (more than Hoare)</td>
+                                <td class="py-2 pr-4">O(1)</td>
+                                <td class="py-2 pr-4">No</td>
+                                <td class="py-2">Simplest; clear to teach. Higher swap count; avoid when many duplicates
+                                    or nearly sorted unless pivot is randomized.</td>
+                            </tr>
+                            <!-- Hoare -->
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4 font-medium">Hoare</td>
+                                <td class="py-2 pr-4">Θ(n log n)</td>
+                                <td class="py-2 pr-4">Θ(n²)</td>
+                                <td class="py-2 pr-4">Θ(n log n)</td>
+                                <td class="py-2 pr-4">~ 2·n·log n</td>
+                                <td class="py-2 pr-4">Lower than Lomuto (fewer swaps per partition)</td>
+                                <td class="py-2 pr-4">O(1)</td>
+                                <td class="py-2 pr-4">No</td>
+                                <td class="py-2">Good default for in-place quicksort; better constants than Lomuto.
+                                    Returns split index (not pivot’s final index).</td>
+                            </tr>
+                            <!-- 3-way (DNF) -->
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4 font-medium">3-way (Dutch)</td>
+                                <td class="py-2 pr-4">Θ(n log n) <span class="text-xs text-slate-500">on random
+                                        data</span></td>
+                                <td class="py-2 pr-4">Θ(n²) <span class="text-xs text-slate-500">if always worst pivots
+                                        and no sampling</span></td>
+                                <td class="py-2 pr-4">Θ(n) <span class="text-xs text-slate-500">all equal → shallow
+                                        recursion</span></td>
+                                <td class="py-2 pr-4">Often &lt; 2·n·log n with many duplicates</td>
+                                <td class="py-2 pr-4">Low (moves elements into 3 bands)</td>
+                                <td class="py-2 pr-4">O(1)</td>
+                                <td class="py-2 pr-4">No</td>
+                                <td class="py-2">Best when duplicates are common; collapses equal runs → fewer levels
+                                    and work.</td>
+                            </tr>
+                            <!-- Alexandrescu -->
+                            <tr class="border-b border-slate-100">
+                                <td class="py-2 pr-4 font-medium">Alexandrescu</td>
+                                <td class="py-2 pr-4">Θ(n log n)</td>
+                                <td class="py-2 pr-4">Θ(n²)</td>
+                                <td class="py-2 pr-4">Θ(n log n)</td>
+                                <td class="py-2 pr-4">≈ like Hoare/Lomuto (same order), better branch/caches</td>
+                                <td class="py-2 pr-4">Lower effective writes (vacancy moves)</td>
+                                <td class="py-2 pr-4">O(1)</td>
+                                <td class="py-2 pr-4">No</td>
+                                <td class="py-2">Strict “= left”; sentinel + vacancy reduce checks and swaps. Shines on
+                                    large arrays and modern caches.</td>
+                            </tr>
+                            <!-- Dual-pivot -->
+                            <tr>
+                                <td class="py-2 pr-4 font-medium">Dual-Pivot (Java-style)</td>
+                                <td class="py-2 pr-4">Θ(n log n) <span class="text-xs text-slate-500">often better
+                                        constants</span></td>
+                                <td class="py-2 pr-4">Θ(n²)</td>
+                                <td class="py-2 pr-4">Θ(n log n)</td>
+                                <td class="py-2 pr-4">~ 1.8–1.95·n·log n <span class="text-xs text-slate-500">(lower
+                                        than 1-pivot)</span></td>
+                                <td class="py-2 pr-4">Higher than Hoare; more element moves overall</td>
+                                <td class="py-2 pr-4">O(1)</td>
+                                <td class="py-2 pr-4">No</td>
+                                <td class="py-2">Splits into three regions; good on random primitive arrays. For
+                                    objects, many platforms use Timsort instead.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Legend -->
+                <div class="mt-3 text-xs text-slate-600 space-y-1">
+                    <p><strong>Notes.</strong> All in-place quicksort variants share the same Θ(n log n) average and
+                        Θ(n²) worst-case time; randomized pivots or sampling (median-of-3, ninther) reduce worst-case
+                        risk in practice. Values like “~ 2·n·log n” are rule-of-thumb comparison counts for average
+                        cases and vary with pivot selection and implementation details.</p>
+                    <p><strong>Space.</strong> All shown are in-place O(1) extra space (excluding recursion stack).
+                        Recursion depth is Θ(log n) average, Θ(n) worst without safeguards (e.g., tail-call elimination
+                        or introsort fallback).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Pivot Selection — Pseudocode & Equations ===== -->
+    <!-- ===== Pivot Selection — Pseudocode & Deeper Math ===== -->
+    <section id="pivot-pseudocode" class="py-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <h3 class="text-2xl font-extrabold mb-4">Pivot Selection — Pseudocode & Equations</h3>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Left: pseudocode blocks -->
+                <article class="card p-5">
+                    <h4 class="text-lg font-semibold mb-3">Python-style Pseudocode (one per strategy)</h4>
+
+                    <h5 class="font-semibold text-slate-800 mb-1">First / Last</h5>
+                    <pre class="line-numbers language-python"><code>def pivot_first(lo, hi):
+    return lo
+
+def pivot_last(lo, hi):
+    return hi</code></pre>
+
+                    <h5 class="font-semibold text-slate-800 mt-4 mb-1">Random</h5>
+                    <pre class="line-numbers language-python"><code>import random
+
+def pivot_random(lo, hi):
+    return lo + random.randint(0, hi - lo)</code></pre>
+
+                    <h5 class="font-semibold text-slate-800 mt-4 mb-1">Median-of-3</h5>
+                    <pre class="line-numbers language-python"><code>def pivot_median3(A, lo, hi):
+    i, k, j = lo, (lo + hi) // 2, hi
+    # return index of median among A[i], A[k], A[j]
+    if A[i] &gt; A[k]: i, k = k, i
+    if A[k] &gt; A[j]: k, j = j, k
+    if A[i] &gt; A[k]: i, k = k, i
+    return k</code></pre>
+
+                    <h5 class="font-semibold text-slate-800 mt-4 mb-1">Tukey’s Ninther (median of 3 medians of 3)</h5>
+                    <pre class="line-numbers language-python"><code>def pivot_ninther(A, lo, hi):
+    n  = hi - lo + 1
+    d  = max(1, n // 8)                      # spacing across the range
+    g1 = [lo, lo + d, lo + 2*d]
+    g2 = [(lo + hi)//2 - d, (lo + hi)//2, (lo + hi)//2 + d]
+    g3 = [hi - 2*d, hi - d, hi]
+    # median index of each triple (by value)
+    def med3(i, k, j):
+        if A[i] &gt; A[k]: i, k = k, i
+        if A[k] &gt; A[j]: k, j = j, k
+        if A[i] &gt; A[k]: i, k = k, i
+        return k
+    m1 = med3(g1[0], g1[1], g1[2])
+    m2 = med3(g2[0], g2[1], g2[2])
+    m3 = med3(g3[0], g3[1], g3[2])
+    trio = sorted([(A[m1], m1), (A[m2], m2), (A[m3], m3)], key=lambda x: x[0])
+    return trio[1][1]</code></pre>
+
+                    <h5 class="font-semibold text-slate-800 mt-4 mb-1">Median-of-Medians (BFPRT)</h5>
+                    <pre class="line-numbers language-python"><code>def pivot_median_of_medians(A, lo, hi):
+    """
+    Deterministic pivot with a constant 'middle band' guarantee (~30–70%).
+    Pseudocode sketch; uses indices-by-value ordering.
+    """
+    # Helper: median index of a small index list by comparing A[idx]
+    def median_index(A, idxs):
+        idxs = idxs[:]                       # copy to avoid mutating caller
+        idxs.sort(key=lambda t: A[t])
+        return idxs[len(idxs)//2]
+
+    # Recursive 'select by value' on an arbitrary index list
+    def select_idx(A, idxs, k):              # return index in A whose rank is k within idxs
+        if len(idxs) &lt;= 5:
+            idxs.sort(key=lambda t: A[t])
+            return idxs[k]
+        # group into chunks of 5 and collect their medians
+        meds = []
+        for i in range(0, len(idxs), 5):
+            block = idxs[i:i+5]
+            meds.append(median_index(A, block))
+        # pivot = median of medians (by value)
+        p = select_idx(A, meds, len(meds)//2)
+        # partition idxs around A[p] (three-way by value)
+        less  = [i for i in idxs if A[i] &lt;  A[p]]
+        equal = [i for i in idxs if A[i] == A[p]]
+        greater = [i for i in idxs if A[i] &gt; A[p]]
+        if k &lt; len(less):      return select_idx(A, less, k)
+        if k &lt; len(less)+len(equal): return equal[k - len(less)]
+        return select_idx(A, greater, k - len(less) - len(equal))
+
+    idxs = list(range(lo, hi+1))
+    return select_idx(A, idxs, len(idxs)//2)</code></pre>
+
+                    <p class="text-xs text-slate-600 mt-3">
+                        <strong>Tips.</strong> <code>median-of-3</code> is a cheap, solid default; <code>ninther</code>
+                        gives a stronger
+                        center bias for large inputs; <code>median-of-medians</code> guarantees a pivot away from
+                        extremes (worst-case safety),
+                        but costs more per partition.
+                    </p>
+                </article>
+                <!-- Right: math & proofs (expanded, step-by-step) -->
+                <article class="card p-5 mathjax">
+                    <h4 class="text-lg font-semibold mb-2">How sampling changes balance — math &amp; proofs</h4>
+
+                    <p class="text-sm text-slate-700">
+                        Let the pivot’s <em>quantile</em> be $X\in[0,1]$: the fraction of keys $\le$ pivot.
+                        A split is “balanced within $\alpha$” if both parts are at least $\alpha n$, i.e.,
+                        $X\in[\alpha,1-\alpha]$.
+                    </p>
+
+                    <div class="mt-3 space-y-4 text-sm">
+                        <!-- 1. Random pivot -->
+                        <div class="theorem">
+                            <strong>Random pivot.</strong> If the pivot is chosen uniformly at random among the $n$
+                            keys, then
+                            \[
+                            X\sim \mathrm{Uniform}(0,1),\qquad
+                            \Pr\!\big[X\in[\alpha,1-\alpha]\big]=1-2\alpha.
+                            \]
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-slate-800"><em>Proof (step by step)</em></summary>
+                                <ol class="list-decimal list-inside space-y-1">
+                                    <li>All $n$ ranks are equally likely; normalizing ranks by $n$ yields a uniform
+                                        quantile.</li>
+                                    <li>The “balanced” interval inside $[0,1]$ is exactly $[\alpha,1-\alpha]$, length
+                                        $1-2\alpha$.</li>
+                                    <li>Therefore $\Pr[X\in[\alpha,1-\alpha]] = 1-2\alpha$.</li>
+                                </ol>
+                            </details>
+                        </div>
+
+                        <!-- 2. Median-of-(2t+1) -->
+                        <div class="theorem">
+                            <strong>Median-of-$(2t{+}1)$.</strong> If you sample $m=2t{+}1$ i.i.d. uniforms and take the
+                            median,
+                            \[
+                            X \sim \mathrm{Beta}(t{+}1,\; t{+}1).
+                            \]
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-slate-800"><em>Proof (order statistics)</em>
+                                </summary>
+                                The $r$-th order statistic of $m$ i.i.d. Uniform$(0,1)$ samples has
+                                $\mathrm{Beta}(r,\,m{+}1{-}r)$.
+                                For the median of an odd sample, $m=2t{+}1$ and $r=t{+}1$, giving
+                                $\mathrm{Beta}(t{+}1,t{+}1)$.
+                            </details>
+                        </div>
+
+                        <!-- 3. Balanced probability in closed form -->
+                        <div class="def">
+                            <strong>Balanced-split probability (closed form).</strong>
+                            For $X\sim\mathrm{Beta}(t{+}1,t{+}1)$,
+                            \[
+                            \Pr\!\big[X\in[\alpha,1-\alpha]\big]
+                            \;=\; 1 - 2\,I_{\alpha}\!\big(t{+}1,\,t{+}1\big),
+                            \]
+                            where $I_x(a,b)$ is the regularized incomplete beta.
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-slate-800"><em>Why this holds</em></summary>
+                                By symmetry of $\mathrm{Beta}(t{+}1,t{+}1)$,
+                                $\Pr[X\le \alpha]=I_{\alpha}(t{+}1,t{+}1)$ and $\Pr[X\ge 1{-}\alpha]=\Pr[X\le \alpha]$.
+                                Excluding both tails gives the stated expression.
+                            </details>
+                        </div>
+
+                        <!-- 4. Examples -->
+                        <div class="insight">
+                            <strong>Worked examples.</strong>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li><em>Median-of-3</em> ($t=1\Rightarrow X\sim\mathrm{Beta}(2,2)$, density $6x(1-x)$):
+                                    \[
+                                    \Pr[X\in[\alpha,1-\alpha]]=\!\int_{\alpha}^{1-\alpha}6x(1-x)\,dx
+                                    = 1 - 6\alpha^2 + 4\alpha^3.
+                                    \]
+                                    For $\alpha=0.1$: random $=0.8$ vs median-of-3 $=0.944$.</li>
+                                <li><em>Ninther</em> (median-of-3 medians-of-3) is tightly center-biased; a good
+                                    approximation is $X\approx\mathrm{Beta}(5,5)$:
+                                    \[
+                                    \Pr[X\in[\alpha,1-\alpha]]
+                                    \approx 1 - 252\alpha^5 + 840\alpha^6 - 1080\alpha^7 + 630\alpha^8 - 140\alpha^9.
+                                    \]
+                                    For $\alpha=0.1$: $\approx 0.9982$ (extreme splits are strongly suppressed).</li>
+                            </ul>
+                        </div>
+
+                        <!-- 5. High-probability balance from sampling -->
+                        <div class="theorem">
+                            <strong>High-probability balance (tail bound).</strong>
+                            Let $m=2t{+}1$ be the sample size and $\delta\in(0,\tfrac12)$. Then
+                            \[
+                            \Pr\big[|X-\tfrac12|\ge \delta\big]
+                            \;\le\; 2\,e^{-2m\delta^2}\quad\text{(DKW/Chernoff-style bound)}.
+                            \]
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-slate-800"><em>Sketch</em></summary>
+                                The empirical CDF of $m$ i.i.d. uniforms concentrates uniformly around the identity
+                                (DKW).
+                                The median is where the empirical CDF crosses $1/2$; its deviation inherits the
+                                $e^{-2m\delta^2}$ tail.
+                            </details>
+                        </div>
+
+                        <!-- 6. Worst-case depth from alpha-balanced splits -->
+                        <div class="def">
+                            <strong>Depth vs. balance.</strong> If every split leaves each side $\ge \alpha n$ (so each
+                            subproblem shrinks by at most factor $1-\alpha$), then
+                            \[
+                            \text{depth} \;\le\; \frac{\log n}{\log\!\big(\tfrac{1}{1-\alpha}\big)}
+                            \;\;\le\;\; \frac{1}{\alpha}\,\log n.
+                            \]
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-slate-800"><em>Proof</em></summary>
+                                After $d$ levels: size $\le n(1-\alpha)^d$.
+                                Stop when $n(1-\alpha)^d \le 1\Rightarrow d \ge \log n /
+                                \log\!\big(\frac{1}{1-\alpha}\big)$.
+                                Using $\log(1-\alpha)\le -\alpha$ gives $d\le \frac{1}{\alpha}\log n$.
+                            </details>
+                        </div>
+
+                        <!-- 7. BFPRT guarantee -->
+                        <div class="theorem">
+                            <strong>BFPRT (Median-of-Medians, groups of 5) — “30–70” guarantee.</strong>
+                            The pivot $p$ satisfies $|\{x\le p\}|\ge 0.3n$ and $|\{x\ge p\}|\ge 0.3n$.
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-slate-800"><em>Proof (classic)</em></summary>
+                                Partition into groups of 5 and take each group’s true median.
+                                At least half of these medians are $\ge$ the median-of-medians $p$.
+                                Each such “good” median dominates at least 2 elements in its 5-group, so at least $3/10$
+                                of all elements are $\ge p$.
+                                By symmetry, at least $3/10$ are $\le p$. Hence both sides $\ge 0.3n$.
+                            </details>
+                            <p class="mt-1 text-slate-700">
+                                Consequence: worst-case depth $O(\log n)$ and worst-case quicksort with this pivot has
+                                $O(n\log n)$ time (with a larger constant due to linear-time selection each level).
+                            </p>
+                        </div>
+
+                        <!-- 8. Solving the average-case recurrence with a general pivot law -->
+                        <div class="theorem">
+                            <strong>Average-case quicksort with a general pivot distribution.</strong>
+                            Suppose one partition step costs $c_p\,n+o(n)$ comparisons on subarray size $n$, and the
+                            pivot quantile $X$ has density $f$.
+                            With
+                            \[
+                            T(n)=\mathbb{E}\!\big[T(Xn)+T((1{-}X)n)\big]+c_p\,n+o(n)
+                            \]
+                            and the ansatz $T(n)=a\,n\log n + b\,n + o(n)$ (natural log), the leading constant is
+                            \[
+                            \boxed{\;a=\frac{c_p}{\ \mathbb{E}\big[-X\ln X-(1{-}X)\ln(1{-}X)\big]\ } \;}\,.
+                            \]
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-slate-800"><em>Derivation (step by step)</em>
+                                </summary>
+                                <ol class="list-decimal list-inside space-y-1">
+                                    <li>Assume $T(n)=a\,n\ln n+b\,n+o(n)$.</li>
+                                    <li>Then $T(Xn)\approx a\,Xn(\ln n+\ln X)+b\,Xn$, and similarly for $1{-}X$.</li>
+                                    <li>Plug into the recurrence and cancel the $a\,n\ln n$ terms:
+                                        \[
+                                        a\,n\ln n+b\,n \;=\; a\,n\ln n + a\,n\,\mathbb{E}[X\ln X+(1{-}X)\ln(1{-}X)] +
+                                        b\,n + c_p\,n + o(n).
+                                        \]
+                                    </li>
+                                    <li>Equate $n$-coefficients to get $a\,\mathbb{E}[X\ln X+(1{-}X)\ln(1{-}X)]+c_p=0$.
+                                    </li>
+                                    <li>Since the bracket is negative, $a=\dfrac{c_p}{\mathbb{E}[-X\ln
+                                        X-(1{-}X)\ln(1{-}X)]}\ &gt; 0$.</li>
+                                </ol>
+                            </details>
+                        </div>
+
+                        <!-- 9. Specializing the constant 'a' to Uniform and Beta -->
+                        <div class="insight">
+                            <strong>Plugging in the law of $X$.</strong>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li><em>Random pivot ($X\sim\mathrm{Uniform}$).</em>
+                                    $\mathbb{E}[-X\ln X]=\mathbb{E}[-(1{-}X)\ln(1{-}X)]=\tfrac14$, so the denominator is
+                                    $\tfrac12$.
+                                    If $c_p=1$ (about $n$ comparisons per partition), then $a=2$ and
+                                    \[
+                                    T(n)\;=\;2\,n\ln n + O(n)
+                                    \]
+                                    (equivalently $\approx 1.386\,n\log_2 n$).</li>
+
+                                <li><em>Median-of-$(2t{+}1)$: $X\sim\mathrm{Beta}(a,a)$ with $a=t{+}1$.</em>
+                                    One can show
+                                    \[
+                                    \mathbb{E}\!\big[-X\ln X-(1{-}X)\ln(1{-}X)\big] \;=\; \psi(2a{+}1) - \psi(a{+}1),
+                                    \]
+                                    where $\psi$ is the digamma and $\psi(k)=H_{k-1}{-}\gamma$ for integer $k$ (harmonic
+                                    numbers $H_s$).
+                                    Hence
+                                    \[
+                                    a \;=\; \frac{c_p}{\psi(2a{+}1)-\psi(a{+}1)}.
+                                    \]
+                                    <details class="mt-1">
+                                        <summary class="cursor-pointer text-slate-800"><em>Why this identity holds</em>
+                                        </summary>
+                                        Using moments $E[X^p]=\dfrac{B(a{+}p,a)}{B(a,a)}$, differentiate at $p=1$:
+                                        $\dfrac{d}{dp}E[X^p]\big|_{p=1}=E[X\ln X]
+                                        =\tfrac{a}{2a}\big(\psi(a{+}1)-\psi(2a{+}1)\big)=\tfrac12\big(\psi(a{+}1)-\psi(2a{+}1)\big)$.
+                                        Symmetry gives the same for $E[(1{-}X)\ln(1{-}X)]$. Summing and negating yields
+                                        the claim.
+                                    </details>
+                                    <div class="mt-1">
+                                        <em>Numbers:</em>
+                                        <ul class="list-disc list-inside">
+                                            <li>Median-of-3: $a=t{+}1=2$ $\Rightarrow$ denominator
+                                                $=\psi(5)-\psi(3)=H_4-H_2=\tfrac{7}{12}\approx 0.5833$.
+                                                Thus $a\approx \dfrac{1}{0.5833}\approx 1.714$ $\Rightarrow$
+                                                $T(n)\approx 1.714\,n\ln n$ ($\approx 1.188\,n\log_2 n$).</li>
+                                            <li>Ninther $\approx \mathrm{Beta}(5,5)$: denominator
+                                                $=\psi(11)-\psi(6)=H_{10}-H_5\approx 0.6456$.
+                                                Then $a\approx \dfrac{1}{0.6456}\approx 1.55$ ($\approx 1.07\,n\log_2
+                                                n$).</li>
+                                        </ul>
+                                    </div>
+                                </li>
+                            </ul>
+                            <p class="mt-1 text-slate-700">
+                                <em>Takeaway:</em> Sampling doesn’t change $O(n\log n)$ but strictly lowers the leading
+                                constant via a larger
+                                $\mathbb{E}[-X\ln X-(1{-}X)\ln(1{-}X)]$ (i.e., more mass near $X=\tfrac12$).
+                            </p>
+                        </div>
+
+                        <!-- 10. Cost of getting the sampled pivot -->
+                        <div class="def">
+                            <strong>Sampling overhead.</strong>
+                            Picking the median of $(2t{+}1)$ samples costs $O(t)$ comparisons (constant when $t$ is
+                            fixed).
+                            The total expected running time remains
+                            \[
+                            T(n)=\Big(\underbrace{c_p}_{\text{partition}}+\underbrace{c_s}_{\text{sampling}}\Big)\frac{n\ln
+                            n}{\ \mathbb{E}[{-}X\ln X-(1{-}X)\ln(1{-}X)]\ } + O(n),
+                            \]
+                            where $c_s$ is the (small) sampling constant.
+                        </div>
+
+                        <!-- 11. Summary bullets -->
+                        <div class="insight">
+                            <strong>Summary.</strong>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Random pivot: balanced probability $1-2\alpha$; $T(n)=2\,n\ln n+O(n)$.</li>
+                                <li>Median-of-3: balanced probability $1-6\alpha^2+4\alpha^3$; $T(n)\approx 1.714\,n\ln
+                                    n$.</li>
+                                <li>Ninther: extremely high balanced probability; $T(n)\approx 1.55\,n\ln n$.</li>
+                                <li>BFPRT pivot guarantees $\alpha=0.3$ each split $\Rightarrow$ worst-case $O(n\ln n)$.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ===== Pivoting ===== -->
+    <section id="pivoting"
+        class="py-12 border-b border-slate-200 bg-gradient-to-tr from-rose-50 via-white to-emerald-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-extrabold mb-6">Pivot Selection Cheatsheet</h2>
+            <div class="grid lg:grid-cols-2 gap-6">
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Strategies</h3>
+                    <ul class="list-disc ml-6 text-sm space-y-1">
+                        <li><strong>First / Last</strong>: trivial; bad on sorted/adversarial inputs.</li>
+                        <li><strong>Random</strong>: expected balanced; good default.</li>
+                        <li><strong>Median-of-3</strong>: first/middle/last; reduces extremes.</li>
+                        <li><strong>Ninther</strong>: median of three medians of three; robust, higher constant.</li>
+                    </ul>
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">When to use which?</h3>
+                    <ul class="list-disc ml-6 text-sm space-y-1">
+                        <li>Many duplicates → <strong>3-way</strong> or <strong>Dual-Pivot</strong>.</li>
+                        <li>Nearly-sorted → median-of-3 (avoid last-pivot Lomuto).</li>
+                        <li>Very large arrays → cache-friendly variants like <strong>Alexandrescu</strong>.</li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Simulator ===== -->
+    <section id="simulator"
+        class="py-12 border-b border-slate-200 bg-gradient-to-tr from-slate-50 via-brand-50 to-cyan-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-extrabold mb-4">Interactive Quicksort / Partition Simulator</h2>
+            <div class="grid lg:grid-cols-3 gap-6">
+                <article class="card p-5 lg:col-span-2">
+                    <div class="grid md:grid-cols-3 gap-3 text-sm">
+                        <label class="md:col-span-2"> Array (comma-sep)
+                            <input id="arrInput" class="w-full px-2 py-1 border rounded-md"
+                                value="9,4,7,3,10,5,2,8,6,1">
+                        </label>
+                        <div class="flex gap-2 md:justify-end items-end">
+                            <button id="btnRand"
+                                class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">random</button>
+                            <button id="btnNearly"
+                                class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">nearly-sorted</button>
+                            <button id="btnDup"
+                                class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">duplicates</button>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-4 gap-3 text-sm mt-3">
+                        <label> Scheme
+                            <select id="scheme" class="w-full px-2 py-1 border rounded-md">
+                                <option value="lomuto">Lomuto</option>
+                                <option value="hoare">Hoare</option>
+                                <option value="three">3-way</option>
+                            </select>
+                        </label>
+                        <label> Pivot
+                            <select id="pivot" class="w-full px-2 py-1 border rounded-md">
+                                <option value="first">first</option>
+                                <option value="last" selected>last</option>
+                                <option value="random">random</option>
+                                <option value="median3">median-of-3</option>
+                            </select>
+                        </label>
+                        <label> Speed
+                            <input id="speed" type="range" min="50" max="800" value="300" class="w-full">
+                        </label>
+                        <div class="flex gap-2 items-end">
+                            <button id="btnStep" class="px-3 py-1.5 rounded-md bg-brand-600 text-white">step</button>
+                            <button id="btnAuto" class="px-3 py-1.5 rounded-md bg-emerald-600 text-white">auto</button>
+                            <button id="btnReset"
+                                class="px-3 py-1.5 rounded-md bg-white ring-1 ring-slate-200">reset</button>
+                        </div>
+                    </div>
+
+                    <div class="relative mt-4">
+                        <div id="arrayViz" class="min-h-[120px] grid grid-flow-col auto-cols-max gap-2"></div>
+                        <div id="ptrLayer" class="absolute inset-0 pointer-events-none"></div>
+                    </div>
+
+                    <div class="mt-4 grid sm:grid-cols-3 gap-3 text-sm">
+                        <div class="p-2 rounded-md bg-white ring-1 ring-slate-200"><strong>Comparisons:</strong> <span
+                                id="statCmp" class="badge">0</span></div>
+                        <div class="p-2 rounded-md bg-white ring-1 ring-slate-200"><strong>Swaps:</strong> <span
+                                id="statSwp" class="badge">0</span></div>
+                        <div class="p-2 rounded-md bg-white ring-1 ring-slate-200"><strong>Recursion depth:</strong>
+                            <span id="statDepth" class="badge">0</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-xl font-semibold mb-2">Call Stack (ranges)</h3>
+                    <div class="overflow-x-auto">
+                        <svg id="qsStackSvg" viewBox="0 0 360 320"
+                            class="w-[360px] max-w-full border border-slate-200 rounded-xl bg-white"></svg>
+                    </div>
+                    <div class="text-xs text-slate-600 mt-2">Frames show <code>[lo, hi]</code> for current calls.</div>
+                </article>
+                <article class="card p-5 mt-4">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-xl font-semibold">Pedagogical Log</h3>
+    <div class="flex gap-2">
+      <button id="btnClearLog" class="px-2 py-1 text-xs rounded-md bg-white ring-1 ring-slate-200">clear</button>
+      <label class="text-xs inline-flex items-center gap-1">
+        <input id="chkAutoscroll" type="checkbox" class="accent-brand-600" checked>
+        autoscroll
+      </label>
+    </div>
+  </div>
+  <ol id="eduLog" class="text-sm max-h-72 overflow-auto space-y-1 pr-2">
+    <!-- log lines go here -->
+  </ol>
+  <div class="text-xs text-slate-600 mt-2">Each line explains the exact operation performed during the current step.</div>
+</article>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Extras & Exercises ===== -->
+    <section id="extras"
+        class="py-12 border-b border-slate-200 bg-gradient-to-tr from-slate-50 via-white to-emerald-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-extrabold mb-4">Extras</h2>
+            <div class="card p-5">
+                <p class="text-sm">
+                    These schemes mix well with pivot sampling (median-of-3, ninther). For real datasets with duplicates
+                    or runs,
+                    3-way and dual-pivot often shine. Alexandrescu’s variant is great on big arrays with modern caches.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="exercises" class="py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-extrabold mb-4">Exercises</h2>
+            <div class="grid lg:grid-cols-2 gap-6 text-sm">
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold mb-2">1) Trace Hoare</h3>
+                    <p>On <code>[7,3,5,2,9,1]</code> (pivot=first) list the swaps and final split index.</p>
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold mb-2">2) 3-way proof sketch</h3>
+                    <p>Show why an all-equal array runs in linear time (constant recursion depth).</p>
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold mb-2">3) Dual-Pivot ranges</h3>
+                    <p>Argue the sizes of the three intervals on random data and impact on recursion depth.</p>
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold mb-2">4) Alexandrescu micro-bench</h3>
+                    <p>Measure swaps vs Lomuto on large random inputs; explain the difference.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-10 bg-slate-950 text-slate-200">
+        <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+            <p class="text-sm">© <span id="year"></span> Recursion & Partitioning Lab</p>
+            <div class="text-xs text-slate-400">Single-page • Copy-ready • Printable</div>
+        </div>
+    </footer>
+    <script>
+        /* ------- Call Stack mini visual (animated) ------- */
+        (function initCallStack() {
+            function boot() {
+                const svg = document.getElementById('csSvg');
+                const msg = document.getElementById('csMsg');
+                const btnF = document.getElementById('csFactorial');
+                const btnB = document.getElementById('csFib');
+                const btnC = document.getElementById('csClear');
+                if (!svg || !btnF || !btnB || !btnC) return setTimeout(boot, 50);
+
+                const W = 600, H = 300, FW = 220, FH = 46, GAP = 10;
+                svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+                svg.setAttribute('width', W);
+                svg.setAttribute('height', H);
+
+                let frames = [];
+                let running = false;
+                const DELAY = 220; // ms between visual steps
+
+                function s(tag, attrs = {}) { const e = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+                function t(txt, x, y, fs = 13) { const e = s('text', { x, y, fill: '#0f172a' }); e.setAttribute('font-size', fs); e.textContent = txt; return e; }
+                function info(x) { if (msg) msg.textContent = x; }
+                function draw() {
+                    svg.innerHTML = '';
+                    frames.forEach((f, i) => {
+                        const x = (W - FW) / 2, y = H - (i + 1) * (FH + GAP);
+                        const g = s('g');
+                        g.appendChild(s('rect', { x, y, width: FW, height: FH, rx: 10, fill: '#f8fafc', stroke: '#94a3b8' }));
+                        g.appendChild(t(`→ ${f.name}()`, x + 14, y + 18));
+                        g.appendChild(t(f.locals || '', x + 14, y + 34, 12));
+                        svg.appendChild(g);
+                    });
+                }
+                function clear() { frames = []; draw(); info(''); }
+
+                const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+                async function push(name, locals) { frames.push({ name, locals }); draw(); await sleep(DELAY); }
+                async function pop() { frames.pop(); draw(); await sleep(DELAY); }
+
+                // Animated recursion so the DOM can paint each step
+                async function factorial(n) {
+                    await push('factorial', `n=${n}`);
+                    if (n <= 1) { await pop(); return 1; }
+                    const r = n * await factorial(n - 1);
+                    await pop();
+                    return r;
+                }
+                async function fib(n) {
+                    await push('fib', `n=${n}`);
+                    if (n <= 1) { await pop(); return n; }
+                    const r = await fib(n - 1) + await fib(n - 2);
+                    await pop();
+                    return r;
+                }
+
+                async function runSafely(fn, label) {
+                    if (running) return;
+                    running = true;
+                    clear();
+                    info(label);
+                    try { await fn(); } finally { running = false; }
+                }
+
+                btnF.onclick = () => runSafely(() => factorial(5), 'factorial(5)');
+                btnB.onclick = () => runSafely(() => fib(5), 'fib(5)');
+                btnC.onclick = () => { if (!running) clear(); };
+
+                // Optional: auto demo
+                runSafely(() => factorial(4), 'factorial(4)');
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+        })();
+    </script>
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* ------- Quicksort / Partition Simulator (pedagogical) ------- */
+  (function () {
+    const arrInput = document.getElementById('arrInput');
+    const schemeSel = document.getElementById('scheme');
+    const pivotSel  = document.getElementById('pivot');
+    const arrayViz  = document.getElementById('arrayViz');
+    const ptrLayer  = document.getElementById('ptrLayer');
+    const statCmp   = document.getElementById('statCmp');
+    const statSwp   = document.getElementById('statSwp');
+    const statDepth = document.getElementById('statDepth');
+    const speed     = document.getElementById('speed');
+    const btnStep   = document.getElementById('btnStep');
+    const btnAuto   = document.getElementById('btnAuto');
+    const btnReset  = document.getElementById('btnReset');
+    const qsStackSvg = document.getElementById('qsStackSvg');
+
+    // Pedagogical log UI
+    const eduLog = document.getElementById('eduLog');
+    const btnClearLog = document.getElementById('btnClearLog');
+    const chkAutoscroll = document.getElementById('chkAutoscroll');
+
+    let A = [];
+    let steps = [];
+    let timer = null;
+    let metrics = { cmp: 0, swp: 0, depth: 0, depthMax: 0 };
+
+    /* --------- Utilities ---------- */
+    function parse() {
+      const nums = arrInput.value.split(/[, \t\r\n]+/)
+        .filter(Boolean).map(Number).filter(x => Number.isFinite(x));
+      A = nums.slice(); 
+      return A;
+    }
+    function renderArray() {
+      arrayViz.innerHTML = ''; ptrLayer.innerHTML = '';
+      A.forEach((v, idx) => {
+        const cell = document.createElement('div');
+        cell.className = 'box border border-slate-300 bg-white rounded-lg w-12 h-12 flex items-center justify-center font-semibold';
+        cell.textContent = String(v);
+        cell.dataset.idx = idx;
+        arrayViz.appendChild(cell);
+      });
+    }
+    function ptr(x, color, label) {
+      const boxes = arrayViz.children; if (!boxes.length) return;
+      const target = boxes[Math.max(0, Math.min(boxes.length - 1, x))];
+      const p = document.createElement('div'); 
+      p.className = 'pointer ' + color; 
+      p.textContent = label;
+      p.style.position = 'absolute';
+      p.style.transform = 'translate(-50%, -110%)';
+      p.style.left = (target.offsetLeft + target.offsetWidth / 2) + 'px';
+      p.style.top  = (target.offsetTop) + 'px';
+      p.style.padding = '2px 6px';
+      p.style.borderRadius = '9999px';
+      p.style.fontSize = '12px';
+      p.style.fontWeight = '600';
+      p.style.background = color === 'gold' ? '#fde68a' : (color === 'green' ? '#bbf7d0' : '#fecaca');
+      p.style.border = '1px solid rgba(15,23,42,.15)';
+      ptrLayer.appendChild(p);
+    }
+    function mark(idx, cls) { 
+      const el = arrayViz.children[idx]; 
+      if (el) { 
+        el.classList.add(cls); 
+        setTimeout(() => el.classList.remove(cls), Math.max(200, +speed.value - 50)); 
+      } 
+    }
+    function swap(i, j) { 
+      const tmp = A[i]; A[i] = A[j]; A[j] = tmp; 
+      metrics.swp++; statSwp.textContent = metrics.swp; 
+    }
+    function cmp() { 
+      metrics.cmp++; statCmp.textContent = metrics.cmp; 
+    }
+
+    // Pedagogical log helpers
+    function log(html) {
+      const li = document.createElement('li');
+      li.innerHTML = html;
+      eduLog.appendChild(li);
+      if (chkAutoscroll.checked) eduLog.scrollTop = eduLog.scrollHeight;
+    }
+    function badge(text, color='slate') {
+      return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold border border-slate-200 bg-${color}-50">${text}</span>`;
+    }
+    function code(s) { return `<code class="font-mono text-[12px] px-1 rounded bg-slate-100">${s}</code>`; }
+
+    // Pivot helpers
+    function choosePivotIndex(lo, hi, arr) {
+      const mode = pivotSel.value;
+      if (mode === 'first') return lo;
+      if (mode === 'last')  return hi;
+      if (mode === 'random') return lo + Math.floor(Math.random() * (hi - lo + 1));
+      const m = Math.floor((lo + hi) / 2);
+      const trio = [[arr[lo], lo], [arr[m], m], [arr[hi], hi]].sort((x, y) => x[0] - y[0]);
+      return trio[1][1]; // median-of-3
+    }
+
+    /* --------- Build the "steps" trace (immutable description of the run) ---------- */
+    function build() {
+      steps = []; metrics = { cmp: 0, swp: 0, depth: 0, depthMax: 0 };
+      const arr = A.slice();
+
+      function pushFrame(stack) { 
+        steps.push({ type: 'stack', stack: stack.slice(), depth: metrics.depth }); 
+      }
+
+      function lomuto(lo, hi) {
+        const pIdx = choosePivotIndex(lo, hi, arr);
+        if (pIdx !== hi) { 
+          steps.push({ type: 'swap', i: pIdx, j: hi, vi: arr[pIdx], vj: arr[hi], why: 'move pivot to end (Lomuto)' });
+          [arr[pIdx], arr[hi]] = [arr[hi], arr[pIdx]]; 
+        }
+        const p = arr[hi]; 
+        steps.push({ type: 'pivot', scheme: 'Lomuto', idx: hi, val: p });
+        let i = lo - 1;
+        for (let j = lo; j < hi; j++) { 
+          // comparison A[j] <= p
+          cmp();
+          steps.push({ type: 'cmp', leftIdx: j, leftVal: arr[j], op: '<=', right: {kind: 'pivot', idx: hi, val: p} });
+          steps.push({ type: 'ptrs', i: i, j: j, pivot: hi, scheme: 'lomuto' });
+          if (arr[j] <= p) { 
+            i++;
+            steps.push({ type: 'swap', i: i, j: j, vi: arr[i], vj: arr[j], why: 'A[j] <= pivot ⇒ expand ≤ region' });
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+          }
+        }
+        steps.push({ type: 'swap', i: i + 1, j: hi, vi: arr[i+1], vj: arr[hi], why: 'place pivot into its final position' });
+        [arr[i + 1], arr[hi]] = [arr[hi], arr[i + 1]];
+        steps.push({ type: 'part', scheme: 'Lomuto', lo, hi, pivotFinal: i + 1 });
+        return i + 1;
+      }
+
+      function hoare(lo, hi) {
+        const pIdx = choosePivotIndex(lo, hi, arr);
+        if (pIdx !== lo) { 
+          steps.push({ type: 'swap', i: pIdx, j: lo, vi: arr[pIdx], vj: arr[lo], why: 'move pivot to front (Hoare)' });
+          [arr[pIdx], arr[lo]] = [arr[lo], arr[pIdx]]; 
+        }
+        const p = arr[lo];
+        steps.push({ type: 'pivot', scheme: 'Hoare', idx: lo, val: p });
+        let i = lo - 1, j = hi + 1;
+        while (true) {
+          // Scan from left until arr[++i] >= p
+          do { i++; cmp(); steps.push({ type: 'scanL', idx: i, val: arr[i], pv: p }); } while (arr[i] < p);
+          // Scan from right until arr[--j] <= p
+          do { j--; cmp(); steps.push({ type: 'scanR', idx: j, val: arr[j], pv: p }); } while (arr[j] > p);
+
+          steps.push({ type: 'ptrs', i, j, pivot: lo, scheme: 'hoare' });
+
+          if (i >= j) { 
+            steps.push({ type: 'part', scheme: 'Hoare', lo, hi, splitAt: j });
+            return j; 
+          }
+          steps.push({ type: 'swap', i, j, vi: arr[i], vj: arr[j], why: 'place smaller on left, larger on right' });
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      }
+
+      function threeWay(lo, hi) {
+        const pIdx = choosePivotIndex(lo, hi, arr);
+        if (pIdx !== lo) { 
+          steps.push({ type: 'swap', i: pIdx, j: lo, vi: arr[pIdx], vj: arr[lo], why: 'move pivot to front (3-way)' });
+          [arr[pIdx], arr[lo]] = [arr[lo], arr[pIdx]]; 
+        }
+        const p = arr[lo];
+        steps.push({ type: 'pivot', scheme: '3-way', idx: lo, val: p });
+        let lt = lo, i = lo + 1, gt = hi;
+        while (i <= gt) {
+          cmp();
+          steps.push({ type: 'cmp', leftIdx: i, leftVal: arr[i], op: 'vs', right: {kind: 'pivot', idx: lo, val: p} });
+          steps.push({ type: 'ptrs3', lt, i, gt, pivot: lo });
+          if (arr[i] < p) {
+            steps.push({ type: 'swap', i: lt, j: i, vi: arr[lt], vj: arr[i], why: '< pivot ⇒ grow < region' });
+            [arr[lt], arr[i]] = [arr[i], arr[lt]]; lt++; i++;
+          } else if (arr[i] > p) {
+            steps.push({ type: 'swap', i: i, j: gt, vi: arr[i], vj: arr[gt], why: '> pivot ⇒ shrink > region' });
+            [arr[i], arr[gt]] = [arr[gt], arr[i]]; gt--;
+          } else {
+            steps.push({ type: 'eq', idx: i, val: arr[i], pv: p });
+            i++;
+          }
+        }
+        steps.push({ type: 'part', scheme: '3-way', lo, hi, lt, gt });
+        return [lt, gt];
+      }
+
+      function quicksort(lo, hi, depth, callstack) {
+        metrics.depth = depth; metrics.depthMax = Math.max(metrics.depthMax, depth);
+        const stack = (callstack || []).concat([[lo, hi]]);
+        pushFrame(stack);
+        steps.push({ type: 'call', lo, hi, depth });
+
+        if (lo >= hi) {
+          steps.push({ type: 'base', lo, hi, why: 'lo ≥ hi ⇒ 0 or 1 element' });
+          return;
+        }
+
+        if (schemeSel.value === 'lomuto') { 
+          const p = lomuto(lo, hi); 
+          steps.push({ type: 'recurse', left: [lo, p-1], right: [p+1, hi], pivot: p });
+          quicksort(lo, p - 1, depth + 1, stack);
+          quicksort(p + 1, hi, depth + 1, stack);
+        } else if (schemeSel.value === 'hoare') { 
+          const j = hoare(lo, hi);
+          steps.push({ type: 'recurse', left: [lo, j], right: [j+1, hi], splitAt: j });
+          quicksort(lo, j, depth + 1, stack);
+          quicksort(j + 1, hi, depth + 1, stack);
+        } else { 
+          const [lt, gt] = threeWay(lo, hi);
+          steps.push({ type: 'recurse', left: [lo, lt-1], mid: [lt, gt], right: [gt+1, hi], note: 'equals in [lt,gt]' });
+          quicksort(lo, lt - 1, depth + 1, stack);
+          quicksort(gt + 1, hi, depth + 1, stack);
+        }
+      }
+
+      quicksort(0, arr.length - 1, 1, []);
+      steps.push({ type: 'done', depthMax: metrics.depthMax });
+    }
+
+    /* --------- Call stack drawing ---------- */
+    function drawStack(stack, depth) {
+      const svg = qsStackSvg; svg.innerHTML = ''; 
+      const W = 340, H = 300, FW = 220, FH = 38, G = 8; 
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      (stack || []).forEach((rng, idx) => {
+        const [lo, hi] = rng; 
+        const x = (W - FW) / 2, y = H - (idx + 1) * (FH + G);
+        const g = s('g'); 
+        g.appendChild(s('rect', { x, y, width: FW, height: FH, rx: 10, fill: '#f8fafc', stroke: '#94a3b8' }));
+        g.appendChild(text(`[${lo}, ${hi}]`, x + 12, y + 22)); 
+        svg.appendChild(g);
+      });
+      function s(tag, attrs = {}) { 
+        const e = document.createElementNS('http://www.w3.org/2000/svg', tag); 
+        for (const k in attrs) e.setAttribute(k, attrs[k]); 
+        return e; 
+      }
+      function text(txt, x, y) { 
+        const e = document.createElementNS('http://www.w3.org/2000/svg', 'text'); 
+        e.setAttribute('x', x); e.setAttribute('y', y); 
+        e.setAttribute('fill', '#0f172a'); 
+        e.textContent = txt; 
+        return e; 
+      }
+      statDepth.textContent = depth ?? statDepth.textContent;
+    }
+
+    /* --------- Playback ---------- */
+    let stepIdx = 0;
+    function refreshViz() { renderArray(); }
+    function playStep() {
+      if (stepIdx >= steps.length) return stopAuto();
+      const st = steps[stepIdx++];
+
+      // Draw / act
+      if (st.type === 'swap') { 
+        // Use values stored in step (pre-swap view)
+        log(`${badge('SWAP','amber')} swap(${code(st.i)}, ${code(st.j)}) — values ${code(st.vi)} ↔ ${code(st.vj)} ${st.why ? '· <em>'+st.why+'</em>' : ''}`);
+        swap(st.i, st.j); 
+        refreshViz(); mark(st.i, 'swap'); mark(st.j, 'swap'); 
+      }
+      if (st.type === 'cmp') {
+        log(`${badge('CMP','blue')} compare A[${code(st.leftIdx)}]=${code(st.leftVal)} ${code(st.op)} pivot(${code(st.right.idx)})=${code(st.right.val)}`);
+      }
+      if (st.type === 'scanL') {
+        log(`${badge('SCAN←','cyan')} left scan i→${code(st.idx)} with A[i]=${code(st.val)}; stop when A[i] ≥ pivot(${code(st.pv)})`);
+      }
+      if (st.type === 'scanR') {
+        log(`${badge('SCAN→','cyan')} right scan j→${code(st.idx)} with A[j]=${code(st.val)}; stop when A[j] ≤ pivot(${code(st.pv)})`);
+      }
+      if (st.type === 'eq') {
+        log(`${badge('=','emerald')} A[${code(st.idx)}]=${code(st.val)} equals pivot(${code(st.pv)}) — advance i`);
+      }
+      if (st.type === 'pivot') {
+        log(`${badge('PIVOT','purple')} scheme ${code(st.scheme)} with pivot at ${code(st.idx)} value ${code(st.val)}`);
+      }
+      if (st.type === 'part') {
+        if (st.scheme === 'Lomuto') {
+          log(`${badge('PART','fuchsia')} ${code('Lomuto')} final pivot at index ${code(st.pivotFinal)} · subranges left=[${code(st.lo)}, ${code(st.pivotFinal-1)}], right=[${code(st.pivotFinal+1)}, ${code(st.hi)}]`);
+        } else if (st.scheme === 'Hoare') {
+          log(`${badge('PART','fuchsia')} ${code('Hoare')} split at j=${code(st.splitAt)} · subranges left=[${code(st.lo)}, ${code(st.splitAt)}], right=[${code(st.splitAt+1)}, ${code(st.hi)}]`);
+        } else {
+          log(`${badge('PART','fuchsia')} ${code('3-way')} bands: < [${code(st.lo)}, ${code(st.lt-1)}], = [${code(st.lt)}, ${code(st.gt)}], > [${code(st.gt+1)}, ${code(st.hi)}]`);
+        }
+      }
+      if (st.type === 'ptrs')   { refreshViz(); ptr(st.i, 'green', 'i'); ptr(st.j, 'red', 'j'); ptr(st.pivot, 'gold', 'p'); }
+      if (st.type === 'ptrs3')  { refreshViz(); ptr(st.lt, 'green', 'lt'); ptr(st.i, 'red', 'i'); ptr(st.gt, 'gold', 'gt'); }
+      if (st.type === 'stack')  { drawStack(st.stack, st.depth); }
+      if (st.type === 'call')   { log(`${badge('CALL','slate')} quicksort([${code(st.lo)}, ${code(st.hi)}]) at depth ${code(st.depth)}`); }
+      if (st.type === 'base')   { log(`${badge('BASE','zinc')} range [${code(st.lo)}, ${code(st.hi)}] has ≤ 1 element — return`); }
+      if (st.type === 'recurse') { 
+        if (st.mid) {
+          log(`${badge('RECURSE','indigo')} left=[${code(st.left[0])}, ${code(st.left[1])}], equals=${code('kept')}, right=[${code(st.right[0])}, ${code(st.right[1])}]`);
+        } else if ('pivot' in st) {
+          log(`${badge('RECURSE','indigo')} left=[${code(st.left[0])}, ${code(st.left[1])}], right=[${code(st.right[0])}, ${code(st.right[1])}] (pivot at ${code(st.pivot)})`);
+        } else {
+          log(`${badge('RECURSE','indigo')} left=[${code(st.left[0])}, ${code(st.left[1])}], right=[${code(st.right[0])}, ${code(st.right[1])}] (split at ${code(st.splitAt)})`);
+        }
+      }
+      if (st.type === 'done')   { statDepth.textContent = st.depthMax; log(`${badge('DONE','teal')} sorting complete — max recursion depth ${code(st.depthMax)}`); stopAuto(); }
+    }
+    function startAuto() { if (timer) return; timer = setInterval(playStep, +speed.value); }
+    function stopAuto() { if (timer) { clearInterval(timer); timer = null; } }
+
+    /* --------- Presets ---------- */
+    function setRand()   { const n = 10; const arr = Array.from({ length: n }, () => Math.floor(Math.random() * 99)); arrInput.value = arr.join(','); reset(); }
+    function setNearly() { const n = 12; const arr = Array.from({ length: n }, (_, i) => i + 1); [arr[n-2], arr[n-1]] = [arr[n-1], arr[n-2]]; [arr[3], arr[4]] = [arr[4], arr[3]]; arrInput.value = arr.join(','); reset(); }
+    function setDup()    { const arr = [3, 5, 3, 3, 8, 5, 5, 1, 5, 3, 8, 5, 3]; arrInput.value = arr.join(','); reset(); }
+
+    /* --------- Reset ---------- */
+    function reset() { 
+      stopAuto(); parse(); renderArray(); build(); stepIdx = 0; 
+      statCmp.textContent = metrics.cmp = 0; 
+      statSwp.textContent = metrics.swp = 0; 
+      statDepth.textContent = metrics.depth = 0; 
+      drawStack([]);
+      eduLog.innerHTML = '';
+      log(`${badge('READY','emerald')} loaded array: [${A.map(x => code(String(x))).join(', ')}]; scheme=${code(schemeSel.value)}, pivot=${code(pivotSel.value)}`);
+    }
+
+    // Wire up
+    document.getElementById('btnRand').onclick   = setRand;
+    document.getElementById('btnNearly').onclick = setNearly;
+    document.getElementById('btnDup').onclick    = setDup;
+    btnReset.onclick = reset; 
+    btnStep.onclick  = playStep; 
+    btnAuto.onclick  = () => { if (timer) stopAuto(); else startAuto(); };
+    schemeSel.onchange = reset; 
+    pivotSel.onchange  = reset; 
+    arrInput.onchange  = reset; 
+    speed.oninput = () => { if (timer) { stopAuto(); startAuto(); } };
+
+    btnClearLog.onclick = () => { eduLog.innerHTML = ''; };
+    reset();
+  })();
+</script>
+
+</body>
+
+</html>
