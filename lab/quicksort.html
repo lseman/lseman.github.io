@@ -1,0 +1,2418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickSort Mastery - Python Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#ecfeff', 100: '#cffafe', 200: '#a5f3fc',
+                            300: '#67e8f9', 400: '#22d3ee', 500: '#06b6d4',
+                            600: '#0891b2', 700: '#0e7490', 800: '#155e75', 900: '#164e63'
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui'],
+                        'display': ['Sora', 'Inter', 'system-ui'],
+                        'mono': ['JetBrains Mono', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --brand: #0891b2;
+            --brand-light: #06b6d4;
+            --brand-dark: #0e7490;
+            --ink: #0f172a;
+            --ink-light: #1e293b;
+            --ink-lighter: #475569;
+            --paper: #ffffff;
+            --surface: #f8fafc;
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
+            --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, .08), 0 2px 4px -1px rgba(15, 23, 42, .06);
+            --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, .1), 0 4px 6px -2px rgba(15, 23, 42, .05);
+            --grid-color: rgba(8, 145, 178, .08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--ink);
+            background: var(--surface);
+            scroll-behavior: smooth;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #ffffff, #f8fafc);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Sora', 'Inter', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+        }
+
+        h1 { font-size: clamp(2.5rem, 5vw, 3.5rem) !important; line-height: 1.1 !important; }
+        h2 { font-size: clamp(2rem, 4vw, 2.5rem) !important; line-height: 1.2 !important; }
+        h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem) !important; line-height: 1.3 !important; }
+
+        .mono {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            letter-spacing: -0.01em;
+        }
+
+        .container {
+            max-width: 75rem;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        #main-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px) saturate(180%);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        #main-nav.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: var(--shadow-md);
+        }
+
+        #main-nav a {
+            position: relative;
+            color: var(--ink-lighter);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        #main-nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--brand);
+            transition: width 0.3s ease;
+        }
+
+        #main-nav a:hover {
+            color: var(--brand);
+        }
+
+        #main-nav a:hover::after {
+            width: 100%;
+        }
+
+        #main-nav a[aria-current="page"] {
+            color: var(--brand-dark);
+            font-weight: 600;
+        }
+
+        #hero {
+            background: linear-gradient(135deg, #f8fafc 0%, #ecfeff 100%);
+            position: relative;
+        }
+
+        .hero-pattern {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 20% 10%, rgba(8, 145, 178, .12), transparent 40%), 
+                radial-gradient(circle at 80% 30%, rgba(8, 145, 178, .15), transparent 35%);
+        }
+
+        .grid-lines {
+            position: absolute;
+            inset: 0;
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px), 
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at 50% 30%, black 30%, transparent 70%);
+        }
+
+        .card {
+            background: white;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(8, 145, 178, 0.2);
+        }
+
+        .card-header {
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 1rem 1.5rem;
+            background: var(--surface);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 0.875rem;
+            background: white;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--ink-lighter);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s ease;
+        }
+
+        .badge:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--brand);
+            color: var(--brand);
+        }
+
+        .badge-cyan { background: #cffafe; color: #0e7490; border-color: #a5f3fc; }
+        .badge-teal { background: #ccfbf1; color: #115e59; border-color: #99f6e4; }
+        .badge-blue { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        .badge-slate { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+        .badge-amber { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .badge-emerald { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--brand);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            background: var(--brand-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--ink);
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            border-color: var(--brand);
+            color: var(--brand);
+            box-shadow: var(--shadow-md);
+        }
+
+        .icon-box {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            background: var(--brand);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover .icon-box {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        section {
+            padding: 5rem 0;
+            position: relative;
+        }
+
+        section:nth-child(even) {
+            background: white;
+        }
+
+        section:nth-child(odd) {
+            background: var(--surface);
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .reveal.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .brand-text {
+            color: var(--brand);
+        }
+
+        .check-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .check-list li {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            align-items: flex-start;
+        }
+
+        .check-list li::before {
+            content: "✓";
+            color: var(--brand);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        pre[class*="language-"] {
+            border-radius: 0.75rem;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            font-size: 0.8rem !important;
+        }
+
+        pre[class*="language-"] code {
+            font-size: 0.8rem !important;
+            line-height: 1.6;
+        }
+
+        footer {
+            background: linear-gradient(to bottom, #0f172a, #020617);
+            color: #cbd5e1;
+            border-top: 1px solid #1e293b;
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--brand) 0%, var(--brand-light) 100%);
+            opacity: 0.6;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--brand);
+            outline-offset: 2px;
+        }
+
+        #mobile-menu {
+            background: white;
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            section {
+                padding: 3rem 0;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--brand);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--brand-dark);
+        }
+
+        .watermark {
+            position: absolute;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            color: var(--brand);
+            opacity: 0.04;
+            pointer-events: none;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .watermark-1 {
+            top: 10%;
+            left: 5%;
+            transform: rotate(-15deg);
+            animation: float-1 20s ease-in-out infinite;
+        }
+
+        .watermark-2 {
+            top: 25%;
+            right: 10%;
+            transform: rotate(12deg);
+            animation: float-2 18s ease-in-out infinite;
+        }
+
+        .watermark-3 {
+            top: 50%;
+            left: 15%;
+            transform: rotate(-8deg);
+            animation: float-3 22s ease-in-out infinite;
+        }
+
+        .watermark-4 {
+            top: 60%;
+            right: 20%;
+            transform: rotate(18deg);
+            animation: float-4 19s ease-in-out infinite;
+        }
+
+        .watermark-5 {
+            top: 35%;
+            left: 45%;
+            transform: rotate(-20deg);
+            animation: float-5 21s ease-in-out infinite;
+        }
+
+        @keyframes float-1 {
+            0%, 100% { transform: rotate(-15deg) translateY(0px); }
+            50% { transform: rotate(-12deg) translateY(-15px); }
+        }
+
+        @keyframes float-2 {
+            0%, 100% { transform: rotate(12deg) translateY(0px); }
+            50% { transform: rotate(15deg) translateY(-12px); }
+        }
+
+        @keyframes float-3 {
+            0%, 100% { transform: rotate(-8deg) translateY(0px); }
+            50% { transform: rotate(-5deg) translateY(-18px); }
+        }
+
+        @keyframes float-4 {
+            0%, 100% { transform: rotate(18deg) translateY(0px); }
+            50% { transform: rotate(20deg) translateY(-10px); }
+        }
+
+        @keyframes float-5 {
+            0%, 100% { transform: rotate(-20deg) translateY(0px); }
+            50% { transform: rotate(-18deg) translateY(-14px); }
+        }
+
+        .complexity-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .complexity-table th,
+        .complexity-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .complexity-table th {
+            background: var(--surface);
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .complexity-table tr:hover {
+            background: var(--surface);
+        }
+
+        /* Simulator Styles */
+        .array-visual {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .array-item {
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 2px solid var(--brand);
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .array-item.pivot {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            transform: scale(1.1);
+        }
+
+        .array-item.comparing {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        .array-item.swapping {
+            background: #fecaca;
+            border-color: #ef4444;
+            animation: shake 0.3s ease;
+        }
+
+        .array-item.sorted {
+            background: #d1fae5;
+            border-color: #10b981;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #1e293b;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+        }
+
+        .log-entry {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-left: 3px solid transparent;
+            color: #cbd5e1;
+        }
+
+        .log-entry.info {
+            border-left-color: #06b6d4;
+            color: #a5f3fc;
+        }
+
+        .log-entry.success {
+            border-left-color: #10b981;
+            color: #6ee7b7;
+        }
+
+        .log-entry.warning {
+            border-left-color: #f59e0b;
+            color: #fcd34d;
+        }
+
+        .log-entry.error {
+            border-left-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--ink);
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 0.625rem;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-box {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--ink-lighter);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--brand);
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <nav id="main-nav" class="fixed top-0 left-0 right-0 z-50">
+        <div class="container">
+            <div class="flex items-center justify-between py-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-primary-600 text-white rounded-lg flex items-center justify-center font-bold mono">
+                        <span>QS</span>
+                    </div>
+                    <span id="nav-title" class="text-lg font-semibold brand-text font-display">QuickSort Mastery</span>
+                </div>
+                <div id="nav-links" class="hidden md:flex items-center gap-6 text-sm mono">
+                    <!-- Populated by JS -->
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-slate-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden pb-4">
+            <div class="container space-y-2">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </nav>
+
+    <div style="height: 64px;" aria-hidden="true"></div>
+
+    <header id="hero" class="relative py-20 min-h-[60vh] flex items-center">
+        <div class="hero-pattern"></div>
+        <div class="grid-lines"></div>
+        
+        <div class="watermark watermark-1">def partition():</div>
+        <div class="watermark watermark-2">pivot = arr[high]</div>
+        <div class="watermark watermark-3">quicksort(arr, low, high)</div>
+        <div class="watermark watermark-4">O(n log n)</div>
+        <div class="watermark watermark-5">median_of_three()</div>
+        
+        <div class="container relative z-10">
+            <div class="max-w-4xl">
+                <h1 id="hero-title" class="font-display mb-6 reveal show">
+                    Master QuickSort in Python
+                </h1>
+                <p id="hero-subtitle" class="text-xl text-slate-600 mb-8 leading-relaxed reveal show" style="animation-delay: 0.1s;">
+                    Deep dive into QuickSort algorithms, partitioning schemes (Lomuto & Hoare), and pivot selection strategies with complete Python implementations.
+                </p>
+                <div id="hero-nav" class="flex flex-wrap gap-3 reveal show" style="animation-delay: 0.2s;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <!-- Sections populated by JS -->
+    </main>
+
+    <footer class="py-12 relative">
+        <div class="container">
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 brand-text font-display">QuickSort Mastery</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Comprehensive guide to understanding and implementing QuickSort algorithms in Python.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4 text-slate-300">Quick Links</h4>
+                    <div class="space-y-2">
+                        <a class="block text-sm text-slate-400 hover:text-cyan-400 transition-colors" href="#introduction">Introduction</a>
+                        <a class="block text-sm text-slate-400 hover:text-cyan-400 transition-colors" href="#partitioning">Partitioning</a>
+                        <a class="block text-sm text-slate-400 hover:text-cyan-400 transition-colors" href="#pivoting">Pivot Strategies</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4 text-slate-300">Learning Resources</h4>
+                    <div class="flex gap-3">
+                        <a class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors" href="#">
+                            <span>📚</span>
+                        </a>
+                        <a class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors" href="#">
+                            <span>💻</span>
+                        </a>
+                        <a class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors" href="#">
+                            <span>🐍</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-slate-400">
+                    © <span id="year"></span> QuickSort Mastery. Educational resource.
+                </p>
+                <div class="flex gap-6">
+                    <a class="text-sm text-slate-400 hover:text-cyan-400 transition-colors" href="#hero">Back to top ↑</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <script>
+        const SITE_CONFIG = {
+            meta: {
+                title: "QuickSort Mastery",
+                subtitle: "Python implementations and analysis"
+            },
+            hero: {
+                title: "Master QuickSort in Python",
+                subtitle: "Deep dive into QuickSort algorithms, partitioning schemes (Lomuto & Hoare), and pivot selection strategies with complete Python implementations.",
+                quickLinks: [
+                    { text: "Start Learning", href: "#introduction", style: "primary" },
+                    { text: "View Code", href: "#partitioning", style: "secondary" },
+                    { text: "Practice", href: "#exercises", style: "outline" }
+                ]
+            },
+            sections: [
+                {
+                    id: "introduction",
+                    title: "QuickSort Fundamentals",
+                    icon: "📚",
+                    content: {
+                        type: "cards",
+                        layout: "grid-2",
+                        items: [
+                            {
+                                title: "How QuickSort Works",
+                                description: "QuickSort is a divide-and-conquer algorithm that selects a pivot element and partitions the array around it, recursively sorting the subarrays.",
+                                icon: "🎯",
+                                highlight: "Divide & Conquer",
+                                color: "cyan",
+                                details: [
+                                    "Choose a pivot element from the array",
+                                    "Partition array: elements < pivot on left, > pivot on right",
+                                    "Recursively sort left and right subarrays",
+                                    "Base case: array of size 0 or 1 is already sorted"
+                                ]
+                            },
+                            {
+                                title: "Time Complexity",
+                                description: "Average case O(n log n), but worst case O(n²) with poor pivot selection. Understanding complexity is crucial for optimization.",
+                                icon: "⚡",
+                                highlight: "Performance",
+                                color: "teal",
+                                details: [
+                                    "Best/Average: O(n log n) - balanced partitions",
+                                    "Worst: O(n²) - already sorted with bad pivot",
+                                    "Space: O(log n) for recursion stack",
+                                    "In-place sorting: no extra array needed"
+                                ]
+                            },
+                            {
+                                title: "Why QuickSort?",
+                                description: "Despite O(n²) worst case, QuickSort is often faster in practice than other O(n log n) algorithms due to cache efficiency.",
+                                icon: "🚀",
+                                highlight: "Practical",
+                                color: "blue",
+                                details: [
+                                    "Excellent cache locality and memory access patterns",
+                                    "In-place sorting saves memory",
+                                    "Small constant factors in practice",
+                                    "Used in many standard library implementations"
+                                ]
+                            },
+                            {
+                                title: "Key Decisions",
+                                description: "Two critical choices affect QuickSort's performance: the partitioning scheme and the pivot selection strategy.",
+                                icon: "🔑",
+                                highlight: "Design Choices",
+                                color: "slate",
+                                details: [
+                                    "Partitioning: Lomuto (simple) vs Hoare (efficient)",
+                                    "Pivot: random, first, last, median-of-3, median-of-5",
+                                    "Hybrid approaches: switch to insertion sort for small arrays",
+                                    "Three-way partitioning for duplicate keys"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    id: "partitioning",
+                    title: "Partitioning Schemes",
+                    icon: "🔀",
+                    content: {
+                        type: "code-examples",
+                        items: [
+                            {
+                                title: "Lomuto Partition Scheme",
+                                language: "python",
+                                code: `def lomuto_partition(arr, low, high):
+    """
+    Lomuto partition scheme: simpler but less efficient
+    Pivot is always the last element (arr[high])
+    Time: O(n), Space: O(1)
+    """
+    pivot = arr[high]  # Choose last element as pivot
+    i = low - 1  # Index of smaller element
+    
+    # Move all elements smaller than pivot to the left
+    for j in range(low, high):
+        if arr[j] <= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    
+    # Place pivot in its correct position
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1
+
+def quicksort_lomuto(arr, low, high):
+    """QuickSort using Lomuto partition"""
+    if low < high:
+        pi = lomuto_partition(arr, low, high)
+        quicksort_lomuto(arr, low, pi - 1)
+        quicksort_lomuto(arr, pi + 1, high)
+
+# Example usage
+arr = [10, 7, 8, 9, 1, 5]
+quicksort_lomuto(arr, 0, len(arr) - 1)
+print(arr)  # [1, 5, 7, 8, 9, 10]`,
+                                description: "Lomuto partition is easier to understand and implement. It uses a single loop and performs more swaps than Hoare, making it slightly slower but more intuitive."
+                            },
+                            {
+                                title: "Hoare Partition Scheme",
+                                language: "python",
+                                code: `def hoare_partition(arr, low, high):
+    """
+    Hoare partition scheme: more efficient, fewer swaps
+    Pivot can be any element, traditionally first element
+    Time: O(n), Space: O(1)
+    """
+    pivot = arr[low]  # Choose first element as pivot
+    i = low - 1
+    j = high + 1
+    
+    while True:
+        # Find leftmost element >= pivot
+        i += 1
+        while arr[i] < pivot:
+            i += 1
+        
+        # Find rightmost element <= pivot
+        j -= 1
+        while arr[j] > pivot:
+            j -= 1
+        
+        # If pointers crossed, return partition point
+        if i >= j:
+            return j
+        
+        # Swap elements at i and j
+        arr[i], arr[j] = arr[j], arr[i]
+
+def quicksort_hoare(arr, low, high):
+    """QuickSort using Hoare partition"""
+    if low < high:
+        pi = hoare_partition(arr, low, high)
+        quicksort_hoare(arr, low, pi)
+        quicksort_hoare(arr, pi + 1, high)
+
+# Example usage
+arr = [10, 7, 8, 9, 1, 5]
+quicksort_hoare(arr, 0, len(arr) - 1)
+print(arr)  # [1, 5, 7, 8, 9, 10]`,
+                                description: "Hoare partition is the original scheme, performing fewer swaps on average (about 3 times fewer than Lomuto). It uses two pointers that move toward each other, making it more efficient in practice."
+                            },
+                            {
+                                title: "Three-Way Partition (Dutch National Flag)",
+                                language: "python",
+                                code: `def three_way_partition(arr, low, high):
+    """
+    Three-way partitioning for arrays with duplicate keys
+    Divides array into: < pivot | = pivot | > pivot
+    Time: O(n), Space: O(1)
+    Optimal for arrays with many duplicates
+    """
+    if low >= high:
+        return
+    
+    pivot = arr[low]
+    lt = low      # arr[low:lt] < pivot
+    i = low + 1   # arr[lt:i] = pivot
+    gt = high     # arr[gt+1:high+1] > pivot
+    
+    while i <= gt:
+        if arr[i] < pivot:
+            arr[lt], arr[i] = arr[i], arr[lt]
+            lt += 1
+            i += 1
+        elif arr[i] > pivot:
+            arr[i], arr[gt] = arr[gt], arr[i]
+            gt -= 1
+        else:
+            i += 1
+    
+    return lt, gt
+
+def quicksort_3way(arr, low, high):
+    """QuickSort with three-way partitioning"""
+    if low < high:
+        lt, gt = three_way_partition(arr, low, high)
+        quicksort_3way(arr, low, lt - 1)
+        quicksort_3way(arr, gt + 1, high)
+
+# Example with duplicates
+arr = [4, 9, 4, 4, 1, 9, 4, 4, 9, 4, 4, 1, 4]
+quicksort_3way(arr, 0, len(arr) - 1)
+print(arr)  # [1, 1, 4, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9]`,
+                                description: "Three-way partitioning (Dutch National Flag algorithm) is optimal for arrays with many duplicate values. It creates three partitions: less than, equal to, and greater than the pivot, avoiding unnecessary comparisons of equal elements."
+                            }
+                        ]
+                    }
+                },
+
+                {
+    id: "lomuto-tutorial",
+    title: "Lomuto Partition: Visual Walkthrough",
+    icon: "🎯",
+    content: {
+        type: "visual-tutorial",
+        scheme: "lomuto",
+        description: "Let's visualize how Lomuto partition works on the array [8, 3, 7, 1, 5, 9, 2]. The pivot is always the last element (2 in this case).",
+        initialArray: [8, 3, 7, 1, 5, 9, 2],
+        pivot: 2,
+        steps: [
+            {
+                stepNumber: 0,
+                badge: "slate",
+                title: "Initial Array",
+                description: "Pivot = 2 (last element). Index i = -1 (tracks the boundary of smaller elements).",
+                array: [
+                    { value: 8, label: "j=0", highlight: null },
+                    { value: 3, label: "j=1", highlight: null },
+                    { value: 7, label: "j=2", highlight: null },
+                    { value: 1, label: "j=3", highlight: null },
+                    { value: 5, label: "j=4", highlight: null },
+                    { value: 9, label: "j=5", highlight: null },
+                    { value: 2, label: "pivot", highlight: "pivot" }
+                ],
+                note: "i = -1 (no elements smaller than pivot yet)"
+            },
+            {
+                stepNumber: 1,
+                badge: "cyan",
+                title: "Compare arr[0]=8 with pivot=2",
+                description: "8 > 2, so we skip it. No swap needed. i stays at -1.",
+                array: [
+                    { value: 8, label: "j=0 ✗", highlight: "compare" },
+                    { value: 3, label: "j=1", highlight: null },
+                    { value: 7, label: "j=2", highlight: null },
+                    { value: 1, label: "j=3", highlight: null },
+                    { value: 5, label: "j=4", highlight: null },
+                    { value: 9, label: "j=5", highlight: null },
+                    { value: 2, label: "pivot", highlight: "pivot" }
+                ]
+            },
+            {
+                stepNumber: 2,
+                badge: "cyan",
+                title: "Compare arr[1]=3 with pivot=2",
+                description: "3 > 2, so we skip it. i stays at -1.",
+                array: [
+                    { value: 8, label: "j=0", highlight: null },
+                    { value: 3, label: "j=1 ✗", highlight: "compare" },
+                    { value: 7, label: "j=2", highlight: null },
+                    { value: 1, label: "j=3", highlight: null },
+                    { value: 5, label: "j=4", highlight: null },
+                    { value: 9, label: "j=5", highlight: null },
+                    { value: 2, label: "pivot", highlight: "pivot" }
+                ]
+            },
+            {
+                stepNumber: 3,
+                badge: "cyan",
+                title: "Compare arr[2]=7 with pivot=2",
+                description: "7 > 2, so we skip it. i stays at -1.",
+                array: [
+                    { value: 8, label: "j=0", highlight: null },
+                    { value: 3, label: "j=1", highlight: null },
+                    { value: 7, label: "j=2 ✗", highlight: "compare" },
+                    { value: 1, label: "j=3", highlight: null },
+                    { value: 5, label: "j=4", highlight: null },
+                    { value: 9, label: "j=5", highlight: null },
+                    { value: 2, label: "pivot", highlight: "pivot" }
+                ]
+            },
+            {
+                stepNumber: 4,
+                badge: "emerald",
+                title: "Compare arr[3]=1 with pivot=2",
+                description: "1 ≤ 2 ✓ Found smaller element! Increment i to 0, then swap arr[0] and arr[3].",
+                array: [
+                    { value: "8→", label: "i=0 ⇄", highlight: "swap" },
+                    { value: 3, label: "j=1", highlight: null },
+                    { value: 7, label: "j=2", highlight: null },
+                    { value: "←1", label: "j=3 ⇄", highlight: "swap" },
+                    { value: 5, label: "j=4", highlight: null },
+                    { value: 9, label: "j=5", highlight: null },
+                    { value: 2, label: "pivot", highlight: "pivot" }
+                ],
+                note: "After swap: [1, 3, 7, 8, 5, 9, 2]"
+            },
+            {
+                stepNumber: 5,
+                badge: "cyan",
+                title: "Compare arr[4]=5 with pivot=2",
+                description: "5 > 2, so we skip it. i stays at 0.",
+                array: [
+                    { value: 1, label: "i=0 ✓", highlight: "sorted-left" },
+                    { value: 3, label: "j=1", highlight: null },
+                    { value: 7, label: "j=2", highlight: null },
+                    { value: 8, label: "j=3", highlight: null },
+                    { value: 5, label: "j=4 ✗", highlight: "compare" },
+                    { value: 9, label: "j=5", highlight: null },
+                    { value: 2, label: "pivot", highlight: "pivot" }
+                ]
+            },
+            {
+                stepNumber: 6,
+                badge: "cyan",
+                title: "Compare arr[5]=9 with pivot=2",
+                description: "9 > 2, so we skip it. i stays at 0.",
+                array: [
+                    { value: 1, label: "i=0 ✓", highlight: "sorted-left" },
+                    { value: 3, label: "j=1", highlight: null },
+                    { value: 7, label: "j=2", highlight: null },
+                    { value: 8, label: "j=3", highlight: null },
+                    { value: 5, label: "j=4", highlight: null },
+                    { value: 9, label: "j=5 ✗", highlight: "compare" },
+                    { value: 2, label: "pivot", highlight: "pivot" }
+                ]
+            },
+            {
+                stepNumber: "final",
+                badge: "emerald",
+                title: "Place Pivot in Correct Position",
+                description: "Swap pivot (position 6) with arr[i+1] = arr[1]. Pivot is now in its final sorted position!",
+                array: [
+                    { value: 1, label: "≤ pivot", highlight: "sorted-left" },
+                    { value: 2, label: "pivot ✓", highlight: "pivot-final" },
+                    { value: 7, label: "> pivot", highlight: "sorted-right" },
+                    { value: 8, label: "> pivot", highlight: "sorted-right" },
+                    { value: 5, label: "> pivot", highlight: "sorted-right" },
+                    { value: 9, label: "> pivot", highlight: "sorted-right" },
+                    { value: 3, label: "> pivot", highlight: "sorted-right" }
+                ],
+                note: "Final result: [1, 2, 7, 8, 5, 9, 3]"
+            }
+        ],
+        insight: {
+            title: "Key Insight",
+            text: "Lomuto maintains a boundary (index i) that separates elements ≤ pivot from elements > pivot. Every element ≤ pivot gets swapped to the left side. Simple but performs more swaps than Hoare.",
+            color: "cyan"
+        }
+    }
+},
+{
+    id: "hoare-tutorial",
+    title: "Hoare Partition: Visual Walkthrough",
+    icon: "⚡",
+    content: {
+        type: "visual-tutorial",
+        scheme: "hoare",
+        description: "Let's visualize how Hoare partition works on the array [8, 3, 7, 1, 5, 9, 2]. The pivot is the first element (8 in this case). Two pointers move toward each other.",
+        initialArray: [8, 3, 7, 1, 5, 9, 2],
+        pivot: 8,
+        steps: [
+            {
+                stepNumber: 0,
+                badge: "slate",
+                title: "Initial Array",
+                description: "Pivot = 8 (first element). Pointers: i = -1 (left), j = 7 (right).",
+                array: [
+                    { value: 8, label: "pivot", highlight: "pivot" },
+                    { value: 3, label: "idx=1", highlight: null },
+                    { value: 7, label: "idx=2", highlight: null },
+                    { value: 1, label: "idx=3", highlight: null },
+                    { value: 5, label: "idx=4", highlight: null },
+                    { value: 9, label: "idx=5", highlight: null },
+                    { value: 2, label: "idx=6", highlight: null }
+                ],
+                pointerNote: true
+            },
+            {
+                stepNumber: 1,
+                badge: "cyan",
+                title: "Move i Right (find element ≥ pivot)",
+                description: "Increment i until arr[i] ≥ 8. We find i=0 (arr[0]=8 ≥ 8).",
+                array: [
+                    { value: 8, label: "i=0 ✓", highlight: "compare" },
+                    { value: 3, label: "idx=1", highlight: null },
+                    { value: 7, label: "idx=2", highlight: null },
+                    { value: 1, label: "idx=3", highlight: null },
+                    { value: 5, label: "idx=4", highlight: null },
+                    { value: 9, label: "idx=5", highlight: null },
+                    { value: 2, label: "idx=6", highlight: null }
+                ]
+            },
+            {
+                stepNumber: 2,
+                badge: "cyan",
+                title: "Move j Left (find element ≤ pivot)",
+                description: "Decrement j until arr[j] ≤ 8. Check j=6 (2≤8✓), j=5 (9>8), ..., stop at j=6 (arr[6]=2 ≤ 8).",
+                array: [
+                    { value: 8, label: "i=0", highlight: "compare" },
+                    { value: 3, label: "idx=1", highlight: null },
+                    { value: 7, label: "idx=2", highlight: null },
+                    { value: 1, label: "idx=3", highlight: null },
+                    { value: 5, label: "idx=4", highlight: null },
+                    { value: 9, label: "idx=5", highlight: null },
+                    { value: 2, label: "j=6 ✓", highlight: "compare-right" }
+                ]
+            },
+            {
+                stepNumber: 3,
+                badge: "emerald",
+                title: "Swap arr[i] and arr[j]",
+                description: "i < j, so swap arr[0]=8 with arr[6]=2. Now 2 is on the left, 8 is on the right.",
+                array: [
+                    { value: "8→", label: "i=0 ⇄", highlight: "swap" },
+                    { value: 3, label: "idx=1", highlight: null },
+                    { value: 7, label: "idx=2", highlight: null },
+                    { value: 1, label: "idx=3", highlight: null },
+                    { value: 5, label: "idx=4", highlight: null },
+                    { value: 9, label: "idx=5", highlight: null },
+                    { value: "←2", label: "j=6 ⇄", highlight: "swap" }
+                ],
+                note: "After swap: [2, 3, 7, 1, 5, 9, 8]"
+            },
+            {
+                stepNumber: 4,
+                badge: "cyan",
+                title: "Continue: Move i Right",
+                description: "Find next element ≥ 8. Increment i: arr[1]=3 < 8, arr[2]=7 < 8, arr[3]=1 < 8, arr[4]=5 < 8, arr[5]=9 ≥ 8 ✓. Stop at i=5.",
+                array: [
+                    { value: 2, label: "idx=0", highlight: null },
+                    { value: 3, label: "idx=1", highlight: null },
+                    { value: 7, label: "idx=2", highlight: null },
+                    { value: 1, label: "idx=3", highlight: null },
+                    { value: 5, label: "idx=4", highlight: null },
+                    { value: 9, label: "i=5 ✓", highlight: "compare" },
+                    { value: 8, label: "idx=6", highlight: null }
+                ]
+            },
+            {
+                stepNumber: 5,
+                badge: "cyan",
+                title: "Move j Left",
+                description: "Find element ≤ 8. Decrement j: arr[6]=8 ≤ 8, but we already passed it. arr[5]=9 > 8, arr[4]=5 ≤ 8 ✓. Stop at j=4.",
+                array: [
+                    { value: 2, label: "idx=0", highlight: null },
+                    { value: 3, label: "idx=1", highlight: null },
+                    { value: 7, label: "idx=2", highlight: null },
+                    { value: 1, label: "idx=3", highlight: null },
+                    { value: 5, label: "j=4 ✓", highlight: "compare-right" },
+                    { value: 9, label: "i=5", highlight: "compare" },
+                    { value: 8, label: "idx=6", highlight: null }
+                ]
+            },
+            {
+                stepNumber: "final",
+                badge: "emerald",
+                title: "Pointers Crossed - Partition Complete!",
+                description: "i (5) ≥ j (4), so pointers have crossed! Return j=4 as the partition index. All elements ≤ 8 are to the left of j, all > 8 are to the right.",
+                array: [
+                    { value: 2, label: "≤ 8", highlight: "sorted-left" },
+                    { value: 3, label: "≤ 8", highlight: "sorted-left" },
+                    { value: 7, label: "≤ 8", highlight: "sorted-left" },
+                    { value: 1, label: "≤ 8", highlight: "sorted-left" },
+                    { value: 5, label: "j=4 ✓", highlight: "pivot-final" },
+                    { value: 9, label: "> 8", highlight: "sorted-right" },
+                    { value: 8, label: "> 8", highlight: "sorted-right" }
+                ],
+                note: "Partitioned: [2, 3, 7, 1, 5] | [9, 8]"
+            }
+        ],
+        insight: {
+            title: "Key Insight",
+            text: "Hoare uses two pointers moving toward each other from opposite ends. It swaps elements that are on the \"wrong side\" of the pivot. More efficient than Lomuto (~3x fewer swaps), but the pivot doesn't end up in its final position (unlike Lomuto).",
+            color: "purple"
+        }
+    }
+},
+                {
+                    id: "pivoting",
+                    title: "Pivot Selection Strategies",
+                    icon: "🎲",
+                    content: {
+                        type: "code-examples",
+                        items: [
+                            {
+                                title: "Random Pivot Selection",
+                                language: "python",
+                                code: `import random
+
+def random_pivot_partition(arr, low, high):
+    """
+    Select random pivot to avoid worst-case on sorted arrays
+    Expected time: O(n log n) regardless of input
+    """
+    # Choose random pivot and swap with last element
+    random_idx = random.randint(low, high)
+    arr[random_idx], arr[high] = arr[high], arr[random_idx]
+    
+    # Use standard Lomuto partition
+    pivot = arr[high]
+    i = low - 1
+    
+    for j in range(low, high):
+        if arr[j] <= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1
+
+def quicksort_random(arr, low, high):
+    """QuickSort with random pivot selection"""
+    if low < high:
+        pi = random_pivot_partition(arr, low, high)
+        quicksort_random(arr, low, pi - 1)
+        quicksort_random(arr, pi + 1, high)
+
+# Example usage
+arr = [10, 7, 8, 9, 1, 5]
+quicksort_random(arr, 0, len(arr) - 1)
+print(arr)  # [1, 5, 7, 8, 9, 10]`,
+                                description: "Random pivot selection provides O(n log n) expected time complexity for any input, avoiding the worst-case O(n²) behavior on already sorted or reverse-sorted arrays. Simple and effective."
+                            },
+                            {
+                                title: "Median-of-Three Pivot",
+                                language: "python",
+                                code: `def median_of_three(arr, low, high):
+    """
+    Choose median of first, middle, and last elements
+    Better pivot than random for nearly sorted data
+    """
+    mid = (low + high) // 2
+    
+    # Sort three elements to find median
+    if arr[low] > arr[mid]:
+        arr[low], arr[mid] = arr[mid], arr[low]
+    if arr[low] > arr[high]:
+        arr[low], arr[high] = arr[high], arr[low]
+    if arr[mid] > arr[high]:
+        arr[mid], arr[high] = arr[high], arr[mid]
+    
+    # Place median at second-to-last position
+    arr[mid], arr[high - 1] = arr[high - 1], arr[mid]
+    return arr[high - 1]
+
+def median3_partition(arr, low, high):
+    """Partition using median-of-three pivot"""
+    if high - low < 2:
+        return low
+    
+    pivot = median_of_three(arr, low, high)
+    i = low
+    j = high - 1
+    
+    while True:
+        i += 1
+        while arr[i] < pivot:
+            i += 1
+        j -= 1
+        while arr[j] > pivot:
+            j -= 1
+        if i >= j:
+            break
+        arr[i], arr[j] = arr[j], arr[i]
+    
+    arr[i], arr[high - 1] = arr[high - 1], arr[i]
+    return i
+
+def quicksort_median3(arr, low, high):
+    """QuickSort with median-of-three pivot"""
+    if low < high:
+        pi = median3_partition(arr, low, high)
+        quicksort_median3(arr, low, pi - 1)
+        quicksort_median3(arr, pi + 1, high)
+
+# Example usage
+arr = [10, 7, 8, 9, 1, 5]
+quicksort_median3(arr, 0, len(arr) - 1)
+print(arr)  # [1, 5, 7, 8, 9, 10]`,
+                                description: "Median-of-three selects the median of the first, middle, and last elements as the pivot. This provides better pivots than random selection for partially sorted data and is commonly used in practice."
+                            },
+                            {
+                                title: "Median-of-Five Pivot (Median-of-Medians Approximation)",
+                                language: "python",
+                                code: `def median_of_five(arr, low, high):
+    """
+    Choose median of five elements for better pivot quality
+    More robust than median-of-three, closer to true median
+    """
+    # Calculate five evenly spaced indices
+    length = high - low + 1
+    indices = [
+        low,
+        low + length // 4,
+        low + length // 2,
+        low + 3 * length // 4,
+        high
+    ]
+    
+    # Extract values at these indices
+    values = [arr[i] for i in indices]
+    
+    # Sort the five values using insertion sort (efficient for 5 elements)
+    for i in range(1, 5):
+        key = values[i]
+        key_idx = indices[i]
+        j = i - 1
+        while j >= 0 and values[j] > key:
+            values[j + 1] = values[j]
+            indices[j + 1] = indices[j]
+            j -= 1
+        values[j + 1] = key
+        indices[j + 1] = key_idx
+    
+    # Return index of median (middle element)
+    return indices[2]
+
+def median5_partition(arr, low, high):
+    """Partition using median-of-five pivot"""
+    # Choose median-of-five and swap with high
+    median_idx = median_of_five(arr, low, high)
+    arr[median_idx], arr[high] = arr[high], arr[median_idx]
+    
+    # Standard Lomuto partition
+    pivot = arr[high]
+    i = low - 1
+    
+    for j in range(low, high):
+        if arr[j] <= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1
+
+def quicksort_median5(arr, low, high):
+    """QuickSort with median-of-five pivot"""
+    if low < high:
+        pi = median5_partition(arr, low, high)
+        quicksort_median5(arr, low, pi - 1)
+        quicksort_median5(arr, pi + 1, high)
+
+# Example usage
+arr = [10, 7, 8, 9, 1, 5, 3, 2, 4, 6]
+quicksort_median5(arr, 0, len(arr) - 1)
+print(arr)  # [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`,
+                                description: "Median-of-five samples five elements and chooses their median as the pivot. This provides better pivot quality than median-of-three with minimal overhead, especially useful for larger arrays or adversarial inputs."
+                            }
+                        ]
+                    }
+                },
+                {
+                    id: "simulator",
+                    title: "Interactive Simulator",
+                    icon: "🎮",
+                    content: {
+                        type: "simulator",
+                        description: "Visualize QuickSort step-by-step with different partitioning schemes and pivot strategies."
+                    }
+                },
+                {
+                    id: "analysis",
+                    title: "Performance Analysis",
+                    icon: "📊",
+                    content: {
+                        type: "analysis",
+                        description: "Comparing different QuickSort implementations across various scenarios."
+                    }
+                },
+                {
+                    id: "exercises",
+                    title: "Practice Exercises",
+                    icon: "✏️",
+                    content: {
+                        type: "exercises",
+                        items: [
+                            {
+                                title: "Exercise 1: Implement Basic QuickSort",
+                                difficulty: "easy",
+                                description: "Implement QuickSort using Lomuto partition with the last element as pivot. Test it on arrays of different sizes and verify correctness.",
+                                topics: ["Lomuto Partition", "Recursion", "Basic Implementation"]
+                            },
+                            {
+                                title: "Exercise 2: Compare Partitioning Schemes",
+                                difficulty: "medium",
+                                description: "Implement both Lomuto and Hoare partition schemes. Count the number of swaps and comparisons for the same input array. Which performs better?",
+                                topics: ["Lomuto vs Hoare", "Performance Analysis", "Swap Count"]
+                            },
+                            {
+                                title: "Exercise 3: Handle Duplicates Efficiently",
+                                difficulty: "medium",
+                                description: "Implement three-way partitioning (Dutch National Flag). Test on an array with many duplicate values and compare performance with standard QuickSort.",
+                                topics: ["Three-Way Partition", "Duplicates", "Optimization"]
+                            },
+                            {
+                                title: "Exercise 4: Optimize Pivot Selection",
+                                difficulty: "hard",
+                                description: "Implement QuickSort with median-of-three pivot selection. Test on sorted, reverse-sorted, and random arrays. How does it compare to random pivot?",
+                                topics: ["Median-of-Three", "Worst Case Avoidance", "Empirical Analysis"]
+                            },
+                            {
+                                title: "Exercise 5: Hybrid QuickSort",
+                                difficulty: "hard",
+                                description: "Create a hybrid algorithm that uses QuickSort for large subarrays but switches to insertion sort when subarray size falls below a threshold (e.g., 10 elements). Find the optimal threshold.",
+                                topics: ["Hybrid Algorithms", "Small Array Optimization", "Benchmarking"]
+                            },
+                            {
+                                title: "Exercise 6: Iterative QuickSort",
+                                difficulty: "medium",
+                                description: "Implement an iterative (non-recursive) version of QuickSort using an explicit stack. This avoids recursion stack overflow for large arrays.",
+                                topics: ["Iterative Implementation", "Stack Management", "Space Optimization"]
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
+    </script>
+
+    <script>
+        class QuickSortTemplate {
+            constructor(config) {
+                this.config = config;
+                this.init();
+            }
+
+            init() {
+                this.renderNavigation();
+                this.renderHero();
+                this.renderSections();
+                this.setupEventListeners();
+                this.observeReveals();
+                this.initSyntaxHighlighting();
+                document.getElementById('year').textContent = new Date().getFullYear();
+            }
+
+            initSyntaxHighlighting() {
+                if (typeof Prism !== 'undefined') {
+                    Prism.highlightAll();
+                }
+            }
+
+            observeReveals() {
+                const reveals = document.querySelectorAll('.reveal');
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('show');
+                        }
+                    });
+                }, { threshold: 0.1 });
+                reveals.forEach(reveal => observer.observe(reveal));
+            }
+
+            renderNavigation() {
+                const navLinks = document.getElementById('nav-links');
+                const mobileMenu = document.getElementById('mobile-menu');
+                
+                this.config.sections.forEach(section => {
+                    const link = this.createNavLink(section);
+                    navLinks.appendChild(link);
+                    
+                    const mobileLink = this.createNavLink(section, true);
+                    mobileMenu.appendChild(mobileLink);
+                });
+            }
+
+            createNavLink(section, isMobile = false) {
+                const link = document.createElement('a');
+                link.href = `#${section.id}`;
+                link.className = isMobile
+                    ? 'block px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors'
+                    : 'px-3 py-2 text-slate-700 hover:text-primary-600 transition-colors';
+                link.textContent = section.title;
+                return link;
+            }
+
+            renderHero() {
+                document.getElementById('hero-title').textContent = this.config.hero.title;
+                document.getElementById('hero-subtitle').textContent = this.config.hero.subtitle;
+                
+                const heroNav = document.getElementById('hero-nav');
+                this.config.hero.quickLinks.forEach(link => {
+                    const btn = document.createElement('a');
+                    btn.href = link.href;
+                    btn.className = `btn btn-${link.style}`;
+                    btn.textContent = link.text;
+                    heroNav.appendChild(btn);
+                });
+            }
+
+            renderSections() {
+                const mainContent = document.getElementById('main-content');
+                
+                this.config.sections.forEach(section => {
+                    const sectionEl = document.createElement('section');
+                    sectionEl.id = section.id;
+                    
+                    const container = document.createElement('div');
+                    container.className = 'container';
+                    
+                    const header = document.createElement('h2');
+                    header.className = 'font-display mb-12 reveal';
+                    header.innerHTML = `${section.icon} ${section.title}`;
+                    container.appendChild(header);
+                    
+                    const contentEl = this.renderContent(section.content);
+                    container.appendChild(contentEl);
+                    
+                    sectionEl.appendChild(container);
+                    mainContent.appendChild(sectionEl);
+                });
+            }
+
+            renderContent(content) {
+                const wrapper = document.createElement('div');
+                
+                switch(content.type) {
+                    case 'cards':
+                        wrapper.className = content.layout === 'grid-2'
+                            ? 'grid md:grid-cols-2 gap-6'
+                            : 'grid md:grid-cols-3 gap-6';
+                        content.items.forEach(item => {
+                            wrapper.appendChild(this.createCard(item));
+                        });
+                        break;
+                    
+                case 'visual-tutorial':
+    wrapper.appendChild(this.createVisualTutorial(content));
+    break;
+                    case 'code-examples':
+                        wrapper.className = 'space-y-8';
+                        content.items.forEach(item => {
+                            wrapper.appendChild(this.createCodeExample(item));
+                        });
+                        break;
+                    
+                    case 'simulator':
+                        wrapper.appendChild(this.createSimulator(content));
+                        break;
+                    
+                    case 'analysis':
+                        wrapper.appendChild(this.createAnalysis(content));
+                        break;
+                    
+                    case 'exercises':
+                        wrapper.className = 'space-y-6';
+                        content.items.forEach(item => {
+                            wrapper.appendChild(this.createExercise(item));
+                        });
+                        break;
+                }
+                
+                return wrapper;
+            }
+
+            createCard(item) {
+                const card = document.createElement('div');
+                card.className = 'card reveal';
+                
+                const body = document.createElement('div');
+                body.className = 'p-8';
+                
+                const icon = document.createElement('div');
+                icon.className = 'icon-box mb-6';
+                icon.textContent = item.icon;
+                
+                const title = document.createElement('h3');
+                title.className = 'font-display mb-3';
+                title.textContent = item.title;
+                
+                const description = document.createElement('p');
+                description.className = 'text-slate-600 mb-4 text-sm leading-relaxed';
+                description.textContent = item.description;
+                
+                const badge = document.createElement('span');
+                badge.className = `badge badge-${item.color} mb-4 mono`;
+                badge.textContent = item.highlight;
+                
+                body.appendChild(icon);
+                body.appendChild(title);
+                body.appendChild(description);
+                body.appendChild(badge);
+                
+                if (item.details) {
+                    const list = document.createElement('ul');
+                    list.className = 'check-list text-sm text-slate-600 mt-4';
+                    item.details.forEach(detail => {
+                        const li = document.createElement('li');
+                        li.textContent = detail;
+                        list.appendChild(li);
+                    });
+                    body.appendChild(list);
+                }
+                
+                card.appendChild(body);
+                return card;
+            }
+
+            createCodeExample(item) {
+                const container = document.createElement('div');
+                container.className = 'card reveal';
+                
+                const header = document.createElement('div');
+                header.className = 'card-header';
+                const headerTitle = document.createElement('h3');
+                headerTitle.className = 'font-display text-lg';
+                headerTitle.textContent = item.title;
+                header.appendChild(headerTitle);
+                container.appendChild(header);
+                
+                const body = document.createElement('div');
+                body.className = 'p-6';
+                
+                if (item.description) {
+                    const desc = document.createElement('p');
+                    desc.className = 'text-sm text-slate-600 mb-4 leading-relaxed';
+                    desc.textContent = item.description;
+                    body.appendChild(desc);
+                }
+                
+                const pre = document.createElement('pre');
+                pre.className = `language-${item.language}`;
+                const code = document.createElement('code');
+                code.className = `language-${item.language}`;
+                code.textContent = item.code;
+                pre.appendChild(code);
+                body.appendChild(pre);
+                
+                container.appendChild(body);
+                
+                setTimeout(() => {
+                    if (typeof Prism !== 'undefined') {
+                        Prism.highlightElement(code);
+                    }
+                }, 100);
+                
+                return container;
+            }
+
+            createVisualTutorial(content) {
+    const container = document.createElement('div');
+    container.className = 'card reveal';
+    
+    const header = document.createElement('div');
+    header.className = 'card-header';
+    const headerTitle = document.createElement('h3');
+    headerTitle.className = 'font-display text-lg';
+    headerTitle.textContent = `Understanding ${content.scheme === 'lomuto' ? 'Lomuto' : 'Hoare'} Partition Step-by-Step`;
+    header.appendChild(headerTitle);
+    container.appendChild(header);
+    
+    const body = document.createElement('div');
+    body.className = 'p-8';
+    
+    const desc = document.createElement('p');
+    desc.className = 'text-slate-600 mb-8 leading-relaxed';
+    desc.textContent = content.description;
+    body.appendChild(desc);
+    
+    // Render each step
+    content.steps.forEach(step => {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'mb-12';
+        
+        const stepHeader = document.createElement('div');
+        stepHeader.className = 'flex items-center gap-4 mb-4';
+        
+        const badge = document.createElement('span');
+        badge.className = `badge badge-${step.badge} mono`;
+        badge.textContent = `Step ${step.stepNumber}`;
+        stepHeader.appendChild(badge);
+        
+        const title = document.createElement('h4');
+        title.className = 'text-lg font-semibold';
+        title.textContent = step.title;
+        stepHeader.appendChild(title);
+        
+        stepDiv.appendChild(stepHeader);
+        
+        const description = document.createElement('p');
+        description.className = 'text-sm text-slate-600 mb-4';
+        description.textContent = step.description;
+        stepDiv.appendChild(description);
+        
+        // Array visualization
+        const arrayViz = document.createElement('div');
+        arrayViz.className = 'flex gap-3 items-end mb-4 justify-center flex-wrap';
+        
+        step.array.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'text-center';
+            
+            const box = document.createElement('div');
+            box.className = 'w-16 h-16 flex items-center justify-center rounded-lg font-bold text-xl';
+            
+            // Apply highlight styles
+            if (item.highlight === 'pivot') {
+                box.className += ' bg-amber-100 border-2 border-amber-500';
+            } else if (item.highlight === 'compare') {
+                box.className += ' bg-blue-100 border-2 border-blue-500';
+            } else if (item.highlight === 'compare-right') {
+                box.className += ' bg-purple-100 border-2 border-purple-500';
+            } else if (item.highlight === 'swap') {
+                box.className += ' bg-red-100 border-2 border-red-500';
+            } else if (item.highlight === 'sorted-left') {
+                box.className += ' bg-emerald-100 border-2 border-emerald-500';
+            } else if (item.highlight === 'sorted-right') {
+                box.className += ' bg-purple-100 border-2 border-purple-500';
+            } else if (item.highlight === 'pivot-final') {
+                box.className += ' bg-cyan-100 border-2 border-cyan-500 shadow-lg';
+            } else {
+                box.className += ' bg-white border-2 border-slate-300';
+            }
+            
+            box.textContent = item.value;
+            itemDiv.appendChild(box);
+            
+            const label = document.createElement('div');
+            label.className = 'text-xs mt-2 mono';
+            
+            if (item.highlight === 'pivot' || item.highlight === 'pivot-final') {
+                label.className += ' text-amber-600 font-semibold';
+            } else if (item.highlight === 'compare') {
+                label.className += ' text-blue-600 font-semibold';
+            } else if (item.highlight === 'compare-right') {
+                label.className += ' text-purple-600 font-semibold';
+            } else if (item.highlight === 'swap') {
+                label.className += ' text-red-600 font-semibold';
+            } else if (item.highlight === 'sorted-left') {
+                label.className += ' text-emerald-600 font-semibold';
+            } else if (item.highlight === 'sorted-right') {
+                label.className += ' text-purple-600 font-semibold';
+            } else {
+                label.className += ' text-slate-500';
+            }
+            
+            label.textContent = item.label;
+            itemDiv.appendChild(label);
+            
+            arrayViz.appendChild(itemDiv);
+        });
+        
+        stepDiv.appendChild(arrayViz);
+        
+        if (step.note) {
+            const note = document.createElement('p');
+            note.className = 'text-sm text-center text-slate-500 mt-4';
+            note.textContent = step.note;
+            stepDiv.appendChild(note);
+        }
+        
+        if (step.pointerNote) {
+            const pointerNote = document.createElement('div');
+            pointerNote.className = 'flex justify-between items-center px-8 text-xs mono mt-4';
+            pointerNote.innerHTML = `
+                <div class="text-blue-600 font-semibold">← i starts here (will move right)</div>
+                <div class="text-purple-600 font-semibold">j starts here (will move left) →</div>
+            `;
+            stepDiv.appendChild(pointerNote);
+        }
+        
+        body.appendChild(stepDiv);
+    });
+    
+    // Insight box
+    const insightBox = document.createElement('div');
+    insightBox.className = `bg-${content.insight.color}-50 border-l-4 border-${content.insight.color}-500 p-6 rounded-lg`;
+    insightBox.innerHTML = `
+        <h4 class="font-semibold text-${content.insight.color}-900 mb-2">${content.scheme === 'lomuto' ? '🎯' : '⚡'} ${content.insight.title}</h4>
+        <p class="text-sm text-${content.insight.color}-800 leading-relaxed">${content.insight.text}</p>
+    `;
+    body.appendChild(insightBox);
+    
+    container.appendChild(body);
+    return container;
+}
+
+            createSimulator(content) {
+                const container = document.createElement('div');
+                container.className = 'card reveal';
+                
+                const header = document.createElement('div');
+                header.className = 'card-header';
+                const headerTitle = document.createElement('h3');
+                headerTitle.className = 'font-display text-lg';
+                headerTitle.textContent = 'QuickSort Step-by-Step Visualizer';
+                header.appendChild(headerTitle);
+                container.appendChild(header);
+                
+                const body = document.createElement('div');
+                body.className = 'p-8';
+                
+                const desc = document.createElement('p');
+                desc.className = 'text-slate-600 mb-6 text-sm leading-relaxed';
+                desc.textContent = content.description;
+                body.appendChild(desc);
+                
+                // Controls
+                const controls = document.createElement('div');
+                controls.className = 'grid md:grid-cols-3 gap-4 mb-6';
+                
+                const inputGroup = document.createElement('div');
+                inputGroup.className = 'control-group';
+                inputGroup.innerHTML = `
+                    <label for="sim-array">Array (comma-separated)</label>
+                    <input type="text" id="sim-array" value="5, 2, 9, 1, 7, 6, 3" placeholder="5, 2, 9, 1, 7, 6, 3">
+                `;
+                controls.appendChild(inputGroup);
+                
+                const partitionGroup = document.createElement('div');
+                partitionGroup.className = 'control-group';
+                partitionGroup.innerHTML = `
+                    <label for="sim-partition">Partition Scheme</label>
+                    <select id="sim-partition">
+                        <option value="lomuto">Lomuto Partition</option>
+                        <option value="hoare">Hoare Partition</option>
+                        <option value="threeway">Three-Way Partition</option>
+                    </select>
+                `;
+                controls.appendChild(partitionGroup);
+                
+                const pivotGroup = document.createElement('div');
+                pivotGroup.className = 'control-group';
+                pivotGroup.innerHTML = `
+                    <label for="sim-pivot">Pivot Strategy</label>
+                    <select id="sim-pivot">
+                        <option value="last">Last Element</option>
+                        <option value="first">First Element</option>
+                        <option value="random">Random</option>
+                        <option value="median3">Median-of-Three</option>
+                    </select>
+                `;
+                controls.appendChild(pivotGroup);
+                
+                body.appendChild(controls);
+                
+                // Action buttons
+                const actions = document.createElement('div');
+                actions.className = 'flex gap-3 mb-6';
+                
+                const runBtn = document.createElement('button');
+                runBtn.className = 'btn btn-primary';
+                runBtn.textContent = '▶ Run Simulation';
+                runBtn.onclick = () => this.runSimulation();
+                
+                const stepBtn = document.createElement('button');
+                stepBtn.className = 'btn btn-secondary';
+                stepBtn.textContent = '⏯ Step Forward';
+                stepBtn.onclick = () => this.stepSimulation();
+                stepBtn.disabled = true;
+                stepBtn.id = 'step-btn';
+                
+                const resetBtn = document.createElement('button');
+                resetBtn.className = 'btn btn-secondary';
+                resetBtn.textContent = '↻ Reset';
+                resetBtn.onclick = () => this.resetSimulation();
+                
+                actions.appendChild(runBtn);
+                actions.appendChild(stepBtn);
+                actions.appendChild(resetBtn);
+                body.appendChild(actions);
+                
+                // Stats
+                const stats = document.createElement('div');
+                stats.className = 'stats-grid mb-6';
+                stats.innerHTML = `
+                    <div class="stat-box">
+                        <div class="stat-label">Comparisons</div>
+                        <div class="stat-value" id="sim-comparisons">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Swaps</div>
+                        <div class="stat-value" id="sim-swaps">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Recursive Calls</div>
+                        <div class="stat-value" id="sim-calls">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Current Depth</div>
+                        <div class="stat-value" id="sim-depth">0</div>
+                    </div>
+                `;
+                body.appendChild(stats);
+                
+                // Array visualization
+                const vizTitle = document.createElement('h4');
+                vizTitle.className = 'text-sm font-semibold text-slate-700 mb-3';
+                vizTitle.textContent = 'Array State:';
+                body.appendChild(vizTitle);
+                
+                const arrayViz = document.createElement('div');
+                arrayViz.id = 'array-viz';
+                arrayViz.className = 'array-visual';
+                body.appendChild(arrayViz);
+                
+                // Log
+                const logTitle = document.createElement('h4');
+                logTitle.className = 'text-sm font-semibold text-slate-700 mb-3 mt-6';
+                logTitle.textContent = 'Execution Log:';
+                body.appendChild(logTitle);
+                
+                const logContainer = document.createElement('div');
+                logContainer.id = 'sim-log';
+                logContainer.className = 'log-container';
+                body.appendChild(logContainer);
+                
+                container.appendChild(body);
+                
+                // Initialize simulator state
+                this.simulatorState = {
+                    steps: [],
+                    currentStep: 0,
+                    running: false,
+                    comparisons: 0,
+                    swaps: 0,
+                    calls: 0
+                };
+                
+                return container;
+            }
+
+            runSimulation() {
+                const arrayInput = document.getElementById('sim-array').value;
+                const partition = document.getElementById('sim-partition').value;
+                const pivot = document.getElementById('sim-pivot').value;
+                
+                // Parse array
+                const arr = arrayInput.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+                
+                if (arr.length === 0) {
+                    this.addLog('error', 'Invalid array input');
+                    return;
+                }
+                
+                // Reset state
+                this.simulatorState = {
+                    steps: [],
+                    currentStep: 0,
+                    running: false,
+                    comparisons: 0,
+                    swaps: 0,
+                    calls: 0,
+                    array: [...arr],
+                    partition,
+                    pivot
+                };
+                
+                // Clear log
+                document.getElementById('sim-log').innerHTML = '';
+                
+                this.addLog('info', `Starting QuickSort with ${partition} partition and ${pivot} pivot`);
+                this.addLog('info', `Initial array: [${arr.join(', ')}]`);
+                
+                // Generate steps
+                this.generateSteps([...arr], 0, arr.length - 1, 0);
+                
+                // Update display
+                this.updateStats();
+                this.updateArray(arr);
+                
+                // Enable step button
+                document.getElementById('step-btn').disabled = false;
+                
+                this.addLog('success', `Generated ${this.simulatorState.steps.length} steps`);
+            }
+
+            generateSteps(arr, low, high, depth) {
+                if (low >= high) return;
+                
+                this.simulatorState.calls++;
+                
+                const step = {
+                    type: 'call',
+                    array: [...arr],
+                    low,
+                    high,
+                    depth,
+                    message: `quicksort(arr, ${low}, ${high}) at depth ${depth}`
+                };
+                this.simulatorState.steps.push(step);
+                
+                // Select pivot based on strategy
+                let pivotIdx = high;
+                const pivotStrategy = this.simulatorState.pivot;
+                
+                if (pivotStrategy === 'first') {
+                    pivotIdx = low;
+                } else if (pivotStrategy === 'random') {
+                    pivotIdx = low + Math.floor(Math.random() * (high - low + 1));
+                } else if (pivotStrategy === 'median3' && high - low >= 2) {
+                    const mid = Math.floor((low + high) / 2);
+                    const vals = [[arr[low], low], [arr[mid], mid], [arr[high], high]];
+                    vals.sort((a, b) => a[0] - b[0]);
+                    pivotIdx = vals[1][1];
+                }
+                
+                // Swap pivot to appropriate position
+                if (pivotIdx !== high && this.simulatorState.partition === 'lomuto') {
+                    [arr[pivotIdx], arr[high]] = [arr[high], arr[pivotIdx]];
+                    this.simulatorState.steps.push({
+                        type: 'pivot',
+                        array: [...arr],
+                        low,
+                        high,
+                        pivotIdx: high,
+                        message: `Selected pivot: ${arr[high]} (moved to position ${high})`
+                    });
+                }
+                
+                // Partition based on scheme
+                let pi;
+                if (this.simulatorState.partition === 'lomuto') {
+                    pi = this.lomutoPartitionSteps(arr, low, high);
+                } else if (this.simulatorState.partition === 'hoare') {
+                    pi = this.hoarePartitionSteps(arr, low, high);
+                } else {
+                    pi = this.lomutoPartitionSteps(arr, low, high); // Default
+                }
+                
+                this.simulatorState.steps.push({
+                    type: 'partitioned',
+                    array: [...arr],
+                    low,
+                    high,
+                    pivotIdx: pi,
+                    message: `Partition complete. Pivot at index ${pi}`
+                });
+                
+                // Recursive calls
+                this.generateSteps(arr, low, pi - 1, depth + 1);
+                this.generateSteps(arr, pi + 1, high, depth + 1);
+            }
+
+            lomutoPartitionSteps(arr, low, high) {
+                const pivot = arr[high];
+                let i = low - 1;
+                
+                for (let j = low; j < high; j++) {
+                    this.simulatorState.comparisons++;
+                    this.simulatorState.steps.push({
+                        type: 'compare',
+                        array: [...arr],
+                        indices: [j, high],
+                        message: `Compare arr[${j}]=${arr[j]} with pivot=${pivot}`
+                    });
+                    
+                    if (arr[j] <= pivot) {
+                        i++;
+                        if (i !== j) {
+                            this.simulatorState.swaps++;
+                            [arr[i], arr[j]] = [arr[j], arr[i]];
+                            this.simulatorState.steps.push({
+                                type: 'swap',
+                                array: [...arr],
+                                indices: [i, j],
+                                message: `Swap arr[${i}]=${arr[i]} with arr[${j}]=${arr[j]}`
+                            });
+                        }
+                    }
+                }
+                
+                this.simulatorState.swaps++;
+                [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+                this.simulatorState.steps.push({
+                    type: 'swap',
+                    array: [...arr],
+                    indices: [i + 1, high],
+                    message: `Place pivot ${pivot} at position ${i + 1}`
+                });
+                
+                return i + 1;
+            }
+
+            hoarePartitionSteps(arr, low, high) {
+                const pivot = arr[low];
+                let i = low - 1;
+                let j = high + 1;
+                
+                while (true) {
+                    do {
+                        i++;
+                        if (i <= high) {
+                            this.simulatorState.comparisons++;
+                        }
+                    } while (i <= high && arr[i] < pivot);
+                    
+                    do {
+                        j--;
+                        if (j >= low) {
+                            this.simulatorState.comparisons++;
+                        }
+                    } while (j >= low && arr[j] > pivot);
+                    
+                    if (i >= j) {
+                        return j;
+                    }
+                    
+                    this.simulatorState.swaps++;
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                    this.simulatorState.steps.push({
+                        type: 'swap',
+                        array: [...arr],
+                        indices: [i, j],
+                        message: `Hoare: Swap arr[${i}]=${arr[i]} with arr[${j}]=${arr[j]}`
+                    });
+                }
+            }
+
+            stepSimulation() {
+                if (this.simulatorState.currentStep >= this.simulatorState.steps.length) {
+                    this.addLog('success', '✓ Sorting complete!');
+                    document.getElementById('step-btn').disabled = true;
+                    return;
+                }
+                
+                const step = this.simulatorState.steps[this.simulatorState.currentStep];
+                
+                // Update array visualization
+                this.updateArray(step.array, step.indices, step.type);
+                
+                // Add to log
+                const logType = step.type === 'swap' ? 'warning' : 
+                               step.type === 'compare' ? 'info' : 'success';
+                this.addLog(logType, step.message);
+                
+                // Update stats
+                document.getElementById('sim-comparisons').textContent = this.simulatorState.comparisons;
+                document.getElementById('sim-swaps').textContent = this.simulatorState.swaps;
+                document.getElementById('sim-calls').textContent = this.simulatorState.calls;
+                document.getElementById('sim-depth').textContent = step.depth || 0;
+                
+                this.simulatorState.currentStep++;
+            }
+
+            updateArray(arr, highlightIndices = [], type = '') {
+                const viz = document.getElementById('array-viz');
+                viz.innerHTML = '';
+                
+                arr.forEach((val, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'array-item';
+                    item.textContent = val;
+                    
+                    if (highlightIndices && highlightIndices.includes(idx)) {
+                        if (type === 'swap') {
+                            item.classList.add('swapping');
+                        } else if (type === 'compare') {
+                            item.classList.add('comparing');
+                        } else if (type === 'pivot') {
+                            item.classList.add('pivot');
+                        }
+                    }
+                    
+                    viz.appendChild(item);
+                });
+            }
+
+            addLog(type, message) {
+                const log = document.getElementById('sim-log');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                
+                const timestamp = new Date().toLocaleTimeString();
+                entry.textContent = `[${timestamp}] ${message}`;
+                
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+            }
+
+            updateStats() {
+                document.getElementById('sim-comparisons').textContent = this.simulatorState.comparisons;
+                document.getElementById('sim-swaps').textContent = this.simulatorState.swaps;
+                document.getElementById('sim-calls').textContent = this.simulatorState.calls;
+                document.getElementById('sim-depth').textContent = 0;
+            }
+
+            resetSimulation() {
+                this.simulatorState = {
+                    steps: [],
+                    currentStep: 0,
+                    running: false,
+                    comparisons: 0,
+                    swaps: 0,
+                    calls: 0
+                };
+                
+                document.getElementById('sim-log').innerHTML = '';
+                document.getElementById('array-viz').innerHTML = '';
+                document.getElementById('step-btn').disabled = true;
+                this.updateStats();
+                
+                this.addLog('info', 'Simulator reset. Configure and run a new simulation.');
+            }
+
+            createAnalysis(content) {
+                const container = document.createElement('div');
+                container.className = 'card reveal';
+                
+                const header = document.createElement('div');
+                header.className = 'card-header';
+                const headerTitle = document.createElement('h3');
+                headerTitle.className = 'font-display text-lg';
+                headerTitle.textContent = 'Complexity Comparison';
+                header.appendChild(headerTitle);
+                container.appendChild(header);
+                
+                const body = document.createElement('div');
+                body.className = 'p-8';
+                
+                const desc = document.createElement('p');
+                desc.className = 'text-slate-600 mb-6 text-sm leading-relaxed';
+                desc.textContent = content.description;
+                body.appendChild(desc);
+                
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'overflow-x-auto';
+                
+                const table = document.createElement('table');
+                table.className = 'complexity-table mono text-sm';
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Strategy</th>
+                            <th>Best Case</th>
+                            <th>Average Case</th>
+                            <th>Worst Case</th>
+                            <th>Space</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Lomuto Partition</strong></td>
+                            <td>O(n log n)</td>
+                            <td>O(n log n)</td>
+                            <td>O(n²)</td>
+                            <td>O(log n)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hoare Partition</strong></td>
+                            <td>O(n log n)</td>
+                            <td>O(n log n)</td>
+                            <td>O(n²)</td>
+                            <td>O(log n)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Random Pivot</strong></td>
+                            <td>O(n log n)</td>
+                            <td>O(n log n)</td>
+                            <td>O(n²)*</td>
+                            <td>O(log n)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Median-of-Three</strong></td>
+                            <td>O(n log n)</td>
+                            <td>O(n log n)</td>
+                            <td>O(n²)**</td>
+                            <td>O(log n)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Three-Way Partition</strong></td>
+                            <td>O(n)</td>
+                            <td>O(n log n)</td>
+                            <td>O(n²)</td>
+                            <td>O(log n)</td>
+                        </tr>
+                    </tbody>
+                `;
+                
+                tableContainer.appendChild(table);
+                body.appendChild(tableContainer);
+                
+                const notes = document.createElement('div');
+                notes.className = 'mt-6 text-xs text-slate-500 space-y-2';
+                notes.innerHTML = `
+                    <p><strong>*</strong> Random pivot has O(n log n) <em>expected</em> time complexity</p>
+                    <p><strong>**</strong> Median-of-three significantly reduces probability of worst case</p>
+                    <p><strong>Note:</strong> Hoare partition performs ~3x fewer swaps than Lomuto in practice</p>
+                    <p><strong>Three-way:</strong> Best case O(n) occurs when all elements are equal</p>
+                `;
+                body.appendChild(notes);
+                
+                container.appendChild(body);
+                return container;
+            }
+
+            createExercise(item) {
+                const card = document.createElement('div');
+                card.className = 'card reveal';
+                
+                const body = document.createElement('div');
+                body.className = 'p-8';
+                
+                const header = document.createElement('div');
+                header.className = 'flex items-start justify-between mb-4 gap-4';
+                
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'flex-1';
+                
+                const title = document.createElement('h3');
+                title.className = 'font-display text-lg mb-2';
+                title.textContent = item.title;
+                titleDiv.appendChild(title);
+                
+                if (item.topics) {
+                    const topicsDiv = document.createElement('div');
+                    topicsDiv.className = 'flex flex-wrap gap-2 mt-2';
+                    item.topics.forEach(topic => {
+                        const topicBadge = document.createElement('span');
+                        topicBadge.className = 'badge badge-cyan mono text-xs';
+                        topicBadge.textContent = topic;
+                        topicsDiv.appendChild(topicBadge);
+                    });
+                    titleDiv.appendChild(topicsDiv);
+                }
+                
+                const difficulty = document.createElement('span');
+                difficulty.className = 'badge mono';
+                let diffColor = 'slate';
+                if (item.difficulty === 'easy') diffColor = 'emerald';
+                else if (item.difficulty === 'medium') diffColor = 'amber';
+                else if (item.difficulty === 'hard') diffColor = 'teal';
+                difficulty.className += ` badge-${diffColor}`;
+                difficulty.textContent = item.difficulty.toUpperCase();
+                
+                header.appendChild(titleDiv);
+                header.appendChild(difficulty);
+                body.appendChild(header);
+                
+                const description = document.createElement('p');
+                description.className = 'text-slate-600 text-sm leading-relaxed';
+                description.textContent = item.description;
+                body.appendChild(description);
+                
+                card.appendChild(body);
+                return card;
+            }
+
+            setupEventListeners() {
+                document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                    const menu = document.getElementById('mobile-menu');
+                    menu.classList.toggle('hidden');
+                });
+
+                document.querySelectorAll('a[href^="#"]').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const target = document.querySelector(link.getAttribute('href'));
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            document.getElementById('mobile-menu').classList.add('hidden');
+                        }
+                    });
+                });
+
+                const header = document.getElementById('main-nav');
+                window.addEventListener('scroll', () => {
+                    if (window.scrollY > 50) {
+                        header.classList.add('scrolled');
+                    } else {
+                        header.classList.remove('scrolled');
+                    }
+                    
+                    const sections = document.querySelectorAll('section[id]');
+                    const scrollY = window.pageYOffset;
+                    sections.forEach(section => {
+                        const sectionHeight = section.offsetHeight;
+                        const sectionTop = section.offsetTop - 100;
+                        const sectionId = section.getAttribute('id');
+                        if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                            document.querySelectorAll(`a[href="#${sectionId}"]`).forEach(link => {
+                                link.setAttribute('aria-current', 'page');
+                            });
+                        } else {
+                            document.querySelectorAll(`a[href="#${sectionId}"]`).forEach(link => {
+                                link.removeAttribute('aria-current');
+                            });
+                        }
+                    });
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new QuickSortTemplate(SITE_CONFIG);
+        });
+    </script>
+</body>
+</html>
