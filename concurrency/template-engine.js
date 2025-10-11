@@ -175,6 +175,34 @@ class EducationalTemplate {
                     wrapper.appendChild(this.createCard(item));
                 });
                 break;
+
+case 'images':
+    wrapper.className = 'grid md:grid-cols-1 gap-6';
+    content.items.forEach(item => {
+        const img = document.createElement('img');
+        img.alt = item.alt || '';
+        img.className = 'rounded-lg shadow-lg reveal';
+
+        // If it's a GIF, force reload to restart animation each time
+        if (item.src.endsWith('.gif')) {
+            // Strip any previous query parameters to avoid buildup
+            const baseSrc = item.src.split('?')[0];
+            img.src = `${baseSrc}?t=${Date.now()}`;
+            
+            // Optional: restart periodically (e.g., every 10s)
+            img.addEventListener('load', () => {
+                setInterval(() => {
+                    img.src = `${baseSrc}?t=${Date.now()}`;
+                }, 1000); // 10 seconds
+            });
+        } else {
+            img.src = item.src;
+        }
+
+        wrapper.appendChild(img);
+    });
+    break;
+
             
             case 'code-examples':
                 wrapper.className = 'space-y-8';

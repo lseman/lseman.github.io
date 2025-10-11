@@ -37,11 +37,27 @@ const CONTENT_CONFIG = {
         quickLinks: [
             { text: "Get Started", href: "#overview", style: "primary" },
             { text: "View Assignments", href: "#assignments", style: "outline" },
-            { text: "Download Code", href: "#implementation", style: "secondary" }
+            { text: "Sketch Code", href: "#implementation", style: "secondary" }
         ]
     },
 
     sections: [
+        {
+            id: "illustration",
+            title: "The Job!",
+            icon: "🖼️",
+            content: {
+                type: "images",
+                layout: "single",
+                items : [
+                    {
+                        src: "warehouse_ultra.gif",
+                        alt: "Multi-Robot Warehouse Visualization",
+                        caption: "Real-time simulation of robots navigating a warehouse using your concurrent data structures."
+                    }
+                ]
+            },
+        },
         {
             id: "overview",
             title: "Project Overview",
