@@ -193,7 +193,7 @@ case 'images':
             img.addEventListener('load', () => {
                 setInterval(() => {
                     img.src = `${baseSrc}?t=${Date.now()}`;
-                }, 1000); // 10 seconds
+                }, 6000); // 10 seconds
             });
         } else {
             img.src = item.src;
