@@ -1032,50 +1032,78 @@ sys.stderr = StringIO()
     // ========================================================================
     // CARD, CODE, AND OTHER COMPONENT CREATORS
     // ========================================================================
+createCard(item) {
+    const card = document.createElement('div');
+    card.className = 'card reveal';
 
-    createCard(item) {
-        const card = document.createElement('div');
-        card.className = 'card reveal';
+    const body = document.createElement('div');
+    body.className = 'p-8';
 
-        const body = document.createElement('div');
-        body.className = 'p-8';
+    // Helper: format Markdown-style bold (**text**) to <b>text</b>
+    const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
-        const icon = document.createElement('div');
-        icon.className = 'icon-box mb-6';
-        icon.textContent = item.icon || '';
-        icon.setAttribute('aria-hidden', 'true');
+    // Icon
+    const icon = document.createElement('div');
+    icon.className = 'icon-box mb-6';
+    icon.textContent = item.icon || '';
+    icon.setAttribute('aria-hidden', 'true');
 
-        const title = document.createElement('h3');
-        title.className = 'font-display mb-3';
-        title.textContent = item.title || '';
+    // Title
+    const title = document.createElement('h3');
+    title.className = 'font-display mb-3';
+    title.innerHTML = formatBold(item.title || '');
 
-        const description = document.createElement('p');
-        description.className = 'math-nowrap';
-        description.textContent = item.description || '';
+    // Description
+    const description = document.createElement('p');
+    description.className = 'math-nowrap';
+    description.innerHTML = formatBold(item.description || '');
 
-        const badge = document.createElement('span');
-        badge.className = `badge badge-${item.color || 'slate'} mb-4 mono`;
-        badge.textContent = item.highlight || '';
+    // Badge
+    const badge = document.createElement('span');
+    badge.className = `badge badge-${item.color || 'slate'} mb-4 mono`;
+    badge.textContent = item.highlight || '';
 
-        body.appendChild(icon);
-        body.appendChild(title);
-        body.appendChild(description);
-        body.appendChild(badge);
-
-        if (item.details && item.details.length > 0) {
-            const list = document.createElement('ul');
-            list.className = 'check-list text-sm text-slate-600 mt-4';
-            item.details.forEach(detail => {
-                const li = document.createElement('li');
-                li.textContent = detail;
-                list.appendChild(li);
-            });
-            body.appendChild(list);
-        }
-
-        card.appendChild(body);
-        return card;
+    // Math (new block)
+    const math = document.createElement('div');
+    math.className = 'mt-4 mathjax-block';
+    if (item.math && item.math.length > 0) {
+        item.math.forEach(expr => {
+            const p = document.createElement('p');
+            p.innerHTML = expr; // keep LaTeX-friendly syntax
+            math.appendChild(p);
+        });
     }
+
+    // Compose body
+    body.appendChild(icon);
+    body.appendChild(title);
+    body.appendChild(description);
+
+    if (item.math && item.math.length > 0) body.appendChild(math);
+
+    body.appendChild(badge);
+
+    // Details list
+    if (item.details && item.details.length > 0) {
+        const list = document.createElement('ul');
+        list.className = 'check-list text-sm text-slate-600 mt-4';
+        item.details.forEach(detail => {
+            const li = document.createElement('li');
+            li.innerHTML = formatBold(detail); // support bold inside details
+            list.appendChild(li);
+        });
+        body.appendChild(list);
+    }
+
+    card.appendChild(body);
+
+    // ✅ Trigger MathJax typesetting for this card after it's appended
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        MathJax.typesetPromise([card]);
+    }
+
+    return card;
+}
 
     createCodeExample(item) {
         const container = document.createElement('div');
