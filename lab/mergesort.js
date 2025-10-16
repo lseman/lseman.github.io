@@ -574,6 +574,320 @@ print("After: ", sorted_data)
                 ]
             }
         },
+        
+  {
+    "id": "top-down-mergesort",
+    "title": "Top-Down Merge Sort",
+    "icon": "📉",
+    "content": {
+      "type": "visual-tutorial",
+      "title": "Top-Down Merge Sort: [38, 27, 43, 3]",
+      "description": "Recursive divide-and-conquer: Split the array into halves until size 1, then merge back up.",
+      "visualizationType": "array",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "badge": "INITIAL",
+          "badgeColor": "slate",
+          "title": "Starting Array",
+          "description": "We begin with the unsorted array. MergeSort will recursively divide this until we reach subarrays of size 1.",
+          "array": [
+            { "value": 38, "highlight": "default", "label": "index 0" },
+            { "value": 27, "highlight": "default", "label": "index 1" },
+            { "value": 43, "highlight": "default", "label": "index 2" },
+            { "value": 3, "highlight": "default", "label": "index 3" }
+          ],
+          "note": "🎯 Array size: 4 elements"
+        },
+        {
+          "stepNumber": 2,
+          "badge": "DIVIDE",
+          "badgeColor": "cyan",
+          "title": "First Division: Split in Half",
+          "description": "Divide the array into two halves at the midpoint. Left half: [38, 27], Right half: [43, 3]",
+          "array": [
+            { "value": 38, "highlight": "sorted-left", "label": "left[0]" },
+            { "value": 27, "highlight": "sorted-left", "label": "left[1]" },
+            { "value": 43, "highlight": "sorted-right", "label": "right[0]" },
+            { "value": 3, "highlight": "sorted-right", "label": "right[1]" }
+          ],
+          "note": "🔻 Recursively sort each half",
+          "code": "mid = len(arr) // 2\nleft = arr[:mid] # [38, 27]\nright = arr[mid:] # [43, 3]"
+        },
+        {
+          "stepNumber": 3,
+          "badge": "DIVIDE",
+          "badgeColor": "cyan",
+          "title": "Divide Left: [38, 27] → [38] | [27]",
+          "description": "Continue dividing the left half. Split [38, 27] into [38] and [27].",
+          "array": [
+            { "value": 38, "highlight": "active", "label": "[38]" },
+            { "value": 27, "highlight": "active", "label": "[27]" }
+          ],
+          "note": "✅ Both are size 1 - base case reached!"
+        },
+        {
+          "stepNumber": 4,
+          "badge": "MERGE",
+          "badgeColor": "emerald",
+          "title": "Merge Left: [38] + [27] → [27, 38]",
+          "description": "Compare 38 and 27. Since 27 < 38, the merged result is [27, 38].",
+          "array": [
+            { "value": 27, "highlight": "sorted", "label": "✓" },
+            { "value": 38, "highlight": "sorted", "label": "✓" }
+          ],
+          "note": "🔼 First merge complete! Left half is now sorted.",
+          "code": "if left[i] <= right[j]:\n result.append(left[i])\nelse:\n result.append(right[j])"
+        },
+        {
+          "stepNumber": 5,
+          "badge": "DIVIDE",
+          "badgeColor": "cyan",
+          "title": "Divide Right: [43, 3] → [43] | [3]",
+          "description": "Now divide the right half. Split [43, 3] into [43] and [3].",
+          "array": [
+            { "value": 43, "highlight": "active", "label": "[43]" },
+            { "value": 3, "highlight": "active", "label": "[3]" }
+          ],
+          "note": "✅ Both are size 1 - base case reached!"
+        },
+        {
+          "stepNumber": 6,
+          "badge": "MERGE",
+          "badgeColor": "emerald",
+          "title": "Merge Right: [43] + [3] → [3, 43]",
+          "description": "Compare 43 and 3. Since 3 < 43, the merged result is [3, 43].",
+          "array": [
+            { "value": 3, "highlight": "sorted", "label": "✓" },
+            { "value": 43, "highlight": "sorted", "label": "✓" }
+          ],
+          "note": "🔼 Right half is now sorted!"
+        },
+        {
+          "stepNumber": 7,
+          "badge": "MERGE",
+          "badgeColor": "teal",
+          "title": "Final Merge: [27, 38] + [3, 43]",
+          "description": "Now merge the two sorted halves. Compare elements from both arrays and build the final result.",
+          "array": [
+            { "value": 27, "highlight": "sorted-left", "label": "left" },
+            { "value": 38, "highlight": "sorted-left", "label": "left" },
+            { "value": 3, "highlight": "sorted-right", "label": "right" },
+            { "value": 43, "highlight": "sorted-right", "label": "right" }
+          ],
+          "note": "⚔️ Compare: 27 vs 3 → take 3"
+        },
+        {
+          "stepNumber": 8,
+          "badge": "COMPLETE",
+          "badgeColor": "emerald",
+          "title": "✨ Fully Sorted!",
+          "description": "The final merge produces the completely sorted array: [3, 27, 38, 43]",
+          "array": [
+            { "value": 3, "highlight": "pivot-final", "label": "✓" },
+            { "value": 27, "highlight": "pivot-final", "label": "✓" },
+            { "value": 38, "highlight": "pivot-final", "label": "✓" },
+            { "value": 43, "highlight": "pivot-final", "label": "✓" }
+          ],
+          "note": "🎉 Array is sorted! Notice how we divided down to size 1, then merged back up."
+        }
+      ],
+      "insight": {
+        "color": "cyan",
+        "icon": "🧠",
+        "title": "Top-Down Merge Sort Insight",
+        "text": "Uses recursion to divide until base case (size 1), then merges upward. Elegant but can hit stack limits on huge arrays.",
+        "points": [
+          "Recursive splits: Halve until size 1",
+          "Base: Size 1 is sorted",
+          "Merge: Stable, O(n) per level",
+          "Time: O(n log n)",
+          "Space: O(n) + recursion depth O(log n)"
+        ]
+      }
+    }
+  },
+  {
+    "id": "bottom-up-mergesort",
+    "title": "Bottom-Up Merge Sort",
+    "icon": "📈",
+    "content": {
+      "type": "visual-tutorial",
+      "title": "Bottom-Up Merge Sort: [38, 27, 43, 3]",
+      "description": "Iterative approach: Start with subarrays of size 1, merge into larger sorted chunks in passes, doubling size each time.",
+      "visualizationType": "array",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "badge": "INITIAL",
+          "badgeColor": "slate",
+          "title": "Starting Array",
+          "description": "Begin with unsorted array. We'll treat each element as a sorted subarray of size 1.",
+          "array": [
+            { "value": 38, "highlight": "default", "label": "run[0]" },
+            { "value": 27, "highlight": "default", "label": "run[1]" },
+            { "value": 43, "highlight": "default", "label": "run[2]" },
+            { "value": 3, "highlight": "default", "label": "run[3]" }
+          ],
+          "note": "🎯 Size 1 runs: Each element is 'sorted'"
+        },
+        {
+          "stepNumber": 2,
+          "badge": "PASS 1",
+          "badgeColor": "cyan",
+          "title": "Pass 1: Merge Size 1 → 2 (First Pair)",
+          "description": "Merge adjacent pairs. First: [38] + [27] → [27, 38]",
+          "array": [
+            { "value": 27, "highlight": "sorted", "label": "merged[0]" },
+            { "value": 38, "highlight": "sorted", "label": "merged[1]" },
+            { "value": 43, "highlight": "active", "label": "next[0]" },
+            { "value": 3, "highlight": "active", "label": "next[1]" }
+          ],
+          "note": "🔻 Compare 38 > 27 → Take 27 first",
+          "code": "size = 1\nmerge pairs from i=0 to end"
+        },
+        {
+          "stepNumber": 3,
+          "badge": "PASS 1",
+          "badgeColor": "cyan",
+          "title": "Pass 1: Merge Size 1 → 2 (Second Pair)",
+          "description": "Next pair: [43] + [3] → [3, 43]",
+          "array": [
+            { "value": 27, "highlight": "sorted-left", "label": "left run" },
+            { "value": 38, "highlight": "sorted-left", "label": "left run" },
+            { "value": 3, "highlight": "sorted", "label": "merged[0]" },
+            { "value": 43, "highlight": "sorted", "label": "merged[1]" }
+          ],
+          "note": "🔻 Compare 43 > 3 → Take 3 first. End of pass 1."
+        },
+        {
+          "stepNumber": 4,
+          "badge": "PASS 2",
+          "badgeColor": "emerald",
+          "title": "Pass 2: Merge Size 2 → 4",
+          "description": "Now merge the two size-2 runs: [27, 38] + [3, 43]",
+          "array": [
+            { "value": 27, "highlight": "sorted-left", "label": "left[0]" },
+            { "value": 38, "highlight": "sorted-left", "label": "left[1]" },
+            { "value": 3, "highlight": "sorted-right", "label": "right[0]" },
+            { "value": 43, "highlight": "sorted-right", "label": "right[1]" }
+          ],
+          "note": "⚔️ Compare: 27 vs 3 → Take 3, then 27 vs 43 → Take 27, etc.",
+          "code": "size *= 2  # Now size=2\nmerge adjacent size-2 chunks"
+        },
+        {
+          "stepNumber": 5,
+          "badge": "COMPLETE",
+          "badgeColor": "emerald",
+          "title": "✨ Fully Sorted!",
+          "description": "Final merge yields [3, 27, 38, 43]. No more passes needed.",
+          "array": [
+            { "value": 3, "highlight": "pivot-final", "label": "✓" },
+            { "value": 27, "highlight": "pivot-final", "label": "✓" },
+            { "value": 38, "highlight": "pivot-final", "label": "✓" },
+            { "value": 43, "highlight": "pivot-final", "label": "✓" }
+          ],
+          "note": "🎉 Sorted! Bottom-up builds from bottom without recursion."
+        }
+      ],
+      "insight": {
+        "color": "cyan",
+        "icon": "🧠",
+        "title": "Bottom-Up Merge Sort Insight",
+        "text": "Iterative from small to large: No recursion, so safe for massive arrays. Fixed passes: log n levels.",
+        "points": [
+          "Start: Size 1 runs",
+          "Passes: Double size each pass, merge adjacent",
+          "No base case check: Always full passes",
+          "Time: O(n log n)",
+          "Space: O(n) for temp arrays"
+        ]
+      }
+    }
+  },
+  {
+    "id": "natural-mergesort",
+    "title": "Natural Merge Sort",
+    "icon": "🌿",
+    "content": {
+      "type": "visual-tutorial",
+      "title": "Natural Merge Sort: [38, 27, 43, 3]",
+      "description": "Adaptive bottom-up: First identify 'natural runs' (already sorted segments), then merge them iteratively.",
+      "visualizationType": "array",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "badge": "SCAN",
+          "badgeColor": "slate",
+          "title": "Starting Array & Detect Runs",
+          "description": "Scan for ascending runs: [38] (descends to 27), [27, 43] (27<43), [3] (end).",
+          "array": [
+            { "value": 38, "highlight": "run1", "label": "run1" },
+            { "value": 27, "highlight": "run2", "label": "run2 start" },
+            { "value": 43, "highlight": "run2", "label": "run2" },
+            { "value": 3, "highlight": "run3", "label": "run3" }
+          ],
+          "note": "🎯 Runs: [38] | [27,43] | [3] - Leverage existing order!"
+        },
+        {
+          "stepNumber": 2,
+          "badge": "PASS 1",
+          "badgeColor": "cyan",
+          "title": "Pass 1: Merge First Two Runs",
+          "description": "Merge [38] + [27, 43] → Compare: 38>27 → [27, 38, 43]",
+          "array": [
+            { "value": 27, "highlight": "sorted", "label": "merged[0]" },
+            { "value": 38, "highlight": "sorted", "label": "merged[1]" },
+            { "value": 43, "highlight": "sorted", "label": "merged[2]" },
+            { "value": 3, "highlight": "active", "label": "remaining run" }
+          ],
+          "note": "🔻 Fewer merges if data is partially sorted",
+          "code": "find_runs()\nmerge adjacent runs iteratively"
+        },
+        {
+          "stepNumber": 3,
+          "badge": "PASS 2",
+          "badgeColor": "emerald",
+          "title": "Pass 2: Merge with Last Run",
+          "description": "Now merge [27, 38, 43] + [3] → Compare: 27>3 → [3, 27, 38, 43]",
+          "array": [
+            { "value": 27, "highlight": "sorted-left", "label": "left[0]" },
+            { "value": 38, "highlight": "sorted-left", "label": "left[1]" },
+            { "value": 43, "highlight": "sorted-left", "label": "left[2]" },
+            { "value": 3, "highlight": "sorted-right", "label": "right[0]" }
+          ],
+          "note": "⚔️ Insert 3 at front. Adaptive: Skips unnecessary splits."
+        },
+        {
+          "stepNumber": 4,
+          "badge": "COMPLETE",
+          "badgeColor": "emerald",
+          "title": "✨ Fully Sorted!",
+          "description": "Only 2 merges needed due to the natural run [27,43].",
+          "array": [
+            { "value": 3, "highlight": "pivot-final", "label": "✓" },
+            { "value": 27, "highlight": "pivot-final", "label": "✓" },
+            { "value": 38, "highlight": "pivot-final", "label": "✓" },
+            { "value": 43, "highlight": "pivot-final", "label": "✓" }
+          ],
+          "note": "🎉 Efficient on real data with trends!"
+        }
+      ],
+      "insight": {
+        "color": "cyan",
+        "icon": "🧠",
+        "title": "Natural Merge Sort Insight",
+        "text": "Optimizes by using existing sorted runs, like in TimSort. Great for nearly-sorted data; falls back to O(n log n).",
+        "points": [
+          "Scan: Find maximal ascending runs",
+          "Merge: Bottom-up on runs, like bottom-up but adaptive",
+          "Adaptive: O(n) on sorted, O(n log n) worst",
+          "Time: Better average case",
+          "Space: O(n)"
+        ]
+      }
+    }
+  },
         {
             id: "implementations",
             title: "Python Implementations",
