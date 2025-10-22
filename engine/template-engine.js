@@ -21,6 +21,7 @@ class EducationalTemplate {
             'cards': this.renderCards.bind(this),
             'images': this.renderImages.bind(this),
             'code-examples': this.renderCodeExamples.bind(this),
+            'code-blocks': this.renderCodeExamples.bind(this), // Alias for code-examples
             'simulator': this.renderSimulator.bind(this),
             'analysis': this.renderAnalysis.bind(this),
             'exercises': this.renderExercises.bind(this),
@@ -688,9 +689,12 @@ sys.stderr = StringIO()
         body.className = 'p-8';
 
         if (content.description) {
+            // Helper: format Markdown-style bold (**text**) to <b>text</b>
+            const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
             const desc = document.createElement('p');
             desc.className = 'text-slate-600 mb-8 leading-relaxed';
-            desc.textContent = content.description;
+            desc.innerHTML = formatBold(content.description);
             body.appendChild(desc);
         }
 
@@ -742,9 +746,12 @@ sys.stderr = StringIO()
 
         // Step description
         if (step.description) {
+            // Helper: format Markdown-style bold (**text**) to <b>text</b>
+            const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
             const description = document.createElement('p');
             description.className = 'text-sm text-slate-600 mb-6 leading-relaxed';
-            description.textContent = step.description;
+            description.innerHTML = formatBold(step.description);
             stepDiv.appendChild(description);
         }
 
@@ -758,6 +765,9 @@ sys.stderr = StringIO()
                 break;
             case 'tree':
                 viz = this.createTreeVisualization(step);
+                break;
+            case 'linked-list':
+                viz = this.createLinkedListVisualization(step);
                 break;
             case 'custom':
                 viz = step.customRender ? step.customRender() : this.createArrayVisualization(step);
@@ -776,9 +786,12 @@ sys.stderr = StringIO()
 
         // Additional note
         if (step.note) {
+            // Helper: format Markdown-style bold (**text**) to <b>text</b>
+            const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
             const note = document.createElement('p');
             note.className = 'text-sm text-center text-slate-500 mt-4 italic';
-            note.textContent = step.note;
+            note.innerHTML = formatBold(step.note);
             stepDiv.appendChild(note);
         }
 
@@ -974,6 +987,165 @@ sys.stderr = StringIO()
     }
 
     /**
+     * Create linked list visualization (singly or doubly linked)
+     */
+    createLinkedListVisualization(step) {
+        const listViz = document.createElement('div');
+        listViz.className = 'flex flex-col items-center gap-6 py-8 px-4';
+        listViz.setAttribute('role', 'img');
+        listViz.setAttribute('aria-label', `Linked list visualization: ${step.title}`);
+
+        if (!step.data || !step.data.nodes || step.data.nodes.length === 0) {
+            listViz.innerHTML = '<p class="text-slate-400">No linked list data</p>';
+            return listViz;
+        }
+
+        const listType = step.data.type || 'singly';
+        const nodes = step.data.nodes;
+
+        // Container for nodes and arrows
+        const nodesContainer = document.createElement('div');
+        nodesContainer.className = 'flex items-center gap-4 flex-wrap justify-center';
+
+        // Add Head label
+        const headLabel = document.createElement('div');
+        headLabel.className = 'text-sm font-bold text-purple-600 px-3 py-1 bg-purple-50 rounded border-2 border-purple-300';
+        headLabel.textContent = 'HEAD';
+        nodesContainer.appendChild(headLabel);
+
+        // Render each node
+        nodes.forEach((node, index) => {
+            // Create node container
+            const nodeContainer = document.createElement('div');
+            nodeContainer.className = 'flex items-center gap-2';
+
+            // Create the node box
+            const nodeBox = document.createElement('div');
+            nodeBox.className = 'flex flex-col items-center';
+
+            // Node content box
+            const nodeContent = document.createElement('div');
+            nodeContent.className = 'flex items-center bg-white border-3 border-slate-700 rounded-lg shadow-lg transition-all duration-300';
+            
+            if (listType === 'doubly') {
+                // Doubly linked: [prev | data | next]
+                const prevBox = document.createElement('div');
+                prevBox.className = 'w-10 h-16 flex items-center justify-center border-r-2 border-slate-300 text-xs text-slate-400';
+                prevBox.innerHTML = node.prev !== null ? '←' : '∅';
+                
+                const dataBox = document.createElement('div');
+                dataBox.className = 'w-16 h-16 flex items-center justify-center font-bold text-xl text-slate-900';
+                dataBox.textContent = node.data;
+                
+                const nextBox = document.createElement('div');
+                nextBox.className = 'w-10 h-16 flex items-center justify-center border-l-2 border-slate-300 text-xs text-slate-400';
+                nextBox.innerHTML = node.next !== null ? '→' : '∅';
+                
+                nodeContent.appendChild(prevBox);
+                nodeContent.appendChild(dataBox);
+                nodeContent.appendChild(nextBox);
+            } else {
+                // Singly linked: [data | next]
+                const dataBox = document.createElement('div');
+                dataBox.className = 'w-16 h-16 flex items-center justify-center font-bold text-xl text-slate-900 border-r-2 border-slate-300';
+                dataBox.textContent = node.data;
+                
+                const nextBox = document.createElement('div');
+                nextBox.className = 'w-12 h-16 flex items-center justify-center text-xs text-slate-400';
+                nextBox.innerHTML = node.next !== null ? '→' : '∅';
+                
+                nodeContent.appendChild(dataBox);
+                nodeContent.appendChild(nextBox);
+            }
+            
+            nodeBox.appendChild(nodeContent);
+
+            // Node label (optional)
+            if (node.label) {
+                const label = document.createElement('div');
+                label.className = 'text-xs text-slate-500 mt-2 font-mono';
+                label.textContent = node.label;
+                nodeBox.appendChild(label);
+            }
+
+            nodeContainer.appendChild(nodeBox);
+
+            // Add arrow between nodes (except for last node)
+            if (index < nodes.length - 1) {
+                const arrow = document.createElement('div');
+                arrow.className = 'flex flex-col items-center gap-1';
+                
+                if (listType === 'doubly') {
+                    // Bidirectional arrows
+                    const forwardArrow = document.createElement('div');
+                    forwardArrow.className = 'text-purple-500 text-2xl';
+                    forwardArrow.textContent = '→';
+                    
+                    const backwardArrow = document.createElement('div');
+                    backwardArrow.className = 'text-blue-500 text-2xl';
+                    backwardArrow.textContent = '←';
+                    
+                    arrow.appendChild(forwardArrow);
+                    arrow.appendChild(backwardArrow);
+                } else {
+                    // Single direction arrow
+                    const forwardArrow = document.createElement('div');
+                    forwardArrow.className = 'text-purple-500 text-3xl';
+                    forwardArrow.textContent = '→';
+                    arrow.appendChild(forwardArrow);
+                }
+                
+                nodeContainer.appendChild(arrow);
+            }
+
+            nodesContainer.appendChild(nodeContainer);
+        });
+
+        // Add None/Null indicator at the end
+        const nullBox = document.createElement('div');
+        nullBox.className = 'text-sm font-bold text-slate-400 px-3 py-1 bg-slate-100 rounded border-2 border-slate-300';
+        nullBox.textContent = 'None';
+        nodesContainer.appendChild(nullBox);
+
+        listViz.appendChild(nodesContainer);
+
+        // Add explanation text
+        if (step.explanation && step.explanation.length > 0) {
+            // Helper: format Markdown-style bold (**text**) to <b>text</b>
+            const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
+            const explanationBox = document.createElement('div');
+            explanationBox.className = 'mt-6 p-4 bg-slate-50 rounded-lg max-w-3xl';
+            
+            const explanationList = document.createElement('ul');
+            explanationList.className = 'text-sm text-slate-700 space-y-2';
+            
+            step.explanation.forEach(point => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `<span class="text-purple-600 font-bold mt-1">•</span><span>${formatBold(point)}</span>`;
+                explanationList.appendChild(li);
+            });
+            
+            explanationBox.appendChild(explanationList);
+            listViz.appendChild(explanationBox);
+        }
+
+        // Add complexity info
+        if (step.complexity) {
+            // Helper: format Markdown-style bold (**text**) to <b>text</b>
+            const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
+            const complexityBox = document.createElement('div');
+            complexityBox.className = 'mt-4 text-xs text-slate-500 font-mono bg-amber-50 px-4 py-2 rounded border border-amber-200';
+            complexityBox.innerHTML = formatBold(step.complexity);
+            listViz.appendChild(complexityBox);
+        }
+
+        return listViz;
+    }
+
+    /**
      * Create pointer indicators (i, j, left, right, etc.)
      */
     createPointerIndicators(pointers) {
@@ -996,6 +1168,9 @@ sys.stderr = StringIO()
      * Create insight box at end of tutorial
      */
     createInsightBox(insight) {
+        // Helper: format Markdown-style bold (**text**) to <b>text</b>
+        const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        
         const color = insight.color || 'cyan';
         const icon = insight.icon || '💡';
 
@@ -1009,7 +1184,7 @@ sys.stderr = StringIO()
 
         const text = document.createElement('p');
         text.className = `text-sm text-${color}-800 leading-relaxed`;
-        text.textContent = insight.text || '';
+        text.innerHTML = formatBold(insight.text || '');
         insightBox.appendChild(text);
 
         if (insight.points && insight.points.length > 0) {
@@ -1019,7 +1194,7 @@ sys.stderr = StringIO()
             insight.points.forEach(point => {
                 const li = document.createElement('li');
                 li.className = 'flex items-start gap-2';
-                li.innerHTML = `<span class="text-${color}-600 font-bold">•</span><span>${point}</span>`;
+                li.innerHTML = `<span class="text-${color}-600 font-bold">•</span><span>${formatBold(point)}</span>`;
                 list.appendChild(li);
             });
 
@@ -1041,6 +1216,12 @@ createCard(item) {
 
     // Helper: format Markdown-style bold (**text**) to <b>text</b>
     const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+    // Helper: extract inner code from fenced pseudocode
+    const extractPseudocode = code => {
+        if (!code) return '';
+        return code.replace(/^```[\s\S]*?\n?/, '').replace(/\n?```$/, '').trim();
+    };
 
     // Icon
     const icon = document.createElement('div');
@@ -1095,6 +1276,28 @@ createCard(item) {
         body.appendChild(list);
     }
 
+    // Pseudocode block
+    if (item.pseudocode) {
+        const pseudocodeDiv = document.createElement('div');
+        pseudocodeDiv.className = 'mt-6';
+        
+        const pseudocodeLabel = document.createElement('h4');
+        pseudocodeLabel.className = 'font-semibold mb-2 text-slate-700';
+        pseudocodeLabel.textContent = 'Pseudocode';
+        
+        const codePre = document.createElement('pre');
+        codePre.className = 'bg-slate-100 rounded-lg p-4 overflow-x-auto';
+        
+        const codeCode = document.createElement('code');
+        codeCode.className = 'text-sm text-slate-800';
+        codeCode.textContent = extractPseudocode(item.pseudocode);
+        
+        codePre.appendChild(codeCode);
+        pseudocodeDiv.appendChild(pseudocodeLabel);
+        pseudocodeDiv.appendChild(codePre);
+        body.appendChild(pseudocodeDiv);
+    }
+
     card.appendChild(body);
 
     // ✅ Trigger MathJax typesetting for this card after it's appended
@@ -1121,9 +1324,12 @@ createCard(item) {
         body.className = 'p-6';
 
         if (item.description) {
+            // Helper: format Markdown-style bold (**text**) to <b>text</b>
+            const formatBold = text => text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
             const desc = document.createElement('p');
             desc.className = 'text-sm text-slate-600 mb-4 leading-relaxed';
-            desc.textContent = item.description;
+            desc.innerHTML = formatBold(item.description);
             body.appendChild(desc);
         }
 
