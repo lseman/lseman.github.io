@@ -871,6 +871,15 @@ sys.stderr = StringIO()
       case "binary-tree":
         viz = this.createTreeVisualization(step);
         break;
+      case "avl-balance":
+        viz = this.createTreeVisualization(step);
+        break;
+      case "avl-tree":
+        viz = this.createTreeVisualization(step);
+        break;
+      case "rotation-animation":
+        viz = this.createTreeVisualization(step);
+        break;
       case "linked-list":
         viz = this.createLinkedListVisualization(step);
         break;
@@ -1051,71 +1060,6 @@ sys.stderr = StringIO()
   }
 
   /**
-   * Create tree visualization (for recursive algorithms and binary trees)
-   */
-  createTreeVisualization(step) {
-    const treeViz = document.createElement("div");
-    treeViz.className =
-      "flex flex-col items-center gap-4 py-8 overflow-x-auto w-full";
-    treeViz.setAttribute("role", "img");
-    treeViz.setAttribute("aria-label", "Tree visualization");
-
-    if (!step.tree && !step.data?.tree) {
-      treeViz.innerHTML = '<p class="text-slate-400">No tree data</p>';
-      return treeViz;
-    }
-
-    const treeData = step.tree || step.data?.tree;
-    const treeType = step.data?.type || "generic";
-
-    // Check if this is a binary tree (has left/right structure)
-    const isBinaryTree =
-      treeData && (treeData.left !== undefined || treeData.right !== undefined);
-
-    if (isBinaryTree) {
-      // Render as binary tree with proper layout
-      treeViz.appendChild(this.renderBinaryTree(treeData, step));
-    } else {
-      // Render as generic tree (original behavior)
-      treeViz.appendChild(this.renderGenericTree(treeData));
-    }
-
-    // Add explanation text if provided
-    if (step.explanation && step.explanation.length > 0) {
-      const formatBold = (text) => text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
-
-      const explanationBox = document.createElement("div");
-      explanationBox.className = "mt-6 p-4 bg-slate-50 rounded-lg max-w-3xl";
-
-      const explanationList = document.createElement("ul");
-      explanationList.className = "text-sm text-slate-700 space-y-2";
-
-      step.explanation.forEach((point) => {
-        const li = document.createElement("li");
-        li.className = "flex items-start gap-2";
-        li.innerHTML = `<span class="text-green-600 font-bold mt-1">•</span><span>${formatBold(point)}</span>`;
-        explanationList.appendChild(li);
-      });
-
-      explanationBox.appendChild(explanationList);
-      treeViz.appendChild(explanationBox);
-    }
-
-    // Add complexity info
-    if (step.complexity) {
-      const formatBold = (text) => text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
-
-      const complexityBox = document.createElement("div");
-      complexityBox.className =
-        "mt-4 text-xs text-slate-500 font-mono bg-amber-50 px-4 py-2 rounded border border-amber-200";
-      complexityBox.innerHTML = formatBold(step.complexity);
-      treeViz.appendChild(complexityBox);
-    }
-
-    return treeViz;
-  }
-
-  /**
    * Render a binary tree with proper hierarchical layout
    */
   renderBinaryTree(tree, step) {
@@ -1262,7 +1206,8 @@ sys.stderr = StringIO()
   }
 
   /**
-   * Create a single binary tree node element
+   * Create a single binary tree node element with AVL support
+   * NEW: Displays balance factor badges for AVL trees
    */
   createBinaryTreeNode(node, x, y, step) {
     const nodeDiv = document.createElement("div");
@@ -1282,6 +1227,7 @@ sys.stderr = StringIO()
     const value = node.value;
     const highlight = node.highlight;
     const label = node.label;
+    const bf = node.bf; // NEW: Balance factor for AVL trees
 
     // Check if this node is highlighted in step - check multiple possible locations
     const isHighlighted =
@@ -1326,6 +1272,29 @@ sys.stderr = StringIO()
     circle.textContent = value;
     nodeDiv.appendChild(circle);
 
+    // NEW: Balance Factor badge (for AVL trees)
+    if (bf !== undefined && bf !== null) {
+      const bfBadge = document.createElement("div");
+      bfBadge.className =
+        "absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 shadow-md z-10";
+
+      // Color based on balance factor
+      if (Math.abs(bf) > 1) {
+        // Unbalanced - red
+        bfBadge.className += " bg-red-500 border-red-700 text-white";
+      } else if (bf === 0) {
+        // Perfectly balanced - green
+        bfBadge.className += " bg-emerald-500 border-emerald-700 text-white";
+      } else {
+        // Acceptably balanced - blue
+        bfBadge.className += " bg-blue-500 border-blue-700 text-white";
+      }
+
+      bfBadge.textContent = bf >= 0 ? `+${bf}` : bf;
+      bfBadge.title = `Balance Factor: ${bf}`;
+      nodeDiv.appendChild(bfBadge);
+    }
+
     // Node label
     if (label) {
       const labelDiv = document.createElement("div");
@@ -1360,6 +1329,147 @@ sys.stderr = StringIO()
     }
 
     return nodeDiv;
+  }
+
+  // ============================================================================
+  // UPDATED METHOD 2: createTreeVisualization - Add rotation indicators
+  // ============================================================================
+
+  /**
+   * Create tree visualization with rotation indicator support
+   * NEW: Shows rotation arrows for AVL tree operations
+   */
+  createTreeVisualization(step) {
+    const treeViz = document.createElement("div");
+    treeViz.className =
+      "flex flex-col items-center gap-4 py-8 overflow-x-auto w-full";
+    treeViz.setAttribute("role", "img");
+    treeViz.setAttribute("aria-label", "Tree visualization");
+
+    if (!step.tree && !step.data?.tree) {
+      treeViz.innerHTML = '<p class="text-slate-400">No tree data</p>';
+      return treeViz;
+    }
+
+    const treeData = step.tree || step.data?.tree;
+    const treeType = step.data?.type || "generic";
+
+    // Check if this is a binary tree (has left/right structure)
+    const isBinaryTree =
+      treeData && (treeData.left !== undefined || treeData.right !== undefined);
+
+    if (isBinaryTree) {
+      // Render as binary tree with proper layout
+      treeViz.appendChild(this.renderBinaryTree(treeData, step));
+    } else {
+      // Render as generic tree (original behavior)
+      treeViz.appendChild(this.renderGenericTree(treeData));
+    }
+
+    // NEW: Add rotation indicator if present
+    if (step.data?.rotationArrow || step.rotationPerformed) {
+      const rotationIndicator = this.createRotationIndicator(
+        step.data?.rotationArrow || step.rotationPerformed,
+      );
+      treeViz.insertBefore(rotationIndicator, treeViz.firstChild);
+    }
+
+    // Add explanation text if provided
+    if (step.explanation && step.explanation.length > 0) {
+      const formatBold = (text) => text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
+      const explanationBox = document.createElement("div");
+      explanationBox.className = "mt-6 p-4 bg-slate-50 rounded-lg max-w-3xl";
+
+      const explanationList = document.createElement("ul");
+      explanationList.className = "text-sm text-slate-700 space-y-2";
+
+      step.explanation.forEach((point) => {
+        const li = document.createElement("li");
+        li.className = "flex items-start gap-2";
+        li.innerHTML = `<span class="text-green-600 font-bold mt-1">•</span><span>${formatBold(point)}</span>`;
+        explanationList.appendChild(li);
+      });
+
+      explanationBox.appendChild(explanationList);
+      treeViz.appendChild(explanationBox);
+    }
+
+    // Add complexity info
+    if (step.complexity) {
+      const formatBold = (text) => text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
+      const complexityBox = document.createElement("div");
+      complexityBox.className =
+        "mt-4 text-xs text-slate-500 font-mono bg-amber-50 px-4 py-2 rounded border border-amber-200";
+      complexityBox.innerHTML = formatBold(step.complexity);
+      treeViz.appendChild(complexityBox);
+    }
+
+    return treeViz;
+  }
+
+  // ============================================================================
+  // NEW METHOD: createRotationIndicator - Shows rotation type
+  // ============================================================================
+
+  /**
+   * Create rotation indicator for AVL tree rotations
+   * Shows which rotation was performed
+   */
+  createRotationIndicator(rotationType) {
+    const indicator = document.createElement("div");
+    indicator.className =
+      "mb-6 p-4 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg border-2 border-purple-300 shadow-md";
+
+    const content = document.createElement("div");
+    content.className = "flex items-center justify-center gap-3";
+
+    const icon = document.createElement("div");
+    icon.className = "text-3xl";
+
+    const text = document.createElement("div");
+    text.className = "font-bold text-purple-800";
+
+    // Determine rotation type and display
+    switch (rotationType) {
+      case "right":
+      case "right-rotation":
+      case "right-rotation-at-20":
+        icon.textContent = "↪️";
+        text.textContent = "Right Rotation Performed";
+        break;
+      case "left":
+      case "left-rotation":
+        icon.textContent = "↩️";
+        text.textContent = "Left Rotation Performed";
+        break;
+      case "left-at-child":
+        icon.textContent = "↩️";
+        text.textContent = "Step 1: Left Rotation at Child";
+        break;
+      case "right-at-parent":
+        icon.textContent = "↪️";
+        text.textContent = "Step 2: Right Rotation at Parent";
+        break;
+      case "right-at-child":
+        icon.textContent = "↪️";
+        text.textContent = "Step 1: Right Rotation at Child";
+        break;
+      case "left-at-parent":
+        icon.textContent = "↩️";
+        text.textContent = "Step 2: Left Rotation at Parent";
+        break;
+      default:
+        icon.textContent = "🔄";
+        text.textContent = "Rotation Performed";
+    }
+
+    content.appendChild(icon);
+    content.appendChild(text);
+    indicator.appendChild(content);
+
+    return indicator;
   }
 
   /**
