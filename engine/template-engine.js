@@ -1012,7 +1012,7 @@ sys.stderr = StringIO()
 
     // Determine graph type
     const graphType = step.data?.type || step.type || "undirected-graph";
-    
+
     // Fix: Check for "undirected" first, then check for "directed"
     let isDirected;
     if (forceDirected !== null) {
@@ -1024,10 +1024,12 @@ sys.stderr = StringIO()
     } else {
       isDirected = false; // default to undirected
     }
-    
+
     const isWeighted = graphType.includes("weighted");
 
-    console.log(`Graph Visualization - Type: ${graphType}, forceDirected: ${forceDirected}, isDirected: ${isDirected}`);
+    console.log(
+      `Graph Visualization - Type: ${graphType}, forceDirected: ${forceDirected}, isDirected: ${isDirected}`,
+    );
 
     // Create container for the graph
     const container = document.createElement("div");
@@ -1071,7 +1073,9 @@ sys.stderr = StringIO()
     // Draw edges first (so they appear behind nodes)
     if (graphData.edges) {
       graphData.edges.forEach((edge) => {
-        const [from, to, weight] = Array.isArray(edge) ? edge : [edge[0], edge[1], edge[2]];
+        const [from, to, weight] = Array.isArray(edge)
+          ? edge
+          : [edge[0], edge[1], edge[2]];
         const fromPos = positions[from];
         const toPos = positions[to];
 
@@ -1084,7 +1088,9 @@ sys.stderr = StringIO()
             isWeighted ? weight : null,
           );
         } else {
-          console.warn(`Graph edge ${from} -> ${to}: position not found. From: ${fromPos}, To: ${toPos}`);
+          console.warn(
+            `Graph edge ${from} -> ${to}: position not found. From: ${fromPos}, To: ${toPos}`,
+          );
         }
       });
     }
@@ -1160,7 +1166,7 @@ sys.stderr = StringIO()
         x: centerX + radius * Math.cos(angle),
         y: centerY + radius * Math.sin(angle),
       };
-      
+
       // Store with both string and number keys to handle type mismatches
       positions[vertex] = pos;
       positions[String(vertex)] = pos;
@@ -1322,7 +1328,8 @@ sys.stderr = StringIO()
    */
   createQueueStackDisplay(step) {
     const container = document.createElement("div");
-    container.className = "mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200";
+    container.className =
+      "mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200";
 
     const queue = step.queue || step.data?.queue;
     const stack = step.stack || step.data?.stack;
@@ -1338,7 +1345,8 @@ sys.stderr = StringIO()
       queueDisplay.className = "flex gap-2 items-center flex-wrap";
 
       if (queue.length === 0) {
-        queueDisplay.innerHTML = '<span class="text-slate-400 text-sm">Empty</span>';
+        queueDisplay.innerHTML =
+          '<span class="text-slate-400 text-sm">Empty</span>';
       } else {
         queue.forEach((item, index) => {
           const itemBox = document.createElement("div");
@@ -1369,7 +1377,8 @@ sys.stderr = StringIO()
       stackDisplay.className = "flex gap-2 items-center flex-wrap";
 
       if (stack.length === 0) {
-        stackDisplay.innerHTML = '<span class="text-slate-400 text-sm">Empty</span>';
+        stackDisplay.innerHTML =
+          '<span class="text-slate-400 text-sm">Empty</span>';
       } else {
         stack.forEach((item, index) => {
           const itemBox = document.createElement("div");
@@ -1441,7 +1450,8 @@ sys.stderr = StringIO()
 
     // Create table container
     const tableContainer = document.createElement("div");
-    tableContainer.className = "overflow-x-auto bg-white rounded-lg shadow-lg p-6";
+    tableContainer.className =
+      "overflow-x-auto bg-white rounded-lg shadow-lg p-6";
 
     const table = document.createElement("table");
     table.className = "border-collapse";
@@ -1450,7 +1460,7 @@ sys.stderr = StringIO()
     // Header row (column indices)
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    
+
     // Empty top-left cell
     const emptyCell = document.createElement("th");
     emptyCell.className = "w-12 h-12 bg-slate-100 border-2 border-slate-300";
@@ -1459,7 +1469,8 @@ sys.stderr = StringIO()
     // Column headers
     for (let i = 0; i < numVertices; i++) {
       const th = document.createElement("th");
-      th.className = "w-12 h-12 bg-blue-100 border-2 border-blue-300 text-center font-bold text-blue-800";
+      th.className =
+        "w-12 h-12 bg-blue-100 border-2 border-blue-300 text-center font-bold text-blue-800";
       th.textContent = i;
       headerRow.appendChild(th);
     }
@@ -1473,15 +1484,17 @@ sys.stderr = StringIO()
 
       // Row header
       const rowHeader = document.createElement("th");
-      rowHeader.className = "w-12 h-12 bg-blue-100 border-2 border-blue-300 text-center font-bold text-blue-800";
+      rowHeader.className =
+        "w-12 h-12 bg-blue-100 border-2 border-blue-300 text-center font-bold text-blue-800";
       rowHeader.textContent = i;
       tr.appendChild(rowHeader);
 
       // Matrix cells
       row.forEach((value, j) => {
         const td = document.createElement("td");
-        td.className = "w-12 h-12 border-2 border-slate-300 text-center font-bold transition-all";
-        
+        td.className =
+          "w-12 h-12 border-2 border-slate-300 text-center font-bold transition-all";
+
         if (value === 0) {
           td.className += " bg-slate-50 text-slate-400";
           td.textContent = "0";
@@ -1547,14 +1560,16 @@ sys.stderr = StringIO()
 
     const listData = step.data?.list || step.list;
 
-    if (!listData || typeof listData !== 'object') {
-      listViz.innerHTML = '<p class="text-slate-400">No adjacency list data</p>';
+    if (!listData || typeof listData !== "object") {
+      listViz.innerHTML =
+        '<p class="text-slate-400">No adjacency list data</p>';
       return listViz;
     }
 
     // Create container for the list
     const listContainer = document.createElement("div");
-    listContainer.className = "w-full max-w-4xl bg-white rounded-lg shadow-lg p-6";
+    listContainer.className =
+      "w-full max-w-4xl bg-white rounded-lg shadow-lg p-6";
 
     // Create list items
     const listItemsContainer = document.createElement("div");
@@ -1566,7 +1581,8 @@ sys.stderr = StringIO()
 
       // Vertex box
       const vertexBox = document.createElement("div");
-      vertexBox.className = "w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-lg flex-shrink-0";
+      vertexBox.className =
+        "w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-lg flex-shrink-0";
       vertexBox.textContent = vertex;
       itemRow.appendChild(vertexBox);
 
@@ -1584,7 +1600,7 @@ sys.stderr = StringIO()
         neighbors.forEach((neighbor, index) => {
           // Handle both simple neighbors and weighted edges (neighbor, weight) tuples
           let neighborValue, weight;
-          
+
           if (Array.isArray(neighbor)) {
             [neighborValue, weight] = neighbor;
           } else {
@@ -1593,14 +1609,15 @@ sys.stderr = StringIO()
           }
 
           const neighborBox = document.createElement("div");
-          neighborBox.className = "px-3 py-1 bg-emerald-100 text-emerald-800 rounded border-2 border-emerald-300 font-semibold";
-          
+          neighborBox.className =
+            "px-3 py-1 bg-emerald-100 text-emerald-800 rounded border-2 border-emerald-300 font-semibold";
+
           if (weight !== null && weight !== undefined) {
             neighborBox.innerHTML = `<span class="font-bold">${neighborValue}</span> <span class="text-xs text-emerald-600">(${weight})</span>`;
           } else {
             neighborBox.textContent = neighborValue;
           }
-          
+
           neighborsContainer.appendChild(neighborBox);
 
           if (index < neighbors.length - 1) {
@@ -2557,7 +2574,7 @@ sys.stderr = StringIO()
   // CARD, CODE, AND OTHER COMPONENT CREATORS (Remaining methods truncated for brevity)
   // See original file for full implementations of:
   // - createCard
-  // - createCodeExample  
+  // - createCodeExample
   // - createExercise
   // - createSimulator
   // - createAnalysis
@@ -2870,9 +2887,13 @@ sys.stderr = StringIO()
   }
 
   // Simulator and other methods omitted for brevity - see original file
-  createSimulator(content) { /* ... */ }
-  createAnalysis(content) { /* ... */ }
-  
+  createSimulator(content) {
+    /* ... */
+  }
+  createAnalysis(content) {
+    /* ... */
+  }
+
   initSyntaxHighlighting() {
     if (typeof Prism !== "undefined") {
       Prism.highlightAll();
