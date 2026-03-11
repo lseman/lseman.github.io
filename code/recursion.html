@@ -785,7 +785,7 @@
         <div class="max-w-7xl mx-auto px-6">
             <h3 class="text-2xl font-extrabold mb-4">Pivot Selection — Pseudocode & Equations</h3>
 
-            <div class="grid lg:grid-cols-2 gap-6">
+            <div class="grid lg:grid-cols-1 gap-6">
                 <!-- Left: pseudocode blocks -->
                 <article class="card p-5">
                     <h4 class="text-lg font-semibold mb-3">Python-style Pseudocode (one per strategy)</h4>
@@ -875,257 +875,278 @@ def pivot_random(lo, hi):
                     </p>
                 </article>
                 <!-- Right: math & proofs (expanded, step-by-step) -->
-                <article class="card p-5 mathjax">
-                    <h4 class="text-lg font-semibold mb-2">How sampling changes balance — math &amp; proofs</h4>
-
-                    <p class="text-sm text-slate-700">
-                        Let the pivot’s <em>quantile</em> be $X\in[0,1]$: the fraction of keys $\le$ pivot.
-                        A split is “balanced within $\alpha$” if both parts are at least $\alpha n$, i.e.,
-                        $X\in[\alpha,1-\alpha]$.
-                    </p>
-
-                    <div class="mt-3 space-y-4 text-sm">
-                        <!-- 1. Random pivot -->
-                        <div class="theorem">
-                            <strong>Random pivot.</strong> If the pivot is chosen uniformly at random among the $n$
-                            keys, then
-                            \[
-                            X\sim \mathrm{Uniform}(0,1),\qquad
-                            \Pr\!\big[X\in[\alpha,1-\alpha]\big]=1-2\alpha.
-                            \]
-                            <details class="mt-2">
-                                <summary class="cursor-pointer text-slate-800"><em>Proof (step by step)</em></summary>
-                                <ol class="list-decimal list-inside space-y-1">
-                                    <li>All $n$ ranks are equally likely; normalizing ranks by $n$ yields a uniform
-                                        quantile.</li>
-                                    <li>The “balanced” interval inside $[0,1]$ is exactly $[\alpha,1-\alpha]$, length
-                                        $1-2\alpha$.</li>
-                                    <li>Therefore $\Pr[X\in[\alpha,1-\alpha]] = 1-2\alpha$.</li>
-                                </ol>
-                            </details>
-                        </div>
-
-                        <!-- 2. Median-of-(2t+1) -->
-                        <div class="theorem">
-                            <strong>Median-of-$(2t{+}1)$.</strong> If you sample $m=2t{+}1$ i.i.d. uniforms and take the
-                            median,
-                            \[
-                            X \sim \mathrm{Beta}(t{+}1,\; t{+}1).
-                            \]
-                            <details class="mt-2">
-                                <summary class="cursor-pointer text-slate-800"><em>Proof (order statistics)</em>
-                                </summary>
-                                The $r$-th order statistic of $m$ i.i.d. Uniform$(0,1)$ samples has
-                                $\mathrm{Beta}(r,\,m{+}1{-}r)$.
-                                For the median of an odd sample, $m=2t{+}1$ and $r=t{+}1$, giving
-                                $\mathrm{Beta}(t{+}1,t{+}1)$.
-                            </details>
-                        </div>
-
-                        <!-- 3. Balanced probability in closed form -->
-                        <div class="def">
-                            <strong>Balanced-split probability (closed form).</strong>
-                            For $X\sim\mathrm{Beta}(t{+}1,t{+}1)$,
-                            \[
-                            \Pr\!\big[X\in[\alpha,1-\alpha]\big]
-                            \;=\; 1 - 2\,I_{\alpha}\!\big(t{+}1,\,t{+}1\big),
-                            \]
-                            where $I_x(a,b)$ is the regularized incomplete beta.
-                            <details class="mt-2">
-                                <summary class="cursor-pointer text-slate-800"><em>Why this holds</em></summary>
-                                By symmetry of $\mathrm{Beta}(t{+}1,t{+}1)$,
-                                $\Pr[X\le \alpha]=I_{\alpha}(t{+}1,t{+}1)$ and $\Pr[X\ge 1{-}\alpha]=\Pr[X\le \alpha]$.
-                                Excluding both tails gives the stated expression.
-                            </details>
-                        </div>
-
-                        <!-- 4. Examples -->
-                        <div class="insight">
-                            <strong>Worked examples.</strong>
-                            <ul class="list-disc list-inside space-y-1">
-                                <li><em>Median-of-3</em> ($t=1\Rightarrow X\sim\mathrm{Beta}(2,2)$, density $6x(1-x)$):
-                                    \[
-                                    \Pr[X\in[\alpha,1-\alpha]]=\!\int_{\alpha}^{1-\alpha}6x(1-x)\,dx
-                                    = 1 - 6\alpha^2 + 4\alpha^3.
-                                    \]
-                                    For $\alpha=0.1$: random $=0.8$ vs median-of-3 $=0.944$.</li>
-                                <li><em>Ninther</em> (median-of-3 medians-of-3) is tightly center-biased; a good
-                                    approximation is $X\approx\mathrm{Beta}(5,5)$:
-                                    \[
-                                    \Pr[X\in[\alpha,1-\alpha]]
-                                    \approx 1 - 252\alpha^5 + 840\alpha^6 - 1080\alpha^7 + 630\alpha^8 - 140\alpha^9.
-                                    \]
-                                    For $\alpha=0.1$: $\approx 0.9982$ (extreme splits are strongly suppressed).</li>
-                            </ul>
-                        </div>
-
-                        <!-- 5. High-probability balance from sampling -->
-                        <div class="theorem">
-                            <strong>High-probability balance (tail bound).</strong>
-                            Let $m=2t{+}1$ be the sample size and $\delta\in(0,\tfrac12)$. Then
-                            \[
-                            \Pr\big[|X-\tfrac12|\ge \delta\big]
-                            \;\le\; 2\,e^{-2m\delta^2}\quad\text{(DKW/Chernoff-style bound)}.
-                            \]
-                            <details class="mt-2">
-                                <summary class="cursor-pointer text-slate-800"><em>Sketch</em></summary>
-                                The empirical CDF of $m$ i.i.d. uniforms concentrates uniformly around the identity
-                                (DKW).
-                                The median is where the empirical CDF crosses $1/2$; its deviation inherits the
-                                $e^{-2m\delta^2}$ tail.
-                            </details>
-                        </div>
-
-                        <!-- 6. Worst-case depth from alpha-balanced splits -->
-                        <div class="def">
-                            <strong>Depth vs. balance.</strong> If every split leaves each side $\ge \alpha n$ (so each
-                            subproblem shrinks by at most factor $1-\alpha$), then
-                            \[
-                            \text{depth} \;\le\; \frac{\log n}{\log\!\big(\tfrac{1}{1-\alpha}\big)}
-                            \;\;\le\;\; \frac{1}{\alpha}\,\log n.
-                            \]
-                            <details class="mt-2">
-                                <summary class="cursor-pointer text-slate-800"><em>Proof</em></summary>
-                                After $d$ levels: size $\le n(1-\alpha)^d$.
-                                Stop when $n(1-\alpha)^d \le 1\Rightarrow d \ge \log n /
-                                \log\!\big(\frac{1}{1-\alpha}\big)$.
-                                Using $\log(1-\alpha)\le -\alpha$ gives $d\le \frac{1}{\alpha}\log n$.
-                            </details>
-                        </div>
-
-                        <!-- 7. BFPRT guarantee -->
-                        <div class="theorem">
-                            <strong>BFPRT (Median-of-Medians, groups of 5) — “30–70” guarantee.</strong>
-                            The pivot $p$ satisfies $|\{x\le p\}|\ge 0.3n$ and $|\{x\ge p\}|\ge 0.3n$.
-                            <details class="mt-2">
-                                <summary class="cursor-pointer text-slate-800"><em>Proof (classic)</em></summary>
-                                Partition into groups of 5 and take each group’s true median.
-                                At least half of these medians are $\ge$ the median-of-medians $p$.
-                                Each such “good” median dominates at least 2 elements in its 5-group, so at least $3/10$
-                                of all elements are $\ge p$.
-                                By symmetry, at least $3/10$ are $\le p$. Hence both sides $\ge 0.3n$.
-                            </details>
-                            <p class="mt-1 text-slate-700">
-                                Consequence: worst-case depth $O(\log n)$ and worst-case quicksort with this pivot has
-                                $O(n\log n)$ time (with a larger constant due to linear-time selection each level).
-                            </p>
-                        </div>
-
-                        <!-- 8. Solving the average-case recurrence with a general pivot law -->
-                        <div class="theorem">
-                            <strong>Average-case quicksort with a general pivot distribution.</strong>
-                            Suppose one partition step costs $c_p\,n+o(n)$ comparisons on subarray size $n$, and the
-                            pivot quantile $X$ has density $f$.
-                            With
-                            \[
-                            T(n)=\mathbb{E}\!\big[T(Xn)+T((1{-}X)n)\big]+c_p\,n+o(n)
-                            \]
-                            and the ansatz $T(n)=a\,n\log n + b\,n + o(n)$ (natural log), the leading constant is
-                            \[
-                            \boxed{\;a=\frac{c_p}{\ \mathbb{E}\big[-X\ln X-(1{-}X)\ln(1{-}X)\big]\ } \;}\,.
-                            \]
-                            <details class="mt-2">
-                                <summary class="cursor-pointer text-slate-800"><em>Derivation (step by step)</em>
-                                </summary>
-                                <ol class="list-decimal list-inside space-y-1">
-                                    <li>Assume $T(n)=a\,n\ln n+b\,n+o(n)$.</li>
-                                    <li>Then $T(Xn)\approx a\,Xn(\ln n+\ln X)+b\,Xn$, and similarly for $1{-}X$.</li>
-                                    <li>Plug into the recurrence and cancel the $a\,n\ln n$ terms:
-                                        \[
-                                        a\,n\ln n+b\,n \;=\; a\,n\ln n + a\,n\,\mathbb{E}[X\ln X+(1{-}X)\ln(1{-}X)] +
-                                        b\,n + c_p\,n + o(n).
-                                        \]
-                                    </li>
-                                    <li>Equate $n$-coefficients to get $a\,\mathbb{E}[X\ln X+(1{-}X)\ln(1{-}X)]+c_p=0$.
-                                    </li>
-                                    <li>Since the bracket is negative, $a=\dfrac{c_p}{\mathbb{E}[-X\ln
-                                        X-(1{-}X)\ln(1{-}X)]}\ &gt; 0$.</li>
-                                </ol>
-                            </details>
-                        </div>
-
-                        <!-- 9. Specializing the constant 'a' to Uniform and Beta -->
-                        <div class="insight">
-                            <strong>Plugging in the law of $X$.</strong>
-                            <ul class="list-disc list-inside space-y-1">
-                                <li><em>Random pivot ($X\sim\mathrm{Uniform}$).</em>
-                                    $\mathbb{E}[-X\ln X]=\mathbb{E}[-(1{-}X)\ln(1{-}X)]=\tfrac14$, so the denominator is
-                                    $\tfrac12$.
-                                    If $c_p=1$ (about $n$ comparisons per partition), then $a=2$ and
-                                    \[
-                                    T(n)\;=\;2\,n\ln n + O(n)
-                                    \]
-                                    (equivalently $\approx 1.386\,n\log_2 n$).</li>
-
-                                <li><em>Median-of-$(2t{+}1)$: $X\sim\mathrm{Beta}(a,a)$ with $a=t{+}1$.</em>
-                                    One can show
-                                    \[
-                                    \mathbb{E}\!\big[-X\ln X-(1{-}X)\ln(1{-}X)\big] \;=\; \psi(2a{+}1) - \psi(a{+}1),
-                                    \]
-                                    where $\psi$ is the digamma and $\psi(k)=H_{k-1}{-}\gamma$ for integer $k$ (harmonic
-                                    numbers $H_s$).
-                                    Hence
-                                    \[
-                                    a \;=\; \frac{c_p}{\psi(2a{+}1)-\psi(a{+}1)}.
-                                    \]
-                                    <details class="mt-1">
-                                        <summary class="cursor-pointer text-slate-800"><em>Why this identity holds</em>
-                                        </summary>
-                                        Using moments $E[X^p]=\dfrac{B(a{+}p,a)}{B(a,a)}$, differentiate at $p=1$:
-                                        $\dfrac{d}{dp}E[X^p]\big|_{p=1}=E[X\ln X]
-                                        =\tfrac{a}{2a}\big(\psi(a{+}1)-\psi(2a{+}1)\big)=\tfrac12\big(\psi(a{+}1)-\psi(2a{+}1)\big)$.
-                                        Symmetry gives the same for $E[(1{-}X)\ln(1{-}X)]$. Summing and negating yields
-                                        the claim.
-                                    </details>
-                                    <div class="mt-1">
-                                        <em>Numbers:</em>
-                                        <ul class="list-disc list-inside">
-                                            <li>Median-of-3: $a=t{+}1=2$ $\Rightarrow$ denominator
-                                                $=\psi(5)-\psi(3)=H_4-H_2=\tfrac{7}{12}\approx 0.5833$.
-                                                Thus $a\approx \dfrac{1}{0.5833}\approx 1.714$ $\Rightarrow$
-                                                $T(n)\approx 1.714\,n\ln n$ ($\approx 1.188\,n\log_2 n$).</li>
-                                            <li>Ninther $\approx \mathrm{Beta}(5,5)$: denominator
-                                                $=\psi(11)-\psi(6)=H_{10}-H_5\approx 0.6456$.
-                                                Then $a\approx \dfrac{1}{0.6456}\approx 1.55$ ($\approx 1.07\,n\log_2
-                                                n$).</li>
-                                        </ul>
-                                    </div>
-                                </li>
-                            </ul>
-                            <p class="mt-1 text-slate-700">
-                                <em>Takeaway:</em> Sampling doesn’t change $O(n\log n)$ but strictly lowers the leading
-                                constant via a larger
-                                $\mathbb{E}[-X\ln X-(1{-}X)\ln(1{-}X)]$ (i.e., more mass near $X=\tfrac12$).
-                            </p>
-                        </div>
-
-                        <!-- 10. Cost of getting the sampled pivot -->
-                        <div class="def">
-                            <strong>Sampling overhead.</strong>
-                            Picking the median of $(2t{+}1)$ samples costs $O(t)$ comparisons (constant when $t$ is
-                            fixed).
-                            The total expected running time remains
-                            \[
-                            T(n)=\Big(\underbrace{c_p}_{\text{partition}}+\underbrace{c_s}_{\text{sampling}}\Big)\frac{n\ln
-                            n}{\ \mathbb{E}[{-}X\ln X-(1{-}X)\ln(1{-}X)]\ } + O(n),
-                            \]
-                            where $c_s$ is the (small) sampling constant.
-                        </div>
-
-                        <!-- 11. Summary bullets -->
-                        <div class="insight">
-                            <strong>Summary.</strong>
-                            <ul class="list-disc list-inside space-y-1">
-                                <li>Random pivot: balanced probability $1-2\alpha$; $T(n)=2\,n\ln n+O(n)$.</li>
-                                <li>Median-of-3: balanced probability $1-6\alpha^2+4\alpha^3$; $T(n)\approx 1.714\,n\ln
-                                    n$.</li>
-                                <li>Ninther: extremely high balanced probability; $T(n)\approx 1.55\,n\ln n$.</li>
-                                <li>BFPRT pivot guarantees $\alpha=0.3$ each split $\Rightarrow$ worst-case $O(n\ln n)$.
-                                </li>
-                            </ul>
-                        </div>
+<article class="card p-5 mathjax">
+    <h4 class="text-lg font-semibold mb-2">How sampling changes balance — math & proofs</h4>
+    <p class="text-sm text-slate-700">
+        Let the pivot’s <em>quantile</em> be $X\in[0,1]$: the fraction of keys $\le$ pivot.
+        A split is “balanced within $\alpha$” if both parts are at least $\alpha n$, i.e.,
+        $X\in[\alpha,1-\alpha]$.
+    </p>
+    <div class="mt-3 space-y-4 text-sm">
+<!-- 1. Random pivot -->
+        <div class="theorem">
+            <strong>Random pivot.</strong> If the pivot is chosen uniformly at random among the $n$
+            keys, then
+            \[
+            X\sim \mathrm{Uniform}(0,1),\qquad
+            \Pr\!\big[X\in[\alpha,1-\alpha]\big]=1-2\alpha.
+            \]
+            <details class="mt-2">
+                <summary class="cursor-pointer text-slate-800"><em>Proof (step by step)</em></summary>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>Assume the $n$ keys are distinct and sorted for simplicity: $k_1 < k_2 < \dots < k_n$.</li>
+                    <li>Choosing a pivot uniformly at random selects $k_i$ with probability $1/n$ for each $i$.</li>
+                    <li>The rank of the pivot is $i$, so the quantile $X = i/n$.</li>
+                    <li>Since $i$ is uniform over $\{1,2,\dots,n\}$, $X$ is approximately uniform on $\{1/n, 2/n, \dots, 1\}$, which converges to $\mathrm{Uniform}(0,1)$ as $n\to\infty$.</li>
+                    <li>The “balanced” interval inside $[0,1]$ is exactly $[\alpha,1-\alpha]$, length $1-2\alpha$.</li>
+                    <li>Therefore $\Pr[X\in[\alpha,1-\alpha]] = 1-2\alpha$.</li>
+                </ol>
+            </details>
+        </div>
+<!-- 2. Median-of-(2t+1) -->
+        <div class="theorem">
+            <strong>Median-of-$(2t{+}1)$.</strong> If you sample $m=2t{+}1$ i.i.d. uniforms and take the
+            median,
+            \[
+            X \sim \mathrm{Beta}(t{+}1,\; t{+}1).
+            \]
+            <details class="mt-2">
+                <summary class="cursor-pointer text-slate-800"><em>Proof (order statistics, expanded)</em>
+                </summary>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>Let $U_{(1)} \le U_{(2)} \le \dots \le U_{(m)}$ be the order statistics of $m$ i.i.d. $\mathrm{Uniform}(0,1)$ random variables.</li>
+                    <li>The $r$-th order statistic $U_{(r)}$ has $\mathrm{Beta}(r,\,m{+}1{-}r)$ distribution. This follows from the fact that the spacings between uniforms are like Dirichlet, but the marginal is Beta.</li>
+                    <li>For the median of an odd sample size $m=2t{+}1$, the median is $U_{(t+1)}$, so $r = t+1$.</li>
+                    <li>Thus, $U_{(t+1)} \sim \mathrm{Beta}(t+1, (2t+1)+1 - (t+1)) = \mathrm{Beta}(t+1, t+1)$.</li>
+                </ol>
+            </details>
+        </div>
+<!-- 3. Balanced probability in closed form -->
+        <div class="def">
+            <strong>Balanced-split probability (closed form).</strong>
+            For $X\sim\mathrm{Beta}(t{+}1,t{+}1)$,
+            \[
+            \Pr\!\big[X\in[\alpha,1-\alpha]\big]
+            \;=\; 1 - 2\,I_{\alpha}\!\big(t{+}1,\,t{+}1\big),
+            \]
+            where $I_x(a,b)$ is the regularized incomplete beta function, $I_x(a,b) = \frac{B(x;a,b)}{B(a,b)}$ with $B$ the beta function.
+            <details class="mt-2">
+                <summary class="cursor-pointer text-slate-800"><em>Why this holds (with computation notes)</em></summary>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>The CDF of $\mathrm{Beta}(a,a)$ is $F(x) = I_x(a,a)$.</li>
+                    <li>By symmetry (since $a=b$), $F(\alpha) = \Pr[X \le \alpha]$ and $\Pr[X \ge 1-\alpha] = 1 - F(1-\alpha) = F(\alpha)$ because $F(1-\alpha) = 1 - F(\alpha)$.</li>
+                    <li>Thus, $\Pr[X < \alpha \text{ or } X > 1-\alpha] = 2 F(\alpha) = 2 I_\alpha(a,a)$.</li>
+                    <li>Excluding both tails gives $\Pr[\alpha \le X \le 1-\alpha] = 1 - 2 I_\alpha(a,a)$.</li>
+                    <li><em>Computation:</em> For large $t$, use numerical libraries like SciPy's `beta.cdf`; for small $t$, integrate the density explicitly as in the examples below.</li>
+                </ol>
+            </details>
+        </div>
+<!-- 4. Examples -->
+        <div class="insight">
+            <strong>Worked examples.</strong>
+            <ul class="list-disc list-inside space-y-1">
+                <li><em>Median-of-3</em> ($t=1\Rightarrow X\sim\mathrm{Beta}(2,2)$, density $6x(1-x)$):
+                    \[
+                    \Pr[X\in[\alpha,1-\alpha]]=\!\int_{\alpha}^{1-\alpha}6x(1-x)\,dx
+                    = 1 - 6\alpha^2 + 4\alpha^3.
+                    \]
+                    Derivation: $\int 6x - 6x^2 dx = 3x^2 - 2x^3 \big|_\alpha^{1-\alpha} = [3(1-\alpha)^2 - 2(1-\alpha)^3] - [3\alpha^2 - 2\alpha^3] = 1 - 6\alpha^2 + 4\alpha^3$ by expansion.
+                    For $\alpha=0.1$: random $=0.8$ vs median-of-3 $=0.944$. For $\alpha=0.25$: $0.5$ vs $0.8125$.</li>
+                <li><em>Ninther</em> (median-of-3 medians-of-3, effectively sampling 9 elements) is tightly center-biased; a good approximation is $X\approx\mathrm{Beta}(5,5)$ ($t=4$):
+                    \[
+                    \Pr[X\in[\alpha,1-\alpha]]
+                    \approx 1 - 252\alpha^5 + 840\alpha^6 - 1080\alpha^7 + 630\alpha^8 - 140\alpha^9.
+                    \]
+                    This polynomial comes from expanding the incomplete beta for $a=5$. For $\alpha=0.1$: $\approx 0.9982$ (extreme splits are strongly suppressed). For $\alpha=0.25$: $\approx 0.9844$.</li>
+            </ul>
+        </div>
+<!-- New: Numerical table -->
+        <div class="insight">
+            <strong>Numerical balanced probabilities ($\alpha=0.1$).</strong>
+            <table class="min-w-full border-collapse border border-slate-300 mt-2">
+                <thead>
+                    <tr>
+                        <th class="border border-slate-300 p-1">Sample size $m=2t+1$</th>
+                        <th class="border border-slate-300 p-1">$t$</th>
+                        <th class="border border-slate-300 p-1">Pr[balanced]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="border border-slate-300 p-1 text-center">3</td><td class="border border-slate-300 p-1 text-center">1</td><td class="border border-slate-300 p-1 text-center">0.944</td></tr>
+                    <tr><td class="border border-slate-300 p-1 text-center">5</td><td class="border border-slate-300 p-1 text-center">2</td><td class="border border-slate-300 p-1 text-center">0.983</td></tr>
+                    <tr><td class="border border-slate-300 p-1 text-center">7</td><td class="border border-slate-300 p-1 text-center">3</td><td class="border border-slate-300 p-1 text-center">0.995</td></tr>
+                    <tr><td class="border border-slate-300 p-1 text-center">9</td><td class="border border-slate-300 p-1 text-center">4</td><td class="border border-slate-300 p-1 text-center">0.998</td></tr>
+                    <tr><td class="border border-slate-300 p-1 text-center">11</td><td class="border border-slate-300 p-1 text-center">5</td><td class="border border-slate-300 p-1 text-center">0.999</td></tr>
+                    <tr><td class="border border-slate-300 p-1 text-center">21</td><td class="border border-slate-300 p-1 text-center">10</td><td class="border border-slate-300 p-1 text-center">1.000</td></tr>
+                </tbody>
+            </table>
+            <p class="mt-1 text-xs text-slate-600">As $t$ increases, the probability approaches 1 rapidly, concentrating $X$ near 0.5.</p>
+        </div>
+<!-- 5. High-probability balance from sampling -->
+        <div class="theorem">
+            <strong>High-probability balance (tail bound).</strong>
+            Let $m=2t{+}1$ be the sample size and $\delta\in(0,\tfrac12)$. Then
+            \[
+            \Pr\big[|X-\tfrac12|\ge \delta\big]
+            \;\le\; 2\,e^{-2m\delta^2}\quad\text{(DKW/Chernoff-style bound)}.
+            \]
+            <details class="mt-2">
+                <summary class="cursor-pointer text-slate-800"><em>Sketch (with intuition)</em></summary>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>The empirical CDF $\hat{F}_m(u) = \frac{1}{m} \sum I(U_i \le u)$ of $m$ i.i.d. uniforms concentrates uniformly around the true CDF $F(u)=u$ by the DKW inequality: $\Pr[\sup | \hat{F}_m - u | \ge \epsilon] \le 2 e^{-2 m \epsilon^2}$.</li>
+                    <li>The median $X$ is the value where $\hat{F}_m(X) = 1/2$, i.e., $X = \hat{F}_m^{-1}(1/2)$.</li>
+                    <li>By uniform convergence, $|\hat{F}_m(X) - X| < \epsilon$ implies $|X - 1/2| < \epsilon$ roughly, inheriting the exponential tail $e^{-2m\delta^2}$ for deviations $\delta$.</li>
+                    <li>This is a concentration result: larger $m$ makes $X$ tightly around 1/2 with high probability.</li>
+                </ol>
+            </details>
+        </div>
+<!-- 6. Worst-case depth from alpha-balanced splits -->
+        <div class="def">
+            <strong>Depth vs. balance.</strong> If every split leaves each side $\ge \alpha n$ (so each
+            subproblem shrinks by at most factor $1-\alpha$), then
+            \[
+            \text{depth} \;\le\; \frac{\log n}{\log\!\big(\tfrac{1}{1-\alpha}\big)}
+            \;\;\le\;\; \frac{1}{\alpha}\,\log n.
+            \]
+            <details class="mt-2">
+                <summary class="cursor-pointer text-slate-800"><em>Proof (inductive)</em></summary>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>Start with size $n_0 = n$.</li>
+                    <li>After one split, both subproblems have size $\le (1-\alpha) n_0$.</li>
+                    <li>After $d$ levels, worst-case size $n_d \le n (1-\alpha)^d$.</li>
+                    <li>Recursion stops when $n_d \le 1$, so $(1-\alpha)^d \le 1/n \implies d \log(1-\alpha) \le -\log n \implies d \ge \frac{\log n}{-\log(1-\alpha)} = \frac{\log n}{\log \frac{1}{1-\alpha}}$.</li>
+                    <li>Since $\log(1-\alpha) \le -\alpha$ (by concavity of log, or Taylor: $\log(1-\alpha) = -\alpha - \alpha^2/2 - \dots \le -\alpha$), thus $-\log(1-\alpha) \ge \alpha \implies d \le \frac{\log n}{\alpha}$.</li>
+                </ol>
+            </details>
+        </div>
+<!-- 7. BFPRT guarantee -->
+        <div class="theorem">
+            <strong>BFPRT (Median-of-Medians, groups of 5) — “30–70” guarantee.</strong>
+            The pivot $p$ satisfies $|\{x\le p\}|\ge 0.3n$ and $|\{x\ge p\}|\ge 0.3n$.
+            <details class="mt-2">
+                <summary class="cursor-pointer text-slate-800"><em>Proof (classic, step-by-step)</em></summary>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>Partition the $n$ elements into $\lceil n/5 \rceil$ groups of 5 (last may be smaller, but ignore for asymptotics).</li>
+                    <li>Find the median of each group of 5 (costs $O(1)$ per group, total $O(n)$).</li>
+                    <li>Let $M$ be the set of these group medians ($|M| \approx n/5$).</li>
+                    <li>Recursively find the median $p$ of $M$ (this is the median-of-medians).</li>
+                    <li>At least half of the medians in $M$ are $\ge p$ (by definition of median).</li>
+                    <li>Each such "good" group median is $\ge 3$ elements in its group of 5 (itself and at least 2 smaller).</li>
+                    <li>Thus, number of elements $\ge p$ is at least $(1/2) \cdot (n/5) \cdot 3 = 3n/10 = 0.3n$.</li>
+                    <li>By symmetry (reversing inequalities), at least 0.3n elements $\le p$.</li>
+                </ol>
+            </details>
+            <p class="mt-1 text-slate-700">
+                Consequence: worst-case depth $O(\log n)$ and worst-case quicksort with this pivot has
+                $O(n\log n)$ time (with a larger constant due to linear-time selection each level; the constant is about 20-30 times slower than average-case in practice).
+            </p>
+        </div>
+<!-- 8. Solving the average-case recurrence with a general pivot law -->
+        <div class="theorem">
+            <strong>Average-case quicksort with a general pivot distribution.</strong>
+            Suppose one partition step costs $c_p\,n+o(n)$ comparisons on subarray size $n$, and the
+            pivot quantile $X$ has density $f$.
+            With
+            \[
+            T(n)=\mathbb{E}\!\big[T(Xn)+T((1{-}X)n)\big]+c_p\,n+o(n)
+            \]
+            and the ansatz $T(n)=a\,n\log n + b\,n + o(n)$ (natural log), the leading constant is
+            \[
+            \boxed{\;a=\frac{c_p}{\ \mathbb{E}\big[-X\ln X-(1{-}X)\ln(1{-}X)\big]\ } \;}\,.
+            \]
+            <details class="mt-2">
+                <summary class="cursor-pointer text-slate-800"><em>Derivation (step by step, with boundary terms)</em>
+                </summary>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>Assume $T(n)=a\,n\ln n+b\,n+o(n)$, valid for large $n$ (base cases $T(0)=T(1)=0$ handled by $o(n)$).</li>
+                    <li>Then $T(Xn)=a\,Xn\,(\ln(Xn)) + b\,Xn + o(n) = a\,Xn\,(\ln n + \ln X) + b\,Xn + o(n)$.</li>
+                    <li>Similarly, $T((1-X)n) = a\,(1-X)n\,(\ln n + \ln(1-X)) + b\,(1-X)n + o(n)$.</li>
+                    <li>Taking expectation: $\mathbb{E}[T(Xn) + T((1-X)n)] = a\,n\ln n + a\,n\,\mathbb{E}[X\ln X + (1-X)\ln(1-X)] + b\,n + o(n)$.</li>
+                    <li>Plug into recurrence: $a n \ln n + b n = a n \ln n + a n \mathbb{E}[X\ln X + (1-X)\ln(1-X)] + b n + c_p n + o(n)$.</li>
+                    <li>Cancel $a n \ln n + b n$: $0 = a n \mathbb{E}[X\ln X + (1-X)\ln(1-X)] + c_p n + o(n)$.</li>
+                    <li>Divide by $n$: $0 = a \mathbb{E}[X\ln X + (1-X)\ln(1-X)] + c_p + o(1)$.</li>
+                    <li>Thus, $a = - \frac{c_p}{\mathbb{E}[X\ln X + (1-X)\ln(1-X)]} = \frac{c_p}{\mathbb{E}[-X\ln X - (1-X)\ln(1-X)]}$, since the entropy-like term is positive.</li>
+                </ol>
+            </details>
+        </div>
+<!-- 9. Specializing the constant 'a' to Uniform and Beta -->
+        <div class="insight">
+            <strong>Plugging in the law of $X$.</strong>
+            <ul class="list-disc list-inside space-y-1">
+                <li><em>Random pivot ($X\sim\mathrm{Uniform}$).</em>
+                    $\mathbb{E}[-X\ln X]=\int_0^1 -x \ln x \, dx = [-\frac{1}{4} x^2 (2\ln x -1) + \frac{1}{4}]_0^1 = \frac{1}{4}$ (by parts: $u=\ln x, dv=x dx$).
+                    By symmetry, $\mathbb{E}[-(1{-}X)\ln(1{-}X)]=\tfrac14$, so denominator $\tfrac12$.
+                    If $c_p=1$ (about $n$ comparisons per partition), then $a=2$ and
+                    \[
+                    T(n)\;=\;2\,n\ln n + O(n)
+                    \]
+                    (equivalently $\approx 1.386\,n\log_2 n$, since $\ln n = \log_2 n / \log_2 e \approx 1.4427 \log_2 n$, so $2 / 1.4427 \approx 1.386$).</li>
+                <li><em>Median-of-$(2t{+}1)$: $X\sim\mathrm{Beta}(a,a)$ with $a=t{+}1$.</em>
+                    One can show
+                    \[
+                    \mathbb{E}\!\big[-X\ln X-(1{-}X)\ln(1{-}X)\big] \;=\; \psi(2a{+}1) - \psi(a{+}1),
+                    \]
+                    where $\psi$ is the digamma function, $\psi(z) = \frac{\Gamma'(z)}{\Gamma(z)}$, and for integer $k$, $\psi(k)=H_{k-1}-\gamma$ ($H_s$ harmonic number, $\gamma\approx0.577$ Euler's constant).
+                    Hence
+                    \[
+                    a \;=\; \frac{c_p}{\psi(2a{+}1)-\psi(a{+}1)}.
+                    \]
+                    <details class="mt-1">
+                        <summary class="cursor-pointer text-slate-800"><em>Why this identity holds (derivation)</em>
+                        </summary>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>The moments: $E[X^p] = \frac{B(a+p,a)}{B(a,a)} = \frac{\Gamma(a+p)\Gamma(2a)/\Gamma(2a+p)}{\Gamma(a)^2 / \Gamma(2a)}$.</li>
+                            <li>$E[X \ln X] = \frac{d}{dp} E[X^p] \big|_{p=0}$, but for precision, differentiate at $p=1$ for convenience, adjusting.</li>
+                            <li>Actually: $\frac{d}{dp} \log E[X^p] = \frac{E[X^p \ln X]}{E[X^p]}$, but directly: $\frac{d}{dp} E[X^p] = E[X^p \ln X]$.</li>
+                            <li>For Beta, $E[X^p] = \prod_{k=0}^{p-1} \frac{a+k}{2a+k}$ (for integer p, but general via Gamma).</li>
+                            <li>Using $\log \Gamma(z+1) \approx z \log z - z + \frac{1}{2} \log(2\pi z)$ (Stirling), but exact: $\psi(a+1) = \frac{d}{da} \log \Gamma(a+1)$.</li>
+                            <li>Standard result: $E[\ln X] = \psi(a) - \psi(2a)$; then $E[X \ln X] = E[\ln X \cdot X] = \int x \ln x f(x) dx$, but via differentiation: $\frac{d}{dp} B(a+p,a)/B(a,a) |_{p=1} = E[X \ln X] = \frac{1}{B(a,a)} \frac{\partial}{\partial p} B(a+p,a)|_{p=1} = ...$ leading to $\psi(a+1) - \psi(2a+1)$ scaled.</li>
+                            <li>Precisely: $E[X \ln X] = \frac{a}{2a} (\psi(a+1) - \psi(2a+1)) = \frac{1}{2} (\psi(a+1) - \psi(2a+1))$.</li>
+                            <li>Symmetry: $E[(1-X) \ln(1-X)] = E[X \ln X]$. Thus $E[-X\ln X - (1-X)\ln(1-X)] = -2 E[X \ln X] = \psi(2a+1) - \psi(a+1)$.</li>
+                        </ol>
+                        </details>
+                    <div class="mt-1">
+                        <em>Numbers (for $c_p=1$):</em>
+                        <ul class="list-disc list-inside">
+                            <li>Median-of-3: $a=2$, denominator $=\psi(5)-\psi(3)= (H_4 - \gamma) - (H_2 - \gamma) = H_4 - H_2 = (1+1/2+1/3+1/4) - (1+1/2) = 25/12 - 3/2 = 7/12 \approx 0.5833$.
+                                Thus $a\approx 1.714$ $\Rightarrow$ $T(n)\approx 1.714\,n\ln n$ ($\approx 1.188\,n\log_2 n$).</li>
+                            <li>Median-of-5 ($t=2, a=3$): $\psi(7)-\psi(4) = H_6 - H_3 \approx 2.59286 - 1.83333 = 0.75952$, $a \approx 1.317$ ($\approx 0.913 n \log_2 n$).</li>
+                            <li>Ninther $\approx \mathrm{Beta}(5,5)$ ($a=5$): $\psi(11)-\psi(6)=H_{10}-H_5 \approx 2.92897 - 2.28333 = 0.64564$.
+                                Then $a\approx 1.549$ ($\approx 1.074\,n\log_2 n$).</li>
+                        </ul>
                     </div>
-                </article>
+                </li>
+            </ul>
+            <p class="mt-1 text-slate-700">
+                <em>Takeaway:</em> Sampling doesn’t change $O(n\log n)$ but strictly lowers the leading
+                constant via a larger
+                $\mathbb{E}[-X\ln X-(1{-}X)\ln(1{-}X)]$ (i.e., more mass near $X=\tfrac12$, reducing recursion depth variance).
+            </p>
+        </div>
+<!-- 10. Cost of getting the sampled pivot -->
+        <div class="def">
+            <strong>Sampling overhead.</strong>
+            Picking the median of $(2t{+}1)$ samples costs $O(t)$ comparisons (e.g., for median-of-3: 3 comparisons in worst case; for larger $t$, use a tournament or linear-time selection, but fixed $t$ keeps it constant).
+            The total expected running time remains
+            \[
+            T(n)=\Big(\underbrace{c_p}_{\text{partition}}+\underbrace{c_s}_{\text{sampling}}\Big)\frac{n\ln
+            n}{\ \mathbb{E}[{-}X\ln X-(1{-}X)\ln(1{-}X)]\ } + O(n),
+            \]
+            where $c_s = O(1)$ for fixed $t$ (e.g., $c_s \approx 2.5$ for median-of-3). For large $t$, $c_s = O(t)$, but balance improves, trading off.
+        </div>
+<!-- 11. Summary bullets -->
+        <div class="insight">
+            <strong>Summary.</strong>
+            <ul class="list-disc list-inside space-y-1">
+                <li>Random pivot: balanced probability $1-2\alpha$; $T(n)=2\,n\ln n+O(n)$.</li>
+                <li>Median-of-3: balanced probability $1-6\alpha^2+4\alpha^3$; $T(n)\approx 1.714\,n\ln n$.</li>
+                <li>Median-of-5: prob $\approx 0.983$ ($\alpha=0.1$); $T(n)\approx 1.317\,n\ln n$.</li>
+                <li>Ninther: extremely high balanced probability ($\approx0.998$ for $\alpha=0.1$); $T(n)\approx 1.55\,n\ln n$.</li>
+                <li>BFPRT pivot guarantees $\alpha=0.3$ each split $\Rightarrow$ worst-case $O(n\ln n)$ (but high constant).</li>
+            </ul>
+        </div>
+    </div>
+</article>
 
             </div>
         </div>
