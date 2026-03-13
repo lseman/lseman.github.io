@@ -390,13 +390,42 @@ class ThemeManager {
         };
     }
 
+    cloneTheme(theme) {
+        if (!theme) return null;
+        return {
+            ...theme,
+            cssVariables: { ...(theme.cssVariables || {}) },
+            tailwindExtend: theme.tailwindExtend
+                ? JSON.parse(JSON.stringify(theme.tailwindExtend))
+                : undefined,
+        };
+    }
+
+    mergeThemes(baseTheme, overrideTheme = {}) {
+        const base = this.cloneTheme(baseTheme) || { cssVariables: {} };
+        const override = this.cloneTheme(overrideTheme) || {};
+
+        return {
+            ...base,
+            ...override,
+            cssVariables: {
+                ...(base.cssVariables || {}),
+                ...(override.cssVariables || {}),
+            },
+            tailwindExtend: {
+                ...(base.tailwindExtend || {}),
+                ...(override.tailwindExtend || {}),
+            },
+        };
+    }
+
     /**
      * Get a theme by name
      * @param {string} themeName - Name of the theme
      * @returns {Object|null} Theme object or null if not found
      */
     getTheme(themeName) {
-        return this.themes[themeName] || null;
+        return this.cloneTheme(this.themes[themeName] || null);
     }
 
     /**
@@ -404,7 +433,9 @@ class ThemeManager {
      * @returns {Object} All themes
      */
     getAllThemes() {
-        return this.themes;
+        return Object.fromEntries(
+            Object.entries(this.themes).map(([name, theme]) => [name, this.cloneTheme(theme)])
+        );
     }
 
     /**
@@ -434,10 +465,46 @@ class ThemeManager {
      * @param {Object} theme - Theme configuration
      */
     registerTheme(name, theme) {
+        if (!name || typeof name !== 'string') {
+            throw new Error('Theme name must be a non-empty string');
+        }
+
+        if (!theme || typeof theme !== 'object') {
+            throw new Error(`Theme '${name}' must be an object`);
+        }
+
         if (this.themes[name]) {
             console.warn(`Theme '${name}' already exists. Overwriting...`);
         }
-        this.themes[name] = theme;
+        this.themes[name] = this.mergeThemes({ name, description: '', cssVariables: {} }, theme);
+    }
+
+    /**
+     * Resolve a theme from a preset name or a theme descriptor object.
+     * Supports:
+     * - 'violet'
+     * - { preset: 'violet' }
+     * - { extends: 'violet', cssVariables: { ... } }
+     */
+    resolveTheme(themeInput) {
+        if (!themeInput) {
+            return this.getTheme('default');
+        }
+
+        if (typeof themeInput === 'string') {
+            return this.getTheme(themeInput) || this.getTheme('default');
+        }
+
+        if (typeof themeInput !== 'object') {
+            return this.getTheme('default');
+        }
+
+        const presetName = themeInput.preset || themeInput.extends || themeInput.name;
+        const presetTheme = presetName && this.themes[presetName]
+            ? this.getTheme(presetName)
+            : this.getTheme('default');
+
+        return this.mergeThemes(presetTheme, themeInput);
     }
 
     /**
@@ -446,7 +513,7 @@ class ThemeManager {
      * @returns {boolean} Success status
      */
     applyTheme(themeName) {
-        const theme = this.getTheme(themeName);
+        const theme = this.resolveTheme(themeName);
         if (!theme) {
             console.error(`Theme '${themeName}' not found`);
             return false;
@@ -457,6 +524,9 @@ class ThemeManager {
             root.style.setProperty(key, value);
         });
 
+        root.dataset.theme = themeName && typeof themeName === 'string'
+            ? themeName
+            : (theme.preset || theme.extends || theme.name || 'custom');
         console.log(`Applied theme: ${theme.name}`);
         return true;
     }

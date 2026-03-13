@@ -253,6 +253,12 @@
         themeToggle.addEventListener('click', (e) => {
             e.stopPropagation();
 
+            const existingMenu = themeToggle.querySelector('.theme-selector-menu');
+            if (existingMenu) {
+                existingMenu.remove();
+                return;
+            }
+
             // Check if ThemeManager is available
             if (typeof window.themeManager === 'undefined') {
                 console.error('ThemeManager not loaded');
@@ -268,7 +274,7 @@
 
             // Create theme selection dropdown
             const menu = document.createElement('div');
-            menu.className = 'absolute right-0 top-full mt-2 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50';
+            menu.className = 'theme-selector-menu absolute right-0 top-full mt-2 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50';
             menu.style.minWidth = '220px';
             menu.style.maxHeight = '400px';
             menu.style.overflowY = 'auto';
@@ -309,6 +315,10 @@
                 item.onclick = () => {
                     window.themeManager.applyTheme(themeName);
                     localStorage.setItem('selectedTheme', themeName);
+
+                    if (window.educationalTemplate?.setTheme) {
+                        window.educationalTemplate.setTheme(themeName);
+                    }
 
                     if (typeof toast !== 'undefined') {
                         toast.success(`Theme changed to ${theme.name}`, 2000);
@@ -457,14 +467,17 @@
         // Initialize ThemeManager if available
         if (typeof ThemeManager !== 'undefined' && !window.themeManager) {
             window.themeManager = new ThemeManager();
-            const savedTheme = localStorage.getItem('selectedTheme') || 'violet';
-            window.themeManager.applyTheme(savedTheme);
-            console.log('✅ Theme Manager initialized with theme:', savedTheme);
+        }
 
-            // Inject theme into config if not already present
-            if (config && !config.theme) {
-                config.theme = window.themeManager.getTheme(savedTheme);
-            }
+        if (typeof ThemeManager !== 'undefined' && window.themeManager) {
+            const requestedTheme = typeof config.theme === 'string'
+                ? config.theme
+                : (config.theme?.preset || config.theme?.extends || localStorage.getItem('selectedTheme') || 'default');
+            const resolvedTheme = window.themeManager.resolveTheme(requestedTheme === 'custom' ? config.theme : (config.theme || requestedTheme));
+
+            window.themeManager.applyTheme(requestedTheme);
+            console.log('✅ Theme Manager initialized with theme:', requestedTheme);
+            config.theme = resolvedTheme;
         }
 
         // Initialize template

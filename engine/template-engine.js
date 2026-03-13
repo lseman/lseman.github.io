@@ -30,6 +30,14 @@ class EducationalTemplate {
       "visual-tutorial": this.renderVisualTutorial.bind(this),
     };
 
+    if (config.customRenderers && typeof config.customRenderers === "object") {
+      Object.entries(config.customRenderers).forEach(([type, renderer]) => {
+        if (typeof renderer === "function") {
+          this.registerContentRenderer(type, renderer);
+        }
+      });
+    }
+
     // Extensible algorithm registry for simulators
     this.algorithms = {};
 
@@ -203,11 +211,13 @@ sys.stderr = StringIO()
       );
     }
 
+    const normalizedSections = this.normalizeSections(config.sections || []);
+
     // Set defaults for optional fields
     return {
       ...config,
-      theme: config.theme || {},
-      sections: config.sections || [],
+      theme: this.resolveThemeConfig(config.theme),
+      sections: normalizedSections,
       hero: {
         watermarks: [],
         quickLinks: [],
@@ -219,6 +229,53 @@ sys.stderr = StringIO()
         ...config.footer,
       },
     };
+  }
+
+  resolveThemeConfig(themeConfig) {
+    if (typeof window !== "undefined" && window.themeManager) {
+      return window.themeManager.resolveTheme(themeConfig);
+    }
+
+    if (typeof themeConfig === "string") {
+      return {
+        preset: themeConfig,
+        name: themeConfig,
+        cssVariables: {},
+      };
+    }
+
+    if (!themeConfig || typeof themeConfig !== "object") {
+      return {};
+    }
+
+    return {
+      ...themeConfig,
+      cssVariables: { ...(themeConfig.cssVariables || {}) },
+    };
+  }
+
+  normalizeSections(sections) {
+    return sections.map((section, index) => {
+      const fallbackTitle = section?.title || `Section ${index + 1}`;
+      const normalizedId = section?.id || this.slugify(fallbackTitle, index);
+
+      return {
+        ...section,
+        id: normalizedId,
+        title: fallbackTitle,
+        content: section?.content || {},
+      };
+    });
+  }
+
+  slugify(value, index = 0) {
+    const slug = String(value || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    return slug || `section-${index + 1}`;
   }
 
   init() {
@@ -263,6 +320,12 @@ sys.stderr = StringIO()
     }
   }
 
+  setTheme(themeConfig) {
+    this.config.theme = this.resolveThemeConfig(themeConfig);
+    this.applyTheme();
+    this.observeReveals();
+  }
+
   renderMetadata() {
     const { meta } = this.config;
     if (!meta) return;
@@ -299,6 +362,11 @@ sys.stderr = StringIO()
     // Clear existing
     navLinks.innerHTML = "";
     mobileMenu.innerHTML = "";
+
+    const existingBackdrop = document.getElementById("nav-menu-backdrop");
+    const existingPanel = document.getElementById("nav-menu-panel");
+    if (existingBackdrop) existingBackdrop.remove();
+    if (existingPanel) existingPanel.remove();
 
     // Desktop: Just show a menu button
     const menuButton = document.createElement("button");
@@ -499,6 +567,7 @@ sys.stderr = StringIO()
     if (hero.watermarks) {
       const container = document.getElementById("watermarks-container");
       if (container) {
+        container.innerHTML = "";
         hero.watermarks.forEach((text, i) => {
           const watermark = document.createElement("div");
           watermark.className = `watermark watermark-${i + 1}`;
@@ -512,6 +581,7 @@ sys.stderr = StringIO()
     // Render quick links
     const heroNav = document.getElementById("hero-nav");
     if (heroNav && hero.quickLinks) {
+      heroNav.innerHTML = "";
       hero.quickLinks.forEach((link) => {
         const btn = document.createElement("a");
         btn.href = link.href;
@@ -538,6 +608,7 @@ sys.stderr = StringIO()
     // Footer links
     const footerLinks = document.getElementById("footer-links");
     if (footerLinks && footer.links) {
+      footerLinks.innerHTML = "";
       footer.links.forEach((link) => {
         const a = document.createElement("a");
         a.href = link.href;
@@ -551,6 +622,7 @@ sys.stderr = StringIO()
     // Footer resources
     const footerResources = document.getElementById("footer-resources");
     if (footerResources && footer.resources) {
+      footerResources.innerHTML = "";
       footer.resources.forEach((resource) => {
         const a = document.createElement("a");
         a.href = resource.href;
@@ -565,6 +637,8 @@ sys.stderr = StringIO()
   renderSections() {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
+
+    mainContent.innerHTML = "";
 
     this.config.sections.forEach((section) => {
       const sectionEl = document.createElement("section");
@@ -2901,6 +2975,9 @@ sys.stderr = StringIO()
   }
 
   observeReveals() {
+    this.observers.forEach((observer) => observer.disconnect());
+    this.observers = [];
+
     const reveals = document.querySelectorAll(".reveal");
     const revealOnce = this.config.theme?.revealOnce !== false;
 
