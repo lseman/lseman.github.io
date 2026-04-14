@@ -272,6 +272,46 @@ hing<!doctype html>
         @media (max-width: 768px) {
             .form-grid-2 { grid-template-columns: 1fr; }
         }
+
+        /* Inline truth tables */
+        table.truth-table {
+            border-collapse: collapse;
+            margin-top: 6px;
+            font-size: 0.82rem;
+        }
+        table.truth-table th,
+        table.truth-table td {
+            border: 1px solid #cbd5e1;
+            padding: 3px 10px;
+            text-align: center;
+        }
+        table.truth-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+
+        /* Inline code in prose */
+        .card p code, .insight code, .warn code, .theorem code, .def code {
+            font-family: var(--mono);
+            font-size: 0.84em;
+            background: rgba(100,116,139,0.10);
+            border-radius: 4px;
+            padding: 1px 4px;
+        }
+
+        /* Section intro paragraphs */
+        .section > p.section-intro {
+            color: #475569;
+            max-width: 48rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1.25rem;
+            line-height: 1.7;
+        }
+
+        /* Tip badge on articles */
+        article.tip {
+            border-left: 4px solid var(--cyan, #06b6d4);
+        }
     </style>
 </head>
 
@@ -302,7 +342,7 @@ hing<!doctype html>
       <header id="hero" class="hero">
         <div class="hero-tag">Integer Programming</div>
         <h1 class="hero-title">Mixed-Integer Programming Cheat Sheet</h1>
-        <p class="hero-sub">Concise formulas and modeling idioms for MILP: logical relations, Big-M, conditional constraints, linearization, min/max gadgets, and McCormick envelopes. MathJax-ready, classroom-friendly, and printable.</p>
+        <p class="hero-sub">Concise formulas, intuition, and worked numerical examples for MILP: logical relations, Big-M, conditional constraints, linearization, min/max gadgets, McCormick envelopes, piecewise linear models, and SOS branching. Classroom-friendly, interactive, and printable.</p>
         <div class="hero-meta">
           <span>cheat sheet</span>
           <span>interactive notes</span>
@@ -328,22 +368,105 @@ hing<!doctype html>
                 <span class="section-num">01</span>
                 <h2 class="section-title">Logical Statements</h2>
             </div>
+            <p class="text-slate-700 max-w-3xl mt-2 mb-4">
+                Binary variables \(x, y, z \in \{0,1\}\) encode true/false decisions. Every propositional logic formula
+                translates into a set of linear inequalities — the key idea that makes MIP so expressive.
+            </p>
             <div class="grid gap-4">
+                <!-- Implication -->
                 <article class="card p-4 tip">
-                    <h4 class="font-semibold">Implication — <span class="text-slate-500">If \(x\) then \(y\)</span></h4>
+                    <h4 class="font-semibold">Implication — <span class="text-slate-500">If \(x=1\) then \(y=1\)</span></h4>
                     <div class="math-block">$$x \le y$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Why it works:</strong> If \(x=1\), the constraint forces \(y \ge 1\), hence \(y=1\).
+                        If \(x=0\) the constraint \(0 \le y\) is trivially satisfied and \(y\) is free.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> "Machine B can only run if machine A is running."
+                        Let \(x=1\) mean A is on and \(y=1\) mean B is on. Constraint: \(y \le x\)
+                        (B on ⟹ A on). If \(x=0\) then \(y=0\); if \(x=1\) then \(y\) can be 0 or 1.
+                    </div>
                 </article>
+
+                <!-- NOT -->
                 <article class="card p-4 tip">
-                    <h4 class="font-semibold">Logical NOT</h4>
+                    <h4 class="font-semibold">Logical NOT — \(\lnot y\)</h4>
                     <div class="math-block">$$\lnot y \;=\; 1 - y$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Complementing a binary variable is free — no new variable needed.
+                        The complement \(1-y\) is also binary: when \(y=0\) it equals 1, and vice versa.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> "A job must be assigned if and only if the machine is not idle."
+                        If \(y=1\) means idle, then \(1-y=1\) means busy, and you can use \(1-y\) directly
+                        anywhere a binary indicator is needed.
+                    </div>
                 </article>
+
+                <!-- AND -->
                 <article class="card p-4">
                     <h4 class="font-semibold">AND — \(z = x \land y\)</h4>
-                    <div class="math-block">$$z \le x$$ $$z \le y$$ $$x + y - 1 \le z$$</div>
+                    <div class="math-block">$$z \le x \qquad z \le y \qquad x + y - 1 \le z$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Why it works:</strong> The first two constraints ensure \(z\) cannot exceed either input.
+                        The third forces \(z \ge 1\) whenever both \(x=1\) and \(y=1\) simultaneously.
+                        Combined with \(z \le x, z \le y\) this pins \(z=1\) iff both inputs are 1.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Truth table check:</strong>
+                        <table style="border-collapse:collapse;margin-top:6px;font-size:0.82rem;">
+                          <tr><th style="border:1px solid #cbd5e1;padding:3px 8px;">x</th><th style="border:1px solid #cbd5e1;padding:3px 8px;">y</th><th style="border:1px solid #cbd5e1;padding:3px 8px;">z = x∧y</th><th style="border:1px solid #cbd5e1;padding:3px 8px;">constraints satisfied?</th></tr>
+                          <tr><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;">0≤0, 0≤0, −1≤0 ✓</td></tr>
+                          <tr><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;">0≤1, 0≤0, 0≤0 ✓</td></tr>
+                          <tr><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;">1≤1, 1≤1, 1≤1 ✓</td></tr>
+                        </table>
+                    </div>
                 </article>
+
+                <!-- OR -->
                 <article class="card p-4">
                     <h4 class="font-semibold">OR — \(z = x \lor y\)</h4>
-                    <div class="math-block">$$x \le z$$ $$y \le z$$ $$z \le x + y$$</div>
+                    <div class="math-block">$$x \le z \qquad y \le z \qquad z \le x + y$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Why it works:</strong> The first two constraints force \(z \ge \max(x,y)\).
+                        The third prevents \(z=1\) when both inputs are 0 (since \(0+0=0\)).
+                        Together they encode \(z=1\) iff at least one of \(x,y\) is 1.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> "A penalty \(p\) applies if order A <em>or</em> order B is late."
+                        Let \(x,y\) be lateness indicators; model \(z=x\lor y\) and include \(p \ge Mz\) for
+                        some large penalty multiplier \(M\).
+                    </div>
+                </article>
+
+                <!-- XOR -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Exclusive OR — \(z = x \oplus y\)</h4>
+                    <div class="math-block">$$z \le x + y \qquad z \ge x - y \qquad z \ge y - x \qquad z \le 2 - x - y$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        \(z=1\) iff exactly one of \(x,y\) is 1 (they differ).
+                        Equivalently: \(x + y = 2z - 1\) is wrong since that's not always integer-linear;
+                        the four-inequality form above is the standard MIP encoding.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Shortcut (sum encoding).</strong> If you only need <em>at most one</em> of \(n\) binaries to be active
+                        (SOS1), just add \(\sum_i x_i \le 1\) — no auxiliary variable needed.
+                    </div>
+                </article>
+
+                <!-- At-least / at-most k -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Cardinality constraints — at most / at least \(k\) active</h4>
+                    <div class="math-block">
+                        $$\text{At most } k:\quad \sum_{i=1}^n x_i \le k$$
+                        $$\text{At least } k:\quad \sum_{i=1}^n x_i \ge k$$
+                        $$\text{Exactly } k:\quad \sum_{i=1}^n x_i = k$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        These are already linear — no auxiliary variables needed!
+                        They generalize implication: "if project A is selected then at least 2 of {B,C,D} must also be selected"
+                        becomes \(x_B + x_C + x_D \ge 2 x_A\).
+                    </p>
                 </article>
             </div>
         </section>
@@ -352,14 +475,81 @@ hing<!doctype html>
         <section id="bigm" class="section mb-6">
             <div class="section-header">
                 <span class="section-num">02</span>
-                <h2 class="section-title">Big-M</h2>
+                <h2 class="section-title">Big-M Method</h2>
+            </div>
+            <p class="text-slate-700 max-w-3xl mt-2 mb-4">
+                Big-M constraints are the workhorse of MIP modeling: they allow a binary variable \(y\) to
+                <em>switch</em> a constraint on or off. The constant \(M\) must be an upper bound on the
+                constraint's slack — choose it as tight as possible to keep the LP relaxation strong.
+            </p>
+            <div class="warn text-sm mb-4 max-w-3xl">
+                <strong>Common pitfall:</strong> Using \(M = 10^6\) "to be safe" weakens the LP relaxation
+                dramatically, leading to slow branch-and-bound. Always derive \(M\) analytically from
+                variable bounds.
             </div>
             <div class="grid gap-4">
+                <!-- Setup cost -->
                 <article class="card p-4">
-                    <h4 class="font-semibold">Setup Cost — <span class="text-slate-500">If \(x>0\) then \(y=1\)</span>
-                    </h4>
-                    <div class="math-block">$$x \le M y$$</div>
-                    <p class="text-xs text-slate-600 mt-2">Choose the smallest valid \(M\) to tighten the model.</p>
+                    <h4 class="font-semibold">Setup Cost (fixed-charge) — <span class="text-slate-500">if \(x>0\) then \(y=1\)</span></h4>
+                    <div class="math-block">$$x \le M y, \qquad y \in \{0,1\}$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Interpretation:</strong> \(y\) is a "setup" indicator. If you want to produce \(x > 0\)
+                        units, you must pay a setup cost encoded by forcing \(y=1\).
+                        The objective typically includes \(f y + c x\) (fixed + variable cost).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> A machine can produce up to 500 units (\(x \le 500\)).
+                        A production run costs \(\$200\) fixed + \(\$3\)/unit.
+                        Model: \(x \le 500\,y\), objective includes \(200y + 3x\).
+                        Here \(M = 500\) — no need for \(10^6\).
+                    </div>
+                </article>
+
+                <!-- Conditional constraint on/off -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Switch Constraint On/Off — <span class="text-slate-500">if \(y=1\) then enforce \(g(x) \le 0\)</span></h4>
+                    <div class="math-block">$$g(x) \le M(1 - y)$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        When \(y=1\): \(g(x) \le 0\) — constraint is active.<br>
+                        When \(y=0\): \(g(x) \le M\) — constraint is relaxed (slack by \(M\), effectively inactive).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Tight M rule:</strong> set \(M = \max_{x \in \mathcal{F}} g(x)\) — the worst-case
+                        value of \(g(x)\) in the feasible region. If \(g(x)=ax - b\) and \(x \in [L,U]\), then
+                        \(M = aU - b\) (for \(a>0\)).
+                    </div>
+                </article>
+
+                <!-- Both directions -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Bidirectional Big-M — <span class="text-slate-500">\(y=1 \Leftrightarrow g(x) \le 0\)</span></h4>
+                    <div class="math-block">
+                        $$g(x) \le M(1-y)$$
+                        $$g(x) \ge \varepsilon - M y$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        The first constraint says: if \(y=1\) then \(g(x)\le 0\).
+                        The second (with small \(\varepsilon > 0\)) says: if \(y=0\) then \(g(x) > 0\), i.e., the constraint is violated.
+                        Together they create an if-and-only-if link between \(y\) and the constraint status.
+                    </p>
+                </article>
+
+                <!-- Numerical tight-M example -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Worked example — choosing a tight \(M\)</h4>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Problem:</strong> Enforce "if factory \(j\) is open (\(y_j=1\)) then its total
+                        shipment \(\sum_i x_{ij}\) must not exceed capacity \(C_j = 80\)."
+                    </p>
+                    <div class="math-block">$$\sum_i x_{ij} \le C_j + M(1-y_j)$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Each \(x_{ij} \in [0, d_i]\) with \(\sum_i d_i = 200\).
+                        Tight bound: \(M = \sum_i d_i - C_j = 200 - 80 = 120\).
+                        A naive \(M=10^6\) is 8300× looser, severely weakening the LP bound.
+                    </p>
+                    <div class="theorem text-sm mt-3">
+                        <strong>LP-relaxation quality:</strong> Tight \(M\) → LP bound close to IP optimum → fewer B&amp;B nodes.
+                    </div>
                 </article>
             </div>
         </section>
@@ -370,19 +560,80 @@ hing<!doctype html>
                 <span class="section-num">03</span>
                 <h2 class="section-title">Conditional Expressions</h2>
             </div>
+            <p class="text-slate-700 max-w-3xl mt-2 mb-4">
+                Conditional constraints activate or deactivate depending on the value of a binary decision variable.
+                They are the building blocks of disjunctive programming — any "either/or" modeling situation.
+            </p>
             <div class="grid gap-4">
+                <!-- If-Then -->
                 <article class="card p-4">
-                    <h4 class="font-semibold">If-Then — <span class="text-slate-500">if \(y=1\) then \(a x \le
-                            b\)</span></h4>
-                    <div class="math-block">$$a x \le b + M(1 - y)$$</div>
-                </article>
-                <article class="card p-4">
-                    <h4 class="font-semibold">If-Then-Else</h4>
-                    <div class="math-block">
-                        $$a_1 x_1 \le b + M(1 - y_1)$$
-                        $$a_2 x_2 \le b + M(1 - y_2)$$
-                        $$y_1 + y_2 = 1$$
+                    <h4 class="font-semibold">If-Then — <span class="text-slate-500">if \(y=1\) then \(ax \le b\)</span></h4>
+                    <div class="math-block">$$ax \le b + M(1 - y)$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>How it works:</strong>
+                        When \(y=1\): \(ax \le b\) — the constraint is active.<br>
+                        When \(y=0\): \(ax \le b + M\) — constraint is relaxed, \(x\) is unconstrained (assuming \(ax \le b+M\) is always true).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> "If supplier \(s\) is chosen (\(y=1\)), total order \(x\) must not exceed its quota \(b=100\)."
+                        With \(x \in [0,200]\): \(x \le 100 + 200(1-y)\).
+                        When \(y=1\): \(x \le 100\) ✓. When \(y=0\): \(x \le 300\), always satisfied. Here \(M = 200\).
                     </div>
+                </article>
+
+                <!-- If-Then-Else -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">If-Then-Else — <span class="text-slate-500">two mutually exclusive regimes</span></h4>
+                    <div class="math-block">
+                        $$a_1 x \le b_1 + M(1 - y)$$
+                        $$a_2 x \le b_2 + M y$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        When \(y=1\): first constraint is active (\(a_1 x \le b_1\)), second is relaxed.<br>
+                        When \(y=0\): second constraint is active (\(a_2 x \le b_2\)), first is relaxed.<br>
+                        This is a disjunction: exactly one regime applies.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> Pricing rule: if demand \(x &gt; 50\) units, unit cost is \(\$4\); otherwise \(\$6\).
+                        Model with mode indicator \(y\) (1 = high-demand):
+                        cost \(c = 4x\cdot y + 6x\cdot(1-y)\) — which itself needs linearization (§05).
+                    </div>
+                </article>
+
+                <!-- Disjunction (either/or) -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Disjunctive Constraints — <span class="text-slate-500">either \(g_1(x)\le 0\) or \(g_2(x)\le 0\)</span></h4>
+                    <div class="math-block">
+                        $$g_1(x) \le M\,y$$
+                        $$g_2(x) \le M(1-y)$$
+                        $$y \in \{0,1\}$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Exactly one of the two constraints is enforced (the other gets the big-M slack).
+                        Generalizes to \(k\)-of-\(n\): enforce at least \(k\) constraints among \(n\) by
+                        adding \(\sum_i y_i \ge k\) and relaxing each constraint by \(M y_i\).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Scheduling example.</strong> Job A must finish before B starts, or B before A
+                        (no-overlap on one machine). Let \(s_A, s_B\) be start times, \(p_A, p_B\) processing times:
+                        $$s_A + p_A \le s_B + M y \qquad s_B + p_B \le s_A + M(1-y)$$
+                        The binary \(y\) selects which job goes first.
+                    </div>
+                </article>
+
+                <!-- Indicator / native -->
+                <article class="card p-4 tip">
+                    <h4 class="font-semibold">Indicator constraints (solver-native alternative)</h4>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Modern solvers (Gurobi, CPLEX, SCIP) support native indicator constraints:
+                    </p>
+                    <pre style="background:#0b1220;color:#e5e7eb;padding:.75rem 1rem;border-radius:.75rem;font-size:.82rem;overflow-x:auto;margin-top:.5rem;"># Gurobi Python
+m.addConstr((y == 1) >> (a * x &lt;= b))</pre>
+                    <p class="text-sm text-slate-700 mt-2">
+                        The solver uses its own branching/presolve logic instead of big-M, which often gives
+                        tighter bounds and avoids numerical issues from large \(M\) values.
+                        <strong>Prefer this when available.</strong>
+                    </p>
                 </article>
             </div>
         </section>
@@ -391,12 +642,76 @@ hing<!doctype html>
         <section id="precedence" class="section mb-6">
             <div class="section-header">
                 <span class="section-num">04</span>
-                <h2 class="section-title">Precedence</h2>
+                <h2 class="section-title">Precedence &amp; Sequencing</h2>
             </div>
+            <p class="text-slate-700 max-w-3xl mt-2 mb-4">
+                Precedence constraints control the relative order of tasks. They appear in scheduling,
+                project planning, and machine sequencing. A binary variable \(y_{ij}\) encodes the order:
+                \(y_{ij}=1\) means job \(i\) comes before job \(j\).
+            </p>
             <div class="grid gap-4">
+                <!-- Basic precedence -->
                 <article class="card p-4">
-                    <h4 class="font-semibold">\(x_i\) preceded by \(x_j\)?</h4>
-                    <div class="math-block">$$x_i + d_i \le x_j + M(1 - y_{i,j})$$</div>
+                    <h4 class="font-semibold">Fixed Precedence — <span class="text-slate-500">\(i\) must finish before \(j\) starts</span></h4>
+                    <div class="math-block">$$s_i + d_i \le s_j$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Where \(s_i\) is the start time and \(d_i\) the duration of job \(i\).
+                        This is purely linear — no binary needed when the order is fixed.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> Concrete must cure (job A, 2 days) before painting (job B).
+                        \(s_A + 2 \le s_B\). If \(s_A = 3\), then \(s_B \ge 5\).
+                    </div>
+                </article>
+
+                <!-- Optional/disjunctive precedence -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Disjunctive Precedence — <span class="text-slate-500">decide the order \(i\) before \(j\) or \(j\) before \(i\)</span></h4>
+                    <div class="math-block">
+                        $$s_i + d_i \le s_j + M(1 - y_{ij})$$
+                        $$s_j + d_j \le s_i + M\, y_{ij}$$
+                        $$y_{ij} \in \{0,1\}$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        When \(y_{ij}=1\): job \(i\) finishes before job \(j\) starts.<br>
+                        When \(y_{ij}=0\): job \(j\) finishes before job \(i\) starts.<br>
+                        The tight \(M\) is the horizon \(T\) (total time window).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Numerical example.</strong> Two jobs share one machine. \(d_A=3, d_B=2\), horizon \(T=10\).
+                        <br>If \(y_{AB}=1\): \(s_A + 3 \le s_B\). Say \(s_A=0 \Rightarrow s_B \ge 3\).
+                        <br>If \(y_{AB}=0\): \(s_B + 2 \le s_A\). Say \(s_B=0 \Rightarrow s_A \ge 2\).
+                        <br>Makespan minimization then picks the better option.
+                    </div>
+                </article>
+
+                <!-- Makespan -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Makespan — <span class="text-slate-500">minimize completion time</span></h4>
+                    <div class="math-block">
+                        $$C_{\max} \ge s_i + d_i \quad \forall\, i$$
+                        $$\min\; C_{\max}$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        \(C_{\max}\) is a continuous variable representing the latest finish time.
+                        Combined with disjunctive precedence above, this forms the classical
+                        single-machine makespan MIP.
+                    </p>
+                </article>
+
+                <!-- Sequence-dependent setup -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Sequence-Dependent Setups</h4>
+                    <div class="math-block">$$s_j \ge s_i + d_i + \sigma_{ij} - M(1-y_{ij})$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        \(\sigma_{ij}\) is the setup time when switching from job \(i\) to job \(j\).
+                        This generalizes basic precedence: the gap between jobs depends on which
+                        specific pair is adjacent in the sequence — common in manufacturing and TSP variants.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> Painting jobs: switching from red (\(i\)) to blue (\(j\)) requires a 1-hour wash.
+                        \(\sigma_{ij}=1\). If \(s_i=2, d_i=3\): then \(s_j \ge 2+3+1=6\).
+                    </div>
                 </article>
             </div>
         </section>
@@ -405,21 +720,97 @@ hing<!doctype html>
         <section id="linearization" class="section mb-6">
             <div class="section-header">
                 <span class="section-num">05</span>
-                <h2 class="section-title">Linearization</h2>
+                <h2 class="section-title">Linearization of Products</h2>
             </div>
+            <p class="text-slate-700 max-w-3xl mt-2 mb-4">
+                Products of variables are nonlinear and must be linearized for MIP solvers.
+                The technique depends on which variables are binary vs. continuous.
+                For continuous × continuous, see McCormick Envelopes (§07).
+            </p>
             <div class="grid gap-4">
+                <!-- Binary × Binary -->
                 <article class="card p-4">
-                    <h4 class="font-semibold">Binary × Binary — <span class="text-slate-500">\(z = xy\)</span></h4>
-                    <div class="math-block">$$z \le x$$ $$z \le y$$ $$z \ge x + y - 1$$</div>
+                    <h4 class="font-semibold">Binary × Binary — <span class="text-slate-500">\(z = x \cdot y,\quad x,y \in \{0,1\}\)</span></h4>
+                    <div class="math-block">$$z \le x \qquad z \le y \qquad z \ge x + y - 1 \qquad z \ge 0$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Why:</strong> The first two constraints cap \(z\) at both inputs.
+                        The third forces \(z \ge 1\) when both are 1. Note this is identical to AND (§01) — the
+                        product of two binaries is their logical AND.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Truth table:</strong>
+                        <table style="border-collapse:collapse;margin-top:6px;font-size:0.82rem;">
+                          <tr><th style="border:1px solid #cbd5e1;padding:3px 8px;">x</th><th style="border:1px solid #cbd5e1;padding:3px 8px;">y</th><th style="border:1px solid #cbd5e1;padding:3px 8px;">xy</th><th style="border:1px solid #cbd5e1;padding:3px 8px;">z</th></tr>
+                          <tr><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td></tr>
+                          <tr><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">0</td></tr>
+                          <tr><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td><td style="border:1px solid #cbd5e1;padding:3px 8px;text-align:center;">1</td></tr>
+                        </table>
+                    </div>
                 </article>
+
+                <!-- Real × Binary -->
                 <article class="card p-4">
-                    <h4 class="font-semibold">Real × Binary — <span class="text-slate-500">\(z = x y,\
-                            x\in[L,U]\)</span></h4>
+                    <h4 class="font-semibold">Continuous × Binary — <span class="text-slate-500">\(z = x \cdot y,\quad x\in[L,U],\; y\in\{0,1\}\)</span></h4>
                     <div class="math-block">
-                        $$z \le x + U(1 - y)$$
-                        $$z \ge x - L(1 - y)$$
-                        $$z \le U y$$
-                        $$L y \le z$$
+                        $$L\,y \;\le\; z \;\le\; U\,y$$
+                        $$x - U(1-y) \;\le\; z \;\le\; x - L(1-y)$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Case \(y=1\):</strong> top row gives \(L \le z \le U\); bottom row gives \(x \le z \le x\), so \(z=x\). ✓<br>
+                        <strong>Case \(y=0\):</strong> top row gives \(0 \le z \le 0\), so \(z=0\). ✓<br>
+                        These 4 inequalities are the tightest possible linear formulation.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example.</strong> Revenue \(z = p \cdot y\), price \(p \in [10, 50]\), sale indicator \(y \in \{0,1\}\).
+                        \(10y \le z \le 50y\) and \(p - 50(1-y) \le z \le p - 10(1-y)\).
+                        If \(y=1, p=30\): \(z=30\). If \(y=0\): \(z=0\).
+                    </div>
+                </article>
+
+                <!-- Integer × Binary -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Integer × Binary — <span class="text-slate-500">\(z = q \cdot y,\quad q \in \{0,1,\ldots,K\}\)</span></h4>
+                    <div class="math-block">
+                        $$z \le K\,y \qquad z \le q \qquad z \ge q - K(1-y) \qquad z \ge 0$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Same pattern as continuous × binary with \(L=0, U=K\).
+                        Works for any bounded integer \(q\). If \(q\) is general integer with \(q\in[L,U]\),
+                        substitute \(L=L, U=U\) in the continuous × binary formula.
+                    </p>
+                </article>
+
+                <!-- Sum of binary products -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Sum of Binary Products — <span class="text-slate-500">\(\sum_{i,j} c_{ij} x_i x_j\)</span></h4>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Introduce \(z_{ij} = x_i x_j\) for each pair and use the binary × binary linearization.
+                        This grows as \(O(n^2)\) in variables and constraints.
+                        For sparse problems, only introduce \(z_{ij}\) for pairs with \(c_{ij} \ne 0\).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Application — Quadratic Binary Programs (QUBO):</strong> any binary quadratic objective
+                        can be linearized this way, transforming a QUBO into an ILP.
+                    </div>
+                </article>
+
+                <!-- Absolute value -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Absolute Value — <span class="text-slate-500">\(z = |x|,\quad x \in [L,U]\)</span></h4>
+                    <div class="math-block">
+                        $$z \ge x \qquad z \ge -x \qquad z \ge 0$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        When <strong>minimizing</strong> \(z\), the solver will automatically drive \(z\) to \(|x|\)
+                        since tightening \(z\) is always beneficial. No binary variable needed!
+                    </p>
+                    <div class="warn text-sm mt-3">
+                        <strong>Caution:</strong> If you are <em>maximizing</em> \(z = |x|\), this trick fails — the solver
+                        will push \(z \to \infty\). You then need a binary variable and big-M to enforce \(z = |x|\) exactly.
+                    </div>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example — L1 penalty:</strong> \(\min \sum_i |x_i - \hat x_i|\).
+                        Introduce \(z_i \ge x_i - \hat x_i\) and \(z_i \ge \hat x_i - x_i\), minimize \(\sum_i z_i\).
                     </div>
                 </article>
             </div>
@@ -429,28 +820,91 @@ hing<!doctype html>
         <section id="minmax" class="section mb-6">
             <div class="section-header">
                 <span class="section-num">06</span>
-                <h2 class="section-title">Min-Max Gadgets</h2>
+                <h2 class="section-title">Min / Max Gadgets</h2>
             </div>
+            <p class="text-slate-700 max-w-3xl mt-2 mb-4">
+                \(\max\) and \(\min\) of variables are piecewise-linear and nonlinear from a modeling standpoint.
+                Their linearizations depend on whether they appear in the <em>objective</em> or <em>constraints</em>,
+                and whether we are minimizing or maximizing — often one direction is free!
+            </p>
             <div class="grid gap-4">
-                <article class="card p-4">
-                    <h4 class="font-semibold">\(z = \max\{x, y\}\)</h4>
-                    <div class="math-block">
-                        $$z \ge x$$
-                        $$z \ge y$$
-                        $$z \le x + M(1 - b)$$
-                        $$x \le y + M b$$
-                        $$b \in \{0,1\}$$
+                <!-- Max in objective (minimize) -->
+                <article class="card p-4 tip">
+                    <h4 class="font-semibold">Minimize \(\max\{x_1, \ldots, x_n\}\) — <span class="text-slate-500">free trick</span></h4>
+                    <div class="math-block">$$\min\; z \quad \text{s.t.}\quad z \ge x_i \quad \forall\, i$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        No binary variable needed! When the objective is to minimize \(z\), the solver
+                        naturally drives \(z\) down to \(\max_i x_i\).
+                        This is the epigraph trick — \(z\) is the epigraph of the max function.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example — Minimize makespan:</strong> \(\min C_{\max}\) with \(C_{\max} \ge s_i + d_i\) for all jobs \(i\).
+                        Jobs: A ends at 7, B ends at 5, C ends at 9. Optimal: \(C_{\max}=9\). Pure LP!
                     </div>
                 </article>
-                <article class="card p-4">
-                    <h4 class="font-semibold">\(z = \min\{x, y\}\)</h4>
-                    <div class="math-block">
-                        $$z \le x$$
-                        $$z \le y$$
-                        $$z \ge x - M(1 - b)$$
-                        $$z \ge y - M b$$
-                        $$b \in \{0,1\}$$
+
+                <!-- Min in objective (maximize) -->
+                <article class="card p-4 tip">
+                    <h4 class="font-semibold">Maximize \(\min\{x_1, \ldots, x_n\}\) — <span class="text-slate-500">free trick</span></h4>
+                    <div class="math-block">$$\max\; z \quad \text{s.t.}\quad z \le x_i \quad \forall\, i$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Again no binary needed! The solver pushes \(z\) up toward \(\min_i x_i\).
+                        Classic in fairness/bottleneck optimization: maximize the worst-case allocation.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example — Max-min fairness:</strong> Distribute resources among 3 agents with allocations \(x_1,x_2,x_3\).
+                        Maximize the minimum: \(\max z\) s.t. \(z \le x_i\) and \(\sum x_i \le 100\). Optimal: \(x_i=33.3, z=33.3\).
                     </div>
+                </article>
+
+                <!-- Exact max (MIP) -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Exact \(z = \max\{x, y\}\) — <span class="text-slate-500">requires binary when in constraints</span></h4>
+                    <div class="math-block">
+                        $$z \ge x \qquad z \ge y$$
+                        $$z \le x + M(1 - b) \qquad z \le y + M\,b \qquad b \in \{0,1\}$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>How it works:</strong> The first two inequalities ensure \(z \ge \max(x,y)\).
+                        The last two force \(z\) to equal the larger of the two:
+                        \(b=0 \Rightarrow z \le x\) (so \(z=x\) since \(x \ge y\)),
+                        \(b=1 \Rightarrow z \le y\) (so \(z=y\) since \(y \ge x\)).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Numerical check.</strong> Let \(x=3, y=7, M=10\).
+                        Optimal: \(b=1\) (y is larger). Then \(z \ge 3, z \ge 7, z \le 3+10=13, z \le 7\). So \(z=7\). ✓
+                    </div>
+                </article>
+
+                <!-- Exact min (MIP) -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">Exact \(z = \min\{x, y\}\) — <span class="text-slate-500">requires binary when in constraints</span></h4>
+                    <div class="math-block">
+                        $$z \le x \qquad z \le y$$
+                        $$z \ge x - M(1 - b) \qquad z \ge y - M\,b \qquad b \in \{0,1\}$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        The first two cap \(z\) at both inputs. The last two force \(z\) to exactly equal the smaller:
+                        \(b=0 \Rightarrow z \ge x\) (combined with \(z \le x\) gives \(z=x\) when \(x \le y\)),
+                        \(b=1 \Rightarrow z \ge y\) (gives \(z=y\) when \(y \le x\)).
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Numerical check.</strong> Let \(x=3, y=7, M=10\).
+                        Optimal: \(b=0\) (x is smaller). Then \(z \le 3, z \le 7, z \ge 3, z \ge 7-10=-3\). So \(z=3\). ✓
+                    </div>
+                </article>
+
+                <!-- n-way max -->
+                <article class="card p-4">
+                    <h4 class="font-semibold">\(n\)-way max/min without binary (in objective)</h4>
+                    <div class="math-block">
+                        $$\min z \quad \text{s.t.}\quad z \ge x_i,\; i=1,\ldots,n \qquad \text{(for } \max\text{)}$$
+                        $$\max z \quad \text{s.t.}\quad z \le x_i,\; i=1,\ldots,n \qquad \text{(for } \min\text{)}$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Generalizes directly to any number of variables with \(O(n)\) constraints and
+                        <em>zero</em> binary variables. This is always the preferred formulation when possible.
+                    </p>
                 </article>
             </div>
         </section>
@@ -563,7 +1017,6 @@ hing<!doctype html>
                             this \(y\).
                         </div>
                     </div>
-                </article>
             </div>
         </div>
     </section>
@@ -768,7 +1221,7 @@ hing<!doctype html>
                         </div>
                     </div>
                 </div>
-                <canvas id="pw3d" class="w-full h-auto rounded-lg border border-slate-200" style="height:460px;"></canvas>
+                <canvas id="pw3d" class="w-full rounded-lg border border-slate-200" style="height:300px;"></canvas>
             </div>
 
 
@@ -1584,20 +2037,20 @@ hing<!doctype html>
             <div class="mt-2 grid md:grid-cols-2 gap-4">
                 <div class="card p-4">
                     <h4 class="font-semibold text-slate-800 mb-2">True \(f(x,y)\)</h4>
-                    <div class="relative">
+                    <div style="position:relative;">
                         <canvas id="pwl2_true" width="360" height="360"
-                            class="w-full h-full block rounded-lg border border-slate-200 bg-transparent"></canvas>
+                            style="display:block;width:100%;height:auto;border-radius:.75rem;border:1px solid #e2e8f0;"></canvas>
                         <canvas id="pwl2_true_overlay" width="360" height="360"
-                            class="absolute inset-0 w-full h-full block pointer-events-none"></canvas>
+                            style="display:block;position:absolute;inset:0;width:100%;height:auto;pointer-events:none;"></canvas>
                     </div>
                 </div>
                 <div class="card p-4">
                     <h4 class="font-semibold text-slate-800 mb-2">Piecewise Bilinear \(\hat f(x,y)\)</h4>
-                    <div class="relative">
+                    <div style="position:relative;">
                         <canvas id="pwl2_approx" width="360" height="360"
-                            class="w-full h-full block rounded-lg border border-slate-200 bg-transparent"></canvas>
+                            style="display:block;width:100%;height:auto;border-radius:.75rem;border:1px solid #e2e8f0;"></canvas>
                         <canvas id="pwl2_approx_overlay" width="360" height="360"
-                            class="absolute inset-0 w-full h-full block pointer-events-none"></canvas>
+                            style="display:block;position:absolute;inset:0;width:100%;height:auto;pointer-events:none;"></canvas>
                     </div>
                 </div>
             </div>
@@ -2060,131 +2513,324 @@ hing<!doctype html>
                 <h2 class="section-title">SOS Branching</h2>
             </div>
             <p class="text-slate-700 max-w-3xl mt-2">
-                Special Ordered Sets let solvers branch on the ordered position of active variables rather than on
-                individual binaries. For piecewise models and ordered choices, this preserves adjacency and avoids
-                exploring infeasible non-consecutive combinations.
+                Special Ordered Sets (SOS) are a clever way to tell the solver about structure it couldn't
+                otherwise see: that variables have a meaningful <em>order</em>, and that only one option
+                (SOS1) or one consecutive pair (SOS2) should be active at once. Understanding them from
+                first principles makes piecewise-linear modeling much clearer.
             </p>
 
-            <div class="grid lg:grid-cols-2 gap-4 mt-8">
-                <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">Why SOS exists</h3>
-                    <p class="text-sm text-slate-700 mt-2">
-                        SOS constraints arise naturally in modeling when the active choice must be one option or a
-                        consecutive pair of options. SOS1 captures mutually exclusive alternatives; SOS2 captures
-                        piecewise-linear interpolation over adjacent breakpoints.
-                    </p>
-                    <div class="theorem text-sm mt-3">
-                        <div>For piecewise linear approximation:</div>
-                        <div>\(x = \sum_{j=1}^n \lambda^{(j)} t_j, \qquad \hat f = \sum_{j=1}^n \lambda^{(j)} f(t_j),\)</div>
-                        <div>with \(\sum_j \lambda^{(j)} = 1,\ \lambda^{(j)} \ge 0.\)</div>
-                        <div>SOS2 ensures at most two adjacent \(\lambda^{(j)}\) are nonzero, so the solution lies on one
-                        linear segment.</div>
-                    </div>
-                </article>
-                <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">Reference weights vs. indices</h3>
-                    <p class="text-sm text-slate-700 mt-2">
-                        The ordering is driven by explicit reference weights \(w_1 < w_2 < \cdots < w_n\), not by the
-                        numeric labels \(j\). Using \(j\) is only the special uniform case. In general the weights encode
-                        the geometric positions of the ordered variables.
-                    </p>
-                    <p class="text-sm text-slate-700 mt-2">
-                        Conflating the index \(j\) with the weight \(w_j\) can confuse students, because SOS2 is about
-                        adjacency in the ordered weight space, not the raw variable name.
-                    </p>
-                </article>
-            </div>
-
-            <div class="grid lg:grid-cols-2 gap-4 mt-6">
-                <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">Formal SOS definitions</h3>
-                    <div class="theorem text-sm mt-3 space-y-2">
-                        <div><strong>SOS1:</strong> at most one variable can be nonzero.</div>
-                        <div>\(|\{j : x^{(j)} > 0\}| \le 1.\)</div>
-                        <div><strong>SOS2:</strong> at most two nonzeros, and if two are nonzero they must be adjacent:</div>
-                        <div>\(|\{j : x^{(j)} > 0\}| \le 2, \text{ and if } x^{(j)}, x^{(k)} > 0,\ k = j + 1.\)</div>
-                    </div>
-                </article>
-                <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">Feasibility sketch</h3>
-                    <p class="text-sm text-slate-700 mt-2">
-                        An SOS2 solution is feasible when the support is empty, a singleton, or a consecutive pair.
-                        Any non-consecutive support is SOS2-infeasible because it would mix non-adjacent breakpoints.
-                    </p>
-                    <p class="text-sm text-slate-700 mt-2">
-                        For piecewise approximation, infeasible LP solutions correspond to meaningless blends that do not lie
-                        on a single segment of the interpolant.
-                    </p>
-                </article>
-            </div>
-
-            <div class="grid lg:grid-cols-2 gap-4 mt-6">
-                <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">SOS branching logic</h3>
-                    <p class="text-sm text-slate-700 mt-2">
-                        When the LP relaxation yields an SOS-infeasible solution, the solver chooses a split point based on
-                        the weighted centroid of the active variables and creates two complementary branches.
-                    </p>
-                    <div class="theorem text-sm mt-3 space-y-2">
-                        <div>Compute total mass \(W = \sum_j \bar x^{(j)}\) and barycenter</div>
-                        <div>\(\bar w = \frac{\sum_j w_j \bar x^{(j)}}{W}.\)</div>
-                        <div>Split at \(r = \max\{j : w_j \le \bar w\}.\)</div>
-                    </div>
-                </article>
-                <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">Why the split works</h3>
-                    <p class="text-sm text-slate-700 mt-2">
-                        The branch cut produces two ordered subsets: one prefix and one suffix. Both are consecutive blocks,
-                        so the SOS structure is preserved in each child.
-                    </p>
-                    <p class="text-sm text-slate-700 mt-2">
-                        The original fractional solution has positive mass on both sides of the split, so it is eliminated
-                        from both children and progress is guaranteed.
-                    </p>
-                </article>
-            </div>
-
-            <article class="card p-5 mt-6">
-                <h3 class="text-lg font-semibold text-slate-800">SOS2 numerical example</h3>
+            <!-- ── MOTIVATION ─────────────────────────────────────── -->
+            <h3 class="text-base font-bold text-slate-700 mt-8 mb-3 uppercase tracking-wide">The problem SOS solves</h3>
+            <article class="card p-5">
+                <p class="text-sm text-slate-700">
+                    Suppose you want to model \(y = f(x)\) where \(f\) is nonlinear, using a
+                    <strong>piecewise-linear approximation</strong> over breakpoints
+                    \(t_1 &lt; t_2 &lt; \cdots &lt; t_n\) with known values \(f_1, f_2, \ldots, f_n\).
+                    The standard convex-combination approach introduces weights \(\lambda_j \ge 0\):
+                </p>
+                <div class="math-block mt-2">
+                    $$x = \sum_{j=1}^n \lambda_j\, t_j, \qquad y = \sum_{j=1}^n \lambda_j\, f_j, \qquad \sum_{j=1}^n \lambda_j = 1$$
+                </div>
                 <p class="text-sm text-slate-700 mt-2">
-                    Consider an SOS2 set with values
-                    \((x^{(1)},x^{(2)},x^{(3)},x^{(4)},x^{(5)}) = (0, 0.4, 0.3, 0.3, 0)\).
-                    The support is \(\{2,3,4\}\), which violates SOS2 because it is not a single adjacent pair.
+                    The LP relaxation (ignoring integrality) will happily set, say,
+                    \(\lambda_1 = 0.5\) and \(\lambda_5 = 0.5\) — blending the first and last breakpoints.
+                    But that does <em>not</em> correspond to any point on the piecewise-linear curve;
+                    it is a spurious "average" that skips over everything in between.
                 </p>
-                <div class="theorem text-sm mt-3 space-y-2">
-                    <div>Compute total mass \(W = 0 + 0.4 + 0.3 + 0.3 + 0 = 1.0\).</div>
-                    <div>Compute the weighted position
-                        \(w = 1\cdot0 + 2\cdot0.4 + 3\cdot0.3 + 4\cdot0.3 + 5\cdot0 = 2.9\).</div>
-                    <div>Split index \(r = \lfloor w / W \rfloor = \lfloor 2.9 \rfloor = 2\).</div>
+                <div class="insight text-sm mt-3">
+                    <strong>The fix:</strong> enforce that at most <em>two adjacent</em> \(\lambda_j\) are nonzero.
+                    Then the solution is guaranteed to lie on one linear segment — a valid interpolation.
+                    This is exactly the SOS2 constraint.
+                </div>
+            </article>
+
+            <!-- ── DEFINITIONS ────────────────────────────────────── -->
+            <h3 class="text-base font-bold text-slate-700 mt-8 mb-3 uppercase tracking-wide">Formal definitions</h3>
+            <div class="grid lg:grid-cols-2 gap-4">
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold text-slate-800">SOS Type 1 (SOS1)</h3>
+                    <p class="text-sm text-slate-700 mt-2">
+                        An ordered set of variables \(\{x_1, x_2, \ldots, x_n\}\) is SOS1 if
+                        <strong>at most one</strong> variable can be nonzero:
+                    </p>
+                    <div class="math-block">$$|\{j : x_j > 0\}| \le 1$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Intuition:</strong> "Choose at most one option." Like a binary variable,
+                        but generalised — \(x_j\) does not have to be 0/1, it just has to be the
+                        <em>only</em> nonzero one.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example — facility location:</strong> 5 candidate sites, pick at most one.
+                        The capacity variable \(x_j\) for site \(j\) (how much to build there) forms an SOS1 set.
+                        No need to add \(\sum_j y_j \le 1\) with extra binaries — the SOS1 structure handles it.
+                    </div>
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold text-slate-800">SOS Type 2 (SOS2)</h3>
+                    <p class="text-sm text-slate-700 mt-2">
+                        An ordered set \(\{x_1, x_2, \ldots, x_n\}\) is SOS2 if <strong>at most two</strong>
+                        variables are nonzero, and those two must be <strong>consecutive</strong> in the ordering:
+                    </p>
+                    <div class="math-block">$$|\{j : x_j > 0\}| \le 2, \quad \text{and if } x_j, x_k > 0 \text{ then } |j - k| = 1$$</div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        <strong>Intuition:</strong> "Interpolate between two adjacent options."
+                        The two nonzero variables act as the two endpoints of the active segment.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Example — piecewise linear \(f(x)\):</strong>
+                        If \(x = 2.3\) lies between breakpoints \(t_2=2\) and \(t_3=3\),
+                        then only \(\lambda_2\) and \(\lambda_3\) are nonzero:
+                        \(\lambda_2=0.7,\ \lambda_3=0.3\), giving \(y = 0.7f_2 + 0.3f_3\). ✓
+                    </div>
+                </article>
+            </div>
+
+            <!-- ── WHAT FEASIBLE LOOKS LIKE ───────────────────────── -->
+            <h3 class="text-base font-bold text-slate-700 mt-8 mb-3 uppercase tracking-wide">What SOS2-feasible and infeasible look like</h3>
+            <article class="card p-5">
+                <p class="text-sm text-slate-700 mb-3">
+                    Consider 5 breakpoints. Each row below shows a possible LP solution for \((\lambda_1,\ldots,\lambda_5)\)
+                    and whether it is SOS2-feasible:
+                </p>
+                <div style="overflow-x:auto;">
+                <table style="border-collapse:collapse;width:100%;font-size:0.82rem;">
+                    <thead>
+                        <tr style="background:#f1f5f9;">
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:left;">Solution</th>
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">\(\lambda_1\)</th>
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">\(\lambda_2\)</th>
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">\(\lambda_3\)</th>
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">\(\lambda_4\)</th>
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">\(\lambda_5\)</th>
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">SOS2?</th>
+                            <th style="border:1px solid #cbd5e1;padding:5px 10px;text-align:left;">Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">A</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">0.7</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">0.3</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;color:#16a34a;font-weight:700;">✓ yes</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">Two nonzeros, adjacent (j=2,3)</td>
+                        </tr>
+                        <tr style="background:#fafafa;">
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">B</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">1.0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;color:#16a34a;font-weight:700;">✓ yes</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">One nonzero (singleton — at a breakpoint exactly)</td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">C</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">0.5</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">0.5</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;color:#dc2626;font-weight:700;">✗ no</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">Nonzeros at j=1 and j=5 — not adjacent</td>
+                        </tr>
+                        <tr style="background:#fafafa;">
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">D</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">0.4</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">0.3</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;font-weight:600;">0.3</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;">0</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;text-align:center;color:#dc2626;font-weight:700;">✗ no</td>
+                            <td style="border:1px solid #cbd5e1;padding:5px 10px;">Three nonzeros — spans two segments, not one</td>
+                        </tr>
+                    </tbody>
+                </table>
                 </div>
                 <p class="text-sm text-slate-700 mt-3">
-                    That produces two children:
-                </p>
-                <div class="text-sm text-slate-700 mt-2 space-y-2">
-                    <div><strong>Left branch:</strong> zero \(x^{(1)},x^{(2)}\); remaining block \(\{3,4,5\}\).</div>
-                    <div><strong>Right branch:</strong> zero \(x^{(3)},x^{(4)},x^{(5)}\); remaining block \(\{1,2\}\).</div>
-                </div>
-                <p class="text-sm text-slate-700 mt-3">
-                    The current LP solution has positive mass on both sides of the split, so it is excluded from both
-                    children. The right block \(\{1,2\}\) is immediately SOS2-feasible, while the left block can be
-                    branched again if needed.
+                    Solution D is the classic LP-relaxation problem: the solver blends across multiple segments
+                    because it has no reason not to. The SOS2 constraint rules out D (and C), leaving only A and B as valid.
                 </p>
             </article>
 
-            <div class="grid lg:grid-cols-2 gap-4 mt-6">
+            <!-- ── REFERENCE WEIGHTS ─────────────────────────────── -->
+            <h3 class="text-base font-bold text-slate-700 mt-8 mb-3 uppercase tracking-wide">Reference weights — the ordering that matters</h3>
+            <article class="card p-5">
+                <p class="text-sm text-slate-700">
+                    Each variable in an SOS set has an associated <strong>reference weight</strong>
+                    \(w_j\). The SOS constraint uses these weights to define adjacency —
+                    two variables are adjacent if no other variable has a weight between them.
+                </p>
+                <p class="text-sm text-slate-700 mt-2">
+                    For piecewise linear models, the natural choice is \(w_j = t_j\) (the breakpoint positions).
+                    This way, "adjacent" in weight space means "neighbouring segment endpoints."
+                </p>
+                <div class="insight text-sm mt-3">
+                    <strong>Why not just use indices?</strong> Indices work fine for a <em>uniform</em> grid.
+                    But if breakpoints are at \(t = \{0, 1, 5, 6, 100\}\), then \(\lambda_4\) and \(\lambda_5\)
+                    are adjacent in index but span a huge gap. The reference weights \(\{0,1,5,6,100\}\) encode
+                    the true geometry, so the solver branches correctly.
+                </div>
+            </article>
+
+            <!-- ── BRANCHING ALGORITHM ───────────────────────────── -->
+            <h3 class="text-base font-bold text-slate-700 mt-8 mb-3 uppercase tracking-wide">How SOS branching works — step by step</h3>
+            <article class="card p-5">
+                <p class="text-sm text-slate-700">
+                    When the LP relaxation returns an SOS-infeasible solution (e.g. solution D above),
+                    the solver cannot just round a single variable — it needs to split the ordered set.
+                    Here is the algorithm:
+                </p>
+
+                <ol class="mt-3 space-y-4 text-sm text-slate-700" style="list-style:none;padding:0;">
+                    <li style="display:flex;gap:.75rem;">
+                        <span style="min-width:1.5rem;font-weight:700;color:#4f46e5;">①</span>
+                        <div>
+                            <strong>Compute the weighted centroid.</strong>
+                            Let \(\bar\lambda_j\) be the LP solution values. Compute the total mass
+                            \(W = \sum_j \bar\lambda_j\) and the weighted average position:
+                            $$\bar w = \frac{\sum_j w_j\, \bar\lambda_j}{W}$$
+                            This is the "centre of gravity" of the active weights.
+                        </div>
+                    </li>
+                    <li style="display:flex;gap:.75rem;">
+                        <span style="min-width:1.5rem;font-weight:700;color:#4f46e5;">②</span>
+                        <div>
+                            <strong>Find the split index.</strong>
+                            Let \(r = \max\{j : w_j \le \bar w\}\) — the last variable whose weight is
+                            at or below the centroid. This is where we cut the ordered sequence in two.
+                        </div>
+                    </li>
+                    <li style="display:flex;gap:.75rem;">
+                        <span style="min-width:1.5rem;font-weight:700;color:#4f46e5;">③</span>
+                        <div>
+                            <strong>Create two child nodes:</strong>
+                            <ul class="mt-1 space-y-1 pl-2">
+                                <li><strong>Left branch:</strong> force \(\lambda_j = 0\) for all \(j \le r\) — only the right block \(\{r+1, \ldots, n\}\) can be active.</li>
+                                <li><strong>Right branch:</strong> force \(\lambda_j = 0\) for all \(j > r\) — only the left block \(\{1, \ldots, r\}\) can be active.</li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li style="display:flex;gap:.75rem;">
+                        <span style="min-width:1.5rem;font-weight:700;color:#4f46e5;">④</span>
+                        <div>
+                            <strong>Progress is guaranteed.</strong>
+                            The current LP solution has positive mass on <em>both sides</em> of the split
+                            (because the centroid lies strictly between two blocks), so it is cut off from
+                            both children. Each recursive subproblem is strictly smaller.
+                        </div>
+                    </li>
+                </ol>
+            </article>
+
+            <!-- ── WORKED EXAMPLE ─────────────────────────────────── -->
+            <h3 class="text-base font-bold text-slate-700 mt-8 mb-3 uppercase tracking-wide">Fully worked numerical example</h3>
+            <article class="card p-5">
+                <p class="text-sm text-slate-700">
+                    We have 5 breakpoints at positions \(t = (1, 2, 3, 4, 5)\), so reference weights
+                    \(w_j = j\). The LP relaxation returns:
+                </p>
+                <div class="math-block">$$(\lambda_1,\lambda_2,\lambda_3,\lambda_4,\lambda_5) = (0,\; 0.4,\; 0.3,\; 0.3,\; 0)$$</div>
+                <p class="text-sm text-slate-700 mt-1">
+                    Support = \(\{2, 3, 4\}\) — three nonzeros, spanning two segments. <span style="color:#dc2626;font-weight:600;">SOS2-infeasible.</span>
+                </p>
+
+                <div class="mt-4 space-y-4 text-sm text-slate-700">
+                    <div class="def p-3">
+                        <strong>Step 1 — centroid.</strong><br>
+                        \(W = 0 + 0.4 + 0.3 + 0.3 + 0 = 1.0\)<br>
+                        \(\bar w = \dfrac{1\cdot0 + 2\cdot0.4 + 3\cdot0.3 + 4\cdot0.3 + 5\cdot0}{1.0}
+                        = \dfrac{0 + 0.8 + 0.9 + 1.2 + 0}{1.0} = 2.9\)
+                    </div>
+
+                    <div class="def p-3">
+                        <strong>Step 2 — split index.</strong><br>
+                        \(r = \max\{j : w_j \le 2.9\} = \max\{1,2\} = 2\)
+                        (since \(w_2=2 \le 2.9\) but \(w_3=3 > 2.9\)).<br>
+                        We cut between positions 2 and 3.
+                    </div>
+
+                    <div class="def p-3">
+                        <strong>Step 3 — two children.</strong>
+                        <div style="font-family:var(--mono);font-size:0.8rem;background:#0b1220;color:#e5e7eb;padding:.75rem 1rem;border-radius:.6rem;margin-top:.5rem;line-height:1.9;">
+                            Original:  [ λ₁  λ₂ | λ₃  λ₄  λ₅ ]   (split after index 2)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ 0   0.4 | 0.3  0.3   0  ]<br>
+                            <br>
+                            Left  (j ≤ 2 zeroed):  λ₁=λ₂=0,  only {3,4,5} active<br>
+                            Right (j &gt; 2 zeroed):  λ₃=λ₄=λ₅=0,  only {1,2} active
+                        </div>
+                    </div>
+
+                    <div class="insight p-3">
+                        <strong>Step 4 — what happens next.</strong><br>
+                        <strong>Right branch</strong> \(\{1,2\}\): at most 2 consecutive variables — immediately SOS2-feasible!
+                        The LP will find a solution with at most \(\lambda_1, \lambda_2 > 0\).<br><br>
+                        <strong>Left branch</strong> \(\{3,4,5\}\): also at most 3 variables, and any solution with
+                        at most two adjacent nonzeros is SOS2-feasible. If the LP returns 3 nonzeros again,
+                        branch once more (centroid will split between 3–4 or 4–5).<br><br>
+                        The original LP solution \((0,0.4,0.3,0.3,0)\) has mass on <em>both</em> sides of the split
+                        (\(\lambda_2=0.4\) on the left, \(\lambda_3+\lambda_4=0.6\) on the right),
+                        so it is <span style="font-weight:600;">cut off from both children</span>. Progress guaranteed.
+                    </div>
+                </div>
+            </article>
+
+            <!-- ── SOS vs BIG-M ───────────────────────────────────── -->
+            <h3 class="text-base font-bold text-slate-700 mt-8 mb-3 uppercase tracking-wide">SOS2 vs. binary (big-M) encoding</h3>
+            <div class="grid lg:grid-cols-2 gap-4">
                 <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">Practical SOS branching benefit</h3>
+                    <h3 class="text-lg font-semibold text-slate-800">Binary encoding of piecewise linear</h3>
                     <p class="text-sm text-slate-700 mt-2">
-                        Branching on SOS order often reduces strong node counts by keeping the search aligned with the
-                        underlying piecewise structure, instead of allowing non-adjacent breakpoint combinations.
+                        With \(n\) breakpoints (\(n-1\) segments), introduce \(n-1\) binary variables \(\delta_k\)
+                        where \(\delta_k=1\) means segment \(k\) is active:
+                    </p>
+                    <div class="math-block" style="font-size:.88rem;">
+                        $$\sum_{k=1}^{n-1}\delta_k = 1, \quad \lambda_j \le \delta_{j-1} + \delta_j \quad \forall j$$
+                    </div>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Works, but adds \(n-1\) binary variables. For \(n=20\) breakpoints: 19 extra binaries,
+                        \(2^{19} \approx 500{,}000\) possible combinations for the solver to explore.
                     </p>
                 </article>
                 <article class="card p-5">
-                    <h3 class="text-lg font-semibold text-slate-800">When to prefer native SOS</h3>
+                    <h3 class="text-lg font-semibold text-slate-800">SOS2 encoding</h3>
                     <p class="text-sm text-slate-700 mt-2">
-                        Use native SOS branching for piecewise linear models, ordered alternatives, and other problems where
-                        adjacency is intrinsic. It is especially useful when the alternative is a big-
-                        <em>M</em> reformulation with many extra binaries.</p>
+                        Same \(n\) breakpoints, declare \(\lambda_1, \ldots, \lambda_n\) as an SOS2 set.
+                        <strong>No binary variables needed.</strong> The solver branches on the ordered structure
+                        directly — each branch cuts the set in half (binary search on the segments).
+                    </p>
+                    <p class="text-sm text-slate-700 mt-2">
+                        For \(n=20\): about \(\log_2(19) \approx 4\) branching levels vs. 19 binary decisions.
+                        Much shallower tree, especially when the piecewise function has many segments.
+                    </p>
+                    <div class="insight text-sm mt-3">
+                        <strong>Practical rule:</strong> use native SOS2 declarations whenever your solver
+                        supports them. Gurobi, CPLEX, SCIP and HiGHS all do.
+                    </div>
+                </article>
+            </div>
+
+            <!-- ── WHEN TO USE ────────────────────────────────────── -->
+            <div class="grid lg:grid-cols-2 gap-4 mt-4">
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold text-slate-800">When to use SOS1</h3>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 mt-2 space-y-1">
+                        <li>Selecting exactly one item from an ordered list (alternative products, modes, routes)</li>
+                        <li>Fixed-charge problems where at most one product line is activated</li>
+                        <li>Replacing a sum-to-one binary constraint \(\sum y_j \le 1\) when \(y_j\) is continuous</li>
+                    </ul>
+                </article>
+                <article class="card p-5">
+                    <h3 class="text-lg font-semibold text-slate-800">When to use SOS2</h3>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 mt-2 space-y-1">
+                        <li>Any piecewise-linear approximation of a nonlinear function</li>
+                        <li>Ordered discrete choices where adjacent options can be blended (e.g. staffing levels)</li>
+                        <li>Replacing the binary-segment encoding to reduce the number of integer variables</li>
+                        <li>Whenever you need convex combination weights over an ordered grid</li>
+                    </ul>
                 </article>
             </div>
         </div>
@@ -2194,36 +2840,129 @@ hing<!doctype html>
         <section id="extras" class="section mb-6">
             <div class="section-header">
                 <span class="section-num">12</span>
-                <h2 class="section-title">Extras — Modeling Tips</h2>
+                <h2 class="section-title">Extras — Modeling Tips &amp; Common Pitfalls</h2>
             </div>
+            <p class="text-slate-700 max-w-3xl mt-2 mb-4">
+                Practical guidelines for building strong, fast MIP models. Small modeling choices can
+                make the difference between a model that solves in seconds and one that runs for hours.
+            </p>
             <div class="grid md:grid-cols-2 gap-4">
+                <!-- Tight Big-M -->
                 <article class="card p-4 tip">
-                    <h4 class="font-semibold">Tight Big-M</h4>
+                    <h4 class="font-semibold">Tight Big-M bounds</h4>
                     <p class="text-sm text-slate-700 mt-2">
-                        Derive \(M\) from known bounds: if \(a x \le b\) and \(x\in[L,U]\), use the worst-case left-hand
-                        side to compute the smallest valid \(M\).
+                        Derive \(M\) analytically from variable bounds. For constraint \(ax \le b\) with \(x\in[L,U]\):
+                    </p>
+                    <div class="math-block" style="font-size:.9rem;">$$M = aU - b \quad (a>0) \qquad M = |b - aL| \quad (a<0)$$</div>
+                    <p class="text-sm text-slate-700">
+                        Never use a round number like \(10^6\) without verification — it weakens the LP relaxation.
+                        A looser \(M\) means a worse dual bound and exponentially more B&amp;B nodes.
                     </p>
                 </article>
+
+                <!-- Indicator constraints -->
                 <article class="card p-4 tip">
-                    <h4 class="font-semibold">Indicator Constraints</h4>
+                    <h4 class="font-semibold">Indicator constraints (solver-native)</h4>
                     <p class="text-sm text-slate-700 mt-2">
-                        Prefer native indicators (if the solver supports them) over Big-M for numerics and automatic
-                        presolve/branching.
+                        Gurobi, CPLEX, and SCIP support native indicator constraints that outperform Big-M:
+                    </p>
+                    <pre style="background:#0b1220;color:#e5e7eb;padding:.6rem .9rem;border-radius:.6rem;font-size:.8rem;overflow-x:auto;margin-top:.5rem;"># Gurobi
+m.addConstr((y == 1) >> (a*x &lt;= b))
+# CPLEX Python API
+mdl.add_if_then(y == 1, a*x &lt;= b)</pre>
+                    <p class="text-sm text-slate-700 mt-2">
+                        The solver exploits structure in presolve/branching, often giving much tighter bounds without
+                        choosing \(M\) at all.
                     </p>
                 </article>
+
+                <!-- SOS2 vs binary -->
                 <article class="card p-4 tip">
-                    <h4 class="font-semibold">SOS2 / Piecewise Linear</h4>
+                    <h4 class="font-semibold">SOS2 vs. binary for piecewise linear</h4>
                     <p class="text-sm text-slate-700 mt-2">
-                        For \(y = f(x)\) on breakpoints, use SOS2 with convex combination; it’s tighter and faster than
-                        ad-hoc binaries.
+                        For a piecewise-linear function with \(n\) breakpoints, an SOS2 encoding uses \(n\) continuous
+                        variables vs. \(n-1\) binaries for the binary encoding. SOS2 is typically faster because:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 mt-1 space-y-1">
+                        <li>Branching is done on adjacency, not individual bits</li>
+                        <li>LP relaxation is often tighter</li>
+                        <li>Fewer constraints needed</li>
+                    </ul>
+                    <p class="text-sm text-slate-700 mt-2">Use native SOS2 declarations in your solver when available.</p>
+                </article>
+
+                <!-- McCormick -->
+                <article class="card p-4 tip">
+                    <h4 class="font-semibold">McCormick for bilinear terms</h4>
+                    <p class="text-sm text-slate-700 mt-2">
+                        For \(w = xy\) with \(x\in[x_L,x_U], y\in[y_L,y_U]\), add four McCormick inequalities (§07).
+                        The tightness of the relaxation depends critically on bound quality:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 mt-1 space-y-1">
+                        <li>Tighten bounds via preprocessing, probing, or dual information</li>
+                        <li>Partition into smaller boxes for piecewise McCormick (§08)</li>
+                        <li>Domain reduction during B&amp;B can significantly improve bounds</li>
+                    </ul>
+                </article>
+
+                <!-- Symmetry breaking -->
+                <article class="card p-4 tip">
+                    <h4 class="font-semibold">Symmetry breaking</h4>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Identical items (machines, workers, bins) create symmetric solutions — the solver explores
+                        equivalent subtrees needlessly. Fix: add <em>index-ordering constraints</em>:
+                    </p>
+                    <div class="math-block" style="font-size:.9rem;">$$y_1 \ge y_2 \ge \cdots \ge y_k$$</div>
+                    <p class="text-sm text-slate-700">
+                        This forces the model to "use" item 1 before item 2, etc., eliminating symmetric copies.
+                        Can reduce search tree by orders of magnitude on symmetric instances.
                     </p>
                 </article>
+
+                <!-- Warm starting -->
                 <article class="card p-4 tip">
-                    <h4 class="font-semibold">McCormick for Bilinear</h4>
+                    <h4 class="font-semibold">Warm starting &amp; MIP start</h4>
                     <p class="text-sm text-slate-700 mt-2">
-                        If \(w = x\,z\), \(x\in[L_x,U_x]\), \(z\in[L_z,U_z]\), add four McCormick planes; refine with
-                        partitioning for better bounds.
+                        Provide a feasible solution upfront (e.g. from a heuristic) to give the solver an initial
+                        upper bound. This prunes the B&amp;B tree immediately:
                     </p>
+                    <pre style="background:#0b1220;color:#e5e7eb;padding:.6rem .9rem;border-radius:.6rem;font-size:.8rem;overflow-x:auto;margin-top:.5rem;"># Gurobi
+x.Start = heuristic_value
+m.update(); m.optimize()</pre>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Even a poor feasible solution (say, greedy) can cut solve time by 50–90% on hard instances.
+                    </p>
+                </article>
+
+                <!-- Valid inequalities -->
+                <article class="card p-4 tip">
+                    <h4 class="font-semibold">Valid inequalities &amp; cuts</h4>
+                    <p class="text-sm text-slate-700 mt-2">
+                        User-defined cuts tighten the LP relaxation without changing the feasible set.
+                        Common families:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 mt-1 space-y-1">
+                        <li><strong>Cover inequalities</strong>: for knapsack-type constraints</li>
+                        <li><strong>Clique inequalities</strong>: from conflict graphs</li>
+                        <li><strong>Gomory cuts</strong>: automatic, generated from LP tableau</li>
+                    </ul>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Adding even a few strong cuts can dramatically improve the root LP bound and reduce tree size.
+                    </p>
+                </article>
+
+                <!-- Presolve hints -->
+                <article class="card p-4 tip">
+                    <h4 class="font-semibold">Presolve &amp; model hygiene</h4>
+                    <p class="text-sm text-slate-700 mt-2">
+                        Before solving, check your model for:
+                    </p>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 mt-1 space-y-1">
+                        <li>Redundant constraints (remove them — presolve may miss some)</li>
+                        <li>Variables with identical bounds (fix them to constants)</li>
+                        <li>Overcrowded big-M (may cause numerical instability)</li>
+                        <li>Units consistency (mix of 1e-3 and 1e6 values leads to ill-conditioning)</li>
+                    </ul>
                 </article>
             </div>
         </section>
