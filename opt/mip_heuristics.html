@@ -8,8 +8,8 @@
   <script>
     window.MathJax = {
       tex: {
-        inlineMath: [['$', '$']],
-        displayMath: [['$$', '$$']],
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
         tags: 'ams'
       },
       options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
@@ -244,7 +244,8 @@
     }
 
     .demo-panel {
-      margin: 1.8rem 0;
+      margin: 1.8rem auto;
+      max-width: 900px;
       border: 1px solid rgba(193, 180, 157, 0.85);
       border-radius: 24px;
       overflow: hidden;
@@ -263,6 +264,8 @@
       font-size: 0.72rem;
       letter-spacing: 0.08em;
       color: var(--cyan);
+      white-space: normal;
+      word-break: break-word;
     }
 
     .demo-body {
@@ -274,10 +277,25 @@
 
     .demo-body.column {
       flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+
+    .demo-body.column > * {
+      width: 100%;
+    }
+
+    .demo-body.column .demo-status {
+      padding: 0.85rem 1rem;
+      border: 1px solid rgba(193, 180, 157, 0.6);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
     }
 
     canvas {
       display: block;
+      width: 100%;
+      height: auto;
       max-width: 100%;
       border-radius: 18px;
       border: 1px solid rgba(193, 180, 157, 0.85);
@@ -286,10 +304,44 @@
     }
 
     .demo-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.7rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.85rem;
       align-items: center;
+    }
+
+    .demo-controls > * {
+      min-width: 0;
+    }
+
+    .demo-controls label,
+    .demo-status {
+      min-width: 0;
+      white-space: normal;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .demo-controls label {
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .demo-controls input[type=range] {
+      width: 100%;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .demo-controls select {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .demo-controls button {
+      min-width: 90px;
+      width: auto;
+      justify-self: start;
     }
 
     .btn {
@@ -2831,162 +2883,181 @@ print(inside_local_branching_ball(x, x_bar, k=2))</pre>
 
         <h3>What is LNS? The Destroy-and-Repair Framework</h3>
         <p>
-          <strong>Large Neighborhood Search (LNS)</strong> is one of the most important modern ideas in MIP heuristics.
-          Instead of searching the entire combinatorial space again, LNS starts from a known feasible solution and
-          explores a <em>restricted neighborhood</em> around it.
+          <strong>Large Neighborhood Search (LNS)</strong> is one of the most powerful and broadly applicable ideas in
+          MIP heuristics. The central observation is that once a feasible incumbent \(x^{inc}\) is known, we rarely
+          need to explore all of \(\{0,1\}^n\) to improve it — most good solutions are close to the incumbent in
+          structure. LNS exploits this by <em>fixing</em> a large portion of the solution and <em>re-optimizing</em>
+          only the freed part via an exact sub-MIP solver.
         </p>
 
         <p>
-          <strong>Analogy:</strong> Think of LNS like editing a document. Instead of rewriting the entire document
-          (too slow), you select some paragraphs to delete and rewrite them (destroy), then use your word processor
-          to fill in the blanks with better content (repair). The key insight: you keep what's already good, and only
-          change what might be improvable.
-        </p>
-
-        <p>
-          The core principle is simple: keep part of the incumbent fixed, <strong>free</strong> another part, and then
-          solve the resulting <strong>sub-MIP</strong>. This creates a neighborhood that is much larger than a tiny
-          one-variable local search move, but still much cheaper than solving the full original model.
+          The method was introduced by Shaw (1998) in the context of constraint programming and later adopted widely
+          in MIP solvers. Its appeal lies in a clean trade-off: the free set \(F\) can be made large enough to escape
+          local optima (unlike single-variable local search), yet small enough that the resulting sub-MIP remains
+          tractable.
         </p>
 
         <div class="callout teal">
           <div class="callout-title">Unifying View</div>
-          LNS is a broad framework. Many famous MIP heuristics can be interpreted as special cases of LNS:
-          <strong>RINS</strong> fixes variables where incumbent and LP agree, <strong>Local Branching</strong> uses a
-          Hamming-ball neighborhood, and <strong>Crossover</strong> fixes variables where good parents agree.
+          LNS is a broad meta-framework. Many classic MIP heuristics are special cases:
+          <strong>RINS</strong> sets \(F\) = variables where incumbent and LP relaxation disagree,
+          <strong>Local Branching</strong> defines the neighborhood by a Hamming-ball constraint,
+          <strong>Fix-and-Optimize</strong> frees one structural block at a time, and
+          <strong>Crossover</strong> frees variables where two good parents disagree.
+          Understanding LNS gives you a unified lens for all of them.
         </div>
+
+        <h3>Formal Definition</h3>
+        <p>
+          Given an incumbent \(x^{inc} \in X\) and a <em>free set</em> \(F \subseteq \{1,\dots,n\}\), the
+          LNS neighborhood is:
+        </p>
 
         <div class="math-block">
-          $$\text{Given incumbent } x^{inc}, \text{ choose a free set } F \subseteq \{1,\dots,n\}$$
-          $$x_j = x^{inc}_j \qquad \forall j \notin F$$
-          $$\text{solve the restricted sub-MIP over the free variables in } F$$
+          $$\mathcal{N}(x^{inc}, F) \;=\; \left\{ x \in X \;\middle|\; x_j = x^{inc}_j \text{ for all } j \notin F \right\}.$$
         </div>
 
-        <h3>Destroy-and-Repair Interpretation — The Core Loop</h3>
         <p>
-          In practice, LNS is often described as a <strong>destroy-and-repair</strong> heuristic:
+          The heuristic solves the <strong>restricted sub-MIP</strong>:
+        </p>
+
+        <div class="math-block">
+          $$\min_{x} \; c^\top x \qquad \text{s.t.} \qquad x \in \mathcal{N}(x^{inc}, F),$$
+        </div>
+
+        <p>
+          which is equivalent to the original MIP with the additional fixing constraints
+          \(x_j = x^{inc}_j\) for all \(j \notin F\). Because \(|F| \ll n\) in practice, the sub-MIP has far fewer
+          free variables and is typically much easier to solve than the original.
+        </p>
+
+        <h3>Destroy-and-Repair — The Core Loop</h3>
+        <p>
+          The three-phase loop that drives LNS:
         </p>
 
         <ul class="steps">
-          <li><span class="step-num">1</span><span class="step-text"><strong>Destroy:</strong> select some variables
-              and release them from the incumbent assignment. <em>Analogy:</em> Like erasing part of your solution to
-              explore alternatives.</span></li>
-          <li><span class="step-num">2</span><span class="step-text"><strong>Repair:</strong> solve the restricted
-              sub-MIP to rebuild those variables in a better way. <em>Analogy:</em> Like filling in the erased part
-              with something improved.</span></li>
-          <li><span class="step-num">3</span><span class="step-text"><strong>Accept:</strong> keep the repaired
-              solution if it is feasible and improves the incumbent. <em>Analogy:</em> Like keeping the edit if it
-              makes things better, otherwise undoing it.</span></li>
+          <li><span class="step-num">1</span><span class="step-text"><strong>Destroy:</strong> select a free set
+              \(F\) and release those variables from the incumbent assignment. This "breaks" part of the solution,
+              opening a neighborhood for exploration. The choice of destroy rule is the most consequential design
+              decision in LNS.</span></li>
+          <li><span class="step-num">2</span><span class="step-text"><strong>Repair:</strong> pass the partial
+              assignment (fixed variables + freed variables) to an exact MIP solver with a time or node limit.
+              The solver rebuilds the freed variables optimally within the reduced search space, producing a
+              candidate solution \(x^{cand}\).</span></li>
+          <li><span class="step-num">3</span><span class="step-text"><strong>Accept:</strong> replace the incumbent
+              if \(x^{cand}\) is feasible and \(c^\top x^{cand} < c^\top x^{inc}\). Some variants use a
+              <em>non-improving acceptance</em> rule (simulated annealing) to escape local optima at the cost
+              of occasional regressions.</span></li>
         </ul>
 
-        <p>
-          This view is especially important pedagogically because it unifies many apparently different heuristics under
-          the same logic: <em>search a large but structured neighborhood around a good solution</em>.
-        </p>
-
-        <h3>Why LNS is Powerful — Two Key Advantages</h3>
-        <div class="two-col">
-          <div class="callout green">
-            <div class="callout-title">Much Larger Than Local Search</div>
-            <strong>Analogy:</strong> A single-variable move is like taking one step. LNS frees many variables at once,
-            so the solver can perform coordinated changes (like rearranging an entire room) that a purely local search
-            would miss.
-            <br>Single-variable moves explore tiny neighborhoods; LNS explores rooms full of possibilities.
-          </div>
-          <div class="callout green">
-            <div class="callout-title">Much Cheaper Than Full Re-optimization</div>
-            <strong>Analogy:</strong> Rewriting your entire essay from scratch is expensive. LNS is like editing only
-            the parts that need work — you save time because most of your solution is already good.
-            <br>Because most variables remain fixed, the sub-MIP is far smaller than the original problem and can often
-            be solved quickly.
-          </div>
+        <div class="callout teal">
+          <div class="callout-title">Why "Large" Neighborhood?</div>
+          Classical local search moves one or two variables at a time — the neighborhood has size \(O(n)\).
+          LNS frees \(|F|\) variables simultaneously, giving a neighborhood of size up to \(2^{|F|}\) for binary
+          programs. With \(|F| = 20\) this is already over one million potential solutions, all explored by the
+          sub-MIP in a single call. This is the key reason LNS can escape plateaus that stall single-variable
+          local search.
         </div>
 
-        <h3>Neighborhood Design Choices</h3>
+        <h3>Neighborhood Design: Destroy Strategies</h3>
         <p>
-          The practical strength of LNS depends on <strong>which variables are freed</strong>. Several strategies are
-          common:
+          The practical strength of LNS hinges entirely on <strong>which variables go into \(F\)</strong>.
+          A good destroy rule produces a neighborhood that is (a) likely to contain improvements and (b) tractable
+          for the repair solver. The main strategies:
         </p>
 
         <table class="comp-table">
           <thead>
             <tr>
               <th>Destroy Rule</th>
-              <th>Main Idea</th>
-              <th>Typical Use</th>
+              <th>How \(F\) is selected</th>
+              <th>Best suited for</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td><strong>Random destroy</strong></td>
-              <td>Free a random subset of variables</td>
-              <td>Diversification, simplicity</td>
+              <td>Sample \(|F|\) variables uniformly at random</td>
+              <td>Diversification; baseline for comparisons</td>
             </tr>
             <tr>
               <td><strong>Fractional-guided</strong></td>
-              <td>Free variables with high LP fractionality or disagreement</td>
-              <td>LP-informed repair</td>
+              <td>Free variables where \(\bar{x}_j\) (LP relaxation) differs most from \(x^{inc}_j\)</td>
+              <td>LP-relaxation is a reliable guide; tight LP gaps</td>
             </tr>
             <tr>
               <td><strong>Constraint-based</strong></td>
-              <td>Free variables involved in violated / tight rows</td>
-              <td>Repair difficult structures</td>
+              <td>Free variables appearing in violated or near-tight rows</td>
+              <td>Problems with structural infeasibility bottlenecks</td>
             </tr>
             <tr>
               <td><strong>Block / domain-based</strong></td>
-              <td>Free one structural block at a time</td>
-              <td>Scheduling, routing, assignment models</td>
+              <td>Free one structured block (e.g., one time period, one route, one machine)</td>
+              <td>Scheduling, vehicle routing, assignment problems</td>
+            </tr>
+            <tr>
+              <td><strong>Objective-based</strong></td>
+              <td>Free variables with the highest reduced costs or contribution to the objective gap</td>
+              <td>Problems where the objective landscape is informative</td>
             </tr>
           </tbody>
         </table>
 
-        <h3>Scientific Perspective</h3>
+        <h3>Repair via Sub-MIP</h3>
         <p>
-          From an optimization viewpoint, LNS defines a family of restricted feasible regions
-          \(\mathcal{N}(x^{inc})\) around the incumbent. The heuristic then solves
+          The repair step is not a heuristic — it invokes an <em>exact</em> MIP solver on the restricted
+          sub-problem. This is what distinguishes LNS from pure metaheuristics: the sub-MIP guarantees that the
+          repair is <strong>optimal within the chosen neighborhood</strong>, given sufficient time. In practice,
+          a time or node limit is imposed, so the repair may be a high-quality but not necessarily optimal solution.
         </p>
-
-        <div class="math-block">
-          $$\min \; c^\top x \qquad \text{subject to} \qquad x \in \mathcal{N}(x^{inc}) \cap X,$$
-        </div>
-
         <p>
-          where \(X\) is the feasible set of the original MIP. The neighborhood is large enough to admit substantial
-          improvement, but structured enough that solving inside it remains computationally affordable.
+          The sub-MIP inherits all constraints of the original model, plus the fixing constraints
+          \(x_j = x^{inc}_j\) for \(j \notin F\). It typically solves much faster because:
         </p>
+        <ul>
+          <li>Fewer branching decisions are needed (only \(|F|\) variables are free).</li>
+          <li>The LP relaxation of the sub-MIP is often tighter, since many columns are pinned.</li>
+          <li>A warm start from the incumbent is always available.</li>
+        </ul>
 
         <h3>Worked Binary Example</h3>
         <p>
-          Suppose the incumbent is the binary vector
+          Suppose \(n = 8\) and the incumbent is:
         </p>
 
         <div class="math-block">
-          $$x^{inc} = (1,0,1,1,0,0,1,0).$$
+          $$x^{inc} = (1,\;0,\;1,\;1,\;0,\;0,\;1,\;0).$$
         </div>
 
         <p>
-          If an LNS heuristic frees positions \(2,4,7\), then the other variables remain fixed:
+          A random destroy rule with rate 37.5% frees positions \(F = \{2, 4, 7\}\).
+          The sub-MIP enforces:
         </p>
 
         <div class="math-block">
-          $$x_1=1,\;x_3=1,\;x_5=0,\;x_6=0,\;x_8=0,$$
-          $$x_2,\;x_4,\;x_7 \text{ are free and re-optimized by the sub-MIP.}$$
+          $$x_1=1,\quad x_3=1,\quad x_5=0,\quad x_6=0,\quad x_8=0 \qquad \text{(fixed)}$$
+          $$x_2,\; x_4,\; x_7 \in \{0,1\} \qquad \text{(free, re-optimized)}$$
         </div>
 
         <p>
-          The search is therefore no longer over all \(2^8 = 256\) assignments, but only over the
-          \(2^3 = 8\) assignments in the chosen neighborhood.
+          The search space shrinks from \(2^8 = 256\) to \(2^3 = 8\) assignments — a factor of 32 reduction
+          from fixing 5 variables. For a problem with \(n = 1000\) and \(|F| = 50\), the reduction is astronomical:
+          from \(2^{1000}\) to \(2^{50} \approx 10^{15}\), still large but explorable by a branch-and-bound solver
+          with LP bounds.
         </p>
 
         <div class="algo">
-          <div class="algo-title">Algorithm — Generic Large Neighborhood Search</div>
-          <pre><span class="ln">1</span><span class="kw">function</span> <span class="fn">LNS</span>(incumbent x*, problem P, destroy_rule, budget):
-<span class="ln">2</span>   free_set <span class="op">←</span> <span class="fn">ChooseFreeVariables</span>(x*, destroy_rule, budget)
-<span class="ln">3</span>   subproblem <span class="op">←</span> <span class="fn">BuildRestrictedSubMIP</span>(P, x*, free_set)
-<span class="ln">4</span>   candidate <span class="op">←</span> <span class="fn">SolveSubMIP</span>(subproblem)
-<span class="ln">5</span>   <span class="kw">if</span> candidate feasible <span class="kw">and</span> candidate improves x*:
-<span class="ln">6</span>      <span class="kw">return</span> candidate
-<span class="ln">7</span>   <span class="kw">return</span> x*   <span class="cm">// keep incumbent</span></pre>
+          <div class="algo-title">Algorithm — Generic Large Neighborhood Search (iterated)</div>
+          <pre><span class="ln">1</span>  <span class="kw">function</span> <span class="fn">LNS</span>(x<sub>0</sub>, problem P, destroy_rule, max_iter, time_limit):
+<span class="ln">2</span>    x* <span class="op">←</span> x<sub>0</sub>                        <span class="cm">// start from a feasible incumbent</span>
+<span class="ln">3</span>    <span class="kw">for</span> t = 1 <span class="kw">to</span> max_iter:
+<span class="ln">4</span>      F       <span class="op">←</span> <span class="fn">ChooseFreeVariables</span>(x*, destroy_rule)
+<span class="ln">5</span>      subMIP  <span class="op">←</span> <span class="fn">BuildRestrictedSubMIP</span>(P, x*, F)
+<span class="ln">6</span>      x_cand  <span class="op">←</span> <span class="fn">SolveSubMIP</span>(subMIP, time_limit)   <span class="cm">// exact solver, time-limited</span>
+<span class="ln">7</span>      <span class="kw">if</span> x_cand is feasible <span class="kw">and</span> c·x_cand &lt; c·x*:
+<span class="ln">8</span>        x* <span class="op">←</span> x_cand                 <span class="cm">// accept improvement</span>
+<span class="ln">9</span>    <span class="kw">return</span> x*</pre>
         </div>
 
         <div class="algo">
@@ -2994,22 +3065,76 @@ print(inside_local_branching_ball(x, x_bar, k=2))</pre>
           <pre>import random
 
 def choose_free_set(n, rate=0.3):
+    """Random destroy: free 'rate' fraction of variables."""
     k = max(1, int(rate * n))
-    return sorted(random.sample(range(n), k))
+    return set(random.sample(range(n), k))
 
-def apply_lns_neighborhood(incumbent, free_set):
-    fixed = {}
-    for j, val in enumerate(incumbent):
-        if j not in free_set:
-            fixed[j] = val
-    return fixed
+def build_sub_mip(P, incumbent, free_set):
+    """Fix all variables not in free_set to their incumbent value."""
+    fixing = {j: incumbent[j] for j in range(len(incumbent)) if j not in free_set}
+    return P.with_fixings(fixing)   # problem-specific API
 
 x_inc = [1, 0, 1, 1, 0, 0, 1, 0]
-free = choose_free_set(len(x_inc), rate=0.375)
-fixed = apply_lns_neighborhood(x_inc, free)
-print("free vars :", free)
-print("fixed vars:", fixed)</pre>
+free  = choose_free_set(len(x_inc), rate=0.375)
+print("free  vars :", sorted(free))
+print("fixed vars :", {j: x_inc[j] for j in range(len(x_inc)) if j not in free})</pre>
         </div>
+
+        <h3>Destroy Rate: The Key Hyper-parameter</h3>
+        <p>
+          The fraction \(\rho = |F|/n\) (destroy rate) controls the fundamental trade-off:
+        </p>
+        <div class="two-col">
+          <div class="callout green">
+            <div class="callout-title">Small \(\rho\) — Intensification</div>
+            Few variables are freed. The neighborhood is small and the sub-MIP is fast, but the search is
+            tightly constrained around the current incumbent. Good for fine-tuning near-optimal solutions.
+            Risk: getting trapped in a local optimum.
+          </div>
+          <div class="callout green">
+            <div class="callout-title">Large \(\rho\) — Diversification</div>
+            Many variables are freed. The neighborhood is large and the sub-MIP is expensive, but the search
+            can make dramatic moves. Good for escaping local optima. Risk: sub-MIP becomes too hard to solve
+            within the time limit.
+          </div>
+        </div>
+        <p>
+          Typical values lie in \(\rho \in [0.15, 0.50]\). A common adaptive strategy is to
+          <em>start small</em> (intensify) and <em>increase \(\rho\) when stuck</em> (diversify). Some solvers
+          maintain a schedule \(\rho_1 \leq \rho_2 \leq \cdots\) that grows when no improvement is found
+          for several consecutive iterations.
+        </p>
+
+        <h3>Acceptance Criteria</h3>
+        <p>
+          The standard LNS loop accepts only improvements. But two alternative acceptance rules are worth knowing:
+        </p>
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Acceptance Rule</th>
+              <th>When to accept \(x^{cand}\)</th>
+              <th>Effect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Greedy (strict)</strong></td>
+              <td>\(c^\top x^{cand} < c^\top x^*\) only</td>
+              <td>Pure intensification; fast convergence but local-optima risk</td>
+            </tr>
+            <tr>
+              <td><strong>Simulated Annealing</strong></td>
+              <td>Always if improving; with prob. \(e^{-\Delta/T}\) if worsening</td>
+              <td>Can escape local optima; requires temperature schedule tuning</td>
+            </tr>
+            <tr>
+              <td><strong>Threshold</strong></td>
+              <td>\(c^\top x^{cand} \leq c^\top x^* + \delta\) for some tolerance \(\delta \geq 0\)</td>
+              <td>Plateau-crossing; simpler than SA, no temperature schedule needed</td>
+            </tr>
+          </tbody>
+        </table>
 
         <h3>Relationship to Other Heuristics</h3>
         <table class="comp-table">
@@ -3017,40 +3142,46 @@ print("fixed vars:", fixed)</pre>
             <tr>
               <th>Heuristic</th>
               <th>LNS interpretation</th>
+              <th>Destroy rule</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td><strong>RINS</strong></td>
-              <td>Free variables where LP and incumbent disagree; fix the rest.</td>
+              <td>One-shot LNS triggered at B&amp;B nodes</td>
+              <td>\(F\) = variables where incumbent and LP disagree</td>
             </tr>
             <tr>
               <td><strong>Local Branching</strong></td>
-              <td>Neighborhood defined by a Hamming-distance constraint.</td>
-            </tr>
-            <tr>
-              <td><strong>Crossover</strong></td>
-              <td>Fix variables where parents agree; optimize the remaining part.</td>
+              <td>LNS with a Hamming-ball constraint instead of a free set</td>
+              <td>\(\sum_{j:\,x^*_j=1}(1-x_j)+\sum_{j:\,x^*_j=0}x_j \leq k\)</td>
             </tr>
             <tr>
               <td><strong>Fix-and-Optimize</strong></td>
-              <td>Free one structured block at a time; optimize that block exactly.</td>
+              <td>LNS that cycles through structural blocks</td>
+              <td>\(F\) = one time period / machine / route at a time</td>
+            </tr>
+            <tr>
+              <td><strong>Crossover / RENS</strong></td>
+              <td>LNS with information from a second reference solution</td>
+              <td>\(F\) = variables where two good solutions differ</td>
             </tr>
           </tbody>
         </table>
 
         <div class="callout red">
-          <div class="callout-title">Limitation</div>
-          LNS is only as good as its neighborhood design. If too many variables are fixed, the sub-MIP becomes too
-          rigid and no improvement is possible. If too many variables are free, the neighborhood becomes too large and
-          the sub-MIP becomes expensive.
+          <div class="callout-title">Main Limitation</div>
+          LNS quality is entirely determined by the destroy rule. A poor \(F\) selection either (a) makes the
+          sub-MIP trivially feasible with no room for improvement, or (b) makes it too hard to solve in the allowed
+          time. There is no universally best destroy strategy — the right choice is problem-specific, which is
+          precisely the motivation for Adaptive LNS (§ 13).
         </div>
 
-        <h3>Interactive Demo Idea</h3>
+        <h3>Interactive Demo</h3>
         <p>
-          The interactive demo below shows an incumbent bit string. Some variables are fixed, while others are released
-          into the neighborhood. The user controls the <strong>destroy rate</strong> and the <strong>destroy
-            strategy</strong>, then runs a simulated repair step.
+          The demo below shows an incumbent bit string. Gold variables are freed into the neighborhood; grey variables
+          remain fixed. Choose a destroy strategy and rate, then press <strong>Destroy</strong> to select \(F\) and
+          <strong>Repair</strong> to simulate a sub-MIP repair step.
         </p>
 
         <div class="demo-panel">
@@ -3090,21 +3221,20 @@ print("fixed vars:", fixed)</pre>
           </div>
         </div>
 
-        <h3>When Should a Solver Use LNS?</h3>
+        <h3>When to Use LNS</h3>
         <ul class="steps">
-          <li><span class="step-num">1</span><span class="step-text"><strong>After finding a first incumbent,</strong>
-              when improvement heuristics become meaningful.</span></li>
-          <li><span class="step-num">2</span><span class="step-text"><strong>When the full model is too large,</strong>
-              but structured sub-problems are still manageable.</span></li>
-          <li><span class="step-num">3</span><span class="step-text"><strong>When local search is too weak,</strong>
-              because improvements require coordinated changes to many variables.</span></li>
-          <li><span class="step-num">4</span><span class="step-text"><strong>When the incumbent is already
-                good,</strong>
-              and the goal is intensification around promising regions.</span></li>
+          <li><span class="step-num">1</span><span class="step-text"><strong>After finding a first incumbent</strong>
+              — LNS only makes sense once a feasible starting solution exists.</span></li>
+          <li><span class="step-num">2</span><span class="step-text"><strong>When the full MIP is too large to
+                re-solve</strong> but sub-problems with 10–50% of the variables remain tractable.</span></li>
+          <li><span class="step-num">3</span><span class="step-text"><strong>When local search stalls</strong>
+              — single-variable moves cannot improve the solution, but coordinated changes to a block of variables
+              can.</span></li>
+          <li><span class="step-num">4</span><span class="step-text"><strong>When the problem has exploitable
+                structure</strong> — blocks, periods, routes — that suggest a natural destroy rule beyond random
+              selection.</span></li>
         </ul>
       </div>
-
-      from pathlib import Path
 
       <!-- ══════════════════════════
          §13 ADAPTIVE LARGE NEIGHBORHOOD SEARCH
@@ -3115,209 +3245,314 @@ print("fixed vars:", fixed)</pre>
           <h2 class="section-title">Adaptive Large Neighborhood Search (ALNS)</h2>
         </div>
 
-        <h3>What is ALNS? Learning Which Tools Work Best</h3>
+        <h3>Motivation: The Problem with a Single Destroy Rule</h3>
         <p>
-          <strong>Adaptive Large Neighborhood Search (ALNS)</strong> extends LNS by not using a single fixed
-          destroy-and-repair strategy. Instead, it maintains a <em>portfolio</em> of operators and
-          <strong>adapts</strong> over time, rewarding operators that recently produced good improvements.
+          Standard LNS (§ 12) asks the practitioner to commit to one destroy strategy before running. In practice,
+          no single operator dominates across problem instances or even across different phases of a single run:
+          block destroy may be powerful early (while large structural improvements exist) but ineffective later
+          (when only fine-grained tuning is needed), while random or fractional destroy may then become more useful.
         </p>
 
         <p>
-          <strong>Analogy:</strong> Imagine you're a chef trying to create a perfect dish. You have various tools — a
-          knife, a blender, a mortar and pestle. Standard LNS picks one tool (say, the knife) and keeps using it.
-          ALNS is like a chef who tries different tools and learns which ones work best for different ingredients.
-          If chopping vegetables works well today, the chef uses the knife more often tomorrow.
-        </p>
-
-        <p>
-          This is the natural next step after standard LNS. In ordinary LNS, the user chooses one destroy rule
-          (random, block, fractional-guided, etc.). In ALNS, the heuristic itself learns which operators are working
-          well on the current instance and allocates more calls to them.
+          <strong>Adaptive Large Neighborhood Search (ALNS)</strong>, introduced by Ropke and Pisinger (2006),
+          resolves this by maintaining a <em>portfolio</em> of destroy and repair operators with
+          <strong>adaptive weights</strong>. After each iteration, the weights are updated based on the quality
+          of the outcome, so that operators that recently produced improvements are selected more often.
+          The algorithm learns, on the fly, which operators suit the current instance and current search phase.
         </p>
 
         <div class="callout teal">
-          <div class="callout-title">Key Idea</div>
-          ALNS treats destroy and repair mechanisms as competing operators. After each iteration, operator scores are
-          updated according to outcome quality, and future selections are biased toward high-performing operators.
+          <div class="callout-title">Core Insight</div>
+          ALNS converts a hyper-parameter selection problem (which destroy rule?) into an online learning problem.
+          The operator portfolio is treated as a multi-armed bandit: each arm is an operator pair \((d, r)\),
+          and the reward signal comes from the quality of the candidate solution produced.
         </div>
+
+        <h3>Formal Setup</h3>
+        <p>
+          Let \(\mathcal{D} = \{d_1, \dots, d_m\}\) be the set of destroy operators and
+          \(\mathcal{R} = \{r_1, \dots, r_p\}\) be the set of repair operators. Each operator \(k\) (destroy or
+          repair) carries a <em>weight</em> \(w_k > 0\). At iteration \(t\), operators are sampled independently
+          by roulette-wheel selection:
+        </p>
 
         <div class="math-block">
-          $$\text{At iteration } t,\quad \text{choose } d \in \mathcal{D},\; r \in \mathcal{R}$$
-          $$x^{cand} \leftarrow \text{Repair}_r\!\left(\text{Destroy}_d(x^{inc})\right)$$
-          $$\text{update operator scores based on feasibility and improvement}$$
+          $$\Pr[\text{select } d_i] = \frac{w_{d_i}}{\sum_{j} w_{d_j}}, \qquad
+            \Pr[\text{select } r_i] = \frac{w_{r_i}}{\sum_{j} w_{r_j}}.$$
         </div>
 
-        <h3>Why ALNS is Useful</h3>
-        <div class="two-col">
-          <div class="callout green">
-            <div class="callout-title">Adapts to Instance Structure</div>
-            Some instances respond better to block destroy, others to LP-guided or random diversification.
-            ALNS automatically shifts weight toward the operators that are currently effective.
-          </div>
-          <div class="callout green">
-            <div class="callout-title">Balances Intensification and Diversification</div>
-            Strong operators are exploited more often, but weaker operators are still sampled occasionally so the
-            search does not become too myopic.
-          </div>
+        <p>
+          The chosen pair \((d, r)\) is applied to produce a candidate:
+        </p>
+
+        <div class="math-block">
+          $$x^{cand} \;\leftarrow\; \text{Repair}_r\!\bigl(\text{Destroy}_d(x^{inc})\bigr).$$
         </div>
 
         <h3>Canonical ALNS Loop</h3>
         <ul class="steps">
-          <li><span class="step-num">1</span><span class="step-text"><strong>Select</strong> a destroy operator and a
-              repair operator using weighted randomization.</span></li>
-          <li><span class="step-num">2</span><span class="step-text"><strong>Apply</strong> them to produce a candidate
-              solution inside a large neighborhood.</span></li>
-          <li><span class="step-num">3</span><span class="step-text"><strong>Accept or reject</strong> the candidate
-              according to a search rule, such as improving-only or simulated annealing style acceptance.</span></li>
-          <li><span class="step-num">4</span><span class="step-text"><strong>Update scores</strong> of the selected
-              operators according to the observed outcome.</span></li>
+          <li><span class="step-num">1</span><span class="step-text"><strong>Select</strong> destroy operator \(d\)
+              and repair operator \(r\) by roulette-wheel sampling over current weights.</span></li>
+          <li><span class="step-num">2</span><span class="step-text"><strong>Apply</strong> \(d\) to free a
+              neighborhood \(F\), then \(r\) to rebuild the freed variables, yielding candidate
+              \(x^{cand}\).</span></li>
+          <li><span class="step-num">3</span><span class="step-text"><strong>Accept or reject</strong>
+              \(x^{cand}\) via an acceptance criterion (improving-only, simulated annealing, or threshold).
+              If accepted, update \(x^{inc} \leftarrow x^{cand}\).</span></li>
+          <li><span class="step-num">4</span><span class="step-text"><strong>Score and update</strong> — assign a
+              reward \(\sigma\) based on outcome quality, then apply the exponential smoothing update to
+              \(w_d\) and \(w_r\).</span></li>
         </ul>
 
-        <h3>Operator Scoring</h3>
+        <h3>Operator Scoring and Weight Update</h3>
         <p>
-          A common pedagogical scoring rule is:
+          The reward \(\sigma\) assigned to the used operators reflects how valuable the outcome was:
         </p>
 
         <table class="comp-table">
           <thead>
             <tr>
               <th>Outcome</th>
-              <th>Reward</th>
-              <th>Meaning</th>
+              <th>Reward \(\sigma\)</th>
+              <th>Rationale</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>Global best</strong></td>
-              <td>high</td>
-              <td>The operator pair produced the best solution seen so far.</td>
+              <td><strong>New global best</strong> (\(c^\top x^{cand} < c^\top x^{best}\))</td>
+              <td>\(\sigma_1\) (highest, e.g. 33)</td>
+              <td>Operator pair found the best solution seen so far — very valuable.</td>
             </tr>
             <tr>
-              <td><strong>Improving incumbent</strong></td>
-              <td>medium</td>
-              <td>The candidate is accepted and improves the current incumbent.</td>
+              <td><strong>Improves incumbent</strong> (\(c^\top x^{cand} < c^\top x^{inc}\))</td>
+              <td>\(\sigma_2\) (medium, e.g. 9)</td>
+              <td>Accepted improvement that is not a global best.</td>
             </tr>
             <tr>
-              <td><strong>Accepted but not improving</strong></td>
-              <td>small</td>
-              <td>The move helps exploration but does not improve the best value.</td>
+              <td><strong>Accepted without improving</strong> (e.g., SA acceptance)</td>
+              <td>\(\sigma_3\) (small, e.g. 3)</td>
+              <td>Diversifying move; accepted but objective did not improve.</td>
             </tr>
             <tr>
-              <td><strong>Rejected / infeasible</strong></td>
-              <td>none</td>
-              <td>No immediate contribution.</td>
+              <td><strong>Rejected</strong> (not accepted)</td>
+              <td>\(0\)</td>
+              <td>No contribution; operator weight drifts down over time.</td>
             </tr>
           </tbody>
         </table>
 
+        <p>
+          Weights are updated via <strong>exponential smoothing</strong> (also called the reaction factor rule):
+        </p>
+
         <div class="math-block">
-          $$w_k^{t+1} = (1-\eta)\, w_k^t + \eta \cdot \text{reward}_k^t,$$
+          $$w_k^{\,t+1} \;=\; (1-\eta)\,w_k^{\,t} \;+\; \eta\,\sigma_k^{\,t},$$
         </div>
 
         <p>
-          where \(w_k\) is the weight of operator \(k\) and \(\eta \in (0,1)\) is a reaction factor. Large
-          \(\eta\) makes the method react quickly; small \(\eta\) makes it more stable.
+          where \(\eta \in (0,1)\) is the <em>reaction factor</em>. Only the weights of the <em>selected</em>
+          operators \(d\) and \(r\) are updated each iteration; all others remain unchanged. The parameter \(\eta\)
+          controls adaptivity:
         </p>
 
-        <h3>Destroy and Repair Portfolio</h3>
-        <table class="comp-table">
-          <thead>
-            <tr>
-              <th>Destroy operator</th>
-              <th>Main idea</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Random destroy</strong></td>
-              <td>Release a random subset of variables for diversification.</td>
-            </tr>
-            <tr>
-              <td><strong>Block destroy</strong></td>
-              <td>Release one contiguous structural block.</td>
-            </tr>
-            <tr>
-              <td><strong>Fractional destroy</strong></td>
-              <td>Release variables that look uncertain or disagree with LP guidance.</td>
-            </tr>
-            <tr>
-              <td><strong>Worst-contributor destroy</strong></td>
-              <td>Release variables that appear least aligned with the current objective.</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="two-col">
+          <div class="callout green">
+            <div class="callout-title">Large \(\eta\) — Reactive</div>
+            The algorithm reacts quickly to recent performance. Useful when instance structure changes across
+            the search (e.g., early vs. late phases). Risk: noisy updates can cause oscillation.
+          </div>
+          <div class="callout green">
+            <div class="callout-title">Small \(\eta\) — Stable</div>
+            Weights evolve slowly, reflecting long-run operator quality. Useful for large instances where
+            any single iteration is noisy. Risk: slow adaptation to changing conditions.
+          </div>
+        </div>
 
-        <table class="comp-table">
-          <thead>
-            <tr>
-              <th>Repair operator</th>
-              <th>Main idea</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Greedy repair</strong></td>
-              <td>Choose the best feasible local assignment immediately.</td>
-            </tr>
-            <tr>
-              <td><strong>Balanced repair</strong></td>
-              <td>Prefer feasible assignments with more stability and lower disruption.</td>
-            </tr>
-            <tr>
-              <td><strong>Objective-biased repair</strong></td>
-              <td>Favor aggressive high-objective reconstructions.</td>
-            </tr>
-          </tbody>
-        </table>
+        <p>
+          A common choice is \(\eta \in [0.1, 0.3]\). Weights are typically initialized uniformly
+          (\(w_k = 1\) for all \(k\)) and clipped to a minimum (e.g., \(w_k \geq 0.01\)) to prevent any
+          operator from being permanently excluded.
+        </p>
+
+        <h3>Segment-Based Scoring</h3>
+        <p>
+          A practical refinement introduced by Ropke and Pisinger is to accumulate scores over a
+          <em>segment</em> of \(L\) iterations before updating weights (rather than updating every step).
+          During the segment, each operator \(k\) accumulates:
+        </p>
+        <div class="math-block">
+          $$\tilde{\sigma}_k = \sum_{\text{iterations in segment}} \sigma_k^t, \qquad
+            n_k = \text{number of times operator } k \text{ was selected.}$$
+        </div>
+        <p>
+          After the segment, the update becomes:
+        </p>
+        <div class="math-block">
+          $$w_k \;\leftarrow\; (1-\eta)\,w_k \;+\; \eta\,\frac{\tilde{\sigma}_k}{n_k} \quad (n_k > 0),$$
+        </div>
+        <p>
+          with \(\tilde{\sigma}_k, n_k\) reset to zero for the next segment. Segment-based updates reduce noise
+          and give rarely-selected operators a fair assessment over multiple uses.
+        </p>
+
+        <h3>Operator Portfolio</h3>
+        <div class="two-col">
+          <div>
+            <table class="comp-table">
+              <thead>
+                <tr>
+                  <th>Destroy operator</th>
+                  <th>How \(F\) is chosen</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Random destroy</strong></td>
+                  <td>Uniform random sample of \(\rho \cdot n\) variables</td>
+                </tr>
+                <tr>
+                  <td><strong>Block destroy</strong></td>
+                  <td>One contiguous structural block (period, machine, route)</td>
+                </tr>
+                <tr>
+                  <td><strong>Fractional / LP-guided</strong></td>
+                  <td>Variables most fractional in the current LP relaxation</td>
+                </tr>
+                <tr>
+                  <td><strong>Worst-removal</strong></td>
+                  <td>Variables contributing least to (or most against) the objective</td>
+                </tr>
+                <tr>
+                  <td><strong>Related removal</strong></td>
+                  <td>Cluster of "similar" variables (nearby in time, space, or graph distance)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <table class="comp-table">
+              <thead>
+                <tr>
+                  <th>Repair operator</th>
+                  <th>How freed variables are rebuilt</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Exact sub-MIP</strong></td>
+                  <td>Time-limited branch-and-bound on the restricted sub-MIP</td>
+                </tr>
+                <tr>
+                  <td><strong>Greedy repair</strong></td>
+                  <td>Assign freed variables one by one in decreasing marginal-benefit order</td>
+                </tr>
+                <tr>
+                  <td><strong>Regret repair</strong></td>
+                  <td>Assign the variable with the largest difference between best and second-best option</td>
+                </tr>
+                <tr>
+                  <td><strong>LP-rounding</strong></td>
+                  <td>Solve the LP relaxation, round the most fractional variables, propagate</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         <div class="algo">
           <div class="algo-title">Algorithm — Adaptive Large Neighborhood Search</div>
-          <pre><span class="ln">1</span><span class="kw">function</span> <span class="fn">ALNS</span>(incumbent x*, operators, T):
-<span class="ln">2</span>   initialize weights for all destroy and repair operators
-<span class="ln">3</span>   <span class="kw">for</span> t = 1 <span class="kw">to</span> T:
-<span class="ln">4</span>      d <span class="op">←</span> <span class="fn">SampleDestroyOperator</span>(weights_destroy)
-<span class="ln">5</span>      r <span class="op">←</span> <span class="fn">SampleRepairOperator</span>(weights_repair)
-<span class="ln">6</span>      partial <span class="op">←</span> <span class="fn">Destroy</span>(x*, d)
-<span class="ln">7</span>      candidate <span class="op">←</span> <span class="fn">Repair</span>(partial, r)
-<span class="ln">8</span>      outcome <span class="op">←</span> <span class="fn">EvaluateCandidate</span>(candidate, x*)
-<span class="ln">9</span>      <span class="kw">if</span> outcome accepted: x* <span class="op">←</span> candidate
-<span class="ln">10</span>     <span class="fn">UpdateWeights</span>(d, r, outcome)
-<span class="ln">11</span>  <span class="kw">return</span> x*</pre>
+          <pre><span class="ln">1</span>  <span class="kw">function</span> <span class="fn">ALNS</span>(x<sub>0</sub>, P, 𝒟, ℛ, η, σ₁, σ₂, σ₃, T):
+<span class="ln">2</span>    x* <span class="op">←</span> x<sub>0</sub>  ;  x<sub>best</sub> <span class="op">←</span> x<sub>0</sub>
+<span class="ln">3</span>    initialize w<sub>d</sub> = 1 for all d ∈ 𝒟,  w<sub>r</sub> = 1 for all r ∈ ℛ
+<span class="ln">4</span>    <span class="kw">for</span> t = 1 <span class="kw">to</span> T:
+<span class="ln">5</span>      d       <span class="op">←</span> <span class="fn">RouletteSelect</span>(𝒟, w<sub>d</sub>)          <span class="cm">// sample destroy op</span>
+<span class="ln">6</span>      r       <span class="op">←</span> <span class="fn">RouletteSelect</span>(ℛ, w<sub>r</sub>)          <span class="cm">// sample repair op</span>
+<span class="ln">7</span>      F       <span class="op">←</span> <span class="fn">Destroy</span>(x*, d)                  <span class="cm">// choose free set</span>
+<span class="ln">8</span>      x_cand  <span class="op">←</span> <span class="fn">Repair</span>(x*, F, r, P)            <span class="cm">// rebuild freed vars</span>
+<span class="ln">9</span>      σ <span class="op">←</span> 0
+<span class="ln">10</span>     <span class="kw">if</span> c·x_cand &lt; c·x<sub>best</sub>:  x<sub>best</sub> <span class="op">←</span> x_cand  ;  σ <span class="op">←</span> σ₁
+<span class="ln">11</span>     <span class="kw">elif</span> <span class="fn">Accept</span>(x_cand, x*):                  <span class="cm">// e.g. SA or greedy</span>
+<span class="ln">12</span>       x* <span class="op">←</span> x_cand
+<span class="ln">13</span>       σ <span class="op">←</span> σ₂ <span class="kw">if</span> c·x_cand &lt; c·x* <span class="kw">else</span> σ₃
+<span class="ln">14</span>     w<sub>d</sub>[d] <span class="op">←</span> (1−η)·w<sub>d</sub>[d] + η·σ              <span class="cm">// update destroy weight</span>
+<span class="ln">15</span>     w<sub>r</sub>[r] <span class="op">←</span> (1−η)·w<sub>r</sub>[r] + η·σ              <span class="cm">// update repair weight</span>
+<span class="ln">16</span>   <span class="kw">return</span> x<sub>best</sub></pre>
         </div>
 
         <div class="algo">
-          <div class="algo-title">Python Sketch — Weighted Operator Selection</div>
+          <div class="algo-title">Python Sketch — Weighted Operator Selection and Update</div>
           <pre>import random
 
-def weighted_pick(names, weights):
+def roulette_select(operators, weights):
+    """Select one operator by roulette-wheel (proportional to weight)."""
     total = sum(weights)
     u = random.random() * total
-    acc = 0.0
-    for name, w in zip(names, weights):
-        acc += w
-        if acc >= u:
-            return name
-    return names[-1]
+    cumulative = 0.0
+    for op, w in zip(operators, weights):
+        cumulative += w
+        if cumulative >= u:
+            return op
+    return operators[-1]
 
+def update_weight(weights, idx, sigma, eta, w_min=0.01):
+    """Exponential smoothing update for selected operator."""
+    weights[idx] = max(w_min, (1 - eta) * weights[idx] + eta * sigma)
+
+# Example: 4 destroy operators, uniform initial weights
 destroy_ops = ["random", "block", "fractional", "worst"]
-destroy_w = [1.0, 1.0, 1.0, 1.0]
+destroy_w   = [1.0, 1.0, 1.0, 1.0]
+ETA = 0.2
+SIGMA = {"global_best": 33, "improving": 9, "accepted": 3, "rejected": 0}
 
-chosen = weighted_pick(destroy_ops, destroy_w)
-print("selected destroy operator:", chosen)</pre>
+# One iteration
+chosen = roulette_select(destroy_ops, destroy_w)
+outcome = "improving"   # determined after evaluating candidate
+idx = destroy_ops.index(chosen)
+update_weight(destroy_w, idx, SIGMA[outcome], ETA)
+print(f"Selected: {chosen!r}  |  Updated weights: {[round(w,3) for w in destroy_w]}")</pre>
         </div>
 
+        <h3>Acceptance Criterion in ALNS</h3>
+        <p>
+          ALNS is commonly paired with a <strong>simulated annealing</strong> acceptance criterion.
+          The candidate \(x^{cand}\) is accepted with probability:
+        </p>
+        <div class="math-block">
+          $$\Pr[\text{accept}] =
+            \begin{cases}
+              1 & \text{if } c^\top x^{cand} \leq c^\top x^{inc}, \\
+              \exp\!\left(-\dfrac{c^\top x^{cand} - c^\top x^{inc}}{T_t}\right) & \text{otherwise,}
+            \end{cases}$$
+        </div>
+        <p>
+          where \(T_t\) is a temperature that decreases geometrically: \(T_{t+1} = \alpha \cdot T_t\) with
+          \(\alpha \in (0.99, 0.999)\). The initial temperature \(T_0\) is typically set so that a solution
+          with objective value \(w\%\) worse than the incumbent is accepted with a prescribed probability
+          (e.g., \(w = 5\%\), probability = 0.5).
+          This allows ALNS to escape local optima early in the run while converging to intensification later.
+        </p>
+
         <div class="callout red">
-          <div class="callout-title">Limitation</div>
-          ALNS introduces another layer of design decisions: which operators to include, how to score them, how fast to
-          adapt, and which candidates to accept. A poor scoring or acceptance rule can bias the search too quickly
-          toward one operator and lose diversity.
+          <div class="callout-title">Limitations and Design Pitfalls</div>
+          <ul>
+            <li><strong>Operator dominance:</strong> If one operator is lucky early, its weight can dominate
+              quickly and starve other operators. Use segment-based updates and weight clipping to mitigate.</li>
+            <li><strong>Portfolio design:</strong> ALNS quality depends on including a diverse, complementary
+              set of operators. A portfolio of similar operators will adapt to one and ignore the others.</li>
+            <li><strong>Score calibration:</strong> The absolute values of \(\sigma_1, \sigma_2, \sigma_3\)
+              matter relative to each other. If \(\sigma_1 \gg \sigma_2\), the algorithm over-exploits global-best
+              operators even when their recent success was lucky.</li>
+            <li><strong>Acceptance and scoring interaction:</strong> The acceptance criterion determines which
+              outcomes occur, directly affecting score distributions. Tuning them independently can introduce
+              inconsistencies.</li>
+          </ul>
         </div>
 
         <h3>Interactive Demo</h3>
         <p>
-          The interactive demo below simulates an ALNS controller over a small binary incumbent. Each iteration chooses
-          one destroy operator and one repair operator using adaptive weights, applies them, evaluates the candidate,
-          and updates operator scores.
+          The demo below simulates ALNS on a small binary incumbent. Each step selects a destroy and repair operator
+          by adaptive roulette, applies them, evaluates the candidate, and updates the operator weights displayed
+          as bar charts. Watch how the weight distribution shifts as certain operators produce more improvements.
         </p>
 
         <div class="demo-panel">
@@ -3330,7 +3565,7 @@ print("selected destroy operator:", chosen)</pre>
               Press <strong>Step</strong> to run one adaptive iteration, or <strong>Auto</strong> to simulate several.
             </div>
             <br>
-            <canvas id="alnsCanvas" width="760" height="360"></canvas>
+            <canvas id="alnsCanvas" width="760" height="520"></canvas>
             <br>
             <div class="demo-controls">
               <label style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)">
@@ -3354,16 +3589,43 @@ print("selected destroy operator:", chosen)</pre>
           </div>
         </div>
 
-        <h3>Where This Fits in Your Chapter</h3>
-        <ul class="steps">
-          <li><span class="step-num">1</span><span class="step-text"><strong>Put ALNS immediately after LNS</strong>,
-              because it generalizes the same destroy-and-repair framework.</span></li>
-          <li><span class="step-num">2</span><span class="step-text"><strong>Then keep Crossover &amp;
-                Mutation</strong>,
-              since they can be presented as special neighborhood-generation mechanisms.</span></li>
-          <li><span class="step-num">3</span><span class="step-text"><strong>Use ALNS as your bridge</strong> from
-              fixed heuristics to adaptive heuristic orchestration.</span></li>
-        </ul>
+        <h3>LNS vs. ALNS — Summary</h3>
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>LNS</th>
+              <th>ALNS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Destroy rule</strong></td>
+              <td>One fixed rule, chosen by the user</td>
+              <td>Portfolio; selected adaptively each iteration</td>
+            </tr>
+            <tr>
+              <td><strong>Repair rule</strong></td>
+              <td>One fixed repair (usually exact sub-MIP)</td>
+              <td>Portfolio; selected adaptively each iteration</td>
+            </tr>
+            <tr>
+              <td><strong>Acceptance</strong></td>
+              <td>Typically improving-only</td>
+              <td>Often simulated annealing for diversification</td>
+            </tr>
+            <tr>
+              <td><strong>Hyper-parameters</strong></td>
+              <td>Destroy rate \(\rho\), time limit per sub-MIP</td>
+              <td>Additionally: \(\eta\), \(\sigma_1, \sigma_2, \sigma_3\), SA schedule</td>
+            </tr>
+            <tr>
+              <td><strong>Best used when</strong></td>
+              <td>One destroy rule clearly dominates; problem structure is well-understood</td>
+              <td>No single rule dominates; multiple complementary strategies are available</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- ══════════════════════════

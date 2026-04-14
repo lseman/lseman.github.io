@@ -230,11 +230,11 @@
     ctx.save();
     ctx.font = '12px "JetBrains Mono", monospace';
     ctx.fillStyle = "rgba(40,40,40,0.92)";
-    ctx.fillText(title, x, y - 10);
+    ctx.fillText(title, x, y - 24);
 
     const maxW = 220;
     const barH = 16;
-    const gap = 14;
+    const gap = 20;
     const maxWeight = Math.max(...ops.map(o => o.weight), 1.0);
 
     ops.forEach((op, idx) => {
@@ -259,9 +259,10 @@
     });
 
     ctx.restore();
+    return ops.length * (barH + gap) - gap;
   }
 
-  function drawSummary(ctx) {
+  function drawSummary(ctx, y) {
     const inc = score(ALNS.incumbent);
     const best = score(ALNS.best);
 
@@ -271,12 +272,12 @@
     ctx.fillText(
       `incumbent = (${inc.pair[0]}, ${inc.pair[1]}) | obj = ${inc.obj} | feasible = ${inc.feas ? "yes" : "no"}`,
       40,
-      338
+      y
     );
     ctx.fillText(
       `best      = (${best.pair[0]}, ${best.pair[1]}) | obj = ${best.obj} | feasible = ${best.feas ? "yes" : "no"} | iter = ${ALNS.iter}`,
       40,
-      356
+      y + 18
     );
     ctx.restore();
   }
@@ -294,10 +295,10 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     drawBitRow(ctx, ALNS.incumbent, 42, "Current incumbent", ALNS.best);
-    drawBitRow(ctx, ALNS.best, 112, "Best solution", ALNS.incumbent, (_, changed) => changed ? "#1f7a4f" : "rgba(40,40,40,0.92)");
-    drawBarGroup(ctx, 40, 188, "Destroy operator weights", ALNS.destroyOps);
-    drawBarGroup(ctx, 40, 278, "Repair operator weights", ALNS.repairOps);
-    drawSummary(ctx);
+    drawBitRow(ctx, ALNS.best, 120, "Best solution", ALNS.incumbent, (_, changed) => changed ? "#1f7a4f" : "rgba(40,40,40,0.92)");
+    const destroyHeight = drawBarGroup(ctx, 40, 210, "Destroy operator weights", ALNS.destroyOps);
+    const repairHeight = drawBarGroup(ctx, 40, 210 + destroyHeight + 40, "Repair operator weights", ALNS.repairOps);
+    drawSummary(ctx, 210 + destroyHeight + 40 + repairHeight + 34);
   }
 
   function alnsUpdateEta(value) {
