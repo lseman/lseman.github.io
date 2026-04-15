@@ -246,7 +246,6 @@ class MLP {
 
                     for (let layer = this.weights.length - 1; layer >= 0; layer--) {
                         const prevAct = acts[layer];
-                        const z = zs[layer];
                         for (let j = 0; j < delta.length; j++) {
                             const d = delta[j];
                             batchGradB[layer][j] += d;
@@ -255,13 +254,14 @@ class MLP {
                             }
                         }
                         if (layer > 0) {
+                            const prevZ = zs[layer - 1];
                             const nextDelta = new Array(this.weights[layer][0].length).fill(0);
                             for (let i2 = 0; i2 < nextDelta.length; i2++) {
                                 let sum = 0;
                                 for (let j = 0; j < delta.length; j++) {
                                     sum += this.weights[layer][j][i2] * delta[j];
                                 }
-                                nextDelta[i2] = this._activatePrime(z[i2]) * sum;
+                                nextDelta[i2] = this._activatePrime(prevZ[i2]) * sum;
                             }
                             delta = nextDelta;
                         }
@@ -1735,17 +1735,25 @@ s7d_reset();
 
 
 // =====================================
-//  SECTION 8 — DECISION BOUNDARIES
-//  improved: correct mini-batch backprop + probability field
+//  SECTION 8 — DECISION BOUNDARIES (2×2 mosaic)
+//  Four architectures train on the same data simultaneously
 // =====================================
 let s8Running = false, s8Raf = null, s8Epoch = 0;
-let s8Model = null, s8Data = null, s8H = 8, s8Layers = 1;
+let s8Models = [], s8Data = null;
+
+// Fixed 2×2 grid configs: [layers, units, label]
+const s8Configs = [
+    { layers: 1, units: 4,  label: '1 layer × 4 units' },
+    { layers: 1, units: 16, label: '1 layer × 16 units' },
+    { layers: 2, units: 8,  label: '2 layers × 8 units' },
+    { layers: 3, units: 8,  label: '3 layers × 8 units' },
+];
 
 function s8_probColor(p) {
     const r = Math.round(248 * (1 - p) + 96 * p);
     const g = Math.round(113 * (1 - p) + 165 * p);
     const b = Math.round(113 * (1 - p) + 250 * p);
-    return `rgba(${r},${g},${b},0.22)`;
+    return `rgba(${r},${g},${b},0.28)`;
 }
 
 function s8_makeData(type) {
@@ -1756,11 +1764,7 @@ function s8_makeData(type) {
             const cx = cls === 0 ? -0.7 : 0.7;
             const cy = cls === 0 ? -0.3 : 0.3;
             for (let i = 0; i < 80; i++) {
-                data.push({
-                    x: cx + (Math.random() - 0.5) * 0.4,
-                    y: cy + (Math.random() - 0.5) * 0.4,
-                    c: cls
-                });
+                data.push({ x: cx + (Math.random() - 0.5) * 0.4, y: cy + (Math.random() - 0.5) * 0.4, c: cls });
             }
         }
     } else if (type === 'moons') {
@@ -1768,26 +1772,19 @@ function s8_makeData(type) {
             for (let i = 0; i < 80; i++) {
                 const t = Math.PI * (i / 80);
                 if (cls === 0) {
-                    const dx = 0.8 * Math.cos(t) + 0.4 + (Math.random() - 0.5) * noise;
-                    const dy = 0.8 * Math.sin(t) - 0.35 + (Math.random() - 0.5) * noise;
-                    data.push({ x: dx, y: dy, c: cls });
+                    data.push({ x: 0.8 * Math.cos(t) + 0.4 + (Math.random() - 0.5) * noise, y: 0.8 * Math.sin(t) - 0.35 + (Math.random() - 0.5) * noise, c: 0 });
                 } else {
-                    const dx = 0.8 * Math.cos(t) + 0.15 + (Math.random() - 0.5) * noise;
-                    const dy = -0.8 * Math.sin(t) - 0.05 + (Math.random() - 0.5) * noise;
-                    data.push({ x: dx, y: dy, c: cls });
+                    data.push({ x: 0.8 * Math.cos(t) + 0.15 + (Math.random() - 0.5) * noise, y: -0.8 * Math.sin(t) - 0.05 + (Math.random() - 0.5) * noise, c: 1 });
                 }
             }
         }
     } else {
         for (let cls = 0; cls < 2; cls++) {
             const radius = cls === 0 ? 0.85 : 0.35;
-            const offset = cls === 0 ? 0 : 0;
             for (let i = 0; i < 100; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const r = radius + (Math.random() - 0.5) * 0.08;
-                const x = r * Math.cos(angle) + offset;
-                const y = r * Math.sin(angle) + offset;
-                data.push({ x, y, c: cls });
+                data.push({ x: r * Math.cos(angle), y: r * Math.sin(angle), c: cls });
             }
         }
     }
@@ -1797,21 +1794,14 @@ function s8_makeData(type) {
 function s8_reset() {
     s8Running = false;
     cancelAnimationFrame(s8Raf);
-    document.getElementById('s8-play').textContent = '▶ Train';
+    document.getElementById('s8-play').textContent = '▶ Train all';
     s8Epoch = 0;
-    s8H = parseInt(document.getElementById('s8-units').value, 10);
-    s8Layers = parseInt(document.getElementById('s8-layers').value, 10);
     const dataType = document.getElementById('s8-dataset').value;
-    document.getElementById('s8-lr-label').textContent = parseFloat(document.getElementById('s8-lr').value).toFixed(3);
-
-    s8Data = s8_makeData(dataType);
-
     const activation = document.getElementById('s8-activation').value;
-    const architecture = [2, ...Array(s8Layers).fill(s8H), 1];
-    s8Model = new MLP(architecture, activation);
-
+    document.getElementById('s8-lr-label').textContent = parseFloat(document.getElementById('s8-lr').value).toFixed(3);
+    s8Data = s8_makeData(dataType);
+    s8Models = s8Configs.map(cfg => new MLP([2, ...Array(cfg.layers).fill(cfg.units), 1], activation));
     document.getElementById('s8-epoch').textContent = 'Epoch 0';
-    document.getElementById('s8-loss').textContent = 'Loss: -';
     s8_draw();
 }
 
@@ -1822,7 +1812,7 @@ function s8_lrChange() {
 
 function s8_toggle() {
     s8Running = !s8Running;
-    document.getElementById('s8-play').textContent = s8Running ? '⏸ Pause' : '▶ Train';
+    document.getElementById('s8-play').textContent = s8Running ? '⏸ Pause' : '▶ Train all';
     if (s8Running) s8_tick();
 }
 
@@ -1831,72 +1821,103 @@ function s8_tick() {
     s8Epoch += 1;
     const lr = parseFloat(document.getElementById('s8-lr').value);
     const optimizer = document.getElementById('s8-optimizer').value;
-    const batchSize = parseInt(document.getElementById('s8-batch-size')?.value || 8, 10);
-    s8Model.train(s8Data.map(d => [d.x, d.y]), s8Data.map(d => d.c), {
-        lr,
-        epochs: 1,
-        batchSize,
-        optimizer,
-        beta1: 0.9,
-        beta2: 0.999,
-        eps: 1e-8
-    });
-    const loss = s8Data.reduce((acc, d) => {
-        let p = s8Model.predict([d.x, d.y]);
-        p = Math.max(1e-7, Math.min(1 - 1e-7, p));
-        return acc + -(d.c * Math.log(p) + (1 - d.c) * Math.log(1 - p));
-    }, 0) / s8Data.length;
+    const xs = s8Data.map(d => [d.x, d.y]);
+    const ys = s8Data.map(d => d.c);
+    s8Models.forEach(m => m.train(xs, ys, { lr, epochs: 1, batchSize: 16, optimizer, beta1: 0.9, beta2: 0.999, eps: 1e-8 }));
     document.getElementById('s8-epoch').textContent = `Epoch ${s8Epoch}`;
-    document.getElementById('s8-loss').textContent = `Loss: ${loss.toFixed(3)}`;
     s8_draw();
-    if (s8Epoch < 500) { s8Raf = requestAnimationFrame(s8_tick); }
-    else { s8Running = false; document.getElementById('s8-play').textContent = '▶ Train'; }
+    if (s8Epoch < 600) { s8Raf = requestAnimationFrame(s8_tick); }
+    else { s8Running = false; document.getElementById('s8-play').textContent = '▶ Train all'; }
+}
+
+function s8_drawPanel(ctx, model, cfg, ox, oy, pw, ph, data, epoch) {
+    const res = 48;
+    const cW = pw / res, cH = ph / res;
+    const scale = Math.min(pw, ph) * 0.44;
+    const pcx = ox + pw / 2, pcy = oy + ph / 2;
+
+    // Probability field
+    for (let j = 0; j < res; j++) {
+        for (let i = 0; i < res; i++) {
+            const wx = (i / (res - 1)) * 2 - 1;
+            const wy = 1 - (j / (res - 1)) * 2;
+            const p = model ? model.predict([wx, wy]) : 0.5;
+            ctx.fillStyle = s8_probColor(p);
+            ctx.fillRect(ox + i * cW, oy + j * cH, cW + 1, cH + 1);
+        }
+    }
+
+    // Decision boundary
+    if (epoch > 0) {
+        for (let j = 0; j < res - 1; j++) {
+            for (let i = 0; i < res - 1; i++) {
+                const x1 = (i / (res - 1)) * 2 - 1, y1 = 1 - (j / (res - 1)) * 2;
+                const x2 = ((i + 1) / (res - 1)) * 2 - 1;
+                const p1 = model.predict([x1, y1]);
+                const p2 = model.predict([x2, y1]);
+                const p3 = model.predict([x1, y1 - 2 / (res - 1)]);
+                if ((p1 < 0.5) !== (p2 < 0.5) || (p1 < 0.5) !== (p3 < 0.5)) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.fillRect(ox + i * cW, oy + j * cH, 2, 2);
+                }
+            }
+        }
+    }
+
+    // Data points
+    data.forEach(({ x, y, c }) => {
+        ctx.fillStyle = c === 0 ? 'rgba(248,113,113,0.9)' : 'rgba(96,165,250,0.9)';
+        ctx.beginPath();
+        ctx.arc(pcx + x * scale, pcy - y * scale, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 0.5; ctx.stroke();
+    });
+
+    // Panel border
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+    ctx.strokeRect(ox + 0.5, oy + 0.5, pw - 1, ph - 1);
+
+    // Label
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(ox + 4, oy + 4, pw - 8, 18);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = "bold 10px 'Fira Code', monospace";
+    ctx.textAlign = 'left';
+    ctx.fillText(cfg.label, ox + 8, oy + 16);
+
+    // Loss badge (bottom-right)
+    if (epoch > 0) {
+        const loss = data.reduce((acc, d) => {
+            let p = model.predict([d.x, d.y]);
+            p = Math.max(1e-7, Math.min(1 - 1e-7, p));
+            return acc + -(d.c * Math.log(p) + (1 - d.c) * Math.log(1 - p));
+        }, 0) / data.length;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(ox + pw - 72, oy + ph - 18, 68, 14);
+        ctx.fillStyle = 'rgba(250,200,80,0.9)';
+        ctx.font = "9px 'Fira Code', monospace";
+        ctx.textAlign = 'right';
+        ctx.fillText(`loss ${loss.toFixed(3)}`, ox + pw - 4, oy + ph - 7);
+    }
+    ctx.textAlign = 'left';
 }
 
 function s8_draw() {
     const canvas = document.getElementById('c8');
     const { ctx, W, H } = dpr(canvas);
     darkBg(ctx, W, H);
-    if (!s8Data) { s8_reset(); return; }
+    drawDarkGrid(ctx, W, H, 32);
+    if (!s8Data) return;
 
-    const scale = Math.min(W, H) * 0.42;
-    const cx = W / 2, cy = H / 2;
-    const px = x => cx + x * scale;
-    const py = y => cy - y * scale;
+    const PAD = 8, COLS = 2, ROWS = 2;
+    const pw = (W - PAD * (COLS + 1)) / COLS;
+    const ph = (H - PAD * (ROWS + 1)) / ROWS;
 
-    const res = 80;
-    const cW = W / res, cH = H / res;
-
-    for (let j = 0; j < res; j++) {
-        for (let i = 0; i < res; i++) {
-            const wx = (i / (res - 1)) * 2 - 1;
-            const wy = 1 - (j / (res - 1)) * 2;
-            const p = s8Model ? s8Model.predict([wx, wy]) : 0.5;
-            ctx.fillStyle = s8_probColor(p);
-            ctx.fillRect(i * cW, j * cH, cW + 1, cH + 1);
-        }
-    }
-
-    for (let j = 0; j < res - 1; j++) {
-        for (let i = 0; i < res - 1; i++) {
-            const x1 = (i / (res - 1)) * 2 - 1;
-            const y1 = 1 - (j / (res - 1)) * 2;
-            const x2 = ((i + 1) / (res - 1)) * 2 - 1;
-            const y2 = 1 - ((j + 1) / (res - 1)) * 2;
-            const p1 = s8Model ? s8Model.predict([x1, y1]) : 0.5;
-            const p2 = s8Model ? s8Model.predict([x2, y1]) : 0.5;
-            const p3 = s8Model ? s8Model.predict([x1, y2]) : 0.5;
-            if ((p1 < 0.5) !== (p2 < 0.5) || (p1 < 0.5) !== (p3 < 0.5)) {
-                ctx.fillStyle = 'rgba(255,255,255,0.75)';
-                ctx.fillRect(i * cW, j * cH, 2, 2);
-            }
-        }
-    }
-
-    s8Data.forEach(({ x, y, c }) => {
-        ctx.fillStyle = c === 0 ? 'rgba(248,113,113,0.9)' : 'rgba(96,165,250,0.9)';
-        ctx.beginPath(); ctx.arc(px(x), py(y), 4, 0, Math.PI * 2);
-        ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.5; ctx.stroke();
+    s8Configs.forEach((cfg, idx) => {
+        const col = idx % COLS, row = Math.floor(idx / COLS);
+        const ox = PAD + col * (pw + PAD);
+        const oy = PAD + row * (ph + PAD);
+        s8_drawPanel(ctx, s8Models[idx], cfg, ox, oy, pw, ph, s8Data, s8Epoch);
     });
 }
 
@@ -3047,19 +3068,26 @@ function s14_draw(t) {
 s14_draw(0);
 
 // =====================================
-//  SECTION 15 — DECISION BOUNDARY: WIDTH / DEPTH
+//  SECTION 15 — WIDTH vs DEPTH (2×3 mosaic)
+//  Columns: K = 2, 8, 16 neurons/layer
+//  Rows:    L = 1, 3 hidden layers
+//  Same dataset, trained simultaneously
 // =====================================
 let s15Running = false, s15Raf = null;
 let s15Epoch = 0;
-let s15K = 4, s15L = 2;
 let s15Diff = 'circle';
 let s15Activation = 'relu';
 let s15Optimizer = 'sgd';
 let s15Lr = 0.08;
-let s15Batch = 32;
-let s15Model = null;
+let s15Models = [];
 let s15Data = [];
 let s15Trained = false;
+
+// Fixed 2×3 grid: rows=depth, cols=width
+const s15Configs = [
+    { K: 2,  L: 1 }, { K: 8,  L: 1 }, { K: 16, L: 1 },
+    { K: 2,  L: 3 }, { K: 8,  L: 3 }, { K: 16, L: 3 },
+];
 
 function s15_genData(diff) {
     const pts = [];
@@ -3067,12 +3095,12 @@ function s15_genData(diff) {
         for (let cls = 0; cls < 2; cls++) {
             for (let i = 0; i < 80; i++) {
                 const angle = Math.random() * 2 * Math.PI;
-                const r = cls === 0 ? Math.random() * 0.45 : 0.65 + Math.random() * 0.45;
-                pts.push({ x: r * Math.cos(angle) + (Math.random() - 0.5) * 0.06, y: r * Math.sin(angle) + (Math.random() - 0.5) * 0.06, c: cls });
+                const r = cls === 0 ? Math.random() * 0.45 : 0.65 + Math.random() * 0.35;
+                pts.push({ x: r * Math.cos(angle) + (Math.random() - 0.5) * 0.05, y: r * Math.sin(angle) + (Math.random() - 0.5) * 0.05, c: cls });
             }
         }
     } else if (diff === 'xor') {
-        [[-0.7, -0.7], [-0.7, 0.7], [0.7, -0.7], [0.7, 0.7]].forEach(([cx, cy], cls) => {
+        [[-0.65, -0.65], [-0.65, 0.65], [0.65, -0.65], [0.65, 0.65]].forEach(([cx, cy], cls) => {
             for (let i = 0; i < 40; i++) {
                 pts.push({ x: cx + (Math.random() - 0.5) * 0.5, y: cy + (Math.random() - 0.5) * 0.5, c: cls % 2 });
             }
@@ -3081,8 +3109,8 @@ function s15_genData(diff) {
         for (let cls = 0; cls < 2; cls++) {
             for (let i = 0; i < 80; i++) {
                 const t = i / 80 * 3 * Math.PI + cls * Math.PI;
-                const r = 0.1 + 0.9 * (i / 80);
-                pts.push({ x: r * Math.cos(t) + (Math.random() - 0.5) * 0.06, y: r * Math.sin(t) + (Math.random() - 0.5) * 0.06, c: cls });
+                const r = 0.1 + 0.85 * (i / 80);
+                pts.push({ x: r * Math.cos(t) + (Math.random() - 0.5) * 0.05, y: r * Math.sin(t) + (Math.random() - 0.5) * 0.05, c: cls });
             }
         }
     }
@@ -3091,31 +3119,18 @@ function s15_genData(diff) {
 
 function s15_reset() {
     s15Running = false; cancelAnimationFrame(s15Raf);
-    document.getElementById('s15-play').textContent = '▶ Animate';
+    document.getElementById('s15-play').textContent = '▶ Train all';
     s15Epoch = 0;
     s15Trained = false;
     s15Diff = document.getElementById('s15-diff').value;
     s15Activation = document.getElementById('s15-activation').value;
     s15Optimizer = document.getElementById('s15-optimizer').value;
-    s15Batch = +document.getElementById('s15-batch').value;
     s15Lr = +document.getElementById('s15-lr').value / 100;
     document.getElementById('s15-lr-val').textContent = s15Lr.toFixed(2);
     s15Data = s15_genData(s15Diff);
-    s15Model = new MLP([2, ...Array(s15L).fill(s15K), 1], s15Activation);
-    document.getElementById('s15-regions').textContent = 'regions: —';
+    s15Models = s15Configs.map(cfg => new MLP([2, ...Array(cfg.L).fill(cfg.K), 1], s15Activation));
+    document.getElementById('s15-regions').textContent = 'epoch: —';
     s15_draw();
-}
-
-function s15_kChange() {
-    s15K = +document.getElementById('s15-k').value;
-    document.getElementById('s15-k-val').textContent = s15K;
-    s15_reset();
-}
-
-function s15_lChange() {
-    s15L = +document.getElementById('s15-l').value;
-    document.getElementById('s15-l-val').textContent = s15L;
-    s15_reset();
 }
 
 function s15_lrChange() {
@@ -3127,85 +3142,154 @@ function s15_lrChange() {
 
 function s15_toggle() {
     s15Running = !s15Running;
-    document.getElementById('s15-play').textContent = s15Running ? '⏸ Stop' : '▶ Animate';
+    document.getElementById('s15-play').textContent = s15Running ? '⏸ Stop' : '▶ Train all';
     if (s15Running) s15_tick();
 }
 
 function s15_tick() {
     if (!s15Running) return;
-    if (s15Epoch < 1000) {
-        s15Model.train(
-            s15Data.map(d => [d.x, d.y]),
-            s15Data.map(d => d.c),
-            { lr: s15Lr, epochs: 1, batchSize: s15Batch, optimizer: s15Optimizer }
-        );
-        s15Epoch += 1;
-        s15Trained = true;
-        document.getElementById('s15-regions').textContent = `epoch: ${s15Epoch}`;
-        s15_draw();
+    const xs = s15Data.map(d => [d.x, d.y]);
+    const ys = s15Data.map(d => d.c);
+    s15Models.forEach(m => m.train(xs, ys, { lr: s15Lr, epochs: 1, batchSize: 32, optimizer: s15Optimizer }));
+    s15Epoch += 1;
+    s15Trained = true;
+    document.getElementById('s15-regions').textContent = `epoch: ${s15Epoch}`;
+    s15_draw();
+    if (s15Epoch < 800) {
         s15Raf = requestAnimationFrame(s15_tick);
     } else {
         s15Running = false;
-        document.getElementById('s15-play').textContent = '▶ Animate';
-        const estRegions = Math.min(s15K * s15K * s15L, 500);
-        document.getElementById('s15-regions').textContent = `regions ≈ ${estRegions}`;
+        document.getElementById('s15-play').textContent = '▶ Train all';
     }
+}
+
+function s15_drawPanel(ctx, model, cfg, ox, oy, pw, ph, data, trained) {
+    const res = 44;
+    const cW = pw / res, cH = ph / res;
+    const scale = Math.min(pw, ph) * 0.42;
+    const pcx = ox + pw / 2, pcy = oy + ph / 2;
+
+    // Color field
+    for (let j = 0; j < res; j++) {
+        for (let i = 0; i < res; i++) {
+            const wx = (i / (res - 1)) * 2 - 1;
+            const wy = 1 - (j / (res - 1)) * 2;
+            const p = model ? model.predict([wx, wy]) : 0.5;
+            const t = Math.abs(p - 0.5) * 2;
+            ctx.fillStyle = p < 0.5
+                ? `rgba(248,113,113,${Math.min(t * 0.55, 0.5)})`
+                : `rgba(96,165,250,${Math.min(t * 0.55, 0.5)})`;
+            ctx.fillRect(ox + i * cW, oy + j * cH, cW + 1, cH + 1);
+        }
+    }
+
+    // Decision boundary
+    if (trained) {
+        for (let j = 0; j < res - 1; j++) {
+            for (let i = 0; i < res - 1; i++) {
+                const x1 = (i / (res - 1)) * 2 - 1, y1 = 1 - (j / (res - 1)) * 2;
+                const x2 = ((i + 1) / (res - 1)) * 2 - 1;
+                const p1 = model.predict([x1, y1]);
+                const p2 = model.predict([x2, y1]);
+                const p3 = model.predict([x1, y1 - 2 / (res - 1)]);
+                if ((p1 < 0.5) !== (p2 < 0.5) || (p1 < 0.5) !== (p3 < 0.5)) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+                    ctx.fillRect(ox + i * cW, oy + j * cH, 2, 2);
+                }
+            }
+        }
+    }
+
+    // Data points
+    data.forEach(({ x, y, c }) => {
+        ctx.fillStyle = c === 0 ? 'rgba(248,113,113,0.9)' : 'rgba(96,165,250,0.9)';
+        ctx.beginPath();
+        ctx.arc(pcx + x * scale, pcy - y * scale, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 0.4; ctx.stroke();
+    });
+
+    // Panel border
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+    ctx.strokeRect(ox + 0.5, oy + 0.5, pw - 1, ph - 1);
+
+    // Title badge
+    const isWide = cfg.K >= 8;
+    const badgeColor = isWide ? 'rgba(42,140,90,0.7)' : 'rgba(212,140,30,0.7)';
+    const titleW = pw - 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(ox + 4, oy + 4, titleW, 17);
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.font = "bold 9px 'Fira Code', monospace";
+    ctx.textAlign = 'left';
+    ctx.fillText(`K=${cfg.K} units · L=${cfg.L} layers`, ox + 8, oy + 15);
+
+    // Accent line under title
+    ctx.fillStyle = badgeColor;
+    ctx.fillRect(ox + 4, oy + 21, titleW, 2);
+
+    // Loss badge bottom
+    if (trained) {
+        const loss = data.reduce((acc, d) => {
+            let p = model.predict([d.x, d.y]);
+            p = Math.max(1e-7, Math.min(1 - 1e-7, p));
+            return acc + -(d.c * Math.log(p) + (1 - d.c) * Math.log(1 - p));
+        }, 0) / data.length;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(ox + pw - 68, oy + ph - 17, 64, 13);
+        ctx.fillStyle = 'rgba(250,200,80,0.9)';
+        ctx.font = "8px 'Fira Code', monospace";
+        ctx.textAlign = 'right';
+        ctx.fillText(`loss ${loss.toFixed(3)}`, ox + pw - 4, oy + ph - 7);
+    }
+    ctx.textAlign = 'left';
 }
 
 function s15_draw() {
     const canvas = document.getElementById('c15');
     const { ctx, W, H } = dpr(canvas);
     darkBg(ctx, W, H);
-    drawDarkGrid(ctx, W, H, 40);
+    drawDarkGrid(ctx, W, H, 32);
 
-    const scale = Math.min(W, H) * 0.38;
-    const cx = W / 2, cy = H / 2;
-    const px = x => cx + x * scale;
-    const py = y => cy - y * scale;
+    const PAD = 8, COLS = 3, ROWS = 2;
+    const HEADER = 20; // space for row/col labels
+    const pw = (W - PAD * (COLS + 1)) / COLS;
+    const ph = (H - PAD * (ROWS + 1) - HEADER) / ROWS;
 
-    const res = 60;
-    const cW = W / res, cH = H / res;
-    for (let j = 0; j < res; j++) for (let i = 0; i < res; i++) {
-        const wx = (i - res / 2) / scale * 2, wy = (res / 2 - j) / scale * 2;
-        const p = s15Trained && s15Model ? s15Model.predict([wx, wy]) : 0.5;
-        const t = Math.abs(p - 0.5) * 2;
-        ctx.fillStyle = p < 0.5
-            ? `rgba(248,113,113,${Math.min(t * 0.6, 0.5)})`
-            : `rgba(96,165,250,${Math.min(t * 0.6, 0.5)})`;
-        ctx.fillRect(i * cW, j * cH, cW + 1, cH + 1);
-    }
-
-    if (s15Trained) {
-        for (let j = 0; j < res - 1; j++) for (let i = 0; i < res - 1; i++) {
-            const wx = (i - res / 2) / scale * 2, wy = (res / 2 - j) / scale * 2;
-            const p1 = s15Model.predict([wx, wy]);
-            const p2 = s15Model.predict([wx + 2 / scale, wy]);
-            const p3 = s15Model.predict([wx, wy + 2 / scale]);
-            if ((p1 < 0.5) !== (p2 < 0.5) || (p1 < 0.5) !== (p3 < 0.5)) {
-                ctx.fillStyle = 'rgba(255,255,255,0.55)';
-                ctx.fillRect(i * cW, j * cH, 2, 2);
-            }
-        }
-    }
-
-    s15Data.forEach(({ x, y, c }) => {
-        ctx.fillStyle = c === 0 ? '#f87171' : '#60a5fa';
-        ctx.beginPath(); ctx.arc(px(x), py(y), 4, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.5; ctx.stroke();
+    // Column headers (width)
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = "10px 'Fira Code', monospace";
+    ctx.textAlign = 'center';
+    [2, 8, 16].forEach((K, col) => {
+        const ox = PAD + col * (pw + PAD);
+        ctx.fillText(`K = ${K} neurons/layer`, ox + pw / 2, HEADER - 4);
     });
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(cx, 20); ctx.lineTo(cx, H - 20); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(20, cy); ctx.lineTo(W - 20, cy); ctx.stroke();
+    // Row labels (depth)
+    ctx.save();
+    ctx.textAlign = 'center';
+    [1, 3].forEach((L, row) => {
+        const oy = HEADER + PAD + row * (ph + PAD);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.font = "9px 'Fira Code', monospace";
+        ctx.fillText(`L=${L}`, PAD - 2, oy + ph / 2);
+    });
+    ctx.restore();
+
+    s15Configs.forEach((cfg, idx) => {
+        const col = idx % COLS, row = Math.floor(idx / COLS);
+        const ox = PAD + col * (pw + PAD);
+        const oy = HEADER + PAD + row * (ph + PAD);
+        s15_drawPanel(ctx, s15Models[idx], cfg, ox, oy, pw, ph, s15Data, s15Trained);
+    });
 
     if (!s15Trained) {
-        ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = "13px 'Fira Code'";
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.font = "12px 'Fira Code', monospace";
         ctx.textAlign = 'center';
-        ctx.fillText('Press ▶ to train — watch the boundary form', W / 2, H / 2);
+        ctx.fillText('Press ▶ to train all 6 configs simultaneously', W / 2, H / 2 + 10);
         ctx.textAlign = 'left';
     }
-
-    label(ctx, `K=${s15K} neurons × L=${s15L} layers · ${s15Activation.toUpperCase()} · ${s15Optimizer.toUpperCase()}`, 12, H - 14, 'rgba(255,255,255,0.5)', 11);
 }
 
 s15_reset();
