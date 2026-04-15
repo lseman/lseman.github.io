@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Networks — Interactive Atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Fira+Code:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --bg: #f8f7f4;
+      --bg2: #ffffff;
+      --bg3: #f0ede8;
+      --text: #1a1814;
+      --text2: #5a5650;
+      --text3: #9a9690;
+      --accent: #d4450c;
+      --accent2: #1a6fbf;
+      --accent3: #2a8c5a;
+      --border: #ddd9d0;
+      --font-display: 'Oxanium', sans-serif;
+      --font-body: 'Libre Baskerville', serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.7;
+      display: flex;
+      min-height: 100vh
+    }
+
+    /* Sidebar */
+    nav {
+      width: 240px;
+      min-width: 240px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 0
+    }
+
+    nav h1 {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      padding: 0 20px 16px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    nav ul {
+      list-style: none;
+      padding: 12px 0
+    }
+
+    nav li a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 20px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text2);
+      text-decoration: none;
+      transition: all .15s
+    }
+
+    nav li a:hover,
+    nav li a.active {
+      color: var(--accent);
+      background: rgba(212, 69, 12, .06)
+    }
+
+    nav li a .num {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      background: var(--bg3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--text3);
+      flex-shrink: 0;
+      font-family: var(--font-mono)
+    }
+
+    nav li a.active .num {
+      background: var(--accent);
+      color: #fff
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 48px;
+      max-width: 900px
+    }
+
+    .atlas-header {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 2px solid var(--border)
+    }
+
+    .atlas-header h1 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px
+    }
+
+    .atlas-header p {
+      color: var(--text2);
+      font-size: 14px;
+      max-width: 600px
+    }
+
+    /* Sections */
+    .section {
+      margin-bottom: 64px;
+      scroll-margin-top: 24px
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 16px
+    }
+
+    .section-num {
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .1em;
+      text-transform: uppercase
+    }
+
+    .section h2 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text)
+    }
+
+    .section p {
+      color: var(--text2);
+      font-size: 14px;
+      max-width: 680px;
+      margin-bottom: 20px;
+      line-height: 1.8
+    }
+
+    .section p code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg3);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--accent)
+    }
+
+    /* Canvas cards */
+    .canvas-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden
+    }
+
+    .canvas-area {
+      position: relative;
+      background: #0d1117
+    }
+
+    .canvas-area canvas {
+      display: block;
+      width: 100%;
+      height: auto
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      align-items: center
+    }
+
+    .controls label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text2)
+    }
+
+    /* Buttons */
+    button {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg2);
+      color: var(--text2);
+      cursor: pointer;
+      transition: all .15s;
+      letter-spacing: .05em
+    }
+
+    button:hover {
+      background: var(--bg3);
+      color: var(--text)
+    }
+
+    button.active,
+    button.selected {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent)
+    }
+
+    button.btn-play {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent)
+    }
+
+    button.btn-play:hover {
+      background: #b83a0a
+    }
+
+    button.btn-reset {
+      background: var(--bg3)
+    }
+
+    /* Range inputs */
+    input[type=range] {
+      width: 100px;
+      accent-color: var(--accent);
+      vertical-align: middle
+    }
+
+    .val-display {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+      min-width: 36px
+    }
+
+    /* Legend items */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg3)
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text2)
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0
+    }
+
+    /* Info boxes */
+    .info-box {
+      background: rgba(212, 69, 12, .06);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--text2)
+    }
+
+    /* Digit canvas specific */
+    .digit-area {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 16px
+    }
+
+    #digitCanvas {
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      cursor: crosshair;
+      background: #000;
+      touch-action: none
+    }
+
+    .feature-maps {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px
+    }
+
+    .feature-maps canvas {
+      width: 100%;
+      border-radius: 4px
+    }
+
+    /* Split canvas layout */
+    .split-canvas {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0
+    }
+
+    .split-canvas canvas {
+      border-right: 1px solid var(--border)
+    }
+
+    /* Math blocks — displayed equations */
+    .math-block {
+      background: rgba(13, 17, 23, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 18px;
+      margin: 16px 0;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.9;
+      font-family: var(--font-mono);
+    }
+
+    .math-block .font-semibold {
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .math-block p {
+      margin: 0 0 6px
+    }
+
+    /* Card improvements */
+    .canvas-card {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    }
+  </style>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['\\[', '\\]'], ['$$', '$$']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+</head>
+
+<body>
+  <nav>
+    <h1>NN Atlas</h1>
+    <ul>
+      <li><a href="#s0"><span class="num">00</span>Math foundations</a></li>
+      <li><a href="#s1"><span class="num">01</span>Activation functions</a></li>
+      <li><a href="#s2"><span class="num">02</span>Gradient descent</a></li>
+      <li><a href="#s3"><span class="num">03</span>Backpropagation</a></li>
+      <li><a href="#s4"><span class="num">04</span>Gradient heatmaps</a></li>
+      <li><a href="#s5"><span class="num">05</span>Optimizer comparison</a></li>
+      <li><a href="#s6"><span class="num">06</span>Batch strategies</a></li>
+      <li><a href="#s7"><span class="num">07</span>Init & normalization</a></li>
+      <li><a href="#s8"><span class="num">08</span>Decision boundaries</a></li>
+      <li><a href="#s9"><span class="num">09</span>Hidden representations</a></li>
+      <li><a href="#s10"><span class="num">10</span>Convolution intuition</a></li>
+      <li><a href="#s11"><span class="num">11</span>CNN on digits</a></li>
+      <li><a href="#s12"><span class="num">12</span>Learned filters</a></li>
+      <li><a href="#s13"><span class="num">13</span>Gradient-flow heatmap</a></li>
+      <li><a href="#s14"><span class="num">14</span>Jacobian & SVD</a></li>
+      <li><a href="#s15"><span class="num">15</span>Boundaries: width &amp; depth</a></li>
+      <li><a href="#s16"><span class="num">16</span>Regularization theory</a></li>
+      <li><a href="#s17"><span class="num">17</span>Loss landscape geometry</a></li>
+    </ul>
+  </nav>
+  <main>
+    <div class="atlas-header">
+      <h1>Neural Networks — Interactive Atlas</h1>
+      <p>An interactive companion for <em>DAS410108 — Algoritmos Baseados em Dados para Problemas de Ciência e Engenharia</em>.
+        Work through each section in order, or jump to any topic. Every section is interactive: run the
+        simulations, change the parameters, and observe what changes.</p>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <span
+          style="font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase">Prerequisites</span>
+        <span class="tag">linear algebra</span>
+        <span class="tag">basic calculus</span>
+        <span class="tag">gradient &amp; partial derivatives</span>
+        <span class="tag">probability basics</span>
+      </div>
+      <style>
+        .tag {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          background: var(--bg3);
+          color: var(--text2);
+          padding: 3px 10px;
+          border-radius: 20px;
+          border: 1px solid var(--border);
+        }
+      </style>
+    </div>
+
+    <!-- ========== SECTION 0 — MATHEMATICAL FOUNDATIONS ========== -->
+    <section class="section" id="s0">
+      <div class="section-header"><span class="section-num">00</span>
+        <h2>Mathematical foundations</h2>
+      </div>
+      <p>This section reviews the linear algebra, calculus, and probability tools used throughout the atlas.
+        Master these concepts before proceeding — they are the language of neural networks.</p>
+
+      <!-- Notation -->
+      <div style="margin-bottom:24px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">
+          Notation</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+          <div
+            style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-mono)">
+            <div><strong style="color:var(--accent)">Vectors:</strong> x ∈ ℝⁿ — column vector</div>
+            <div><strong style="color:var(--accent)">Matrices:</strong> W ∈ ℝ<sup>m×n</sup></div>
+            <div><strong style="color:var(--accent)">Transpose:</strong> x<sup>⊤</sup>,
+              (AB)<sup>⊤</sup>=B<sup>⊤</sup>A<sup>⊤</sup></div>
+          </div>
+          <div
+            style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-mono)">
+            <div><strong style="color:var(--accent2)">Norms:</strong> ‖x‖₂ = √(∑xᵢ²) (Euclidean)</div>
+            <div><strong style="color:var(--accent2)">Inner product:</strong> a<sup>⊤</sup>b = ∑ᵢ aᵢbᵢ</div>
+            <div><strong style="color:var(--accent2)">Hadamard:</strong> (A∘B)ᵢⱼ = AᵢⱼBᵢⱼ</div>
+          </div>
+          <div
+            style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-mono)">
+            <div><strong style="color:var(--accent3)">Partial deriv:</strong> ∂f/∂xᵢ</div>
+            <div><strong style="color:var(--accent3)">Gradient:</strong> ∇<sub>θ</sub>L = [∂L/∂θ₁, …]<sup>⊤</sup></div>
+            <div><strong style="color:var(--accent3)">Hessian:</strong> Hᵢⱼ = ∂²L/∂θᵢ∂θⱼ</div>
+          </div>
+          <div
+            style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-mono)">
+            <div><strong style="color:var(--accent)">Expectation:</strong> 𝔼[x] = ∑ᵢ pᵢxᵢ</div>
+            <div><strong style="color:var(--accent)">Variance:</strong> Var(x) = 𝔼[(x−𝔼[x])²]</div>
+            <div><strong style="color:var(--accent)">Covariance:</strong> Cov(x,y) = 𝔼[xy]−𝔼[x]𝔼[y]</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Jacobian -->
+      <div style="margin-bottom:24px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">
+          The Jacobian — derivative of a vector-valued function</h3>
+        <p>For f : ℝⁿ → ℝᵐ, the <strong>Jacobian</strong> J ∈ ℝ<sup>m×n</sup> collects all first-order partial
+          derivatives:
+          \[J_{ij} = \frac{\partial f_i}{\partial x_j}.
+          \qquad
+          J = \begin{pmatrix}
+          \frac{\partial f_1}{\partial x_1} & \cdots & \frac{\partial f_1}{\partial x_n}\\
+          \vdots & \ddots & \vdots\\
+          \frac{\partial f_m}{\partial x_1} & \cdots & \frac{\partial f_m}{\partial x_n}
+          \end{pmatrix}.\]
+          For scalar f (m=1), J reduces to the gradient ∇f ∈ ℝⁿ. The Jacobian linearizes a nonlinear map:
+          f(x + δ) ≈ f(x) + J·δ for small δ.</p>
+        <div class="info-box">
+          <strong>The chain rule in Jacobian form:</strong> If z = f(y) and y = g(x), then
+          \[J_z = J_f(y) \cdot J_g(x) \quad\Longrightarrow\quad
+          \frac{\partial z_i}{\partial x_j} = \sum_k \frac{\partial z_i}{\partial y_k}\frac{\partial y_k}{\partial
+          x_j}.\]
+          This is how gradients flow backward through each layer of a neural network.
+        </div>
+      </div>
+
+      <!-- Chain rule visualization -->
+      <div style="margin-bottom:24px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">
+          Computational graph &amp; the chain rule</h3>
+        <div
+          style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;font-size:13px">
+          <div style="text-align:center;font-family:var(--font-mono);font-size:12px;line-height:2;margin-bottom:16px">
+            <span style="background:#1e3a5f;padding:4px 12px;border-radius:4px;color:#93c5fd;margin:0 4px">x</span>
+            <span style="color:var(--text3)">→</span>
+            <span style="background:#1a3a2a;padding:4px 12px;border-radius:4px;color:#86efac;margin:0 4px">W⁽¹⁾x +
+              b⁽¹⁾</span>
+            <span style="color:var(--text3)">→</span>
+            <span style="background:#3a1a1a;padding:4px 12px;border-radius:4px;color:#fca5a5;margin:0 4px">f(·)</span>
+            <span style="color:var(--text3)">→</span>
+            <span style="background:#1a3a2a;padding:4px 12px;border-radius:4px;color:#86efac;margin:0 4px">W⁽²⁾h +
+              b⁽²⁾</span>
+            <span style="color:var(--text3)">→</span>
+            <span style="background:#3a2a1a;padding:4px 12px;border-radius:4px;color:#fcd34d;margin:0 4px">L</span>
+          </div>
+          <p style="margin:0">The forward pass computes all intermediate values <em>a</em> = pre-activations and
+            <em>h</em> = post-activations.
+            The backward pass applies the chain rule recursively: each node receives ∂L/∂a from its child and multiplies
+            by the local derivative to produce ∂L/∂x for its parent.
+          </p>
+        </div>
+      </div>
+
+      <!-- Probability -->
+      <div style="margin-bottom:24px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">
+          Probability refresher</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div
+            style="background:rgba(42,140,90,.06);border:1px solid rgba(42,140,90,.2);border-radius:8px;padding:10px 14px;font-size:13px">
+            <strong style="color:var(--accent3)">Maximum Likelihood Estimation:</strong>
+            \[\hat\theta = \arg\max_\theta \prod_i p(y_i|x_i;\theta)
+            = \arg\min_\theta \sum_i -\log p(y_i|x_i;\theta).\]
+            Cross-entropy loss is the negative log-likelihood of a categorical distribution.
+          </div>
+          <div
+            style="background:rgba(26,111,191,.06);border:1px solid rgba(26,111,191,.2);border-radius:8px;padding:10px 14px;font-size:13px">
+            <strong style="color:var(--accent2)">KL Divergence:</strong>
+            \[D_{\text{KL}}(P\|Q) = \sum_x P(x)\log\frac{P(x)}{Q(x)}
+            = H(P,Q) - H(P).\]
+            Measures "information loss" when Q approximates P. Always ≥ 0, zero iff P=Q.
+          </div>
+        </div>
+        <div class="math-block text-sm">
+          <p class="font-semibold">Gaussian properties:</p>
+          If x ~ 𝒩(μ, σ²): &nbsp; PDF: p(x) = (1/σ√(2π))·exp(−(x−μ)²/2σ²)
+          <br>E[x] = μ, &nbsp; Var(x) = σ², &nbsp; Linear transform: ax+b ~ 𝒩(aμ+b, a²σ²)
+          <br>Sampling: Box-Muller: z₁,z₂ ~ U(0,1) → x = √(−2 ln z₁)·cos(2πz₂) ~ 𝒩(0,1)
+        </div>
+      </div>
+
+      <!-- Taylor series -->
+      <div style="margin-bottom:24px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">
+          Taylor series — optimization's foundation</h3>
+        <p>Any smooth function can be approximated by polynomials around a point x₀:
+          \[f(x) = f(x_0) + f'(x_0)(x-x_0) + \frac{f''(x_0)}{2}(x-x_0)^2 + \cdots + \frac{f^{(n)}(x_0)}{n!}(x-x_0)^n +
+          R_n(x).\]
+          In multiple dimensions (θ ∈ ℝᵈ):
+          \[\mathcal{L}(\theta + \delta) = \mathcal{L}(\theta) + \nabla_\theta\mathcal{L}^\top\delta +
+          \frac{1}{2}\delta^\top H\delta + \cdots\]
+          where H = Hessian matrix (Hᵢⱼ = ∂²L/∂θᵢ∂θⱼ).</p>
+        <div class="info-box">
+          <strong>Why this matters for gradient descent:</strong> The first-order Taylor approximation says that
+          locally, <em>every smooth loss landscape looks like a tilted plane</em>. The gradient ∇L points in the
+          direction of steepest ascent.
+          Gradient descent takes a step opposite to this direction, trusting the local linear approximation.
+          If η is small enough, the approximation error (quadratic term) stays bounded.
+        </div>
+      </div>
+
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c0" width="800" height="320"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s0-play" onclick="s0_toggle()">▶ Animate</button>
+          <button class="btn-reset" onclick="s0_reset()">↺ Reset</button>
+          <label>Order
+            <select id="s0-order" onchange="s0_draw()" style="font-family:var(--font-mono);font-size:11px">
+              <option>1 (linear)</option>
+              <option selected>2 (quadratic)</option>
+              <option>3 (cubic)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========== SECTION 1 ========== -->
+    <section class="section" id="s1">
+      <div class="section-header"><span class="section-num">01</span>
+        <h2>Activation functions</h2>
+      </div>
+      <p>Each artificial neuron computes a weighted sum of its inputs, then applies an
+        <em>activation function</em> \(\sigma(\cdot)\):
+        \[y = \sigma\!\bigl(w_1 x_1 + \cdots + w_n x_n + b\bigr)
+        = \sigma\bigl(w^{\top}x + b\bigr).\]
+      </p>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Theorem (Depth collapse without non-linearity):</p>
+        Let a network have layers \(a^{(\ell)} = W^{(\ell)}a^{(\ell-1)}+b^{(\ell)}\) with identity activation σ(z)=z.
+        Then the entire L-layer network reduces to a single affine transform:
+        \[a^{(L)} = \underbrace{W^{(L)}\cdots W^{(1)}}_{\tilde W}a^{(0)} + \underbrace{\bigl(W^{(L)}\cdots
+        W^{(2)}b^{(1)} + \cdots + b^{(L)}\bigr)}_{\tilde b}.\]
+        <em>Proof:</em> By induction on ℓ. Base ℓ=1: \(a^{(1)}=W^{(1)}a^{(0)}+b^{(1)}\). Inductive step: assume
+        \(a^{(\ell-1)} = \tilde W^{(\ell-1)}a^{(0)}+\tilde b^{(\ell-1)}\); then
+        \(a^{(\ell)} = W^{(\ell)}(\tilde W^{(\ell-1)}a^{(0)}+\tilde b^{(\ell-1)})+b^{(\ell)}
+        = \tilde W^{(\ell)}a^{(0)}+\tilde b^{(\ell)}\). ∎
+        <strong>Therefore: without non-linearity, depth buys nothing over a single linear layer.</strong>
+      </div>
+      <div class="info-box">
+        <strong>Derivative = gradient signal.</strong> The dashed curve shows \(\sigma'(z)\).
+        During backpropagation, gradients are multiplied by \(\sigma'(z)\) at every neuron.
+        If \(\sigma'(z) \approx 0\) for most \(z\) (saturation), the gradient vanishes and early
+        layers stop learning — the core of the vanishing-gradient problem.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Formal definition of derivative:</p>
+        \[\sigma'(z) = \lim_{h\to 0}\frac{\sigma(z+h)-\sigma(z)}{h}.\]
+        For sigmoid: \(\sigma'(z) = \sigma(z)(1-\sigma(z))\) — vanishes at both extremes (±∞).
+        For tanh: \(\sigma'(z) = 1-\tanh^2(z)\) — same saturation problem.
+        For ReLU: \(\sigma'(z) = \mathbf{1}_{z>0}\) — exactly 0 or 1, no vanishing (but can "die").
+      </div>
+      <div
+        style="background:rgba(26,111,191,.06);border-left:3px solid #1a6fbf;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent2)">Intuition:</strong> Think of \(\sigma\) as a threshold or filter.
+        Sigmoid squashes everything to \((0,1)\)—useful for probabilities but saturates quickly.
+        ReLU clips at zero: \(f(x) = \max(0,x)\). Most modern architectures use ReLU or its smooth
+        variants (GELU, Swish) because they avoid saturation and are computationally cheap.
+        Leaky ReLU and ELU fix the "dead neuron" problem of vanilla ReLU.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c1" width="800" height="340"></canvas></div>
+        <div class="controls">
+          <button id="b1-sigmoid" class="selected" onclick="s1_select('sigmoid',this)">Sigmoid</button>
+          <button id="b1-tanh" onclick="s1_select('tanh',this)">Tanh</button>
+          <button id="b1-relu" onclick="s1_select('relu',this)">ReLU</button>
+          <button id="b1-lrelu" onclick="s1_select('lrelu',this)">Leaky ReLU</button>
+          <button id="b1-gelu" onclick="s1_select('gelu',this)">GELU</button>
+          <button id="b1-swish" onclick="s1_select('swish',this)">Swish</button>
+          <button id="b1-elu" onclick="s1_select('elu',this)">ELU</button>
+          <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            <label><input type="checkbox" id="s1-deriv" checked onchange="s1_draw()"> derivative</label>
+          </span>
+        </div>
+        <div class="legend" id="s1-legend">
+          <div class="legend-item">
+            <div class="legend-dot" id="s1-dot" style="background:#4ade80"></div><span id="s1-info">f(x) =
+              1/(1+e⁻ˣ)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#666;opacity:.5"></div><span>f′(x) — gradient magnitude</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 2 ========== -->
+    <section class="section" id="s2">
+      <div class="section-header"><span class="section-num">02</span>
+        <h2>Gradient descent &amp; the loss landscape</h2>
+      </div>
+      <p>The goal of training is to find weights \(\theta\) that minimize a loss function \(\mathcal{L}(\theta)\).
+        Gradient descent takes the gradient \(\nabla_\theta\mathcal{L}\) — the direction of steepest ascent —
+        and steps <em>opposite</em> to it:
+        \[\theta_{t+1} = \theta_t - \eta\,\nabla_\theta\mathcal{L}(\theta_t).\]
+        The scalar \(\eta > 0\) is the <em>learning rate</em>: it controls how far we trust the gradient.
+      </p>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Taylor series and the justification for gradient descent:</p>
+        For a smooth loss, the second-order Taylor expansion around \(\theta_t\) is:
+        \[\mathcal{L}(\theta_t + \delta) = \mathcal{L}(\theta_t) + \nabla_\theta\mathcal{L}^\top\delta +
+        \frac{1}{2}\delta^\top H\delta + O(\|\delta\|^3).\]
+        Setting δ = −η∇ℒ gives:
+        \[\mathcal{L}(\theta_{t+1}) \approx \mathcal{L}(\theta_t) - \eta\|\nabla_\theta\mathcal{L}\|^2 +
+        \frac{\eta^2}{2}\nabla_\theta\mathcal{L}^\top H\nabla_\theta\mathcal{L}.\]
+        If η is small enough that the quadratic term is smaller than the linear decrease, loss decreases.
+        This holds when \(\eta < 2/\lambda_{\max}(H)\) — larger curvature (sharp minima) needs smaller η. </div>
+          <div class="math-block text-sm">
+            <p class="font-semibold">Convergence on convex quadratics:</p>
+            For \(\mathcal{L}(\theta) = \frac{1}{2}\theta^\top A\theta - b^\top\theta\) with symmetric positive-definite
+            A,
+            gradient descent with \(\eta \in (0, 2/\lambda_{\max}(A))\) converges geometrically:
+            \[\|\theta_t - \theta^*\| \leq
+            \left(\frac{\lambda_{\max}(A)-\lambda_{\min}(A)}{\lambda_{\max}(A)+\lambda_{\min}(A)}\right)^{t}\|\theta_0 -
+            \theta^*\|.\]
+            The convergence rate depends on the <em>condition number</em> κ = λ_max/λ_min: larger κ → slower
+            convergence.
+          </div>
+          <div class="math-block text-sm">
+            <p class="font-semibold">Learning rate schedules:</p>
+            Step decay: \(\eta_t = \eta_0\cdot 0.5^{\lfloor t/T\rfloor}\) (drop by half every T steps)
+            <br>Cosine annealing (Loshchilov & Hutter, 2017): \(\eta_t = \eta_{\max}\frac{1+\cos(\pi t/T)}{2}\)
+            <br>Warmup: increase linearly from η_min to η_max over T_warm steps, then apply main schedule.
+            Warmup prevents the large gradient spikes in early training when parameters are random and fragile.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div
+              style="background:rgba(42,140,90,.06);border:1px solid rgba(42,140,90,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+              <strong style="color:var(--accent3)">If \(\eta\) is too small:</strong> convergence is slow — you take
+              many
+              tiny steps toward the minimum. The optimizer may appear to "stall" early.
+            </div>
+            <div
+              style="background:rgba(212,69,12,.06);border:1px solid rgba(212,69,12,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+              <strong style="color:var(--accent)">If \(\eta\) is too large:</strong> you overshoot, bounce across,
+              or even diverge (loss explodes). The path oscillates wildly or climbs instead of descending.
+            </div>
+          </div>
+          <div class="info-box">
+            <strong>Local minima are not the main enemy.</strong> In high dimensions, most local minima are
+            equally good (they all yield similar loss). The real difficulty is <em>saddle points</em> —
+            plateaus where \(\nabla\mathcal{L} \approx 0\) in all directions but some directions curve upward.
+            Second-order methods (Newton, quasi-Newton) can escape these; gradient descent alone cannot.
+          </div>
+          <div class="canvas-card">
+            <div class="canvas-area"><canvas id="c2" width="800" height="420"></canvas></div>
+            <div class="controls">
+              <button class="btn-play" id="s2-play" onclick="s2_toggle()">▶ Play</button>
+              <button class="btn-reset" onclick="s2_reset()">↺ Reset</button>
+              <label>LR <input type="range" id="s2-lr" min="1" max="30" value="8" oninput="s2_lrChange()"> <span
+                  class="val-display" id="s2-lr-val">0.08</span></label>
+              <button onclick="s2_setFunc('bowl')">Bowl</button>
+              <button onclick="s2_setFunc('rosenbrock')">Rosenbrock</button>
+              <button onclick="s2_setFunc('bumpy')">Bumpy</button>
+            </div>
+          </div>
+    </section>
+
+    <!-- ========== SECTION 3 ========== -->
+    <section class="section" id="s3">
+      <div class="section-header"><span class="section-num">03</span>
+        <h2>Backpropagation — the chain rule in action</h2>
+      </div>
+      <p>Backpropagation is an efficient algorithm for computing
+        \(\frac{\partial\mathcal{L}}{\partial w}\) for every weight \(w\) in a neural network.
+        It applies the <em>chain rule</em> recursively, from the loss function back to the first layer.
+        The key insight: each layer only needs to know its own local gradient
+        \(\frac{\partial\mathcal{L}}{\partial a}\) (the "error signal") to update its weights.
+      </p>
+      <div
+        style="background:rgba(212,69,12,.06);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent)">The chain rule:</strong>
+        If \(z = f(y)\) and \(y = g(x)\), then
+        \(\displaystyle\frac{\partial z}{\partial x} = \frac{\partial z}{\partial y}\cdot\frac{\partial y}{\partial
+        x}\).
+        In a network we have a <em>long chain</em> of nested functions, so we multiply local derivatives
+        all the way from the loss back to each weight.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Theorem (Backpropagation formula):</p>
+        For layer ℓ with pre-activation \(z^{(\ell)} = W^{(\ell)}a^{(\ell-1)}+b^{(\ell)}\) and activation \(a^{(\ell)} =
+        f(z^{(\ell)})\):
+        \[\delta^{(\ell)} = \frac{\partial\mathcal{L}}{\partial z^{(\ell)}},
+        \qquad
+        \delta^{(\ell)} = f'(z^{(\ell)})\;\circ\;\bigl(W^{(\ell+1)\top}\delta^{(\ell+1)}\bigr).\]
+        The weight gradient is:
+        \[\frac{\partial\mathcal{L}}{\partial W^{(\ell)}} = \delta^{(\ell)}{a^{(\ell-1)}}^\top,
+        \qquad
+        \frac{\partial\mathcal{L}}{\partial b^{(\ell)}} = \delta^{(\ell)}.\]
+        <em>Proof:</em> By induction from the output layer. Base: \(\delta^{(\text{L})} = \partial\mathcal{L}/\partial
+        z^{(\text{L})} = \hat y - y\) for MSE.
+        Inductive step: \(\partial\mathcal{L}/\partial z_i^{(\ell)} = \sum_k \partial\mathcal{L}/\partial z_k^{(\ell+1)}
+        \cdot \partial z_k^{(\ell+1)}/\partial z_i^{(\ell)} = \sum_k \delta_k^{(\ell+1)} w_{ik}^{(\ell+1)}
+        f'(z_i^{(\ell)})\).
+        ∎
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Two-layer MLP:</p>
+        $$a^{(1)} = W^{(1)}x + b^{(1)},\qquad h^{(1)} = f(a^{(1)}),\qquad a^{(2)} = {w^{(2)}}^{\top}h^{(1)} + b^{(2)}.$$
+        With squared loss \(\mathcal L = \tfrac12(\hat y - y)^2\) and \(\hat y = a^{(2)}\):
+        $$\delta^{(2)} = \frac{\partial\mathcal L}{\partial a^{(2)}} = \hat y - y,\qquad
+        \delta^{(1)} = \frac{\partial\mathcal L}{\partial a^{(1)}} =
+        \bigl(w^{(2)}\delta^{(2)}\bigr)\odot f'\!(a^{(1)}).$$
+        $$\frac{\partial \mathcal L}{\partial W^{(1)}} = \delta^{(1)} x^{\top},\qquad
+        \frac{\partial \mathcal L}{\partial w^{(2)}} = \delta^{(2)} h^{(1)\top}.$$
+        <strong>Weight update:</strong> \(w \leftarrow w - \eta\,\frac{\partial\mathcal L}{\partial w}\).
+      </div>
+      <div class="info-box">
+        <strong>Why "backprop"?</strong> Because we first compute all activations in the
+        <em>forward pass</em> (left to right, from input to loss), then propagate the error
+        signal <em>backwards</em> (right to left). Each layer's \(\delta\) tells it how much
+        its output contributed to the final error — and this is all it needs to update its weights.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c3" width="800" height="420"></canvas></div>
+        <div class="controls">
+          <button onclick="s3_prev()">← Prev</button>
+          <span class="val-display" id="s3-step-label" style="font-size:13px;padding:0 8px">Step 0 / 8</span>
+          <button onclick="s3_next()">Next →</button>
+          <button class="btn-reset" onclick="s3_reset()">↺ Reset</button>
+          <span id="s3-desc"
+            style="font-size:12px;color:var(--text2);flex:1;text-align:right;font-family:var(--font-mono)">Click Next to
+            begin forward pass</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 4 ========== -->
+    <section class="section" id="s4">
+      <div class="section-header"><span class="section-num">04</span>
+        <h2>Gradient heatmaps — monitoring learning</h2>
+      </div>
+      <p>Each weight \(w_{ij}\) in a layer receives a gradient \(\partial\mathcal{L}/\partial w_{ij}\) from
+        backprop. This heatmap visualizes \(\partial\mathcal{L}/\partial w\) for every weight in a layer.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div
+          style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+          <strong style="color:#f87171">Red = large positive gradient:</strong> adjusting this weight strongly
+          in the \(+\) direction reduces the loss. These connections are actively learning.
+        </div>
+        <div
+          style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+          <strong style="color:#60a5fa">Blue = large negative gradient:</strong> the weight must decrease
+          to reduce the loss. Learning is strong but in the opposite direction.
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>Dead or saturated neurons:</strong> white/gray cells have near-zero gradient.
+        This can happen when (a) ReLU neurons receive only negative inputs (they output zero always,
+        producing "dead" neurons), or (b) sigmoid/tanh neurons saturate at their asymptotic limits,
+        making \(\sigma'(z) \approx 0\). Try <em>Saturate neurons</em> to simulate this effect.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Gradient clipping (Pascanu et al., 2012):</p>
+        To prevent exploding gradients, clip the gradient norm:
+        \[g \leftarrow \begin{cases} g & \text{if } \|g\|_2 \leq \tau \\
+        \dfrac{\tau}{\|g\|_2}\,g & \text{otherwise} \end{cases}\]
+        where \(\tau\) is the clip threshold (typical: 1.0 to 5.0).
+        This prevents individual gradient components from becoming too large while preserving direction.
+        For RNNs and LSTMs, clipping is essential due to unstable gradient dynamics over sequences.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c4" width="800" height="340"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s4-play" onclick="s4_toggle()">▶ Simulate training</button>
+          <button class="btn-reset" onclick="s4_reset()">↺ Reset</button>
+          <label>Layer <select id="s4-layer" onchange="s4_draw()" style="font-family:var(--font-mono);font-size:11px">
+              <option>Input→Hidden</option>
+              <option>Hidden→Hidden</option>
+              <option>Hidden→Output</option>
+            </select></label>
+          <button onclick="s4_saturate()">Saturate neurons</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 5 ========== -->
+    <section class="section" id="s5">
+      <div class="section-header"><span class="section-num">05</span>
+        <h2>Optimizer comparison</h2>
+      </div>
+      <p>All optimizers are variants of the basic idea \(\theta \leftarrow \theta - \eta\,\nabla_\theta\mathcal{L}\),
+        but they differ in how they adapt the step direction and magnitude. The key tension:
+        <em>fast convergence</em> vs <em>generalization</em>. Adaptive methods (Adam) often find wider minima,
+        which generalize better; SGD with momentum tends to find sharper minima but sometimes generalizes better
+        in practice.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:12px">
+        <div
+          style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:8px;padding:8px 12px">
+          <strong style="color:#f87171">SGD:</strong> Pure gradient descent. Simple, but sensitive to \(\eta\).
+          Zigzags on elongated valleys because it can't distinguish the two curvature directions.
+        </div>
+        <div
+          style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);border-radius:8px;padding:8px 12px">
+          <strong style="color:#60a5fa">Momentum:</strong> Adds a "velocity" term: gradients are accumulated
+          in a running average. Dampens oscillation along the direction that changes sign frequently.
+        </div>
+        <div
+          style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:8px;padding:8px 12px">
+          <strong style="color:#4ade80">RMSProp:</strong> Adapts the learning rate <em>per parameter</em>.
+          Divides the gradient by the running RMS of recent gradients. Common in RNNs and LSTMs.
+        </div>
+        <div
+          style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.15);border-radius:8px;padding:8px 12px">
+          <strong style="color:#fbbf24">Adam:</strong> Combines momentum (first moment) and adaptive rates
+          (second moment). Bias-corrected estimates prevent initialization bias. Default for most
+          vision and language tasks.
+        </div>
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Adam bias correction (critical at early steps):</p>
+        At initialization, m₀ and v₀ are biased toward zero because they accumulate from m_1 = (1-\beta_1)g_1.
+        Bias correction removes this initialization bias:
+        \[\hat m_t = \frac{m_t}{1-\beta_1^t},\qquad \hat v_t = \frac{v_t}{1-\beta_2^t}.\]
+        Without correction, early steps are smaller than intended; with correction, \(\hat m_1 = m_1/(1-\beta_1) = g_1\)
+        — correct scale.
+        As t \(\to\infty\), \(\beta_1^t \to 0\) and correction has negligible effect.
+        Default \(\beta_1=0.9, \beta_2=0.999\) give corrections of ~10\xe2\x81\xb7 and ~1000\xe2\x81\xb7 at step 1.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Learning rate schedules:</p>
+        Step decay: \(\eta_t = \eta_0 \cdot 0.5^{\lfloor t/T\rfloor}\)
+        <br>Cosine annealing (Loshchilov & Hutter, 2017): \(\eta_t = \eta_{\max}\frac{1+\cos(\pi t/T)}{2}\)
+        <br>Linear warmup: \(\eta_t = \eta_{\max}\cdot t/T_{\text{warm}}\) for \(t < T_{\text{warm}}\), then switch to
+          main schedule. Warmup prevents gradient spikes when randomly initialized fragile parameters face large
+          gradients. </div>
+          <div class="math-block text-sm">
+            <p class="font-semibold">Optimizer equations:</p>
+            SGD:
+            $$\theta_{t+1}=\theta_t-\eta\,g_t,\qquad g_t=\nabla_\theta L(\theta_t).$$
+            Momentum:
+            $$v_t=\mu v_{t-1}+\eta g_t,\qquad \theta_{t+1}=\theta_t-v_t.$$
+            RMSProp:
+            $$s_t=\rho s_{t-1}+(1-\rho)g_t^2,
+            \qquad \theta_{t+1}=\theta_t-\frac{\eta}{\sqrt{s_t+\varepsilon}}g_t.$$
+            Adam:
+            $$m_t=\beta_1 m_{t-1}+(1-\beta_1)g_t,
+            \qquad v_t=\beta_2 v_{t-1}+(1-\beta_2)g_t^2,$$
+            $$\hat m_t=\frac{m_t}{1-\beta_1^t},\qquad \hat v_t=\frac{v_t}{1-\beta_2^t},$$
+            $$\theta_{t+1}=\theta_t-\eta\frac{\hat m_t}{\sqrt{\hat v_t+\varepsilon}}.$$
+          </div>
+          <div class="canvas-card">
+            <div class="canvas-area"><canvas id="c5" width="800" height="420"></canvas></div>
+            <div class="controls">
+              <button class="btn-play" id="s5-play" onclick="s5_toggle()">▶ Race</button>
+              <button class="btn-reset" onclick="s5_reset()">↺ Reset</button>
+            </div>
+            <div class="legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#f87171"></div><span>SGD</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#60a5fa"></div><span>Momentum</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#4ade80"></div><span>RMSProp</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#fbbf24"></div><span>Adam</span>
+              </div>
+            </div>
+          </div>
+    </section>
+
+    <!-- ========== SECTION 6 ========== -->
+    <section class="section" id="s6">
+      <div class="section-header"><span class="section-num">06</span>
+        <h2>Batch size: full, mini-batch, and SGD</h2>
+      </div>
+      <p>The loss \(\mathcal{L}\) is an average over all training samples:
+        \(\mathcal{L}(\theta) = \frac{1}{N}\sum_{i=1}^{N}\ell(x_i, y_i; \theta)\).
+        The <em>gradient estimator</em> — how many samples we average over per update — controls
+        the noise-vs-cost tradeoff.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;font-size:12px">
+        <div
+          style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#4ade80">Full batch (B = N)</strong><br>
+          Smooth, reliable path. Accurate gradient. But: \(O(N)\) per step, can get trapped in
+          <em>sharp</em> local minima, and can't use GPU parallelism efficiently.
+        </div>
+        <div
+          style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#fbbf24">Mini-batch (1 &lt; B &lt; N)</strong><br>
+          The practical sweet spot. Noise helps escape local minima; large enough B gives
+          stable gradients. Standard: B = 32, 64, 128, 256. GPU hardware is optimized for this.
+        </div>
+        <div
+          style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#f87171">SGD (B = 1)</strong><br>
+          Highest variance gradient estimator. Noisy path helps exploration and can find
+          flatter minima. But: very unstable, noisy convergence curves. Used in some advanced
+          scheduling strategies.
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>Noise scale slider:</strong> Increase the noise scale to see how SGD's high-variance
+        gradients produce erratic convergence curves compared to full-batch's smooth descent.
+        The noise in SGD is not purely a bug — it acts as implicit regularization.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Gradient estimators:</p>
+        Full batch:
+        $$g_t=\frac{1}{N}\sum_{i=1}^{N}\nabla_\theta L(x_i;\theta_t),$$
+        $$\theta_{t+1}=\theta_t-\eta g_t.$$
+        Mini-batch of size \(B\):
+        $$g_t=\frac{1}{B}\sum_{i\in\mathcal B_t}\nabla_\theta L(x_i;\theta_t),$$
+        which reduces variance by roughly \(1/B\) compared to SGD.
+        SGD (\(B=1\)) uses a single sample gradient.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c6" width="800" height="360"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s6-play" onclick="s6_toggle()">▶ Train</button>
+          <button class="btn-reset" onclick="s6_reset()">↺ Reset</button>
+          <label>Noise scale <input type="range" id="s6-noise" min="0" max="20" value="10"> </label>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#4ade80"></div><span>Full batch (smooth)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#fbbf24"></div><span>Mini-batch (32)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f87171"></div><span>SGD (1 sample)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 7 ========== -->
+    <section class="section" id="s7">
+      <div class="section-header"><span class="section-num">07</span>
+        <h2>Initialization, normalization &amp; skip connections</h2>
+      </div>
+      <p>Weight initialization sets the <em>starting distribution</em> of activations and gradients before training.
+        It must avoid two failure modes: <em>exploding activations</em> (weights too large) and
+        <em>vanishing activations</em> (weights too small). The right initialization preserves variance
+        of signals in both the forward and backward passes.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:12px">
+        <div
+          style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#f87171">Zero / constant init:</strong> All neurons compute the same function —
+          they are <em>symmetric</em> and learn identically. The network cannot distinguish any input
+          feature. This is called <em>symmetry breaking failure</em>.
+        </div>
+        <div
+          style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#fbbf24">Too-large init:</strong> Activations or gradients grow exponentially
+          with depth. Early layers' gradients overflow (exploding gradients). Training diverges
+          immediately. Unstable from the first step.
+        </div>
+        <div
+          style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#4ade80">Xavier / Glorot:</strong> Designed for sigmoid/tanh activations.
+          Sets \(\operatorname{Var}(w) = \frac{2}{n_{\text{in}}+n_{\text{out}}}\) to preserve
+          variance in <em>both</em> forward and backward passes.
+        </div>
+        <div
+          style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#60a5fa">He initialization:</strong> Tailored for ReLU: since half the
+          ReLU outputs are zero, variance is halved. Uses
+          \(\operatorname{Var}(w) = \frac{2}{n_{\text{in}}}\) — the factor of 2 compensates
+          for the ReLU's killed half.
+        </div>
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Theorem (Xavier initialization — variance derivation):</p>
+        For layer \(y = Wx + b\) with x zero-mean and independent of w:
+        \[\operatorname{Var}(y_i) = \sum_j \mathbb{E}[w_{ij}^2]\,\mathbb{E}[x_j^2]
+        = n_{\text{in}}\,\operatorname{Var}(w)\,\operatorname{Var}(x).\]
+        <em>Proof:</em> \(\operatorname{Var}(y_i) = \mathbb{E}[y_i^2] - \mathbb{E}[y_i]^2\).
+        Since \(\mathbb{E}[y_i] = \sum_j w_{ij}\mathbb{E}[x_j] + b_i = 0\) and w \\bot x:
+        \[\mathbb{E}[y_i^2] = \mathbb{E}\bigl[(\sum_j w_{ij}x_j)^2\bigr]
+        = \sum_j \mathbb{E}[w_{ij}^2]\,\mathbb{E}[x_j^2]
+        = n_{\text{in}}\,\operatorname{Var}(w)\,\operatorname{Var}(x).\]
+        ∎
+        Xavier sets \(\operatorname{Var}(w) = 2/(n_{\text{in}}+n_{\text{out}})\) to preserve variance
+        in both forward (by symmetry argument) and backward passes.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">He initialization derivation:</p>
+        For ReLU activations, approximately half the pre-activations are zero:
+        \[\operatorname{Var}(y_i) \approx \frac{1}{2}\,n_{\text{in}}\,\operatorname{Var}(w)\,\operatorname{Var}(x).
+        \Rightarrow \operatorname{Var}(w) = \frac{2}{n_{\text{in}}}.\]
+        The factor of 2 compensates for the ReLU killing roughly half the signal. ∎
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Variance preservation:</p>
+        For layer \(y = W x + b\) with zero-mean inputs,
+        $$\operatorname{Var}(y) \approx n_{\text{in}}\operatorname{Var}(w)\operatorname{Var}(x).$$
+        Xavier chooses \(\operatorname{Var}(w)=\frac{2}{n_{\text{in}}+n_{\text{out}}}\),
+        while He uses \(\operatorname{Var}(w)=\frac{2}{n_{\text{in}}}\) for ReLU-like activations.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Dropout regularization:</p>
+        $$r_i \sim \mathrm{Bernoulli}(1-p),\qquad \tilde h_i=\frac{r_i h_i}{1-p}.$$
+        $$\mathbb{E}[\tilde h_i] = h_i,
+        \qquad \mathrm{Var}[\tilde h_i] = \frac{p}{1-p} h_i^2.$$
+        This keeps the mean activation fixed at inference while adding noise during training.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Normalization formulas:</p>
+        BatchNorm:
+        $$\mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\quad
+        \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,$$
+        $$\hat x_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\varepsilon}},\quad
+        y_i=\gamma\hat x_i+\beta.$$
+        LayerNorm:
+        $$\mu=\frac{1}{H}\sum_{j=1}^{H}x_j,\quad
+        \sigma^2=\frac{1}{H}\sum_{j=1}^{H}(x_j-\mu)^2,$$
+        $$\hat x_j=\frac{x_j-\mu}{\sqrt{\sigma^2+\varepsilon}},\quad
+        y_j=\gamma_j\hat x_j+\beta_j.$$
+        RMSNorm:
+        $$\mathrm{rms}(x)=\sqrt{\frac{1}{H}\sum_{j=1}^{H}x_j^2+\varepsilon},\quad
+        y_j=\gamma_j\frac{x_j}{\mathrm{rms}(x)}.$$
+      </div>
+      <div
+        style="background:rgba(26,111,191,.06);border-left:3px solid #1a6fbf;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent2)">Why normalize?</strong> Internal covariate shift — the idea that
+        each layer's input distribution shifts as previous layers update — forces later layers to
+        constantly adapt. BatchNorm fixes this by re-centering and re-scaling activations per mini-batch.
+        It also adds implicit regularization: the noise from batch statistics acts as a regularizer,
+        similar to dropout.
+      </div>
+      <div class="info-box">
+        <strong>Practical rules:</strong> Xavier for tanh/sigmoid/linear, He for ReLU-family,
+        BatchNorm for CNNs (not RNNs), LayerNorm for sequence models (transformers, LSTMs),
+        RMSNorm when speed matters (LayerNorm without the mean subtraction).
+      </div>
+
+      <div
+        style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:0">
+        <h3 style="font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--text);margin-bottom:6px">
+          Dropout — implicit ensemble of sub-networks</h3>
+        <p style="font-size:13px;color:var(--text2);max-width:none;margin-bottom:16px">
+          Dropout randomly <em>zeroes</em> a fraction \(p\) of hidden units during training.
+          At inference, all units are active but their outputs are scaled by \((1-p)\) to
+          match the expected training-time signal. The key insight: at training time the
+          network sees a different sub-network at each step; at inference it averages over
+          all \(2^H\) possible sub-networks (for \(H\) hidden units).
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+            <h4
+              style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+              Training phase</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:12px">
+              <div
+                style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 4px;font-family:var(--font-mono);font-size:12px">
+                h<sub>1</sub><br><span style="color:var(--accent3);font-size:10px">kept</span>
+              </div>
+              <div
+                style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 4px;font-family:var(--font-mono);font-size:12px">
+                h<sub>2</sub><br><span style="color:var(--accent3);font-size:10px">kept</span>
+              </div>
+              <div
+                style="background:#2a2020;border:1px solid rgba(248,113,113,.3);border-radius:8px;padding:10px 4px;font-family:var(--font-mono);font-size:12px;color:rgba(255,255,255,.35)">
+                h<sub>3</sub><br><span style="color:#f87171;font-size:10px">zeroed</span>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7">
+              <div style="margin-bottom:4px">
+                <strong style="color:var(--text)">Keep mask:</strong> \(r_i \sim \mathrm{Bernoulli}(1-p)\)
+              </div>
+              <div>
+                <strong style="color:var(--text)">Scaled output:</strong> \(\tilde h_i = \dfrac{r_i}{1-p}\,h_i\)
+              </div>
+              <div
+                style="margin-top:6px;padding:6px 8px;background:rgba(42,140,90,.08);border-radius:6px;font-size:11px">
+                \(\mathbb{E}[\tilde h_i] = \dfrac{1-p}{1-p}\,h_i = h_i\) &nbsp;<span style="color:var(--accent3)">✓
+                  expected value preserved</span>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+            <h4
+              style="font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+              Inference phase</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:12px">
+              <div
+                style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 4px;font-family:var(--font-mono);font-size:12px">
+                h<sub>1</sub><br><span style="color:var(--accent2);font-size:10px">active</span>
+              </div>
+              <div
+                style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 4px;font-family:var(--font-mono);font-size:12px">
+                h<sub>2</sub><br><span style="color:var(--accent2);font-size:10px">active</span>
+              </div>
+              <div
+                style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 4px;font-family:var(--font-mono);font-size:12px">
+                h<sub>3</sub><br><span style="color:var(--accent2);font-size:10px">active</span>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7">
+              <div style="margin-bottom:4px">
+                <strong style="color:var(--text)">No mask:</strong> all \(r_i = 1\)
+              </div>
+              <div>
+                <strong style="color:var(--text)">Output:</strong> \(\hat y = W\bigl[(1-p)h_1, (1-p)h_2,
+                (1-p)h_3\bigr]\)
+              </div>
+              <div
+                style="margin-top:6px;padding:6px 8px;background:rgba(26,111,191,.08);border-radius:6px;font-size:11px">
+                Scaling by \((1-p)\) makes the <em>expected</em> inference output equal to the expected training output.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          style="background:rgba(212,69,12,.06);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;color:var(--text2)">
+          <strong style="color:var(--accent)">Why does dropout work?</strong> Three complementary views:
+          <ul style="margin:6px 0 0 18px;line-height:1.9">
+            <li><strong>Implicit ensemble:</strong> each training step trains a different sub-network; at inference we
+              effectively average over all \(2^H\) combinations.</li>
+            <li><strong>Co-adaptation prevention:</strong> units cannot rely on specific other units being present,
+              forcing each to learn more robust, generalizable features.</li>
+            <li><strong>Variance reduction:</strong> the mask injects noise that acts like explicit regularization,
+              reducing overfitting.</li>
+          </ul>
+        </div>
+        <div class="math-block text-sm mt-4">
+          <p class="font-semibold">Dropout as L2 regularization (Wager et al., 2013):</p>
+          When \(p\) is small, dropout approximates L2 regularization on the activations:
+          $$\mathcal{L}_{\text{dropout}} \approx \mathcal{L}_0 + \lambda\sum_i h_i^2,
+          \qquad \lambda = \frac{p(1-p)}{2}\,\|w_i\|_2^2.$$
+          The effective weight decay depends on the current weight norm — adaptive regularization that
+          automatically scales down weights when they grow large.
+        </div>
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c7" width="800" height="360"></canvas></div>
+        <div class="controls">
+          <button onclick="s7_set('zero')">Zero init</button>
+          <button onclick="s7_set('large')">Too large</button>
+          <button onclick="s7_set('xavier')" id="s7-xavier" class="selected">Xavier</button>
+          <button onclick="s7_set('he')">He (ReLU)</button>
+          <button onclick="s7_set('bn')">+ Batch Norm</button>
+          <button onclick="s7_set('skip')">Skip connections</button>
+        </div>
+        <div class="legend" id="s7-info">
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">Xavier: σ = √(2/(fan_in +
+            fan_out))</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 8 ========== -->
+    <section class="section" id="s8">
+      <div class="section-header"><span class="section-num">08</span>
+        <h2>Decision boundaries — how networks classify</h2>
+      </div>
+      <p>A classifier carves the input space into regions. In a 2D problem, the
+        <em>decision boundary</em> is the curve where the network's output switches from predicting
+        class 0 to class 1 (here: where \(\hat{y} = 0.5\)). A single linear layer can only draw
+        a <em>straight line</em> — it cannot solve XOR. With one hidden layer of ReLU units,
+        each neuron defines a half-plane; the network's boundary is a union of these half-planes,
+        creating arbitrarily complex shapes.
+      </p>
+      <div
+        style="background:rgba(212,69,12,.06);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent)">Universal approximation theorem (Cybenko, 1989):</strong>
+        A single hidden-layer network with sigmoid activations can approximate any continuous function
+        on a compact domain to any desired accuracy, given enough hidden units.
+        The <em>proof is existential</em> — it doesn't tell us how many units we need or how to find them.
+        In practice, depth is often more parameter-efficient than width for complex functions.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Theorem (Lipschitz continuity and generalization):</p>
+        A function \(f: \mathbb{R}^n \to \mathbb{R}\) is L-Lipschitz if
+        \[|f(x) - f(x')| \leq L\,\|x - x'\|_2\quad \forall x,x'.\]
+        For a neural network with Lipschitz activations (ReLU: L=1, tanh: L=1):
+        \[|f(x) - f(x')| \leq \Bigl(\prod_{\ell=1}^{L} L_\ell\|W^{(\ell)}\|_2\Bigr)\|x-x'\|_2,\]
+        where \(L_\ell\) is the Lipschitz constant of the \(\ell\)-th activation.
+        Smaller \(L\) (tighter Lipschitz bound) often correlates with better generalization:
+        the network's output changes less in response to input perturbations.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Two-layer classifier:</p>
+        $$a^{(1)}=W^{(1)}x+b^{(1)},
+        \qquad h^{(1)}=f(a^{(1)}),
+        \qquad y=\operatorname{sign}({w^{(2)}}^{\top}h^{(1)}+b^{(2)}).$$
+        Decision boundaries form where the final linear score crosses zero, so hidden activations determine the shape.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c8" width="800" height="420"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s8-play" onclick="s8_toggle()">▶ Train</button>
+          <button class="btn-reset" onclick="s8_reset()">↺ Reset</button>
+          <label>Hidden units: <select id="s8-units" onchange="s8_reset()"
+              style="font-family:var(--font-mono);font-size:11px">
+              <option>4</option>
+              <option>8</option>
+              <option>16</option>
+            </select></label>
+          <span class="val-display" id="s8-epoch">Epoch 0</span>
+          <span class="val-display" id="s8-loss" style="color:var(--accent)">Loss: -</span>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f87171;border-radius:50%"></div><span>Class 0</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#60a5fa;border-radius:50%"></div><span>Class 1</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 9 ========== -->
+    <section class="section" id="s9">
+      <div class="section-header"><span class="section-num">09</span>
+        <h2>Hidden representations — geometry of learning</h2>
+      </div>
+      <p>Each layer of a neural network applies an <em>affine transformation</em> followed by a non-linearity:
+        \[x^{(\ell)} = f\!\bigl(W^{(\ell)}x^{(\ell-1)} + b^{(\ell)}\bigr).\]
+        Geometrically, this is a sequence of rotations, scalings, translations, and foldings.
+        The network's job is to <em>untangle</em> the input data — moving points so that classes become
+        linearly separable, then placing a simple linear classifier on top.
+      </p>
+      <div
+        style="background:rgba(26,111,191,.06);border-left:3px solid #1a6fbf;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent2)">Why linear separability matters:</strong>
+        The final classification layer is typically a single linear transformation (or a softmax).
+        If the network's last hidden representation is linearly separable, the classifier is trivial.
+        This is why depth helps: each layer can progressively "unwrap" a tangled manifold,
+        doing a small part of the work at each step rather than requiring one layer to do everything at once.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Layer transformation:</p>
+        $$x^{(\ell)}=f\bigl(W^{(\ell)}x^{(\ell-1)}+b^{(\ell)}\bigr),
+        \qquad x^{(0)}=x.$$
+        After several layers, nonlinearity and affine transforms can map tangled classes into a space where a linear
+        separator exists.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c9" width="800" height="360"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s9-play" onclick="s9_toggle()">▶ Animate layers</button>
+          <button class="btn-reset" onclick="s9_reset()">↺ Reset</button>
+          <span class="val-display" id="s9-layer-label">Input space</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 10 ========== -->
+    <section class="section" id="s10">
+      <div class="section-header"><span class="section-num">10</span>
+        <h2>Convolution — parameter sharing &amp; translation equivariance</h2>
+      </div>
+      <p>A convolutional layer applies a small <em>kernel</em> (filter) — a matrix of learnable weights —
+        across the entire input. At each spatial location, it computes a dot product:
+        \[y_{i,j} = \sum_{u=1}^{k}\sum_{v=1}^{k} x_{i+u-1,\,j+v-1}\;k_{u,v}.\]
+        Crucially, the <em>same</em> kernel weights are used at every position — this is
+        <strong>parameter sharing</strong>, which massively reduces the number of parameters compared to
+        a fully-connected layer.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div
+          style="background:rgba(42,140,90,.06);border:1px solid rgba(42,140,90,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+          <strong style="color:var(--accent3)">Translation equivariance:</strong>
+          If the input shifts, the feature map shifts by the same amount. The network "knows"
+          where a feature is relative to the whole image, not as an absolute location. This makes
+          CNNs robust to translations of the input.
+        </div>
+        <div
+          style="background:rgba(26,111,191,.06);border:1px solid rgba(26,111,191,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+          <strong style="color:var(--accent2)">Local receptive field:</strong>
+          Each output depends only on a small k×k patch of the input. This enforces a
+          <em>locality</em> prior: nearby pixels are more related than distant ones.
+          Stacking conv layers expands the effective receptive field exponentially.
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>How to read a kernel:</strong> Positive values (red) in the kernel detect features
+        that match the kernel's pattern. Negative values (blue) suppress features that match.
+        A horizontal edge detector has high positive values on one side and negative on the other,
+        so it produces a strong response where brightness changes vertically.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c10" width="800" height="400"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s10-play" onclick="s10_toggle()">▶ Slide</button>
+          <button class="btn-reset" onclick="s10_reset()">↺ Reset</button>
+          <button onclick="s10_setKernel('edge_h')">Horiz edge</button>
+          <button onclick="s10_setKernel('edge_v')">Vert edge</button>
+          <button onclick="s10_setKernel('blur')">Blur</button>
+          <button onclick="s10_setKernel('sharpen')">Sharpen</button>
+          <label>Speed <input type="range" id="s10-speed" min="1" max="10" value="4"></label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 11 ========== -->
+    <section class="section" id="s11">
+      <div class="section-header"><span class="section-num">11</span>
+        <h2>CNN for digit classification — feature hierarchy</h2>
+      </div>
+      <p>Draw a digit (0–9) in the canvas. The forward pass applies the learned convolution kernels
+        to extract increasingly abstract features. This section shows the <em>feature hierarchy</em>:
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:12px">
+        <div
+          style="background:rgba(42,140,90,.06);border:1px solid rgba(42,140,90,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:var(--accent3)">Layer 1 — Edge detectors:</strong>
+          The first conv layer uses simple Sobel/Laplacian-like kernels to detect edges at
+          different orientations. Each filter responds strongly where brightness changes
+          in a specific direction.
+        </div>
+        <div
+          style="background:rgba(26,111,191,.06);border:1px solid rgba(26,111,191,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:var(--accent2)">Layer 2 — Composite features:</strong>
+          After pooling, a second conv layer combines edges into more complex patterns:
+          curves, loops, junctions. These begin to look like digit components.
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>Architecture insight:</strong> This is a simplified CNN. A real architecture would stack
+        many conv layers (each time halving spatial resolution and doubling channels), then apply
+        fully-connected layers for classification. The key principle is <em>hierarchical feature composition</em>:
+        simple edges → parts → digit → class.
+      </div>
+      <div class="canvas-card">
+        <div class="digit-area">
+          <div>
+            <canvas id="digitCanvas" width="140" height="140"></canvas>
+            <div style="margin-top:8px;display:flex;gap:6px">
+              <button onclick="s11_clear()" style="flex:1">Clear</button>
+              <button class="btn-play" onclick="s11_classify()" style="flex:1">Classify ▶</button>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:8px">Layer 1 — edge
+              maps (8 filters)</div>
+            <div id="fmap1" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:12px"></div>
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:8px">Layer 2 —
+              composite maps (16 filters)</div>
+            <div id="fmap2" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:12px"></div>
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:8px">Output
+              probabilities</div>
+            <canvas id="c11out" width="500" height="60"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 12 ========== -->
+    <section class="section" id="s12">
+      <div class="section-header"><span class="section-num">12</span>
+        <h2>What filters learn — from edges to textures</h2>
+      </div>
+      <p>In a trained CNN, different layers encode fundamentally different kinds of visual information.
+        This is a consequence of the error signal flowing back through the network: early layers
+        receive gradient information about <em>what edges the final classifier needs</em>, and they
+        self-organize to provide them.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:12px">
+        <div
+          style="background:rgba(42,140,90,.06);border:1px solid rgba(42,140,90,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:var(--accent3)">Early layers (L1/L2):</strong>
+          Oriented Gabor-like filters, resembling hand-crafted edge detectors (Sobel, Laplacian).
+          These are the <em>vocabulary of visual primitives</em> — a small set of basic patterns
+          that can be combined to describe any image.
+        </div>
+        <div
+          style="background:rgba(26,111,191,.06);border:1px solid rgba(26,111,191,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:var(--accent2)">Mid layers (L3/L4):</strong>
+          Combinations of edges into textures: line junctions, corners, blobs, simple textures.
+          Still geometric, but more complex and specific to the training distribution.
+        </div>
+        <div
+          style="background:rgba(212,69,12,.06);border:1px solid rgba(212,69,12,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:var(--accent)">Deep layers (L5+):</strong>
+          Complex shape detectors, object parts, class-specific patterns. In ImageNet-trained
+          networks, some deep filters respond to "dog faces" or "car wheels." They are highly
+          specialized to the training data.
+        </div>
+        <div
+          style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#fbbf24">Feature map = filter response:</strong>
+          Each filter produces a <em>feature map</em>: a spatial grid of how strongly that
+          filter fires at each location in the image. Bright spots in the feature map show
+          where that pattern occurs.
+        </div>
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c12" width="800" height="380"></canvas></div>
+        <div class="controls">
+          <button onclick="s12_set('edges')" class="selected" id="s12-edges">Edge filters</button>
+          <button onclick="s12_set('gabor')" id="s12-gabor">Gabor-like</button>
+          <button onclick="s12_set('color')" id="s12-color">Color blobs</button>
+          <button onclick="s12_set('texture')" id="s12-texture">Textures</button>
+          <button onclick="s12_set('deep')" id="s12-deep">Deep filters</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 13 ========== -->
+    <section class="section" id="s13">
+      <div class="section-header"><span class="section-num">13</span>
+        <h2>Gradient flow — vanishing &amp; exploding gradients</h2>
+      </div>
+      <p>During backpropagation, gradients are multiplied by weight matrices and activation derivatives at each layer.
+        If the product of these terms is \(<1\) per layer, gradients shrink exponentially with depth (<em>vanishing
+          gradients</em>): early layers receive almost zero update signal and stop learning.
+          If the product is \(>1\), gradients grow exponentially (<em>exploding gradients</em>):
+          weights update wildly and training diverges.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div
+          style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+          <strong style="color:#f87171">Vanishing gradients:</strong> The gradient magnitude drops as it
+          propagates backward. Early layers (near the input) learn very slowly or not at all.
+          This was the main obstacle to training deep networks before ResNet and proper initialization.
+        </div>
+        <div
+          style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
+          <strong style="color:#fbbf24">Exploding gradients:</strong> Gradient magnitude grows backward.
+          Weight updates are huge, loss diverges to NaN. Common in RNNs with unstable dynamics.
+          Gradient clipping (\(\|g\| \leftarrow \min(\|g\|, \tau)\)) is the standard fix.
+        </div>
+      </div>
+      <div
+        style="background:rgba(26,111,191,.06);border-left:3px solid #1a6fbf;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent2)">Residual connections as an ODE:</strong>
+        A residual block \(x_{k+1} = x_k + F(x_k)\) is analogous to a forward Euler step
+        for \(\frac{dx}{ds} = F(x(s))\). Linearizing: \(x_{k+1} \approx (I + J)x_k\) where
+        \(J = \partial F/\partial x\). Plain stacking scales perturbations by \(\|J\|^K\); residual
+        stacking scales them by \(\|I+J\|^K\). Since eigenvalues of \(J\) are typically small,
+        \(\|I+J\| \approx 1\) regardless of depth — gradients flow like in a width-1 network.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Theorem (Gradient scaling — spectral radius):</p>
+        During backprop, gradient magnitude scales as the product of layer spectral radii:
+        \[\|\nabla_{\theta^{(k)}}\mathcal{L}\| \approx \prod_{\ell=k}^{L} \rho\bigl(W^{(\ell)}\bigr)\,\prod_{\ell=k}^{L}
+        \rho\bigl(f'(z^{(\ell)})\bigr).\]
+        Here \(\rho(A) = |\lambda_{\max}(A)|\) is the spectral radius (largest absolute eigenvalue).
+        <em>Proof sketch:</em> The backprop recurrence \(\delta^{(\ell)} = W^{(\ell+1)\top}\delta^{(\ell+1)} \circ
+        f'(z^{(\ell)})\)
+        approximately multiplies by \(\rho(W^{\ell+1})\cdot\rho(f'(z^{\ell}))\) per layer.
+        If \(\rho(W) > 1\) and \(f' =\,\text{identity}\): gradients <em>explode</em> exponentially.
+        If \(\rho(W) < 1\): gradients <em>vanish</em> exponentially.
+          Only when \(\rho(W) \approx 1\) and \(\rho(f'(z)) \approx 1\) does the signal propagate stably. ∎
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Residuals as ODE steps:</p>
+        A residual block is written as
+        $$x_{k+1}=x_k+F(x_k),$$
+        which is analogous to the forward Euler step for
+        $$\frac{dx}{ds}=F(x(s)).$$
+        Linearizing around a point gives
+        $$x_{k+1}=(I+J)x_k,\qquad\text{where }J=\frac{\partial F}{\partial x}.$$
+        For an eigenvalue \(\lambda\) of \(J\), a plain stack scales perturbations by \(|\lambda|^K\), while
+        a residual stack scales them by \(|1+\lambda|^K\). The residual form therefore makes stable depth easier to
+        achieve.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Fixed-point intuition:</p>
+        If \(F(x^*)=0\), then \(x^*\) is a fixed point of the block and remains unchanged by the residual update.
+        This identity bias means deep networks can learn small deviations from the identity map rather than full
+        transforms.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c13" width="800" height="360"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s13-play" onclick="s13_toggle()">▶ Train</button>
+          <button class="btn-reset" onclick="s13_reset()">↺ Reset</button>
+          <button id="s13-bn" onclick="s13_toggleBN()">Batch Norm: OFF</button>
+          <button id="s13-skip" onclick="s13_toggleSkip()">Skip Conn: OFF</button>
+          <button onclick="s13_setDepth(4)">4 layers</button>
+          <button onclick="s13_setDepth(8)">8 layers</button>
+          <button onclick="s13_setDepth(16)">16 layers</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 14 ========== -->
+    <section class="section" id="s14">
+      <div class="section-header"><span class="section-num">14</span>
+        <h2>Jacobians &amp; singular values — how layers transform space</h2>
+      </div>
+      <p>The <strong>Jacobian</strong> of a function \(f: \mathbb{R}^n \to \mathbb{R}^m\) is the matrix of all
+        first-order partial derivatives:
+        \[J_{ij} = \frac{\partial y_i}{\partial x_j},
+        \qquad J = \begin{pmatrix}
+        \frac{\partial y_1}{\partial x_1} & \cdots & \frac{\partial y_1}{\partial x_n}\\
+        \vdots & \ddots & \vdots\\
+        \frac{\partial y_m}{\partial x_1} & \cdots & \frac{\partial y_m}{\partial x_n}
+        \end{pmatrix}.\]
+      </p>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Theorem (SVD = stretch factor decomposition):</p>
+        Any matrix \(J \in \mathbb{R}^{m \times n imes n}\) can be decomposed as:
+        \[J = U\Sigma V^{\top},\qquad U^\top U = I_m,\; V^\top V = I_n.\]
+        The columns \(u_i\) of \(U\) and \(v_i\) of \(V\) are orthonormal bases.
+        The diagonal \(\sigma_i\) of \(\Sigma\) are <em>singular values</em>, sorted \(\sigma_1 \geq \sigma_2 \geq
+        \cdots \geq 0\).
+        <em>Geometric interpretation:</em> \(J\) applied to direction \(v_i\) stretches by \(\sigma_i\) and aligns with
+        \(u_i\).
+        \[(J v_i) / \|Jv_i\| = u_i,\qquad \|Jv_i\| = \sigma_i.\]
+        <em>Proof sketch:</em> \(J^\top J\) is symmetric positive-semidefinite, so has orthonormal eigenvectors \(v_i\)
+        with \(\lambda_i \geq 0\).
+        Set \(\sigma_i = \sqrt{\lambda_i}\), \(u_i = Jv_i/\sigma_i\). Then \(Jv_i = \sigma_i u_i\) and extending gives
+        \(J = U\Sigma V^\top\). ∎
+      </div>
+      <p style="color:var(--text2);font-size:14px;max-width:680px;margin-bottom:20px;line-height:1.8">
+
+        For a neural network layer, \(J\) maps an input perturbation \(\delta x\) to the output perturbation
+        \(\delta y \approx J\,\delta x\).
+      </p>
+      <div
+        style="background:rgba(212,69,12,.06);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent)">SVD decomposes any matrix</strong> into orthogonal directions of
+        maximum and minimum stretching:
+        \[J = U\Sigma V^{\top},\qquad
+        \sigma_i = \Sigma_{ii}.\]
+        Each \(\sigma_i\) is a <em>singular value</em>: applying \(J\) to a unit vector in the
+        \(V_i\) direction stretches it by exactly \(\sigma_i\). The ratio \(\sigma_{\max}/\sigma_{\min}\)
+        is the <em>condition number</em> — it determines how amplification or attenuation varies
+        across directions.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:12px">
+        <div
+          style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#4ade80">Gradient flow:</strong>
+          If all \(\sigma_i \approx 1\), gradients are neither amplified nor attenuated — ideal
+          for training. If \(\sigma_i \gg 1\), gradients explode (unstable). If \(\sigma_i \ll 1\),
+          gradients vanish. Weight initialization schemes (Xavier, He) are designed to keep
+          singular values near 1.
+        </div>
+        <div
+          style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:8px 12px">
+          <strong style="color:#fbbf24">Anisotropic scaling:</strong>
+          A matrix with \(\sigma_1 \gg \sigma_2\) squashes space in one direction. Input perturbations
+          along \(v_2\) are nearly erased; perturbations along \(v_1\) are amplified. This distorts
+          the loss landscape and makes optimization harder.
+        </div>
+        <div class="math-block text-sm">
+          <p class="font-semibold">Theorem (Condition number = optimization difficulty):</p>
+          The condition number of \(J\) is \(\kappa(J) = \sigma_{\max}/\sigma_{\min}\).
+          It determines how gradient descent behaves:
+          '
+          \[\text{convergence rate} \approx \frac{\kappa(J)-1}{\kappa(J)+1}.\]
+          <ul style="margin:6px 0 0 18px;line-height:1.8">
+            <li>\(\kappa \approx 1\): all singular values similar — spherical contours — gradient descent zigzags less,
+              converges fast</li>
+            <li>\(\kappa \gg 1\): elongated contours — gradient has very different curvature in different directions —
+              slow convergence</li>
+          </ul>
+          Weight initialization schemes (Xavier, He) are specifically designed to keep \(\kappa(J) \approx 1\) at
+          initialization,
+          ensuring gradient flow is isotropic (equal in all directions) in the early training phase.
+        </div>
+
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c14" width="800" height="420"></canvas></div>
+        <div class="controls">
+          <button onclick="s14_set('identity')">Identity</button>
+          <button onclick="s14_set('rotation')">Rotation</button>
+          <button onclick="s14_set('shear')">Shear</button>
+          <button onclick="s14_set('scale')">Anisotropic scale</button>
+          <button onclick="s14_set('random')">Random</button>
+          <button class="btn-play" onclick="s14_animate()">▶ Animate SVD</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 15 ========== -->
+    <section class="section" id="s15">
+      <div class="section-header"><span class="section-num">15</span>
+        <h2>Decision boundaries — width, depth &amp; expressivity</h2>
+      </div>
+      <p>A neural network with one hidden layer of ReLU units partitions the input space into a
+        <em>piecewise linear</em> region. Each ReLU neuron "clips" the space with a hyperplane;
+        the network's decision boundary is the union of all such half-planes.
+        Adding more neurons or more layers exponentially increases the number of linear regions.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:12px">
+        <div
+          style="background:rgba(42,140,90,.06);border:1px solid rgba(42,140,90,.2);border-radius:8px;padding:10px 14px">
+          <strong style="color:var(--accent3)">Width (more neurons):</strong>
+          A single hidden layer with \(K\) ReLU neurons creates at most \(K\) linear pieces.
+          More neurons means more pieces to approximate complex shapes. For a single layer,
+          the number of distinct linear regions grows linearly with \(K\).
+        </div>
+        <div
+          style="background:rgba(26,111,191,.06);border:1px solid rgba(26,111,191,.2);border-radius:8px;padding:10px 14px">
+          <strong style="color:var(--accent2)">Depth (more layers):</strong>
+          Depth is far more powerful. A network with \(L\) layers and width \(K\) can create
+          exponentially many more regions: \(O(K^L)\) in the worst case. Each layer composes
+          the piecewise-linear regions from the previous layer, creating a hierarchy of
+          progressively finer partitions.
+        </div>
+      </div>
+      <div
+        style="background:rgba(212,69,12,.06);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent)">The XOR insight:</strong>
+        A single linear unit cannot solve XOR because a straight line cannot separate the two classes
+        when they alternate. But two ReLU units <em>can</em>: each ReLU defines a half-plane;
+        their positive regions can be positioned to form a triangle that encloses the positive class.
+        This is why non-linearity (ReLU) + width gives us more expressivity than one linear model.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Theorem (Exponential depth advantage):</p>
+        A ReLU network with depth L and width K (per hidden layer) can partition the input space
+        into at most \(R(K,L,n) = \sum_{i=0}^{n}\binom{K}{i}\) distinct linear regions.
+        In the worst case (K \(\geq\) n):
+        \[R(K,L,n) \approx O(K^n)\quad\text{for one layer, but}\quad O(K^{Ln})\text{? No — depth composes.}\]
+        Each layer multiplies the number of regions by up to K:
+        \[\text{regions after L layers} \approx O(K^L).\]
+        <em>Proof sketch (Pascanu et al., 2014):</em> Each ReLU neuron \(h_i = \max(0, w_i^\top x + b_i)\)
+        introduces one hyperplane \(\{x : w_i^\top x + b_i = 0\}\).
+        K neurons create at most K+1 regions in 1D; in nD, K hyperplanes can create \(O(K^n)\) regions.
+        With L layers, regions from layer \(\ell-1\) are each subdivided by layer \(\ell\)'s hyperplanes,
+        giving a multiplicative factor — exponential growth in depth. ∎
+        Width scales linearly; depth scales exponentially. This is why depth is preferred for high-dimensional inputs.
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">Counting linear regions (Pascanu et al., 2014):</p>
+        For a network with \(L\) layers, width \(K\), and input dimension \(n\):
+        $$R(K, L, n) \leq \sum_{i=0}^{n} \binom{K}{i} \;\leq\; K^n \quad\text{(worst case)}.$$
+        Depth scales the exponent: a 3-layer network with \(K=10\) can create thousands of regions
+        where a single layer creates only dozens. This exponential growth is why depth
+        outperforms width for high-dimensional inputs like images.
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c15" width="800" height="400"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s15-play" onclick="s15_toggle()">▶ Animate</button>
+          <button class="btn-reset" onclick="s15_reset()">↺ Reset</button>
+          <label>Neurons (width) <input type="range" id="s15-k" min="1" max="16" value="4" oninput="s15_kChange()">
+            <span class="val-display" id="s15-k-val">4</span></label>
+          <label>Layers (depth) <input type="range" id="s15-l" min="1" max="4" value="2" oninput="s15_lChange()"> <span
+              class="val-display" id="s15-l-val">2</span></label>
+          <label>Difficulty
+            <select id="s15-diff" onchange="s15_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option value="circle">Circle</option>
+              <option value="xor">XOR spiral</option>
+              <option value="spiral">Spiral</option>
+            </select>
+          </label>
+          <span class="val-display" id="s15-regions" style="margin-left:auto">regions: —</span>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f87171;border-radius:50%"></div><span>Class 0</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#60a5fa;border-radius:50%"></div><span>Class 1</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:rgba(255,255,255,.3)"></div><span>Decision boundary</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========== SECTION 16 — REGULARIZATION THEORY ========== -->
+    <section class="section" id="s16">
+      <div class="section-header"><span class="section-num">16</span>
+        <h2>Regularization theory</h2>
+      </div>
+      <p>Regularization is any modification to the learning algorithm that reduces generalization error
+        (test loss) without necessarily reducing training error. The fundamental trade-off:
+        more capacity fits training data better; more regularization improves generalization.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div
+          style="background:rgba(212,69,12,.06);border:1px solid rgba(212,69,12,.2);border-radius:8px;padding:10px 14px;font-size:13px">
+          <strong style="color:var(--accent)">Bias-variance decomposition:</strong><br>
+          \[\mathbb{E}[(y-\hat y)^2] = \text{Bias}^2[\hat y] + \text{Var}[\hat y] + \sigma^2.\]
+          Simple models (high bias) underfit; complex models (high variance) overfit.
+          Regularization controls effective model complexity.
+        </div>
+        <div
+          style="background:rgba(42,140,90,.06);border:1px solid rgba(42,140,90,.2);border-radius:8px;padding:10px 14px;font-size:13px">
+          <strong style="color:var(--accent3)">Rademacher complexity:</strong><br>
+          Measures how well a function class can fit random ±1 noise.
+          For a class ℱ and N samples:
+          \[\mathfrak{R}_N(\mathcal{F}) = \mathbb{E}_{x_i,\sigma}\left[\sup_{f\in\mathcal{F}}\frac{1}{N}\sum_{i=1}^N
+          \sigma_i f(x_i)\right].\]
+          Bounds test error: R(ℱ) ≤ R̂_N(ℱ) + O(√(complexity/N)).
+        </div>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">L2 regularization = weight decay</p>
+        \[\mathcal{L}_{\text{reg}}(\theta) = \mathcal{L}_0(\theta) + \frac{\lambda}{2}\|\theta\|_2^2,
+        \qquad \nabla_\theta\mathcal{L}_{\text{reg}} = \nabla_\theta\mathcal{L}_0 + \lambda\theta.\]
+        The gradient term −λθ drives weights toward zero each step (hence "weight decay").
+        Equivalent to imposing a Gaussian prior p(w) ∝ exp(−λ‖w‖²/2) via MAP estimation.
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Dropout as approximate variational inference (Gal & Ghahramani, 2016)</p>
+        Minimizing the cross-entropy objective with dropout is equivalent to minimizing the variational lower bound:
+        \[\mathcal{L}_{\text{dropout}} \approx \sum_i \mathbb{E}_{q(\epsilon)}[\log p(y_i|f(x_i,\epsilon))].\]
+        The dropout mask ε ~ Bernoulli(p) approximates the variational distribution over network subgraphs.
+        At test time, the deterministic network with scaled weights approximates the Bayesian posterior predictive.
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Early stopping as implicit regularization</p>
+        Let the optimization trajectory be θ(t). Early stopping at T* chooses θ(T*) rather than the global minimizer θ*.
+        The effective regularizer is:
+        \[\Omega(\theta) = \frac{1}{2}(\theta - \theta^*)^\top H^*(\theta - \theta^*) + O(\|\theta-\theta^*\|^3),\]
+        where H* = Hessian at the global minimum. Early stopping implicitly penalizes the directional component
+        along eigenvectors of H* with small curvature — effectively controlling effective rank.
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Label smoothing (Szegedy et al., 2016)</p>
+        Instead of one-hot targets y ∈ {0,1}, use soft targets:
+        \[\tilde y = (1-\epsilon)\,y + \epsilon/K,\]
+        where K is the number of classes. This prevents the model from becoming overconfident on training data
+        and acts as a regularizer equivalent to L2 regularization on logits:
+        \[\mathcal{L}_{\text{ls}} = -(1-\epsilon)\sum_i y_i\log\hat y_i - \epsilon\sum_i\sum_k \frac{1}{K}\log\hat
+        y_k.\]
+      </div>
+
+      <div class="info-box">
+        <strong>Practical regularization hierarchy</strong> (most to least impactful in practice):
+        <ol style="margin:8px 0 0 20px;line-height:1.9">
+          <li>Data augmentation (increases effective sample size N)</li>
+          <li>Dropout / dropblock / r-drop</li>
+          <li>Weight decay (L2) with proper schedule</li>
+          <li>Label smoothing</li>
+          <li>Early stopping (by monitoring val loss)</li>
+          <li>Mixup / CutMix (interpolated training samples)</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 17 — LOSS LANDSCAPE GEOMETRY ========== -->
+    <section class="section" id="s17">
+      <div class="section-header"><span class="section-num">17</span>
+        <h2>Loss landscape geometry</h2>
+      </div>
+      <p>The loss landscape ℒ(θ) is a scalar function over a very high-dimensional parameter space (often 10⁶–10⁹
+        dimensions).
+        Its geometry determines whether gradient-based optimization succeeds and how well the final model generalizes.
+      </p>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Hessian eigenstructure — curvature of the loss landscape</p>
+        The Hessian H = ∇²ℒ(θ) at any point has an orthogonal eigen-decomposition:
+        \[H = Q\Lambda Q^\top, \quad Q = [q_1,\dots,q_d], \quad \Lambda = \text{diag}(\lambda_1,\dots,\lambda_d).\]
+        Moving in direction qᵢ with step α changes the loss by:
+        \[\mathcal{L}(\theta + \alpha q_i) \approx \mathcal{L}(\theta) + \frac{1}{2}\alpha^2\lambda_i\|\theta\|^2.\]
+        <ul style="margin:6px 0 0 18px;line-height:1.8">
+          <li><strong>λᵢ &gt; 0:</strong> local minimum along qᵢ (curves upward)</li>
+          <li><strong>λᵢ &lt; 0:</strong> local maximum / saddle point (curves downward)</li>
+          <li><strong>λᵢ ≈ 0:</strong> flat direction — large steps barely change loss (plateau)</li>
+        </ul>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div
+          style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:10px 14px;font-size:13px">
+          <strong style="color:#4ade80">Flat minima generalize better</strong><br>
+          Keskar et al. (2017): models converging to flat minima (small Hessian eigenvalues) generalize better
+          than sharp minima (large eigenvalues), even with identical training loss.
+          Sharp minima are sensitive to small parameter perturbations → large change in output → overfit.
+        </div>
+        <div
+          style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:10px 14px;font-size:13px">
+          <strong style="color:#fbbf24">Mode connectivity (Garipov et al., 2018)</strong><br>
+          Any two independently trained minima are connected by a path of constant low loss.
+          Formally: ∃γ(t) such that ℒ(γ(0))=ℒ(γ(1)) and ℒ(γ(t)) ≤ ℒ(γ(0))+ε for all t ∈ [0,1].
+          This means loss landscapes have "valleys" connecting many good solutions.
+        </div>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">SGD noise as implicit regularization</p>
+        SGD with mini-batch gradient adds isotropic noise to the gradient estimate:
+        \[g_{\text{SGD}} = \frac{1}{B}\sum_{i\in\mathcal{B}}\nabla_\theta\ell(x_i,y_i;\theta)
+        = \nabla_\theta\mathcal{L} + \mathcal{N}(0,\sigma^2_{\text{eff}}).\]
+        At flat minima, this noise causes small parameter diffusion but the loss stays low.
+        At sharp minima, noise causes large loss fluctuations → escape. This explains why SGD often
+        finds wider, better-generalizing minima than full-batch gradient descent.
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Spectral gap of the Hessian — deep网络的优化 landscape</p>
+        Let λ₁ ≥ λ₂ ≥ … ≥ λ_d be Hessian eigenvalues sorted descending. The <em>spectral gap</em>
+        γ = λ_k − λ_{k+1} (for some k) determines how quickly SGD can escape the current region.
+        Large gap → well-separated modes → easier to identify distinct minima.
+        Small gap → eigenvalue clustering → many correlated directions of similar curvature.
+      </div>
+
+      <div class="info-box">
+        <strong>Practical implications:</strong>
+        <ul style="margin:8px 0 0 20px;line-height:1.9">
+          <li>Learning rate annealing (cosine schedule) naturally explores wider minima by starting high (escaping sharp
+            minima) and settling low (converging to flat regions)</li>
+          <li>Label smoothing and Mixup push the loss landscape toward flatter regions by preventing overconfident
+            predictions</li>
+          <li>Sharpness-aware minimization (SAM) explicitly regularizes toward flat minima: maximizes loss along
+            gradient directions</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="nn_atlas.js"></script>
+</body>
+
+</html>
