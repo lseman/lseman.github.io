@@ -351,21 +351,21 @@
 
     /* Math blocks — displayed equations */
     .math-block {
-      background: rgba(13, 17, 23, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #f0ede8;
+      border: 1px solid var(--border);
       border-left: 3px solid var(--accent2);
       border-radius: 0 8px 8px 0;
       padding: 12px 18px;
       margin: 16px 0;
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.75);
+      color: var(--text);
       line-height: 1.9;
       font-family: var(--font-mono);
     }
 
     .math-block .font-semibold {
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.85);
+      color: var(--text);
       margin-bottom: 6px;
       font-size: 12px;
       text-transform: uppercase;
@@ -373,7 +373,12 @@
     }
 
     .math-block p {
-      margin: 0 0 6px
+      margin: 0 0 6px;
+      color: var(--text2);
+    }
+
+    .math-block ul li {
+      color: var(--text2);
     }
 
     /* Card improvements */
@@ -408,13 +413,13 @@
       <li><a href="#s4"><span class="num">04</span>Gradient heatmaps</a></li>
       <li><a href="#s5"><span class="num">05</span>Optimizer comparison</a></li>
       <li><a href="#s6"><span class="num">06</span>Batch strategies</a></li>
-      <li><a href="#s7"><span class="num">07</span>Init & normalization</a></li>
+      <li><a href="#s7"><span class="num">07</span>Initialization & normalization</a></li>
       <li><a href="#s8"><span class="num">08</span>Decision boundaries</a></li>
       <li><a href="#s9"><span class="num">09</span>Hidden representations</a></li>
       <li><a href="#s10"><span class="num">10</span>Convolution intuition</a></li>
       <li><a href="#s11"><span class="num">11</span>CNN on digits</a></li>
       <li><a href="#s12"><span class="num">12</span>Learned filters</a></li>
-      <li><a href="#s13"><span class="num">13</span>Gradient-flow heatmap</a></li>
+      <li><a href="#s13"><span class="num">13</span>Gradient flow &amp; skip connections</a></li>
       <li><a href="#s14"><span class="num">14</span>Jacobian & SVD</a></li>
       <li><a href="#s15"><span class="num">15</span>Boundaries: width &amp; depth</a></li>
       <li><a href="#s16"><span class="num">16</span>Regularization theory</a></li>
@@ -907,7 +912,7 @@
         Without correction, early steps are smaller than intended; with correction, \(\hat m_1 = m_1/(1-\beta_1) = g_1\)
         — correct scale.
         As t \(\to\infty\), \(\beta_1^t \to 0\) and correction has negligible effect.
-        Default \(\beta_1=0.9, \beta_2=0.999\) give corrections of ~10\xe2\x81\xb7 and ~1000\xe2\x81\xb7 at step 1.
+        Default \(\beta_1=0.9, \beta_2=0.999\) give corrections of \(\approx 10\) and \(\approx 1000\) at step 1.
       </div>
       <div class="math-block text-sm">
         <p class="font-semibold">Learning rate schedules:</p>
@@ -989,6 +994,8 @@
         <strong>Noise scale slider:</strong> Increase the noise scale to see how SGD's high-variance
         gradients produce erratic convergence curves compared to full-batch's smooth descent.
         The noise in SGD is not purely a bug — it acts as implicit regularization.
+        Use the mini-batch slider to compare different batch sizes: smaller B increases noise, larger B
+        gives smoother updates but more computation per step.
       </div>
       <div class="math-block text-sm">
         <p class="font-semibold">Gradient estimators:</p>
@@ -1005,14 +1012,16 @@
         <div class="controls">
           <button class="btn-play" id="s6-play" onclick="s6_toggle()">▶ Train</button>
           <button class="btn-reset" onclick="s6_reset()">↺ Reset</button>
-          <label>Noise scale <input type="range" id="s6-noise" min="0" max="20" value="10"> </label>
+          <label>Noise scale <input type="range" id="s6-noise" min="0" max="20" value="10"></label>
+          <label>Mini-batch B <input type="range" id="s6-batch-size" min="2" max="64" step="2" value="16" oninput="s6_batchChange()"></label>
+          <span style="font-size:12px;color:var(--text2);">B = <span id="s6-batch-label">16</span></span>
         </div>
         <div class="legend">
           <div class="legend-item">
             <div class="legend-dot" style="background:#4ade80"></div><span>Full batch (smooth)</span>
           </div>
           <div class="legend-item">
-            <div class="legend-dot" style="background:#fbbf24"></div><span>Mini-batch (32)</span>
+            <div class="legend-dot" style="background:#fbbf24"></div><span>Mini-batch (<span id="s6-legend-mini-size">16</span>)</span>
           </div>
           <div class="legend-item">
             <div class="legend-dot" style="background:#f87171"></div><span>SGD (1 sample)</span>
@@ -1024,105 +1033,404 @@
     <!-- ========== SECTION 7 ========== -->
     <section class="section" id="s7">
       <div class="section-header"><span class="section-num">07</span>
-        <h2>Initialization, normalization &amp; skip connections</h2>
+        <h2>Initialization &amp; normalization</h2>
       </div>
       <p>Weight initialization sets the <em>starting distribution</em> of activations and gradients before training.
         It must avoid two failure modes: <em>exploding activations</em> (weights too large) and
         <em>vanishing activations</em> (weights too small). The right initialization preserves variance
         of signals in both the forward and backward passes.
       </p>
+
+      <!-- ---- WHY INITIALIZATION MATTERS: INTUITION ---- -->
+      <div style="background:rgba(26,111,191,.06);border-left:3px solid #1a6fbf;border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--accent2);display:block;margin-bottom:6px">The core intuition: keeping signals alive through depth</strong>
+        Think of a 50-layer network as a chain of amplifiers. Each layer multiplies the signal by some factor that depends on the weights. If every layer amplifies by 1.1, after 50 layers the signal is \(1.1^{50} \approx 117\times\) larger — activations blow up. If each layer shrinks by 0.9, after 50 layers the signal is \(0.9^{50} \approx 0.005\times\) — it vanishes to nothing. Only if each layer preserves the signal magnitude (factor ≈ 1) does information flow cleanly from input to output — and gradients flow cleanly back.
+        <br><br>
+        <strong style="color:var(--accent2)">Concrete numbers:</strong> Suppose each weight is drawn from a Gaussian with standard deviation \(\sigma_w\) and a layer has \(n=512\) inputs. The pre-activation is \(z = \sum_{j=1}^{512} w_j x_j\). If \(\sigma_w = 0.1\), then \(\text{Var}(z) = 512 \cdot 0.01 \cdot \text{Var}(x) = 5.12 \cdot \text{Var}(x)\) — the signal grows by 5× per layer! After 10 layers: \(5.12^{10} \approx 10^7\). Conversely, if \(\sigma_w = 0.01\), then \(\text{Var}(z) = 0.0512 \cdot \text{Var}(x)\) and after 10 layers: \(0.0512^{10} \approx 10^{-13}\).
+        <br><br>
+        The <em>correct</em> choice is the one that makes Var(z) = Var(x), i.e., the signal preserves its scale at every layer. This is the principle behind all modern initializations.
+      </div>
+
+      <!-- ---- FAILURE MODE DEMOS ---- -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:12px">
         <div
           style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:8px 12px">
           <strong style="color:#f87171">Zero / constant init:</strong> All neurons compute the same function —
           they are <em>symmetric</em> and learn identically. The network cannot distinguish any input
           feature. This is called <em>symmetry breaking failure</em>.
+          <br><br><em>Why it fails:</em> if all weights in a layer are equal, all neurons receive the same gradient and update identically. No matter how many epochs you train, they remain identical — effectively one neuron, not many.
         </div>
         <div
           style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:8px 12px">
           <strong style="color:#fbbf24">Too-large init:</strong> Activations or gradients grow exponentially
           with depth. Early layers' gradients overflow (exploding gradients). Training diverges
           immediately. Unstable from the first step.
+          <br><br><em>Why it fails:</em> for sigmoid/tanh, large pre-activations push into the saturation zone (slope ≈ 0). Every gradient then gets multiplied by ≈ 0 at each layer. For linear-like activations (ReLU), gradients explode instead, causing NaN weights.
         </div>
         <div
           style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px">
-          <strong style="color:#4ade80">Xavier / Glorot:</strong> Designed for sigmoid/tanh activations.
+          <strong style="color:#4ade80">Xavier / Glorot (2010):</strong> Designed for sigmoid/tanh activations.
           Sets \(\operatorname{Var}(w) = \frac{2}{n_{\text{in}}+n_{\text{out}}}\) to preserve
           variance in <em>both</em> forward and backward passes.
+          <br><br><em>Rule of thumb:</em> sample \(w \sim \mathcal{U}\!\left[-\frac{\sqrt{6}}{\sqrt{n_\text{in}+n_\text{out}}},\; \frac{\sqrt{6}}{\sqrt{n_\text{in}+n_\text{out}}}\right]\) or \(w \sim \mathcal{N}\!\left(0,\,\frac{2}{n_\text{in}+n_\text{out}}\right)\).
         </div>
         <div
           style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:8px 12px">
-          <strong style="color:#60a5fa">He initialization:</strong> Tailored for ReLU: since half the
+          <strong style="color:#60a5fa">He / Kaiming (2015):</strong> Tailored for ReLU: since half the
           ReLU outputs are zero, variance is halved. Uses
           \(\operatorname{Var}(w) = \frac{2}{n_{\text{in}}}\) — the factor of 2 compensates
           for the ReLU's killed half.
+          <br><br><em>Rule of thumb:</em> sample \(w \sim \mathcal{N}\!\left(0,\,\sqrt{\frac{2}{n_\text{in}}}\right)\). This is the default in PyTorch for layers followed by ReLU.
         </div>
       </div>
+
+      <!-- ---- FULL XAVIER DERIVATION ---- -->
+      <div style="margin-bottom:8px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px">
+          Full derivation: Xavier / Glorot initialization
+        </h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">
+          We want to find \(\operatorname{Var}(w)\) so that each layer neither amplifies nor attenuates the signal. We derive this from first principles, separately for the forward pass and the backward pass, then reconcile both conditions into one formula.
+        </p>
+      </div>
+
       <div class="math-block text-sm">
-        <p class="font-semibold">Theorem (Xavier initialization — variance derivation):</p>
-        For layer \(y = Wx + b\) with x zero-mean and independent of w:
-        \[\operatorname{Var}(y_i) = \sum_j \mathbb{E}[w_{ij}^2]\,\mathbb{E}[x_j^2]
-        = n_{\text{in}}\,\operatorname{Var}(w)\,\operatorname{Var}(x).\]
-        <em>Proof:</em> \(\operatorname{Var}(y_i) = \mathbb{E}[y_i^2] - \mathbb{E}[y_i]^2\).
-        Since \(\mathbb{E}[y_i] = \sum_j w_{ij}\mathbb{E}[x_j] + b_i = 0\) and w \\bot x:
-        \[\mathbb{E}[y_i^2] = \mathbb{E}\bigl[(\sum_j w_{ij}x_j)^2\bigr]
-        = \sum_j \mathbb{E}[w_{ij}^2]\,\mathbb{E}[x_j^2]
-        = n_{\text{in}}\,\operatorname{Var}(w)\,\operatorname{Var}(x).\]
-        ∎
-        Xavier sets \(\operatorname{Var}(w) = 2/(n_{\text{in}}+n_{\text{out}})\) to preserve variance
-        in both forward (by symmetry argument) and backward passes.
+        <p class="font-semibold">Step 1 — Forward pass variance analysis</p>
+        <p>Consider a single layer: \(y_i = \sum_{j=1}^{n_\text{in}} w_{ij} x_j + b_i\).</p>
+        <p><strong>Assumptions (needed to apply independence):</strong></p>
+        <ul style="margin:6px 0 10px 18px;line-height:1.7;font-size:12px;color:var(--text2)">
+          <li>Inputs \(x_j\) are i.i.d. with mean 0 and variance \(\sigma_x^2\).</li>
+          <li>Weights \(w_{ij}\) are i.i.d. with mean 0 and variance \(\sigma_w^2\).</li>
+          <li>Weights are independent of inputs (valid at initialization).</li>
+          <li>Bias \(b_i = 0\) at initialization.</li>
+        </ul>
+        <p>Now expand the variance of \(y_i\):</p>
+        \[\operatorname{Var}(y_i) = \operatorname{Var}\!\Bigl(\sum_j w_{ij} x_j\Bigr)
+        \overset{\text{independence}}{=}
+        \sum_j \operatorname{Var}(w_{ij} x_j).\]
+        <p>For each term, since \(w_{ij}\) and \(x_j\) are independent with zero mean:</p>
+        \[\operatorname{Var}(w_{ij} x_j) = \mathbb{E}[w_{ij}^2]\,\mathbb{E}[x_j^2] - \underbrace{(\mathbb{E}[w_{ij}])^2}_{=0}\,(\mathbb{E}[x_j])^2 = \sigma_w^2\,\sigma_x^2.\]
+        <p>Summing over \(n_\text{in}\) inputs:</p>
+        \[\boxed{\operatorname{Var}(y_i) = n_\text{in}\,\sigma_w^2\,\sigma_x^2.}\]
+        <p>For the forward signal to be preserved: \(\operatorname{Var}(y) = \operatorname{Var}(x)\), so:</p>
+        \[n_\text{in}\,\sigma_w^2 = 1 \quad\Longrightarrow\quad \sigma_w^2 = \frac{1}{n_\text{in}}.\tag{forward}\]
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Step 2 — Backward pass variance analysis</p>
+        <p>Let \(\delta^{(\ell)} = \partial\mathcal{L}/\partial z^{(\ell)}\) be the error signal at layer \(\ell\). It flows back as:</p>
+        \[\delta_j^{(\ell)} = \sum_i w_{ij}\,\delta_i^{(\ell+1)} \cdot \sigma'(z_j^{(\ell)}).\]
+        <p>Ignoring the activation derivative (assuming it's ≈ 1 near zero, valid for tanh/sigmoid near initialization), the same analysis applies to the backward direction but now summing over \(n_\text{out}\) terms (the number of neurons in the <em>next</em> layer that feed back):</p>
+        \[\operatorname{Var}(\delta^{(\ell)}) = n_\text{out}\,\sigma_w^2\,\operatorname{Var}(\delta^{(\ell+1)}).\]
+        <p>For gradients to be preserved: \(\operatorname{Var}(\delta^{(\ell)}) = \operatorname{Var}(\delta^{(\ell+1)})\), so:</p>
+        \[\sigma_w^2 = \frac{1}{n_\text{out}}.\tag{backward}\]
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Step 3 — Reconciling forward and backward conditions</p>
+        <p>We have two constraints: \(\sigma_w^2 = 1/n_\text{in}\) (forward) and \(\sigma_w^2 = 1/n_\text{out}\) (backward). These are compatible only if \(n_\text{in} = n_\text{out}\). In general we can't satisfy both simultaneously.</p>
+        <p>Glorot and Bengio (2010) proposed a <strong>harmonic compromise</strong>: use the average of the two fan numbers:</p>
+        \[\boxed{\sigma_w^2 = \frac{2}{n_\text{in} + n_\text{out}}.}\]
+        <p>This is the <strong>Xavier variance</strong>. It minimizes the worst-case deviation from 1 in both directions.</p>
+        <p style="font-size:12px;color:var(--text2)"><em>Practical note:</em> In PyTorch, <code>nn.init.xavier_uniform_</code> samples from \(\mathcal{U}[-a, a]\) where \(a = \sqrt{6/(n_\text{in}+n_\text{out})}\) (since Var of a uniform on \([-a,a]\) is \(a^2/3\), matching \(\sigma_w^2 = 2/(n_\text{in}+n_\text{out})\) solves to \(a = \sqrt{6/(n_\text{in}+n_\text{out})}\)).</p>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Worked numerical example — Xavier init</p>
+        <p>A layer has \(n_\text{in} = 256\), \(n_\text{out} = 128\). Then:</p>
+        \[\sigma_w^2 = \frac{2}{256+128} = \frac{2}{384} \approx 0.00521, \qquad \sigma_w \approx 0.0722.\]
+        <p>Forward: \(\operatorname{Var}(y) = 256 \cdot 0.00521 \cdot \operatorname{Var}(x) = 1.33\,\operatorname{Var}(x)\). The signal grows by 33% per layer — acceptable over 20 layers: \(1.33^{20} \approx 94\times\). Compare to \(\sigma_w = 0.1\): \(\operatorname{Var}(y) = 256 \cdot 0.01 \cdot \operatorname{Var}(x) = 2.56\,\operatorname{Var}(x)\), growing to \(2.56^{20} \approx 2\times 10^{10}\times\) — completely exploded.</p>
+        <p>With the exact forward condition \(\sigma_w^2 = 1/n_\text{in} = 1/256 \approx 0.0039\): \(\operatorname{Var}(y) = 1.0\,\operatorname{Var}(x)\). Perfect for forward pass but backward might degrade (\(1.33^{20}\) vs \(1.0\)).</p>
+      </div>
+
+      <!-- ---- FULL HE DERIVATION ---- -->
+      <div style="margin-bottom:8px;margin-top:10px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px">
+          Full derivation: He / Kaiming initialization
+        </h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">
+          Xavier was designed for symmetric activations (tanh, sigmoid) that behave linearly near zero. ReLU is not symmetric: it zeros out half of all inputs. This halves the effective variance at each layer. He et al. (2015) corrected for this.
+        </p>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Step 1 — Variance of ReLU output</p>
+        <p>Let \(z = \sum_{j=1}^{n} w_j x_j\) be the pre-activation (a Gaussian for large \(n\)), and let \(a = \text{ReLU}(z) = \max(0,z)\). We need \(\mathbb{E}[a^2]\).</p>
+        <p>If \(z \sim \mathcal{N}(0, \sigma_z^2)\), then:</p>
+        \[\mathbb{E}[\text{ReLU}(z)^2] = \mathbb{E}[z^2 \cdot \mathbf{1}_{z>0}].\]
+        <p>By symmetry of the Gaussian, half the probability mass is on \(z > 0\):</p>
+        \[\mathbb{E}[z^2 \cdot \mathbf{1}_{z>0}] = \frac{1}{2}\,\mathbb{E}[z^2] = \frac{1}{2}\,\sigma_z^2.\]
+        <p><em>Proof of the symmetry step:</em> Since \(z\) and \(-z\) have the same distribution (Gaussian is symmetric), \(\mathbb{E}[z^2 \mathbf{1}_{z>0}] = \mathbb{E}[(-z)^2 \mathbf{1}_{-z>0}] = \mathbb{E}[z^2 \mathbf{1}_{z<0}]\). Therefore both halves contribute equally:
+        \[\mathbb{E}[z^2] = \mathbb{E}[z^2 \mathbf{1}_{z>0}] + \mathbb{E}[z^2 \mathbf{1}_{z\leq 0}] = 2\,\mathbb{E}[z^2\mathbf{1}_{z>0}].\]
+        </p>
+        <p>Also, \(\mathbb{E}[\text{ReLU}(z)] = \mathbb{E}[z \cdot \mathbf{1}_{z>0}] = \frac{1}{2}\mathbb{E}[|z|] = \frac{\sigma_z}{\sqrt{2\pi}}\), so \(\text{Var}(\text{ReLU}(z)) = \frac{\sigma_z^2}{2} - \frac{\sigma_z^2}{2\pi}\). For variance preservation we use the second-moment result:</p>
+        \[\mathbb{E}[a^2] = \frac{1}{2}\,\sigma_z^2.\]
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Step 2 — Propagating through a ReLU layer</p>
+        <p>Let \(a^{(\ell)} = \text{ReLU}(W^{(\ell)} a^{(\ell-1)})\). The pre-activation variance is \(\sigma_{z^{(\ell)}}^2 = n_\ell \sigma_w^2 \mathbb{E}[(a_j^{(\ell-1)})^2]\) (same calculation as Xavier Step 1). But now the post-activation has variance:</p>
+        \[\mathbb{E}[(a_i^{(\ell)})^2] = \frac{1}{2}\,\sigma_{z^{(\ell)}}^2 = \frac{1}{2}\,n_\ell\,\sigma_w^2\,\mathbb{E}[(a_j^{(\ell-1)})^2].\]
+        <p>For the second moment to be preserved layer by layer:</p>
+        \[\frac{1}{2}\,n_\ell\,\sigma_w^2 = 1 \quad\Longrightarrow\quad \boxed{\sigma_w^2 = \frac{2}{n_\text{in}}.}\]
+        <p>This is the <strong>He variance</strong>. The factor of 2 exactly compensates for the halving by ReLU. ∎</p>
+        <p style="font-size:12px;color:var(--text2)"><em>Intuition:</em> ReLU kills half the neurons (sets their output to zero). You need twice as much initial signal energy to compensate, so the surviving neurons carry the same total energy as if nothing were zeroed.</p>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Worked numerical example — He init</p>
+        <p>A ReLU layer has \(n_\text{in} = 512\). Then:</p>
+        \[\sigma_w^2 = \frac{2}{512} \approx 0.00391, \qquad \sigma_w \approx 0.0625.\]
+        <p>Second moment per layer: \(\frac{1}{2} \cdot 512 \cdot 0.00391 = 1.0\). Signal preserved exactly. Compare to Xavier here: \(\sigma_w^2 = 2/(512+256) \approx 0.0026\), giving \(\frac{1}{2} \cdot 512 \cdot 0.0026 = 0.666\) — each layer attenuates by 33%, so after 10 layers: \(0.666^{10} \approx 0.017\). Activations effectively vanish.</p>
+        <p style="color:var(--accent3)"><strong>Summary:</strong> Xavier ≡ "preserve signal for linear activations." He ≡ "preserve signal for ReLU by doubling variance to compensate for half the units being zeroed."</p>
+      </div>
+
+      <!-- ---- COMPARISON TABLE ---- -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px;overflow-x:auto">
+        <h3 style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;text-transform:uppercase;letter-spacing:.07em">Initialization reference</h3>
+        <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:11px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:6px 10px;color:var(--text2)">Method</th>
+              <th style="text-align:left;padding:6px 10px;color:var(--text2)">Variance formula</th>
+              <th style="text-align:left;padding:6px 10px;color:var(--text2)">Activation</th>
+              <th style="text-align:left;padding:6px 10px;color:var(--text2)">PyTorch call</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;color:var(--accent3)">Xavier uniform</td>
+              <td style="padding:6px 10px">\(\mathcal{U}[-\sqrt{6/(n_{in}+n_{out})},\,+\sqrt{6/(n_{in}+n_{out})}]\)</td>
+              <td style="padding:6px 10px">tanh, sigmoid, linear</td>
+              <td style="padding:6px 10px;color:var(--accent)">xavier_uniform_</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;color:var(--accent3)">Xavier normal</td>
+              <td style="padding:6px 10px">\(\mathcal{N}(0,\;2/(n_{in}+n_{out}))\)</td>
+              <td style="padding:6px 10px">tanh, sigmoid, linear</td>
+              <td style="padding:6px 10px;color:var(--accent)">xavier_normal_</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;color:#60a5fa">He / Kaiming normal</td>
+              <td style="padding:6px 10px">\(\mathcal{N}(0,\;2/n_{in})\)</td>
+              <td style="padding:6px 10px;color:#4ade80">ReLU, LeakyReLU</td>
+              <td style="padding:6px 10px;color:var(--accent)">kaiming_normal_</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;color:#fbbf24">LeCun normal</td>
+              <td style="padding:6px 10px">\(\mathcal{N}(0,\;1/n_{in})\)</td>
+              <td style="padding:6px 10px">SELU, sigmoid</td>
+              <td style="padding:6px 10px;color:var(--accent)">kaiming_normal_(a=0, mode='fan_in')</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Variance preservation across L layers — the cascading product</p>
+        <p>If each layer multiplies variance by factor \(c_\ell\), then after \(L\) layers:</p>
+        \[\operatorname{Var}(a^{(L)}) = \operatorname{Var}(a^{(0)}) \cdot \prod_{\ell=1}^{L} c_\ell.\]
+        <p>The conditions above ensure \(c_\ell = 1\) for each layer, so the product stays at 1. Any deviation compounds multiplicatively — 10% error per layer becomes \(1.1^{50} \approx 117\times\) for a 50-layer network. This explains why initialization becomes critical as depth increases.</p>
+        <p>A good sanity check in practice: print the standard deviation of each layer's activations at initialization. They should all be similar (roughly 1 for standardized inputs).</p>
+      </div>
+      <!-- ---- NORMALIZATION SECTION ---- -->
+      <div style="margin-top:12px;margin-bottom:8px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px">
+          Normalization layers
+        </h3>
       </div>
       <div class="math-block text-sm">
-        <p class="font-semibold">He initialization derivation:</p>
-        For ReLU activations, approximately half the pre-activations are zero:
-        \[\operatorname{Var}(y_i) \approx \frac{1}{2}\,n_{\text{in}}\,\operatorname{Var}(w)\,\operatorname{Var}(x).
-        \Rightarrow \operatorname{Var}(w) = \frac{2}{n_{\text{in}}}.\]
-        The factor of 2 compensates for the ReLU killing roughly half the signal. ∎
+        <p class="font-semibold">The core problem: internal covariate shift</p>
+        <p>In a deep neural network, activations can drift wildly as training progresses. Their mean and variance
+        can change from layer to layer or batch to batch, a phenomenon called <strong>internal covariate shift</strong>.</p>
+        <p><strong>Concrete example of why this is bad:</strong> Suppose layer 3's output has mean 5.0 and std 10.0 after a few training steps, but it was mean 0, std 1.0 at initialization. Layer 4 was initialized expecting inputs of scale ~1.0, so its weights produce pre-activations of ~\(n \cdot w \cdot 1.0 \approx\) something reasonable. But now it receives inputs of scale 10.0 — every neuron in layer 4 instantly saturates into the flat region of sigmoid/tanh, killing all gradients. Worse: as training continues, the statistics keep shifting, so the network is forever chasing a moving target.</p>
+        <p>Consequences:</p>
+        <ul style="margin:8px 0 8px 18px;line-height:1.5;font-size:13px;color:var(--text2)">
+          <li>Gradients can explode or vanish when backpropagating through many layers.</li>
+          <li>Training requires tiny learning rates to avoid instability, dramatically slowing progress.</li>
+          <li>Different features may have vastly different scales, making gradient descent inefficient.</li>
+        </ul>
+        <p>Normalization fixes this by forcing activations to have roughly consistent statistics at each layer, then letting the network re-learn any needed scale/shift via trainable parameters \(\gamma, \beta\).</p>
+        <p><strong>Universal recipe:</strong></p>
+        <p style="margin-left:18px;">1. Compute statistics \(\mu, \sigma^2\) over some set of values.</p>
+        <p style="margin-left:18px;">2. Normalize: \(\hat x = (x - \mu)/\sqrt{\sigma^2 + \varepsilon}\).</p>
+        <p style="margin-left:18px;">3. Affine transform: \(y = \gamma \hat x + \beta\) (learned, restores expressiveness).</p>
+        <p>The key question is: <em>which values do you compute statistics over?</em> The answer defines which normalization you're using.</p>
       </div>
-      <div class="math-block text-sm">
-        <p class="font-semibold">Variance preservation:</p>
-        For layer \(y = W x + b\) with zero-mean inputs,
-        $$\operatorname{Var}(y) \approx n_{\text{in}}\operatorname{Var}(w)\operatorname{Var}(x).$$
-        Xavier chooses \(\operatorname{Var}(w)=\frac{2}{n_{\text{in}}+n_{\text{out}}}\),
-        while He uses \(\operatorname{Var}(w)=\frac{2}{n_{\text{in}}}\) for ReLU-like activations.
+
+      <!-- normalization visual diagram -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;font-size:12px">
+        <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Which axes are normalized?  (N=batch, C=channel, H=height, W=width)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;text-align:center">
+          <div>
+            <div style="background:#1e3a5f;border:1px solid #3b82f6;border-radius:6px;padding:8px;font-family:var(--font-mono);font-size:11px;color:#93c5fd;margin-bottom:4px">BatchNorm<br><span style="color:#60a5fa">→ across N, (H,W)</span></div>
+            <div style="font-size:10px;color:var(--text3)">same feature,<br>different samples</div>
+          </div>
+          <div>
+            <div style="background:#1a3a2a;border:1px solid #22c55e;border-radius:6px;padding:8px;font-family:var(--font-mono);font-size:11px;color:#86efac;margin-bottom:4px">LayerNorm<br><span style="color:#4ade80">→ across C, (H,W)</span></div>
+            <div style="font-size:10px;color:var(--text3)">same sample,<br>all features</div>
+          </div>
+          <div>
+            <div style="background:#2d2a1a;border:1px solid #d97706;border-radius:6px;padding:8px;font-family:var(--font-mono);font-size:11px;color:#fcd34d;margin-bottom:4px">GroupNorm<br><span style="color:#fbbf24">→ across C/G, (H,W)</span></div>
+            <div style="font-size:10px;color:var(--text3)">same sample,<br>groups of channels</div>
+          </div>
+          <div>
+            <div style="background:#3a1a2a;border:1px solid #e879f9;border-radius:6px;padding:8px;font-family:var(--font-mono);font-size:11px;color:#f0abfc;margin-bottom:4px">RMSNorm<br><span style="color:#e879f9">→ across C (no mean)</span></div>
+            <div style="font-size:10px;color:var(--text3)">scale only,<br>no centering</div>
+          </div>
+        </div>
       </div>
+
       <div class="math-block text-sm">
-        <p class="font-semibold">Dropout regularization:</p>
-        $$r_i \sim \mathrm{Bernoulli}(1-p),\qquad \tilde h_i=\frac{r_i h_i}{1-p}.$$
-        $$\mathbb{E}[\tilde h_i] = h_i,
-        \qquad \mathrm{Var}[\tilde h_i] = \frac{p}{1-p} h_i^2.$$
-        This keeps the mean activation fixed at inference while adding noise during training.
-      </div>
-      <div class="math-block text-sm">
-        <p class="font-semibold">Normalization formulas:</p>
-        BatchNorm:
+        <p class="font-semibold">BatchNorm — normalize across the batch (Ioffe &amp; Szegedy, 2015)</p>
+        <p><em>Analogy:</em> You have 32 students (batch of 32) each answering a test with 512 questions (features). For question #1, you look at all 32 students' answers, compute their mean and std, and normalize question #1's scores. Each feature is normalized using data from the entire batch.</p>
+        <p>For each feature \(k\) in a mini-batch \(\{x_1,\ldots,x_m\}\):</p>
         $$\mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,\quad
-        \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,$$
-        $$\hat x_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\varepsilon}},\quad
+        \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,\quad
+        \hat x_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\varepsilon}},\quad
         y_i=\gamma\hat x_i+\beta.$$
-        LayerNorm:
+        <p><strong>Why \(\gamma\) and \(\beta\)?</strong> Without them, you force every layer's activations to be mean 0, std 1. But maybe a layer genuinely <em>needs</em> activations centered at 2.0 to represent its target function well. The learnable \(\gamma, \beta\) allow the network to re-scale after normalization, recovering full expressiveness while still benefiting from the numerical stability of normalized inputs.</p>
+        <p><strong>Inference vs. training:</strong> At training time, \(\mu_B, \sigma_B^2\) are computed from the current mini-batch. At inference, there's only one sample, so BatchNorm uses running estimates accumulated during training: \(\mu_\text{run} = (1-\alpha)\mu_\text{run} + \alpha\mu_B\) (exponential moving average).</p>
+        <p><strong>Best for:</strong> large-batch CNN image training. Struggles with batch sizes below ~8.</p>
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">LayerNorm — normalize within each sample (Ba et al., 2016)</p>
+        <p><em>Analogy:</em> For each student individually, average their scores across all 512 questions, compute their personal mean and std, and normalize that student's scores. No other students are involved — each sample is self-contained.</p>
+        <p>For each example, normalize across all \(H\) features:</p>
         $$\mu=\frac{1}{H}\sum_{j=1}^{H}x_j,\quad
-        \sigma^2=\frac{1}{H}\sum_{j=1}^{H}(x_j-\mu)^2,$$
-        $$\hat x_j=\frac{x_j-\mu}{\sqrt{\sigma^2+\varepsilon}},\quad
+        \sigma^2=\frac{1}{H}\sum_{j=1}^{H}(x_j-\mu)^2,\quad
+        \hat x_j=\frac{x_j-\mu}{\sqrt{\sigma^2+\varepsilon}},\quad
         y_j=\gamma_j\hat x_j+\beta_j.$$
-        RMSNorm:
+        <p><strong>Why it's better for sequences:</strong> In a language model, a sentence like "The cat sat" has different length than "The enormous fluffy cat sat on the mat." Batch statistics would mix these, but LayerNorm treats each token's hidden state independently — no batch dimension in the statistics.</p>
+        <p><strong>Best for:</strong> transformers, RNNs, NLP, any variable-length input or small/single-sample inference.</p>
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">GroupNorm — groups of channels per sample (Wu &amp; He, 2018)</p>
+        <p><em>Analogy:</em> Students are grouped by related subjects (e.g., math group, language group). For each student, normalize scores within each group separately. No cross-batch comparison; within-sample, within-group.</p>
+        <p>Divide \(C\) channels into \(G\) groups of \(C/G\) channels. For each group \(g\) and each sample:</p>
+        $$\mu_g=\frac{1}{|g|}\sum_{i\in g}x_i,\quad
+        \sigma_g^2=\frac{1}{|g|}\sum_{i\in g}(x_i-\mu_g)^2,\quad
+        \hat x_i=\frac{x_i-\mu_g}{\sqrt{\sigma_g^2+\varepsilon}},\quad
+        y_i=\gamma_i\hat x_i+\beta_i.$$
+        <p><strong>Special cases:</strong> \(G = C\) (one channel per group) is InstanceNorm; \(G = 1\) (one group = all channels) is LayerNorm. GroupNorm with \(G = 32\) is a practical sweet spot for vision models.</p>
+        <p><strong>Best for:</strong> object detection, segmentation, and any vision task where batch size must be small (e.g., B=2 with high-resolution images).</p>
+      </div>
+      <div class="math-block text-sm">
+        <p class="font-semibold">RMSNorm — scale only, no centering (Zhang &amp; Sennrich, 2019)</p>
+        <p><em>Analogy:</em> Instead of forcing the average score to zero (centering) and normalizing spread, you only ensure the "loudness" (RMS magnitude) of each student's score vector is the same. You don't shift the mean at all.</p>
         $$\mathrm{rms}(x)=\sqrt{\frac{1}{H}\sum_{j=1}^{H}x_j^2+\varepsilon},\quad
         y_j=\gamma_j\frac{x_j}{\mathrm{rms}(x)}.$$
+        <p><strong>Why skip mean subtraction?</strong> In practice, the mean-centering step of LayerNorm is often less important than scale control. The bias \(\beta\) parameters (or other biases in the network) can already shift the mean when needed. By dropping mean subtraction, RMSNorm is cheaper and slightly faster, while retaining most of the benefit.</p>
+        <p><strong>Used in:</strong> LLaMA, Gemma, Mistral, and most modern large language models. The computational savings matter at scale.</p>
       </div>
       <div
         style="background:rgba(26,111,191,.06);border-left:3px solid #1a6fbf;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">
-        <strong style="color:var(--accent2)">Why normalize?</strong> Internal covariate shift — the idea that
-        each layer's input distribution shifts as previous layers update — forces later layers to
-        constantly adapt. BatchNorm fixes this by re-centering and re-scaling activations per mini-batch.
-        It also adds implicit regularization: the noise from batch statistics acts as a regularizer,
-        similar to dropout.
+        <strong style="color:var(--accent2)">Why does normalization help even after good initialization?</strong> Initialization only controls the <em>starting</em> distribution. As training proceeds, weights shift and activations drift. Normalization is a dynamic stabilizer that re-centers and rescales at every forward pass, throughout all of training. It essentially "re-initializes" the statistics at every layer on every step.
       </div>
       <div class="info-box">
-        <strong>Practical rules:</strong> Xavier for tanh/sigmoid/linear, He for ReLU-family,
-        BatchNorm for CNNs (not RNNs), LayerNorm for sequence models (transformers, LSTMs),
-        RMSNorm when speed matters (LayerNorm without the mean subtraction).
+        <strong>Quick decision guide:</strong>
+        <ul style="margin:6px 0 0 18px;line-height:1.9">
+          <li><strong>BatchNorm:</strong> CNN + large batches (B ≥ 16). Standard for ResNet, VGG, EfficientNet.</li>
+          <li><strong>LayerNorm:</strong> Transformers, RNNs, NLP. Any variable-length sequence. GPT, BERT, T5.</li>
+          <li><strong>GroupNorm:</strong> Vision with tiny batches (detection, segmentation). Mask R-CNN default.</li>
+          <li><strong>RMSNorm:</strong> Modern LLMs where speed matters. Drop-in for LayerNorm with ~10% speedup.</li>
+        </ul>
+      </div>
+      <div class="canvas-card">
+        <div class="canvas-area"><canvas id="c7" width="800" height="360"></canvas></div>
+        <div class="controls">
+          <button onclick="s7_set('zero')">Zero init</button>
+          <button onclick="s7_set('large')">Too large</button>
+          <button onclick="s7_set('xavier')" id="s7-xavier" class="selected">Xavier</button>
+          <button onclick="s7_set('he')">He (ReLU)</button>
+          <button onclick="s7_set('bn')">+ Batch Norm</button>
+        </div>
+        <div class="legend" id="s7-info">
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">Xavier: σ = √(2/(fan_in +
+            fan_out))</span>
+        </div>
+      </div>
+      <div style="margin-top:32px;padding:0 4px;">
+        <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px">
+          7.1 Dropout</h3>
       </div>
 
+      <!-- ---- DROPOUT BASIC STATS ---- -->
+      <div class="math-block text-sm">
+        <p class="font-semibold">Dropout — definition and moment derivation</p>
+        <p>Each unit \(h_i\) is independently zeroed with probability \(p\) ("drop rate") at every training step. The inverted-dropout formulation rescales surviving units by \(1/(1-p)\) so the expected activation is unchanged:</p>
+        \[r_i \sim \mathrm{Bernoulli}(1-p), \qquad \tilde h_i = \frac{r_i}{1-p}\,h_i.\]
+
+        <p class="font-semibold" style="margin-top:10px">Proof: first moment (mean preservation)</p>
+        <p>Since \(r_i\) and \(h_i\) are independent at each step (the mask is freshly sampled):</p>
+        \[\mathbb{E}[\tilde h_i] = \frac{1}{1-p}\,\mathbb{E}[r_i]\,h_i = \frac{1}{1-p}\cdot(1-p)\cdot h_i = h_i.\]
+        <p>The mean is preserved exactly — the network at inference (where all \(r_i = 1\), no rescaling needed) sees the same expected signal as during training.</p>
+
+        <p class="font-semibold" style="margin-top:10px">Proof: second moment and variance</p>
+        <p>Since \(r_i^2 = r_i\) (Bernoulli), \(\mathbb{E}[r_i^2] = \mathbb{E}[r_i] = 1-p\):</p>
+        \[\mathbb{E}[\tilde h_i^2] = \frac{h_i^2}{(1-p)^2}\,\mathbb{E}[r_i^2] = \frac{h_i^2}{(1-p)^2}\cdot(1-p) = \frac{h_i^2}{1-p}.\]
+        <p>Therefore the variance of the masked unit is:</p>
+        \[\mathrm{Var}[\tilde h_i] = \mathbb{E}[\tilde h_i^2] - (\mathbb{E}[\tilde h_i])^2 = \frac{h_i^2}{1-p} - h_i^2 = \frac{p}{1-p}\,h_i^2.\]
+        <p>This injected noise is the mechanism by which dropout acts as a regularizer. As \(p\to 0\), variance → 0 (no dropout). As \(p\to 1\), variance → ∞ (too much noise). The sweet spot \(p \in [0.3, 0.5]\) injects moderate, controlled stochasticity.</p>
+      </div>
+
+      <!-- ---- DROPOUT AS L2 REG: FULL PROOF ---- -->
+      <div class="math-block text-sm">
+        <p class="font-semibold">Dropout as adaptive L2 regularization — full derivation (Wager et al., 2013)</p>
+        <p>Consider a single output neuron with weights \(w \in \mathbb{R}^H\) and hidden activations \(h \in \mathbb{R}^H\): the pre-activation is \(a = w^\top h\). Under dropout the activations become \(\tilde h\), so \(\tilde a = w^\top \tilde h\).</p>
+
+        <p class="font-semibold" style="margin-top:8px">Step 1 — First and second moment of \(\tilde a\)</p>
+        <p>Since units are dropped independently:</p>
+        \[\mathbb{E}[\tilde a] = w^\top \mathbb{E}[\tilde h] = w^\top h = a.\]
+        \[\mathrm{Var}[\tilde a] = \sum_i w_i^2\,\mathrm{Var}[\tilde h_i] = \sum_i w_i^2\cdot\frac{p}{1-p}\,h_i^2 = \frac{p}{1-p}\sum_i w_i^2 h_i^2.\]
+
+        <p class="font-semibold" style="margin-top:8px">Step 2 — Taylor expansion of the loss around the clean activation</p>
+        <p>Let \(\mathcal{L}(\tilde a)\) be the per-sample loss. Expand around the mean \(a = \mathbb{E}[\tilde a]\):</p>
+        \[\mathcal{L}(\tilde a) = \mathcal{L}(a) + \mathcal{L}'(a)(\tilde a - a) + \frac{1}{2}\mathcal{L}''(a)(\tilde a - a)^2 + O\!\bigl((\tilde a - a)^3\bigr).\]
+
+        <p class="font-semibold" style="margin-top:8px">Step 3 — Take expectation over the dropout mask</p>
+        <p>Since \(\mathbb{E}[\tilde a - a] = 0\) (zero-mean noise) and \(\mathbb{E}[(\tilde a - a)^2] = \mathrm{Var}[\tilde a]\):</p>
+        \[\mathbb{E}_r[\mathcal{L}(\tilde a)] \approx \mathcal{L}(a) + \frac{1}{2}\mathcal{L}''(a)\,\mathrm{Var}[\tilde a].\]
+        <p>Substituting the variance computed in Step 1:</p>
+        \[\mathbb{E}_r[\mathcal{L}(\tilde a)] \approx \mathcal{L}(a) + \underbrace{\frac{p}{2(1-p)}\,\mathcal{L}''(a)\sum_i w_i^2 h_i^2}_{\text{regularization penalty}}.\]
+
+        <p class="font-semibold" style="margin-top:8px">Step 4 — Identifying the regularizer</p>
+        <p>The penalty term has the structure \(\lambda \sum_i (w_i h_i)^2\) where \(\lambda = p\,\mathcal{L}''(a)\,/\,2(1-p)\). This is an element-wise \(\ell_2\) penalty on the <em>products</em> \(w_i h_i\) — i.e., the contributions of each unit to the output. Defining \(\tilde\lambda_i = (p/(1-p))\,\mathcal{L}''(a)\,h_i^2/2\):</p>
+        \[\boxed{\mathbb{E}_r[\mathcal{L}(\tilde a)] \approx \mathcal{L}(a) + \sum_i \tilde\lambda_i\,w_i^2.}\]
+        <p>This is exactly <strong>adaptive L2 regularization</strong>: the effective penalty on weight \(w_i\) is \(\tilde\lambda_i \propto h_i^2\). Weights connecting to high-activation units receive stronger regularization; weights connected to near-zero units receive almost none. The regularization is data-dependent and automatically calibrated. ∎</p>
+
+        <p class="font-semibold" style="margin-top:8px">Intuition for the result</p>
+        <p>If unit \(h_i\) is almost always active and large, then dropping it occasionally causes a big perturbation to \(\tilde a\), and the network is penalized for relying on it too strongly — it must spread the load across many units. This is exactly the co-adaptation prevention argument: no single unit can dominate.</p>
+      </div>
+
+      <!-- ---- DROPOUT AS ENSEMBLE ---- -->
+      <div class="theorem-box mt-2">
+        Dropout training approximates an ensemble over \(2^n\) subnetworks with shared parameters.
+      </div>
+
+      <div class="mt-4 math-block">
+        <p class="font-semibold mb-1">Step 1 — Subnetworks & active units</p>
+        $$\#\text{subnetworks}=2^n,\qquad \mathbb{E}[\text{active units}]=n(1-p).$$
+
+        <p class="font-semibold mt-3 mb-1">Step 2 — Ensemble view</p>
+        $$f_{\text{drop}}(x)\approx \frac{1}{M}\sum_{m=1}^M f_m(x),\quad f_m:\text{ sampled subnetwork.}$$
+
+        <p class="font-semibold mt-3 mb-1">Step 3 — Variance reduction with correlation \(\rho\)</p>
+        $$\mathrm{Var}[\bar f]=\frac{\sigma^2}{M}\bigl(1+(M-1)\rho\bigr).$$
+        <p class="text-xs text-slate-300">Low correlation between subnetworks (\(\rho\downarrow\)) improves averaging.</p>
+      </div>
+
+      <div class="mt-4 proof-box">
+        <h4 class="font-semibold mb-1">Bias–Variance view</h4>
+        <p class="text-sm">Averaging many subnetworks reduces variance roughly like \(1/M\) when \(\rho\) is small; bias changes are usually minor.</p>
+      </div>
+
+      <div class="mt-4 math-block">
+        <h4 class="font-semibold mb-2">Step 4 — Gaussian approximation of Bernoulli noise</h4>
+        $$r_i \sim \mathrm{Bern}(1-p)\ \approx\ \mathcal{N}(1-p,\;p(1-p))\quad\Longrightarrow\quad
+          \mathcal{L}_{\text{dropout}}\approx \mathcal{L} + \lambda\,p(1-p)\sum_i \mathbb{E}[h_i^2].$$
+        <p class="text-xs text-slate-300">Acts like <strong>data-dependent shrinkage</strong> (units with larger activations get more regularized).</p>
+      </div>
       <div
         style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:0">
         <h3 style="font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--text);margin-bottom:6px">
@@ -1212,6 +1520,29 @@
               reducing overfitting.</li>
           </ul>
         </div>
+
+      <div style="margin-top:32px;padding:0 4px;">
+        <h3 style="font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--text);margin-bottom:10px">
+          Dropout simulation</h3>
+      </div>
+      <div class="canvas-card" style="margin-top:0">
+        <div class="canvas-area"><canvas id="c7d" width="800" height="320"></canvas></div>
+        <div class="controls">
+          <button class="btn-play" id="s7d-play" onclick="s7d_toggle()">▶ Animate</button>
+          <button class="btn-reset" onclick="s7d_reset()">↺ Reset</button>
+          <label>Dropout p <input type="range" id="s7d-p" min="0" max="0.8" step="0.05" value="0.3" oninput="s7d_pChange()"></label>
+          <span style="font-size:12px;color:var(--text2)">p = <span id="s7d-p-label">0.30</span></span>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#4ade80"></div><span>Active neuron</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f87171"></div><span>Dropped neuron</span>
+          </div>
+        </div>
+      </div>
+
         <div class="math-block text-sm mt-4">
           <p class="font-semibold">Dropout as L2 regularization (Wager et al., 2013):</p>
           When \(p\) is small, dropout approximates L2 regularization on the activations:
@@ -1221,21 +1552,7 @@
           automatically scales down weights when they grow large.
         </div>
       </div>
-      <div class="canvas-card">
-        <div class="canvas-area"><canvas id="c7" width="800" height="360"></canvas></div>
-        <div class="controls">
-          <button onclick="s7_set('zero')">Zero init</button>
-          <button onclick="s7_set('large')">Too large</button>
-          <button onclick="s7_set('xavier')" id="s7-xavier" class="selected">Xavier</button>
-          <button onclick="s7_set('he')">He (ReLU)</button>
-          <button onclick="s7_set('bn')">+ Batch Norm</button>
-          <button onclick="s7_set('skip')">Skip connections</button>
-        </div>
-        <div class="legend" id="s7-info">
-          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text2)">Xavier: σ = √(2/(fan_in +
-            fan_out))</span>
-        </div>
-      </div>
+
     </section>
 
     <!-- ========== SECTION 8 ========== -->
@@ -1280,12 +1597,39 @@
         <div class="controls">
           <button class="btn-play" id="s8-play" onclick="s8_toggle()">▶ Train</button>
           <button class="btn-reset" onclick="s8_reset()">↺ Reset</button>
-          <label>Hidden units: <select id="s8-units" onchange="s8_reset()"
-              style="font-family:var(--font-mono);font-size:11px">
+          <label>Dataset: <select id="s8-dataset" onchange="s8_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option value="circles">Circles</option>
+              <option value="moons">Moons</option>
+              <option value="blobs">Blobs</option>
+            </select></label>
+          <label>Hidden layers: <select id="s8-layers" onchange="s8_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+            </select></label>
+          <label>Units/layer: <select id="s8-units" onchange="s8_reset()" style="font-family:var(--font-mono);font-size:11px">
               <option>4</option>
-              <option>8</option>
+              <option selected>8</option>
               <option>16</option>
             </select></label>
+          <label>Activation: <select id="s8-activation" onchange="s8_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option value="relu">ReLU</option>
+              <option value="tanh">tanh</option>
+              <option value="sigmoid">sigmoid</option>
+            </select></label>
+          <label>Optimizer: <select id="s8-optimizer" onchange="s8_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option value="sgd">SGD</option>
+              <option value="momentum">Momentum</option>
+              <option value="rmsprop">RMSProp</option>
+              <option value="adam">Adam</option>
+            </select></label>
+          <label>Batch size: <select id="s8-batch-size" onchange="s8_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option>8</option>
+              <option selected>16</option>
+              <option>32</option>
+            </select></label>
+          <label>LR <input type="range" id="s8-lr" min="0.002" max="0.05" step="0.002" value="0.01" oninput="s8_lrChange()"></label>
+          <span class="val-display" id="s8-lr-label">0.010</span>
           <span class="val-display" id="s8-epoch">Epoch 0</span>
           <span class="val-display" id="s8-loss" style="color:var(--accent)">Loss: -</span>
         </div>
@@ -1491,13 +1835,13 @@
     <!-- ========== SECTION 13 ========== -->
     <section class="section" id="s13">
       <div class="section-header"><span class="section-num">13</span>
-        <h2>Gradient flow — vanishing &amp; exploding gradients</h2>
+        <h2>Gradient flow, skip connections &amp; vanishing gradients</h2>
       </div>
       <p>During backpropagation, gradients are multiplied by weight matrices and activation derivatives at each layer.
-        If the product of these terms is \(<1\) per layer, gradients shrink exponentially with depth (<em>vanishing
-          gradients</em>): early layers receive almost zero update signal and stop learning.
-          If the product is \(>1\), gradients grow exponentially (<em>exploding gradients</em>):
-          weights update wildly and training diverges.</p>
+        If the product of these terms is \(&lt;1\) per layer, gradients shrink exponentially with depth
+        (<em>vanishing gradients</em>): early layers receive almost zero update signal and stop learning.
+        If the product is \(&gt;1\), gradients grow exponentially (<em>exploding gradients</em>):
+        weights update wildly and training diverges.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
         <div
           style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2)">
@@ -1512,45 +1856,112 @@
           Gradient clipping (\(\|g\| \leftarrow \min(\|g\|, \tau)\)) is the standard fix.
         </div>
       </div>
-      <div
-        style="background:rgba(26,111,191,.06);border-left:3px solid #1a6fbf;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--text2)">
-        <strong style="color:var(--accent2)">Residual connections as an ODE:</strong>
-        A residual block \(x_{k+1} = x_k + F(x_k)\) is analogous to a forward Euler step
-        for \(\frac{dx}{ds} = F(x(s))\). Linearizing: \(x_{k+1} \approx (I + J)x_k\) where
-        \(J = \partial F/\partial x\). Plain stacking scales perturbations by \(\|J\|^K\); residual
-        stacking scales them by \(\|I+J\|^K\). Since eigenvalues of \(J\) are typically small,
-        \(\|I+J\| \approx 1\) regardless of depth — gradients flow like in a width-1 network.
-      </div>
+
       <div class="math-block text-sm">
         <p class="font-semibold">Theorem (Gradient scaling — spectral radius):</p>
-        During backprop, gradient magnitude scales as the product of layer spectral radii:
+        <p>During backprop, gradient magnitude scales as the product of layer spectral radii:</p>
         \[\|\nabla_{\theta^{(k)}}\mathcal{L}\| \approx \prod_{\ell=k}^{L} \rho\bigl(W^{(\ell)}\bigr)\,\prod_{\ell=k}^{L}
         \rho\bigl(f'(z^{(\ell)})\bigr).\]
-        Here \(\rho(A) = |\lambda_{\max}(A)|\) is the spectral radius (largest absolute eigenvalue).
+        <p>Here \(\rho(A) = |\lambda_{\max}(A)|\) is the spectral radius (largest absolute eigenvalue).
         <em>Proof sketch:</em> The backprop recurrence \(\delta^{(\ell)} = W^{(\ell+1)\top}\delta^{(\ell+1)} \circ
-        f'(z^{(\ell)})\)
-        approximately multiplies by \(\rho(W^{\ell+1})\cdot\rho(f'(z^{\ell}))\) per layer.
-        If \(\rho(W) > 1\) and \(f' =\,\text{identity}\): gradients <em>explode</em> exponentially.
-        If \(\rho(W) < 1\): gradients <em>vanish</em> exponentially.
-          Only when \(\rho(W) \approx 1\) and \(\rho(f'(z)) \approx 1\) does the signal propagate stably. ∎
+        f'(z^{(\ell)})\) approximately multiplies by \(\rho(W^{\ell+1})\cdot\rho(f'(z^{\ell}))\) per layer.
+        If \(\rho(W) &gt; 1\) and \(f' = \text{identity}\): gradients <em>explode</em> exponentially.
+        If \(\rho(W) &lt; 1\): gradients <em>vanish</em> exponentially.
+        Only when \(\rho(W) \approx 1\) and \(\rho(f'(z)) \approx 1\) does the signal propagate stably. ∎</p>
+        <p><strong>Concrete example:</strong> A 20-layer sigmoid network. The sigmoid derivative peaks at \(\sigma'(0) = 0.25\). If weights are also small, each layer multiplies the gradient by roughly \(0.25 \times \rho(W)\). With \(\rho(W) = 1\), after 20 layers: \(0.25^{20} \approx 10^{-12}\). The first layer's gradient is a trillion times smaller than the last layer's — it effectively does not learn.</p>
       </div>
-      <div class="math-block text-sm">
-        <p class="font-semibold">Residuals as ODE steps:</p>
-        A residual block is written as
-        $$x_{k+1}=x_k+F(x_k),$$
-        which is analogous to the forward Euler step for
-        $$\frac{dx}{ds}=F(x(s)).$$
-        Linearizing around a point gives
-        $$x_{k+1}=(I+J)x_k,\qquad\text{where }J=\frac{\partial F}{\partial x}.$$
-        For an eigenvalue \(\lambda\) of \(J\), a plain stack scales perturbations by \(|\lambda|^K\), while
-        a residual stack scales them by \(|1+\lambda|^K\). The residual form therefore makes stable depth easier to
-        achieve.
+
+      <!-- ===== SKIP CONNECTIONS ===== -->
+      <div style="margin-top:8px;margin-bottom:8px">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">
+          Skip connections (residual connections)
+        </h3>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">
+          Introduced by He et al. in <em>ResNet</em> (2015), skip connections (also called residual connections or shortcut connections) route the input of a block directly to its output, bypassing the transformation \(F\). This single architectural change enabled training networks of 100–1000+ layers that were previously impossible to optimize.
+        </p>
       </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+          <!-- plain block -->
+          <div>
+            <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Plain block (no skip)</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12px">
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 16px;color:var(--text2)">\(x^{(\ell)}\)</div>
+              <div style="color:var(--text3);font-size:10px">↓</div>
+              <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:6px;padding:6px 16px;color:#f87171">Weight layer + BN + ReLU</div>
+              <div style="color:var(--text3);font-size:10px">↓</div>
+              <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:6px;padding:6px 16px;color:#f87171">Weight layer + BN</div>
+              <div style="color:var(--text3);font-size:10px">↓  ReLU</div>
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 16px;color:var(--text2)">\(x^{(\ell+1)} = F(x^{(\ell)})\)</div>
+            </div>
+          </div>
+          <!-- residual block -->
+          <div>
+            <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Residual block (with skip)</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12px;position:relative">
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 16px;color:var(--text2)">\(x^{(\ell)}\)</div>
+              <div style="display:flex;width:100%;justify-content:center;gap:12px;align-items:center">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1">
+                  <div style="color:var(--text3);font-size:10px">↓ F path</div>
+                  <div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:6px;padding:6px 10px;color:#4ade80;font-size:11px">W·x + BN + ReLU</div>
+                  <div style="color:var(--text3);font-size:10px">↓</div>
+                  <div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:6px;padding:6px 10px;color:#4ade80;font-size:11px">W·x + BN</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--accent2);font-size:11px">
+                  <div style="color:var(--text3);font-size:10px">↓ identity</div>
+                  <div style="font-size:18px;color:var(--accent2)">⤵</div>
+                  <div style="font-size:10px;color:var(--accent2)">shortcut</div>
+                </div>
+              </div>
+              <div style="color:var(--accent2);font-size:11px">⊕  (element-wise add)</div>
+              <div style="color:var(--text3);font-size:10px">↓  ReLU</div>
+              <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 16px;color:var(--text2)">\(x^{(\ell+1)} = F(x^{(\ell)}) + x^{(\ell)}\)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="math-block text-sm">
-        <p class="font-semibold">Fixed-point intuition:</p>
-        If \(F(x^*)=0\), then \(x^*\) is a fixed point of the block and remains unchanged by the residual update.
-        This identity bias means deep networks can learn small deviations from the identity map rather than full
-        transforms.
+        <p class="font-semibold">Why skip connections fix vanishing gradients — gradient highway theorem</p>
+        <p>In a plain network of \(L\) layers, the gradient of the loss with respect to layer \(k\)'s parameters involves the chain:</p>
+        \[\frac{\partial \mathcal{L}}{\partial \theta^{(k)}} = \frac{\partial \mathcal{L}}{\partial x^{(L)}} \cdot \prod_{\ell=k}^{L-1} \frac{\partial x^{(\ell+1)}}{\partial x^{(\ell)}}.\]
+        <p>Each factor \(\partial x^{(\ell+1)}/\partial x^{(\ell)} = \text{diag}(f'(z^{(\ell)})) \cdot W^{(\ell)}\) can shrink below 1, causing the product to vanish exponentially.</p>
+        <p>Now introduce a residual connection: \(x^{(\ell+1)} = F_\ell(x^{(\ell)}) + x^{(\ell)}\). Then:</p>
+        \[\frac{\partial x^{(\ell+1)}}{\partial x^{(\ell)}} = \frac{\partial F_\ell}{\partial x^{(\ell)}} + I.\]
+        <p>The Jacobian at each layer gains an <strong>identity term</strong>. Substituting back into the chain product:</p>
+        \[\frac{\partial \mathcal{L}}{\partial \theta^{(k)}} = \frac{\partial \mathcal{L}}{\partial x^{(L)}} \cdot \prod_{\ell=k}^{L-1} \Bigl(\frac{\partial F_\ell}{\partial x^{(\ell)}} + I\Bigr).\]
+        <p>Expanding this product (analogous to expanding \((1+a_\ell)^L\)):</p>
+        \[\prod_{\ell=k}^{L-1}\!\Bigl(\frac{\partial F_\ell}{\partial x^{(\ell)}} + I\Bigr)
+        = I + \sum_{\ell}\frac{\partial F_\ell}{\partial x^{(\ell)}} + \sum_{\ell < m}\frac{\partial F_\ell}{\partial x^{(\ell)}}\frac{\partial F_m}{\partial x^{(m)}} + \cdots\]
+        <p>The leading term is the <strong>identity matrix</strong>. Even if every \(\partial F_\ell / \partial x^{(\ell)}\) is near zero (saturated activations, small weights), the gradient is at least \(\partial\mathcal{L}/\partial x^{(L)} \cdot I = \partial\mathcal{L}/\partial x^{(L)}\) — a direct, unattenuated path from the loss to every layer. ∎</p>
+        <p style="color:var(--accent3)"><strong>Key insight:</strong> the skip connection creates a "gradient highway" — a path where the gradient is multiplied by the identity rather than by a chain of potentially small Jacobians. Early layers always receive at least the loss gradient from the final layer, regardless of depth.</p>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">What the network actually learns to do — residual interpretation</p>
+        <p>A plain layer must learn the full mapping \(H(x)\) from scratch. A residual block learns the <em>residual</em> \(F(x) = H(x) - x\). If the optimal transformation is close to the identity (a common case in deep networks — each layer makes only a small correction), then \(F(x) \approx 0\) is easy to learn: just push all weights toward zero.</p>
+        <p>Pushing weights toward zero is precisely what L2 regularization (weight decay) does — it biases the network toward near-identity transformations per block, which matches the typical structure of well-trained deep residual networks.</p>
+        <p><strong>Analogy:</strong> It is easier to learn "how much to deviate from doing nothing" than "what to do from scratch." A network that starts near identity at each block degrades gracefully as you increase depth — more layers just means more opportunities to make small corrections, not more risk of catastrophic signal distortion.</p>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Residual connections as forward Euler steps of an ODE (Neural ODE view)</p>
+        <p>The residual update \(x_{k+1} = x_k + F(x_k)\) is the forward Euler discretization of the ODE:</p>
+        \[\frac{dx}{ds} = F(x(s)), \qquad x(0) = x_{\text{input}}.\]
+        <p>A network of \(K\) residual blocks is a numerical integrator of this ODE from \(s=0\) to \(s=K\), with step size 1. This view (Chen et al., 2018 — Neural ODEs) suggests:</p>
+        <ul style="margin:8px 0 8px 18px;line-height:1.8;font-size:13px;color:var(--text2)">
+          <li>More depth = finer integration (smaller Euler step size), at the cost of more computation.</li>
+          <li>The network's dynamics are governed by the vector field \(F\); initialization and training shape this field.</li>
+          <li>Continuous-depth models (Neural ODEs) take this limit and use an ODE solver directly, making depth a continuous hyperparameter.</li>
+        </ul>
+        <p>Linearizing around a fixed point: \(x_{k+1} \approx (I + J)x_k\) where \(J = \partial F/\partial x\). For eigenvalue \(\lambda\) of \(J\), a plain stack scales perturbations by \(|\lambda|^K\) (vanishes/explodes), while a residual stack scales them by \(|1+\lambda|^K\). Since \(|1+\lambda| \approx 1\) for small \(\lambda\) (small corrections), residual networks are stable across depth. ∎</p>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Fixed-point intuition and identity initialization</p>
+        <p>If \(F(x^*) = 0\), then \(x^*\) is a fixed point: the block passes it through unchanged. This means a residual block initialized with small weights (so \(F \approx 0\)) behaves like the identity at initialization — the network starts as a "pass-through" and gradually activates each block's transformation during training.</p>
+        <p>In practice (e.g., PyTorch's ResNet): the final BatchNorm of each residual block is initialized with \(\gamma = 0\), making the initial output of \(F\) exactly zero. This is called <strong>zero-initialization of residuals</strong> and gives even better convergence at the start of training.</p>
       </div>
       <div class="canvas-card">
         <div class="canvas-area"><canvas id="c13" width="800" height="360"></canvas></div>
@@ -1725,6 +2136,30 @@
             <span class="val-display" id="s15-k-val">4</span></label>
           <label>Layers (depth) <input type="range" id="s15-l" min="1" max="4" value="2" oninput="s15_lChange()"> <span
               class="val-display" id="s15-l-val">2</span></label>
+          <label>Activation
+            <select id="s15-activation" onchange="s15_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option value="relu">ReLU</option>
+              <option value="tanh">Tanh</option>
+              <option value="sigmoid">Sigmoid</option>
+            </select>
+          </label>
+          <label>Optimizer
+            <select id="s15-optimizer" onchange="s15_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option value="sgd">SGD</option>
+              <option value="momentum">Momentum</option>
+              <option value="rmsprop">RMSprop</option>
+              <option value="adam">Adam</option>
+            </select>
+          </label>
+          <label>LR <input type="range" id="s15-lr" min="1" max="100" value="8" oninput="s15_lrChange()">
+            <span class="val-display" id="s15-lr-val">0.08</span></label>
+          <label>Batch <select id="s15-batch" onchange="s15_reset()" style="font-family:var(--font-mono);font-size:11px">
+              <option value="16">16</option>
+              <option value="32" selected>32</option>
+              <option value="64">64</option>
+              <option value="80">80</option>
+            </select>
+          </label>
           <label>Difficulty
             <select id="s15-diff" onchange="s15_reset()" style="font-family:var(--font-mono);font-size:11px">
               <option value="circle">Circle</option>
@@ -1778,38 +2213,69 @@
       </div>
 
       <div class="math-block text-sm">
-        <p class="font-semibold">L2 regularization = weight decay</p>
-        \[\mathcal{L}_{\text{reg}}(\theta) = \mathcal{L}_0(\theta) + \frac{\lambda}{2}\|\theta\|_2^2,
-        \qquad \nabla_\theta\mathcal{L}_{\text{reg}} = \nabla_\theta\mathcal{L}_0 + \lambda\theta.\]
-        The gradient term −λθ drives weights toward zero each step (hence "weight decay").
-        Equivalent to imposing a Gaussian prior p(w) ∝ exp(−λ‖w‖²/2) via MAP estimation.
+        <p class="font-semibold">L2 regularization = weight decay — and the MAP / Bayesian duality</p>
+        <p>Adding an \(\ell_2\) penalty to the loss is the most common regularizer:</p>
+        \[\mathcal{L}_{\text{reg}}(\theta) = \mathcal{L}_0(\theta) + \frac{\lambda}{2}\|\theta\|_2^2.\]
+        <p>The gradient is \(\nabla_\theta\mathcal{L}_{\text{reg}} = \nabla_\theta\mathcal{L}_0 + \lambda\theta\), so the update rule becomes:</p>
+        \[\theta \leftarrow \theta - \eta(\nabla\mathcal{L}_0 + \lambda\theta) = (1 - \eta\lambda)\theta - \eta\nabla\mathcal{L}_0.\]
+        <p>The factor \((1-\eta\lambda)\) multiplies the weights each step — this is the "weight decay" interpretation: weights are driven exponentially toward zero unless the gradient opposes it.</p>
+
+        <p class="font-semibold" style="margin-top:10px">Proof of MAP equivalence</p>
+        <p>Bayes' theorem: \(p(\theta|\mathcal{D}) \propto p(\mathcal{D}|\theta)\,p(\theta)\). Taking the log:</p>
+        \[\log p(\theta|\mathcal{D}) = \log p(\mathcal{D}|\theta) + \log p(\theta) + \text{const}.\]
+        <p>Maximizing this (MAP estimation) is equivalent to minimizing \(-\log p(\mathcal{D}|\theta) - \log p(\theta)\). If we take a Gaussian prior \(p(\theta) = \mathcal{N}(0, 1/\lambda \cdot I)\), then:</p>
+        \[\log p(\theta) = -\frac{\lambda}{2}\|\theta\|_2^2 + \text{const}.\]
+        <p>So the MAP objective is:</p>
+        \[-\log p(\mathcal{D}|\theta) + \frac{\lambda}{2}\|\theta\|_2^2 = \mathcal{L}_0(\theta) + \frac{\lambda}{2}\|\theta\|_2^2 = \mathcal{L}_{\text{reg}}(\theta). \quad\square\]
+        <p><strong>Key insight:</strong> the strength of the prior \(\lambda\) and the regularization coefficient are the same parameter. A tighter Gaussian prior (larger \(\lambda\)) = stronger regularization = smaller weights. An uninformative prior (\(\lambda \to 0\)) = MLE = no regularization.</p>
+
+        <p class="font-semibold" style="margin-top:10px">L1 regularization and the Laplace prior</p>
+        <p>The same argument with a Laplace prior \(p(\theta) \propto \exp(-\lambda|\theta|)\) gives L1 regularization:</p>
+        \[\mathcal{L}_{\text{L1}} = \mathcal{L}_0(\theta) + \lambda\|\theta\|_1.\]
+        <p>L1 yields sparse solutions (many weights exactly zero) because the Laplace distribution has a sharp peak at zero. L2 (Gaussian prior) yields weights that are small but rarely exactly zero.</p>
       </div>
 
       <div class="math-block text-sm">
-        <p class="font-semibold">Dropout as approximate variational inference (Gal & Ghahramani, 2016)</p>
-        Minimizing the cross-entropy objective with dropout is equivalent to minimizing the variational lower bound:
-        \[\mathcal{L}_{\text{dropout}} \approx \sum_i \mathbb{E}_{q(\epsilon)}[\log p(y_i|f(x_i,\epsilon))].\]
-        The dropout mask ε ~ Bernoulli(p) approximates the variational distribution over network subgraphs.
-        At test time, the deterministic network with scaled weights approximates the Bayesian posterior predictive.
+        <p class="font-semibold">Bias-variance decomposition — proof</p>
+        <p>Let \(\hat f(x)\) be a learned predictor (depends on the random training set \(\mathcal{D}\)), and let \(y = f^*(x) + \epsilon\) where \(\epsilon \sim (0, \sigma^2)\) is irreducible noise. The expected squared error at a test point \(x\) is:</p>
+        \[\mathbb{E}_{\mathcal{D},\epsilon}\bigl[(y - \hat f(x))^2\bigr].\]
+        <p>Add and subtract \(\bar f(x) = \mathbb{E}_\mathcal{D}[\hat f(x)]\) (the mean predictor over all datasets):</p>
+        \[(y - \hat f)^2 = \bigl[(y - f^*) + (f^* - \bar f) + (\bar f - \hat f)\bigr]^2.\]
+        <p>Expanding and taking expectations (cross terms vanish because \(\epsilon\) is independent of \(\hat f\) and \(\mathbb{E}_\mathcal{D}[\hat f - \bar f] = 0\)):</p>
+        \[\mathbb{E}[(y-\hat f)^2] = \underbrace{\sigma^2}_{\text{noise}} + \underbrace{(f^*(x) - \bar f(x))^2}_{\text{bias}^2} + \underbrace{\mathbb{E}_\mathcal{D}[(\hat f(x) - \bar f(x))^2]}_{\text{variance}}.\]
+        <p><em>Cross-term cancellation detail:</em> \(\mathbb{E}[(f^* - \bar f)(\bar f - \hat f)] = (f^* - \bar f)\,\mathbb{E}[\bar f - \hat f] = 0\) since \(\mathbb{E}_\mathcal{D}[\hat f] = \bar f\). ∎</p>
+        <p><strong>Interpretation:</strong> <em>Bias</em> = how wrong the average predictor is (systematic error). <em>Variance</em> = how much individual predictors fluctuate around the average (sensitivity to training data). Regularization reduces variance at the cost of increasing bias. The optimal tradeoff is problem-dependent.</p>
       </div>
 
       <div class="math-block text-sm">
-        <p class="font-semibold">Early stopping as implicit regularization</p>
-        Let the optimization trajectory be θ(t). Early stopping at T* chooses θ(T*) rather than the global minimizer θ*.
-        The effective regularizer is:
-        \[\Omega(\theta) = \frac{1}{2}(\theta - \theta^*)^\top H^*(\theta - \theta^*) + O(\|\theta-\theta^*\|^3),\]
-        where H* = Hessian at the global minimum. Early stopping implicitly penalizes the directional component
-        along eigenvectors of H* with small curvature — effectively controlling effective rank.
+        <p class="font-semibold">Dropout as approximate variational inference (Gal &amp; Ghahramani, 2016)</p>
+        <p>Bayesian inference asks for the posterior \(p(W|\mathcal{D})\) over weights, which is generally intractable. Variational inference approximates it with a simpler distribution \(q_\phi(W)\) by minimizing the KL divergence:</p>
+        \[\min_\phi \;\mathrm{KL}(q_\phi(W)\,\|\,p(W|\mathcal{D})) \;\equiv\; \max_\phi \;\mathbb{E}_{q_\phi}[\log p(\mathcal{D}|W)] - \mathrm{KL}(q_\phi(W)\,\|\,p(W)).\]
+        <p>Gal &amp; Ghahramani showed that if \(q_\phi\) is taken to be a product of Bernoulli mixtures (each weight column is either zero or a Gaussian draw), then optimizing the above ELBO reduces to the standard cross-entropy loss plus an L2 penalty — exactly the dropout training objective:</p>
+        \[\mathcal{L}_{\text{dropout}} = \frac{1}{N}\sum_{i=1}^N \mathbb{E}_{r\sim\mathrm{Bern}(1-p)}[\ell(y_i, f_r(x_i))] + \frac{\lambda}{2N}\|W\|_F^2.\]
+        <p>This means: (1) each forward pass with a random mask is a sample from \(q_\phi\); (2) running \(T\) stochastic forward passes at test time and averaging gives an approximation to the Bayesian posterior predictive — this is <strong>MC dropout</strong>, a practical uncertainty estimation method.</p>
+        <p><strong>Concrete implication:</strong> run 30 forward passes at test time with dropout active. The mean of the outputs is the prediction; the variance across passes estimates model uncertainty (epistemic uncertainty). High variance → the model is uncertain about this input.</p>
       </div>
 
       <div class="math-block text-sm">
-        <p class="font-semibold">Label smoothing (Szegedy et al., 2016)</p>
-        Instead of one-hot targets y ∈ {0,1}, use soft targets:
-        \[\tilde y = (1-\epsilon)\,y + \epsilon/K,\]
-        where K is the number of classes. This prevents the model from becoming overconfident on training data
-        and acts as a regularizer equivalent to L2 regularization on logits:
-        \[\mathcal{L}_{\text{ls}} = -(1-\epsilon)\sum_i y_i\log\hat y_i - \epsilon\sum_i\sum_k \frac{1}{K}\log\hat
-        y_k.\]
+        <p class="font-semibold">Early stopping as implicit regularization — gradient flow analysis</p>
+        <p>For a quadratic loss \(\mathcal{L}(\theta) = \frac{1}{2}\theta^\top A\theta - b^\top\theta\) (symmetric PD \(A\)), gradient flow (continuous-time gradient descent \(\dot\theta = -\nabla\mathcal{L}\)) gives:</p>
+        \[\theta(t) = \theta^* + e^{-At}(\theta_0 - \theta^*).\]
+        <p>Decompose into the eigenbasis \(A = Q\Lambda Q^\top\): in direction \(q_i\) with eigenvalue \(\lambda_i\), the distance to the optimum decays as \(e^{-\lambda_i t}\). Directions with <em>large</em> \(\lambda_i\) (high curvature) converge fast; directions with <em>small</em> \(\lambda_i\) (flat) converge slowly.</p>
+        <p>Stopping at time \(T^*\) therefore keeps the flat-direction components near their initialization \(\theta_0\) (often \(\approx 0\)), while the high-curvature components are already near \(\theta^*\). The effective regularizer is:</p>
+        \[\Omega_T(\theta) = \frac{1}{2}\sum_i \frac{1}{1 - e^{-2\lambda_i T^*}}\,(\theta_i - \theta_i^*)^2 \approx \frac{1}{2}\sum_i \frac{1}{2\lambda_i T^*}(\theta_i - \theta_i^*)^2,\]
+        <p>for small \(\lambda_i T^*\) — a direction-dependent penalty, strongest on flat directions. Equivalently: early stopping is like L2 regularization with \(\lambda_i \propto 1/(\lambda_i T^*)\), which is largest for the flattest curvature directions. ∎</p>
+      </div>
+
+      <div class="math-block text-sm">
+        <p class="font-semibold">Label smoothing (Szegedy et al., 2016) — and why it helps calibration</p>
+        <p>Hard one-hot targets \(y_k \in \{0,1\}\) push the network to predict logits \(z_k \to +\infty\) for the correct class and \(z_k \to -\infty\) for others (to drive cross-entropy to zero). This causes overconfident predictions and poor calibration (the model's reported probability doesn't match its actual accuracy).</p>
+        <p>Label smoothing replaces hard targets with soft targets:</p>
+        \[\tilde y_k = (1-\varepsilon)\,y_k + \frac{\varepsilon}{K},\]
+        <p>where \(K\) is the number of classes. The smoothed cross-entropy loss is:</p>
+        \[\mathcal{L}_{\text{ls}} = -(1-\varepsilon)\sum_k y_k\log\hat p_k \;-\; \frac{\varepsilon}{K}\sum_k\log\hat p_k = (1-\varepsilon)\,\mathcal{L}_{\text{CE}} + \varepsilon\,H(\hat p),\]
+        <p>where \(H(\hat p) = -\frac{1}{K}\sum_k \log\hat p_k\) is the entropy of the prediction. Maximizing entropy prevents overconfidence. The gradient of the smoothed loss pushes logits toward finite values: the optimal logit gap is now bounded by \(\log((K-1)(1-\varepsilon)/\varepsilon)\) rather than \(+\infty\).</p>
+        <p><strong>Why it improves calibration:</strong> a model trained with label smoothing learns to assign \(\varepsilon/K\) probability to incorrect classes, making its confidence estimates more meaningful. Typical \(\varepsilon = 0.1\) gives 90% to the correct class and ~1.1% to each of 9 others.</p>
       </div>
 
       <div class="info-box">

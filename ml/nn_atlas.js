@@ -151,19 +151,53 @@ class AnimLoop {
 //  MLP CLASS (for sections 8, 9, 15)
 // =====================================
 class MLP {
-    constructor(layers) {
+    constructor(layers, activation = 'relu') {
         this.layers = layers;
+        this.activation = activation;
         this.weights = [];
         this.biases = [];
         for (let l = 1; l < layers.length; l++) {
             const fanIn = layers[l - 1];
             const fanOut = layers[l];
-            const std = Math.sqrt(2 / fanIn);
+            const std = activation === 'relu'
+                ? Math.sqrt(2 / fanIn)
+                : Math.sqrt(2 / (fanIn + fanOut));
             this.weights.push(
                 Array.from({ length: fanOut }, () => Array.from({ length: fanIn }, () => (Math.random() - 0.5) * 2 * std))
             );
             this.biases.push(Array.from({ length: fanOut }, () => 0));
         }
+        this.optState = {
+            mW: this.weights.map(w => w.map(row => row.map(() => 0))),
+            mB: this.biases.map(b => b.map(() => 0)),
+            vW: this.weights.map(w => w.map(row => row.map(() => 0))),
+            vB: this.biases.map(b => b.map(() => 0)),
+            sW: this.weights.map(w => w.map(row => row.map(() => 0))),
+            sB: this.biases.map(b => b.map(() => 0)),
+            t: 0
+        };
+    }
+
+    _activate(x) {
+        if (this.activation === 'tanh') return Math.tanh(x);
+        if (this.activation === 'sigmoid') {
+            const z = Math.max(-60, Math.min(60, x));
+            return 1 / (1 + Math.exp(-z));
+        }
+        return Math.max(0, x);
+    }
+
+    _activatePrime(x) {
+        if (this.activation === 'tanh') {
+            const t = Math.tanh(x);
+            return 1 - t * t;
+        }
+        if (this.activation === 'sigmoid') {
+            const z = Math.max(-60, Math.min(60, x));
+            const s = 1 / (1 + Math.exp(-z));
+            return s * (1 - s);
+        }
+        return x > 0 ? 1 : 0;
     }
 
     _forward(x) {
@@ -177,7 +211,7 @@ class MLP {
                 return sum;
             });
             zs.push(z);
-            a = layer === this.weights.length - 1 ? z.map(sigmoid) : z.map(v => Math.max(0, v));
+            a = layer === this.weights.length - 1 ? z.map(sigmoid) : z.map(v => this._activate(v));
             acts.push(a);
         }
         return { acts, zs };
@@ -188,12 +222,21 @@ class MLP {
         return out.length === 1 ? out[0] : out;
     }
 
-    train(X, y, { lr = 0.1, epochs = 100, batchSize = 32 } = {}) {
+    train(X, y, { lr = 0.1, epochs = 100, batchSize = 32, optimizer = 'sgd', beta1 = 0.9, beta2 = 0.999, eps = 1e-8 } = {}) {
         const n = X.length;
+        const state = this.optState;
+        if (optimizer === 'adam') state.t += 1;
+
+        const zeroLike = arr => arr.map(row => row.map(() => 0));
+        const zeroBias = arr => arr.map(() => 0);
+
         for (let epoch = 0; epoch < epochs; epoch++) {
             const indices = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
             for (let start = 0; start < n; start += batchSize) {
                 const end = Math.min(start + batchSize, n);
+                const batchGradW = this.weights.map(zeroLike);
+                const batchGradB = this.biases.map(zeroBias);
+
                 for (let k = start; k < end; k++) {
                     const i = indices[k];
                     const input = X[i];
@@ -206,10 +249,10 @@ class MLP {
                         const z = zs[layer];
                         for (let j = 0; j < delta.length; j++) {
                             const d = delta[j];
+                            batchGradB[layer][j] += d;
                             for (let i2 = 0; i2 < prevAct.length; i2++) {
-                                this.weights[layer][j][i2] -= lr * d * prevAct[i2];
+                                batchGradW[layer][j][i2] += d * prevAct[i2];
                             }
-                            this.biases[layer][j] -= lr * d;
                         }
                         if (layer > 0) {
                             const nextDelta = new Array(this.weights[layer][0].length).fill(0);
@@ -218,9 +261,49 @@ class MLP {
                                 for (let j = 0; j < delta.length; j++) {
                                     sum += this.weights[layer][j][i2] * delta[j];
                                 }
-                                nextDelta[i2] = z[i2] > 0 ? sum : 0;
+                                nextDelta[i2] = this._activatePrime(z[i2]) * sum;
                             }
                             delta = nextDelta;
+                        }
+                    }
+                }
+
+                const inv = 1 / (end - start);
+                for (let layer = 0; layer < this.weights.length; layer++) {
+                    for (let j = 0; j < this.weights[layer].length; j++) {
+                        const gradB = batchGradB[layer][j] * inv;
+                        for (let i2 = 0; i2 < this.weights[layer][j].length; i2++) {
+                            const gradW = batchGradW[layer][j][i2] * inv;
+                            if (optimizer === 'sgd') {
+                                this.weights[layer][j][i2] -= lr * gradW;
+                            } else if (optimizer === 'momentum') {
+                                state.vW[layer][j][i2] = beta1 * state.vW[layer][j][i2] - lr * gradW;
+                                this.weights[layer][j][i2] += state.vW[layer][j][i2];
+                            } else if (optimizer === 'rmsprop') {
+                                state.sW[layer][j][i2] = beta2 * state.sW[layer][j][i2] + (1 - beta2) * gradW * gradW;
+                                this.weights[layer][j][i2] -= lr * gradW / (Math.sqrt(state.sW[layer][j][i2]) + eps);
+                            } else if (optimizer === 'adam') {
+                                state.mW[layer][j][i2] = beta1 * state.mW[layer][j][i2] + (1 - beta1) * gradW;
+                                state.vW[layer][j][i2] = beta2 * state.vW[layer][j][i2] + (1 - beta2) * gradW * gradW;
+                                const mhat = state.mW[layer][j][i2] / (1 - Math.pow(beta1, state.t));
+                                const vhat = state.vW[layer][j][i2] / (1 - Math.pow(beta2, state.t));
+                                this.weights[layer][j][i2] -= lr * mhat / (Math.sqrt(vhat) + eps);
+                            }
+                        }
+                        if (optimizer === 'sgd') {
+                            this.biases[layer][j] -= lr * gradB;
+                        } else if (optimizer === 'momentum') {
+                            state.vB[layer][j] = beta1 * state.vB[layer][j] - lr * gradB;
+                            this.biases[layer][j] += state.vB[layer][j];
+                        } else if (optimizer === 'rmsprop') {
+                            state.sB[layer][j] = beta2 * state.sB[layer][j] + (1 - beta2) * gradB * gradB;
+                            this.biases[layer][j] -= lr * gradB / (Math.sqrt(state.sB[layer][j]) + eps);
+                        } else if (optimizer === 'adam') {
+                            state.mB[layer][j] = beta1 * state.mB[layer][j] + (1 - beta1) * gradB;
+                            state.vB[layer][j] = beta2 * state.vB[layer][j] + (1 - beta2) * gradB * gradB;
+                            const mhat = state.mB[layer][j] / (1 - Math.pow(beta1, state.t));
+                            const vhat = state.vB[layer][j] / (1 - Math.pow(beta2, state.t));
+                            this.biases[layer][j] -= lr * mhat / (Math.sqrt(vhat) + eps);
                         }
                     }
                 }
@@ -947,35 +1030,49 @@ s4_initWeights(); s4_draw();
 //  improved: better state naming + more diagnostics
 // =====================================
 let s5Running = false, s5Raf = null, s5Step = 0;
+const s5Start = [-2.5, 1.8];
+const s5Names = ['sgd', 'momentum', 'rmsprop', 'adam'];
 const s5Optimizers = {
     sgd: {
+        label: 'SGD',
         color: '#f87171',
         path: [],
         lastGradNorm: 0,
-        lastStepNorm: 0
+        lastStepNorm: 0,
+        lastStep: [0, 0],
+        lastEffectiveLr: 0
     },
     momentum: {
+        label: 'Momentum',
         color: '#60a5fa',
         path: [],
         vx: 0, vy: 0,
         lastGradNorm: 0,
-        lastStepNorm: 0
+        lastStepNorm: 0,
+        lastStep: [0, 0],
+        lastEffectiveLr: 0
     },
     rmsprop: {
+        label: 'RMSProp',
         color: '#4ade80',
         path: [],
         sx: 0, sy: 0,
         lastGradNorm: 0,
-        lastStepNorm: 0
+        lastStepNorm: 0,
+        lastStep: [0, 0],
+        lastEffectiveLr: 0
     },
     adam: {
+        label: 'Adam',
         color: '#fbbf24',
         path: [],
         mx: 0, my: 0,
         vx: 0, vy: 0,
         t: 0,
         lastGradNorm: 0,
-        lastStepNorm: 0
+        lastStepNorm: 0,
+        lastStep: [0, 0],
+        lastEffectiveLr: 0
     },
 };
 
@@ -990,13 +1087,15 @@ function s5_reset() {
     s5Step = 0;
 
     Object.values(s5Optimizers).forEach(o => {
-        o.path = [[-2.5, 1.8]];
+        o.path = [[...s5Start]];
         o.vx = 0; o.vy = 0;
         o.sx = 0; o.sy = 0;
         o.mx = 0; o.my = 0;
         o.t = 0;
         o.lastGradNorm = 0;
         o.lastStepNorm = 0;
+        o.lastStep = [0, 0];
+        o.lastEffectiveLr = 0;
     });
 
     s5_draw();
@@ -1057,8 +1156,15 @@ function s5_tick() {
         nx = clamp(nx, -3.5, 3.5);
         ny = clamp(ny, -2.5, 2.5);
 
-        o.lastGradNorm = Math.hypot(gx, gy);
-        o.lastStepNorm = Math.hypot(nx - x, ny - y);
+        const stepX = nx - x;
+        const stepY = ny - y;
+        const gradNorm = Math.hypot(gx, gy);
+        const stepNorm = Math.hypot(stepX, stepY);
+
+        o.lastGradNorm = gradNorm;
+        o.lastStepNorm = stepNorm;
+        o.lastStep = [stepX, stepY];
+        o.lastEffectiveLr = gradNorm > 1e-8 ? stepNorm / gradNorm : 0;
         o.path.push([nx, ny]);
     });
 
@@ -1107,9 +1213,29 @@ function s5_draw() {
     ctx.beginPath();
     ctx.arc(px(0), py(0), 5, 0, Math.PI * 2);
     ctx.fill();
+    label(ctx, 'minimum', px(0) + 10, py(0) - 8, '#fff', 10);
+
+    const drawArrow = (x1, y1, x2, y2, color) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(px(x1), py(y1));
+        ctx.lineTo(px(x2), py(y2));
+        ctx.stroke();
+
+        const angle = Math.atan2(py(y1) - py(y2), px(x2) - px(x1));
+        const headLen = 8;
+        ctx.beginPath();
+        ctx.moveTo(px(x2), py(y2));
+        ctx.lineTo(px(x2) - headLen * Math.cos(angle - Math.PI / 6), py(y2) + headLen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(px(x2) - headLen * Math.cos(angle + Math.PI / 6), py(y2) + headLen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+    };
 
     Object.values(s5Optimizers).forEach(o => {
-        if (o.path.length < 2) return;
+        if (o.path.length < 1) return;
 
         ctx.strokeStyle = o.color;
         ctx.lineWidth = 2;
@@ -1125,7 +1251,20 @@ function s5_draw() {
         ctx.beginPath();
         ctx.arc(px(lx), py(ly), 4, 0, Math.PI * 2);
         ctx.fill();
+
+        if (o.path.length > 1) {
+            const [px0, py0] = o.path[o.path.length - 2];
+            drawArrow(px0, py0, lx, ly, o.color);
+        }
     });
+
+    const startX = s5Start[0], startY = s5Start[1];
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(px(startX), py(startY), 6, 0, Math.PI * 2);
+    ctx.stroke();
+    label(ctx, 'start', px(startX) + 8, py(startY) + 4, 'rgba(255,255,255,0.85)', 10);
 
     let yi = 16;
     Object.entries(s5Optimizers).forEach(([name, o]) => {
@@ -1133,12 +1272,15 @@ function s5_draw() {
         ctx.fillStyle = o.color;
         ctx.font = "11px 'Fira Code'";
         ctx.fillText(
-            `${name.padEnd(9)} L=${s5F(lx, ly).toFixed(3)} |g|=${o.lastGradNorm.toFixed(2)} |Δ|=${o.lastStepNorm.toFixed(2)}`,
+            `${o.label.padEnd(9)} L=${s5F(lx, ly).toFixed(3)} |g|=${o.lastGradNorm.toFixed(2)} |Δ|=${o.lastStepNorm.toFixed(2)} η_eff=${o.lastEffectiveLr.toFixed(3)}`,
             10,
             yi
         );
         yi += 15;
     });
+
+    label(ctx, '✳ step arrow shows last update direction', 10, H - 28, 'rgba(255,255,255,0.55)', 10);
+    label(ctx, `η=0.08  β₁=0.9  β₂=0.999  ε=1e-8`, 10, H - 10, 'rgba(255,255,255,0.45)', 10);
 
     label(ctx, `step: ${s5Step}`, W - 80, H - 10, 'rgba(255,255,255,0.55)', 11);
 }
@@ -1156,6 +1298,7 @@ const s6History = { batch: [], mini: [], sgd: [] };
 let s6Epoch = 0;
 let s6Data = [];
 let s6Models = null;
+let s6BatchSize = 16;
 
 function s6_makeData(n = 160) {
     const data = [];
@@ -1225,7 +1368,18 @@ function s6_reset() {
     s6History.batch = [];
     s6History.mini = [];
     s6History.sgd = [];
+    document.getElementById('s6-batch-label').textContent = s6BatchSize;
+    const legendMini = document.getElementById('s6-legend-mini-size');
+    if (legendMini) legendMini.textContent = s6BatchSize;
     s6_draw();
+}
+
+function s6_batchChange() {
+    s6BatchSize = Math.max(1, parseInt(document.getElementById('s6-batch-size').value, 10));
+    document.getElementById('s6-batch-label').textContent = s6BatchSize;
+    const legendMini = document.getElementById('s6-legend-mini-size');
+    if (legendMini) legendMini.textContent = s6BatchSize;
+    s6_reset();
 }
 
 function s6_toggle() {
@@ -1243,7 +1397,7 @@ function s6_tick() {
     const lr = baseLr * (1 - 0.35 * noiseScale);
 
     s6History.batch.push(s6_step(s6Models.batch, s6Data, lr));
-    s6History.mini.push(s6_step(s6Models.mini, s6_sampleBatch(16), lr));
+    s6History.mini.push(s6_step(s6Models.mini, s6_sampleBatch(s6BatchSize), lr));
     s6History.sgd.push(s6_step(s6Models.sgd, s6_sampleBatch(1), lr));
 
     s6_draw();
@@ -1317,6 +1471,9 @@ function s6_draw() {
         yLegend += 14;
     });
 
+    label(ctx, `mini-batch size B = ${s6BatchSize}`, 10, 34, 'rgba(255,255,255,0.55)', 10);
+    label(ctx, `N = ${s6Data.length}`, 10, 48, 'rgba(255,255,255,0.45)', 10);
+
     if (s6Epoch > 0) {
         label(ctx, `epoch: ${s6Epoch}`, W - 90, H - 20, 'rgba(255,255,255,0.55)', 11);
     }
@@ -1337,7 +1494,6 @@ const s7Info = {
     xavier: { eq: 'Xavier: σ = √(2/(fanᵢₙ+fanₒᵤₜ))', mu: 0, sigma: Math.sqrt(2 / 24), type: 'normal' },
     he: { eq: 'He: σ = √(2/fanᵢₙ)', mu: 0, sigma: Math.sqrt(2 / 8), type: 'normal' },
     bn: { eq: 'BatchNorm: normalizes activations per mini-batch', mu: 0, sigma: Math.sqrt(2 / 24), type: 'bn' },
-    skip: { eq: 'Skip connections: gradient highway bypasses vanishing', mu: 0, sigma: Math.sqrt(2 / 24), type: 'skip' },
 };
 
 function s7_set(mode) {
@@ -1381,30 +1537,23 @@ function s7_draw() {
         ctx.fillRect(i * bW, offY + histH - bH, bW - 1, bH);
     });
 
-    if (cfg.type === 'bn' || cfg.type === 'skip') {
+    if (cfg.type === 'bn') {
         const layers = 8;
         const lW = W / layers;
         label(ctx, 'Activation distribution across layers →', 10, H * 0.72, 'rgba(255,255,255,0.5)', 10);
         for (let l = 0; l < layers; l++) {
-            const scale = cfg.type === 'bn' ? 1.0 : Math.pow(1.5, l);
-            const mu = cfg.type === 'bn' ? 0 : l * 0.1;
-            const bH2 = (H * 0.18) / scale;
+            const bH2 = H * 0.18;
             const cx = l * lW + lW / 2;
             const cy = H * 0.88;
-            ctx.strokeStyle = cfg.type === 'skip' ? `rgba(96,165,250,${0.4 + 0.06 * l})` : 'rgba(74,222,128,0.8)';
+            ctx.strokeStyle = 'rgba(74,222,128,0.8)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             for (let x = cx - lW * 0.4; x <= cx + lW * 0.4; x += 1) {
-                const v = (x - cx - mu * 20) / (lW * 0.1 * scale);
+                const v = (x - cx) / (lW * 0.1);
                 const y = cy - bH2 * Math.exp(-0.5 * v * v);
                 x === cx - lW * 0.4 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
             }
             ctx.stroke();
-            if (cfg.type === 'skip' && l > 0) {
-                ctx.strokeStyle = 'rgba(251,191,36,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([4, 2]);
-                ctx.beginPath(); ctx.moveTo((l - 1) * lW + lW / 2, cy); ctx.bezierCurveTo(cx - lW, cy - 20, cx + lW, cy - 20, cx, cy); ctx.stroke();
-                ctx.setLineDash([]);
-            }
         }
     }
 
@@ -1425,7 +1574,164 @@ function s7_draw() {
     }
 }
 
+let s7dRunning = false, s7dRaf = null, s7dStep = 0, s7dFrame = 0, s7dP = 0.3;
+const s7dInputs = [1.0, 0.6, -0.4, 0.3];
+const s7dW1 = [
+    [0.8, -0.3, 0.5, 0.2],
+    [0.2, 0.5, -0.4, 0.3],
+    [-0.2, 0.4, 0.3, -0.5],
+    [0.6, -0.2, 0.2, 0.4],
+    [0.3, 0.1, 0.6, -0.3],
+    [-0.1, 0.5, 0.4, 0.2],
+];
+const s7dB1 = [0.1, 0.0, 0.05, -0.05, 0.08, 0.02];
+const s7dW2 = [0.4, -0.35, 0.25, 0.3, -0.15, 0.2];
+const s7dB2 = 0.05;
+let s7dMask = [];
+
+function s7d_pChange() {
+    s7dP = parseFloat(document.getElementById('s7d-p').value);
+    document.getElementById('s7d-p-label').textContent = s7dP.toFixed(2);
+    s7d_reset();
+}
+
+function s7d_sampleMask() {
+    s7dMask = s7dW1.map(() => Math.random() >= s7dP);
+    if (!s7dMask.some(Boolean)) {
+        s7dMask[Math.floor(Math.random() * s7dMask.length)] = true;
+    }
+}
+
+function s7d_reset() {
+    s7dRunning = false;
+    cancelAnimationFrame(s7dRaf);
+    s7dStep = 0;
+    s7dFrame = 0;
+    document.getElementById('s7d-play').textContent = '▶ Animate';
+    s7d_sampleMask();
+    s7d_draw();
+}
+
+function s7d_toggle() {
+    s7dRunning = !s7dRunning;
+    document.getElementById('s7d-play').textContent = s7dRunning ? '⏸ Pause' : '▶ Animate';
+    if (s7dRunning) s7d_tick();
+}
+
+function s7d_tick() {
+    if (!s7dRunning) return;
+    s7dFrame += 1;
+    if (s7dFrame % 15 === 0) {
+        s7dStep += 1;
+        s7d_sampleMask();
+        s7d_draw();
+        if (s7dStep >= 80) {
+            s7dRunning = false;
+            document.getElementById('s7d-play').textContent = '▶ Animate';
+            return;
+        }
+    }
+    s7dRaf = requestAnimationFrame(s7d_tick);
+}
+
+function s7d_draw() {
+    const canvas = document.getElementById('c7d');
+    const { ctx, W, H } = dpr(canvas);
+    darkBg(ctx, W, H);
+    drawDarkGrid(ctx, W, H, 36);
+
+    const x0 = 110;
+    const x1 = W * 0.45;
+    const x2 = W - 120;
+    const inY = [H * 0.18, H * 0.36, H * 0.54, H * 0.72];
+    const hidY = Array.from({ length: 6 }, (_, i) => H * (0.12 + i * 0.12));
+    const outY = H * 0.5;
+
+    const hidden = s7dW1.map((w, i) => {
+        const z = w.reduce((sum, v, j) => sum + v * s7dInputs[j], 0) + s7dB1[i];
+        return Math.max(0, z);
+    });
+    const masked = hidden.map((h, i) => s7dMask[i] ? h / (1 - s7dP) : 0);
+    const output = masked.reduce((sum, h, i) => sum + h * s7dW2[i], s7dB2);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < inY.length; i++) {
+        for (let j = 0; j < hidY.length; j++) {
+            ctx.beginPath();
+            ctx.moveTo(x0 + 24, inY[i]);
+            ctx.lineTo(x1 - 24, hidY[j]);
+            ctx.stroke();
+        }
+    }
+    for (let j = 0; j < hidY.length; j++) {
+        const active = s7dMask[j];
+        ctx.strokeStyle = active ? 'rgba(74,222,128,0.45)' : 'rgba(248,113,113,0.2)';
+        for (let k = 0; k < 1; k++) {
+            ctx.beginPath();
+            ctx.moveTo(x1 + 24, hidY[j]);
+            ctx.lineTo(x2 - 24, outY);
+            ctx.stroke();
+        }
+    }
+
+    ctx.fillStyle = '#fff';
+    ctx.font = "12px 'Fira Code'";
+    s7dInputs.forEach((val, i) => {
+        ctx.beginPath();
+        ctx.arc(x0, inY[i], 18, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`x${i + 1}`, x0 - 8, inY[i] + 4);
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillText(val.toFixed(2), x0 - 20, inY[i] + 22);
+    });
+
+    hidY.forEach((y, i) => {
+        const active = s7dMask[i];
+        ctx.beginPath();
+        ctx.arc(x1, y, 22, 0, Math.PI * 2);
+        ctx.fillStyle = active ? 'rgba(74,222,128,0.9)' : 'rgba(248,113,113,0.25)';
+        ctx.fill();
+        ctx.strokeStyle = active ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)';
+        ctx.stroke();
+        ctx.fillStyle = active ? '#0f172a' : 'rgba(255,255,255,0.35)';
+        ctx.fillText(`h${i + 1}`, x1 - 11, y + 4);
+        ctx.fillStyle = active ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.35)';
+        ctx.fillText(active ? hidden[i].toFixed(2) : '0.00', x1 + 28, y + 5);
+        if (!active) {
+            ctx.strokeStyle = 'rgba(248,113,113,0.8)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x1 - 12, y - 12);
+            ctx.lineTo(x1 + 12, y + 12);
+            ctx.moveTo(x1 + 12, y - 12);
+            ctx.lineTo(x1 - 12, y + 12);
+            ctx.stroke();
+        }
+    });
+
+    ctx.beginPath();
+    ctx.arc(x2, outY, 28, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(96,165,250,0.85)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.stroke();
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText('ŷ', x2 - 8, outY + 6);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(output.toFixed(2), x2 + 36, outY + 5);
+
+    label(ctx, `dropout p = ${s7dP.toFixed(2)}`, 14, 24, 'rgba(255,255,255,0.7)', 11);
+    label(ctx, `step ${s7dStep}`, 14, 42, 'rgba(255,255,255,0.6)', 10);
+    label(ctx, `kept / dropped mask`, 14, 60, 'rgba(255,255,255,0.45)', 10);
+}
+
 s7_draw();
+s7d_reset();
 
 
 // =====================================
@@ -1433,7 +1739,7 @@ s7_draw();
 //  improved: correct mini-batch backprop + probability field
 // =====================================
 let s8Running = false, s8Raf = null, s8Epoch = 0;
-let s8Model = null, s8Data = null, s8H = 4;
+let s8Model = null, s8Data = null, s8H = 8, s8Layers = 1;
 
 function s8_probColor(p) {
     const r = Math.round(248 * (1 - p) + 96 * p);
@@ -1442,33 +1748,76 @@ function s8_probColor(p) {
     return `rgba(${r},${g},${b},0.22)`;
 }
 
+function s8_makeData(type) {
+    const data = [];
+    const noise = 0.06;
+    if (type === 'blobs') {
+        for (let cls = 0; cls < 2; cls++) {
+            const cx = cls === 0 ? -0.7 : 0.7;
+            const cy = cls === 0 ? -0.3 : 0.3;
+            for (let i = 0; i < 80; i++) {
+                data.push({
+                    x: cx + (Math.random() - 0.5) * 0.4,
+                    y: cy + (Math.random() - 0.5) * 0.4,
+                    c: cls
+                });
+            }
+        }
+    } else if (type === 'moons') {
+        for (let cls = 0; cls < 2; cls++) {
+            for (let i = 0; i < 80; i++) {
+                const t = Math.PI * (i / 80);
+                if (cls === 0) {
+                    const dx = 0.8 * Math.cos(t) + 0.4 + (Math.random() - 0.5) * noise;
+                    const dy = 0.8 * Math.sin(t) - 0.35 + (Math.random() - 0.5) * noise;
+                    data.push({ x: dx, y: dy, c: cls });
+                } else {
+                    const dx = 0.8 * Math.cos(t) + 0.15 + (Math.random() - 0.5) * noise;
+                    const dy = -0.8 * Math.sin(t) - 0.05 + (Math.random() - 0.5) * noise;
+                    data.push({ x: dx, y: dy, c: cls });
+                }
+            }
+        }
+    } else {
+        for (let cls = 0; cls < 2; cls++) {
+            const radius = cls === 0 ? 0.85 : 0.35;
+            const offset = cls === 0 ? 0 : 0;
+            for (let i = 0; i < 100; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = radius + (Math.random() - 0.5) * 0.08;
+                const x = r * Math.cos(angle) + offset;
+                const y = r * Math.sin(angle) + offset;
+                data.push({ x, y, c: cls });
+            }
+        }
+    }
+    return data;
+}
+
 function s8_reset() {
     s8Running = false;
     cancelAnimationFrame(s8Raf);
     document.getElementById('s8-play').textContent = '▶ Train';
     s8Epoch = 0;
     s8H = parseInt(document.getElementById('s8-units').value, 10);
+    s8Layers = parseInt(document.getElementById('s8-layers').value, 10);
+    const dataType = document.getElementById('s8-dataset').value;
+    document.getElementById('s8-lr-label').textContent = parseFloat(document.getElementById('s8-lr').value).toFixed(3);
 
-    s8Data = [];
-    for (let cls = 0; cls < 2; cls++) {
-        for (let i = 0; i < 60; i++) {
-            const t = i / 60 * 4 * Math.PI + (cls * Math.PI);
-            const r = 0.1 + 0.8 * (i / 60);
-            const noise = 0.08;
-            s8Data.push({
-                x: r * Math.cos(t) + (Math.random() - 0.5) * noise,
-                y: r * Math.sin(t) + (Math.random() - 0.5) * noise,
-                c: cls
-            });
-        }
-    }
+    s8Data = s8_makeData(dataType);
 
-    // Use MLP class: [2 inputs, s8H hidden, 1 output]
-    s8Model = new MLP([2, s8H, 1]);
+    const activation = document.getElementById('s8-activation').value;
+    const architecture = [2, ...Array(s8Layers).fill(s8H), 1];
+    s8Model = new MLP(architecture, activation);
 
     document.getElementById('s8-epoch').textContent = 'Epoch 0';
     document.getElementById('s8-loss').textContent = 'Loss: -';
     s8_draw();
+}
+
+function s8_lrChange() {
+    const lr = parseFloat(document.getElementById('s8-lr').value);
+    document.getElementById('s8-lr-label').textContent = lr.toFixed(3);
 }
 
 function s8_toggle() {
@@ -1479,17 +1828,28 @@ function s8_toggle() {
 
 function s8_tick() {
     if (!s8Running) return;
-    s8Epoch += 5;
-    // Train using MLP class (cross-entropy via sigmoid + BCE approximation)
-    s8Model.train(s8Data.map(d => [d.x, d.y]), s8Data.map(d => d.c), { lr: 0.03, epochs: 5, batchSize: 16 });
+    s8Epoch += 1;
+    const lr = parseFloat(document.getElementById('s8-lr').value);
+    const optimizer = document.getElementById('s8-optimizer').value;
+    const batchSize = parseInt(document.getElementById('s8-batch-size')?.value || 8, 10);
+    s8Model.train(s8Data.map(d => [d.x, d.y]), s8Data.map(d => d.c), {
+        lr,
+        epochs: 1,
+        batchSize,
+        optimizer,
+        beta1: 0.9,
+        beta2: 0.999,
+        eps: 1e-8
+    });
     const loss = s8Data.reduce((acc, d) => {
-        const p = s8Model.predict([d.x, d.y]);
-        return acc + -(d.c * Math.log(p + 1e-8) + (1 - d.c) * Math.log(1 - p + 1e-8));
+        let p = s8Model.predict([d.x, d.y]);
+        p = Math.max(1e-7, Math.min(1 - 1e-7, p));
+        return acc + -(d.c * Math.log(p) + (1 - d.c) * Math.log(1 - p));
     }, 0) / s8Data.length;
     document.getElementById('s8-epoch').textContent = `Epoch ${s8Epoch}`;
     document.getElementById('s8-loss').textContent = `Loss: ${loss.toFixed(3)}`;
     s8_draw();
-    if (s8Epoch < 2000) { s8Raf = requestAnimationFrame(s8_tick); }
+    if (s8Epoch < 500) { s8Raf = requestAnimationFrame(s8_tick); }
     else { s8Running = false; document.getElementById('s8-play').textContent = '▶ Train'; }
 }
 
@@ -1809,114 +2169,387 @@ function s11_clear() {
     ctx2.clearRect(0, 0, c.width, c.height);
 }
 
+// Layer-1 edge/stroke kernels — oriented Sobel + Laplacian variants
 const s11Kernels = [
-    [[1, 0, -1], [2, 0, -2], [1, 0, -1]],
-    [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],
-    [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]],
-    [[0, -1, 0], [-1, 4, -1], [0, -1, 0]],
-    [[1, 1, 1], [1, 1, 1], [1, 1, 1]].map(r => r.map(v => v / 9)),
-    [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]],
-    [[2, 1, 0], [1, 0, -1], [0, -1, -2]],
-    [[0, 1, 0], [1, 0, 1], [0, 1, 0]],
+    { k: [[1, 0, -1], [2, 0, -2], [1, 0, -1]], label: 'Sobel X' },
+    { k: [[-1, -2, -1], [0, 0, 0], [1, 2, 1]], label: 'Sobel Y' },
+    { k: [[-1, -1, 0], [-1, 0, 1], [0, 1, 1]], label: '45° edge' },
+    { k: [[0, 1, 1], [-1, 0, 1], [-1, -1, 0]], label: '135° edge' },
+    { k: [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], label: 'Laplacian' },
+    { k: [[0, -1, 0], [-1, 4, -1], [0, -1, 0]], label: 'LoG' },
+    { k: [[1, 1, 1], [0, 0, 0], [-1, -1, -1]], label: 'Horiz edge' },
+    { k: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]], label: 'Vert edge' },
 ];
 
-function s11_classify() {
-    const offscreen = document.createElement('canvas');
-    offscreen.width = 28; offscreen.height = 28;
-    const octx = offscreen.getContext('2d');
-    octx.drawImage(digitCanvas, 0, 0, 28, 28);
-    const imgData = octx.getImageData(0, 0, 28, 28);
-    const gray = new Array(28 * 28);
-    for (let i = 0; i < 28 * 28; i++) gray[i] = imgData.data[i * 4] / 255;
+// ── Preprocessing helpers ──────────────────────────────────────────────────
 
+// Gaussian blur (3×3, σ≈0.85) applied in-place to a flat Float32 array
+function s11_blur(img, W, H) {
+    const k = [1, 2, 1, 2, 4, 2, 1, 2, 1];
+    const out = new Float32Array(W * H);
+    for (let r = 1; r < H - 1; r++) for (let c = 1; c < W - 1; c++) {
+        let s = 0;
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++)
+            s += img[(r + dr) * W + (c + dc)] * k[(dr + 1) * 3 + (dc + 1)];
+        out[r * W + c] = s / 16;
+    }
+    return out;
+}
+
+// Crop bounding box, center on a square canvas, rescale to target size
+function s11_cropAndCenter(gray, srcW, srcH, dstSize) {
+    // find bounding box of non-zero pixels
+    let minR = srcH, maxR = 0, minC = srcW, maxC = 0;
+    for (let r = 0; r < srcH; r++) for (let c = 0; c < srcW; c++) {
+        if (gray[r * srcW + c] > 0.05) {
+            if (r < minR) minR = r; if (r > maxR) maxR = r;
+            if (c < minC) minC = c; if (c > maxC) maxC = c;
+        }
+    }
+    if (maxR <= minR || maxC <= minC) return new Float32Array(dstSize * dstSize); // empty
+
+    const bbox_h = maxR - minR + 1, bbox_w = maxC - minC + 1;
+    const side = Math.max(bbox_h, bbox_w);
+    // add 20% margin
+    const margin = Math.round(side * 0.2);
+    const padded = side + 2 * margin;
+
+    // draw into padded square, centred
+    const tmp = new Float32Array(padded * padded);
+    const offR = margin + Math.round((side - bbox_h) / 2);
+    const offC = margin + Math.round((side - bbox_w) / 2);
+    for (let r = minR; r <= maxR; r++) for (let c = minC; c <= maxC; c++)
+        tmp[(offR + r - minR) * padded + (offC + c - minC)] = gray[r * srcW + c];
+
+    // bilinear downsample to dstSize × dstSize
+    const out = new Float32Array(dstSize * dstSize);
+    const scale = padded / dstSize;
+    for (let r = 0; r < dstSize; r++) for (let c = 0; c < dstSize; c++) {
+        const sr = r * scale, sc = c * scale;
+        const r0 = Math.floor(sr), c0 = Math.floor(sc);
+        const r1 = Math.min(r0 + 1, padded - 1), c1 = Math.min(c0 + 1, padded - 1);
+        const fr = sr - r0, fc = sc - c0;
+        out[r * dstSize + c] =
+            tmp[r0 * padded + c0] * (1 - fr) * (1 - fc) +
+            tmp[r0 * padded + c1] * (1 - fr) * fc +
+            tmp[r1 * padded + c0] * fr * (1 - fc) +
+            tmp[r1 * padded + c1] * fr * fc;
+    }
+    return out;
+}
+
+// Apply one 3×3 kernel with ReLU, return flat array of size (S-2)×(S-2)
+function s11_conv2d(img, S, kernel) {
+    const O = S - 2;
+    const out = new Float32Array(O * O);
+    for (let r = 1; r < S - 1; r++) for (let c = 1; c < S - 1; c++) {
+        let s = 0;
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++)
+            s += img[(r + dr) * S + (c + dc)] * kernel[dr + 1][dc + 1];
+        out[(r - 1) * O + (c - 1)] = Math.max(0, s);
+    }
+    return out;
+}
+
+// 2×2 max-pool, return flat array of half size
+function s11_maxpool(img, S) {
+    const O = Math.floor(S / 2);
+    const out = new Float32Array(O * O);
+    for (let r = 0; r < O; r++) for (let c = 0; c < O; c++) {
+        out[r * O + c] = Math.max(
+            img[(r * 2) * S + c * 2],
+            img[(r * 2) * S + c * 2 + 1],
+            img[(r * 2 + 1) * S + c * 2],
+            img[(r * 2 + 1) * S + c * 2 + 1]
+        );
+    }
+    return out;
+}
+
+// Render a feature map into a new <canvas> element using a colormap
+function s11_renderMap(data, side, colorFn) {
+    const fc = document.createElement('canvas');
+    fc.width = side; fc.height = side;
+    const fctx = fc.getContext('2d');
+    const mn = Math.min(...data), mx = Math.max(...data) + 1e-6;
+    for (let r = 0; r < side; r++) for (let c = 0; c < side; c++) {
+        const v = (data[r * side + c] - mn) / (mx - mn);
+        fctx.fillStyle = colorFn(v);
+        fctx.fillRect(c, r, 1, 1);
+    }
+    fc.style.width = '100%'; fc.style.borderRadius = '3px';
+    return fc;
+}
+
+// ── Digit-discriminating feature extraction ────────────────────────────────
+//
+// We compute a hand-crafted but principled feature vector from the 28×28
+// preprocessed image that captures the structural properties of each digit.
+// Features are organised into groups: topology, spatial distribution,
+// stroke curvature, and aspect ratio.
+
+function s11_extractFeatures(img, S) {
+    // Quadrant energies (3×3 grid = 9 zones)
+    const zones = new Float32Array(9);
+    const zS = Math.floor(S / 3);
+    for (let zr = 0; zr < 3; zr++) for (let zc = 0; zc < 3; zc++) {
+        let e = 0;
+        for (let r = zr * zS; r < (zr + 1) * zS; r++)
+            for (let c = zc * zS; c < (zc + 1) * zS; c++)
+                e += img[r * S + c];
+        zones[zr * 3 + zc] = e;
+    }
+
+    // Total ink and row/col projections
+    let total = 0;
+    const rowProj = new Float32Array(S), colProj = new Float32Array(S);
+    for (let r = 0; r < S; r++) for (let c = 0; c < S; c++) {
+        const v = img[r * S + c]; total += v; rowProj[r] += v; colProj[c] += v;
+    }
+
+    // Centroid
+    let cx = 0, cy = 0;
+    if (total > 0) {
+        for (let r = 0; r < S; r++) for (let c = 0; c < S; c++) {
+            const v = img[r * S + c]; cx += v * c; cy += v * r;
+        }
+        cx /= (total * S); cy /= (total * S); // normalised 0..1
+    } else { cx = 0.5; cy = 0.5; }
+
+    // Vertical symmetry (left vs right energy)
+    let leftE = 0, rightE = 0, topE = 0, botE = 0;
+    for (let r = 0; r < S; r++) for (let c = 0; c < S; c++) {
+        const v = img[r * S + c];
+        if (c < S / 2) leftE += v; else rightE += v;
+        if (r < S / 2) topE += v; else botE += v;
+    }
+    const hSym = total > 0 ? 1 - Math.abs(leftE - rightE) / (leftE + rightE + 1e-6) : 0;
+    const vSym = total > 0 ? 1 - Math.abs(topE - botE) / (topE + botE + 1e-6) : 0;
+    const topBot = total > 0 ? topE / (topE + botE + 1e-6) : 0.5;
+
+    // Hole detection via flood-fill: count enclosed background regions
+    // We use the 28×28 binary image and flood from every border pixel
+    const thresh = 0.15;
+    const binary = img.map(v => v > thresh ? 1 : 0);
+    const visited = new Uint8Array(S * S);
+    const stack = [];
+    // Flood border
+    for (let r = 0; r < S; r++) { stack.push(r * S); stack.push(r * S + S - 1); }
+    for (let c = 0; c < S; c++) { stack.push(c); stack.push((S - 1) * S + c); }
+    while (stack.length) {
+        const idx = stack.pop();
+        if (idx < 0 || idx >= S * S || visited[idx] || binary[idx]) continue;
+        visited[idx] = 1;
+        const r = Math.floor(idx / S), c = idx % S;
+        if (r > 0) stack.push((r - 1) * S + c);
+        if (r < S - 1) stack.push((r + 1) * S + c);
+        if (c > 0) stack.push(r * S + c - 1);
+        if (c < S - 1) stack.push(r * S + c + 1);
+    }
+    // Unvisited background pixels = holes
+    let holePixels = 0;
+    for (let i = 0; i < S * S; i++) if (!binary[i] && !visited[i]) holePixels++;
+    const holeRatio = holePixels / (S * S);
+
+    // Convex hull approximation: ratio of ink area to bounding-box area
+    let minR2 = S, maxR2 = 0, minC2 = S, maxC2 = 0;
+    for (let r = 0; r < S; r++) for (let c = 0; c < S; c++) {
+        if (binary[r * S + c]) {
+            if (r < minR2) minR2 = r; if (r > maxR2) maxR2 = r;
+            if (c < minC2) minC2 = c; if (c > maxC2) maxC2 = c;
+        }
+    }
+    const bbArea = Math.max(1, (maxR2 - minR2 + 1) * (maxC2 - minC2 + 1));
+    const inkCount = binary.reduce((a, b) => a + b, 0);
+    const density = inkCount / bbArea;
+
+    // Aspect ratio of bounding box (height/width)
+    const aspect = (maxC2 > minC2) ? (maxR2 - minR2 + 1) / (maxC2 - minC2 + 1) : 1;
+
+    // Top-row and bottom-row ink (for distinguishing 7 vs 1 etc)
+    const topStrip = rowProj.slice(0, 4).reduce((a, b) => a + b, 0) / (total + 1e-6);
+    const botStrip = rowProj.slice(S - 4).reduce((a, b) => a + b, 0) / (total + 1e-6);
+    const midRow = rowProj.slice(Math.floor(S * 0.4), Math.floor(S * 0.6)).reduce((a, b) => a + b, 0) / (total + 1e-6);
+    const midCol = colProj.slice(Math.floor(S * 0.4), Math.floor(S * 0.6)).reduce((a, b) => a + b, 0) / (total + 1e-6);
+
+    return {
+        zones,          // 9 spatial zones
+        total, cx, cy,
+        hSym, vSym,
+        topBot,         // top/total energy ratio
+        holeRatio,      // fraction enclosed background
+        density,        // ink / bbox
+        aspect,
+        topStrip, botStrip, midRow, midCol
+    };
+}
+
+// ── Classifier: hand-tuned linear scores per digit ────────────────────────
+//
+// Each digit score is a linear combination of interpretable features.
+// The coefficients encode what structural properties characterise each digit.
+
+function s11_score(f) {
+    const z = f.zones;
+    const scores = [
+        // 0: large hole, symmetric, all quadrants active, low center
+        f.holeRatio * 18 + f.hSym * 4 + f.vSym * 4
+        + (z[0] + z[2] + z[6] + z[8]) * 0.25  // corners active
+        - z[4] * 0.5                            // center sparse
+        + f.density * 2 - f.midRow * 4,
+
+        // 1: tall narrow, vertical strip, low symmetry, high aspect ratio
+        f.aspect * 5 + (1 - f.hSym) * 6
+        + f.midCol * 5
+        - f.midRow * 3
+        - f.holeRatio * 12
+        + (f.cx > 0.35 && f.cx < 0.65 ? 3 : 0)
+        - f.density * 4,
+
+        // 2: top-right + bottom-left energy, mid horizontal stroke, no hole
+        z[2] * 0.35 + z[6] * 0.35 + z[7] * 0.25
+        + f.topStrip * 4 + f.botStrip * 3
+        - f.holeRatio * 10
+        + f.midRow * 3
+        + (1 - f.vSym) * 3,
+
+        // 3: right-heavy, two bumps (mid strip active), low hole
+        (z[2] + z[5] + z[8]) * 0.35 - (z[0] + z[3] + z[6]) * 0.25
+        + f.midRow * 5 + f.topStrip * 2 + f.botStrip * 2
+        - f.holeRatio * 8
+        + (f.cx > 0.5 ? 4 : -2),
+
+        // 4: upper-left + lower-right, horizontal cross-stroke
+        z[0] * 0.3 + z[3] * 0.3 + z[8] * 0.3
+        + f.midRow * 5
+        - f.botStrip * 3
+        + (1 - f.vSym) * 2
+        - f.holeRatio * 5,
+
+        // 5: top-left + bottom-right, mid stroke, slight hole possible
+        z[0] * 0.3 + z[1] * 0.2 + z[8] * 0.3 + z[7] * 0.2
+        + f.topStrip * 3 + f.botStrip * 2
+        + f.midRow * 3
+        + f.holeRatio * 4
+        + f.vSym * 2,
+
+        // 6: large hole (closed bottom loop), left-heavy, bottom heavy
+        f.holeRatio * 15 + z[6] * 0.35 + z[7] * 0.3 + z[8] * 0.3
+        + f.topBot * (-3) + f.botStrip * 4
+        + f.hSym * 2,
+
+        // 7: top horizontal + diagonal down-right, sparse bottom-left
+        f.topStrip * 7 + z[2] * 0.3 + z[5] * 0.25
+        - z[6] * 0.3
+        - f.holeRatio * 10
+        + (1 - f.vSym) * 2
+        + f.aspect * 1.5,
+
+        // 8: two holes, symmetric, dense
+        f.holeRatio * 20 + f.hSym * 5 + f.vSym * 5
+        + f.density * 3
+        + f.topStrip * 2 + f.botStrip * 2,
+
+        // 9: hole in upper loop, top-heavy, right-tilted
+        f.holeRatio * 14 + f.topBot * 5
+        + z[0] * 0.25 + z[1] * 0.25 + z[2] * 0.25
+        + f.hSym * 2
+        - f.botStrip * 2,
+    ];
+    return scores;
+}
+
+function s11_classify() {
+    // ── 1. Capture canvas → float gray ──────────────────────────────────────
+    const SRC = 140;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = SRC; offscreen.height = SRC;
+    const octx = offscreen.getContext('2d');
+    octx.drawImage(digitCanvas, 0, 0, SRC, SRC);
+    const imgData = octx.getImageData(0, 0, SRC, SRC);
+    let rawGray = new Float32Array(SRC * SRC);
+    for (let i = 0; i < SRC * SRC; i++) rawGray[i] = imgData.data[i * 4] / 255;
+
+    // ── 2. Blur then crop-center-rescale to 28×28 ───────────────────────────
+    rawGray = s11_blur(rawGray, SRC, SRC);
+    const S = 28;
+    const gray = s11_cropAndCenter(rawGray, SRC, SRC, S);
+
+    // ── 3. Layer 1 — 8 oriented edge filters → ReLU ──────────────────────────
     const fmap1Container = document.getElementById('fmap1');
     fmap1Container.innerHTML = '';
     const layer1Maps = [];
-    s11Kernels.forEach((k, ki) => {
-        const fmap = [];
-        for (let r = 1; r < 27; r++) for (let c = 1; c < 27; c++) {
-            let sum = 0;
-            for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-                sum += gray[(r + dr) * 28 + (c + dc)] * k[dr + 1][dc + 1];
-            }
-            fmap.push(Math.max(0, sum));
-        }
+    s11Kernels.forEach(({ k }) => {
+        const fmap = s11_conv2d(gray, S, k); // 26×26
         layer1Maps.push(fmap);
-        const fc = document.createElement('canvas'); fc.width = 26; fc.height = 26;
-        const fctx = fc.getContext('2d');
-        const mn = Math.min(...fmap), mx = Math.max(...fmap) + 0.001;
-        for (let r = 0; r < 26; r++) for (let c = 0; c < 26; c++) {
-            const v = (fmap[r * 26 + c] - mn) / (mx - mn);
-            const col = Math.round(v * 255);
-            fctx.fillStyle = `rgb(${col},${Math.round(col * 0.5)},${Math.round(col * 0.2)})`;
-            fctx.fillRect(c, r, 1, 1);
-        }
-        fc.style.width = '100%'; fc.style.borderRadius = '3px';
+        const fc = s11_renderMap(fmap, 26, v => {
+            const r = Math.round(v * 220), g = Math.round(v * 100), b = Math.round(v * 30);
+            return `rgb(${r},${g},${b})`;
+        });
         fmap1Container.appendChild(fc);
     });
 
+    // ── 4. Layer 2 — 8 feature maps: pool each L1 map, then apply 2nd conv ──
+    //    Each L2 map combines a pooled L1 map with a composite kernel
     const fmap2Container = document.getElementById('fmap2');
     fmap2Container.innerHTML = '';
+    const layer2Kernels = [
+        [[0, -1, 0], [-1, 5, -1], [0, -1, 0]],    // sharpened response of Sobel X
+        [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],       // Sobel Y on Sobel Y
+        [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],       // Sobel X on 45°
+        [[1, 1, 1], [1, 1, 1], [1, 1, 1]].map(r => r.map(v => v / 9)), // local avg (blob)
+        [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], // Laplacian on Sobel Y
+        [[0, 1, 0], [1, -4, 1], [0, 1, 0]],         // negative Laplacian (blob boundary)
+        [[1, 0, -1], [2, 0, -2], [1, 0, -1]],       // Sobel X on Horiz
+        [[0, 1, 1], [-1, 0, 1], [-1, -1, 0]],       // 135° on Vert
+    ];
+    const layer2Maps = [];
     for (let i = 0; i < 8; i++) {
-        const fm = layer1Maps[i].map((v, j) => v * (layer1Maps[(i + 1) % 8][j] || 0));
-        const pooled = [];
-        for (let r = 0; r < 13; r++) for (let c = 0; c < 13; c++) {
-            const p = Math.max(
-                fm[(r * 2) * 26 + c * 2] || 0, fm[(r * 2) * 26 + c * 2 + 1] || 0,
-                fm[(r * 2 + 1) * 26 + c * 2] || 0, fm[(r * 2 + 1) * 26 + c * 2 + 1] || 0
-            );
-            pooled.push(p);
-        }
-        const fc = document.createElement('canvas'); fc.width = 13; fc.height = 13;
-        const fctx = fc.getContext('2d');
-        const mn = Math.min(...pooled), mx = Math.max(...pooled) + 0.001;
-        for (let r = 0; r < 13; r++) for (let c = 0; c < 13; c++) {
-            const v = (pooled[r * 13 + c] - mn) / (mx - mn);
-            fctx.fillStyle = `rgb(0,${Math.round(v * 200)},${Math.round(v * 255)})`;
-            fctx.fillRect(c, r, 1, 1);
-        }
-        fc.style.width = '100%'; fc.style.borderRadius = '3px';
+        const pooled = s11_maxpool(layer1Maps[i], 26); // 13×13
+        const fmap2 = s11_conv2d(pooled, 13, layer2Kernels[i]); // 11×11
+        layer2Maps.push({ data: fmap2, size: 11 });
+        const fc = s11_renderMap(fmap2, 11, v => {
+            return `rgb(0,${Math.round(v * 180)},${Math.round(v * 255)})`;
+        });
         fmap2Container.appendChild(fc);
     }
 
-    const totalEnergy = gray.reduce((a, b) => a + b, 0);
-    const topHalf = gray.slice(0, 14 * 28).reduce((a, b) => a + b, 0);
-    const bottomHalf = gray.slice(14 * 28).reduce((a, b) => a + b, 0);
-    const leftHalf = gray.filter((_, i) => i % 28 < 14).reduce((a, b) => a + b, 0);
-    const rightHalf = gray.filter((_, i) => i % 28 >= 14).reduce((a, b) => a + b, 0);
-    const center = gray.filter((_, i) => { const r = Math.floor(i / 28), c = i % 28; return r >= 7 && r < 21 && c >= 7 && c < 21; }).reduce((a, b) => a + b, 0);
+    // ── 5. Extract interpretable features and classify ───────────────────────
+    const feat = s11_extractFeatures(gray, S);
+    const rawScores = s11_score(feat);
 
-    const scores = [
-        totalEnergy * 0.6 + center * 1.2,
-        rightHalf * 1.4 - leftHalf * 0.2,
-        topHalf * 0.8 + rightHalf * 0.5,
-        rightHalf * 1.2 + bottomHalf * 0.4,
-        leftHalf * 0.6 + topHalf * 0.6,
-        leftHalf * 0.8 + bottomHalf * 0.5,
-        leftHalf * 1.1 + center * 0.5,
-        topHalf * 1.5 - bottomHalf * 0.3,
-        totalEnergy * 0.5 + center * 0.8,
-        rightHalf * 0.5 + bottomHalf * 0.8,
-    ];
-    const maxS = Math.max(...scores);
-    const exp = scores.map(s => Math.exp(s - maxS));
+    // Softmax
+    const maxS = Math.max(...rawScores);
+    const exp = rawScores.map(s => Math.exp(s - maxS));
     const sumE = exp.reduce((a, b) => a + b, 0);
     const probs = exp.map(e => e / sumE);
 
+    // ── 6. Render output bar chart ───────────────────────────────────────────
     const c11 = document.getElementById('c11out');
     const ctx2 = c11.getContext('2d');
-    c11.width = 500; c11.height = 60;
-    ctx2.clearRect(0, 0, 500, 60);
-    ctx2.fillStyle = '#0d1117'; ctx2.fillRect(0, 0, 500, 60);
+    c11.width = 500; c11.height = 70;
+    ctx2.fillStyle = '#0d1117'; ctx2.fillRect(0, 0, 500, 70);
     const bW = 500 / 10;
+    const maxP = Math.max(...probs);
+    const predicted = probs.indexOf(maxP);
     probs.forEach((p, i) => {
-        const bH = p * 50;
-        ctx2.fillStyle = p === Math.max(...probs) ? '#fbbf24' : '#60a5fa';
-        ctx2.fillRect(i * bW + 2, 58 - bH, bW - 4, bH);
-        ctx2.fillStyle = 'rgba(255,255,255,0.6)'; ctx2.font = "10px 'Fira Code'";
+        const bH = p * 52;
+        ctx2.fillStyle = i === predicted ? '#fbbf24' : '#60a5fa';
+        ctx2.fillRect(i * bW + 2, 60 - bH, bW - 4, bH);
+        ctx2.fillStyle = i === predicted ? '#fbbf24' : 'rgba(255,255,255,0.55)';
+        ctx2.font = `${i === predicted ? 'bold ' : ''}11px 'Fira Code'`;
         ctx2.textAlign = 'center';
-        ctx2.fillText(i.toString(), i * bW + bW / 2, 58);
+        ctx2.fillText(i.toString(), i * bW + bW / 2, 68);
+        if (p > 0.05) {
+            ctx2.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx2.font = "9px 'Fira Code'";
+            ctx2.fillText(`${Math.round(p * 100)}%`, i * bW + bW / 2, 60 - bH - 2);
+        }
     });
+    ctx2.fillStyle = '#fbbf24';
+    ctx2.font = "bold 12px 'Fira Code'";
+    ctx2.textAlign = 'left';
+    ctx2.fillText(`→ predicted: ${predicted}  (${Math.round(maxP * 100)}% conf.)`, 8, 14);
 }
 
 // =====================================
@@ -1924,62 +2557,127 @@ function s11_classify() {
 // =====================================
 let s12Mode = 'edges';
 
+// Generate a 16×16 procedural test image suited to each filter type
+function s12_testImage(mode) {
+    const S = 16, img = [];
+    for (let r = 0; r < S; r++) {
+        img.push([]);
+        for (let c = 0; c < S; c++) {
+            const x = c / S, y = r / S; // normalised 0..1
+            let v = 0;
+            if (mode === 'edges') {
+                // Diagonal stripes + a circle outline
+                const circle = Math.abs(Math.sqrt((x - 0.5) ** 2 + (y - 0.5) ** 2) - 0.35) < 0.06 ? 1 : 0;
+                const diag = (Math.sin((x - y) * Math.PI * 6) > 0.7) ? 0.6 : 0;
+                v = Math.max(circle, diag);
+            } else if (mode === 'gabor') {
+                // Oriented grating
+                v = 0.5 + 0.5 * Math.sin((x * 5 + y * 3) * Math.PI * 2);
+            } else if (mode === 'color') {
+                // Smooth gradient with a bright spot
+                v = 0.3 + 0.4 * x + 0.3 * Math.exp(-((x - 0.7) ** 2 + (y - 0.3) ** 2) * 30);
+            } else if (mode === 'texture') {
+                // Multi-frequency checkerboard
+                const f1 = Math.sign(Math.sin(x * Math.PI * 4) * Math.sin(y * Math.PI * 4));
+                const f2 = Math.sign(Math.sin(x * Math.PI * 10) * Math.sin(y * Math.PI * 10));
+                v = 0.5 + 0.3 * f1 + 0.2 * f2;
+            } else { // deep — curved shape (arc)
+                const dist = Math.sqrt((x - 0.5) ** 2 + (y - 0.5) ** 2);
+                v = Math.exp(-((dist - 0.3) ** 2) * 80) + 0.2 * Math.sin(x * Math.PI * 8);
+            }
+            img[r].push(Math.max(0, Math.min(1, v)));
+        }
+    }
+    return img;
+}
+
+// Convolve testImg (S×S) with kernel, return flat feature map with dimensions
+function s12_conv(testImg, kernel) {
+    const S = testImg.length;
+    const kR = kernel.length, kC = kernel[0].length;
+    const oR = S - kR + 1, oC = S - kC + 1;
+    const fmap = [];
+    for (let r = 0; r < oR; r++) for (let c = 0; c < oC; c++) {
+        let sum = 0;
+        for (let dr = 0; dr < kR; dr++) for (let dc = 0; dc < kC; dc++)
+            sum += (testImg[r + dr]?.[c + dc] ?? 0) * kernel[dr][dc];
+        fmap.push(sum);
+    }
+    return { fmap, oR, oC };
+}
+
 const s12FilterSets = {
     edges: {
-        name: 'Edge detection filters (oriented Sobel)',
+        name: 'Layer 1 — Edge detectors: oriented Sobel & Laplacian',
+        cols: 4,
         filters: [
-            { k: [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], desc: 'Sobel X' },
-            { k: [[-1, -2, -1], [0, 0, 0], [1, 2, 1]], desc: 'Sobel Y' },
+            { k: [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], desc: 'Sobel X\n(vertical edges)' },
+            { k: [[-1, -2, -1], [0, 0, 0], [1, 2, 1]], desc: 'Sobel Y\n(horizontal edges)' },
             { k: [[-1, -1, 0], [-1, 0, 1], [0, 1, 1]], desc: '45° edge' },
             { k: [[0, 1, 1], [-1, 0, 1], [-1, -1, 0]], desc: '135° edge' },
-            { k: [[-1, -1, -1], [0, 0, 0], [1, 1, 1]], desc: 'Horizontal' },
-            { k: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]], desc: 'Vertical' },
-            { k: [[0, -1, 0], [-1, 4, -1], [0, -1, 0]], desc: 'Laplacian' },
-            { k: [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], desc: 'DoG (edges)' },
+            { k: [[-1, -1, -1], [0, 0, 0], [1, 1, 1]], desc: 'Horiz. edge' },
+            { k: [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]], desc: 'Vert. edge' },
+            { k: [[0, -1, 0], [-1, 4, -1], [0, -1, 0]], desc: 'Laplacian\n(all edges)' },
+            { k: [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], desc: 'DoG\n(edge enhance)' },
         ]
     },
     gabor: {
-        name: 'Gabor-like filters (oriented frequency)',
+        name: 'Layer 1/2 — Gabor-like: oriented frequency bands (as in V1 cortex)',
+        cols: 4,
         filters: Array.from({ length: 8 }, (_, i) => {
             const angle = i * Math.PI / 8;
-            const k = Array.from({ length: 3 }, (_, r) => Array.from({ length: 3 }, (_, c) => {
-                const x = (c - 1) * Math.cos(angle) + (r - 1) * Math.sin(angle);
-                const y = -(c - 1) * Math.sin(angle) + (r - 1) * Math.cos(angle);
-                return Math.exp(-(x * x + y * y) / 2) * Math.cos(2 * Math.PI * x / 2);
+            const k = Array.from({ length: 5 }, (_, r) => Array.from({ length: 5 }, (_, c) => {
+                const cx = c - 2, cy = r - 2;
+                const xp = cx * Math.cos(angle) + cy * Math.sin(angle);
+                const yp = -cx * Math.sin(angle) + cy * Math.cos(angle);
+                return Math.exp(-(xp * xp / 2 + yp * yp / 4)) * Math.cos(2 * Math.PI * xp / 2.5);
             }));
-            return { k, desc: `θ=${Math.round(i * 22.5)}°` };
+            return { k, desc: `θ = ${Math.round(i * 22.5)}°` };
         })
     },
-    color: {
-        name: 'Color-selective filters (opponent channels)',
-        filters: [
-            { k: [[1, 1, 1], [1, 1, 1], [1, 1, 1]].map(r => r.map(v => v / 9)), desc: 'R channel', c: '#f87171' },
-            { k: [[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]], desc: 'G channel', c: '#4ade80' },
-            { k: [[1, 2, 1], [2, 4, 2], [1, 2, 1]].map(r => r.map(v => v / 16)), desc: 'B channel', c: '#60a5fa' },
-            { k: [[-1, 2, -1], [2, -4, 2], [-1, 2, -1]], desc: 'R-G oppon.', c: '#fb923c' },
-            { k: [[1, -2, 1], [-2, 4, -2], [1, -2, 1]], desc: 'G-B oppon.', c: '#a78bfa' },
-            { k: [[0, -1, 0], [-1, 5, -1], [0, -1, 0]], desc: 'Brightness', c: '#fbbf24' },
-            { k: [[1, 0, -1], [0, 0, 0], [-1, 0, 1]], desc: 'Hue edge', c: '#f472b6' },
-            { k: [[-1, 0, 1], [0, 0, 0], [1, 0, -1]], desc: 'Sat. edge', c: '#22d3ee' },
-        ]
-    },
     texture: {
-        name: 'Texture / frequency filters',
+        name: 'Layer 2/3 — Texture / frequency detectors',
+        cols: 4,
         filters: Array.from({ length: 8 }, (_, i) => {
-            const freq = (i + 1) * 0.8;
-            const k = Array.from({ length: 3 }, (_, r) => Array.from({ length: 3 }, (_, c) => Math.cos(freq * c) * Math.exp(-((r - 1) ** 2 + (c - 1) ** 2) / 2)));
-            return { k, desc: `freq ${i + 1}` };
+            const freq = (i + 1) * 0.7;
+            const angle = i * Math.PI / 8;
+            const k = Array.from({ length: 5 }, (_, r) => Array.from({ length: 5 }, (_, c) => {
+                const cx = c - 2, cy = r - 2;
+                const xp = cx * Math.cos(angle) + cy * Math.sin(angle);
+                const g = Math.exp(-(cx * cx + cy * cy) / 4);
+                return g * Math.cos(freq * Math.PI * xp);
+            }));
+            return { k, desc: `f=${i + 1} θ=${Math.round(i * 22.5)}°` };
         })
     },
     deep: {
-        name: 'Deep layer — complex shape detectors (random but structured)',
+        name: 'Layer 4+ — Deep filters: complex shape & curvature detectors',
+        cols: 4,
         filters: Array.from({ length: 8 }, (_, i) => {
-            const seed = i * 7 + 3;
-            const k = Array.from({ length: 5 }, (_, r) => Array.from({ length: 5 }, (_, c) => {
-                return Math.sin(seed * r + c) * 0.8 + Math.cos(seed * c * 0.5 + r) * 0.4;
+            const seed = i * 13 + 7;
+            const k = Array.from({ length: 7 }, (_, r) => Array.from({ length: 7 }, (_, c) => {
+                const cx = c - 3, cy = r - 3;
+                const g = Math.exp(-(cx * cx + cy * cy) / 6);
+                return g * (Math.sin(seed * 0.5 + cx * 0.9 + cy * 0.6) * 0.7
+                          + Math.cos(seed * 0.3 + cx * 0.4 - cy * 0.8) * 0.4
+                          + Math.sin(cx * cy * 0.3 + seed * 0.2) * 0.3);
             }));
-            return { k5: k, k: k.slice(0, 3).map(row => row.slice(0, 3)), desc: `filter ${i + 1}` };
+            return { k, desc: `deep filter ${i + 1}` };
         })
+    },
+    color: {
+        name: 'Layer 1 — Color-selective / opponent channel filters',
+        cols: 4,
+        filters: [
+            { k: [[1,2,1],[2,4,2],[1,2,1]].map(r => r.map(v => v / 16)), desc: 'Gaussian blob\n(center-on)' },
+            { k: [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]], desc: 'DoG\n(surround inhibit)' },
+            { k: [[0,-1,0],[-1,5,-1],[0,-1,0]], desc: 'Sharpening\n(local contrast)' },
+            { k: [[-2,1,1],[1,-2,1],[1,1,-2]], desc: 'R−G opponent' },
+            { k: [[1,1,-2],[1,-2,1],[-2,1,1]], desc: 'B−Y opponent' },
+            { k: [[1,0,-1],[2,0,-2],[1,0,-1]], desc: 'Chromatic\nSobel X' },
+            { k: [[-1,-2,-1],[0,0,0],[1,2,1]], desc: 'Chromatic\nSobel Y' },
+            { k: [[1,1,1],[1,-8,1],[1,1,1]].map(r => r.map(v => v / 8)), desc: 'Color blob\n(neg. Laplacian)' },
+        ]
     }
 };
 
@@ -1994,81 +2692,116 @@ function s12_draw() {
     const canvas = document.getElementById('c12');
     const { ctx, W, H } = dpr(canvas);
     darkBg(ctx, W, H);
+    drawDarkGrid(ctx, W, H, 32);
 
     const fset = s12FilterSets[s12Mode];
-    label(ctx, fset.name, 10, 18, 'rgba(255,255,255,0.6)', 11);
-
     const filters = fset.filters;
-    const n = filters.length;
-    const size = s12Mode === 'deep' ? 40 : 34;
-    const padX = (W - n * size - (n - 1) * 6) / 2;
-    const startY = 40;
+    const cols = fset.cols;           // filters per row
 
-    filters.forEach((f, i) => {
-        const ox = padX + i * (size + 6), oy = startY;
-        const kernel = f.k;
-        const rows = kernel.length, cols = kernel[0].length;
-        const cS = size / Math.max(rows, cols);
+    // Section title
+    label(ctx, fset.name, 12, 16, 'rgba(255,255,255,0.65)', 11);
 
-        let mn = Infinity, mx = -Infinity;
-        kernel.forEach(row => row.forEach(v => { if (v < mn) mn = v; if (v > mx) mx = v; }));
+    // Layout: divide canvas into cols columns, rows filter-rows
+    // Each column cell contains: kernel viz (top) + response viz (bottom) + label
+    const marginX = 16, marginY = 28;
+    const gapX = 10, gapY = 10;
+    const cellW = (W - 2 * marginX - (cols - 1) * gapX) / cols;
 
-        kernel.forEach((row, r) => row.forEach((v, c) => {
-            const t = (v - mn) / (mx - mn + 0.001);
-            if (f.c) {
-                ctx.fillStyle = v > 0 ? f.c + 'cc' : 'rgba(20,20,40,0.8)';
-            } else {
-                ctx.fillStyle = coolwarm(2 * t - 1);
-            }
-            ctx.fillRect(ox + c * cS, oy + r * cS, cS - 1, cS - 1);
-        }));
+    const kernelDisplaySize = Math.min(cellW * 0.42, 70); // kernel box width
+    const responseDisplaySize = cellW - kernelDisplaySize - 8; // response box width
+    const rowH = Math.max(kernelDisplaySize, responseDisplaySize) + 28; // +28 for label
+    const testImg = s12_testImage(s12Mode);
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 0.5;
-        ctx.strokeRect(ox, oy, cols * cS, rows * cS);
+    filters.forEach((f, fi) => {
+        const col = fi % cols;
+        const row = Math.floor(fi / cols);
+        const cellX = marginX + col * (cellW + gapX);
+        const cellY = marginY + row * (rowH + gapY);
 
-        label(ctx, f.desc, ox, oy + rows * cS + 14, 'rgba(255,255,255,0.4)', 9);
-    });
-
-    const testImg = [
-        [0, 0, 1, 1, 1, 1, 0, 0],
-        [0, 1, 0, 0, 0, 0, 1, 0],
-        [1, 0, 0, 0, 1, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 1, 0, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 1],
-        [0, 1, 0, 0, 0, 0, 1, 0],
-        [0, 0, 1, 1, 1, 1, 0, 0],
-    ];
-
-    const imgX = padX, imgY = startY + 50;
-    label(ctx, 'response on test image →', 10, imgY - 2, 'rgba(255,255,255,0.4)', 9);
-
-    filters.forEach((f, i) => {
-        const ox = padX + i * (size + 6);
         const kernel = f.k;
         const kR = kernel.length, kC = kernel[0].length;
-        const outSize = 8 - kR + 1;
-        const fmap = [];
-        let mn = Infinity, mx = -Infinity;
-        for (let r = 0; r <= 7 - kR; r++) for (let c = 0; c <= 7 - kC; c++) {
-            let sum = 0;
-            for (let dr = 0; dr < kR; dr++) for (let dc = 0; dc < kC; dc++) {
-                sum += (testImg[r + dr]?.[c + dc] || 0) * kernel[dr][dc];
-            }
-            fmap.push(sum);
-            if (sum < mn) mn = sum; if (sum > mx) mx = sum;
-        }
 
-        const cS2 = size / outSize;
-        for (let r = 0; r < outSize; r++) for (let c = 0; c < outSize; c++) {
-            const t = (fmap[r * outSize + c] - mn) / (mx - mn + 0.001);
-            ctx.fillStyle = f.c ? `rgba(${parseInt(f.c.slice(1, 3), 16)},${parseInt(f.c.slice(3, 5), 16)},${parseInt(f.c.slice(5, 7), 16)},${t})`
-                : `rgb(${Math.round(lerp(10, 220, t))},${Math.round(lerp(20, 180, t))},${Math.round(lerp(80, 60, t))})`;
-            ctx.fillRect(ox + c * cS2, imgY + r * cS2, cS2 - 1, cS2 - 1);
+        // ── Kernel weight visualisation (left portion of cell) ──
+        const kDispW = kernelDisplaySize, kDispH = kernelDisplaySize;
+        const kCellW = kDispW / kC, kCellH = kDispH / kR;
+        let mn = Infinity, mx = -Infinity;
+        kernel.forEach(row => row.forEach(v => { if (v < mn) mn = v; if (v > mx) mx = v; }));
+        const range = mx - mn + 1e-6;
+
+        kernel.forEach((krow, r) => krow.forEach((v, c) => {
+            const t = (v - mn) / range;
+            ctx.fillStyle = coolwarm(2 * t - 1);
+            ctx.fillRect(cellX + c * kCellW, cellY + r * kCellH, kCellW - 0.5, kCellH - 0.5);
+        }));
+        // kernel grid lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 0.5;
+        for (let r = 0; r <= kR; r++) {
+            ctx.beginPath(); ctx.moveTo(cellX, cellY + r * kCellH); ctx.lineTo(cellX + kDispW, cellY + r * kCellH); ctx.stroke();
         }
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 0.5;
-        ctx.strokeRect(ox, imgY, outSize * cS2, outSize * cS2);
+        for (let c = 0; c <= kC; c++) {
+            ctx.beginPath(); ctx.moveTo(cellX + c * kCellW, cellY); ctx.lineTo(cellX + c * kCellW, cellY + kDispH); ctx.stroke();
+        }
+        // kernel weight values (only for small kernels where text fits)
+        if (kC <= 5 && kCellW > 10) {
+            ctx.textAlign = 'center'; ctx.font = `${Math.min(9, kCellW * 0.45)}px 'Fira Code'`;
+            kernel.forEach((krow, r) => krow.forEach((v, c) => {
+                const t = (v - mn) / range;
+                ctx.fillStyle = t > 0.55 ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.75)';
+                ctx.fillText(v.toFixed(1), cellX + (c + 0.5) * kCellW, cellY + (r + 0.5) * kCellH + 3);
+            }));
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+        ctx.strokeRect(cellX, cellY, kDispW, kDispH);
+
+        // "W" label on kernel
+        label(ctx, 'kernel W', cellX, cellY - 4, 'rgba(255,255,255,0.35)', 8);
+
+        // ── Convolved response map (right portion of cell) ──
+        const respX = cellX + kDispW + 8;
+        const respSize = Math.min(responseDisplaySize, kDispH + 4);
+        const { fmap, oR, oC } = s12_conv(testImg, kernel);
+
+        let fmn = Infinity, fmx = -Infinity;
+        fmap.forEach(v => { if (v < fmn) fmn = v; if (v > fmx) fmx = v; });
+        const frange = fmx - fmn + 1e-6;
+
+        const rCellW = respSize / oC, rCellH = respSize / oR;
+        fmap.forEach((v, idx) => {
+            const r = Math.floor(idx / oC), c = idx % oC;
+            const t = (v - fmn) / frange;
+            // use coolwarm for signed responses, heat for positive-only
+            ctx.fillStyle = fmn < -0.01
+                ? coolwarm(2 * t - 1)
+                : `rgb(${Math.round(lerp(10, 240, t))},${Math.round(lerp(15, 120, t))},${Math.round(lerp(30, 20, t))})`;
+            ctx.fillRect(respX + c * rCellW, cellY + r * rCellH, rCellW - 0.3, rCellH - 0.3);
+        });
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+        ctx.strokeRect(respX, cellY, oC * rCellW, oR * rCellH);
+        label(ctx, 'response', respX, cellY - 4, 'rgba(255,255,255,0.35)', 8);
+
+        // ── Filter description label ──
+        const labelY = cellY + Math.max(kDispH, oR * rCellH) + 12;
+        const descLines = f.desc.split('\n');
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.font = "bold 9px 'Fira Code'";
+        ctx.fillText(descLines[0], cellX, labelY);
+        if (descLines[1]) {
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+            ctx.font = "9px 'Fira Code'";
+            ctx.fillText(descLines[1], cellX, labelY + 11);
+        }
     });
+
+    // ── Coolwarm legend (bottom-right) ──
+    const legW = 80, legH = 8, legX = W - legW - 14, legY = H - 22;
+    for (let i = 0; i < legW; i++) {
+        ctx.fillStyle = coolwarm(2 * i / legW - 1);
+        ctx.fillRect(legX + i, legY, 1, legH);
+    }
+    label(ctx, '−', legX - 8, legY + 8, 'rgba(96,165,250,0.8)', 10);
+    label(ctx, '+', legX + legW + 2, legY + 8, 'rgba(248,113,113,0.8)', 10);
+    label(ctx, 'weight scale', legX + legW / 2 - 22, legY + legH + 11, 'rgba(255,255,255,0.3)', 8);
 }
 
 s12_draw();
@@ -2320,6 +3053,10 @@ let s15Running = false, s15Raf = null;
 let s15Epoch = 0;
 let s15K = 4, s15L = 2;
 let s15Diff = 'circle';
+let s15Activation = 'relu';
+let s15Optimizer = 'sgd';
+let s15Lr = 0.08;
+let s15Batch = 32;
 let s15Model = null;
 let s15Data = [];
 let s15Trained = false;
@@ -2357,8 +3094,14 @@ function s15_reset() {
     document.getElementById('s15-play').textContent = '▶ Animate';
     s15Epoch = 0;
     s15Trained = false;
+    s15Diff = document.getElementById('s15-diff').value;
+    s15Activation = document.getElementById('s15-activation').value;
+    s15Optimizer = document.getElementById('s15-optimizer').value;
+    s15Batch = +document.getElementById('s15-batch').value;
+    s15Lr = +document.getElementById('s15-lr').value / 100;
+    document.getElementById('s15-lr-val').textContent = s15Lr.toFixed(2);
     s15Data = s15_genData(s15Diff);
-    s15Model = new MLP([2, ...Array(s15L).fill(s15K), 1]);
+    s15Model = new MLP([2, ...Array(s15L).fill(s15K), 1], s15Activation);
     document.getElementById('s15-regions').textContent = 'regions: —';
     s15_draw();
 }
@@ -2375,6 +3118,13 @@ function s15_lChange() {
     s15_reset();
 }
 
+function s15_lrChange() {
+    const value = +document.getElementById('s15-lr').value;
+    s15Lr = value / 100;
+    document.getElementById('s15-lr-val').textContent = s15Lr.toFixed(2);
+    s15_reset();
+}
+
 function s15_toggle() {
     s15Running = !s15Running;
     document.getElementById('s15-play').textContent = s15Running ? '⏸ Stop' : '▶ Animate';
@@ -2387,7 +3137,7 @@ function s15_tick() {
         s15Model.train(
             s15Data.map(d => [d.x, d.y]),
             s15Data.map(d => d.c),
-            { lr: 0.08, epochs: 1, batchSize: 32 }
+            { lr: s15Lr, epochs: 1, batchSize: s15Batch, optimizer: s15Optimizer }
         );
         s15Epoch += 1;
         s15Trained = true;
@@ -2455,7 +3205,7 @@ function s15_draw() {
         ctx.textAlign = 'left';
     }
 
-    label(ctx, `K=${s15K} neurons × L=${s15L} layers`, 12, H - 14, 'rgba(255,255,255,0.5)', 11);
+    label(ctx, `K=${s15K} neurons × L=${s15L} layers · ${s15Activation.toUpperCase()} · ${s15Optimizer.toUpperCase()}`, 12, H - 14, 'rgba(255,255,255,0.5)', 11);
 }
 
 s15_reset();
@@ -2465,6 +3215,31 @@ s15_reset();
 // =====================================
 const sections = document.querySelectorAll('.section[id^="s"]');
 const navLinks = document.querySelectorAll('nav li a');
+
+function setActiveNav(targetId) {
+    navLinks.forEach(l => {
+        const isActive = l.getAttribute('href') === targetId;
+        l.classList.toggle('active', isActive);
+        const num = l.querySelector('.num');
+        if (num) num.style.background = isActive ? 'var(--accent)' : 'var(--bg3)';
+        if (num) num.style.color = isActive ? '#fff' : 'var(--text3)';
+    });
+}
+
+navLinks.forEach(link => {
+    link.addEventListener('click', event => {
+        const targetId = link.getAttribute('href');
+        if (targetId && targetId.startsWith('#')) {
+            const target = document.querySelector(targetId);
+            if (target) {
+                event.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                window.history.replaceState(null, '', targetId);
+                setActiveNav(targetId);
+            }
+        }
+    });
+});
 
 const observer = new IntersectionObserver(entries => {
     entries.forEach(e => {
