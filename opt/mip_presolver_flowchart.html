@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIP Presolver — Algorithm Flowchart</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-one-dark.min.css" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$']],
+    displayMath: [['$$', '$$']],
+    processEscapes: true
+  },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+/* ─── RESET & TOKENS ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #090d12;
+  --surface:  #141a22;
+  --surface-2:#101722;
+  --surface-3:#1b2431;
+  --border:   #2c3643;
+  --border-soft: rgba(148,163,184,.16);
+  --text:     #edf4fb;
+  --muted:    #9aa8b8;
+  --soft:     #c7d2de;
+  --accent:   #62b5ff;
+  --danger:   #fb7185;
+  --success:  #36d399;
+
+  --ph1: #3b82f6;  /* housekeeping  – blue     */
+  --ph2: #a78bfa;  /* structural    – violet   */
+  --ph3: #34d399;  /* bounds        – emerald  */
+  --ph4: #fbbf24;  /* geometry      – amber    */
+  --ph5: #f87171;  /* combinatorial – red      */
+  --ph6: #fb923c;  /* dual          – orange   */
+  --ph7: #22d3ee;  /* cleanup       – cyan     */
+  --ph8: #94a3b8;  /* probing       – slate    */
+
+  --drawer-w: 580px;
+  --flow-w:   660px;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 18% -10%, rgba(98,181,255,.18), transparent 34rem),
+    radial-gradient(circle at 88% 8%, rgba(52,211,153,.11), transparent 30rem),
+    linear-gradient(180deg, #0b1118 0%, var(--bg) 38%, #080b10 100%);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── SCROLL PROGRESS ────────────────────────────────────────────────── */
+#scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  z-index: 400;
+  transition: width .08s linear;
+  pointer-events: none;
+}
+
+/* ─── HEADER ─────────────────────────────────────────────────────────── */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(9,13,18,.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.page-header h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+.header-badge {
+  font-size: .7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(88,166,255,.15);
+  color: var(--accent);
+  border: 1px solid rgba(88,166,255,.3);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.header-hint {
+  margin-left: auto;
+  font-size: .78rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header-hint kbd {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: .72rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.header-stat {
+  color: var(--muted);
+  font-size: .74rem;
+  padding: 4px 9px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: rgba(255,255,255,.035);
+}
+
+/* ─── LAYOUT ─────────────────────────────────────────────────────────── */
+.layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 34px 24px 80px;
+  transition: padding-right .35s cubic-bezier(.4,0,.2,1);
+}
+.layout.drawer-open {
+  padding-right: calc(var(--drawer-w) + 24px);
+}
+
+/* ─── PEDAGOGICAL OVERVIEW ───────────────────────────────────────────── */
+.study-panel {
+  width: min(1080px, 100%);
+  margin: 0 auto 30px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
+    rgba(16,23,34,.78);
+  box-shadow: 0 22px 70px rgba(0,0,0,.32);
+  overflow: hidden;
+}
+.study-panel-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
+  gap: 22px;
+  padding: 26px 28px;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.eyebrow::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 18px rgba(98,181,255,.75);
+}
+.study-panel h2 {
+  font-size: clamp(1.65rem, 3vw, 2.7rem);
+  line-height: 1.04;
+  letter-spacing: 0;
+  max-width: 760px;
+}
+.study-panel p {
+  color: var(--soft);
+  line-height: 1.7;
+  margin-top: 14px;
+  max-width: 760px;
+}
+.study-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+.study-step {
+  min-height: 98px;
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(8,13,20,.48);
+}
+.study-step strong {
+  display: block;
+  font-size: .78rem;
+  color: var(--text);
+  margin-bottom: 7px;
+}
+.study-step span {
+  color: var(--muted);
+  font-size: .74rem;
+  line-height: 1.55;
+}
+.overview-stack {
+  display: grid;
+  gap: 12px;
+}
+.mini-map {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(8,13,20,.44);
+  padding: 16px;
+}
+.mini-map-title {
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.mini-map-row {
+  display: grid;
+  grid-template-columns: 74px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: .75rem;
+  color: var(--soft);
+  padding: 5px 0;
+}
+.mini-map-row .bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ph);
+  opacity: .85;
+}
+.mini-map-row .count {
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .68rem;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 15px 16px;
+  border-top: 1px solid var(--border-soft);
+  background: rgba(255,255,255,.025);
+}
+.legend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .72rem;
+}
+.legend-pill i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ph);
+}
+
+/* ─── RULE NAVIGATOR ─────────────────────────────────────────────────── */
+.rule-navigator {
+  width: min(1080px, 100%);
+  margin: 0 auto 26px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+.search-box {
+  position: relative;
+}
+.search-box::before {
+  content: '⌕';
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-54%);
+  color: var(--muted);
+  font-size: 1rem;
+}
+.search-box input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 14px 0 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: rgba(8,13,20,.66);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.search-box input:focus {
+  border-color: rgba(98,181,255,.56);
+  box-shadow: 0 0 0 3px rgba(98,181,255,.13);
+}
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+.filter-btn {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255,255,255,.035);
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.filter-btn:hover,
+.filter-btn.active {
+  color: var(--text);
+  border-color: rgba(98,181,255,.45);
+  background: rgba(98,181,255,.12);
+}
+.filter-meta {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: .74rem;
+  min-height: 18px;
+}
+.flowchart.filtering::before,
+.flowchart.filtering > .connector,
+.flowchart.filtering > .node-diamond-wrap,
+.flowchart.filtering > .node-terminal,
+.flowchart.filtering > .pass-loop-bar {
+  display: none;
+}
+.phase.empty,
+.rule-card.hidden {
+  display: none;
+}
+
+/* ─── FLOWCHART COLUMN ───────────────────────────────────────────────── */
+.flowchart {
+  width: var(--flow-w);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* vertical spine */
+.flowchart::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    rgba(98,181,255,.18) 5%,
+    rgba(148,163,184,.36) 38%,
+    rgba(52,211,153,.24) 70%,
+    rgba(148,163,184,.26) 95%,
+    transparent 100%);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+/* ─── TERMINAL NODES (start/end/infeasible) ─────────────────────────── */
+.node-terminal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 52px;
+  border-radius: 26px;
+  font-weight: 600;
+  font-size: .85rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  margin: 8px 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.25);
+}
+.node-terminal.start {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1a3354 100%);
+  border: 2px solid #3b82f6;
+  color: #93c5fd;
+  box-shadow: 0 0 24px rgba(59,130,246,.25);
+}
+.node-terminal.stop-infeasible {
+  background: linear-gradient(135deg, #3f1a1a 0%, #2d1515 100%);
+  border: 2px dashed #f87171;
+  color: #fca5a5;
+  font-size: .8rem;
+}
+.node-terminal.end {
+  background: linear-gradient(135deg, #1a3a2d 0%, #15302a 100%);
+  border: 2px solid #34d399;
+  color: #6ee7b7;
+  box-shadow: 0 0 24px rgba(52,211,153,.25);
+}
+
+/* ─── CONNECTOR (vertical arrow segment) ────────────────────────────── */
+.connector {
+  position: relative;
+  z-index: 1;
+  width: 2px;
+  height: 24px;
+  background: linear-gradient(180deg, rgba(148,163,184,.18), rgba(148,163,184,.55), rgba(148,163,184,.18));
+}
+.connector.tall { height: 36px; }
+.connector::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid rgba(148,163,184,.55);
+}
+
+/* ─── DIAMOND (decision node) ────────────────────────────────────────── */
+.node-diamond-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+}
+.node-diamond {
+  width: 140px;
+  height: 52px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.node-diamond::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--surface-3), var(--surface-2));
+  border: 1.5px solid rgba(148,163,184,.28);
+  transform: rotate(45deg) scale(.65) translateY(-6px);
+  border-radius: 4px;
+}
+.node-diamond span {
+  position: relative;
+  z-index: 1;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.3;
+}
+.diamond-label-right {
+  position: absolute;
+  left: 158px;
+  top: -12px;
+  font-size: .7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.diamond-label-left {
+  position: absolute;
+  left: 24px;
+  bottom: -14px;
+  font-size: .7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* horizontal arrow to STOP */
+.diamond-arrow-right {
+  position: absolute;
+  left: 74px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.diamond-arrow-right .arrow-line {
+  width: 72px;
+  height: 2px;
+  background: var(--border);
+}
+.diamond-arrow-right .arrow-head {
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid var(--border);
+}
+.diamond-stop {
+  position: absolute;
+  left: 158px;
+  width: 124px;
+  height: 34px;
+  border-radius: 17px;
+  background: rgba(251,113,133,.12);
+  border: 1.5px dashed var(--danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 600;
+  color: #fca5a5;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+/* loop-back arrow (right side) */
+.loop-back-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+}
+.loop-back-wrap .diamond-arrow-right {
+  left: 74px;
+}
+.loop-back-target {
+  position: absolute;
+  left: 158px;
+  width: 130px;
+  height: 34px;
+  border-radius: 17px;
+  background: rgba(59,130,246,.1);
+  border: 1.5px dashed var(--ph1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 600;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ─── PHASE SECTION ──────────────────────────────────────────────────── */
+.phase {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 4px 0;
+  border-radius: 8px;
+  border: 1.5px solid rgba(148,163,184,.18);
+  background:
+    linear-gradient(90deg, rgba(98,181,255,.055), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015)),
+    var(--surface);
+  overflow: visible;
+  box-shadow: 0 16px 42px rgba(0,0,0,.18);
+}
+.phase::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px auto -1.5px -1.5px;
+  width: 4px;
+  border-radius: 8px 0 0 8px;
+  background: var(--ph, var(--accent));
+  opacity: .86;
+}
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 11px 18px;
+  border-bottom: 1px solid rgba(148,163,184,.16);
+}
+.phase-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.phase-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  opacity: .9;
+}
+.phase-desc {
+  font-size: .72rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+.phase-note {
+  display: block;
+  color: var(--muted);
+  font-size: .68rem;
+  margin-left: 20px;
+  margin-top: -4px;
+  padding-bottom: 10px;
+}
+.phase-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ─── RULE CARD ──────────────────────────────────────────────────────── */
+.rule-card {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(148,163,184,.13);
+  transition: background .15s, transform .12s, box-shadow .18s;
+  position: relative;
+}
+.rule-card:last-child { border-bottom: none; }
+.rule-card:hover {
+  background: rgba(255,255,255,.055);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
+}
+.rule-card:active { transform: scale(.99); }
+.rule-card.active {
+  background: rgba(98,181,255,.1);
+  border-left: 3px solid var(--accent);
+}
+
+.rule-num {
+  width: 44px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+.rule-info { min-width: 0; }
+.rule-name {
+  font-size: .88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rule-subtitle {
+  font-size: .72rem;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rule-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.tag {
+  font-size: .65rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.tag.rows    { background: rgba(59,130,246,.15);  color: #93c5fd; }
+.tag.vars    { background: rgba(167,139,250,.15);  color: #c4b5fd; }
+.tag.bounds  { background: rgba(52,211,153,.15);  color: #6ee7b7; }
+.tag.matrix  { background: rgba(251,191,36,.15);  color: #fde68a; }
+.tag.binary  { background: rgba(248,113,113,.15); color: #fca5a5; }
+.tag.integer { background: rgba(244,114,182,.15); color: #f9a8d4; }
+.tag.sos     { background: rgba(251,146,60,.15);  color: #fed7aa; }
+.tag.probing { background: rgba(148,163,184,.15); color: #cbd5e1; }
+.tag.optional{ background: rgba(148,163,184,.1);  color: #94a3b8; border: 1px dashed rgba(148,163,184,.4); }
+.tag.postsolve { background: rgba(99,102,241,.15); color: #a5b4fc; border: 1px dashed rgba(99,102,241,.4); }
+
+.rule-arrow {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: .9rem;
+  transition: transform .2s, color .2s;
+}
+.rule-card:hover .rule-arrow,
+.rule-card.active .rule-arrow {
+  color: var(--accent);
+  transform: translateX(3px);
+}
+
+/* ─── PASS LOOP INDICATOR ────────────────────────────────────────────── */
+.pass-loop-bar {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1.5px dashed rgba(88,166,255,.35);
+  background:
+    linear-gradient(90deg, rgba(98,181,255,.1), rgba(52,211,153,.06)),
+    rgba(88,166,255,.05);
+  margin: 6px 0;
+}
+.pass-loop-bar .loop-icon {
+  font-size: 1.1rem;
+}
+.pass-loop-bar .loop-text {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #93c5fd;
+}
+.pass-loop-bar .loop-sub {
+  font-size: .72rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ─── SIDE DRAWER ────────────────────────────────────────────────────── */
+.drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: var(--drawer-w);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(98,181,255,.13), transparent 20rem),
+    #0d141e;
+  border-left: 1px solid var(--border);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+  box-shadow: -8px 0 40px rgba(0,0,0,.5);
+}
+.drawer.open { transform: translateX(0); }
+
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+.drawer-rule-num {
+  width: 40px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.drawer-title-block { flex: 1; min-width: 0; }
+.drawer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.drawer-subtitle {
+  font-size: .78rem;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.drawer-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color .15s, background .15s;
+  flex-shrink: 0;
+}
+.drawer-close:hover { color: var(--text); background: rgba(255,255,255,.07); }
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.drawer-section-title {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+.drawer-section-title:first-child { margin-top: 0; }
+
+.teaching-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(255,255,255,.035);
+  padding: 13px 14px;
+  margin-bottom: 14px;
+}
+.teaching-card strong {
+  display: block;
+  color: var(--text);
+  font-size: .78rem;
+  margin-bottom: 6px;
+}
+.teaching-card p {
+  color: var(--soft);
+  font-size: .8rem;
+  line-height: 1.6;
+}
+.teaching-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.example-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.example-grid.with-steps {
+  grid-template-columns: 1fr;
+}
+.example-block {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(6,11,18,.56);
+  overflow: hidden;
+}
+.example-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: .67rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.example-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--example-color, var(--accent));
+}
+.example-block pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  color: #dbeafe;
+  font: .77rem/1.65 'JetBrains Mono', monospace;
+  white-space: pre;
+}
+.example-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.example-steps {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(98,181,255,.055), transparent),
+    rgba(6,11,18,.48);
+  overflow: hidden;
+}
+.example-steps ol {
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 0;
+  padding: 0;
+}
+.example-steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding: 11px 12px;
+  color: var(--soft);
+  font-size: .78rem;
+  line-height: 1.55;
+  border-top: 1px solid rgba(148,163,184,.12);
+}
+.example-steps li::before {
+  content: counter(step);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(98,181,255,.14);
+  color: #93c5fd;
+  font: 700 .68rem/1 'JetBrains Mono', monospace;
+}
+
+.math-block {
+  background: rgba(6,11,18,.56);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem;
+  line-height: 1.7;
+  color: #e2e8f0;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+.math-block em { color: #fde68a; font-style: normal; }
+.math-block .comment { color: var(--muted); }
+
+.detail-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.detail-chip {
+  font-size: .72rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.detail-chip .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── THEME TOGGLE ────────────────────────────────────────────────────── */
+.theme-toggle {
+  margin-left: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255,255,255,.04);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  background: rgba(98,181,255,.12);
+  border-color: rgba(98,181,255,.4);
+  color: var(--accent);
+}
+
+/* Light mode overrides */
+body.light {
+  --bg:       #f0f4f8;
+  --surface:  #ffffff;
+  --surface-2:#f8fafc;
+  --surface-3:#eef2f7;
+  --border:   #d1d9e0;
+  --border-soft: rgba(30,50,80,.13);
+  --text:     #0f1923;
+  --muted:    #556a7e;
+  --soft:     #2d3f52;
+  --accent:   #1d6fa8;
+  --danger:   #dc2626;
+  --success:  #059669;
+}
+body.light {
+  background:
+    radial-gradient(circle at 18% -10%, rgba(29,111,168,.10), transparent 34rem),
+    radial-gradient(circle at 88% 8%, rgba(5,150,105,.08), transparent 30rem),
+    linear-gradient(180deg, #e8f0f8 0%, #f0f4f8 38%, #e4ecf4 100%);
+}
+body.light .page-header {
+  background: rgba(240,244,248,.92);
+}
+body.light .drawer {
+  background: radial-gradient(circle at 20% 0%, rgba(29,111,168,.08), transparent 20rem), #f8fafc;
+}
+body.light pre[class*="language-"] {
+  background: #f1f5f9 !important;
+  border-color: rgba(30,50,80,.14);
+}
+body.light .math-block {
+  background: #f1f5f9;
+  color: #0f1923;
+}
+body.light .example-block {
+  background: rgba(240,244,248,.8);
+}
+body.light .example-steps {
+  background: linear-gradient(180deg, rgba(29,111,168,.04), transparent), rgba(240,244,248,.6);
+}
+
+/* ─── COPY BUTTON ─────────────────────────────────────────────────────── */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255,255,255,.04);
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  letter-spacing: .03em;
+}
+.copy-btn:hover {
+  background: rgba(98,181,255,.12);
+  border-color: rgba(98,181,255,.4);
+  color: var(--accent);
+}
+.copy-btn.copied {
+  background: rgba(52,211,153,.12);
+  border-color: rgba(52,211,153,.4);
+  color: var(--success);
+}
+
+/* prism overrides */
+pre[class*="language-"] {
+  border-radius: 8px;
+  font-size: .78rem;
+  line-height: 1.65;
+  margin: 0;
+  background: #0c1220 !important;
+  border: 1px solid rgba(148,163,184,.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+code[class*="language-"] {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem;
+}
+code .token.phase-comment { color: #8ca0b7; font-style: italic; }
+code .token.presolve-keyword { color: #c084fc; font-weight: 600; }
+code .token.presolve-action { color: #67e8f9; font-weight: 600; }
+code .token.presolve-risk { color: #fb7185; font-weight: 700; }
+code .token.presolve-model { color: #7dd3fc; }
+code .token.presolve-constant { color: #fbbf24; }
+code .token.presolve-number { color: #fca5a5; }
+code .token.presolve-string { color: #86efac; }
+code .token.presolve-op { color: #cbd5e1; }
+code .token.presolve-function { color: #93c5fd; }
+code .token.presolve-special { color: #f0abfc; }
+
+.code-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.code-legend span {
+  font-size: .68rem;
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border-soft);
+}
+
+/* ─── SCROLL-IN ANIMATION ─────────────────────────────────────────────── */
+.flowchart > * {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadein .35s ease forwards;
+}
+@keyframes fadein {
+  to { opacity: 1; transform: translateY(0); }
+}
+/* stagger each child */
+.flowchart > *:nth-child(1)  { animation-delay: .00s }
+.flowchart > *:nth-child(2)  { animation-delay: .03s }
+.flowchart > *:nth-child(3)  { animation-delay: .06s }
+.flowchart > *:nth-child(4)  { animation-delay: .09s }
+.flowchart > *:nth-child(5)  { animation-delay: .12s }
+.flowchart > *:nth-child(6)  { animation-delay: .15s }
+.flowchart > *:nth-child(7)  { animation-delay: .18s }
+.flowchart > *:nth-child(8)  { animation-delay: .21s }
+.flowchart > *:nth-child(9)  { animation-delay: .24s }
+.flowchart > *:nth-child(10) { animation-delay: .27s }
+.flowchart > *:nth-child(11) { animation-delay: .30s }
+.flowchart > *:nth-child(12) { animation-delay: .33s }
+.flowchart > *:nth-child(13) { animation-delay: .36s }
+.flowchart > *:nth-child(14) { animation-delay: .39s }
+.flowchart > *:nth-child(15) { animation-delay: .42s }
+.flowchart > *:nth-child(16) { animation-delay: .45s }
+.flowchart > *:nth-child(17) { animation-delay: .48s }
+.flowchart > *:nth-child(18) { animation-delay: .51s }
+.flowchart > *:nth-child(19) { animation-delay: .54s }
+.flowchart > *:nth-child(20) { animation-delay: .57s }
+
+/* ─── RESPONSIVE ──────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  :root { --drawer-w: 100vw; --flow-w: 100%; }
+  .layout.drawer-open { padding-right: 24px; }
+  .diamond-stop, .loop-back-target { display: none; }
+  .page-header { flex-wrap: wrap; padding: 12px 16px; }
+  .header-hint { margin-left: 0; width: 100%; }
+  .study-panel-main { grid-template-columns: 1fr; padding: 22px 18px; }
+  .study-steps { grid-template-columns: 1fr; }
+  .rule-navigator { grid-template-columns: 1fr; }
+  .filter-group { justify-content: flex-start; }
+  .rule-card { grid-template-columns: 38px 1fr; }
+  .rule-tags, .rule-arrow { display: none; }
+  .teaching-grid { grid-template-columns: 1fr; }
+  .example-grid { grid-template-columns: 1fr; }
+  .example-pair { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="scroll-progress" role="progressbar" aria-hidden="true"></div>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+<header class="page-header">
+  <h1>MIP Presolver</h1>
+  <span class="header-badge">17 Rules</span>
+  <span class="header-stat">8 phases · fixed-point loop · postsolve aware</span>
+  <span class="header-hint">
+    <kbd>click</kbd> any rule to inspect pseudocode
+  </span>
+  <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode" aria-label="Toggle theme">
+    <svg id="theme-icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <svg id="theme-icon-light" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+
+<!-- ═══ LAYOUT ═══════════════════════════════════════════════════════════ -->
+<div class="layout" id="layout">
+<section class="study-panel" aria-labelledby="study-title">
+  <div class="study-panel-main">
+    <div>
+      <div class="eyebrow">Presolve as a learning path</div>
+      <h2 id="study-title">From obvious simplifications to structural reasoning, one safe reduction at a time.</h2>
+      <p>
+        Read top to bottom as a pass through the model. Each rule either proves infeasibility, tightens the feasible region
+        without changing integer optima, removes redundant structure, or records enough information for postsolve to rebuild
+        a solution in the original variables.
+      </p>
+      <div class="study-steps">
+        <div class="study-step">
+          <strong>1. Clean the easy facts</strong>
+          <span>Fixed variables, dominated rows, and activity intervals expose contradictions early.</span>
+        </div>
+        <div class="study-step">
+          <strong>2. Propagate consequences</strong>
+          <span>Bounds, integer divisibility, binary packing, and CG rounding shrink the relaxation.</span>
+        </div>
+        <div class="study-step">
+          <strong>3. Repeat to fixed point</strong>
+          <span>Every change can unlock another rule, so the pass loops until no rule changes the model.</span>
+        </div>
+      </div>
+    </div>
+    <div class="overview-stack">
+      <div class="mini-map">
+        <div class="mini-map-title">Rule density by phase</div>
+        <div class="mini-map-row" style="--ph:var(--ph1)"><span>Housekeeping</span><span class="bar" style="width:50%"></span><span class="count">2</span></div>
+        <div class="mini-map-row" style="--ph:var(--ph2)"><span>Structure</span><span class="bar" style="width:75%"></span><span class="count">3</span></div>
+        <div class="mini-map-row" style="--ph:var(--ph3)"><span>Bounds</span><span class="bar" style="width:100%"></span><span class="count">4</span></div>
+        <div class="mini-map-row" style="--ph:var(--ph4)"><span>Geometry</span><span class="bar" style="width:50%"></span><span class="count">2</span></div>
+        <div class="mini-map-row" style="--ph:var(--ph5)"><span>Discrete</span><span class="bar" style="width:50%"></span><span class="count">2</span></div>
+        <div class="mini-map-row" style="--ph:var(--ph6)"><span>Dual</span><span class="bar" style="width:25%"></span><span class="count">1</span></div>
+        <div class="mini-map-row" style="--ph:var(--ph7)"><span>Cleanup</span><span class="bar" style="width:75%"></span><span class="count">3</span></div>
+        <div class="mini-map-row" style="--ph:var(--ph8)"><span>Probing</span><span class="bar" style="width:50%"></span><span class="count">2</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend" aria-label="Legend">
+    <span class="legend-pill" style="--ph:var(--ph1)"><i></i>housekeeping</span>
+    <span class="legend-pill" style="--ph:var(--ph2)"><i></i>structure</span>
+    <span class="legend-pill" style="--ph:var(--ph3)"><i></i>bounds</span>
+    <span class="legend-pill" style="--ph:var(--ph4)"><i></i>geometry</span>
+    <span class="legend-pill" style="--ph:var(--ph5)"><i></i>combinatorial</span>
+    <span class="legend-pill" style="--ph:var(--ph6)"><i></i>dual</span>
+    <span class="legend-pill" style="--ph:var(--ph7)"><i></i>cleanup</span>
+    <span class="legend-pill" style="--ph:var(--ph8)"><i></i>optional probing</span>
+  </div>
+</section>
+
+<section class="rule-navigator" aria-label="Rule search and filters">
+  <label class="search-box">
+    <input id="rule-search" type="search" placeholder="Search rules, phases, tags, or concepts..." autocomplete="off">
+  </label>
+  <div class="filter-group" role="group" aria-label="Filter rules by topic">
+    <button class="filter-btn active" type="button" data-filter="all">All</button>
+    <button class="filter-btn" type="button" data-filter="rows">Rows</button>
+    <button class="filter-btn" type="button" data-filter="vars">Vars</button>
+    <button class="filter-btn" type="button" data-filter="bounds">Bounds</button>
+    <button class="filter-btn" type="button" data-filter="matrix">Matrix</button>
+    <button class="filter-btn" type="button" data-filter="binary">Binary</button>
+    <button class="filter-btn" type="button" data-filter="sos">SOS</button>
+    <button class="filter-btn" type="button" data-filter="probing">Probing</button>
+    <button class="filter-btn" type="button" data-filter="optional">Optional</button>
+  </div>
+  <div class="filter-meta" id="filter-meta">Showing all presolve rules.</div>
+</section>
+
+<div class="flowchart" id="flowchart">
+
+  <!-- START -->
+  <div class="node-terminal start">START</div>
+  <div class="connector tall"></div>
+
+  <!-- PASS LOOP -->
+  <div class="pass-loop-bar">
+    <span class="loop-icon">↻</span>
+    <span class="loop-text">Presolve Pass</span>
+    <span class="loop-sub">repeat until fixed-point or max_passes</span>
+  </div>
+  <div class="connector"></div>
+
+  <!-- ── PHASE 1: HOUSEKEEPING ─────────────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph1)">
+    <div class="phase-header" style="border-color: rgba(59,130,246,.25)">
+      <div class="phase-dot" style="background: var(--ph1)"></div>
+      <span class="phase-label" style="color: var(--ph1)">Phase 1</span>
+      <span class="phase-desc">Housekeeping — 1st sweep</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="r1" onclick="openDrawer('r1',this)">
+        <div class="rule-num" style="background:rgba(59,130,246,.15);color:#93c5fd">R1</div>
+        <div class="rule-info">
+          <div class="rule-name">Substitute Fixed Variables</div>
+          <div class="rule-subtitle">Move fixed-variable contributions to RHS</div>
+        </div>
+        <div class="rule-tags"><span class="tag rows">rows</span><span class="tag vars">vars</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r2" onclick="openDrawer('r2',this)">
+        <div class="rule-num" style="background:rgba(59,130,246,.15);color:#93c5fd">R2</div>
+        <div class="rule-info">
+          <div class="rule-name">Row Feasibility &amp; Redundancy</div>
+          <div class="rule-subtitle">Remove redundant rows; detect infeasibility</div>
+        </div>
+        <div class="rule-tags"><span class="tag rows">rows</span><span class="tag bounds">bounds</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- infeasible check -->
+  <div class="connector"></div>
+  <div class="node-diamond-wrap">
+    <div class="node-diamond"><span>Infeasible?</span></div>
+    <div class="diamond-arrow-right">
+      <div class="arrow-line"></div><div class="arrow-head"></div>
+    </div>
+    <div class="diamond-stop">⚠ INFEASIBLE</div>
+    <div class="diamond-label-left">no ↓</div>
+    <div class="diamond-label-right">yes →</div>
+  </div>
+  <div class="connector"></div>
+
+  <!-- ── PHASE 2: STRUCTURAL ───────────────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph2)">
+    <div class="phase-header" style="border-color:rgba(167,139,250,.25)">
+      <div class="phase-dot" style="background:var(--ph2)"></div>
+      <span class="phase-label" style="color:var(--ph2)">Phase 2</span>
+      <span class="phase-desc">Structural reductions</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="r14" onclick="openDrawer('r14',this)">
+        <div class="rule-num" style="background:rgba(167,139,250,.15);color:#c4b5fd">R14</div>
+        <div class="rule-info">
+          <div class="rule-name">Implicit Free Variable Detection</div>
+          <div class="rule-subtitle">Detect row-implied bounds before aggregation</div>
+        </div>
+        <div class="rule-tags"><span class="tag vars">vars</span><span class="tag bounds">bounds</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r3" onclick="openDrawer('r3',this)">
+        <div class="rule-num" style="background:rgba(167,139,250,.15);color:#c4b5fd">R3</div>
+        <div class="rule-info">
+          <div class="rule-name">Singleton Row Reduction</div>
+          <div class="rule-subtitle">Turn one-variable rows into direct bounds</div>
+        </div>
+        <div class="rule-tags"><span class="tag rows">rows</span><span class="tag bounds">bounds</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r4" onclick="openDrawer('r4',this)">
+        <div class="rule-num" style="background:rgba(167,139,250,.15);color:#c4b5fd">R4</div>
+        <div class="rule-info">
+          <div class="rule-name">Implied-Free Aggregation</div>
+          <div class="rule-subtitle">Substitute an equality variable whose bounds are row-implied</div>
+        </div>
+        <div class="rule-tags"><span class="tag rows">rows</span><span class="tag vars">vars</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+  <div class="node-diamond-wrap">
+    <div class="node-diamond"><span>Infeasible?</span></div>
+    <div class="diamond-arrow-right"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="diamond-stop">⚠ INFEASIBLE</div>
+    <div class="diamond-label-left">no ↓</div>
+    <div class="diamond-label-right">yes →</div>
+  </div>
+  <div class="connector"></div>
+
+  <!-- ── PHASE 3: BOUND-BASED ──────────────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph3)">
+    <div class="phase-header" style="border-color:rgba(52,211,153,.25)">
+      <div class="phase-dot" style="background:var(--ph3)"></div>
+      <span class="phase-label" style="color:var(--ph3)">Phase 3</span>
+      <span class="phase-desc">Bound-based coefficient reductions</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="r5" onclick="openDrawer('r5',this)">
+        <div class="rule-num" style="background:rgba(52,211,153,.15);color:#6ee7b7">R5</div>
+        <div class="rule-info">
+          <div class="rule-name">Bound Tightening</div>
+          <div class="rule-subtitle">Derive tighter variable bounds from constraint activity</div>
+        </div>
+        <div class="rule-tags"><span class="tag bounds">bounds</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r6" onclick="openDrawer('r6',this)">
+        <div class="rule-num" style="background:rgba(52,211,153,.15);color:#6ee7b7">R6</div>
+        <div class="rule-info">
+          <div class="rule-name">Euclidean Reduction</div>
+          <div class="rule-subtitle">Use GCD and divisibility to shrink integer rows</div>
+        </div>
+        <div class="rule-tags"><span class="tag matrix">matrix</span><span class="tag bounds">bounds</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r7" onclick="openDrawer('r7',this)">
+        <div class="rule-num" style="background:rgba(52,211,153,.15);color:#6ee7b7">R7</div>
+        <div class="rule-info">
+          <div class="rule-name">Coefficient Strengthening</div>
+          <div class="rule-subtitle">Tighten an integer row without changing its integer solutions</div>
+        </div>
+        <div class="rule-tags"><span class="tag binary">binary</span><span class="tag matrix">matrix</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r16" onclick="openDrawer('r16',this)">
+        <div class="rule-num" style="background:rgba(52,211,153,.15);color:#6ee7b7">R16</div>
+        <div class="rule-info">
+          <div class="rule-name">Chvátal-Gomory Strengthening</div>
+          <div class="rule-subtitle">Round scaled integer ≥-rows</div>
+        </div>
+        <div class="rule-tags"><span class="tag integer">integer</span><span class="tag matrix">matrix</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+  <div class="node-diamond-wrap">
+    <div class="node-diamond"><span>Infeasible?</span></div>
+    <div class="diamond-arrow-right"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="diamond-stop">⚠ INFEASIBLE</div>
+    <div class="diamond-label-left">no ↓</div>
+    <div class="diamond-label-right">yes →</div>
+  </div>
+  <div class="connector"></div>
+
+  <!-- ── PHASE 4: ROW/COL GEOMETRY ─────────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph4)">
+    <div class="phase-header" style="border-color:rgba(251,191,36,.25)">
+      <div class="phase-dot" style="background:var(--ph4)"></div>
+      <span class="phase-label" style="color:var(--ph4)">Phase 4</span>
+      <span class="phase-desc">Row &amp; column geometry</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="r12" onclick="openDrawer('r12',this)">
+        <div class="rule-num" style="background:rgba(251,191,36,.15);color:#fde68a">R12</div>
+        <div class="rule-info">
+          <div class="rule-name">Parallel Rows</div>
+          <div class="rule-subtitle">Merge, tighten, or discard proportional rows</div>
+        </div>
+        <div class="rule-tags"><span class="tag rows">rows</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r13" onclick="openDrawer('r13',this)">
+        <div class="rule-num" style="background:rgba(251,191,36,.15);color:#fde68a">R13</div>
+        <div class="rule-info">
+          <div class="rule-name">Dominated Columns</div>
+          <div class="rule-subtitle">Needs domination plus infinite or implied room</div>
+        </div>
+        <div class="rule-tags"><span class="tag vars">vars</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+  <div class="node-diamond-wrap">
+    <div class="node-diamond"><span>Infeasible?</span></div>
+    <div class="diamond-arrow-right"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="diamond-stop">⚠ INFEASIBLE</div>
+    <div class="diamond-label-left">no ↓</div>
+    <div class="diamond-label-right">yes →</div>
+  </div>
+  <div class="connector"></div>
+
+  <!-- ── PHASE 5: COMBINATORIAL ────────────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph5)">
+    <div class="phase-header" style="border-color:rgba(248,113,113,.25)">
+      <div class="phase-dot" style="background:var(--ph5)"></div>
+      <span class="phase-label" style="color:var(--ph5)">Phase 5</span>
+      <span class="phase-desc">Combinatorial &amp; sparsification</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="r15" onclick="openDrawer('r15',this)">
+        <div class="rule-num" style="background:rgba(248,113,113,.15);color:#fca5a5">R15</div>
+        <div class="rule-info">
+          <div class="rule-name">SOS Reductions</div>
+          <div class="rule-subtitle">Force zeros, trim sequences, and simplify small SOS sets</div>
+        </div>
+        <div class="rule-tags"><span class="tag sos">SOS1</span><span class="tag sos">SOS2</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r17" onclick="openDrawer('r17',this)">
+        <div class="rule-num" style="background:rgba(248,113,113,.15);color:#fca5a5">R17</div>
+        <div class="rule-info">
+          <div class="rule-name">Non-zero Cancellation</div>
+          <div class="rule-subtitle">Sparsify inequality rows using equality aggregation</div>
+        </div>
+        <div class="rule-tags"><span class="tag matrix">matrix</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- ── PHASE 6: DUAL ─────────────────────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph6)">
+    <div class="phase-header" style="border-color:rgba(251,146,60,.25)">
+      <div class="phase-dot" style="background:var(--ph6)"></div>
+      <span class="phase-label" style="color:var(--ph6)">Phase 6</span>
+      <span class="phase-desc">Dual fixing</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="r8" onclick="openDrawer('r8',this)">
+        <div class="rule-num" style="background:rgba(251,146,60,.15);color:#fed7aa">R8</div>
+        <div class="rule-info">
+          <div class="rule-name">Dual Fixing</div>
+          <div class="rule-subtitle">Fix monotone columns to LB or UB from sign patterns</div>
+        </div>
+        <div class="rule-tags"><span class="tag bounds">bounds</span><span class="tag vars">vars</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- ── PHASE 7: CLEANUP (2nd sweep) ──────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph7)">
+    <div class="phase-header" style="border-color:rgba(34,211,238,.25)">
+      <div class="phase-dot" style="background:var(--ph7)"></div>
+      <span class="phase-label" style="color:var(--ph7)">Phase 7</span>
+      <span class="phase-desc">Cleanup — 2nd sweep &amp; column fixing</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="r1b" onclick="openDrawer('r1',this)">
+        <div class="rule-num" style="background:rgba(34,211,238,.15);color:#a5f3fc">R1′</div>
+        <div class="rule-info">
+          <div class="rule-name">Substitute Fixed Variables <em style="font-style:normal;opacity:.6;font-size:.78rem">(2nd sweep)</em></div>
+          <div class="rule-subtitle">Catch variables newly fixed by earlier rules</div>
+        </div>
+        <div class="rule-tags"><span class="tag rows">rows</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r2b" onclick="openDrawer('r2',this)">
+        <div class="rule-num" style="background:rgba(34,211,238,.15);color:#a5f3fc">R2′</div>
+        <div class="rule-info">
+          <div class="rule-name">Row Feasibility &amp; Redundancy <em style="font-style:normal;opacity:.6;font-size:.78rem">(2nd sweep)</em></div>
+          <div class="rule-subtitle">Clean up rows after the full reduction pass</div>
+        </div>
+        <div class="rule-tags"><span class="tag rows">rows</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="r9" onclick="openDrawer('r9',this)">
+        <div class="rule-num" style="background:rgba(34,211,238,.15);color:#a5f3fc">R9</div>
+        <div class="rule-info">
+          <div class="rule-name">Objective-Only Column Cleanup</div>
+          <div class="rule-subtitle">Generic cleanup for zero-row variables</div>
+        </div>
+        <div class="rule-tags"><span class="tag vars">vars</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+  <div class="node-diamond-wrap">
+    <div class="node-diamond"><span>Infeasible?</span></div>
+    <div class="diamond-arrow-right"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="diamond-stop">⚠ INFEASIBLE</div>
+    <div class="diamond-label-left">no ↓</div>
+    <div class="diamond-label-right">yes →</div>
+  </div>
+  <div class="connector"></div>
+
+  <!-- ── PHASE 8: PROBING (optional) ───────────────────────────── -->
+  <section class="phase" style="--ph: var(--ph8); opacity:.85">
+    <div class="phase-header" style="border-color:rgba(148,163,184,.2)">
+      <div class="phase-dot" style="background:var(--ph8)"></div>
+      <span class="phase-label" style="color:var(--ph8)">Phase 8</span>
+      <span class="phase-desc">Probing (if enable_probing = True)</span>
+    </div>
+    <div class="phase-rules">
+      <div class="rule-card" data-rule="rp1" onclick="openDrawer('rp1',this)">
+        <div class="rule-num" style="background:rgba(148,163,184,.12);color:#cbd5e1">BP</div>
+        <div class="rule-info">
+          <div class="rule-name">Binary Probing</div>
+          <div class="rule-subtitle">Probe x=0/1, propagate, and store implications</div>
+        </div>
+        <div class="rule-tags"><span class="tag probing">probing</span><span class="tag optional">optional</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+      <div class="rule-card" data-rule="rp2" onclick="openDrawer('rp2',this)">
+        <div class="rule-num" style="background:rgba(148,163,184,.12);color:#cbd5e1">IP</div>
+        <div class="rule-info">
+          <div class="rule-name">Implications from Probing</div>
+          <div class="rule-subtitle">Replay stored probing implications and substitutions</div>
+        </div>
+        <div class="rule-tags"><span class="tag probing">probing</span><span class="tag optional">optional</span></div>
+        <div class="rule-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="connector"></div>
+
+  <!-- CHANGED? loop -->
+  <div class="node-diamond-wrap loop-back-wrap">
+    <div class="node-diamond"><span>Changed<br>this pass?</span></div>
+    <div class="diamond-arrow-right"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="loop-back-target">↻ Next Pass</div>
+    <div class="diamond-label-left">no ↓</div>
+    <div class="diamond-label-right">yes →</div>
+  </div>
+  <div class="connector tall"></div>
+
+  <!-- END -->
+  <div class="node-terminal end">Fixed Point</div>
+
+</div><!-- /flowchart -->
+</div><!-- /layout -->
+
+<!-- ═══ SIDE DRAWER ════════════════════════════════════════════════════ -->
+<aside class="drawer" id="drawer" aria-label="Rule details">
+  <div class="drawer-header" id="drawer-header">
+    <div class="drawer-rule-num" id="drawer-num"></div>
+    <div class="drawer-title-block">
+      <div class="drawer-title" id="drawer-title"></div>
+      <div class="drawer-subtitle" id="drawer-subtitle"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close details">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script>
+// Ensure Prism doesn't skip manual-mode check
+if (window.Prism) Prism.manual = false;
+if (window.Prism) {
+  Prism.languages.presolve = {
+    'phase-comment': /#.*/,
+    'presolve-string': /(['"])(?:\\.|(?!\1)[^\\\r\n])*\1/,
+    'presolve-risk': /\b(?:infeasible|unbounded|violate|violates|warning|warn|return|False|True)\b/i,
+    'presolve-action': /\b(?:tighten_lb|tighten_ub|fix_var|propagate|substitute_linear|add_row|delete|remove|push_substitute|extract_fixings|row_activity_bounds|row_activity_excluding|proportionality_factor)\b/,
+    'presolve-keyword': /\b(?:for|if|else|elif|while|continue|break|from|import|in|and|or|not|is|any|all|with|as)\b/,
+    'presolve-model': /\b(?:model|row|rows|variables|variable|coeffs|lhs|rhs|lb|ub|obj|vtype|sos|implication_graph|postsolve_stack|presolver|snapshot)\b/,
+    'presolve-special': /\b(?:INF|EPS|Z_star|SOS1|SOS2|CG|GCD)\b/,
+    'presolve-function': /\b[a-zA-Z_]\w*(?=\()/,
+    'presolve-number': /(?:\b\d+(?:\.\d+)?|\bINF\b)/,
+    'presolve-op': /[-+*/%=<>!]=?|→|≤|≥|==|!=|\+=|-=|\*=|\/=|\b(?:lambda)\b/,
+    punctuation: /[{}[\];(),.:]/
+  };
+}
+// ─── RULE DATA ──────────────────────────────────────────────────────────
+const RULES = {
+
+r1: {
+  num: 'R1',
+  title: 'Substitute Fixed Variables',
+  subtitle: 'Presolve-2 §4.1  ·  Removal of fixed variables',
+  color: '#3b82f6',
+  complexity: 'O(nnz)',
+  postsolve: false,
+  chips: [
+    {label:'target: rows', col:'#3b82f6'},
+    {label:'fires when: x.lb == x.ub', col:'#8b949e'},
+  ],
+  math: String.raw`For each row $\ell \leq \sum_j a_j x_j \leq r$ and each fixed variable $x_k$ ($l_k = u_k = \bar{x}_k$):<br><br>
+$$\text{shift} = a_k \cdot \bar{x}_k$$
+$$\ell' = \ell - \text{shift}, \qquad r' = r - \text{shift}$$
+Remove $x_k$ from row coefficients.`,
+  code: `# Rule 1 — Substitute Fixed Variables
+for row in model.rows.values():
+    shift = 0.0
+    fixed_vars = []
+
+    for x, a in list(row.coeffs.items()):
+        v = model.variables[x]
+        if v.lb == v.ub:          # variable is fixed
+            shift += a * v.lb
+            fixed_vars.append(x)
+            del row.coeffs[x]     # remove from row
+
+    if fixed_vars:
+        if isfinite(row.lhs): row.lhs -= shift
+        if isfinite(row.rhs): row.rhs -= shift
+        logger.log(...)`
+},
+
+r2: {
+  num: 'R2',
+  title: 'Row Feasibility & Redundancy',
+  subtitle: 'Presolve-2 §3.1  ·  Model cleanup and redundant rows',
+  color: '#3b82f6',
+  complexity: 'O(nnz)',
+  postsolve: false,
+  math: String.raw`Activity bounds of row $\sum_j a_j x_j$:<br><br>
+$$\text{min_act} = \sum \{ a_j l_j : a_j > 0 \} + \sum \{ a_j u_j : a_j < 0 \}$$
+$$\text{max_act} = \sum \{ a_j u_j : a_j > 0 \} + \sum \{ a_j l_j : a_j < 0 \}$$<br>
+Infeasibility: &ensp; $\text{max_act} < \ell$ &nbsp;or&nbsp; $\text{min_act} > r$<br>
+Redundant LHS: $\text{min_act} \geq \ell \;\Rightarrow\; \ell = -\infty$<br>
+Redundant RHS: $\text{max_act} \leq r \;\Rightarrow\; r = +\infty$<br>
+If both redundant → delete row.`,
+  code: `# Rule 2 — Row Feasibility & Redundancy
+for rname, row in list(model.rows.items()):
+    min_act, max_act = row_activity_bounds(model, row)
+
+    # Infeasibility check
+    if max_act < row.lhs - EPS or min_act > row.rhs + EPS:
+        presolver.infeasible = True
+        return
+
+    # Redundancy: both sides satisfied by activity interval
+    lhs_ok = (row.lhs == -INF) or (min_act >= row.lhs - EPS)
+    rhs_ok = (row.rhs == +INF) or (max_act <= row.rhs + EPS)
+
+    if lhs_ok and rhs_ok:
+        del model.rows[rname]   # row is redundant`
+},
+
+r14: {
+  num: 'R14',
+  title: 'Implicit Free Variable Detection',
+  subtitle: 'Presolve-2 §4.5  ·  Precondition for aggregation',
+  color: '#a78bfa',
+  complexity: 'O(n·nnz)',
+  postsolve: false,
+  math: String.raw`For each variable $x_j$, compute row-implied bounds (treating $x_j$ as unbounded):<br><br>
+$$\text{row_lb} = \max\!\left(\left\{\frac{\ell_r - \text{rest_max}_r}{a_{rj}} : a_{rj}>0\right\} \cup \left\{\frac{r_r - \text{rest_min}_r}{a_{rj}} : a_{rj}<0\right\}\right)$$
+$$\text{row_ub} = \min\!\left(\left\{\frac{r_r - \text{rest_min}_r}{a_{rj}} : a_{rj}>0\right\} \cup \left\{\frac{\ell_r - \text{rest_max}_r}{a_{rj}} : a_{rj}<0\right\}\right)$$<br>
+If $\text{row_lb} \geq l_j$ and $\text{row_ub} \leq u_j$, then the explicit bounds are redundant and $x_j$ is <em>implied free</em>.<br><br>
+This does not by itself eliminate the variable; it marks $x_j$ as a candidate for the aggregation rule of §4.5.`,
+  code: `# Rule 14 — Implicit Free Variable Detection
+for x, v in model.variables.items():
+    if v.is_fixed(): continue
+
+    row_lb, row_ub = -INF, +INF
+
+    for rname, row in model.rows.items():
+        if x not in row.coeffs: continue
+        a = row.coeffs[x]
+        rest_min, rest_max = row_activity_excluding(model, row, x)
+
+        if a > 0:
+            if isfinite(row.lhs): row_lb = max(row_lb, (row.lhs-rest_max)/a)
+            if isfinite(row.rhs): row_ub = min(row_ub, (row.rhs-rest_min)/a)
+        else:  # a < 0
+            if isfinite(row.lhs): row_ub = min(row_ub, (row.lhs-rest_max)/a)
+            if isfinite(row.rhs): row_lb = max(row_lb, (row.rhs-rest_min)/a)
+
+    v.implied_free = (
+        isfinite(row_lb) and row_lb >= v.lb - EPS and
+        isfinite(row_ub) and row_ub <= v.ub + EPS
+    )`
+},
+
+r3: {
+  num: 'R3',
+  title: 'Singleton Row Reduction',
+  subtitle: 'Derived from Presolve-2 §3.2  ·  One-variable row case',
+  color: '#a78bfa',
+  complexity: 'O(m)',
+  postsolve: false,
+  math: String.raw`Row $\ell \leq a_j x_j \leq r$ with exactly one variable $x_j$:<br><br>
+$$a_j > 0:\quad l_j' = \ell/a_j,\quad u_j' = r/a_j$$
+$$a_j < 0:\quad l_j' = r/a_j,\quad u_j' = \ell/a_j$$
+<small>(direction reverses for negative coefficient)</small><br><br>
+Tighten $x_j$ bounds and delete row.<br>
+For integers: $l_j = \lceil l_j' \rceil$, $u_j = \lfloor u_j' \rfloor$.`,
+  code: `# Rule 3 — Singleton Row Reduction
+for rname, row in list(model.rows.items()):
+    if len(row.coeffs) != 1:
+        continue
+
+    x, a = next(iter(row.coeffs.items()))
+    v = model.variables[x]
+
+    if a > 0:
+        implied_lb = row.lhs / a if isfinite(row.lhs) else -INF
+        implied_ub = row.rhs / a if isfinite(row.rhs) else +INF
+    else:  # a < 0: direction reverses
+        implied_lb = row.rhs / a if isfinite(row.rhs) else -INF
+        implied_ub = row.lhs / a if isfinite(row.lhs) else +INF
+
+    tighten_lb(x, implied_lb)   # ceil if integer
+    tighten_ub(x, implied_ub)   # floor if integer
+    del model.rows[rname]       # row consumed into bounds`
+},
+
+r4: {
+  num: 'R4',
+  title: 'Implied-Free Aggregation',
+  subtitle: 'Presolve-2 §4.5  ·  Substitute an eligible equality variable',
+  color: '#a78bfa',
+  complexity: 'O(m·nnz)',
+  postsolve: true,
+  math: String.raw`Equality row $\sum_j a_j x_j = b$ with $\geq 2$ variables and an implied-free variable $x_k$:<br><br>
+<ol style="margin-left:1.4em;line-height:1.9">
+<li>Pick implied-free $x_k$ with numerically safe pivot $|a_k|$</li>
+<li>Express: $x_k = \dfrac{b - \sum_{j \neq k} a_j x_j}{a_k}$</li>
+<li>For every other row $r$ containing $x_k$ (coeff $= c$):<br>
+&emsp;$a_{rj} \mathrel{-}= \tfrac{c}{a_k} a_j$ &nbsp;for all $j$ in equality<br>
+&emsp;$\ell_r,\, r_r \mathrel{-}= \tfrac{c}{a_k} b$, then remove $x_k$</li>
+<li>Push $(x_k, a_k, \text{others}, b)$ to postsolve stack</li>
+<li>Delete equality row and $x_k$ from model</li>
+</ol><br>
+If $x_k$ is integer, aggregation is allowed only when all variables in the equality are integer and every ratio $a_j/a_k$ is integral. If $b/a_k$ is not integral in that case, the problem is infeasible.`,
+  code: `# Rule 4 — Implied-Free Aggregation
+for rname, row in list(model.rows.items()):
+    if not (row.lhs == row.rhs and isfinite(row.lhs)):
+        continue   # not an equality
+    b = row.rhs
+
+    # Pick implied-free variables with numerically safe pivots
+    candidates = [(x,a) for x,a in row.coeffs.items()
+                  if variables[x].implied_free and abs(a) > EPS]
+    if not candidates: continue
+
+    # Pick largest |coefficient| for numerical stability
+    x_sub, a_sub = max(candidates, key=lambda t: abs(t[1]))
+    others = {x: a for x, a in row.coeffs.items() if x != x_sub}
+
+    if variables[x_sub].vtype in ("I", "B"):
+        if not all(variables[x].vtype in ("I", "B") for x in others):
+            continue
+        if any(abs(aj / a_sub - round(aj / a_sub)) > EPS for aj in others.values()):
+            continue
+        if abs(b / a_sub - round(b / a_sub)) > EPS:
+            presolver.infeasible = True
+            return
+
+    for orow in rows_containing(x_sub):
+        c = orow.coeffs.pop(x_sub)
+        shift = c * b / a_sub
+        orow.lhs -= shift;  orow.rhs -= shift
+        for xj, aj in others.items():
+            orow.coeffs[xj] = orow.coeffs.get(xj, 0) - c*aj/a_sub
+
+    postsolve_stack.push_substitute(x_sub, a_sub, others, b)
+    del model.rows[rname]
+    del model.variables[x_sub]`
+},
+
+r5: {
+  num: 'R5',
+  title: 'Bound Tightening',
+  subtitle: 'Presolve-2 §3.2  ·  Domain propagation',
+  color: '#34d399',
+  complexity: 'O(nnz)',
+  postsolve: false,
+  math: String.raw`For row $\ell \leq \sum_j a_j x_j \leq r$ and variable $x_k$ (coeff $a_k$).<br>
+Let $m^- = \text{rest_min}$, $m^+ = \text{rest_max}$ (activity excluding $x_k$).<br><br>
+From $\geq \ell$ side:<br>
+&emsp;$a_k > 0:\quad l_k' = (\ell - m^+) / a_k$<br>
+&emsp;$a_k < 0:\quad u_k' = (\ell - m^+) / a_k$<br><br>
+From $\leq r$ side:<br>
+&emsp;$a_k > 0:\quad u_k' = (r - m^-) / a_k$<br>
+&emsp;$a_k < 0:\quad l_k' = (r - m^-) / a_k$<br><br>
+For integer/binary: $l_k = \lceil l_k' \rceil$, $u_k = \lfloor u_k' \rfloor$.<br>
+Infeasible if $l_k > u_k$.`,
+  code: `# Rule 5 — Bound Tightening
+for rname, row in model.rows.items():
+    for x, a in row.coeffs.items():
+        if abs(a) <= EPS: continue
+        v = model.variables[x]
+
+        rest_min, rest_max = row_activity_excluding(model, row, x)
+
+        if isfinite(row.lhs):
+            if a > 0:
+                tighten_lb(x, (row.lhs - rest_max) / a)
+            else:
+                tighten_ub(x, (row.lhs - rest_max) / a)
+
+        if isfinite(row.rhs):
+            if a > 0:
+                tighten_ub(x, (row.rhs - rest_min) / a)
+            else:
+                tighten_lb(x, (row.rhs - rest_min) / a)
+
+        if v.lb > v.ub + EPS:
+            presolver.infeasible = True; return
+
+# tighten_lb/ub applies ceil/floor for integer variables`
+},
+
+r6: {
+  num: 'R6',
+  title: 'Euclidean Reduction',
+  subtitle: 'Presolve-2 §3.5  ·  GCD and divisibility cleanup',
+  color: '#34d399',
+  complexity: 'O(nnz)',
+  postsolve: false,
+  math: String.raw`For an all-integer row $\sum_j a_j x_j \leq r$ with integer coefficients:<br><br>
+$$g = \gcd(|a_1|, |a_2|, \ldots, |a_k|)$$
+Since $\sum a_j x_j \in g\mathbb{Z}$ for any integer solution:<br><br>
+&emsp;Inequality ($\leq$): $r' = \lfloor r/g \rfloor$<br>
+&emsp;Inequality ($\geq$): $\ell' = \lceil \ell/g \rceil$<br>
+&emsp;Equality ($=$): if $b \bmod g \neq 0 \;\Rightarrow$ <strong>INFEASIBLE</strong><br><br>
+Divide all coefficients by $g$. For equalities, the paper also derives divisibility substitutions such as $x_1 := \bar d z + \bar b$.`,
+  code: `# Rule 6 — Euclidean Reduction
+from math import gcd
+from functools import reduce
+
+for rname, row in model.rows.items():
+    # Skip rows with non-integer variables or non-integer coefficients
+    all_int = all(variables[x].vtype in ("I","B") for x in row.coeffs)
+    if not all_int: continue
+
+    int_vals = [abs(round(a)) for a in row.coeffs.values()]
+    g = reduce(gcd, int_vals)
+    if g <= 1: continue
+
+    is_equality = isfinite(row.lhs) and row.lhs == row.rhs
+
+    if is_equality:
+        b = row.rhs
+        if round(b) % g != 0:
+            presolver.infeasible = True; return   # no integer solution
+        for x in row.coeffs: row.coeffs[x] /= g
+        row.lhs = row.rhs = round(b) // g
+    else:
+        for x in row.coeffs: row.coeffs[x] /= g
+        if isfinite(row.rhs): row.rhs = floor(row.rhs / g)
+        if isfinite(row.lhs): row.lhs = ceil(row.lhs / g)`
+},
+
+r7: {
+  num: 'R7',
+  title: 'Coefficient Strengthening',
+  subtitle: 'Presolve-2 §3.3  ·  Tighten an integer row without changing its integer solutions',
+  color: '#34d399',
+  complexity: 'O(nnz)',
+  postsolve: false,
+  math: String.raw`Consider an inequality
+$$A_{iS}x_S + a_{ik}x_k \le b_i$$
+with integer variable $x_k \in I$ and an upper bound
+$$A_{iS}x_S \le u_{iS}$$
+valid for all integer-feasible solutions.<br><br>
+<strong>Case 1: $a_{ik} > 0$ and $u_k < +\infty$.</strong><br>
+If
+$$a_{ik} \ge d := b_i - u_{iS} - a_{ik}(u_k - 1) > 0,$$
+then replace the row by
+$$A_{iS}x_S + (a_{ik} - d)x_k \le b_i - d\,u_k.$$
+This dominates the original row in the slice $x_k \in \{u_k-1,u_k\}$ while preserving all integer solutions.<br><br>
+<strong>Case 2: $a_{ik} < 0$ and $\ell_k > -\infty$.</strong><br>
+If
+$$-a_{ik} \ge d' := b_i - u_{iS} - a_{ik}(\ell_k + 1) > 0,$$
+then replace the row by
+$$A_{iS}x_S + (a_{ik} + d')x_k \le b_i + d'\ell_k.$$
+This is the symmetric strengthening near the lower bound.`,
+  code: `# Rule 7 — Coefficient Strengthening
+for rname, row in model.rows.items():
+    if not isfinite(row.rhs): continue
+
+    for x in list(row.coeffs.keys()):
+        a = row.coeffs[x]
+        v = variables[x]
+        if v.vtype not in ("I", "B"): continue
+
+        _, rest_max = row_activity_excluding(model, row, x)
+
+        if a > 0 and isfinite(v.ub):
+            d = row.rhs - rest_max - a * (v.ub - 1)
+            if d > EPS and a >= d - EPS:
+                row.coeffs[x] = a - d
+                row.rhs -= d * v.ub
+
+        elif a < 0 and isfinite(v.lb):
+            d = row.rhs - rest_max - a * (v.lb + 1)
+            if d > EPS and -a >= d - EPS:
+                row.coeffs[x] = a + d
+                row.rhs += d * v.lb`
+},
+
+r16: {
+  num: 'R16',
+  title: 'Chvatal-Gomory Strengthening',
+  subtitle: 'Presolve-2 §3.4  ·  Rounding scaled integer rows',
+  color: '#34d399',
+  complexity: 'O(m·nnz)',
+  postsolve: false,
+  math: String.raw`For a pure $\geq$-row $A_i x \geq b_i$ (all integer/binary, $l_j \geq 0$, $b_i > 0$):<br><br>
+Multiply by $s > 0$ and take ceilings:
+$$\lceil A_i s \rceil\, x \geq \lceil b_i s \rceil \quad\text{(valid for all integer solutions)}$$
+Strictly tighter LP relaxation if $\exists\, k$:
+$$\lceil a_{ik} s \rceil \cdot b_i < a_{ik} \cdot \lceil b_i s \rceil$$
+Scalar heuristic: $s \in \{1\} \cup \left\{\tfrac{t}{a_{\max}},\, \tfrac{t}{a_{\min}},\, \tfrac{2t-1}{2a_{\min}} : t=1,\ldots,5\right\}$<br>
+where $a_{\max} = \max|a_{ij}|$, $a_{\min} = \min|a_{ij}|$ over support.<br><br>
+Choose $s$ that minimises $\sum \lceil a_{ij} s \rceil / \lceil b_i s \rceil$ (tightest normalised row).`,
+  code: `# Rule 16 — Chvatal-Gomory Strengthening
+for rname, row in model.rows.items():
+    # Only pure ≥-rows: lhs finite, rhs = +∞
+    if not isfinite(row.lhs) or isfinite(row.rhs): continue
+    bi = row.lhs
+    if bi <= EPS: continue
+
+    # All variables must be integer/binary with lb ≥ 0
+    if not all(variables[x].vtype in ("I","B") and variables[x].lb >= -EPS
+               for x in row.coeffs): continue
+
+    amax = max(abs(a) for a in row.coeffs.values())
+    amin = min(abs(a) for a in row.coeffs.values() if abs(a) > EPS)
+
+    scalars = {1.0}
+    for t in range(1, 6):
+        scalars |= {t/amax, t/amin, (2*t-1)/(2*amin)}
+
+    best, best_ratio = None, INF
+    for s in scalars:
+        new_c = {x: ceil(a*s - 1e-9) for x, a in row.coeffs.items()}
+        new_b = ceil(bi*s - 1e-9)
+        if new_b <= EPS: continue
+
+        # Accept only if strictly tighter for LP relaxation
+        tighter = any(new_c[x]*bi < row.coeffs[x]*new_b - EPS
+                      for x in row.coeffs)
+        if not tighter: continue
+
+        ratio = sum(new_c.values()) / new_b
+        if ratio < best_ratio:
+            best_ratio, best = ratio, (new_c, new_b)
+
+    if best:
+        row.coeffs, row.lhs = best`
+},
+
+r12: {
+  num: 'R12',
+  title: 'Parallel Rows',
+  subtitle: 'Presolve-2 §5.2  ·  Parallel and nearly parallel rows',
+  color: '#fbbf24',
+  complexity: 'O(m²)',
+  postsolve: false,
+  math: String.raw`Two rows $r_1, r_2$ are parallel when $a_{r_2} = \lambda\, a_{r_1}$ for all $j$.<br>
+After normalising $r_2$ by $1/\lambda$, both constrain $y = a_{r_1}^\top x$:<br><br>
+$\lambda > 0$ (same direction):<br>
+$$\ell = \max(\ell_1,\; \ell_2/\lambda), \qquad r = \min(r_1,\; r_2/\lambda)$$
+Infeasible if $\ell > r$. Remove the dominated weaker row.<br><br>
+$\lambda < 0$ (reversed direction — ranged constraint):<br>
+$$\frac{\ell_2}{\lambda} \leq y \leq \frac{r_2}{\lambda} \quad\text{intersected with}\quad [\ell_1,\, r_1]$$`,
+  code: `# Rule 12 — Parallel Rows
+row_list = list(model.rows.items())
+for i, (n1, r1) in enumerate(row_list):
+    for n2, r2 in row_list[i+1:]:
+        lam = proportionality_factor(r1, r2)
+        if lam is None: continue  # not parallel
+
+        # Normalise r2 bounds by λ
+        if lam > 0:
+            # Same direction — intersect bounds
+            new_lhs = max(r1.lhs, r2.lhs / lam if isfinite(r2.lhs) else -INF)
+            new_rhs = min(r1.rhs, r2.rhs / lam if isfinite(r2.rhs) else +INF)
+            if new_lhs > new_rhs + EPS:
+                presolver.infeasible = True; return
+            r1.lhs, r1.rhs = new_lhs, new_rhs
+            del model.rows[n2]   # r2 dominated by tightened r1
+        else:  # lam < 0
+            # Reversed — combine into ranged row
+            combined_lhs = max(r1.lhs, r2.rhs / lam if isfinite(r2.rhs) else -INF)
+            combined_rhs = min(r1.rhs, r2.lhs / lam if isfinite(r2.lhs) else +INF)
+            if combined_lhs > combined_rhs + EPS:
+                presolver.infeasible = True; return
+            r1.lhs, r1.rhs = combined_lhs, combined_rhs
+            del model.rows[n2]`
+},
+
+r13: {
+  num: 'R13',
+  title: 'Dominated Columns',
+  subtitle: 'Presolve-2 §6.4  ·  Needs domination plus infinite or implied room',
+  color: '#fbbf24',
+  complexity: 'O(n²·m)',
+  postsolve: true,
+  math: String.raw`Variable $x_j$ dominates $x_k$ when:<br><br>
+<ul style="margin-left:1.4em;line-height:1.9">
+<li>$c_j \leq c_k$</li>
+<li>$a_{ij} \leq a_{ik}$ for every $\leq$-row $i$</li>
+<li>$x_j$ is continuous or $x_k$ is integer (no domination from integer to continuous)</li>
+</ul><br>
+The paper's simplest fixing case is:<br>
+$$u_j = +\infty \text{ and } x_j \succ x_k \;\Rightarrow\; x_k := l_k$$
+Signed variants are obtained by complementing variables first. The key point is that domination alone is not enough; one side also needs infinite or implied slack.`,
+  code: `# Rule 13 — Dominated Columns
+var_list = list(model.variables.items())
+for xj, vj in var_list:
+    if isfinite(vj.ub):
+        continue   # need infinite or implied room on dominating column
+
+    for xk, vk in var_list:
+        if xk == xj: continue
+        if vj.obj > vk.obj + EPS: continue      # cj <= ck
+        if variables[xj].vtype in ("I","B") and variables[xk].vtype == "C":
+            continue
+
+        dominates = True
+        for row in model.rows.values():
+            aj = row.coeffs.get(xj, 0.0)
+            ak = row.coeffs.get(xk, 0.0)
+            if aj > ak + EPS:
+                dominates = False; break
+
+        if dominates:
+            fix_var(xk, vk.lb)   # theorem 1(i): dominated column goes to lb
+            break`
+},
+
+r15: {
+  num: 'R15',
+  title: 'SOS Reductions',
+  subtitle: 'Presolve-2 §3.7  ·  SOS1 and SOS2 simplifications',
+  color: '#f87171',
+  complexity: 'O(k)',
+  postsolve: false,
+  math: String.raw`$\text{SOS1}(x_1,\ldots,x_p)$: at most one $x_j \neq 0$.<br>
+$\text{SOS2}(x_1,\ldots,x_p)$: at most two $x_j \neq 0$, and they must be adjacent.<br><br>
+<strong>R1 — Forced fixing:</strong> if $x_k$ must be nonzero ($l_k>0$ or $u_k<0$):<br>
+&emsp;SOS1: fix all $x_j = 0$ for $j \neq k$<br>
+&emsp;SOS2: fix all $x_j = 0$ for $j \notin \{k-1,\,k,\,k+1\}$<br><br>
+<strong>R2 — Zero removal:</strong><br>
+&emsp;SOS1: remove any $x$ fixed to 0<br>
+&emsp;SOS2: trim head/tail zeros only<br><br>
+<strong>R3 — Small-set cleanup:</strong><br>
+&emsp;SOS1 with one remaining variable: discard<br>
+&emsp;SOS2 with at most two remaining variables: discard<br>
+&emsp;SOS2 with three remaining variables: convert to SOS1 on the endpoints.`,
+  code: `# Rule 15 — SOS Reductions
+for sos in model.sos_constraints:
+    vars_in_sos = sos.variables   # ordered list
+
+    # R1: Forced fixing
+    forced = [x for x in vars_in_sos
+              if variables[x].lb > EPS or variables[x].ub < -EPS]
+    if len(forced) == 1:
+        k = forced[0]
+        idx = vars_in_sos.index(k)
+        for j, x in enumerate(vars_in_sos):
+            if sos.type == 1 and x != k:       fix_var(x, 0)
+            if sos.type == 2 and abs(j-idx)>1: fix_var(x, 0)
+
+    # R2: Remove zero-fixed variables
+    if sos.type == 1:
+        sos.variables = [x for x in vars_in_sos
+                         if not is_zero_fixed(x)]
+    else:  # SOS2: only trim head/tail
+        while vars_in_sos and is_zero_fixed(vars_in_sos[0]):
+            vars_in_sos.pop(0)
+        while vars_in_sos and is_zero_fixed(vars_in_sos[-1]):
+            vars_in_sos.pop()
+
+    # R3: Small-set cleanup
+    if sos.type == 1 and len(sos.variables) <= 1:
+        del sos
+    elif sos.type == 2 and len(sos.variables) <= 2:
+        del sos
+    elif sos.type == 2 and len(sos.variables) == 3:
+        sos.type = 1
+        sos.variables = [sos.variables[0], sos.variables[-1]]`
+},
+
+r17: {
+  num: 'R17',
+  title: 'Non-zero Cancellation',
+  subtitle: 'Presolve-2 §5.3  ·  Matrix sparsification',
+  color: '#f87171',
+  complexity: 'O(m·nnz²)',
+  postsolve: false,
+  math: String.raw`For equality $A_i x = b_i$ and inequality $A_r x \leq/\geq b_r$ sharing variable $x_k$:<br><br>
+$$s = -a_{rk} / a_{ik} \quad\text{(cancellation scalar, makes new }a_{rk} = 0\text{)}$$
+$$\text{New row: }(A_r + s A_i)\,x \;\leq/\geq\; b_r + s b_i$$<br>
+Accept only if:<br>
+&emsp;• All variables of the equality already appear in the inequality<br>
+&emsp;• new nnz $<$ old nnz<br>
+&emsp;• $|s| \leq 1000$ (numerical safety)<br><br>
+Impact: affects ~1,138 models; ~9% speed-up in $\geq 10\,\text{s}$ bracket.`,
+  code: `# Rule 17 — Non-zero Cancellation
+eq_rows = [(n,r) for n,r in model.rows.items()
+           if isfinite(r.lhs) and r.lhs == r.rhs]
+
+for eq_name, eq_row in eq_rows:
+    bi = eq_row.lhs
+    support = set(eq_row.coeffs.keys())
+
+    for k in support:
+        aik = eq_row.coeffs[k]
+        if abs(aik) < EPS: continue
+
+        for rname, row in list(model.rows.items()):
+            if rname == eq_name: continue
+            if row.lhs == row.rhs: continue    # skip other equalities
+
+            ark = row.coeffs.get(k, 0.0)
+            if abs(ark) < EPS: continue
+
+            s = -ark / aik
+            if abs(s) > 1000: continue         # numerical safety
+
+            # Count variables in equality but NOT in inequality
+            new_nz = sum(1 for j in support
+                         if j != k and j not in row.coeffs
+                         and abs(eq_row.coeffs[j] * s) > EPS)
+            if new_nz >= 1: continue    # would increase nnz
+
+            # Apply cancellation: row += s * eq_row
+            for j, aij in eq_row.coeffs.items():
+                new_val = row.coeffs.get(j, 0.0) + s * aij
+                if abs(new_val) < EPS: row.coeffs.pop(j, None)
+                else: row.coeffs[j] = new_val
+
+            if isfinite(row.rhs): row.rhs += s * bi
+            if isfinite(row.lhs): row.lhs += s * bi`
+},
+
+r8: {
+  num: 'R8',
+  title: 'Dual Fixing',
+  subtitle: 'Presolve-2 §4.4  ·  No incumbent or LP solve required',
+  color: '#fb923c',
+  complexity: 'O(nnz)',
+  postsolve: false,
+  math: String.raw`Assume $x_j$ appears in no equality row and only in $\leq$ rows.<br><br>
+<strong>Case 1: fix to lower bound.</strong><br>
+If $c_j \geq 0$ and $a_{ij} \geq 0$ for every row containing $x_j$, then:
+$$l_j > -\infty \;\Rightarrow\; x_j := l_j$$
+If $l_j = -\infty$ and $c_j > 0$, the problem is unbounded or infeasible.<br>
+If $l_j = -\infty$ and $c_j = 0$, remove $x_j$ and its incident $\leq$ rows; reconstruct a feasible value in postsolve.<br><br>
+<strong>Case 2: fix to upper bound.</strong><br>
+If $c_j \leq 0$ and $a_{ij} \leq 0$ for every row containing $x_j$, then:
+$$u_j < +\infty \;\Rightarrow\; x_j := u_j$$
+If $u_j = +\infty$ and $c_j < 0$, the problem is unbounded or infeasible.<br>
+If $u_j = +\infty$ and $c_j = 0$, remove $x_j$ and its incident $\leq$ rows; reconstruct a feasible value in postsolve.<br><br>
+Rationale: moving $x_j$ away from that bound cannot improve the objective and only tightens the active inequalities.`,
+  code: `# Rule 8 — Dual Fixing
+for x, v in list(model.variables.items()):
+    if v.is_fixed(): continue
+    if appears_in_equality_row(x): continue
+
+    coeffs = [row.coeffs[x] for row in model.rows.values()
+              if x in row.coeffs]
+    if not coeffs:
+        continue   # Rule 9 handles free columns
+
+    all_nonneg = all(a >= 0 for a in coeffs)
+    all_nonpos = all(a <= 0 for a in coeffs)
+
+    if v.obj >= 0 and all_nonneg:
+        if isfinite(v.lb):
+            fix_var(x, v.lb)
+        elif v.obj > 0:
+            presolver.unbounded_or_infeasible = True
+            return
+        else:
+            postsolve_stack.push(("dual_fix", x))
+            for rname, row in list(model.rows.items()):
+                if x in row.coeffs:
+                    del model.rows[rname]
+            del model.variables[x]
+
+    elif v.obj <= 0 and all_nonpos:
+        if isfinite(v.ub):
+            fix_var(x, v.ub)
+        elif v.obj < 0:
+            presolver.unbounded_or_infeasible = True
+            return
+        else:
+            postsolve_stack.push(("dual_fix", x))
+            for rname, row in list(model.rows.items()):
+                if x in row.coeffs:
+                    del model.rows[rname]
+            del model.variables[x]`
+},
+
+r9: {
+  num: 'R9',
+  title: 'Objective-Only Column Cleanup',
+  subtitle: 'Generic presolve cleanup  ·  Zero-row variables',
+  color: '#22d3ee',
+  complexity: 'O(n)',
+  postsolve: true,
+  math: String.raw`Variable $x_j$ appearing in zero constraint rows:<br><br>
+For minimisation:<br>
+&emsp;$c_j \geq 0$: optimal to set $x_j = l_j$ (lower bound minimises cost)<br>
+&emsp;$c_j < 0$: optimal to set $x_j = u_j$ (upper bound decreases cost)<br><br>
+If the relevant bound is infinite and $c_j \neq 0$:<br>
+&emsp;$\Rightarrow$ problem is <strong>UNBOUNDED</strong><br><br>
+After fixing, remove $x_j$ from the variable set.`,
+  code: `# Rule 9 — Objective-Only Column Cleanup
+# Count appearances of each variable across all rows
+appearances = {x: 0 for x in model.variables}
+for row in model.rows.values():
+    for x in row.coeffs:
+        appearances[x] += 1
+
+for x, count in appearances.items():
+    if count != 0: continue      # only free columns (zero rows)
+    v = model.variables[x]
+    if v.is_fixed(): continue
+
+    if v.obj >= 0:
+        if isfinite(v.lb):
+            fix_var(x, v.lb)     # min cost: push to lower bound
+        else:
+            warn("unbounded: unconstrained var with neg-inf lb")
+
+    else:  # v.obj < 0
+        if isfinite(v.ub):
+            fix_var(x, v.ub)     # push to upper bound (reduces cost)
+        else:
+            warn("unbounded: unconstrained var with pos-inf ub")`
+},
+
+rp1: {
+  num: 'BP',
+  title: 'Binary Probing',
+  subtitle: 'Presolve-2 §7.2  ·  Tentative binary fixing',
+  color: '#94a3b8',
+  complexity: 'O(n·nnz)',
+  postsolve: false,
+  math: String.raw`For each binary variable $x_j \in \{0,1\}$:<br><br>
+Branch 0: temporarily fix $x_j = 0$; propagate bounds.<br>
+Branch 1: temporarily fix $x_j = 1$; propagate bounds.<br><br>
+&emsp;If branch-0 infeasible: fix $x_j = 1$ permanently.<br>
+&emsp;If branch-1 infeasible: fix $x_j = 0$ permanently.<br>
+&emsp;If both infeasible: $\Rightarrow$ <strong>INFEASIBLE</strong>.<br><br>
+For each variable $y$ fixed to the same value in both branches:<br>
+&emsp;$\Rightarrow$ permanently fix $y$ (consensus fixing).<br><br>
+Store implications in ImplicationGraph:<br>
+&emsp;$x_j = 0 \Rightarrow y_k = v_0$ &ensp;and&ensp; $x_j = 1 \Rightarrow y_k = v_1$.`,
+  code: `# Binary Probing
+for xj in binary_variables(model):
+    results = {}
+    for val in (0, 1):
+        snapshot = model.copy()          # save state
+        fix_var(xj, val, snapshot)
+        propagate(snapshot)              # bound propagation
+
+        if snapshot.infeasible:
+            results[val] = 'infeasible'
+        else:
+            results[val] = extract_fixings(snapshot)
+
+    if results[0] == 'infeasible' and results[1] == 'infeasible':
+        presolver.infeasible = True; return
+
+    if results[0] == 'infeasible':
+        fix_var(xj, 1)    # branch-0 infeasible → must be 1
+
+    if results[1] == 'infeasible':
+        fix_var(xj, 0)    # branch-1 infeasible → must be 0
+
+    # Consensus fixings
+    for y in set(results[0]) & set(results[1]):
+        if results[0][y] == results[1][y]:
+            fix_var(y, results[0][y])
+
+    # Store implications
+    for val in (0, 1):
+        for y, v in results[val].items():
+            implication_graph.add(xj, val, y, v)`
+},
+
+rp2: {
+  num: 'IP',
+  title: 'Implications from Probing',
+  subtitle: 'Presolve-2 §7.2  ·  Replay stored implications',
+  color: '#94a3b8',
+  complexity: 'O(|I|)',
+  postsolve: false,
+  math: String.raw`Given the implication graph built during probing:<br><br>
+For each implication $(x_j = v) \Rightarrow (y_k = w)$:<br>
+&emsp;If $x_j$ is already fixed to $v$: fix $y_k = w$.<br><br>
+<strong>Detect aggregations (variable merging):</strong><br>
+If $(x_j=0) \Rightarrow (y_k=a)$ and $(x_j=1) \Rightarrow (y_k=b)$ with $a \neq b$:
+$$y_k = a + (b - a)\,x_j \quad\Rightarrow\text{ substitute } y_k \text{ out}$$<br>
+<strong>Transitive closure:</strong><br>
+Propagate chains of implications to find further fixings.`,
+  code: `# Implications from Probing
+for xj, val, yk, w in implication_graph.iter():
+    vj = model.variables.get(xj)
+    if vj is None: continue
+
+    if vj.is_fixed() and abs(vj.lb - val) < EPS:
+        # xj is fixed to val → implication fires
+        fix_var(yk, w)
+
+# Aggregation detection
+for xj in binary_variables(model):
+    for yk in implication_graph.targets_of(xj):
+        w0 = implication_graph.get(xj, 0, yk)  # xj=0 → yk=w0
+        w1 = implication_graph.get(xj, 1, yk)  # xj=1 → yk=w1
+        if w0 is not None and w1 is not None and abs(w0-w1) > EPS:
+            # yk = w0 + (w1-w0)*xj  →  aggregate yk out
+            substitute_linear(yk, xj, intercept=w0, slope=w1-w0)`
+},
+
+}; // end RULES
+
+const TEACHING = {
+  r1: ['Treat fixed variables as constants, then move their contribution into the row bounds.', 'This keeps the feasible set identical while shrinking the matrix and exposing empty rows.'],
+  r2: ['Use interval arithmetic to ask what each row can possibly achieve under current bounds.', 'If the row interval misses its required range, the model is infeasible; if it is fully inside, the row is redundant.'],
+  r14: ['Detect variables whose explicit bounds are already implied by the rest of the model.', 'That marks them as implied-free candidates for aggregation, but it does not eliminate them by itself.'],
+  r3: ['A one-variable row is just a disguised bound constraint.', 'Move the row into the variable bounds, round for integer variables, then remove the row.'],
+  r4: ['Aggregate only when an equality variable is implied free and the pivot is numerically safe.', 'For integer aggregation, divisibility matters; otherwise the equality can certify infeasibility.'],
+  r5: ['For each coefficient, ask how much room is left after all other variables take their best or worst activity.', 'The leftover room becomes a sharper lower or upper bound for that variable.'],
+  r6: ['Integer rows live on a lattice: if every coefficient shares a divisor, so does every feasible activity.', 'That divisibility can tighten the row, prove an equality impossible, and sometimes reveal substitution structure.'],
+  r7: ['Ask how much of the row can already be explained by the other variables at their largest integer-feasible activity.', 'If an integer variable only matters near one bound, part of its coefficient can be shifted into the right-hand side, tightening the LP relaxation without changing any integer-feasible point.'],
+  r16: ['Chvatal-Gomory strengthening rounds a scaled integer row into another valid integer row.', 'The chosen scale should tighten the LP relaxation while preserving every integer-feasible point.'],
+  r12: ['Parallel rows constrain the same linear form, sometimes with reversed orientation.', 'Normalizing and intersecting them can remove redundancy or expose a contradiction immediately.'],
+  r13: ['Column domination only becomes a fixing rule when the dominating side has infinite or implied room to absorb exchange.', 'Without that extra room, domination alone is not enough to justify a bound fixing.'],
+  r15: ['SOS constraints encode exclusivity or adjacency that ordinary row propagation does not see directly.', 'The paper mainly uses them to force zeros, trim already-zero members, and simplify very small SOS sets.'],
+  r17: ['Use equality rows as algebraic tools for canceling coefficients in inequalities.', 'Accept only cancellations that reduce nonzeros and stay numerically tame.'],
+  r8: ['Check whether the objective and every incident inequality row all push the variable in the same direction.', 'If increasing or decreasing the variable can only worsen a minimization problem and tighten feasibility, one optimal solution survives at the corresponding bound.'],
+  r9: ['A variable absent from all rows can be optimized locally from the objective sign alone.', 'This is a generic cleanup rule in the flowchart, not one of the named reductions from the PDF.'],
+  rp1: ['Temporarily branch each binary variable both ways, propagate, then compare the consequences.', 'An infeasible branch fixes the variable; matching consequences across both branches are globally valid.'],
+  rp2: ['Stored probing implications become a small logical layer on top of numeric propagation.', 'When the trigger is fixed, the implication fires; paired branch outcomes can also yield substitutions.']
+};
+
+const EXAMPLES = {
+  r1: {
+    before: 'row: 2x + 3y <= 11\nbounds: x = 4',
+    steps: [
+      'Notice that x has identical lower and upper bounds, so it is a constant.',
+      'Compute the fixed contribution: 2 * 4 = 8.',
+      'Subtract 8 from the row right-hand side: 11 - 8 = 3.',
+      'Delete x from the row because it no longer needs to be optimized.'
+    ],
+    after: 'row: 3y <= 3\nx removed from the row'
+  },
+  r2: {
+    before: 'row: 5 <= 2x + y <= 20\nbounds: x in [0,2], y in [0,1]\nactivity: [0,5]',
+    steps: [
+      'Compute the smallest possible activity: 2*0 + 0 = 0.',
+      'Compute the largest possible activity: 2*2 + 1 = 5.',
+      'The row can still satisfy the lower side because max activity reaches 5.',
+      'The upper side is always satisfied because max activity 5 is below 20.'
+    ],
+    after: 'RHS is redundant\nLHS is feasible only at max activity\nkeep: 5 <= 2x + y'
+  },
+  r14: {
+    before: 'explicit bounds: 0 <= x <= 10\nrows already imply: 0 <= x <= 10\nx appears in equality x + y = 7',
+    steps: [
+      'Temporarily ignore the explicit bounds on x.',
+      'Ask the rows what interval they force for x.',
+      'The row-implied interval is already inside the explicit interval.',
+      'That means the explicit bounds are redundant and x is eligible for implied-free aggregation checks.'
+    ],
+    after: 'x is implied free\nbounds on x are redundant\nRule 4 may aggregate it'
+  },
+  r3: {
+    before: 'row: 6 <= 3x <= 15\nx integer',
+    steps: [
+      'The row contains only one variable, so it is just a bound in disguise.',
+      'Divide both sides by the positive coefficient 3.',
+      'Get 2 <= x <= 5.',
+      'Transfer those bounds to x and remove the consumed row.'
+    ],
+    after: 'bounds: 2 <= x <= 5\nrow deleted'
+  },
+  r4: {
+    before: 'equality: 2x + y = 8\nx is implied free\nother row: x + z <= 5',
+    steps: [
+      'Choose an implied-free variable x from the equality.',
+      'Solve the equality: x = 4 - 0.5y.',
+      'Substitute that expression anywhere x appears.',
+      'Store the formula so postsolve can reconstruct x after solving.'
+    ],
+    after: 'x = 4 - 0.5y\nother row: z - 0.5y <= 1\nrecord x formula for postsolve'
+  },
+  r5: {
+    before: 'row: 10 <= 2x + 3y\nbounds: y <= 2',
+    steps: [
+      'To derive a lower bound on x, let y help as much as possible.',
+      'The largest contribution from y is 3*2 = 6.',
+      'The row still needs 10 - 6 = 4 from 2x.',
+      'Divide by 2, giving x >= 2.'
+    ],
+    after: '2x must cover at least 4\nx >= 2'
+  },
+  r6: {
+    before: 'integer row: 6x + 9y <= 16',
+    steps: [
+      'All variables and coefficients are integer.',
+      'The coefficient gcd is gcd(6, 9) = 3.',
+      'The left-hand activity must be a multiple of 3, so <= 16 is equivalent to <= 15.',
+      'Divide the entire row by 3.'
+    ],
+    after: 'activity is multiple of 3\n6x + 9y <= 15\n2x + 3y <= 5'
+  },
+  r7: {
+    before: 'row: y + 5x <= 16\nbounds: 0 <= x <= 3, 0 <= y <= 4\nx integer',
+    steps: [
+      'Treat y as the side activity S, so u_iS = 4.',
+      'For x, use a_ik = 5, u_k = 3, and compute d = 16 - 4 - 5*(3-1) = 2.',
+      'Because d > 0 and 5 >= 2, coefficient strengthening applies.',
+      'Replace 5x by (5-2)x = 3x and shift the RHS to 16 - 2*3 = 10.'
+    ],
+    after: 'strengthened row: y + 3x <= 10\nsame integer solutions, tighter LP relaxation'
+  },
+  r16: {
+    before: 'integer row: 3x + 5y >= 7\nchoose scalar s = 1/3',
+    steps: [
+      'Scale the row by s = 1/3.',
+      'The coefficients become 1 and 1.666..., and the RHS becomes 2.333...',
+      'Round up because variables are integer: ceil(1)=1, ceil(1.666)=2, ceil(2.333)=3.',
+      'The rounded row remains valid for integer solutions and may tighten the LP relaxation.'
+    ],
+    after: 'ceil coefficients and RHS\nx + 2y >= 3\nvalid for integer solutions'
+  },
+  r12: {
+    before: 'row A: 2 <= x + y <= 8\nrow B: 6 <= 3x + 3y <= 18',
+    steps: [
+      'Detect that row B is three times row A in coefficients.',
+      'Normalize row B by dividing bounds and coefficients by 3.',
+      'Row B becomes 2 <= x + y <= 6.',
+      'Intersect the two allowed intervals and keep the tighter row.'
+    ],
+    after: 'normalize row B: 2 <= x + y <= 6\ncombined: 2 <= x + y <= 6'
+  },
+  r13: {
+    before: 'x dominates y\nc_x = 2 <= 5 = c_y\nA_.x <= A_.y rowwise\nu_x = +inf',
+    steps: [
+      'Compare x and y in the objective and every <= row.',
+      'x is no more expensive to increase than y and is no harder to use in the constraints.',
+      'Because x has infinite room above, x can absorb any decrease applied to y.',
+      'Therefore the paper lets us push the dominated column y to its lower bound.'
+    ],
+    after: 'y is dominated by x\nfix y to its lower bound'
+  },
+  r15: {
+    before: 'SOS1(x1,x2,x3)\nx2 must be nonzero',
+    steps: [
+      'SOS1 means at most one member may be nonzero.',
+      'Bounds already force x2 to be nonzero.',
+      'No other SOS1 member can now take a nonzero value.',
+      'Fix all remaining members in the SOS1 set to zero.'
+    ],
+    after: 'at most one member can be nonzero\nfix x1 = 0 and x3 = 0'
+  },
+  r17: {
+    before: 'equality: x + y = 4\nrow: 2x + y + z <= 7',
+    steps: [
+      'Pick shared variable x as the cancellation target.',
+      'The inequality has coefficient 2 on x and the equality has coefficient 1.',
+      'Add -2 times the equality to the inequality.',
+      'The x coefficient becomes zero, so the row is sparser.'
+    ],
+    after: 'add -2 * equality to row\n-y + z <= -1\nx canceled'
+  },
+  r8: {
+    before: 'min 4x + y\nrows: 2x + y <= 9, x + 3z <= 8\nbounds: 1 <= x <= 6',
+    steps: [
+      'x does not appear in any equality row.',
+      'Its objective coefficient is positive: c_x = 4 >= 0.',
+      'Its coefficients in every <= row are also nonnegative: 2 and 1.',
+      'Raising x would worsen the objective and make the rows tighter, so an optimal solution exists at the lower bound.'
+    ],
+    after: 'dual fixing applies\nfix x = 1'
+  },
+  r9: {
+    before: 'x appears in zero rows\nminimize 3x\nbounds: 0 <= x <= 10',
+    steps: [
+      'x has no constraint-row appearances, so it affects only the objective.',
+      'The objective coefficient is positive.',
+      'For minimization, the cheapest feasible value is the lower bound.',
+      'Fix x to 0 and remove it from the model.'
+    ],
+    after: 'positive objective cost\nfix x = 0'
+  },
+  rp1: {
+    before: 'probe binary x\nbranch x=0 implies y=2\nbranch x=1 infeasible',
+    steps: [
+      'Temporarily force x = 0 and propagate all consequences.',
+      'Temporarily force x = 1 and propagate again from a clean snapshot.',
+      'The x = 1 branch fails, so no feasible solution can use it.',
+      'Fix x = 0 and keep useful implications found in that branch.'
+    ],
+    after: 'x must be 0\nstore implication x=0 -> y=2'
+  },
+  rp2: {
+    before: 'stored: x=1 -> y=0\ncurrent bounds: x fixed to 1',
+    steps: [
+      'Read an implication produced earlier by probing.',
+      'Check whether its trigger condition is active.',
+      'x is fixed to 1, so the implication fires.',
+      'Fix y to the implied value 0.'
+    ],
+    after: 'implication fires\nfix y = 0'
+  }
+};
+
+// ─── DRAWER LOGIC ──────────────────────────────────────────────────────
+let activeCard = null;
+
+function openDrawer(ruleId, card) {
+  const rule = RULES[ruleId];
+  if (!rule) return;
+
+  // Update active card highlight
+  if (activeCard) activeCard.classList.remove('active');
+  activeCard = card;
+  card.classList.add('active');
+
+  const numEl     = document.getElementById('drawer-num');
+  const titleEl   = document.getElementById('drawer-title');
+  const subEl     = document.getElementById('drawer-subtitle');
+  const bodyEl    = document.getElementById('drawer-body');
+
+  // Header
+  numEl.textContent = rule.num;
+  numEl.style.background = hexAlpha(rule.color, .18);
+  numEl.style.color = rule.color;
+  titleEl.textContent = rule.title;
+  subEl.textContent = rule.subtitle || '';
+
+  // Body
+  const teaching = TEACHING[ruleId] || ['Identify the condition that makes this reduction valid, then apply the smallest model change that preserves optimal solutions.', 'The rule should either reduce size, tighten bounds, prove infeasibility, or add postsolve information.'];
+  const example = EXAMPLES[ruleId] || {
+    before: 'small model fragment before the rule fires',
+    steps: ['Identify the rule trigger.', 'Compute the implied change.', 'Apply the reduction only if it preserves solutions.'],
+    after: 'equivalent or tighter fragment after the safe reduction'
+  };
+  const exampleSteps = (example.steps || []).map(step => `<li>${escHtml(step)}</li>`).join('');
+  const complexityChip = rule.complexity
+    ? `<div class="detail-chip"><div class="dot" style="background:${rule.color}"></div>complexity: <code style="font-family:'JetBrains Mono',monospace;font-size:.7rem;margin-left:3px">${escHtml(rule.complexity)}</code></div>`
+    : '';
+  const postsolveChip = rule.postsolve
+    ? `<div class="detail-chip" style="background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.35);color:#a5b4fc"><div class="dot" style="background:#818cf8"></div>postsolve required</div>`
+    : '';
+
+  bodyEl.innerHTML = `
+    ${(complexityChip || postsolveChip) ? `<div class="detail-chips">${complexityChip}${postsolveChip}</div>` : ''}
+    <div class="teaching-grid">
+      <div class="teaching-card">
+        <strong>Mental model</strong>
+        <p>${escHtml(teaching[0])}</p>
+      </div>
+      <div class="teaching-card">
+        <strong>Safety invariant</strong>
+        <p>${escHtml(teaching[1])}</p>
+      </div>
+    </div>
+    <div class="drawer-section-title">Before / after example</div>
+    <div class="example-grid with-steps">
+      <div class="example-pair">
+        <div class="example-block">
+          <div class="example-label" style="--example-color:#fbbf24">Before</div>
+          <pre>${escHtml(example.before)}</pre>
+        </div>
+        <div class="example-block">
+          <div class="example-label" style="--example-color:#34d399">After</div>
+          <pre>${escHtml(example.after)}</pre>
+        </div>
+      </div>
+      <div class="example-steps">
+        <div class="example-label" style="--example-color:#62b5ff">Step by step</div>
+        <ol>${exampleSteps}</ol>
+      </div>
+    </div>
+    <div class="drawer-section-title">Mathematical definition</div>
+    <div class="math-block">${rule.math}</div>
+    <div class="drawer-section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Pseudocode</span>
+      <button class="copy-btn" id="copy-code-btn" title="Copy pseudocode">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copy</span>
+      </button>
+    </div>
+    <div class="code-legend">
+      <span>purple: control flow</span>
+      <span>cyan: reductions</span>
+      <span>red: stop conditions</span>
+      <span>amber: constants</span>
+    </div>
+    <pre><code id="drawer-code" class="language-presolve">${escHtml(rule.code)}</code></pre>
+  `;
+
+  // Prism highlight — remove data-highlighted so Prism re-runs on every open
+  bodyEl.querySelectorAll('code[class*="language-"]').forEach(el => {
+    el.removeAttribute('data-highlighted');
+  });
+  // Use setTimeout to ensure DOM is flushed before Prism scans
+  setTimeout(() => {
+    const codeEl = document.getElementById('drawer-code');
+    if (codeEl && window.Prism) Prism.highlightElement(codeEl);
+
+    const copyBtn = document.getElementById('copy-code-btn');
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(rule.code).then(() => {
+          copyBtn.classList.add('copied');
+          copyBtn.querySelector('span').textContent = 'Copied!';
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.querySelector('span').textContent = 'Copy';
+          }, 1800);
+        }).catch(() => {});
+      };
+    }
+  }, 0);
+
+  // MathJax typeset
+  if (window.MathJax?.typesetPromise) {
+    MathJax.typesetPromise([bodyEl]).catch(() => {});
+  }
+
+  // Open
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('layout').classList.add('drawer-open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('layout').classList.remove('drawer-open');
+  if (activeCard) { activeCard.classList.remove('active'); activeCard = null; }
+}
+
+// ESC to close
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+document.querySelectorAll('.rule-card').forEach(card => {
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.setAttribute('aria-label', `${card.querySelector('.rule-num')?.textContent || 'Rule'}: ${card.querySelector('.rule-name')?.textContent || 'Open rule details'}`);
+  card.dataset.search = [
+    card.querySelector('.rule-num')?.textContent,
+    card.querySelector('.rule-name')?.textContent,
+    card.querySelector('.rule-subtitle')?.textContent,
+    [...card.querySelectorAll('.tag')].map(tag => tag.textContent).join(' '),
+    card.closest('.phase')?.querySelector('.phase-label')?.textContent,
+    card.closest('.phase')?.querySelector('.phase-desc')?.textContent
+  ].join(' ').toLowerCase();
+  card.dataset.tags = [...card.querySelectorAll('.tag')]
+    .flatMap(tag => [
+      tag.textContent.trim().toLowerCase(),
+      ...[...tag.classList].filter(name => name !== 'tag')
+    ])
+    .join(' ');
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      card.click();
+    }
+  });
+});
+
+const searchInput = document.getElementById('rule-search');
+const filterButtons = document.querySelectorAll('.filter-btn');
+const filterMeta = document.getElementById('filter-meta');
+let activeFilter = 'all';
+
+filterButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    activeFilter = button.dataset.filter;
+    filterButtons.forEach(btn => btn.classList.toggle('active', btn === button));
+    applyRuleFilters();
+  });
+});
+
+searchInput?.addEventListener('input', applyRuleFilters);
+
+function applyRuleFilters() {
+  const query = (searchInput?.value || '').trim().toLowerCase();
+  const filtering = query.length > 0 || activeFilter !== 'all';
+  const flowchart = document.getElementById('flowchart');
+  let visibleRules = 0;
+
+  document.querySelectorAll('.rule-card').forEach(card => {
+    const textMatch = !query || card.dataset.search.includes(query);
+    const tagMatch = activeFilter === 'all' || card.dataset.tags.split(' ').includes(activeFilter);
+    const show = textMatch && tagMatch;
+    card.classList.toggle('hidden', !show);
+    card.setAttribute('aria-hidden', show ? 'false' : 'true');
+    if (show) visibleRules += 1;
+  });
+
+  document.querySelectorAll('.phase').forEach(phase => {
+    const hasVisibleRule = !!phase.querySelector('.rule-card:not(.hidden)');
+    phase.classList.toggle('empty', filtering && !hasVisibleRule);
+  });
+
+  flowchart?.classList.toggle('filtering', filtering);
+  if (filterMeta) {
+    if (!filtering) {
+      filterMeta.textContent = 'Showing all presolve rules.';
+    } else if (visibleRules === 0) {
+      filterMeta.textContent = 'No matching rules. Try another tag or a broader search term.';
+    } else {
+      const parts = [];
+      if (query) parts.push(`search "${query}"`);
+      if (activeFilter !== 'all') parts.push(`tag ${activeFilter}`);
+      filterMeta.textContent = `Showing ${visibleRules} matching rule${visibleRules === 1 ? '' : 's'} for ${parts.join(' + ')}.`;
+    }
+  }
+}
+
+// ─── SCROLL PROGRESS ───────────────────────────────────────────────────
+(function() {
+  const bar = document.getElementById('scroll-progress');
+  if (!bar) return;
+  function update() {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docH = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    bar.style.width = docH > 0 ? (scrollTop / docH * 100) + '%' : '0%';
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+
+// ─── THEME TOGGLE ──────────────────────────────────────────────────────
+(function() {
+  const btn = document.getElementById('theme-toggle');
+  const iconDark = document.getElementById('theme-icon-dark');
+  const iconLight = document.getElementById('theme-icon-light');
+  let isLight = localStorage.getItem('mip-theme') === 'light';
+
+  function applyTheme() {
+    document.body.classList.toggle('light', isLight);
+    iconDark.style.display = isLight ? 'none' : '';
+    iconLight.style.display = isLight ? '' : 'none';
+  }
+  applyTheme();
+
+  btn?.addEventListener('click', () => {
+    isLight = !isLight;
+    localStorage.setItem('mip-theme', isLight ? 'light' : 'dark');
+    applyTheme();
+  });
+})();
+
+// ─── UTILS ─────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function hexAlpha(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+</script>
+</body>
+</html>
