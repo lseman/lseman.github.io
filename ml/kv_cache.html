@@ -1,0 +1,3152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      KV caching, paged attention, and LLM serving — a systems primer
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [["\\(", "\\)"]],
+          displayMath: [["\\[", "\\]"]],
+          packages: { "[+]": ["ams"] },
+        },
+        options: {
+          skipHtmlTags: [
+            "script",
+            "noscript",
+            "style",
+            "textarea",
+            "pre",
+            "code",
+          ],
+        },
+        chtml: {
+          scale: 1.02,
+        },
+      };
+    </script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+    ></script>
+    <style>
+      :root {
+        --bg: #08111a;
+        --bg-elev: #0f1925;
+        --bg-soft: #152131;
+        --bg-code: #071018;
+        --fg: #eaf2f7;
+        --fg-dim: #92a0ae;
+        --fg-faint: #536170;
+        --border: #243345;
+        --border-soft: #1b2836;
+
+        --query: #fbbf24;
+        --key: #2dd4bf;
+        --value: #f472b6;
+        --output: #a78bfa;
+        --score: #7dd3fc;
+
+        --cache: #60a5fa;
+        --page: #34d399;
+        --batch: #f59e0b;
+        --prefix: #c084fc;
+        --accent: #7dd3fc;
+        --accent-2: #bae6fd;
+        --success: #4ade80;
+        --warning: #fb923c;
+        --danger: #f87171;
+        --hot: #fbbf24;
+
+        --kw: #c4b5fd;
+        --tn: #34d399;
+        --fn: #f472b6;
+        --str: #86efac;
+        --num: #7dd3fc;
+        --com: #5d6a7a;
+        --dec: #fdba74;
+
+        --serif: "Newsreader", ui-serif, Georgia, serif;
+        --sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        background-image:
+          radial-gradient(
+            circle at 12% 8%,
+            rgba(125, 211, 252, 0.08),
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 92% 90%,
+            rgba(245, 158, 11, 0.06),
+            transparent 42%
+          ),
+          linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.012) 1px,
+            transparent 1px
+          );
+        background-size:
+          100% 100%,
+          100% 100%,
+          56px 56px,
+          56px 56px;
+        background-attachment: fixed;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 290px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      aside.toc {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 38px 22px 40px 30px;
+        border-right: 1px solid var(--border-soft);
+        background: rgba(8, 17, 26, 0.76);
+        backdrop-filter: blur(14px);
+      }
+      aside.toc .brand {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: 24px;
+        letter-spacing: -0.01em;
+        margin-bottom: 4px;
+        color: var(--fg);
+        font-variation-settings: "opsz" 36;
+      }
+      aside.toc .brand em {
+        font-style: italic;
+        color: var(--accent-2);
+      }
+      aside.toc .tag {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--fg-faint);
+        margin-bottom: 28px;
+      }
+      aside.toc nav {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      aside.toc nav a {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 6px 10px;
+        border-radius: 5px;
+        text-decoration: none;
+        color: var(--fg-dim);
+        font-size: 13px;
+        line-height: 1.35;
+        transition:
+          color 0.18s,
+          background 0.18s,
+          border-color 0.18s;
+        border-left: 2px solid transparent;
+      }
+      aside.toc nav a:hover {
+        color: var(--fg);
+      }
+      aside.toc nav a.active {
+        color: var(--accent-2);
+        border-left-color: var(--accent);
+        background: rgba(125, 211, 252, 0.08);
+      }
+      aside.toc nav a.active-parent {
+        color: var(--fg);
+        border-left-color: rgba(125, 211, 252, 0.32);
+        background: rgba(125, 211, 252, 0.04);
+      }
+      aside.toc nav a .n {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--fg-faint);
+        min-width: 24px;
+      }
+      aside.toc nav a.active .n {
+        color: var(--accent);
+      }
+      aside.toc nav a.active-parent .n {
+        color: var(--accent-2);
+      }
+      aside.toc nav .subnav {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        margin: 2px 0 8px 24px;
+        padding-left: 10px;
+        border-left: 1px solid var(--border-soft);
+      }
+      aside.toc nav .subnav.active-group {
+        border-left-color: rgba(125, 211, 252, 0.42);
+      }
+      aside.toc nav a.subitem {
+        padding: 4px 10px;
+        font-size: 12px;
+        color: var(--fg-faint);
+      }
+      aside.toc nav a.subitem .n {
+        min-width: 34px;
+        font-size: 9.75px;
+      }
+
+      main {
+        padding: 60px clamp(28px, 6vw, 96px) 120px;
+        max-width: 980px;
+      }
+
+      section {
+        margin-bottom: 110px;
+        scroll-margin-top: 30px;
+      }
+      section .marker {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        color: var(--accent);
+        margin-bottom: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+      section .marker::before {
+        content: "";
+        width: 18px;
+        height: 1px;
+        background: var(--accent);
+      }
+      section h1,
+      section h2 {
+        font-family: var(--serif);
+        font-weight: 300;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        margin: 0 0 22px;
+        color: var(--fg);
+        font-variation-settings: "opsz" 72;
+      }
+      section h1 {
+        font-size: clamp(44px, 7vw, 76px);
+      }
+      section h2 {
+        font-size: clamp(30px, 4.5vw, 46px);
+      }
+      section h1 em,
+      section h2 em {
+        font-style: italic;
+        color: var(--accent-2);
+      }
+      section h3 {
+        font-family: var(--sans);
+        font-weight: 600;
+        font-size: 18.5px;
+        letter-spacing: -0.005em;
+        margin: 38px 0 14px;
+        color: var(--fg);
+      }
+      section h3::before {
+        content: "§ ";
+        color: var(--accent);
+        font-family: var(--mono);
+        font-weight: 400;
+      }
+      section h4 {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--fg-dim);
+        margin: 30px 0 10px;
+      }
+      section p {
+        margin: 0 0 16px;
+        color: var(--fg);
+      }
+      section p.lede {
+        font-family: var(--serif);
+        font-size: 21px;
+        line-height: 1.5;
+        letter-spacing: -0.005em;
+        color: var(--fg-dim);
+        margin-bottom: 28px;
+        max-width: 64ch;
+        font-variation-settings: "opsz" 24;
+      }
+
+      code.inl {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        background: var(--bg-soft);
+        border: 1px solid var(--border-soft);
+        padding: 1px 6px;
+        border-radius: 4px;
+        color: var(--accent-2);
+      }
+      strong {
+        color: var(--fg);
+        font-weight: 600;
+      }
+      .kbd-cache {
+        color: var(--cache);
+        font-weight: 600;
+      }
+      .kbd-page {
+        color: var(--page);
+        font-weight: 600;
+      }
+      .kbd-batch {
+        color: var(--batch);
+        font-weight: 600;
+      }
+      .kbd-q {
+        color: var(--query);
+        font-weight: 600;
+      }
+      .kbd-k {
+        color: var(--key);
+        font-weight: 600;
+      }
+      .kbd-v {
+        color: var(--value);
+        font-weight: 600;
+      }
+
+      mjx-container[jax="CHTML"] {
+        color: inherit;
+      }
+      .eq {
+        margin: 22px 0;
+        padding: 18px 24px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border-soft);
+        border-left: 3px solid var(--accent);
+        border-radius: 6px;
+        color: var(--fg);
+        overflow-x: auto;
+        text-align: center;
+      }
+      .eq mjx-container[jax="CHTML"][display="true"] {
+        margin: 0 !important;
+        color: var(--fg);
+        font-size: 1.05em;
+      }
+      .eq .lbl {
+        display: block;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--fg-faint);
+        letter-spacing: 0.12em;
+        margin-top: 10px;
+        text-align: right;
+      }
+
+      .callout {
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        background: linear-gradient(
+          90deg,
+          rgba(125, 211, 252, 0.06),
+          transparent
+        );
+        padding: 14px 18px;
+        border-radius: 6px;
+        margin: 22px 0;
+        font-size: 14.5px;
+        color: var(--fg-dim);
+      }
+      .callout.warn {
+        border-left-color: var(--warning);
+        background: linear-gradient(
+          90deg,
+          rgba(251, 146, 60, 0.06),
+          transparent
+        );
+      }
+      .callout.hot {
+        border-left-color: var(--hot);
+        background: linear-gradient(
+          90deg,
+          rgba(251, 191, 36, 0.06),
+          transparent
+        );
+      }
+      .callout.cool {
+        border-left-color: var(--page);
+        background: linear-gradient(
+          90deg,
+          rgba(52, 211, 153, 0.06),
+          transparent
+        );
+      }
+      .callout .label {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+        display: block;
+        margin-bottom: 6px;
+      }
+      .callout.warn .label {
+        color: var(--warning);
+      }
+      .callout.hot .label {
+        color: var(--hot);
+      }
+      .callout.cool .label {
+        color: var(--page);
+      }
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+
+      .codeblock {
+        margin: 24px 0;
+        background: var(--bg-code);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .codeblock .head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 14px;
+        background: rgba(125, 211, 252, 0.05);
+        border-bottom: 1px solid var(--border-soft);
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--fg-dim);
+      }
+      .codeblock .head .file {
+        color: var(--accent-2);
+      }
+      .codeblock .head .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        background: var(--fg-faint);
+      }
+      .codeblock .head .dot.r {
+        background: #ff5f56;
+      }
+      .codeblock .head .dot.y {
+        background: #ffbd2e;
+      }
+      .codeblock .head .dot.g {
+        background: #27c93f;
+      }
+      .codeblock pre {
+        margin: 0;
+        padding: 18px 20px;
+        font-family: var(--mono);
+        font-size: 13.2px;
+        line-height: 1.65;
+        color: var(--fg);
+        overflow-x: auto;
+      }
+      .codeblock pre code {
+        font-family: inherit;
+      }
+      .tok-kw {
+        color: var(--kw);
+      }
+      .tok-tn {
+        color: var(--tn);
+      }
+      .tok-fn {
+        color: var(--fn);
+      }
+      .tok-str {
+        color: var(--str);
+      }
+      .tok-num {
+        color: var(--num);
+      }
+      .tok-com {
+        color: var(--com);
+        font-style: italic;
+      }
+      .tok-dec {
+        color: var(--dec);
+      }
+      .tok-self {
+        color: var(--accent-2);
+        font-style: italic;
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin: 28px 0;
+      }
+      .compare.three {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .compare .card {
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-elev);
+      }
+      .compare .card h4 {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--fg-dim);
+        margin: 0 0 12px;
+      }
+      .compare .card p {
+        font-size: 13.8px;
+        margin-bottom: 0;
+        color: var(--fg-dim);
+        line-height: 1.55;
+      }
+      .compare .card .num {
+        font-family: var(--serif);
+        font-size: 30px;
+        font-weight: 300;
+        color: var(--accent-2);
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .tablewrap {
+        margin: 28px 0;
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-elev);
+      }
+      .topic-table {
+        width: 100%;
+        min-width: 860px;
+        border-collapse: collapse;
+      }
+      .topic-table thead th {
+        padding: 14px 16px;
+        text-align: left;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--fg-dim);
+        background: rgba(125, 211, 252, 0.05);
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .topic-table tbody td {
+        padding: 14px 16px;
+        vertical-align: top;
+        border-top: 1px solid var(--border-soft);
+        color: var(--fg-dim);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+      .topic-table tbody tr:first-child td {
+        border-top: none;
+      }
+      .topic-table strong {
+        color: var(--fg);
+      }
+
+      .widget {
+        margin: 34px 0;
+        padding: 26px 28px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background:
+          radial-gradient(
+            circle at 100% 0%,
+            rgba(125, 211, 252, 0.05),
+            transparent 50%
+          ),
+          var(--bg-elev);
+      }
+      .widget .wlabel {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 6px;
+      }
+      .widget .wtitle {
+        font-family: var(--serif);
+        font-size: 24px;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        margin-bottom: 18px;
+        color: var(--fg);
+      }
+      .widget .wtitle em {
+        color: var(--accent-2);
+        font-style: italic;
+      }
+      .widget .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px 22px;
+        margin-bottom: 18px;
+        align-items: center;
+      }
+      .widget .controls .ctrl {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 130px;
+      }
+      .widget .controls label {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--fg-dim);
+        letter-spacing: 0.04em;
+      }
+      .widget .controls label .v {
+        color: var(--accent-2);
+        font-weight: 700;
+      }
+      .widget input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        width: 160px;
+        height: 18px;
+      }
+      .widget input[type="range"]::-webkit-slider-runnable-track {
+        height: 3px;
+        background: var(--border);
+        border-radius: 2px;
+      }
+      .widget input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--bg);
+        margin-top: -5px;
+        cursor: pointer;
+      }
+      .widget input[type="range"]::-moz-range-track {
+        height: 3px;
+        background: var(--border);
+        border-radius: 2px;
+      }
+      .widget input[type="range"]::-moz-range-thumb {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--bg);
+        cursor: pointer;
+      }
+      .widget button {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        background: transparent;
+        color: var(--accent-2);
+        border: 1px solid var(--accent);
+        border-radius: 4px;
+        padding: 6px 13px;
+        cursor: pointer;
+      }
+      .widget button.tab {
+        background: var(--bg-soft);
+        border-color: var(--border);
+        color: var(--fg-dim);
+      }
+      .widget button.tab.active {
+        background: var(--accent);
+        color: var(--bg);
+        border-color: var(--accent);
+      }
+      .widget select {
+        background: var(--bg-soft);
+        color: var(--fg);
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+      }
+      .widget .svgwrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+      .widget svg {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      .widget .legend {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--fg-dim);
+      }
+      .widget .legend .swatch {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      .widget .commentary {
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: var(--bg-soft);
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--fg-dim);
+        font-family: var(--mono);
+        line-height: 1.55;
+        border-left: 2px solid var(--accent);
+        min-height: 1.6em;
+      }
+
+      .hero {
+        padding: 80px 0 40px;
+      }
+      .hero .eyebrow {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 22px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .hero .eyebrow .pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(125, 211, 252, 0.55);
+        }
+        70% {
+          box-shadow: 0 0 0 12px rgba(125, 211, 252, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(125, 211, 252, 0);
+        }
+      }
+      .hero h1 {
+        font-family: var(--serif);
+        font-weight: 200;
+        font-size: clamp(50px, 9vw, 96px);
+        line-height: 0.96;
+        letter-spacing: -0.035em;
+        margin: 0 0 24px;
+        color: var(--fg);
+      }
+      .hero h1 em {
+        font-style: italic;
+        color: var(--accent-2);
+        font-weight: 300;
+      }
+      .hero .sub {
+        font-family: var(--serif);
+        font-size: 22px;
+        line-height: 1.5;
+        color: var(--fg-dim);
+        max-width: 60ch;
+        margin-bottom: 36px;
+      }
+      .hero .meta {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--fg-faint);
+      }
+      .hero .meta div span {
+        display: block;
+        color: var(--fg-dim);
+        margin-top: 3px;
+      }
+
+      footer {
+        margin-top: 80px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border-soft);
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--fg-faint);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .quiz {
+        margin: 28px 0;
+        padding: 22px 24px;
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+        background: var(--bg-elev);
+      }
+      .quiz .qlabel {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--hot);
+        margin-bottom: 8px;
+      }
+      .quiz .q {
+        font-size: 15.5px;
+        margin-bottom: 14px;
+        color: var(--fg);
+      }
+      .quiz .opts {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .quiz .opt {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 14px;
+        border: 1px solid var(--border-soft);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13.5px;
+        color: var(--fg-dim);
+        transition: all 0.15s;
+        font-family: var(--mono);
+      }
+      .quiz .opt:hover {
+        border-color: var(--accent);
+        color: var(--fg);
+      }
+      .quiz .opt.correct {
+        border-color: var(--success);
+        color: var(--success);
+        background: rgba(74, 222, 128, 0.06);
+      }
+      .quiz .opt.wrong {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: rgba(248, 113, 113, 0.06);
+      }
+      .quiz .explain {
+        margin-top: 12px;
+        font-size: 13.5px;
+        color: var(--fg-dim);
+        display: none;
+        border-top: 1px solid var(--border-soft);
+        padding-top: 12px;
+      }
+      .quiz.answered .explain {
+        display: block;
+      }
+
+      @media (max-width: 900px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+        aside.toc {
+          position: relative;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid var(--border-soft);
+          padding: 22px;
+        }
+        aside.toc nav {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        aside.toc nav .subnav {
+          margin-left: 18px;
+        }
+        main {
+          padding: 40px 22px 80px;
+        }
+        .compare,
+        .compare.three {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="toc">
+        <div class="brand"><em>KV cache,</em><br />paged attention</div>
+        <div class="tag">Inference systems · GOS Lab</div>
+        <nav id="nav">
+          <a href="#intro"><span class="n">00</span><span>Overview</span></a>
+          <a href="#serving"
+            ><span class="n">01</span><span>Serving mental model</span></a
+          >
+          <a href="#kvcache"
+            ><span class="n">02</span><span>KV caching</span></a
+          >
+          <div class="subnav">
+            <a class="subitem" href="#kv-step"
+              ><span class="n">02.1</span><span>Decode step</span></a
+            >
+            <a class="subitem" href="#kv-bytes"
+              ><span class="n">02.2</span><span>Memory math</span></a
+            >
+          </div>
+          <a href="#prefill"
+            ><span class="n">03</span><span>Prefill vs decode</span></a
+          >
+          <a href="#gqa"
+            ><span class="n">04</span><span>GQA / MQA economics</span></a
+          >
+          <a href="#paged"
+            ><span class="n">05</span><span>PagedAttention</span></a
+          >
+          <div class="subnav">
+            <a class="subitem" href="#paged-blocks"
+              ><span class="n">05.1</span><span>Block tables</span></a
+            >
+            <a class="subitem" href="#paged-frag"
+              ><span class="n">05.2</span><span>Fragmentation</span></a
+            >
+            <a class="subitem" href="#paged-kernel"
+              ><span class="n">05.3</span><span>Kernel path</span></a
+            >
+          </div>
+          <a href="#batching"
+            ><span class="n">06</span><span>Continuous batching</span></a
+          >
+          <a href="#prefix"
+            ><span class="n">07</span><span>Prefix caching</span></a
+          >
+          <a href="#longctx"
+            ><span class="n">08</span><span>Long-context tricks</span></a
+          >
+          <a href="#stack"
+            ><span class="n">09</span><span>Serving stack</span></a
+          >
+        </nav>
+      </aside>
+
+      <main>
+        <section class="hero" id="intro">
+          <div class="eyebrow">
+            <span class="pulse"></span> Lecture notes · DAS410108
+          </div>
+          <h1>KV caching,<br /><em>paged attention, and serving.</em></h1>
+          <p class="sub">
+            A systems-first tutorial on what actually happens after a
+            transformer is trained: how decode-time attention reuses memory, why
+            the KV cache dominates long-context inference, and how modern
+            engines keep GPUs busy without drowning in fragmentation.
+          </p>
+          <div class="meta">
+            <div>Author<span>L. Meneghetti</span></div>
+            <div>Audience<span>Graduate ML / systems</span></div>
+            <div>Focus<span>Inference-time attention</span></div>
+            <div>Length<span>9 sections · ~60 min</span></div>
+          </div>
+        </section>
+
+        <section>
+          <div class="marker">Section 00 · Why this page exists</div>
+          <h2>
+            Training taught you <em>attention</em>.<br />Serving teaches you
+            <em>memory</em>.
+          </h2>
+          <p class="lede">
+            During training, we talk about expressive power, optimization, and
+            attention patterns. During deployment, the bottlenecks shift. The
+            model weights sit there; the requests move; and the thing that keeps
+            growing token by token is the <strong>KV cache</strong>.
+          </p>
+          <p>
+            This page is about that second world. Not "what is a transformer?"
+            but "why is time-to-first-token high?", "why does batch size fall as
+            the conversation gets longer?", "why does GQA matter so much for
+            serving?", and "what exactly does vLLM mean by
+            <em>PagedAttention</em>?"
+          </p>
+
+          <div class="compare three">
+            <div class="card">
+              <h4>What you'll build</h4>
+              <p>
+                A decode-step mental model, a KV-cache memory calculator, a
+                paged-allocation diagram, a continuous-batching scheduler
+                visualization, and a prefix-caching reuse model.
+              </p>
+            </div>
+            <div class="card">
+              <h4>What you'll understand</h4>
+              <p>
+                Why decoding is memory-bound, why cache bytes scale with
+                <code class="inl">kv_heads</code> not query heads, why block
+                tables beat contiguous buffers, and how serving stacks combine
+                allocation and scheduling tricks.
+              </p>
+            </div>
+            <div class="card">
+              <h4>What you'll see</h4>
+              <p>
+                Five interactive widgets: cache growth, prefill-vs-decode work,
+                paged allocation, continuous batching, and prefix reuse. Each
+                one is there to make a systems intuition stick.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="serving">
+          <div class="marker">Section 01 · Mental model</div>
+          <h2>
+            Serving a causal LM — <em>one new query, old keys and values.</em>
+          </h2>
+          <p class="lede">
+            At generation step <em>t</em>, a decoder-only transformer does
+            <strong>not</strong> recompute attention for the whole sequence from
+            scratch. It computes a new query for the newest token, compares that
+            query against all previously stored keys, mixes the stored values,
+            and appends one more key/value pair to memory.
+          </p>
+
+          <p>
+            That change of perspective is the entire point of KV caching. During
+            training we materialize many query rows at once. During inference,
+            after the prompt has been prefetched, the hot loop is narrower: one
+            token arrives, one token leaves, and the history is reused.
+          </p>
+
+          <div class="compare">
+            <div class="card">
+              <h4>Without cache</h4>
+              <p>
+                Every decode step would rerun projections and attention over the
+                entire prefix seen so far. Correct, but wasteful: the model
+                would keep recomputing identical old keys and values.
+              </p>
+            </div>
+            <div class="card">
+              <h4>With cache</h4>
+              <p>
+                Old <span class="kbd-k">K</span> and
+                <span class="kbd-v">V</span> tensors are stored once per layer.
+                Each new step computes only the fresh row, attends over the
+                stored history, then appends the row to the cache.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout cool">
+            <span class="label">The serving mindset</span>
+            <p>
+              Think of autoregressive inference as a stateful program. The model
+              weights are immutable. The request state is the prompt prefix plus
+              the per-layer KV cache. Most serving tricks are really different
+              ways of managing that state efficiently.
+            </p>
+          </div>
+        </section>
+
+        <section id="kvcache">
+          <div class="marker">Section 02 · Reuse</div>
+          <h2>KV caching — <em>save the history, append the frontier.</em></h2>
+          <p class="lede">
+            The cache stores the per-layer key and value tensors for all tokens
+            seen so far. On the next token, the model computes a single new row
+            of
+            <span class="kbd-k">K</span> and <span class="kbd-v">V</span>,
+            concatenates them to the cache, and reuses the rest.
+          </p>
+
+          <h3 id="kv-step">The decode step, written explicitly</h3>
+          <p>
+            For the newest token, attention at one layer reduces to a single
+            query row looking back over the cached history:
+          </p>
+
+          <div class="eq">
+            \[ o_t = \operatorname{softmax}\!\left(\frac{q_t
+            K_{1:t-1}^{\top}}{\sqrt d}\right) V_{1:t-1} \]
+            <span class="lbl">Eq. 1 · one-token decode with a cache</span>
+          </div>
+
+          <p>
+            The expensive part is not the math on paper. It is the fact that for
+            every new token, every layer must read a longer and longer cache
+            from high-bandwidth memory. This is why long-context serving often
+            turns into a memory-traffic problem long before it becomes a raw
+            FLOP problem.
+          </p>
+
+          <div class="codeblock">
+            <div class="head">
+              <span
+                ><span class="dot r"></span><span class="dot y"></span
+                ><span class="dot g"></span>
+                <span class="file">decode_step.py</span></span
+              ><span>pedagogical one-layer cache append</span>
+            </div>
+            <pre><code><span class="tok-kw">def</span> <span class="tok-fn">decode_step</span>(x_t, cache_k, cache_v, W_q, W_k, W_v):
+    <span class="tok-com"># x_t: (B, d_model) newest token embedding</span>
+    <span class="tok-com"># cache_k, cache_v: (B, T_prev, d_head) for one head in one layer</span>
+
+    q_t = <span class="tok-fn">W_q</span>(x_t)[:, <span class="tok-kw">None</span>, :]                          <span class="tok-com"># (B, 1, d_head)</span>
+    k_t = <span class="tok-fn">W_k</span>(x_t)[:, <span class="tok-kw">None</span>, :]
+    v_t = <span class="tok-fn">W_v</span>(x_t)[:, <span class="tok-kw">None</span>, :]
+
+    K = torch.<span class="tok-fn">cat</span>([cache_k, k_t], dim=<span class="tok-num">1</span>)              <span class="tok-com"># append to history</span>
+    V = torch.<span class="tok-fn">cat</span>([cache_v, v_t], dim=<span class="tok-num">1</span>)
+
+    scores = q_t @ K.<span class="tok-fn">transpose</span>(-<span class="tok-num">2</span>, -<span class="tok-num">1</span>) / math.<span class="tok-fn">sqrt</span>(q_t.size(-<span class="tok-num">1</span>))
+    probs  = F.<span class="tok-fn">softmax</span>(scores, dim=-<span class="tok-num">1</span>)
+    out_t  = probs @ V
+    <span class="tok-kw">return</span> out_t, K, V</code></pre>
+          </div>
+
+          <div class="widget" id="decode-widget">
+            <div class="wlabel">Interactive · decode animation</div>
+            <div class="wtitle">One query, growing <em>K/V history</em></div>
+            <div class="controls">
+              <button id="dec-play">&#9654; Play</button>
+              <button id="dec-step">Step →</button>
+              <button id="dec-reset">Reset</button>
+              <div class="ctrl" style="min-width: 0">
+                <label>speed</label>
+                <select id="dec-speed">
+                  <option value="900">slow</option>
+                  <option value="480" selected>normal</option>
+                  <option value="200">fast</option>
+                </select>
+              </div>
+            </div>
+            <div class="svgwrap">
+              <svg id="decode-svg" viewBox="0 0 800 340"></svg>
+            </div>
+            <div class="legend">
+              <span
+                ><span class="swatch" style="background: var(--query)"></span
+                >query q_t (new token)</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--key)"></span
+                >cached keys K</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--value)"></span
+                >cached values V</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--output)"></span
+                >output o_t</span
+              >
+            </div>
+            <div class="commentary" id="decode-cmt"></div>
+          </div>
+
+          <div class="quiz" data-correct="2">
+            <div class="qlabel">Check your understanding</div>
+            <div class="q">
+              In a causal decoder at long context, which quantity keeps growing
+              <em>per request</em> as more tokens are generated?
+            </div>
+            <div class="opts">
+              <div class="opt" data-i="0">Model weights</div>
+              <div class="opt" data-i="1">The number of layers</div>
+              <div class="opt" data-i="2">The KV cache</div>
+              <div class="opt" data-i="3">The query head count</div>
+            </div>
+            <div class="explain">
+              The weights are fixed once the model is loaded. What grows with
+              request length is the cache of old keys and values that every
+              future decode step must read.
+            </div>
+          </div>
+
+          <h3 id="kv-bytes">How many bytes are we talking about?</h3>
+          <p>
+            One cached token stores both keys and values, for every layer, for
+            every KV head. A good back-of-the-envelope formula is:
+          </p>
+
+          <div class="eq">
+            \[ \text{KV bytes} \approx B \cdot L \cdot T \cdot 2 \cdot
+            H_{\mathrm{kv}} \cdot d_{\mathrm{head}} \cdot s \]
+            <span class="lbl"
+              >Eq. 2 · cache size for a batch of active sequences</span
+            >
+          </div>
+
+          <p>
+            Here <em>B</em> is active batch size, <em>L</em> is layer count,
+            <em>T</em> is tokens already cached, <em>H<sub>kv</sub></em> is the
+            number of key/value heads, and <em>s</em> is bytes per element. The
+            factor of 2 is because you store both
+            <span class="kbd-k">K</span> and <span class="kbd-v">V</span>.
+          </p>
+
+          <div class="widget" id="kvmem-widget">
+            <div class="wlabel">Interactive · memory growth</div>
+            <div class="wtitle">KV cache size is a <em>systems budget</em></div>
+            <div class="controls">
+              <div class="ctrl">
+                <label
+                  >layers = <span class="v" id="kvm-layers-v">32</span></label
+                >
+                <input
+                  type="range"
+                  min="16"
+                  max="80"
+                  step="8"
+                  value="32"
+                  id="kvm-layers"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >query heads = <span class="v" id="kvm-hq-v">32</span></label
+                >
+                <input
+                  type="range"
+                  min="8"
+                  max="64"
+                  step="8"
+                  value="32"
+                  id="kvm-hq"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >KV heads = <span class="v" id="kvm-hkv-v">8</span></label
+                >
+                <input
+                  type="range"
+                  min="1"
+                  max="64"
+                  step="1"
+                  value="8"
+                  id="kvm-hkv"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >head dim = <span class="v" id="kvm-d-v">128</span></label
+                >
+                <input
+                  type="range"
+                  min="64"
+                  max="192"
+                  step="32"
+                  value="128"
+                  id="kvm-d"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >tokens / request =
+                  <span class="v" id="kvm-t-v">4096</span></label
+                >
+                <input
+                  type="range"
+                  min="512"
+                  max="16384"
+                  step="512"
+                  value="4096"
+                  id="kvm-t"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >active batch = <span class="v" id="kvm-b-v">8</span></label
+                >
+                <input
+                  type="range"
+                  min="1"
+                  max="32"
+                  step="1"
+                  value="8"
+                  id="kvm-b"
+                />
+              </div>
+              <div class="ctrl">
+                <label>dtype</label>
+                <select id="kvm-dtype">
+                  <option value="2">fp16 / bf16</option>
+                  <option value="1">fp8</option>
+                  <option value="0.5">int4 packed</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap">
+              <button class="tab active" data-kvm-tab="bars" id="kvm-tab-bars">
+                Snapshot
+              </button>
+              <button class="tab" data-kvm-tab="curve" id="kvm-tab-curve">
+                Growth curve
+              </button>
+            </div>
+            <div class="svgwrap" id="kvm-bars-panel">
+              <svg id="kvmem-svg" viewBox="0 0 800 290"></svg>
+            </div>
+            <div class="svgwrap" id="kvm-curve-panel" style="display: none">
+              <svg id="kvmem-curve-svg" viewBox="0 0 800 290"></svg>
+            </div>
+            <div class="legend">
+              <span
+                ><span class="swatch" style="background: var(--cache)"></span
+                >current config</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--accent-2)"></span
+                >MHA baseline</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--page)"></span>MQA
+                floor</span
+              >
+            </div>
+            <div class="commentary" id="kvmem-cmt"></div>
+          </div>
+        </section>
+
+        <section id="prefill">
+          <div class="marker">Section 03 · Throughput shift</div>
+          <h2>
+            Prefill vs decode — <em>the bottleneck flips after the prompt.</em>
+          </h2>
+          <p class="lede">
+            Prefill consumes the input prompt and builds the cache. Decode uses
+            that cache to emit output tokens one by one. The first phase is a
+            big, parallel matrix workload. The second is a skinny, serial loop
+            with ever larger memory reads.
+          </p>
+
+          <p>
+            This is why time-to-first-token and tokens-per-second are often
+            governed by different mechanisms. Prefill likes large GEMMs and high
+            arithmetic intensity. Decode likes low-overhead scheduling and
+            careful cache management.
+          </p>
+
+          <div class="eq">
+            \[ \text{work without cache} \;\approx\; \sum_{t=1}^{G}
+            O\!\bigl((P+t)^2\bigr), \qquad \text{work with cache} \;\approx\;
+            O(P^2) + \sum_{t=1}^{G} O(P+t) \]
+            <span class="lbl"
+              >Eq. 3 · why caching changes decode from repeated quadratic
+              recompute to incremental reuse</span
+            >
+          </div>
+
+          <div class="widget" id="prefill-widget">
+            <div class="wlabel">Interactive · phase change</div>
+            <div class="wtitle">
+              Prefill is <em>wide</em>; decode is <em>long</em>
+            </div>
+            <div class="controls">
+              <div class="ctrl">
+                <label
+                  >prompt tokens =
+                  <span class="v" id="pf-p-v">2048</span></label
+                >
+                <input
+                  type="range"
+                  min="256"
+                  max="8192"
+                  step="256"
+                  value="2048"
+                  id="pf-p"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >generated tokens =
+                  <span class="v" id="pf-g-v">256</span></label
+                >
+                <input
+                  type="range"
+                  min="32"
+                  max="1024"
+                  step="32"
+                  value="256"
+                  id="pf-g"
+                />
+              </div>
+            </div>
+            <div class="svgwrap">
+              <svg id="prefill-svg" viewBox="0 0 800 320"></svg>
+            </div>
+            <div class="commentary" id="prefill-cmt"></div>
+          </div>
+
+          <div class="callout hot">
+            <span class="label">A common mistake</span>
+            <p>
+              People often say "inference is just a forward pass." True, but
+              misleading. Serving performance is not about one forward pass in
+              isolation. It is about a long-lived stateful process that
+              alternates a prompt build-up phase with thousands or millions of
+              one-token updates.
+            </p>
+          </div>
+        </section>
+
+        <section id="gqa">
+          <div class="marker">Section 04 · Head economics</div>
+          <h2>GQA and MQA — <em>fewer KV heads, smaller serving bill.</em></h2>
+          <p class="lede">
+            During training, grouped-query attention may sound like a
+            representational design choice. During serving, it is also a direct
+            memory optimization. The cache scales with
+            <strong>KV heads</strong>, not with the number of query heads.
+          </p>
+
+          <div class="compare three">
+            <div class="card">
+              <h4>MHA</h4>
+              <p>
+                Every query head gets its own key and value head. Best symmetry,
+                worst cache footprint.
+              </p>
+            </div>
+            <div class="card">
+              <h4>GQA</h4>
+              <p>
+                Several query heads share one KV head group. This is the modern
+                compromise in many deployed LLMs.
+              </p>
+            </div>
+            <div class="card">
+              <h4>MQA</h4>
+              <p>
+                All query heads share one key head and one value head. Minimum
+                KV memory, but the strongest sharing assumption.
+              </p>
+            </div>
+          </div>
+
+          <p>
+            If a model has 32 query heads and only 8 KV heads, the cache is
+            roughly one quarter of the MHA baseline, everything else equal. That
+            reduction flows through the whole serving stack: more active
+            requests fit, larger contexts fit, and bandwidth pressure during
+            decode falls.
+          </p>
+
+          <div class="codeblock">
+            <div class="head">
+              <span
+                ><span class="dot r"></span><span class="dot y"></span
+                ><span class="dot g"></span>
+                <span class="file">gqa_shapes.py</span></span
+              ><span>the cache follows KV heads</span>
+            </div>
+            <pre><code><span class="tok-kw">def</span> <span class="tok-fn">kv_cache_shape</span>(batch, layers, tokens, kv_heads, head_dim):
+    <span class="tok-com"># one cache tensor for keys, one for values</span>
+    K = (batch, layers, tokens, kv_heads, head_dim)
+    V = (batch, layers, tokens, kv_heads, head_dim)
+    <span class="tok-kw">return</span> K, V
+
+
+<span class="tok-com"># query head count affects compute, but cache bytes follow kv_heads:</span>
+<span class="tok-com"># bytes ~ 2 * batch * layers * tokens * kv_heads * head_dim * dtype_size</span></code></pre>
+          </div>
+
+          <div class="widget" id="gqa-widget">
+            <div class="wlabel">Interactive · head sharing</div>
+            <div class="wtitle">MHA / GQA / MQA — <em>who shares what</em></div>
+            <div class="controls">
+              <div class="ctrl">
+                <label
+                  >query heads = <span class="v" id="gqa-hq-v">8</span></label
+                >
+                <input
+                  type="range"
+                  min="4"
+                  max="16"
+                  step="4"
+                  value="8"
+                  id="gqa-hq"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >KV heads = <span class="v" id="gqa-hkv-v">2</span></label
+                >
+                <input
+                  type="range"
+                  min="1"
+                  max="16"
+                  step="1"
+                  value="2"
+                  id="gqa-hkv"
+                />
+              </div>
+            </div>
+            <div class="svgwrap">
+              <svg id="gqa-svg" viewBox="0 0 800 300"></svg>
+            </div>
+            <div class="legend">
+              <span
+                ><span class="swatch" style="background: var(--query)"></span
+                >query head</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--key)"></span>key
+                head (cached)</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--value)"></span
+                >value head (cached)</span
+              >
+            </div>
+            <div class="commentary" id="gqa-cmt"></div>
+          </div>
+
+          <div class="callout">
+            <span class="label">Rule of thumb</span>
+            <p>
+              When someone tells you a model serves well at long context, ask
+              how many KV heads it has. Architectural choices that look small on
+              paper often dominate the deployed memory budget.
+            </p>
+          </div>
+        </section>
+
+        <section id="paged">
+          <div class="marker">Section 05 · Memory manager</div>
+          <h2>PagedAttention — <em>virtual memory for the KV cache.</em></h2>
+          <p class="lede">
+            A naive engine tries to store each request's cache in one contiguous
+            chunk. That is simple, but it fragments badly as requests of
+            different lengths arrive and finish. PagedAttention breaks each
+            request into fixed size blocks and keeps a small block table that
+            maps logical blocks to physical ones.
+          </p>
+
+          <h3 id="paged-blocks">Logical tokens, physical blocks</h3>
+          <p>
+            The idea is operating-systems flavored. A request thinks in logical
+            token positions. The allocator thinks in uniform cache pages. The
+            block table bridges the two: "logical block 0 lives in physical
+            block 12, logical block 1 lives in physical block 4," and so on.
+          </p>
+
+          <h3 id="paged-frag">Why this beats contiguous buffers</h3>
+          <p>
+            With contiguous allocation, a new request may fail to fit even when
+            the total free memory is sufficient, simply because the free space
+            is scattered. With fixed-size blocks, scattered free blocks are
+            still useful. The allocator cares about <em>how many</em> blocks are
+            free, not whether they form one uninterrupted run.
+          </p>
+
+          <div class="widget" id="paged-widget">
+            <div class="wlabel">Interactive · allocation</div>
+            <div class="wtitle">Contiguous memory <em>vs</em> paged blocks</div>
+            <div class="controls">
+              <div class="ctrl">
+                <label
+                  >block size =
+                  <span class="v" id="pg-b-v">16</span> tokens</label
+                >
+                <input
+                  type="range"
+                  min="8"
+                  max="32"
+                  step="4"
+                  value="16"
+                  id="pg-b"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >new request length =
+                  <span class="v" id="pg-t-v">48</span> tokens</label
+                >
+                <input
+                  type="range"
+                  min="8"
+                  max="112"
+                  step="8"
+                  value="48"
+                  id="pg-t"
+                />
+              </div>
+            </div>
+            <div class="svgwrap">
+              <svg id="paged-svg" viewBox="0 0 800 420"></svg>
+            </div>
+            <div class="legend">
+              <span
+                ><span class="swatch" style="background: #334155"></span>free
+                block</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--cache)"></span
+                >existing request</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--page)"></span>new
+                request (paged)</span
+              >
+              <span
+                ><span class="swatch" style="background: var(--danger)"></span
+                >contiguous failure</span
+              >
+            </div>
+            <div class="commentary" id="paged-cmt"></div>
+          </div>
+
+          <h3 id="paged-kernel">
+            The attention kernel still has to follow the mapping
+          </h3>
+          <p>
+            PagedAttention is not just an allocator. The attention kernel must
+            read the block table, walk the physical blocks in the right order,
+            and gather the right key/value tiles for each sequence in the batch.
+            The logical sequence looks contiguous to the model, even though the
+            memory is not.
+          </p>
+
+          <div class="codeblock">
+            <div class="head">
+              <span
+                ><span class="dot r"></span><span class="dot y"></span
+                ><span class="dot g"></span>
+                <span class="file">paged_attention_sketch.py</span></span
+              ><span>conceptual block-table traversal</span>
+            </div>
+            <pre><code><span class="tok-kw">def</span> <span class="tok-fn">paged_attention_step</span>(q_t, K_pages, V_pages, block_table, seqlen, block_size):
+    logical_blocks = math.<span class="tok-fn">ceil</span>(seqlen / block_size)
+    phys = block_table[:logical_blocks]                         <span class="tok-com"># map logical -&gt; physical</span>
+
+    K_parts, V_parts = [], []
+    <span class="tok-kw">for</span> b <span class="tok-kw">in</span> phys:
+        K_parts.<span class="tok-fn">append</span>(K_pages[b])
+        V_parts.<span class="tok-fn">append</span>(V_pages[b])
+
+    K = torch.<span class="tok-fn">cat</span>(K_parts, dim=<span class="tok-num">0</span>)[:seqlen]
+    V = torch.<span class="tok-fn">cat</span>(V_parts, dim=<span class="tok-num">0</span>)[:seqlen]
+
+    scores = q_t @ K.<span class="tok-fn">transpose</span>(-<span class="tok-num">2</span>, -<span class="tok-num">1</span>)
+    probs = F.<span class="tok-fn">softmax</span>(scores, dim=-<span class="tok-num">1</span>)
+    <span class="tok-kw">return</span> probs @ V</code></pre>
+          </div>
+
+          <div class="callout cool">
+            <span class="label">The key systems win</span>
+            <p>
+              Paged allocation makes it far easier to support continuous
+              batching, because requests can grow incrementally without
+              demanding that the allocator reserve one giant contiguous region
+              up front.
+            </p>
+          </div>
+        </section>
+
+        <section id="batching">
+          <div class="marker">Section 06 · Scheduler</div>
+          <h2>
+            Continuous batching —
+            <em>schedule at the token step, not at the request.</em>
+          </h2>
+          <p class="lede">
+            Static batching waits for a whole group of requests to finish before
+            the next group enters. Continuous batching, also called
+            iteration-level scheduling, admits and retires requests every decode
+            step. That sounds like a small change. In practice it is a huge
+            utilization change.
+          </p>
+
+          <p>
+            Generation lengths are variable. One request may stop after 12
+            tokens, another after 300. If you force them to stay together until
+            the longest one finishes, GPU slots go idle. Continuous batching
+            fills those holes immediately.
+          </p>
+
+          <div class="widget" id="sched-widget">
+            <div class="wlabel">Interactive · scheduling</div>
+            <div class="wtitle">
+              Static batches waste slots; continuous batches
+              <em>refill them</em>
+            </div>
+            <div class="controls">
+              <div class="ctrl">
+                <label
+                  >GPU slots = <span class="v" id="sch-slots-v">3</span></label
+                >
+                <input
+                  type="range"
+                  min="2"
+                  max="5"
+                  step="1"
+                  value="3"
+                  id="sch-slots"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >length spread =
+                  <span class="v" id="sch-spread-v">4</span></label
+                >
+                <input
+                  type="range"
+                  min="0"
+                  max="8"
+                  step="1"
+                  value="4"
+                  id="sch-spread"
+                />
+              </div>
+              <button id="sch-play">&#9654; Play</button>
+              <button id="sch-step">Step →</button>
+              <button id="sch-reset">Reset</button>
+            </div>
+            <div class="svgwrap">
+              <svg id="sched-svg" viewBox="0 0 800 380"></svg>
+            </div>
+            <div class="commentary" id="sched-cmt"></div>
+          </div>
+
+          <div class="codeblock">
+            <div class="head">
+              <span
+                ><span class="dot r"></span><span class="dot y"></span
+                ><span class="dot g"></span>
+                <span class="file">scheduler_loop.py</span></span
+              ><span>iteration-level serving loop</span>
+            </div>
+            <pre><code><span class="tok-kw">while</span> waiting_queue <span class="tok-kw">or</span> active_batch:
+    <span class="tok-com"># retire completed sequences</span>
+    active_batch = [req <span class="tok-kw">for</span> req <span class="tok-kw">in</span> active_batch <span class="tok-kw">if</span> <span class="tok-kw">not</span> req.done]
+
+    <span class="tok-com"># admit new work into any freed slot</span>
+    <span class="tok-kw">while</span> <span class="tok-fn">len</span>(active_batch) &lt; max_slots <span class="tok-kw">and</span> waiting_queue:
+        active_batch.<span class="tok-fn">append</span>(waiting_queue.<span class="tok-fn">pop</span>(<span class="tok-num">0</span>))
+
+    <span class="tok-com"># run exactly one decode iteration for everyone active</span>
+    logits = <span class="tok-fn">model_decode_one_token</span>(active_batch)
+    <span class="tok-fn">sample_and_append</span>(active_batch, logits)</code></pre>
+          </div>
+
+          <div class="callout warn">
+            <span class="label">Scheduler realism</span>
+            <p>
+              Once you allow sequences to enter and leave every iteration,
+              batching, allocation, and stop conditions become tightly coupled.
+              This is why serving engines look more like operating systems than
+              like notebook inference scripts.
+            </p>
+          </div>
+        </section>
+
+        <section id="prefix">
+          <div class="marker">Section 07 · Reuse across requests</div>
+          <h2>
+            Prefix caching —
+            <em>if the prompt prefix is identical, do not pay twice.</em>
+          </h2>
+          <p class="lede">
+            Many workloads repeat the same system prompt, the same long document
+            header, or the same few-shot examples across many requests. Prefix
+            caching reuses the already-built KV cache for that shared prefix
+            instead of rebuilding it every time.
+          </p>
+
+          <p>
+            The important word is <strong>identical</strong>. This is not fuzzy
+            semantic matching. It is exact token-prefix reuse. If two requests
+            share the first 1200 tokens byte-for-byte after tokenization, the
+            second one can skip recomputing those 1200 tokens and begin from the
+            cached state.
+          </p>
+
+          <div class="widget" id="prefix-widget">
+            <div class="wlabel">Interactive · reuse</div>
+            <div class="wtitle">
+              Shared prompts turn into <em>saved prefill work</em>
+            </div>
+            <div class="controls">
+              <div class="ctrl">
+                <label
+                  >shared prefix =
+                  <span class="v" id="pr-p-v">1024</span> tokens</label
+                >
+                <input
+                  type="range"
+                  min="128"
+                  max="4096"
+                  step="128"
+                  value="1024"
+                  id="pr-p"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >suffix / branch =
+                  <span class="v" id="pr-s-v">192</span> tokens</label
+                >
+                <input
+                  type="range"
+                  min="32"
+                  max="512"
+                  step="32"
+                  value="192"
+                  id="pr-s"
+                />
+              </div>
+              <div class="ctrl">
+                <label
+                  >requests sharing prefix =
+                  <span class="v" id="pr-n-v">4</span></label
+                >
+                <input
+                  type="range"
+                  min="2"
+                  max="8"
+                  step="1"
+                  value="4"
+                  id="pr-n"
+                />
+              </div>
+            </div>
+            <div class="svgwrap">
+              <svg id="prefix-svg" viewBox="0 0 800 310"></svg>
+            </div>
+            <div class="commentary" id="prefix-cmt"></div>
+          </div>
+
+          <div class="codeblock">
+            <div class="head">
+              <span
+                ><span class="dot r"></span><span class="dot y"></span
+                ><span class="dot g"></span>
+                <span class="file">prefix_cache.py</span></span
+              ><span>exact prefix reuse</span>
+            </div>
+            <pre><code><span class="tok-kw">def</span> <span class="tok-fn">lookup_prefix_cache</span>(token_ids, block_hash_table):
+    matched_blocks = []
+    parent = <span class="tok-kw">None</span>
+    <span class="tok-kw">for</span> block_tokens <span class="tok-kw">in</span> <span class="tok-fn">chunk</span>(token_ids, block_size):
+        h = <span class="tok-fn">hash</span>((parent, <span class="tok-fn">tuple</span>(block_tokens)))
+        <span class="tok-kw">if</span> h <span class="tok-kw">not</span> <span class="tok-kw">in</span> block_hash_table:
+            <span class="tok-kw">break</span>
+        matched_blocks.<span class="tok-fn">append</span>(block_hash_table[h])
+        parent = h
+    <span class="tok-kw">return</span> matched_blocks</code></pre>
+          </div>
+
+          <div class="callout hot">
+            <span class="label">Operational subtlety</span>
+            <p>
+              Prefix caching helps only when prefix equality happens on the
+              <em>tokenized</em> input seen by the model. A tiny difference in
+              whitespace, tool schema order, or hidden templating can destroy
+              cache hits.
+            </p>
+          </div>
+        </section>
+
+        <section id="longctx">
+          <div class="marker">Section 08 · Long context</div>
+          <h2>
+            Long-context serving tricks —
+            <em>stretch the cache without drowning in it.</em>
+          </h2>
+          <p class="lede">
+            KV caching is necessary, but not always sufficient. As context
+            grows, modern engines layer on extra tricks: windowed attention,
+            chunked prefill, and KV quantization. Each one targets a different
+            pain point.
+          </p>
+
+          <div class="compare three">
+            <div class="card">
+              <h4>Sliding window</h4>
+              <p>
+                Keep only the recent tail that the model actually attends to.
+                Best when architecture and task both tolerate locality.
+              </p>
+            </div>
+            <div class="card">
+              <h4>Chunked prefill</h4>
+              <p>
+                Break enormous prompts into pieces so prompt ingestion can
+                coexist with decode traffic instead of monopolizing the GPU.
+              </p>
+            </div>
+            <div class="card">
+              <h4>KV quantization</h4>
+              <p>
+                Store cached keys and values in fewer bits to reduce memory
+                footprint and bandwidth, at some accuracy risk.
+              </p>
+            </div>
+          </div>
+
+          <div class="codeblock">
+            <div class="head">
+              <span
+                ><span class="dot r"></span><span class="dot y"></span
+                ><span class="dot g"></span>
+                <span class="file">sliding_window_cache.py</span></span
+              ><span>ring-buffer style tail retention</span>
+            </div>
+            <pre><code><span class="tok-kw">def</span> <span class="tok-fn">append_windowed</span>(cache_k, cache_v, k_t, v_t, window):
+    cache_k = torch.<span class="tok-fn">cat</span>([cache_k, k_t], dim=<span class="tok-num">1</span>)[..., -window:, :]
+    cache_v = torch.<span class="tok-fn">cat</span>([cache_v, v_t], dim=<span class="tok-num">1</span>)[..., -window:, :]
+    <span class="tok-kw">return</span> cache_k, cache_v</code></pre>
+          </div>
+
+          <div class="callout warn">
+            <span class="label">Different tricks solve different problems</span>
+            <p>
+              PagedAttention solves allocation waste. Continuous batching solves
+              scheduler waste. Prefix caching solves repeated prefill waste.
+              Sliding windows and KV quantization solve raw cache size. They
+              complement each other; they are not substitutes.
+            </p>
+          </div>
+        </section>
+
+        <section id="stack">
+          <div class="marker">Section 09 · End-to-end picture</div>
+          <h2>
+            A modern serving stack —
+            <em>allocator, scheduler, cache reuse, and architecture.</em>
+          </h2>
+          <p class="lede">
+            Real deployments rarely rely on one trick. High-throughput engines
+            stack them: smaller KV heads at the model level, paged allocation at
+            the memory level, continuous batching at the scheduler level, and
+            prefix reuse when workloads repeat themselves.
+          </p>
+
+          <div class="tablewrap">
+            <table class="topic-table">
+              <thead>
+                <tr>
+                  <th>Technique</th>
+                  <th>What It Fixes</th>
+                  <th>Best When</th>
+                  <th>Main Cost / Caveat</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>KV caching</strong></td>
+                  <td>Avoids recomputing old keys and values every step</td>
+                  <td>Any autoregressive decode workload</td>
+                  <td>Cache grows with context and must be read every token</td>
+                </tr>
+                <tr>
+                  <td><strong>GQA / MQA</strong></td>
+                  <td>Shrinks per-token cache bytes and decode bandwidth</td>
+                  <td>Long contexts, high concurrency</td>
+                  <td>
+                    Architectural tradeoff; not free to retrofit after training
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>PagedAttention</strong></td>
+                  <td>Reduces fragmentation and enables flexible growth</td>
+                  <td>Variable-length requests under continuous batching</td>
+                  <td>Allocator and kernel become more complex</td>
+                </tr>
+                <tr>
+                  <td><strong>Continuous batching</strong></td>
+                  <td>
+                    Improves GPU utilization under variable output lengths
+                  </td>
+                  <td>Online serving with heterogeneous requests</td>
+                  <td>
+                    Scheduler, stop logic, and allocation interact tightly
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Prefix caching</strong></td>
+                  <td>Skips repeated prefill on identical prompt prefixes</td>
+                  <td>Shared system prompts, repeated document scaffolds</td>
+                  <td>Exact token prefix match required</td>
+                </tr>
+                <tr>
+                  <td><strong>Sliding window / KV quantization</strong></td>
+                  <td>Reduces absolute cache footprint for long contexts</td>
+                  <td>Architectures or workloads tolerant to approximation</td>
+                  <td>Potential quality loss or architectural constraints</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Questions to ask when tokens/sec is disappointing</h3>
+          <p>
+            Are you decode-bound or prefill-bound? Is the cache too large
+            because of MHA? Are requests fragmenting memory? Are short
+            generations sitting idle behind one long response? Are repeated
+            prompts missing cache hits because the prompt template is not
+            stable? Most production issues land in one of those buckets.
+          </p>
+
+          <div class="callout cool">
+            <span class="label">One-line summary</span>
+            <p>
+              Attention explains what the model <em>means</em>. KV caching,
+              paged attention, and scheduling explain what the model
+              <em>costs</em>.
+            </p>
+          </div>
+
+          <footer>
+            <span
+              >DAS410108 · Data-Driven Algorithms for Science and Engineering ·
+              UFSC</span
+            >
+            <span>Compiled with care · v1.0</span>
+          </footer>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const navLinks = document.querySelectorAll("aside.toc nav a");
+      const navGroups = document.querySelectorAll("aside.toc nav .subnav");
+      const sections = Array.from(navLinks).map((a) =>
+        document.querySelector(a.getAttribute("href")),
+      );
+      function syncNav() {
+        const y = window.scrollY + 140;
+        let idx = 0;
+        for (let i = 0; i < sections.length; i++) {
+          if (sections[i] && sections[i].offsetTop <= y) idx = i;
+        }
+        navLinks.forEach((a) => a.classList.remove("active", "active-parent"));
+        navGroups.forEach((g) => g.classList.remove("active-group"));
+        const activeLink = navLinks[idx];
+        if (!activeLink) return;
+        activeLink.classList.add("active");
+        if (activeLink.classList.contains("subitem")) {
+          const group = activeLink.closest(".subnav");
+          const parent = group && group.previousElementSibling;
+          if (group) group.classList.add("active-group");
+          if (parent && parent.matches("a"))
+            parent.classList.add("active-parent");
+        }
+      }
+      window.addEventListener("scroll", syncNav, { passive: true });
+      syncNav();
+
+      document.querySelectorAll(".quiz").forEach((quiz) => {
+        const correct = +quiz.dataset.correct;
+        quiz.querySelectorAll(".opt").forEach((opt) => {
+          opt.addEventListener("click", () => {
+            if (quiz.classList.contains("answered")) return;
+            const i = +opt.dataset.i;
+            quiz.classList.add("answered");
+            if (i === correct) opt.classList.add("correct");
+            else {
+              opt.classList.add("wrong");
+              quiz
+                .querySelector(`.opt[data-i="${correct}"]`)
+                .classList.add("correct");
+            }
+          });
+        });
+      });
+
+      function fmtBytes(bytes) {
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        let v = bytes;
+        let i = 0;
+        while (v >= 1024 && i < units.length - 1) {
+          v /= 1024;
+          i += 1;
+        }
+        return `${v.toFixed(v >= 10 || i === 0 ? 1 : 2)} ${units[i]}`;
+      }
+
+      function esc(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      /* =========================================================
+   Widget — animated decode step
+   ========================================================= */
+      {
+        const svg = document.getElementById("decode-svg");
+        const cmt = document.getElementById("decode-cmt");
+        const playBtn = document.getElementById("dec-play");
+        const stepBtn = document.getElementById("dec-step");
+        const resetBtn = document.getElementById("dec-reset");
+        const speedSel = document.getElementById("dec-speed");
+
+        const MAX_T = 10;
+        let t = 0;
+        let playing = false;
+        let timer = null;
+
+        const TOKEN_LABELS = [
+          "The",
+          "quick",
+          "brown",
+          "fox",
+          "jumps",
+          "over",
+          "the",
+          "lazy",
+          "dog",
+          "→",
+        ];
+
+        function render() {
+          const W = 800,
+            H = 340;
+          const cached = t; // number of tokens already in cache
+          const newTok = Math.min(t, MAX_T - 1);
+
+          // layout constants
+          const kRow = 70;
+          const vRow = 130;
+          const qRow = 200;
+          const oRow = 270;
+          const cellW = 44,
+            cellH = 30,
+            gap = 6;
+          const startX = 50;
+
+          let out = `<rect width="${W}" height="${H}" fill="transparent"/>`;
+
+          // axis labels
+          out += `<text x="14" y="${kRow + 20}" font-family="var(--mono)" font-size="12" fill="var(--key)" text-anchor="middle" transform="rotate(-90,14,${kRow + 20})">K cache</text>`;
+          out += `<text x="14" y="${vRow + 20}" font-family="var(--mono)" font-size="12" fill="var(--value)" text-anchor="middle" transform="rotate(-90,14,${vRow + 20})">V cache</text>`;
+          out += `<text x="14" y="${qRow + 20}" font-family="var(--mono)" font-size="12" fill="var(--query)" text-anchor="middle" transform="rotate(-90,14,${qRow + 20})">query</text>`;
+          out += `<text x="14" y="${oRow + 20}" font-family="var(--mono)" font-size="12" fill="var(--output)" text-anchor="middle" transform="rotate(-90,14,${oRow + 20})">output</text>`;
+
+          // draw cached K cells
+          for (let i = 0; i < cached; i++) {
+            const x = startX + i * (cellW + gap);
+            out += `<rect x="${x}" y="${kRow}" width="${cellW}" height="${cellH}" rx="5" fill="var(--key)" opacity="0.75"/>`;
+            out += `<text x="${x + cellW / 2}" y="${kRow + 19}" font-family="var(--mono)" font-size="10" fill="var(--bg)" text-anchor="middle">${esc(TOKEN_LABELS[i] || i)}</text>`;
+          }
+          // draw cached V cells
+          for (let i = 0; i < cached; i++) {
+            const x = startX + i * (cellW + gap);
+            out += `<rect x="${x}" y="${vRow}" width="${cellW}" height="${cellH}" rx="5" fill="var(--value)" opacity="0.75"/>`;
+            out += `<text x="${x + cellW / 2}" y="${vRow + 19}" font-family="var(--mono)" font-size="10" fill="var(--bg)" text-anchor="middle">${esc(TOKEN_LABELS[i] || i)}</text>`;
+          }
+
+          // new query cell (the current token)
+          const qLabel = TOKEN_LABELS[newTok] || `t${newTok}`;
+          const qX = startX + newTok * (cellW + gap);
+          out += `<rect x="${qX}" y="${qRow}" width="${cellW}" height="${cellH}" rx="5" fill="var(--query)" opacity="0.9"/>`;
+          out += `<text x="${qX + cellW / 2}" y="${qRow + 19}" font-family="var(--mono)" font-size="10" fill="var(--bg)" text-anchor="middle">${esc(qLabel)}</text>`;
+          out += `<text x="${qX + cellW / 2}" y="${qRow - 8}" font-family="var(--mono)" font-size="9" fill="var(--query)" text-anchor="middle">q_t</text>`;
+
+          // attention arrows from query to each cached K
+          for (let i = 0; i < cached; i++) {
+            const kx = startX + i * (cellW + gap) + cellW / 2;
+            const ky = kRow + cellH;
+            const fade = 0.15 + (0.6 * (i + 1)) / Math.max(cached, 1);
+            out += `<line x1="${qX + cellW / 2}" y1="${qRow}" x2="${kx}" y2="${ky + 10}" stroke="var(--score)" stroke-width="1.4" opacity="${fade.toFixed(2)}" stroke-dasharray="4 3"/>`;
+          }
+
+          // output cell (shown after at least 1 cached token)
+          if (cached > 0) {
+            const oX = startX + newTok * (cellW + gap);
+            out += `<rect x="${oX}" y="${oRow}" width="${cellW}" height="${cellH}" rx="5" fill="var(--output)" opacity="0.85"/>`;
+            out += `<text x="${oX + cellW / 2}" y="${oRow + 19}" font-family="var(--mono)" font-size="10" fill="var(--bg)" text-anchor="middle">o_t</text>`;
+            // arrow from query to output
+            out += `<line x1="${qX + cellW / 2}" y1="${qRow + cellH}" x2="${oX + cellW / 2}" y2="${oRow}" stroke="var(--output)" stroke-width="1.8" opacity="0.6"/>`;
+          }
+
+          // step counter
+          out += `<text x="${W - 16}" y="20" font-family="var(--mono)" font-size="11" fill="var(--fg-faint)" text-anchor="end">step ${t + 1} / ${MAX_T}</text>`;
+
+          // cache size annotation
+          const cacheAnnot =
+            cached > 0
+              ? `reading ${cached} cached K/V pair${cached > 1 ? "s" : ""}`
+              : "no cache yet — first token";
+          out += `<text x="${startX}" y="${H - 8}" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">${esc(cacheAnnot)}</text>`;
+
+          svg.innerHTML = out;
+
+          if (cached === 0) {
+            cmt.textContent = `Step 1: the first token "${TOKEN_LABELS[0]}" arrives. No cache exists yet — the query attends over nothing. One K/V pair is written to the cache.`;
+          } else {
+            cmt.textContent = `Step ${t + 1}: query q_t for "${qLabel}" attends over ${cached} cached key/value pair${cached > 1 ? "s" : ""}. The attention is computed in O(T) reads, then one new K/V pair is appended, growing the cache to ${cached + 1}.`;
+          }
+        }
+
+        function advance() {
+          t = Math.min(t + 1, MAX_T - 1);
+          render();
+          if (t >= MAX_T - 1 && playing) stopPlay();
+        }
+
+        function startPlay() {
+          playing = true;
+          playBtn.textContent = "⏸ Pause";
+          timer = setInterval(advance, +speedSel.value);
+        }
+
+        function stopPlay() {
+          playing = false;
+          playBtn.textContent = "▶ Play";
+          clearInterval(timer);
+          timer = null;
+        }
+
+        playBtn.addEventListener("click", () => {
+          if (playing) stopPlay();
+          else {
+            if (t >= MAX_T - 1) t = 0;
+            startPlay();
+          }
+        });
+        stepBtn.addEventListener("click", () => {
+          stopPlay();
+          advance();
+        });
+        resetBtn.addEventListener("click", () => {
+          stopPlay();
+          t = 0;
+          render();
+        });
+        speedSel.addEventListener("change", () => {
+          if (playing) {
+            stopPlay();
+            startPlay();
+          }
+        });
+        render();
+      }
+
+      /* =========================================================
+   Widget — KV memory
+   ========================================================= */
+      {
+        const layersIn = document.getElementById("kvm-layers");
+        const hqIn = document.getElementById("kvm-hq");
+        const hkvIn = document.getElementById("kvm-hkv");
+        const dIn = document.getElementById("kvm-d");
+        const tIn = document.getElementById("kvm-t");
+        const bIn = document.getElementById("kvm-b");
+        const dtypeIn = document.getElementById("kvm-dtype");
+        const svg = document.getElementById("kvmem-svg");
+        const svgCurve = document.getElementById("kvmem-curve-svg");
+        const cmt = document.getElementById("kvmem-cmt");
+        const labels = {
+          layers: document.getElementById("kvm-layers-v"),
+          hq: document.getElementById("kvm-hq-v"),
+          hkv: document.getElementById("kvm-hkv-v"),
+          d: document.getElementById("kvm-d-v"),
+          t: document.getElementById("kvm-t-v"),
+          b: document.getElementById("kvm-b-v"),
+        };
+
+        // tab switching
+        document.querySelectorAll("[data-kvm-tab]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("[data-kvm-tab]")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            const tab = btn.dataset.kvmTab;
+            document.getElementById("kvm-bars-panel").style.display =
+              tab === "bars" ? "" : "none";
+            document.getElementById("kvm-curve-panel").style.display =
+              tab === "curve" ? "" : "none";
+          });
+        });
+
+        function kvBytes(batch, layers, tokens, kvHeads, headDim, dtypeBytes) {
+          return batch * layers * tokens * 2 * kvHeads * headDim * dtypeBytes;
+        }
+
+        function renderCurve(L, Hq, Hkv, d, B, s) {
+          const W = 800,
+            H = 290;
+          const mx = 60,
+            my = 28,
+            pw = W - mx - 32,
+            ph = H - my - 52;
+          const steps = 32;
+          const maxT = 16384;
+
+          const series = [
+            { label: "MHA", heads: Hq, color: "var(--accent-2)" },
+            { label: `GQA (${Hkv} KV)`, heads: Hkv, color: "var(--cache)" },
+            { label: "MQA", heads: 1, color: "var(--page)" },
+          ];
+
+          const pts = series.map((s2) =>
+            Array.from({ length: steps + 1 }, (_, i) => {
+              const T = Math.round((i / steps) * maxT);
+              return kvBytes(B, L, T, s2.heads, d, s);
+            }),
+          );
+
+          const maxVal = Math.max(...pts.map((p) => Math.max(...p))) * 1.08;
+
+          function px(i) {
+            return mx + (i / steps) * pw;
+          }
+          function py(v) {
+            return my + ph - (v / maxVal) * ph;
+          }
+          function fmtT(v) {
+            return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v);
+          }
+          function fmtY(v) {
+            const units = ["B", "KB", "MB", "GB"];
+            let u = 0,
+              x = v;
+            while (x >= 1024 && u < units.length - 1) {
+              x /= 1024;
+              u++;
+            }
+            return `${x.toFixed(x >= 10 ? 0 : 1)} ${units[u]}`;
+          }
+
+          let out = `<rect width="${W}" height="${H}" fill="transparent"/>`;
+
+          // grid lines y
+          for (let g = 0; g <= 4; g++) {
+            const yy = my + (g / 4) * ph;
+            const val = maxVal * (1 - g / 4);
+            out += `<line x1="${mx}" y1="${yy}" x2="${mx + pw}" y2="${yy}" stroke="var(--border-soft)" stroke-width="0.8"/>`;
+            out += `<text x="${mx - 6}" y="${yy + 4}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)" text-anchor="end">${fmtY(val)}</text>`;
+          }
+          // x axis ticks
+          [0, 4096, 8192, 12288, 16384].forEach((T) => {
+            const xx = mx + (T / maxT) * pw;
+            out += `<line x1="${xx}" y1="${my}" x2="${xx}" y2="${my + ph}" stroke="var(--border-soft)" stroke-width="0.5"/>`;
+            out += `<text x="${xx}" y="${my + ph + 16}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)" text-anchor="middle">${fmtT(T)}</text>`;
+          });
+
+          // axes
+          out += `<line x1="${mx}" y1="${my}" x2="${mx}" y2="${my + ph}" stroke="var(--border)"/>`;
+          out += `<line x1="${mx}" y1="${my + ph}" x2="${mx + pw}" y2="${my + ph}" stroke="var(--border)"/>`;
+          out += `<text x="${mx + pw / 2}" y="${H - 4}" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)" text-anchor="middle">context tokens</text>`;
+          out += `<text x="12" y="${my + ph / 2}" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)" text-anchor="middle" transform="rotate(-90,12,${my + ph / 2})">cache bytes (batch=${B})</text>`;
+
+          // lines
+          series.forEach((s2, si) => {
+            const p = pts[si];
+            let d2 = "";
+            p.forEach((v, i) => {
+              d2 += `${i ? " L" : "M"} ${px(i)} ${py(v)}`;
+            });
+            out += `<path d="${d2}" fill="none" stroke="${s2.color}" stroke-width="2.2"/>`;
+            // label at end
+            const lastY = py(p[steps]);
+            out += `<text x="${mx + pw + 5}" y="${lastY + 4}" font-family="var(--mono)" font-size="9" fill="${s2.color}">${s2.label}</text>`;
+          });
+
+          // current T marker
+          const curT = +tIn.value;
+          const curX = mx + (curT / maxT) * pw;
+          out += `<line x1="${curX}" y1="${my}" x2="${curX}" y2="${my + ph}" stroke="var(--fg-faint)" stroke-width="1" stroke-dasharray="4 3"/>`;
+          out += `<text x="${curX + 4}" y="${my + 12}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)">T=${fmtT(curT)}</text>`;
+
+          svgCurve.innerHTML = out;
+        }
+
+        function render() {
+          const L = +layersIn.value;
+          const Hq = +hqIn.value;
+          const Hkv = Math.min(+hkvIn.value, Hq);
+          const d = +dIn.value;
+          const T = +tIn.value;
+          const B = +bIn.value;
+          const s = +dtypeIn.value;
+
+          labels.layers.textContent = L;
+          labels.hq.textContent = Hq;
+          labels.hkv.textContent = Hkv;
+          labels.d.textContent = d;
+          labels.t.textContent = T;
+          labels.b.textContent = B;
+          hkvIn.max = String(Hq);
+
+          const current = kvBytes(B, L, T, Hkv, d, s);
+          const mha = kvBytes(B, L, T, Hq, d, s);
+          const mqa = kvBytes(B, L, T, 1, d, s);
+          const maxV = Math.max(current, mha, mqa) * 1.08;
+
+          const W = 800,
+            H = 290,
+            m = 44;
+          const barX = 170,
+            barW = 560,
+            barH = 28,
+            gap = 46;
+          let out = `<rect width="${W}" height="${H}" fill="transparent"/>`;
+          out += `<text x="${m}" y="28" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">cache size for all active sequences</text>`;
+          const bars = [
+            ["MHA baseline", mha, "var(--accent-2)"],
+            ["Current config", current, "var(--cache)"],
+            ["MQA floor", mqa, "var(--page)"],
+          ];
+          bars.forEach((row, i) => {
+            const y = 72 + i * gap;
+            const w = Math.max(2, (barW * row[1]) / maxV);
+            out += `<text x="${m}" y="${y + 18}" font-family="var(--mono)" font-size="11" fill="var(--fg)">${esc(row[0])}</text>`;
+            out += `<rect x="${barX}" y="${y}" width="${barW}" height="${barH}" rx="6" fill="rgba(255,255,255,0.04)" stroke="var(--border-soft)"/>`;
+            out += `<rect x="${barX}" y="${y}" width="${w}" height="${barH}" rx="6" fill="${row[2]}"/>`;
+            out += `<text x="${barX + w + 8}" y="${y + 19}" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">${fmtBytes(row[1])}</text>`;
+          });
+
+          const ratio = mha / current;
+          const ratioVsMqa = current / mqa;
+          out += `<text x="${m}" y="232" font-family="var(--mono)" font-size="11" fill="var(--fg-faint)">formula: B × L × T × 2 × H_kv × d_head × bytes_per_elem</text>`;
+          out += `<text x="${m}" y="254" font-family="var(--mono)" font-size="11" fill="var(--fg-faint)">current / MHA = ${((current / mha) * 100).toFixed(1)}%  ·  current / MQA = ${ratioVsMqa.toFixed(1)}×</text>`;
+          svg.innerHTML = out;
+
+          renderCurve(L, Hq, Hkv, d, B, s);
+
+          cmt.textContent =
+            `At batch ${B}, context ${T}, and ${L} layers, the cache is ${fmtBytes(current)}. ` +
+            `Moving from MHA (${Hq} KV heads) to ${Hkv} KV heads cuts cache bytes by about ${ratio.toFixed(1)}×, which is why GQA is such a practical serving optimization.`;
+        }
+
+        [layersIn, hqIn, hkvIn, dIn, tIn, bIn, dtypeIn].forEach((el) =>
+          el.addEventListener("input", render),
+        );
+        render();
+      }
+
+      /* =========================================================
+   Widget — prefill vs decode
+   ========================================================= */
+      {
+        const pIn = document.getElementById("pf-p");
+        const gIn = document.getElementById("pf-g");
+        const pV = document.getElementById("pf-p-v");
+        const gV = document.getElementById("pf-g-v");
+        const svg = document.getElementById("prefill-svg");
+        const cmt = document.getElementById("prefill-cmt");
+
+        function render() {
+          const P = +pIn.value;
+          const G = +gIn.value;
+          pV.textContent = P;
+          gV.textContent = G;
+
+          const W = 800,
+            H = 320;
+          const leftX = 50,
+            topY = 48,
+            areaW = 300,
+            rowH = 36,
+            gap = 22;
+          const plotX = 420,
+            plotY = 50,
+            plotW = 320,
+            plotH = 210;
+
+          const cacheSeries = [];
+          const noCacheSeries = [];
+          for (let t = 1; t <= G; t++) {
+            cacheSeries.push(P + t);
+            noCacheSeries.push((P + t) * (P + t));
+          }
+          const maxY = Math.max(...noCacheSeries) * 1.05;
+
+          let out = `<rect width="${W}" height="${H}" fill="transparent"/>`;
+          out += `<text x="${leftX}" y="24" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">left: execution phases</text>`;
+          out += `<text x="${plotX}" y="24" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">right: per-step work growth</text>`;
+
+          const prefillW = 240;
+          out += `<text x="${leftX}" y="${topY - 10}" font-family="var(--mono)" font-size="11" fill="var(--fg)">prefill</text>`;
+          out += `<rect x="${leftX}" y="${topY}" width="${prefillW}" height="${rowH}" rx="6" fill="var(--accent)"/>`;
+          out += `<text x="${leftX + 10}" y="${topY + 23}" font-family="var(--mono)" font-size="11" fill="var(--bg)">all ${P} prompt tokens in parallel</text>`;
+
+          out += `<text x="${leftX}" y="${topY + rowH + gap - 10}" font-family="var(--mono)" font-size="11" fill="var(--fg)">decode</text>`;
+          const cellW = Math.min(18, 250 / Math.max(G, 1));
+          for (let i = 0; i < Math.min(G, 14); i++) {
+            const x = leftX + i * (cellW + 4);
+            out += `<rect x="${x}" y="${topY + rowH + gap}" width="${cellW}" height="${rowH}" rx="4" fill="var(--cache)"/>`;
+          }
+          if (G > 14) {
+            out += `<text x="${leftX + 14 * (cellW + 4) + 8}" y="${topY + rowH + gap + 23}" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">... ${G} serial steps</text>`;
+          } else {
+            out += `<text x="${leftX + Math.min(G, 14) * (cellW + 4) + 8}" y="${topY + rowH + gap + 23}" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">one new token each step</text>`;
+          }
+
+          out += `<line x1="${plotX}" y1="${plotY}" x2="${plotX}" y2="${plotY + plotH}" stroke="var(--border)"/>`;
+          out += `<line x1="${plotX}" y1="${plotY + plotH}" x2="${plotX + plotW}" y2="${plotY + plotH}" stroke="var(--border)"/>`;
+
+          function px(i) {
+            return plotX + (i / Math.max(G - 1, 1)) * plotW;
+          }
+          function py(v) {
+            return plotY + plotH - (v / maxY) * plotH;
+          }
+
+          let pathCache = "";
+          let pathNo = "";
+          cacheSeries.forEach((v, i) => {
+            pathCache += `${i ? " L" : "M"} ${px(i)} ${py(v)}`;
+          });
+          noCacheSeries.forEach((v, i) => {
+            pathNo += `${i ? " L" : "M"} ${px(i)} ${py(v)}`;
+          });
+          out += `<path d="${pathNo}" fill="none" stroke="var(--danger)" stroke-width="2.5"/>`;
+          out += `<path d="${pathCache}" fill="none" stroke="var(--page)" stroke-width="2.5"/>`;
+          out += `<text x="${plotX + plotW - 8}" y="${plotY + 16}" font-family="var(--mono)" font-size="10" fill="var(--danger)" text-anchor="end">recompute from scratch</text>`;
+          out += `<text x="${plotX + plotW - 8}" y="${plotY + 34}" font-family="var(--mono)" font-size="10" fill="var(--page)" text-anchor="end">append to cache</text>`;
+          out += `<text x="${plotX}" y="${plotY + plotH + 20}" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">decode step</text>`;
+          out += `<text x="${plotX - 6}" y="${plotY - 6}" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">relative work</text>`;
+          svg.innerHTML = out;
+
+          const ratio =
+            noCacheSeries[noCacheSeries.length - 1] /
+            cacheSeries[cacheSeries.length - 1];
+          cmt.textContent =
+            `Prompt ingestion is one wide parallel phase; generation is ${G} narrow serial phases. ` +
+            `At the final decode step here, recomputing from scratch would be about ${ratio.toFixed(0)}× heavier than reusing a cache, which is exactly why KV caching is non-negotiable in production inference.`;
+        }
+
+        [pIn, gIn].forEach((el) => el.addEventListener("input", render));
+        render();
+      }
+
+      /* =========================================================
+   Widget — paged attention (with block table visualization)
+   ========================================================= */
+      {
+        const bIn = document.getElementById("pg-b");
+        const tIn = document.getElementById("pg-t");
+        const bV = document.getElementById("pg-b-v");
+        const tV = document.getElementById("pg-t-v");
+        const svg = document.getElementById("paged-svg");
+        const cmt = document.getElementById("paged-cmt");
+
+        const totalBlocks = 16;
+        const occupied = new Set([0, 1, 3, 4, 7, 8, 10, 13]);
+
+        function longestFreeRun() {
+          let best = 0,
+            cur = 0;
+          for (let i = 0; i < totalBlocks; i++) {
+            if (occupied.has(i)) {
+              cur = 0;
+            } else {
+              cur++;
+              best = Math.max(best, cur);
+            }
+          }
+          return best;
+        }
+
+        function firstFitRun(len) {
+          let cur = 0,
+            start = 0;
+          for (let i = 0; i < totalBlocks; i++) {
+            if (!occupied.has(i)) {
+              if (cur === 0) start = i;
+              cur++;
+              if (cur >= len) return start;
+            } else cur = 0;
+          }
+          return -1;
+        }
+
+        function render() {
+          const blockSize = +bIn.value;
+          const tokens = +tIn.value;
+          bV.textContent = blockSize;
+          tV.textContent = tokens;
+          const need = Math.ceil(tokens / blockSize);
+          const freeBlocks = totalBlocks - occupied.size;
+          const longest = longestFreeRun();
+          const start = firstFitRun(need);
+          const pagedFit = need <= freeBlocks;
+
+          const freeList = [];
+          for (let i = 0; i < totalBlocks; i++)
+            if (!occupied.has(i)) freeList.push(i);
+          const pagedAlloc = freeList.slice(0, need);
+
+          const W = 800,
+            H = 420,
+            leftX = 52,
+            cell = 38,
+            gap = 8;
+          let out = `<rect width="${W}" height="${H}" fill="transparent"/>`;
+
+          // ── contiguous row ──────────────────────────────────────
+          const contY = 62;
+          out += `<text x="${leftX}" y="${contY - 14}" font-family="var(--mono)" font-size="10.5" fill="var(--fg-dim)">contiguous allocator — needs one uninterrupted run of ${need} blocks</text>`;
+          for (let i = 0; i < totalBlocks; i++) {
+            let fill = occupied.has(i) ? "var(--cache)" : "#334155";
+            let textFill = occupied.has(i) ? "var(--bg)" : "var(--fg)";
+            if (start >= 0 && i >= start && i < start + need) {
+              fill = "var(--page)";
+              textFill = "var(--bg)";
+            }
+            if (start < 0 && !occupied.has(i)) {
+              fill = "var(--danger)";
+              textFill = "var(--fg)";
+            }
+            out += `<rect x="${leftX + i * (cell + gap)}" y="${contY}" width="${cell}" height="${cell}" rx="6" fill="${fill}" stroke="var(--border-soft)"/>`;
+            out += `<text x="${leftX + i * (cell + gap) + cell / 2}" y="${contY + 24}" font-family="var(--mono)" font-size="11" fill="${textFill}" text-anchor="middle">${i}</text>`;
+          }
+          if (start >= 0) {
+            out += `<text x="${leftX}" y="${contY + cell + 16}" font-family="var(--mono)" font-size="10" fill="var(--page)">✓ fits: blocks ${start}–${start + need - 1}</text>`;
+          } else {
+            out += `<text x="${leftX}" y="${contY + cell + 16}" font-family="var(--mono)" font-size="10" fill="var(--danger)">✗ fails: longest free run = ${longest} block${longest !== 1 ? "s" : ""}, need ${need}</text>`;
+          }
+
+          // ── paged row ──────────────────────────────────────────
+          const pageY = 168;
+          out += `<text x="${leftX}" y="${pageY - 14}" font-family="var(--mono)" font-size="10.5" fill="var(--fg-dim)">paged allocator — any ${need} free blocks will do</text>`;
+          const pagedSet = new Set(pagedAlloc);
+          for (let i = 0; i < totalBlocks; i++) {
+            let fill = occupied.has(i) ? "var(--cache)" : "#334155";
+            let textFill = occupied.has(i) ? "var(--bg)" : "var(--fg)";
+            if (pagedFit && pagedSet.has(i)) {
+              fill = "var(--page)";
+              textFill = "var(--bg)";
+            }
+            out += `<rect x="${leftX + i * (cell + gap)}" y="${pageY}" width="${cell}" height="${cell}" rx="6" fill="${fill}" stroke="var(--border-soft)"/>`;
+            out += `<text x="${leftX + i * (cell + gap) + cell / 2}" y="${pageY + 24}" font-family="var(--mono)" font-size="11" fill="${textFill}" text-anchor="middle">${i}</text>`;
+            // logical block label
+            if (pagedFit && pagedSet.has(i)) {
+              const logIdx = pagedAlloc.indexOf(i);
+              out += `<text x="${leftX + i * (cell + gap) + cell / 2}" y="${pageY + cell + 14}" font-family="var(--mono)" font-size="9" fill="var(--page)" text-anchor="middle">L${logIdx}</text>`;
+            }
+          }
+
+          // ── block table ────────────────────────────────────────
+          const btY = 254;
+          out += `<text x="${leftX}" y="${btY - 10}" font-family="var(--mono)" font-size="10.5" fill="var(--fg-dim)">block table (logical → physical)</text>`;
+          const btCellW = 56,
+            btCellH = 28,
+            btGap = 6;
+          if (pagedFit) {
+            pagedAlloc.forEach((phys, log) => {
+              const x = leftX + log * (btCellW + btGap);
+              out += `<rect x="${x}" y="${btY}" width="${btCellW}" height="${btCellH}" rx="5" fill="var(--bg-soft)" stroke="var(--page)" stroke-width="1.5"/>`;
+              out += `<text x="${x + btCellW / 2}" y="${btY + 11}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)" text-anchor="middle">L${log}</text>`;
+              out += `<text x="${x + btCellW / 2}" y="${btY + 24}" font-family="var(--mono)" font-size="11" fill="var(--page)" text-anchor="middle">P${phys}</text>`;
+            });
+            // arrows from logical to physical blocks in the paged row
+            pagedAlloc.forEach((phys, log) => {
+              const btX = leftX + log * (btCellW + btGap) + btCellW / 2;
+              const physX = leftX + phys * (cell + gap) + cell / 2;
+              out += `<line x1="${btX}" y1="${btY + btCellH}" x2="${physX}" y2="${pageY + cell}" stroke="var(--page)" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>`;
+            });
+            out += `<text x="${leftX}" y="${btY + btCellH + 20}" font-family="var(--mono)" font-size="10" fill="var(--page)">✓ paged fits — ${freeBlocks} free blocks, need ${need}</text>`;
+          } else {
+            out += `<text x="${leftX}" y="${btY + 18}" font-family="var(--mono)" font-size="10" fill="var(--danger)">✗ not enough total free blocks (${freeBlocks} < ${need})</text>`;
+          }
+
+          svg.innerHTML = out;
+
+          if (start >= 0) {
+            cmt.textContent = `Needs ${need} block${need !== 1 ? "s" : ""}. Both allocators work here. Paged allocation still wins long-term: as the sequence grows, new blocks can scatter into any free slot instead of requiring a contiguous extension.`;
+          } else if (pagedFit) {
+            cmt.textContent = `Needs ${need} block${need !== 1 ? "s" : ""}. Contiguous fails — the longest free run is only ${longest}. Paged allocation succeeds by mapping logical blocks L0…L${need - 1} to scattered physical blocks. The block table (shown below the rows) is the key: the attention kernel follows this map to reconstruct the logical sequence.`;
+          } else {
+            cmt.textContent = `Needs ${need} block${need !== 1 ? "s" : ""}, but only ${freeBlocks} are free total. Both schemes fail — paged allocation fixes fragmentation, not absolute capacity.`;
+          }
+        }
+
+        [bIn, tIn].forEach((el) => el.addEventListener("input", render));
+        render();
+      }
+
+      /* =========================================================
+   Widget — GQA / MQA head sharing
+   ========================================================= */
+      {
+        const hqIn = document.getElementById("gqa-hq");
+        const hkvIn = document.getElementById("gqa-hkv");
+        const hqV = document.getElementById("gqa-hq-v");
+        const hkvV = document.getElementById("gqa-hkv-v");
+        const svg = document.getElementById("gqa-svg");
+        const cmt = document.getElementById("gqa-cmt");
+
+        function render() {
+          const Hq = +hqIn.value;
+          const Hkv = Math.min(+hkvIn.value, Hq);
+          hqIn.max = "16";
+          hkvIn.max = String(Hq);
+          hqV.textContent = Hq;
+          hkvV.textContent = Hkv;
+
+          const W = 800,
+            H = 300;
+          const qRow = 60,
+            kvRow = 200;
+          const qCellW = Math.min(52, (W - 100) / Math.max(Hq, 1));
+          const kvCellW = Math.min(52, (W - 100) / Math.max(Hkv, 1));
+          const cellH = 34;
+          const startQ = (W - Hq * (qCellW + 6)) / 2;
+          const startKV = (W - Hkv * (kvCellW + 6)) / 2;
+
+          let out = `<rect width="${W}" height="${H}" fill="transparent"/>`;
+
+          // labels
+          out += `<text x="24" y="${qRow + 20}" font-family="var(--mono)" font-size="10" fill="var(--query)">Q heads</text>`;
+          out += `<text x="24" y="${kvRow + 20}" font-family="var(--mono)" font-size="10" fill="var(--key)">K/V heads</text>`;
+
+          // draw query heads
+          for (let i = 0; i < Hq; i++) {
+            const x = startQ + i * (qCellW + 6);
+            out += `<rect x="${x}" y="${qRow}" width="${qCellW}" height="${cellH}" rx="6" fill="var(--query)" opacity="0.8"/>`;
+            out += `<text x="${x + qCellW / 2}" y="${qRow + 21}" font-family="var(--mono)" font-size="9" fill="var(--bg)" text-anchor="middle">Q${i}</text>`;
+          }
+
+          // draw KV heads
+          for (let k = 0; k < Hkv; k++) {
+            const x = startKV + k * (kvCellW + 6);
+            out += `<rect x="${x}" y="${kvRow}" width="${kvCellW / 2 - 2}" height="${cellH}" rx="5" fill="var(--key)" opacity="0.85"/>`;
+            out += `<text x="${x + kvCellW / 4 - 1}" y="${kvRow + 21}" font-family="var(--mono)" font-size="9" fill="var(--bg)" text-anchor="middle">K${k}</text>`;
+            out += `<rect x="${x + kvCellW / 2 + 2}" y="${kvRow}" width="${kvCellW / 2 - 2}" height="${cellH}" rx="5" fill="var(--value)" opacity="0.85"/>`;
+            out += `<text x="${x + (kvCellW * 3) / 4 + 1}" y="${kvRow + 21}" font-family="var(--mono)" font-size="9" fill="var(--bg)" text-anchor="middle">V${k}</text>`;
+          }
+
+          // draw connection lines (query -> its KV group)
+          const groupSize = Hq / Hkv;
+          for (let i = 0; i < Hq; i++) {
+            const kvIdx = Math.floor(i / groupSize);
+            const qx = startQ + i * (qCellW + 6) + qCellW / 2;
+            const kx = startKV + kvIdx * (kvCellW + 6) + kvCellW / 2;
+            const same = Hkv === Hq ? 1 : 0; // MHA: direct, else shared
+            out += `<line x1="${qx}" y1="${qRow + cellH}" x2="${kx}" y2="${kvRow}" stroke="${Hkv === 1 ? "var(--value)" : same ? "var(--accent-2)" : "var(--accent)"}" stroke-width="${Hkv === 1 ? 1.5 : 1.2}" opacity="0.45" stroke-dasharray="${Hkv < Hq ? "3 2" : "none"}"/>`;
+          }
+
+          // mode label
+          let mode, modeColor;
+          if (Hkv === Hq) {
+            mode = "MHA — every query head has its own KV head";
+            modeColor = "var(--accent-2)";
+          } else if (Hkv === 1) {
+            mode = "MQA — all query heads share one KV head";
+            modeColor = "var(--value)";
+          } else {
+            mode = `GQA — ${Hq / Hkv} query heads share each KV head`;
+            modeColor = "var(--accent)";
+          }
+          out += `<text x="${W / 2}" y="${H - 18}" font-family="var(--mono)" font-size="11" fill="${modeColor}" text-anchor="middle">${esc(mode)}</text>`;
+
+          // cache size indicator
+          const mhaBytes = Hq,
+            curBytes = Hkv,
+            mqaBytes = 1;
+          const pct = ((curBytes / mhaBytes) * 100).toFixed(0);
+          out += `<text x="${W / 2}" y="${H - 4}" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)" text-anchor="middle">KV cache = ${pct}% of MHA baseline</text>`;
+
+          svg.innerHTML = out;
+
+          if (Hkv === Hq) {
+            cmt.textContent = `MHA: each of the ${Hq} query heads attends to its own dedicated K and V head. Maximum expressiveness, maximum cache size — ${Hq} K heads + ${Hq} V heads cached per layer.`;
+          } else if (Hkv === 1) {
+            cmt.textContent = `MQA: all ${Hq} query heads attend to the same single K and V head. Cache is ${Hq}× smaller than MHA per layer — a huge serving win, though the shared KV limits representational capacity.`;
+          } else {
+            const g = Hq / Hkv;
+            cmt.textContent = `GQA with ${Hkv} KV heads: every group of ${g} query heads shares one K and one V head. Cache is ${(Hq / Hkv).toFixed(0)}× smaller than MHA, while retaining more expressiveness than MQA. This is the design of Llama-3, Mistral, and most modern models.`;
+          }
+        }
+
+        [hqIn, hkvIn].forEach((el) => el.addEventListener("input", render));
+        render();
+      }
+
+      /* =========================================================
+   Widget — continuous batching (with step playback)
+   ========================================================= */
+      {
+        const slotsIn = document.getElementById("sch-slots");
+        const spreadIn = document.getElementById("sch-spread");
+        const slotsV = document.getElementById("sch-slots-v");
+        const spreadV = document.getElementById("sch-spread-v");
+        const svg = document.getElementById("sched-svg");
+        const cmt = document.getElementById("sched-cmt");
+        const playBtn = document.getElementById("sch-play");
+        const stepBtn = document.getElementById("sch-step");
+        const resetBtn = document.getElementById("sch-reset");
+        const colors = [
+          "#60a5fa",
+          "#34d399",
+          "#f59e0b",
+          "#c084fc",
+          "#fb7185",
+          "#a3e635",
+          "#22d3ee",
+        ];
+
+        let playStep = -1; // -1 = show full view; >=0 = highlight column
+        let playing = false;
+        let timer = null;
+        let currentGrids = null;
+
+        function requestLengths(spread) {
+          return [
+            4,
+            5 + spread,
+            6 + 2 * spread,
+            4 + spread,
+            7 + Math.floor(spread / 2),
+            3 + spread,
+          ];
+        }
+
+        function simulateContinuous(lengths, slots) {
+          const queue = lengths.map((len, i) => ({ id: i, rem: len }));
+          const active = Array(slots).fill(null);
+          const grid = Array.from({ length: slots }, () => []);
+          let t = 0;
+          while (queue.length || active.some(Boolean)) {
+            for (let s = 0; s < slots; s++) {
+              if (!active[s] && queue.length) active[s] = queue.shift();
+            }
+            for (let s = 0; s < slots; s++) {
+              if (active[s]) {
+                grid[s][t] = active[s].id;
+                active[s].rem -= 1;
+              } else grid[s][t] = -1;
+            }
+            for (let s = 0; s < slots; s++) {
+              if (active[s] && active[s].rem === 0) active[s] = null;
+            }
+            t++;
+          }
+          return grid;
+        }
+
+        function simulateStatic(lengths, slots) {
+          const grid = Array.from({ length: slots }, () => []);
+          let cursor = 0;
+          while (cursor < lengths.length) {
+            const batch = lengths.slice(cursor, cursor + slots);
+            const duration = Math.max(...batch);
+            for (let s = 0; s < slots; s++) {
+              const id = cursor + s;
+              for (let t = 0; t < duration; t++) {
+                grid[s].push(s < batch.length && t < batch[s] ? id : -1);
+              }
+            }
+            cursor += slots;
+          }
+          return grid;
+        }
+
+        function utilization(grid) {
+          const cols = Math.max(...grid.map((r) => r.length));
+          let used = 0;
+          grid.forEach((r) =>
+            r.forEach((v) => {
+              if (v >= 0) used++;
+            }),
+          );
+          return used / (grid.length * cols);
+        }
+
+        function drawGrid(grid, x0, y0, title, highlightCol) {
+          const rows = grid.length;
+          const cols = Math.max(...grid.map((r) => r.length));
+          const cellW = Math.min(20, 280 / Math.max(cols, 1));
+          const cellH = 24;
+          let out = `<text x="${x0}" y="${y0 - 16}" font-family="var(--mono)" font-size="11" fill="var(--fg)">${esc(title)}</text>`;
+          // x axis label
+          out += `<text x="${x0}" y="${y0 + rows * (cellH + 6) + 16}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)">decode step →</text>`;
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              const v = grid[r][c] ?? -1;
+              const isHL = highlightCol >= 0 && c === highlightCol;
+              const fill =
+                v >= 0 ? colors[v % colors.length] : "rgba(255,255,255,0.04)";
+              const stroke = isHL
+                ? "white"
+                : v >= 0
+                  ? "none"
+                  : "var(--border-soft)";
+              const opacity = highlightCol >= 0 && !isHL ? "0.28" : "1";
+              out += `<rect x="${x0 + c * (cellW + 2)}" y="${y0 + r * (cellH + 6)}" width="${cellW}" height="${cellH}" rx="3" fill="${fill}" stroke="${stroke}" stroke-width="${isHL ? 1.5 : 0}" opacity="${opacity}"/>`;
+            }
+            out += `<text x="${x0 - 8}" y="${y0 + r * (cellH + 6) + 16}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)" text-anchor="end">S${r + 1}</text>`;
+          }
+          // step number under highlighted column
+          if (highlightCol >= 0 && highlightCol < cols) {
+            const cx = x0 + highlightCol * (cellW + 2) + cellW / 2;
+            out += `<text x="${cx}" y="${y0 + rows * (cellH + 6) + 16}" font-family="var(--mono)" font-size="9" fill="white" text-anchor="middle">${highlightCol + 1}</text>`;
+          }
+          return out;
+        }
+
+        function render() {
+          const slots = +slotsIn.value;
+          const spread = +spreadIn.value;
+          slotsV.textContent = slots;
+          spreadV.textContent = spread;
+          const lengths = requestLengths(spread);
+          const staticGrid = simulateStatic(lengths, slots);
+          const contGrid = simulateContinuous(lengths, slots);
+          currentGrids = { staticGrid, contGrid };
+          const utilStatic = utilization(staticGrid);
+          const utilCont = utilization(contGrid);
+          const staticSteps = Math.max(...staticGrid.map((r) => r.length));
+          const contSteps = Math.max(...contGrid.map((r) => r.length));
+          const maxSteps = Math.max(staticSteps, contSteps);
+
+          let out = `<rect width="800" height="380" fill="transparent"/>`;
+          out += drawGrid(
+            staticGrid,
+            54,
+            68,
+            `static · ${staticSteps} steps  util=${(utilStatic * 100).toFixed(0)}%`,
+            playStep,
+          );
+          out += drawGrid(
+            contGrid,
+            430,
+            68,
+            `continuous · ${contSteps} steps  util=${(utilCont * 100).toFixed(0)}%`,
+            playStep,
+          );
+          out += `<text x="54" y="350" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">request lengths: [${lengths.join(", ")}]</text>`;
+          if (playStep >= 0) {
+            out += `<text x="430" y="350" font-family="var(--mono)" font-size="10" fill="var(--accent)">step ${playStep + 1} highlighted</text>`;
+          } else {
+            out += `<text x="430" y="350" font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">empty cells = idle GPU slots</text>`;
+          }
+          svg.innerHTML = out;
+
+          if (playStep >= 0) {
+            // per-step commentary
+            const contCol = contGrid.map((r) => r[playStep] ?? -1);
+            const statCol = staticGrid.map((r) => r[playStep] ?? -1);
+            const contActive = contCol.filter((v) => v >= 0).length;
+            const statActive = statCol.filter((v) => v >= 0).length;
+            cmt.textContent = `Step ${playStep + 1}: static has ${statActive}/${slots} slot${slots !== 1 ? "s" : ""} busy (${((statActive / slots) * 100).toFixed(0)}%). Continuous has ${contActive}/${slots} slots busy (${((contActive / slots) * 100).toFixed(0)}%). Freed slots in continuous are immediately refilled from the queue.`;
+          } else {
+            cmt.textContent = `With lengths [${lengths.join(", ")}], static batching uses the GPU only ${(utilStatic * 100).toFixed(0)}% of the time. Continuous batching raises that to ${(utilCont * 100).toFixed(0)}% by refilling freed slots every decode step, finishing ${staticSteps - contSteps} steps sooner.`;
+          }
+        }
+
+        function maxStepsCount() {
+          if (!currentGrids) return 1;
+          return Math.max(
+            Math.max(...currentGrids.staticGrid.map((r) => r.length)),
+            Math.max(...currentGrids.contGrid.map((r) => r.length)),
+          );
+        }
+
+        function stopPlay() {
+          playing = false;
+          playBtn.textContent = "▶ Play";
+          clearInterval(timer);
+          timer = null;
+        }
+
+        function startPlay() {
+          playing = true;
+          playBtn.textContent = "⏸ Pause";
+          timer = setInterval(() => {
+            playStep = Math.min(playStep + 1, maxStepsCount() - 1);
+            render();
+            if (playStep >= maxStepsCount() - 1) stopPlay();
+          }, 500);
+        }
+
+        playBtn.addEventListener("click", () => {
+          if (playing) {
+            stopPlay();
+          } else {
+            if (playStep >= maxStepsCount() - 1) playStep = -1;
+            startPlay();
+          }
+        });
+        stepBtn.addEventListener("click", () => {
+          stopPlay();
+          playStep =
+            playStep < 0 ? 0 : Math.min(playStep + 1, maxStepsCount() - 1);
+          render();
+        });
+        resetBtn.addEventListener("click", () => {
+          stopPlay();
+          playStep = -1;
+          render();
+        });
+
+        [slotsIn, spreadIn].forEach((el) =>
+          el.addEventListener("input", () => {
+            stopPlay();
+            playStep = -1;
+            render();
+          }),
+        );
+        render();
+      }
+
+      /* =========================================================
+   Widget — prefix caching (improved)
+   ========================================================= */
+      {
+        const pIn = document.getElementById("pr-p");
+        const sIn = document.getElementById("pr-s");
+        const nIn = document.getElementById("pr-n");
+        const pV = document.getElementById("pr-p-v");
+        const sV = document.getElementById("pr-s-v");
+        const nV = document.getElementById("pr-n-v");
+        const svg = document.getElementById("prefix-svg");
+        const cmt = document.getElementById("prefix-cmt");
+
+        const suffixColors = [
+          "#60a5fa",
+          "#34d399",
+          "#f59e0b",
+          "#fb7185",
+          "#a78bfa",
+          "#22d3ee",
+          "#a3e635",
+          "#f472b6",
+        ];
+
+        function render() {
+          const P = +pIn.value;
+          const S = +sIn.value;
+          const N = +nIn.value;
+          pV.textContent = P;
+          sV.textContent = S;
+          nV.textContent = N;
+
+          const noCache = N * (P + S);
+          const withCache = P + N * S;
+          const saved = noCache - withCache;
+          const pct = ((saved / noCache) * 100).toFixed(0);
+
+          const W = 800,
+            H = 310,
+            x0 = 52;
+          const totalW = W - x0 - 32;
+          const prefixW = Math.round((totalW * P) / (P + S));
+          const suffixW = totalW - prefixW;
+          const rowH = 18,
+            rowGap = 5;
+          const fanStart = x0 + prefixW;
+
+          let out = `<rect width="${W}" height="${H}" fill="transparent"/>`;
+
+          // title row
+          out += `<text x="${x0}" y="22" font-family="var(--mono)" font-size="10.5" fill="var(--fg-dim)">top: token layout per request</text>`;
+
+          // draw each request as prefix + suffix bar, proportionally sized
+          for (let i = 0; i < N; i++) {
+            const y = 36 + i * (rowH + rowGap);
+            // prefix block
+            out += `<rect x="${x0}" y="${y}" width="${prefixW}" height="${rowH}" rx="4" fill="var(--prefix)" opacity="0.82"/>`;
+            // suffix block (proportional to S)
+            const col = suffixColors[i % suffixColors.length];
+            out += `<rect x="${x0 + prefixW}" y="${y}" width="${suffixW}" height="${rowH}" rx="4" fill="${col}" opacity="0.78"/>`;
+            out += `<text x="${x0 - 6}" y="${y + 13}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)" text-anchor="end">req ${i + 1}</text>`;
+          }
+          // label shared prefix
+          const labelY = 36 + N * (rowH + rowGap) + 12;
+          out += `<rect x="${x0}" y="${labelY - 1}" width="${prefixW}" height="2" fill="var(--prefix)" opacity="0.6"/>`;
+          out += `<text x="${x0 + prefixW / 2}" y="${labelY + 11}" font-family="var(--mono)" font-size="9" fill="var(--prefix)" text-anchor="middle">shared prefix · ${P} tokens</text>`;
+          out += `<text x="${x0 + prefixW + suffixW / 2}" y="${labelY + 11}" font-family="var(--mono)" font-size="9" fill="var(--fg-faint)" text-anchor="middle">unique suffix · ${S} tokens</text>`;
+
+          // separator
+          const sepY = labelY + 26;
+          out += `<line x1="${x0}" y1="${sepY}" x2="${W - 16}" y2="${sepY}" stroke="var(--border-soft)" stroke-width="0.8"/>`;
+
+          // bar comparison
+          const barY0 = sepY + 20;
+          const barW = totalW;
+          const maxVal = Math.max(noCache, withCache) * 1.06;
+          function bw(v) {
+            return (barW * v) / maxVal;
+          }
+
+          // without cache
+          out += `<text x="${x0}" y="${barY0 + 13}" font-family="var(--mono)" font-size="10.5" fill="var(--fg)">without prefix cache</text>`;
+          out += `<rect x="${x0}" y="${barY0 + 18}" width="${bw(noCache)}" height="22" rx="5" fill="var(--danger)" opacity="0.8"/>`;
+          out += `<text x="${x0 + bw(noCache) + 8}" y="${barY0 + 33}" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">${noCache.toLocaleString()} tokens</text>`;
+
+          // with cache
+          const cacheBarY = barY0 + 56;
+          out += `<text x="${x0}" y="${cacheBarY + 13}" font-family="var(--mono)" font-size="10.5" fill="var(--fg)">with prefix cache</text>`;
+          // prefix portion (computed once)
+          out += `<rect x="${x0}" y="${cacheBarY + 18}" width="${bw(P)}" height="22" rx="5" fill="var(--prefix)" opacity="0.7"/>`;
+          // suffix portion (N * S)
+          out += `<rect x="${x0 + bw(P)}" y="${cacheBarY + 18}" width="${bw(N * S)}" height="22" rx="5" fill="var(--page)" opacity="0.8"/>`;
+          out += `<text x="${x0 + bw(withCache) + 8}" y="${cacheBarY + 33}" font-family="var(--mono)" font-size="11" fill="var(--fg-dim)">${withCache.toLocaleString()} tokens · saved ${pct}%</text>`;
+
+          svg.innerHTML = out;
+
+          cmt.textContent =
+            `${N} requests share a ${P}-token prefix. Without caching: ${noCache.toLocaleString()} tokens computed. ` +
+            `With exact prefix reuse: prefix built once (${P.toLocaleString()} tokens) + ${N} unique suffixes (${(N * S).toLocaleString()} tokens) = ${withCache.toLocaleString()} total. ` +
+            `Savings: ${saved.toLocaleString()} tokens (${pct}% reduction in prefill work).`;
+        }
+
+        [pIn, sIn, nIn].forEach((el) => el.addEventListener("input", render));
+        render();
+      }
+    </script>
+  </body>
+</html>

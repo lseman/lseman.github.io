@@ -1407,11 +1407,11 @@ out = torch.<span class="tok-fn">relu</span>(z) <span class="tok-com"># launches
           <p>
             The hardest line in this kernel is usually
             <code class="inl"
-              >x_ptrs = x_ptr + offs_m[:, None] * stride_xm + offs_n[None, :]
-              * stride_xn</code
+              >x_ptrs = x_ptr + offs_m[:, None] * stride_xm + offs_n[None, :] *
+              stride_xn</code
             >. Nothing mysterious is happening: we are taking the Cartesian
-            product of a row-offset vector and a column-offset vector to build
-            a 2-D tile of addresses.
+            product of a row-offset vector and a column-offset vector to build a
+            2-D tile of addresses.
           </p>
 
           <div class="widget" id="broadcast-widget">
@@ -2912,7 +2912,11 @@ O_new = α · O + P_j · V_j                      <span class="tok-com"># new ru
           let localMax = null;
           let latestP = [];
 
-          for (let block = 0; block < Math.min(targetStep, NUM_BLOCKS); block++) {
+          for (
+            let block = 0;
+            block < Math.min(targetStep, NUM_BLOCKS);
+            block++
+          ) {
             const start = block * BLOCK;
             const sBlock = scores.slice(start, start + BLOCK);
             const vBlock = values.slice(start, start + BLOCK);
@@ -2920,14 +2924,10 @@ O_new = α · O + P_j · V_j                      <span class="tok-com"># new ru
             const mNew = Math.max(m, localMax);
             alpha = Number.isFinite(m) ? Math.exp(m - mNew) : 0;
             latestP = sBlock.map((score) => Math.exp(score - mNew));
-            l =
-              alpha * l + latestP.reduce((acc, value) => acc + value, 0);
+            l = alpha * l + latestP.reduce((acc, value) => acc + value, 0);
             o =
               alpha * o +
-              latestP.reduce(
-                (acc, value, i) => acc + value * vBlock[i],
-                0,
-              );
+              latestP.reduce((acc, value, i) => acc + value * vBlock[i], 0);
             m = mNew;
           }
 
@@ -2938,7 +2938,8 @@ O_new = α · O + P_j · V_j                      <span class="tok-com"># new ru
           stepBtns.forEach((b, i) => b.classList.toggle("active", i === step));
 
           const processedBlocks = Math.min(step, NUM_BLOCKS);
-          const currentBlock = step === 0 ? null : Math.min(step, NUM_BLOCKS) - 1;
+          const currentBlock =
+            step === 0 ? null : Math.min(step, NUM_BLOCKS) - 1;
           const state = stateAt(step);
 
           const fullMax = Math.max(...scores);
@@ -3026,7 +3027,10 @@ O_new = α · O + P_j · V_j                      <span class="tok-com"># new ru
             { k: "alpha", v: step === 0 ? "—" : fmt(state.alpha ?? 0) },
             { k: "l", v: step === 0 ? "0.000" : fmt(state.l) },
             { k: "o", v: step === 0 ? "0.000" : fmt(state.o) },
-            { k: "online o / l", v: onlineOut == null ? "—" : onlineOut.toFixed(4) },
+            {
+              k: "online o / l",
+              v: onlineOut == null ? "—" : onlineOut.toFixed(4),
+            },
             { k: "full softmax", v: refOut.toFixed(4) },
           ];
           metrics.innerHTML = metricData

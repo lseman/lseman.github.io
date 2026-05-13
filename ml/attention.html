@@ -1036,7 +1036,24 @@
           <a href="#flash"
             ><span class="n">07</span><span>FlashAttention</span></a
           >
-          <a href="#gqa"><span class="n">08</span><span>GQA / MQA</span></a>
+          <a href="#gqa"
+            ><span class="n">08</span><span>GQA / MQA / MLA</span></a
+          >
+          <div class="subnav">
+            <a class="subitem" href="#gqa-topology"
+              ><span class="n">08.1</span><span>Topologies</span></a
+            >
+            <a class="subitem" href="#gqa-impl"
+              ><span class="n">08.2</span><span>Implementation</span></a
+            >
+            <a class="subitem" href="#gqa-savings"
+              ><span class="n">08.3</span><span>Cache savings</span></a
+            >
+            <a class="subitem" href="#gqa-mla"
+              ><span class="n">08.4</span
+              ><span>Multi-head latent attention</span></a
+            >
+          </div>
           <a href="#cross"
             ><span class="n">09</span><span>Cross attention</span></a
           >
@@ -1135,7 +1152,7 @@
                 Scaled dot-product attention, multi-head attention, sinusoidal +
                 RoPE + ALiBi positional encodings, sliding-window and
                 block-sparse masks, ProbSparse, linear attention, Gated
-                DeltaNet, FlashAttention sketch, GQA/MQA, cross-attention,
+                DeltaNet, FlashAttention sketch, GQA/MQA/MLA, cross-attention,
                 time-series-specific temporal and spectral attention, and a
                 12-line training loop.
               </p>
@@ -1145,8 +1162,8 @@
               <p>
                 Why \( \sqrt d \) appears. Why softmax. Why heads. Why
                 positional info has to be added in. Why attention is \( O(N^2)
-                \), and the three different ways to escape that. Why
-                FlashAttention won despite doing <em>more</em> arithmetic.
+                \), and the several different ways people try to escape that.
+                Why FlashAttention won despite doing <em>more</em> arithmetic.
               </p>
             </div>
             <div class="card">
@@ -1954,12 +1971,14 @@ scores = scores + <span class="tok-fn">alibi_bias</span>(H, N).<span class="tok-
 
           <h3>Block sparse patterns</h3>
           <p>
-            Longformer, BigBird, and Sparse Transformer all combine three
-            patterns: <strong>local</strong> (sliding window),
-            <strong>global</strong> (a few tokens attend to everything; everyone
-            attends to them), and <strong>random</strong>. The combination is
-            provably as expressive as full attention asymptotically, while being
-            linear in <em>N</em>.
+            These models are cousins, not copies.
+            <strong>Longformer</strong> uses local windowed attention plus a
+            task-motivated set of global tokens. <strong>BigBird</strong> adds
+            random connections on top of local and global links.
+            <strong>Sparse Transformer</strong> uses factorized fixed or strided
+            sparse patterns. The shared idea is to keep only a carefully chosen
+            subset of query-key interactions so the cost scales subquadratically
+            with sequence length.
           </p>
 
           <div class="callout warn">
@@ -2479,18 +2498,24 @@ scores = scores + <span class="tok-fn">alibi_bias</span>(H, N).<span class="tok-
         <!-- =========================== GQA / MQA -->
         <section id="gqa">
           <div class="marker">Section 08 · KV efficiency</div>
-          <h2>Grouped / Multi-Query Attention — <em>share the KV.</em></h2>
+          <h2>
+            Grouped / Multi-Query / Latent Attention —
+            <em>share or compress the KV.</em>
+          </h2>
           <p class="lede">
             At inference time, autoregressive models cache
             <span class="kbd-k">K</span> and <span class="kbd-v">V</span> for
             all previous tokens — the "KV cache" — to avoid recomputing them at
             every step. For a long context with many heads, this cache dominates
-            memory: a Llama-7B with 32 heads, head-dim 128, and 8k context burns
-            ~1 GB of KV cache per request. Grouped and Multi-Query attention
-            shrink the cache by sharing keys and values across query heads.
+            memory: a 32-layer MHA decoder with 32 heads, head-dim 128, and 8k
+            context burns about 4 GB of KV cache per request in fp16/bf16.
+            Grouped, Multi-Query, and Latent attention attack this bottleneck in
+            two different ways: either <strong>share</strong> keys/values across
+            query heads, or <strong>compress</strong> them into a learned latent
+            bottleneck.
           </p>
 
-          <h3>Three architectures, side by side</h3>
+          <h3 id="gqa-topology">Three architectures, side by side</h3>
 
           <div class="widget" id="gqa-widget">
             <div class="wlabel">Visualization · head topology</div>
@@ -2527,7 +2552,7 @@ scores = scores + <span class="tok-fn">alibi_bias</span>(H, N).<span class="tok-
             <div class="commentary" id="gqa-cmt"></div>
           </div>
 
-          <h3>The implementation</h3>
+          <h3 id="gqa-impl">The implementation</h3>
           <p>
             GQA is structurally identical to MHA, with two small differences:
             <em>W<sub>k</sub></em> and <em>W<sub>v</sub></em> project to a
@@ -2584,23 +2609,115 @@ scores = scores + <span class="tok-fn">alibi_bias</span>(H, N).<span class="tok-
 <span class="tok-com">#   GroupedQueryAttention(d_model, H, 1)   == MQA           (one K/V for all heads)</span></code></pre>
           </div>
 
-          <h3>How much do you save?</h3>
+          <h3 id="gqa-savings">How much do you save?</h3>
           <p>
             For Llama-2-70B (H = 64), switching to GQA with 8 KV-heads cuts the
-            KV cache by 8× — from 32 GB to 4 GB for an 8k context. The model
-            quality penalty is small (Llama 2 and Llama 3 both use GQA). MQA
-            pushes harder (1 KV-head) but with a larger quality drop, so it's
-            mostly seen in smaller models (PaLM, Falcon-40B-instruct).
+            KV cache by 8× — from about 20 GB to about 2.5 GB for an 8k context,
+            assuming fp16/bf16 storage. The model quality penalty is often
+            modest enough that mainstream large models adopt it: Llama 2 70B
+            uses GQA, and the Llama 3 family uses GQA across sizes. MQA pushes
+            harder (1 KV-head) but with a larger quality drop, so it's mostly
+            seen where inference efficiency matters more than preserving full
+            MHA-style flexibility.
           </p>
+
+          <h3 id="gqa-mla">Multi-Head Latent Attention (MLA)</h3>
+          <p>
+            GQA and MQA save memory by making multiple query heads share the
+            same <span class="kbd-k">K</span> and
+            <span class="kbd-v">V</span> tensors. <strong>MLA</strong>,
+            introduced by the DeepSeek team, goes one step further: instead of
+            caching full per-head keys and values, it first compresses each
+            token into a low-dimensional <em>latent KV state</em>, and
+            reconstructs head-specific keys and values from that state when
+            attention is computed.
+          </p>
+          <p>
+            This is the crucial distinction from MQA. In MQA, all query heads
+            literally read the same key/value head. In MLA, heads can still end
+            up with <em>different reconstructed</em> keys and values; the shared
+            object is the latent bottleneck, not the final attention vectors. So
+            MLA trades a bit more projection logic for a much smaller
+            decode-time cache.
+          </p>
+
+          <div class="eq">
+            \[ c_t^{KV} = W^{DKV} h_t, \qquad k_t = W^{UK} c_t^{KV}, \qquad v_t
+            = W^{UV} c_t^{KV} \]
+            <span class="lbl"
+              >Eq. 9 · MLA compresses K/V through a latent state</span
+            >
+          </div>
+
+          <p>
+            Read this equation operationally. For token <em>t</em>, the model
+            first forms a compact latent vector \(c_t^{KV}\). That is the thing
+            it wants to keep around at inference time. When a future query needs
+            to attend back to token <em>t</em>, the model expands that latent
+            back into keys and values through learned up-projections. DeepSeek's
+            official report presents MLA as the mechanism that "significantly
+            compresses" the KV cache; in the DeepSeek-V2 release, they report a
+            93.3% KV-cache reduction relative to DeepSeek 67B.
+          </p>
+
+          <div class="codeblock">
+            <div class="head">
+              <span
+                ><span class="dot r"></span><span class="dot y"></span
+                ><span class="dot g"></span>
+                <span class="file">mla.py</span></span
+              ><span>pedagogical latent-KV attention sketch</span>
+            </div>
+            <pre><code><span class="tok-kw">class</span> <span class="tok-fn">MultiHeadLatentAttention</span>(nn.Module):
+    <span class="tok-kw">def</span> <span class="tok-fn">__init__</span>(<span class="tok-self">self</span>, d_model, num_heads, latent_dim):
+        <span class="tok-fn">super</span>().<span class="tok-fn">__init__</span>()
+        <span class="tok-self">self</span>.H = num_heads
+        <span class="tok-self">self</span>.d_k = d_model // num_heads
+
+        <span class="tok-self">self</span>.W_q   = nn.<span class="tok-fn">Linear</span>(d_model, num_heads * <span class="tok-self">self</span>.d_k, bias=<span class="tok-kw">False</span>)
+        <span class="tok-self">self</span>.W_dkv = nn.<span class="tok-fn">Linear</span>(d_model, latent_dim, bias=<span class="tok-kw">False</span>)     <span class="tok-com"># down-project into cacheable latent</span>
+        <span class="tok-self">self</span>.W_uk  = nn.<span class="tok-fn">Linear</span>(latent_dim, num_heads * <span class="tok-self">self</span>.d_k, bias=<span class="tok-kw">False</span>)
+        <span class="tok-self">self</span>.W_uv  = nn.<span class="tok-fn">Linear</span>(latent_dim, num_heads * <span class="tok-self">self</span>.d_k, bias=<span class="tok-kw">False</span>)
+        <span class="tok-self">self</span>.W_o   = nn.<span class="tok-fn">Linear</span>(d_model, d_model, bias=<span class="tok-kw">False</span>)
+
+    <span class="tok-kw">def</span> <span class="tok-fn">forward</span>(<span class="tok-self">self</span>, x, mask=<span class="tok-kw">None</span>):
+        B, N, _ = x.shape
+        Q = <span class="tok-self">self</span>.<span class="tok-fn">W_q</span>(x).<span class="tok-fn">view</span>(B, N, <span class="tok-self">self</span>.H, <span class="tok-self">self</span>.d_k).<span class="tok-fn">transpose</span>(<span class="tok-num">1</span>, <span class="tok-num">2</span>)
+
+        c_kv = <span class="tok-self">self</span>.<span class="tok-fn">W_dkv</span>(x)                                      <span class="tok-com"># (B, N, r)  -- cache this at decode time</span>
+        K = <span class="tok-self">self</span>.<span class="tok-fn">W_uk</span>(c_kv).<span class="tok-fn">view</span>(B, N, <span class="tok-self">self</span>.H, <span class="tok-self">self</span>.d_k).<span class="tok-fn">transpose</span>(<span class="tok-num">1</span>, <span class="tok-num">2</span>)
+        V = <span class="tok-self">self</span>.<span class="tok-fn">W_uv</span>(c_kv).<span class="tok-fn">view</span>(B, N, <span class="tok-self">self</span>.H, <span class="tok-self">self</span>.d_k).<span class="tok-fn">transpose</span>(<span class="tok-num">1</span>, <span class="tok-num">2</span>)
+
+        scores = Q @ K.<span class="tok-fn">transpose</span>(-<span class="tok-num">2</span>, -<span class="tok-num">1</span>) / math.<span class="tok-fn">sqrt</span>(<span class="tok-self">self</span>.d_k)
+        <span class="tok-kw">if</span> mask <span class="tok-kw">is</span> <span class="tok-kw">not</span> <span class="tok-kw">None</span>:
+            scores = scores.<span class="tok-fn">masked_fill</span>(mask == <span class="tok-num">0</span>, <span class="tok-fn">float</span>(<span class="tok-str">'-inf'</span>))
+        attn = F.<span class="tok-fn">softmax</span>(scores, dim=-<span class="tok-num">1</span>)
+        out = (attn @ V).<span class="tok-fn">transpose</span>(<span class="tok-num">1</span>, <span class="tok-num">2</span>).<span class="tok-fn">contiguous</span>().<span class="tok-fn">view</span>(B, N, -<span class="tok-num">1</span>)
+        <span class="tok-kw">return</span> <span class="tok-self">self</span>.<span class="tok-fn">W_o</span>(out), c_kv</code></pre>
+          </div>
+
+          <div class="callout warn">
+            <span class="label">One practical wrinkle</span>
+            <p>
+              Real MLA implementations are fussier than this pedagogical sketch.
+              In practice, positional encoding interacts awkwardly with
+              compression, so production MLA variants often keep a small
+              dedicated positional path outside the main latent bottleneck, and
+              aggressively fuse projections so reconstruction stays cheap. But
+              the core idea does not change: cache the latent, not the full
+              expanded per-head K/V tensors.
+            </p>
+          </div>
 
           <div class="callout cool">
             <span class="label">Why this matters for serving</span>
             <p>
               An LLM serving system's throughput is mostly bounded by KV-cache
               memory: more memory per request = fewer concurrent requests. GQA
-              is the single change that made long-context production LLMs
-              economically viable. It is the unsung hero of every modern
-              inference stack (vLLM, TensorRT-LLM, SGLang).
+              cuts that cost by <em>sharing</em> K/V across heads; MLA cuts it
+              harder by <em>compressing</em> them into a cacheable latent state.
+              These are exactly the kinds of architectural changes that make
+              long-context production LLMs economically viable.
             </p>
           </div>
         </section>
