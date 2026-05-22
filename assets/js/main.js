@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const rectWidth = badge.offsetWidth;
     const rectHeight = badge.offsetHeight;
     const startX = containerWidth * (index + 0.5) / badges.length;
-    const startY = -50 - Math.random() * 50;
+    const startY = 22 + Math.random() * 20;
 
     const body = Bodies.rectangle(startX, startY, rectWidth, rectHeight, {
       restitution: 0.6,
@@ -212,9 +212,6 @@ function truncate(text, max) {
 const STATUS       = document.getElementById('pub-status');
 const LIST         = document.getElementById('pub-list');
 const EMPTY        = document.getElementById('pub-empty');
-const LATEST_GRID  = document.getElementById('latest-papers-grid');
-const LATEST_STATUS = document.getElementById('latest-status');
-
 /* — Fallback data — */
 const FALLBACK_PUBLICATIONS = [
   {
@@ -236,46 +233,6 @@ const FALLBACK_PUBLICATIONS = [
     citationCount: null
   }
 ];
-
-/* — Latest papers — */
-function renderLatest3(items) {
-  if (!LATEST_GRID) return;
-  const latest3 = items.sort((a, b) => (b.year || 0) - (a.year || 0)).slice(0, 3);
-
-  if (latest3.length === 0) {
-    LATEST_GRID.innerHTML = '<p class="text-slate-500 text-center col-span-3 py-8">No papers available</p>';
-    if (LATEST_STATUS) LATEST_STATUS.textContent = 'No data';
-    return;
-  }
-
-  LATEST_GRID.innerHTML = latest3.map(p => {
-    const venue   = [p.venue, p.year].filter(Boolean).join(' · ');
-    const abstract = truncate(p.abstract || p.tldr, 200);
-    const authors = Array.isArray(p.authors)
-      ? p.authors.slice(0, 3).join(', ') + (p.authors.length > 3 ? ' et al.' : '')
-      : (p.authors || '');
-    return `
-      <article class="card p-8 group">
-        <div class="relative z-10">
-          <h3 class="text-xl font-bold mb-3">
-            <a class="text-slate-700 hover:text-brand transition-colors" href="${p.url || '#'}" target="_blank">${p.title || 'Untitled'}</a>
-          </h3>
-          ${venue   ? `<p class="text-sm text-slate-500 mb-3 font-medium">${venue}</p>` : ''}
-          ${authors ? `<p class="text-xs text-slate-500 mb-4">${authors}</p>` : ''}
-          ${abstract ? `<p class="text-sm text-slate-600 leading-relaxed mb-4">${abstract}</p>` : ''}
-          ${p.citationCount ? `
-            <div class="inline-flex items-center gap-1 text-xs text-brand bg-cyan-50 px-2 py-1 rounded-full">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h4l4 4"/>
-              </svg>
-              ${p.citationCount} citations
-            </div>` : ''}
-        </div>
-      </article>
-    `;
-  }).join('');
-  if (LATEST_STATUS) LATEST_STATUS.textContent = items.length === FALLBACK_PUBLICATIONS.length ? 'Fallback data' : 'Loaded';
-}
 
 /* — Semantic Scholar — */
 async function trySemanticScholar() {
@@ -347,6 +304,18 @@ async function tryLocalPublicationsJson() {
 }
 
 /* — Render publications list — */
+/* Classify a paper into a research area tag based on title/venue keywords */
+function classifyPaper(p) {
+  const text = ((p.title || '') + ' ' + (p.venue || '') + ' ' + (p.abstract || '')).toLowerCase();
+  const orKw = /routing|vehicle|vrp|branch|price|decompos|scheduling|combinatorial|integer|linear programming|column generation|operations research|milp|ilp|heuristic|metaheuristic|exact method|optimization/;
+  const tsKw = /forecast|time.?series|temporal|sequence|attention|transformer|lstm|recurrent|prediction|autoregressive/;
+  const mlKw = /machine learning|deep learning|neural|reinforcement|graph neural|embedding|classification|regression|convolutional|bert|gpt|language model/;
+  if (tsKw.test(text)) return 'ts';
+  if (orKw.test(text)) return 'or';
+  if (mlKw.test(text)) return 'ml';
+  return 'or'; // default for academic OR/ML researcher
+}
+
 function renderPublications(items) {
   if (LIST) LIST.innerHTML = '';
   if (!items || !items.length) {
@@ -355,57 +324,98 @@ function renderPublications(items) {
     return;
   }
   if (EMPTY) EMPTY.classList.add('hidden');
-  const top = items.sort((a, b) => (b.year || 0) - (a.year || 0)).slice(0, 8);
+  const top = items.sort((a, b) => (b.year || 0) - (a.year || 0)).slice(0, 10);
 
   if (LIST) {
-    for (const p of top) {
+    top.forEach((p, idx) => {
       const li = document.createElement('li');
-      li.className = 'pb-6 border-b border-slate-200 last:border-0';
+      const area = classifyPaper(p);
+      li.className = 'pub-card reveal';
+      li.dataset.area = area;
       const authors  = Array.isArray(p.authors) ? p.authors.join(', ') : (p.authors || '');
       const abstract = p.abstract || p.tldr || '';
+      const tagLabel = area === 'or' ? 'OR' : area === 'ml' ? 'ML' : 'TS';
       li.innerHTML = `
-        <h3 class="text-lg font-semibold mb-2">
-          <a class="text-slate-700 hover:text-brand transition-colors" href="${p.url || '#'}" target="_blank">${p.title || 'Untitled'}</a>
-        </h3>
-        ${p.venue || p.year ? `<p class="text-sm text-slate-500 mb-2">${p.venue || ''}${p.year ? ` (${p.year})` : ''}</p>` : ''}
-        ${authors ? `<p class="text-xs text-slate-600 mb-3">${authors}</p>` : ''}
-        ${abstract ? `
-          <div data-abstractbox class="text-sm text-slate-600 leading-relaxed mb-3">
-            <button type="button" data-toggle="abstract" class="inline-flex items-center gap-1 text-xs text-brand bg-cyan-50 hover:bg-cyan-100 px-2 py-1 rounded-full transition-colors">
-              <span>Abstract</span>
-              <svg class="w-3 h-3 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
-            <div data-full class="hidden mt-2 text-xs text-slate-700">${abstract}</div>
+        <div class="pub-card-left">
+          <span class="pub-index mono">${String(idx + 1).padStart(2, '0')}</span>
+          <div class="pub-card-line"></div>
+        </div>
+        <div class="pub-card-body">
+          <div class="pub-card-meta">
+            <span class="pub-tag pub-tag-${area}">${tagLabel}</span>
+            ${p.year ? `<span class="pub-year mono">${p.year}</span>` : ''}
+            ${p.venue ? `<span class="pub-venue">${p.venue}</span>` : ''}
           </div>
-        ` : ''}
-        ${p.citationCount ? `
-          <div class="inline-flex items-center gap-1 text-xs text-brand bg-cyan-50 px-2 py-1 rounded-full">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h4l4 4"/>
-            </svg>
-            ${p.citationCount} citations
-          </div>` : ''}
+          <h3 class="pub-title">
+            <a href="${p.url || '#'}" target="_blank" rel="noreferrer">${p.title || 'Untitled'}</a>
+          </h3>
+          ${authors ? `<p class="pub-authors">${authors}</p>` : ''}
+          <div class="pub-card-footer">
+            ${abstract ? `
+              <button type="button" class="pub-abstract-btn" data-toggle="abstract">
+                <svg class="pub-abstract-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Abstract
+                <svg class="pub-abstract-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>` : ''}
+            ${p.citationCount ? `
+              <span class="pub-cite-badge">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h4l4 4"/>
+                </svg>
+                ${p.citationCount}
+              </span>` : ''}
+            ${p.url ? `
+              <a href="${p.url}" target="_blank" rel="noreferrer" class="pub-link-btn">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                Read
+              </a>` : ''}
+          </div>
+          ${abstract ? `<div data-full class="pub-abstract-body hidden">${abstract}</div>` : ''}
+        </div>
       `;
       LIST.appendChild(li);
-    }
+      setTimeout(() => li.classList.add('show'), idx * 60);
+    });
 
     LIST.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-toggle="abstract"]');
       if (!btn) return;
-      const box    = btn.closest('[data-abstractbox]');
-      const fullEl = box.querySelector('[data-full]');
-      const arrow  = btn.querySelector('svg');
+      const card   = btn.closest('.pub-card-body');
+      const fullEl = card.querySelector('[data-full]');
+      const arrow  = btn.querySelector('.pub-abstract-arrow');
       fullEl.classList.toggle('hidden');
       arrow.classList.toggle('rotate-180');
     });
   }
 
   if (STATUS) STATUS.textContent = 'Loaded';
-  renderLatest3(items);
   buildAndRenderCloudFrom(items);
+  const papersEl = document.getElementById('stat-papers');
+  if (papersEl) papersEl.dataset.target = Math.max(items.length, 1);
 }
+
+/* Publication filter buttons */
+(function initPubFilters() {
+  const btns = document.querySelectorAll('.pub-filter-btn');
+  if (!btns.length) return;
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      document.querySelectorAll('.pub-card').forEach(card => {
+        const show = filter === 'all' || card.dataset.area === filter;
+        card.style.display = show ? '' : 'none';
+      });
+    });
+  });
+})();
 
 /* --------------------------------------------------------------------------
    GitHub repos
@@ -450,6 +460,9 @@ function renderRepos(repos) {
     GH_LIST.appendChild(card);
   }
   if (GH_STATUS) GH_STATUS.textContent = 'Loaded';
+  // Update profile stat with real repo count
+  const reposEl = document.getElementById('stat-repos');
+  if (reposEl) reposEl.dataset.target = top.length;
 }
 
 async function tryGitHubAPI() {
@@ -480,27 +493,55 @@ async function tryGitHubAPI() {
 }
 
 /* --------------------------------------------------------------------------
+   Profile stat counters — defined BEFORE loadScholarMetrics so the hook
+   exists when the cached-metrics path fires synchronously.
+   -------------------------------------------------------------------------- */
+function animateCountUp(el, target, suffix) {
+  const duration = 1400;
+  const start    = performance.now();
+  function step(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(ease * target) + (suffix || '');
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function updateProfileStats({ citationCount, paperCount, hIndex } = {}) {
+  // hero card stats
+  const citEl    = document.getElementById('stat-citations');
+  const papersEl = document.getElementById('stat-papers');
+  const hEl      = document.getElementById('stat-hindex');
+  const reposEl  = document.getElementById('stat-repos');
+  if (citEl    && citationCount != null) animateCountUp(citEl, citationCount, '');
+  if (papersEl && paperCount    != null) { papersEl.dataset.target = paperCount; animateCountUp(papersEl, paperCount, ''); }
+  if (hEl      && hIndex        != null) animateCountUp(hEl, hIndex, '');
+  if (reposEl  && reposEl.dataset.target) animateCountUp(reposEl, parseInt(reposEl.dataset.target, 10), '');
+
+  // publications sidebar stats
+  const gsCit = document.getElementById('gs-citations');
+  const gsH   = document.getElementById('gs-hindex');
+  const gsPap = document.getElementById('gs-papers');
+  if (gsCit && citationCount != null) animateCountUp(gsCit, citationCount, '');
+  if (gsH   && hIndex        != null) animateCountUp(gsH,   hIndex, '');
+  if (gsPap && paperCount    != null) animateCountUp(gsPap, paperCount, '');
+}
+window.__updateProfileStats = updateProfileStats;
+
+/* --------------------------------------------------------------------------
    Scholar metrics (via Semantic Scholar)
    -------------------------------------------------------------------------- */
 (async function loadScholarMetrics() {
-  const MOUNT          = document.getElementById('scholar-metrics');
-  const METRICS_STATUS = document.getElementById('sch-m-status');
-  if (!MOUNT) return;
-
   const CACHE_KEY = 'scholar_metrics_cache_v1';
   const TTL_MS    = 24 * 60 * 60 * 1000; // 24 h
 
-  function render({ hIndex, citationCount, paperCount }) {
-    const parts = [];
-    if (citationCount != null) parts.push(`Citations: <strong>${citationCount.toLocaleString?.() ?? citationCount}</strong>`);
-    if (hIndex       != null) parts.push(`h-index: <strong>${hIndex}</strong>`);
-    if (paperCount   != null) parts.push(`Papers: <strong>${paperCount}</strong>`);
-    MOUNT.innerHTML = parts.length > 0 ? parts.join(' &bull; ') : 'Scholar metrics loading...';
-  }
-
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-    if (cached && (Date.now() - cached.ts) < TTL_MS) { render(cached.data); return; }
+    if (cached && (Date.now() - cached.ts) < TTL_MS) {
+      window.__updateProfileStats(cached.data);
+      return;
+    }
   } catch { /* ignore */ }
 
   // Wait for the publications fetch to populate cachedAuthorData (15 s max)
@@ -517,8 +558,6 @@ async function tryGitHubAPI() {
   }
 
   try {
-    if (METRICS_STATUS) METRICS_STATUS.textContent = 'Loading metrics...';
-
     // Determine authorId: prefer the one set by the publications fetch,
     // but do our own lookup when returning from cache didn't populate it.
     let authorId = cachedAuthorData?.authorId ?? null;
@@ -545,11 +584,10 @@ async function tryGitHubAPI() {
       citationCount: detail.citationCount ?? authorSnapshot?.citationCount ?? null,
       paperCount:    detail.paperCount    ?? null
     };
-    render(data);
+    window.__updateProfileStats(data);
     try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch { /* ignore */ }
   } catch (error) {
     console.log('Scholar metrics error:', error.message);
-    if (METRICS_STATUS) METRICS_STATUS.textContent = 'Metrics temporarily unavailable';
   }
 })();
 
@@ -605,6 +643,7 @@ function renderWordCloud(pairs) {
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   const max  = pairs.length ? Math.max(...pairs.map(([, w]) => w)) : 1;
   const list = pairs.map(([t, w]) => [t, Math.max(8, Math.round(8 + 40 * (w / max)))]);
+  const palette = ['#fbbf24', '#2dd4bf', '#f472b6', '#a78bfa', '#67e8f9'];
   WordCloud(canvas, {
     list,
     gridSize: Math.round(8 * ratio),
@@ -612,7 +651,7 @@ function renderWordCloud(pairs) {
     drawOutOfBound: false,
     backgroundColor: 'transparent',
     origin: [rect.width / 2, rect.height / 2],
-    color: () => '#0891b2',
+    color: () => palette[Math.floor(Math.random() * palette.length)],
   });
 }
 
@@ -694,6 +733,158 @@ function buildAndRenderCloudFrom(items) {
     }
   }
 })();
+
+/* --------------------------------------------------------------------------
+   Neural graph background canvas
+   -------------------------------------------------------------------------- */
+(function initNeuralCanvas() {
+  const canvas = document.getElementById('neural-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes, raf;
+
+  const NODE_COUNT   = 38;
+  const EDGE_DIST    = 180;
+  const COLORS       = ['rgba(167,139,250,', 'rgba(45,212,191,', 'rgba(251,191,36,'];
+
+  function resize() {
+    const section = canvas.closest('section') || canvas.parentElement;
+    W = canvas.width  = section.offsetWidth;
+    H = canvas.height = section.offsetHeight;
+    if (nodes) nodes.forEach(n => {
+      n.x = Math.random() * W;
+      n.y = Math.random() * H;
+    });
+  }
+
+  function createNodes() {
+    nodes = Array.from({ length: NODE_COUNT }, () => ({
+      x:   Math.random() * W,
+      y:   Math.random() * H,
+      vx:  (Math.random() - 0.5) * 0.4,
+      vy:  (Math.random() - 0.5) * 0.4,
+      r:   2 + Math.random() * 2.5,
+      pulse: Math.random() * Math.PI * 2,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const d  = Math.hypot(dx, dy);
+        if (d < EDGE_DIST) {
+          const alpha = (1 - d / EDGE_DIST) * 0.28;
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle = `rgba(167,139,250,${alpha})`;
+          ctx.lineWidth   = 0.7;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // nodes
+    nodes.forEach(n => {
+      n.pulse += 0.025;
+      const glow = 0.55 + 0.45 * Math.sin(n.pulse);
+      const r    = n.r * (0.9 + 0.18 * Math.sin(n.pulse));
+
+      const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.5);
+      grad.addColorStop(0,   n.color + (glow * 0.85).toFixed(2) + ')');
+      grad.addColorStop(0.4, n.color + (glow * 0.3).toFixed(2) + ')');
+      grad.addColorStop(1,   n.color + '0)');
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r * 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = n.color + glow.toFixed(2) + ')';
+      ctx.fill();
+
+      // update position
+      n.x += n.vx;
+      n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+    });
+  }
+
+  function loop() { draw(); raf = requestAnimationFrame(loop); }
+
+  function start() {
+    resize();
+    createNodes();
+    loop();
+  }
+
+  const obs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !raf) start();
+    else if (!entries[0].isIntersecting && raf) { cancelAnimationFrame(raf); raf = null; }
+  });
+  obs.observe(canvas.closest('section') || canvas.parentElement);
+
+  window.addEventListener('resize', () => {
+    resize();
+    if (!raf) start();
+  }, { passive: true });
+})();
+
+/* --------------------------------------------------------------------------
+   Hero typewriter rotation
+   -------------------------------------------------------------------------- */
+(function initHeroTypewriter() {
+  const el = document.getElementById('hero-typewriter');
+  if (!el) return;
+
+  const phrases = [
+    'better decisions',
+    'optimal forecasts',
+    'structured learning',
+    'smarter algorithms',
+    'rigorous ML systems',
+  ];
+
+  let phraseIdx = 0, charIdx = 0, deleting = false;
+
+  function tick() {
+    const current = phrases[phraseIdx];
+    if (!deleting) {
+      charIdx++;
+      el.textContent = current.slice(0, charIdx);
+      if (charIdx === current.length) {
+        deleting = true;
+        setTimeout(tick, 2200);
+        return;
+      }
+      setTimeout(tick, 68);
+    } else {
+      charIdx--;
+      el.textContent = current.slice(0, charIdx);
+      if (charIdx === 0) {
+        deleting = false;
+        phraseIdx = (phraseIdx + 1) % phrases.length;
+        setTimeout(tick, 380);
+        return;
+      }
+      setTimeout(tick, 38);
+    }
+  }
+
+  // start after a short delay so the page has settled
+  setTimeout(tick, 1400);
+})();
+
 
 /* --------------------------------------------------------------------------
    Active nav highlight on scroll
