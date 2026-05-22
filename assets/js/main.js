@@ -209,9 +209,9 @@ function truncate(text, max) {
 }
 
 /* — DOM refs — */
-const STATUS       = document.getElementById('pub-status');
-const LIST         = document.getElementById('pub-list');
-const EMPTY        = document.getElementById('pub-empty');
+const STATUS = document.getElementById('pub-status');
+const LIST = document.getElementById('pub-list');
+const EMPTY = document.getElementById('pub-empty');
 /* — Fallback data — */
 const FALLBACK_PUBLICATIONS = [
   {
@@ -310,7 +310,7 @@ function classifyPaper(p) {
   const orKw = /routing|vehicle|vrp|branch|price|decompos|scheduling|combinatorial|integer|linear programming|column generation|operations research|milp|ilp|heuristic|metaheuristic|exact method|optimization/;
   const tsKw = /forecast|time.?series|temporal|sequence|attention|transformer|lstm|recurrent|prediction|autoregressive/;
   const mlKw = /machine learning|deep learning|neural|reinforcement|graph neural|embedding|classification|regression|convolutional|bert|gpt|language model/;
-  if (tsKw.test(text)) return 'ts';
+  if (tsKw.test(text)) return 'ml';
   if (orKw.test(text)) return 'or';
   if (mlKw.test(text)) return 'ml';
   return 'or'; // default for academic OR/ML researcher
@@ -332,7 +332,7 @@ function renderPublications(items) {
       const area = classifyPaper(p);
       li.className = 'pub-card reveal';
       li.dataset.area = area;
-      const authors  = Array.isArray(p.authors) ? p.authors.join(', ') : (p.authors || '');
+      const authors = Array.isArray(p.authors) ? p.authors.join(', ') : (p.authors || '');
       const abstract = p.abstract || p.tldr || '';
       const tagLabel = area === 'or' ? 'OR' : area === 'ml' ? 'ML' : 'TS';
       li.innerHTML = `
@@ -386,9 +386,9 @@ function renderPublications(items) {
     LIST.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-toggle="abstract"]');
       if (!btn) return;
-      const card   = btn.closest('.pub-card-body');
+      const card = btn.closest('.pub-card-body');
       const fullEl = card.querySelector('[data-full]');
-      const arrow  = btn.querySelector('.pub-abstract-arrow');
+      const arrow = btn.querySelector('.pub-abstract-arrow');
       fullEl.classList.toggle('hidden');
       arrow.classList.toggle('rotate-180');
     });
@@ -421,7 +421,7 @@ function renderPublications(items) {
    GitHub repos
    -------------------------------------------------------------------------- */
 const GH_STATUS = document.getElementById('gh-status');
-const GH_LIST   = document.getElementById('gh-list');
+const GH_LIST = document.getElementById('gh-list');
 
 function renderRepos(repos) {
   if (!GH_LIST) return;
@@ -498,7 +498,7 @@ async function tryGitHubAPI() {
    -------------------------------------------------------------------------- */
 function animateCountUp(el, target, suffix) {
   const duration = 1400;
-  const start    = performance.now();
+  const start = performance.now();
   function step(now) {
     const p = Math.min((now - start) / duration, 1);
     const ease = 1 - Math.pow(1 - p, 3);
@@ -510,22 +510,22 @@ function animateCountUp(el, target, suffix) {
 
 function updateProfileStats({ citationCount, paperCount, hIndex } = {}) {
   // hero card stats
-  const citEl    = document.getElementById('stat-citations');
+  const citEl = document.getElementById('stat-citations');
   const papersEl = document.getElementById('stat-papers');
-  const hEl      = document.getElementById('stat-hindex');
-  const reposEl  = document.getElementById('stat-repos');
-  if (citEl    && citationCount != null) animateCountUp(citEl, citationCount, '');
-  if (papersEl && paperCount    != null) { papersEl.dataset.target = paperCount; animateCountUp(papersEl, paperCount, ''); }
-  if (hEl      && hIndex        != null) animateCountUp(hEl, hIndex, '');
-  if (reposEl  && reposEl.dataset.target) animateCountUp(reposEl, parseInt(reposEl.dataset.target, 10), '');
+  const hEl = document.getElementById('stat-hindex');
+  const reposEl = document.getElementById('stat-repos');
+  if (citEl && citationCount != null) animateCountUp(citEl, citationCount, '');
+  if (papersEl && paperCount != null) { papersEl.dataset.target = paperCount; animateCountUp(papersEl, paperCount, ''); }
+  if (hEl && hIndex != null) animateCountUp(hEl, hIndex, '');
+  if (reposEl && reposEl.dataset.target) animateCountUp(reposEl, parseInt(reposEl.dataset.target, 10), '');
 
   // publications sidebar stats
   const gsCit = document.getElementById('gs-citations');
-  const gsH   = document.getElementById('gs-hindex');
+  const gsH = document.getElementById('gs-hindex');
   const gsPap = document.getElementById('gs-papers');
   if (gsCit && citationCount != null) animateCountUp(gsCit, citationCount, '');
-  if (gsH   && hIndex        != null) animateCountUp(gsH,   hIndex, '');
-  if (gsPap && paperCount    != null) animateCountUp(gsPap, paperCount, '');
+  if (gsH && hIndex != null) animateCountUp(gsH, hIndex, '');
+  if (gsPap && paperCount != null) animateCountUp(gsPap, paperCount, '');
 }
 window.__updateProfileStats = updateProfileStats;
 
@@ -534,7 +534,7 @@ window.__updateProfileStats = updateProfileStats;
    -------------------------------------------------------------------------- */
 (async function loadScholarMetrics() {
   const CACHE_KEY = 'scholar_metrics_cache_v1';
-  const TTL_MS    = 24 * 60 * 60 * 1000; // 24 h
+  const TTL_MS = 24 * 60 * 60 * 1000; // 24 h
 
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
@@ -580,9 +580,9 @@ window.__updateProfileStats = updateProfileStats;
 
     const detail = await getAuthorDetails(authorId);
     const data = {
-      hIndex:        detail.hIndex        ?? authorSnapshot?.hIndex        ?? null,
+      hIndex: detail.hIndex ?? authorSnapshot?.hIndex ?? null,
       citationCount: detail.citationCount ?? authorSnapshot?.citationCount ?? null,
-      paperCount:    detail.paperCount    ?? null
+      paperCount: detail.paperCount ?? null
     };
     window.__updateProfileStats(data);
     try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch { /* ignore */ }
@@ -594,12 +594,12 @@ window.__updateProfileStats = updateProfileStats;
 /* --------------------------------------------------------------------------
    Word cloud
    -------------------------------------------------------------------------- */
-const CLOUD_STATUS  = document.getElementById('cloud-status');
-const TOP_TERMS_OL  = document.getElementById('top-terms');
+const CLOUD_STATUS = document.getElementById('cloud-status');
+const TOP_TERMS_OL = document.getElementById('top-terms');
 
 const STOP = new Set(
   'a,an,and,are,as,at,be,by,for,from,has,have,in,is,its,of,on,or,that,the,to,was,were,with,via,using,into,through,do,does,did,not,can,could,may,might,will,would,should,we,you,they,our,this,these,those,over,under,between,within'
-  .split(',')
+    .split(',')
 );
 
 function buildCorpus(items) {
@@ -635,13 +635,13 @@ function renderTopTerms(list, data) {
 function renderWordCloud(pairs) {
   const canvas = document.getElementById('wordcloud');
   if (!canvas || !window.WordCloud) return;
-  const rect  = canvas.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
   const ratio = window.devicePixelRatio || 1;
-  canvas.width  = rect.width  * ratio;
+  canvas.width = rect.width * ratio;
   canvas.height = rect.height * ratio;
   const ctx = canvas.getContext('2d');
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  const max  = pairs.length ? Math.max(...pairs.map(([, w]) => w)) : 1;
+  const max = pairs.length ? Math.max(...pairs.map(([, w]) => w)) : 1;
   const list = pairs.map(([t, w]) => [t, Math.max(8, Math.round(8 + 40 * (w / max)))]);
   const palette = ['#fbbf24', '#2dd4bf', '#f472b6', '#a78bfa', '#67e8f9'];
   WordCloud(canvas, {
@@ -744,13 +744,13 @@ function buildAndRenderCloudFrom(items) {
   const ctx = canvas.getContext('2d');
   let W, H, nodes, raf;
 
-  const NODE_COUNT   = 38;
-  const EDGE_DIST    = 180;
-  const COLORS       = ['rgba(167,139,250,', 'rgba(45,212,191,', 'rgba(251,191,36,'];
+  const NODE_COUNT = 38;
+  const EDGE_DIST = 180;
+  const COLORS = ['rgba(167,139,250,', 'rgba(45,212,191,', 'rgba(251,191,36,'];
 
   function resize() {
     const section = canvas.closest('section') || canvas.parentElement;
-    W = canvas.width  = section.offsetWidth;
+    W = canvas.width = section.offsetWidth;
     H = canvas.height = section.offsetHeight;
     if (nodes) nodes.forEach(n => {
       n.x = Math.random() * W;
@@ -760,11 +760,11 @@ function buildAndRenderCloudFrom(items) {
 
   function createNodes() {
     nodes = Array.from({ length: NODE_COUNT }, () => ({
-      x:   Math.random() * W,
-      y:   Math.random() * H,
-      vx:  (Math.random() - 0.5) * 0.4,
-      vy:  (Math.random() - 0.5) * 0.4,
-      r:   2 + Math.random() * 2.5,
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: 2 + Math.random() * 2.5,
       pulse: Math.random() * Math.PI * 2,
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
     }));
@@ -778,14 +778,14 @@ function buildAndRenderCloudFrom(items) {
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[i].x - nodes[j].x;
         const dy = nodes[i].y - nodes[j].y;
-        const d  = Math.hypot(dx, dy);
+        const d = Math.hypot(dx, dy);
         if (d < EDGE_DIST) {
           const alpha = (1 - d / EDGE_DIST) * 0.28;
           ctx.beginPath();
           ctx.moveTo(nodes[i].x, nodes[i].y);
           ctx.lineTo(nodes[j].x, nodes[j].y);
           ctx.strokeStyle = `rgba(167,139,250,${alpha})`;
-          ctx.lineWidth   = 0.7;
+          ctx.lineWidth = 0.7;
           ctx.stroke();
         }
       }
@@ -795,12 +795,12 @@ function buildAndRenderCloudFrom(items) {
     nodes.forEach(n => {
       n.pulse += 0.025;
       const glow = 0.55 + 0.45 * Math.sin(n.pulse);
-      const r    = n.r * (0.9 + 0.18 * Math.sin(n.pulse));
+      const r = n.r * (0.9 + 0.18 * Math.sin(n.pulse));
 
       const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.5);
-      grad.addColorStop(0,   n.color + (glow * 0.85).toFixed(2) + ')');
+      grad.addColorStop(0, n.color + (glow * 0.85).toFixed(2) + ')');
       grad.addColorStop(0.4, n.color + (glow * 0.3).toFixed(2) + ')');
-      grad.addColorStop(1,   n.color + '0)');
+      grad.addColorStop(1, n.color + '0)');
 
       ctx.beginPath();
       ctx.arc(n.x, n.y, r * 3.5, 0, Math.PI * 2);
@@ -891,16 +891,16 @@ function buildAndRenderCloudFrom(items) {
    -------------------------------------------------------------------------- */
 (function initActiveNav() {
   const header = document.getElementById('site-header');
-  const links  = Array.from(document.querySelectorAll('header nav a[href^="#"]'));
-  const secs   = links.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+  const links = Array.from(document.querySelectorAll('header nav a[href^="#"]'));
+  const secs = links.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
 
   if (!header || !links.length || !secs.length) return;
 
   const setActive = (id) => {
-    const current   = document.querySelector('header nav a[aria-current="page"]');
+    const current = document.querySelector('header nav a[aria-current="page"]');
     const newActive = document.querySelector(`header nav a[href="#${CSS.escape(id)}"]`);
     if (current === newActive) return;
-    if (current)   current.removeAttribute('aria-current');
+    if (current) current.removeAttribute('aria-current');
     if (newActive) newActive.setAttribute('aria-current', 'page');
   };
 
@@ -908,10 +908,10 @@ function buildAndRenderCloudFrom(items) {
     const topPad = header.offsetHeight + 16;
     let bestSection = null, bestScore = -Infinity;
     for (const section of secs) {
-      const rect          = section.getBoundingClientRect();
-      const vh            = window.innerHeight;
+      const rect = section.getBoundingClientRect();
+      const vh = window.innerHeight;
       if (rect.bottom < topPad || rect.top > vh) continue;
-      const visibleTop    = Math.max(rect.top, topPad);
+      const visibleTop = Math.max(rect.top, topPad);
       const visibleBottom = Math.min(rect.bottom, vh);
       const visibleHeight = Math.max(0, visibleBottom - visibleTop);
       if (visibleHeight <= 0) continue;
