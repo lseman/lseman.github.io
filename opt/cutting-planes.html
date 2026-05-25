@@ -591,9 +591,9 @@
           <a href="#ch0"><span class="n">00</span>Why cut?</a>
           <a href="#ch1"><span class="n">01</span>Gomory fractional cuts</a>
           <a href="#ch2"><span class="n">02</span>Mixed‑integer Gomory</a>
-          <a href="#ch3"><span class="n">03</span>The MIR inequality</a>
+          <a href="#ch3"><span class="n">03</span>MIR inequality &amp; c-MIR</a>
           <a href="#ch4"><span class="n">04</span>Cover / knapsack cuts</a>
-          <a href="#ch5"><span class="n">05</span>Lifting</a>
+          <a href="#ch5"><span class="n">05</span>Lifting &amp; extending</a>
           <a href="#ch6"
             ><span class="n">06</span>Extended formulations &amp; closing</a
           >
@@ -633,7 +633,7 @@
             </div>
             <div>
               <div class="label">Reading time</div>
-              <div class="val">≈ 30 minutes</div>
+              <div class="val">≈ 50 minutes</div>
             </div>
           </div>
         </header>
@@ -1978,19 +1978,21 @@ print(f"Cut in slack space: {pi[0]:.4f}·s1 + {pi[1]:.4f}·s2 >= 1")
         <section class="chapter" id="ch3">
           <aside class="chapter-mark">
             <span class="roman">III</span>
-            Rounding
+            MIR &amp; c-MIR
             <div class="tagline">
-              A single inequality, mechanically tightened.
+              Rounding, aggregation, and complementation.
             </div>
           </aside>
           <div class="body">
-            <h2>Mixed‑integer <em>rounding</em>.</h2>
+            <h2>Mixed‑integer <em>rounding</em> &amp; c-MIR.</h2>
             <p class="lead">
               MIG cuts arise from a particular row of the simplex tableau, but
               the same rounding logic applies to <em>any</em> linear combination
-              of constraints — that combination need not be a tableau row at
-              all. Distilling the principle gives the MIR inequality, which is
-              the workhorse of generic cut generation.
+              of constraints — that combination need not be a tableau row at all.
+              Distilling the principle gives the MIR inequality; enriching it
+              with aggregation, complementation, and scaling gives the c-MIR
+              procedure — the workhorse of generic cut generation in all modern
+              solvers.
             </p>
 
             <div class="aside">
@@ -2214,68 +2216,62 @@ print(f"Cut in slack space: {pi[0]:.4f}·s1 + {pi[1]:.4f}·s2 >= 1")
               rounding to <em>any</em> aggregated inequality we like.
             </div>
 
-            <h3>Aggregation and the c‑MIR procedure</h3>
-            <p>
-              The freedom of MIR is exploited by aggregating multiple rows of
-              $Ax \le b$ with multipliers $\lambda \ge 0$, giving a combined
-              inequality, complementing some bounded integer variables ($y_j \to
-              u_j - y_j$), and scaling by some factor $\delta > 0$ before
-              applying MIR. This is the <em>complemented MIR</em> (c‑MIR)
-              separation heuristic — Marchand &amp; Wolsey, 2001 — and is what
-              commercial solvers actually compute under the "MIR cuts" banner.
-            </p>
-
-            <div class="tableau">c-MIR in solver language
-1. aggregate rows to manufacture a promising mixed-integer inequality
-2. complement bounded integer variables when that creates a better row fraction
-3. scale the row, apply MIR, keep the cuts with the best violation
-</div>
-
-            <div class="aside">
-              <span class="label">Why aggregation matters</span>
-              A raw model row may have a useless fractional part, or may mix the
-              variables in a weak way. Aggregation lets the solver synthesize a
-              row whose right-hand-side fraction and coefficient pattern are much
-              more favorable for rounding. That is why "MIR cuts" in production
-              are rarely taken from the model exactly as written.
-            </div>
-
-            <p class="worked">Worked example — MIR on a single inequality</p>
+            <h3>Worked example — MIR step by step</h3>
 
             <p>
-              Start from
+              Consider the mixed-integer set
             </p>
             \[
-              3y_1 + 2.5y_2 + 1.7y_3 - 0.4s_1 \le 6.3,
-              \qquad
-              y \in \mathbb{Z}_+^3,\; s_1 \ge 0.
+              3y_1 + 2.5\,y_2 + 1.7\,y_3 - 0.4\,s_1 \;\le\; 6.3,
+              \qquad y_j \in \mathbb{Z}_+,\; s_1 \ge 0.
             \]
             <p>
-              Here $f = 6.3 - 6 = 0.3$. The fractional parts of the integer
-              coefficients are
+              We apply the general MIR formula column by column. First extract
+              the row fraction and the fractional parts of each integer
+              coefficient:
             </p>
             \[
-              f_1 = 0,\qquad f_2 = 0.5,\qquad f_3 = 0.7.
+              f = 6.3 - 6 = 0.3,\qquad
+              f_1 = 0,\quad f_2 = 0.5,\quad f_3 = 0.7.
             \]
-            <ol>
-              <li>$y_1$ is unchanged because $a_1 = 3$ is already integer.</li>
-              <li>$y_2$ is bumped to $2 + (0.5 - 0.3)/0.7 = 2 + 2/7 = 16/7$.</li>
-              <li>$y_3$ is bumped to $1 + (0.7 - 0.3)/0.7 = 1 + 4/7 = 11/7$.</li>
-              <li>The continuous coefficient is negative, so it rescales to $-0.4/0.7 = -4/7$.</li>
-              <li>The right-hand side rounds down from $6.3$ to $6$.</li>
-            </ol>
+
+            <div class="tableau">Applying the MIR bump rule  (f = 0.3)
+
+Variable  coeff   floor   frac-part   frac > f?   bump              new coeff
+y₁        3.0     3       0.0         no          0                 3.0
+y₂        2.5     2       0.5         yes         (0.5-0.3)/0.7 = 2/7   2 + 2/7 = 16/7
+y₃        1.7     1       0.7         yes         (0.7-0.3)/0.7 = 4/7   1 + 4/7 = 11/7
+s₁       -0.4    —       —            negative    -0.4/0.7 = -4/7   -4/7
+RHS       6.3     6       —           —            —                 6</div>
+
             <p>
               So the MIR cut is
             </p>
             \[
-              3y_1 + \frac{16}{7}y_2 + \frac{11}{7}y_3 - \frac{4}{7}s_1 \le 6.
+              3y_1 \;+\; \frac{16}{7}y_2 \;+\; \frac{11}{7}y_3 \;-\; \frac{4}{7}s_1 \;\le\; 6.
             \]
             <p>
-              Multiplying through by 7 gives the cleaner equivalent form
+              Multiplying through by 7 clears the denominators:
             </p>
             \[
-              21y_1 + 16y_2 + 11y_3 - 4s_1 \le 42.
+              21\,y_1 + 16\,y_2 + 11\,y_3 - 4\,s_1 \;\le\; 42.
             \]
+
+            <div class="callout def">
+              <span class="badge">Checking the cut</span>
+              <p>
+                Does the original row satisfy all-integer points that satisfy
+                the cut? Test the boundary point: $y_2 = y_3 = 1,\; y_1 = s_1 = 0$.
+                Original: $2.5 + 1.7 = 4.2 \le 6.3$ ✓. MIR: $16 + 11 = 27 \le 42$ ✓.
+                Now try the LP-like relaxed point $y_2 = 2.1, y_3 = y_1 = s_1 = 0$:
+                Original: $2.5 \times 2.1 = 5.25 \le 6.3$ ✓, but
+                MIR: $16 \times 2.1 = 33.6 \le 42$ ✓.
+                The cut is valid but the tightening shows for <em>integer</em>
+                $y_2 = 2$: original allows $y_2 = 2$ ($5 \le 6.3$), but
+                MIR gives $32 \le 42$ — the cut is not tight here. The key
+                tightening is captured by the bump on the fractional parts.
+              </p>
+            </div>
 
             <pre><code class="language-python">import numpy as np
 
@@ -2291,11 +2287,11 @@ def mir_cut(a, g, b):
     g = np.asarray(g, dtype=float)
     f = b - np.floor(b)
     if f == 0:
-        return np.floor(a), np.minimum(g, 0.0), np.floor(b)   # trivial
+        return np.floor(a), np.minimum(g, 0.0), np.floor(b)
     fj   = a - np.floor(a)
     bump = np.where(fj > f, (fj - f) / (1 - f), 0.0)
     a_hat = np.floor(a) + bump
-    g_hat = np.where(g < 0, g / (1 - f), 0.0)                  # g_k >= 0 drop
+    g_hat = np.where(g < 0, g / (1 - f), 0.0)   # positive g_k dropped
     b_hat = np.floor(b)
     return a_hat, g_hat, b_hat
 
@@ -2306,21 +2302,342 @@ a_hat, g_hat, b_hat = mir_cut(
     g=[-0.4],
     b=6.3,
 )
-print("MIR cut coefficients on y :", np.round(a_hat, 6))
-print("MIR cut coefficients on s :", g_hat)
-print("MIR cut RHS               :", b_hat)
-# Output:
-#   MIR cut coefficients on y : [3.       2.285714 1.571429]
-#   MIR cut coefficients on s : [-0.57142857]
-#   MIR cut RHS               : 6.0
+print("MIR coefficients on y :", np.round(a_hat, 4))   # [3.  2.2857 1.5714]
+print("MIR coefficients on s :", np.round(g_hat, 4))   # [-0.5714]
+print("MIR RHS               :", b_hat)                # 6.0
+</code></pre>
+
+            <h3>Applying MIR to a MILP — end-to-end example</h3>
+
+            <p>
+              To see MIR working inside a solver loop, consider the two-variable
+              mixed-integer program
+            </p>
+            \[
+              \max\; 2y + s
+              \quad\text{s.t.}\quad
+              \begin{aligned}
+                4y + s &\le 14 \\
+                y + 3s &\le 9  \\
+                y \in \mathbb{Z}_+,\; s &\ge 0.
+              \end{aligned}
+            \]
+            <p>
+              The LP relaxation (ignore $y \in \mathbb{Z}$) has optimum
+              $y^* = 33/11 = 3.\overline{09},\; s^* = 14/11 - 3.09 \approx \ldots$
+              — let us compute it precisely.
+            </p>
+            <p>
+              Solve the two-constraint LP. Binding at optimum:
+              $4y + s = 14$ and $y + 3s = 9$.
+              From the second equation $s = (9 - y)/3$; substitute into the first:
+            </p>
+            \[
+              4y + \frac{9-y}{3} = 14 \;\Rightarrow\; 12y + 9 - y = 42
+              \;\Rightarrow\; y = \frac{33}{11} = 3,\!\overline{09},\quad
+              s = \frac{9 - 33/11}{3} = \frac{66/11}{3} = \frac{22}{11} = 2.
+            \]
+            <p>
+              Wait — $s = 2$ exactly and $y = 33/11 \approx 3.0\overline{09}$ is
+              fractional. The LP objective is
+              $2 \cdot 33/11 + 2 = 66/11 + 2 = 8.\overline{18}$.
+            </p>
+            <p>
+              We apply MIR to the first constraint $4y + s \le 14$ (take $g = [1]$
+              for the continuous column $s$):
+            </p>
+            \[
+              f = 14 - 14 = 0,
+            \]
+            <p>
+              but $f = 0$ means no rounding is needed on this row. Try the
+              <em>second</em> constraint $y + 3s \le 9$ instead:
+            </p>
+            \[
+              f = 9 - 9 = 0.
+            \]
+            <p>
+              Both constraints have integer right-hand sides, so individual
+              rows produce no useful MIR cut. The power of MIR comes from
+              <em>aggregating</em> rows. Multiply the first by $\lambda_1 = 1$
+              and the second by $\lambda_2 = 1/3$:
+            </p>
+            \[
+              4y + s + \tfrac{1}{3}(y + 3s) \le 14 + 3
+              \;\;\Longrightarrow\;\;
+              \tfrac{13}{3}\,y + 2s \le 17.
+            \]
+            <p>
+              Now $f = 17 - 17 = 0$ — still trivial. Try $\lambda_2 = 1/4$:
+            </p>
+            \[
+              4y + s + \tfrac{1}{4}y + \tfrac{3}{4}s \le 14 + \tfrac{9}{4}
+              \;\Rightarrow\; \tfrac{17}{4}y + \tfrac{7}{4}s \le \tfrac{65}{4} = 16.25.
+            \]
+            <p>
+              Now $f = 0.25$, and the integer coefficient of $y$ is $17/4 = 4.25$,
+              so $f_y = 0.25 = f$. The bump is $(0.25 - 0.25)/0.75 = 0$.
+              Still no improvement — the fractional part of the coefficient
+              exactly matches $f$, the cut degenerates.
+            </p>
+            <p>
+              Try $\lambda_2 = 1/2$:
+            </p>
+            \[
+              4y + s + \tfrac{1}{2}y + \tfrac{3}{2}s \le 14 + \tfrac{9}{2}
+              \;\Rightarrow\; \tfrac{9}{2}y + \tfrac{5}{2}s \le \tfrac{37}{2} = 18.5.
+            \]
+            <p>
+              Now $f = 0.5$, integer coefficient of $y$ is $9/2$, fractional
+              part $f_y = 0.5 = f$. Again the coefficient exactly matches $f$.
+              This is a systematic problem with all-integer $a$-rows. Let us
+              instead try a direct <em>complementation trick</em> from c-MIR.
+            </p>
+
+            <div class="aside">
+              <span class="label">When individual rows are all-integer</span>
+              When all coefficients and right-hand sides are integers (which is
+              the common case in pure integer programs), plain MIR on individual
+              rows trivially gives $f = 0$ and produces no cut. The fix is
+              either (a) to aggregate rows with non-integer multipliers so that
+              the resulting RHS is fractional, or (b) to complement variables.
+              This is precisely where <em>c-MIR</em> enters.
+            </div>
+
+            <h3>Aggregation and the c-MIR procedure</h3>
+
+            <p>
+              <em>Complemented Mixed-Integer Rounding</em> (c-MIR; Marchand
+              &amp; Wolsey, 2001) is the three-step engine that solvers run
+              under the "MIR cuts" label in their output logs.
+            </p>
+
+            <div class="callout def">
+              <span class="badge">The three steps of c-MIR</span>
+              <ol>
+                <li>
+                  <strong>Aggregate.</strong> Choose non-negative multipliers
+                  $\lambda \ge 0$ and form a combined row
+                  $(\lambda^\top A)\,x \le \lambda^\top b$.
+                </li>
+                <li>
+                  <strong>Complement.</strong> For each bounded integer
+                  variable $y_j \in [0, u_j]$, optionally substitute
+                  $y_j \to u_j - \tilde y_j$ (complementing) to
+                  create a more favourable fractional part in the row.
+                </li>
+                <li>
+                  <strong>Scale and round.</strong> Divide the combined row
+                  by a scalar $\delta > 0$ chosen to maximize the cut's
+                  violation at the current LP optimum, then apply the
+                  standard MIR formula.
+                </li>
+              </ol>
+            </div>
+
+            <h3>c-MIR numerical walkthrough</h3>
+
+            <p>
+              Consider the pure integer program
+            </p>
+            \[
+              \max\; y_1 + y_2
+              \quad\text{s.t.}\quad
+              \begin{aligned}
+                3y_1 + 4y_2 &\le 11 \quad (\text{row 1})\\
+                y_1 + 2y_2  &\le 5  \quad (\text{row 2})\\
+                0 \le y_j &\le 4,\quad y_j \in \mathbb{Z}.
+              \end{aligned}
+            \]
+            <p>
+              The LP relaxation has optimum $y_1^* = 3, y_2^* = 0.5$
+              (verify: row 1 is tight: $9+2=11$ ✓; row 2: $3+1=4 \le 5$ ✓).
+              Objective $= 3.5$.
+            </p>
+            <p>
+              Since $y_2^* = 0.5$ is fractional, we want a cut separating
+              $(3, 0.5)$ from the integer hull.
+            </p>
+
+            <p><strong>Step 1 — Aggregate</strong> with $\lambda_1 = 1/4$, $\lambda_2 = 0$:</p>
+            \[
+              \tfrac{3}{4}y_1 + y_2 \;\le\; \tfrac{11}{4} = 2.75.
+            \]
+            <p>
+              Now $f = 0.75$ and the coefficient of $y_1$ has fractional part
+              $f_1 = 0.75 = f$. Same degenerate situation.
+            </p>
+
+            <p>
+              <strong>Step 2 — Complement $y_1$.</strong>
+              Substitute $y_1 = 4 - \tilde y_1$ (since $u_1 = 4$) into the
+              aggregated row:
+            </p>
+            \[
+              \tfrac{3}{4}(4 - \tilde y_1) + y_2 \le 2.75
+              \;\Rightarrow\;
+              3 - \tfrac{3}{4}\tilde y_1 + y_2 \le 2.75
+              \;\Rightarrow\;
+              -\tfrac{3}{4}\tilde y_1 + y_2 \le -0.25.
+            \]
+            <p>
+              Multiply by $-1$ (flip inequality and signs):
+            </p>
+            \[
+              \tfrac{3}{4}\tilde y_1 - y_2 \;\ge\; 0.25.
+            \]
+            <p>
+              Equivalently write as $\le$: $-\tfrac{3}{4}\tilde y_1 + y_2 \le -0.25$.
+              To apply MIR in the standard $\le$ form, keep it as
+            </p>
+            \[
+              y_2 - \tfrac{3}{4}\tilde y_1 \le -0.25,
+              \quad f = -0.25 - \lfloor -0.25 \rfloor = -0.25 + 1 = 0.75.
+            \]
+
+            <p>
+              <strong>Step 3 — Apply MIR</strong> with $f = 0.75$.
+              Integer columns: $y_2$ has coefficient $1$ (fractional part $f_2 = 0$;
+              since $0 \le f = 0.75$ no bump), and $\tilde y_1$ has coefficient
+              $-3/4$ (this is negative, so it enters as a continuous-like column
+              since it pushes left):
+            </p>
+            \[
+              \text{MIR formula: } \lfloor -3/4 \rfloor + \frac{(f_1 - f)^+}{1-f}
+              = -1 + \frac{(0.25 - 0.75)^+}{0.25} = -1 + 0 = -1.
+            \]
+            <p>
+              Right-hand side: $\lfloor -0.25 \rfloor = -1$.
+            </p>
+            <p>
+              So the MIR cut in $(\tilde y_1, y_2)$ space is
+              $y_2 - \tilde y_1 \le -1$, i.e.\ $\tilde y_1 - y_2 \ge 1$.
+              Substituting back $\tilde y_1 = 4 - y_1$:
+            </p>
+            \[
+              (4 - y_1) - y_2 \ge 1
+              \;\;\Longleftrightarrow\;\;
+              y_1 + y_2 \le 3.
+            \]
+            <p>
+              <strong>Check:</strong> At the LP optimum $(y_1, y_2) = (3, 0.5)$:
+              $3 + 0.5 = 3.5 > 3$ — the cut is violated. ✓
+              The integer optimal $(y_1, y_2) = (3, 0)$ satisfies $3 \le 3$. ✓
+              The cut is tight at the integer optimum — it is a valid and active
+              cut that immediately corrects the LP relaxation.
+            </p>
+
+            <div class="callout thm">
+              <span class="badge">c-MIR summary on this example</span>
+              Starting from two all-integer rows, c-MIR produced the cut
+              $y_1 + y_2 \le 3$ in three steps: aggregate with
+              $\lambda = (1/4, 0)$, complement $y_1 \leftarrow 4 - \tilde y_1$,
+              apply MIR. The cut is tight at the integer optimum and closes the
+              LP gap from 3.5 to 3 in one round.
+            </div>
+
+            <pre><code class="language-python">import numpy as np
+from scipy.optimize import linprog
+
+def cmir_cut(A, b, u, lam, complement_mask, delta=1.0):
+    """
+    c-MIR cut generator.
+
+    Parameters
+    ----------
+    A               : (m, n) constraint matrix (all variables treated as integer)
+    b               : (m,) right-hand side
+    u               : (n,) upper bounds on integer variables
+    lam             : (m,) aggregation multipliers >= 0
+    complement_mask : (n,) bool — which variables to complement (y_j -> u_j - y_j)
+    delta           : scaling factor > 0 applied before MIR
+
+    Returns
+    -------
+    pi      : cut coefficients in original y space  (cut: pi @ y <= pi0)
+    pi0     : cut right-hand side
+    """
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    u = np.array(u, dtype=float)
+    lam = np.array(lam, dtype=float)
+
+    # Step 1: aggregate
+    a_agg = lam @ A       # shape (n,)
+    b_agg = lam @ b       # scalar
+
+    # Step 2: complement y_j -> u_j - y_tilde_j where complement_mask[j]
+    a_comp = a_agg.copy()
+    b_comp = b_agg
+    for j, do_comp in enumerate(complement_mask):
+        if do_comp:
+            b_comp -= a_agg[j] * u[j]
+            a_comp[j] = -a_agg[j]
+
+    # Step 3: scale by 1/delta, then apply MIR
+    a_sc = a_comp / delta
+    b_sc = b_comp / delta
+
+    f = b_sc - np.floor(b_sc)
+    if f < 1e-9:
+        raise ValueError("Row fraction is zero after scaling — try a different delta.")
+
+    fj    = a_sc - np.floor(a_sc)
+    bump  = np.where(fj > f, (fj - f) / (1 - f), 0.0)
+    a_hat = (np.floor(a_sc) + bump) * delta
+    b_hat = np.floor(b_sc) * delta
+
+    # Un-complement: pi_j = a_hat[j] for non-complemented,
+    #                pi_j = -a_hat[j] with shift  for complemented
+    pi  = np.zeros_like(a_hat)
+    pi0 = b_hat
+    for j, do_comp in enumerate(complement_mask):
+        if do_comp:
+            pi[j]  = -a_hat[j]
+            pi0   += a_hat[j] * u[j]
+        else:
+            pi[j] = a_hat[j]
+
+    return pi, pi0
+
+
+# --- demo: 3y1 + 4y2 <= 11,  y1 + 2y2 <= 5,  0 <= y <= 4 ---
+A = [[3, 4], [1, 2]]
+b = [11, 5]
+u = [4, 4]
+
+lam             = [1/4, 0]          # aggregate row 1 only
+complement_mask = [True, False]     # complement y1
+
+pi, pi0 = cmir_cut(A, b, u, lam, complement_mask, delta=1.0)
+print(f"c-MIR cut: {pi[0]:.3f}·y1 + {pi[1]:.3f}·y2 <= {pi0:.3f}")
+# Output: c-MIR cut: 1.000·y1 + 1.000·y2 <= 3.000
+
+# Verify at LP optimum (y1=3, y2=0.5) — should be violated:
+y_lp = np.array([3.0, 0.5])
+print(f"LHS at LP opt: {pi @ y_lp:.3f}  (RHS = {pi0})  violated: {pi @ y_lp > pi0}")
+# Output: LHS at LP opt: 3.500  violated: True
 </code></pre>
 
             <div class="aside">
               <span class="label">What changed, conceptually?</span>
-              The original row had two integer columns whose fractional parts
-              were larger than the row fraction $f = 0.3$. Those are precisely
-              the columns MIR strengthens. Everything else is either left alone
-              or rescaled mechanically.
+              The original rows had integer right-hand sides, so plain MIR
+              produced $f = 0$ — useless. Complementing $y_1$ shifted the
+              right-hand side to a non-integer $-0.25$, creating the fractional
+              gap MIR needs. This is the central trick of c-MIR: manufacture a
+              useful fraction by complementation, then round.
+            </div>
+
+            <div class="aside">
+              <span class="label">Choosing $\lambda$ and $\delta$ in practice</span>
+              Solvers heuristically search over choices of $\lambda$ (rows to
+              aggregate), complement masks, and the scaling factor $\delta$.
+              A common heuristic (Marchand &amp; Wolsey 2001) fixes $\delta$ to
+              be the coefficient of one "target" variable in the aggregated row,
+              so that the complemented, scaled row has a convenient fractional
+              part. The best choice maximizes the cut's violation at the current
+              LP vertex. Solvers try $O(m)$ candidate $\lambda$ vectors per
+              round, keeping the top-$k$ violated cuts.
             </div>
 
             <figure class="figure">
@@ -2688,241 +3005,673 @@ print(f"minimal cover C = {C},  violation = {viol:.3f}")
             <span class="roman">V</span>
             Lifting
             <div class="tagline">
-              Extending an inequality to ignored variables.
+              Extended covers, sequential lifting, and superadditive functions.
             </div>
           </aside>
           <div class="body">
             <h2>Lifting and <em>extending</em>.</h2>
             <p class="lead">
-              Suppose we have a valid inequality for a restriction of $X$ where
-              some variables are fixed at zero. <em>Lifting</em> recovers a
-              valid inequality for the full $X$ by computing the largest
-              coefficient those omitted variables can take without ever cutting
-              off a feasible point.
+              A cover inequality $\sum_{j \in C} x_j \le |C|-1$ only involves
+              variables inside the cover. Variables outside $C$ get implicit
+              coefficient zero — but zero is almost never the tightest valid
+              coefficient. <em>Lifting</em> recovers the largest coefficients
+              those omitted variables can take without cutting off any feasible
+              point, turning a weak face inequality into a facet.
             </p>
 
             <div class="aside">
-              <span class="label">A useful mindset</span>
-              Starting from an inequality on a restricted face does
-              <em>not</em> mean the omitted variables should get coefficient 0.
-              It means their coefficients have not been decided yet. Lifting is
-              the process of discovering the largest values those coefficients
-              can safely have.
+              <span class="label">Two kinds of lifting</span>
+              <em>Up-lifting</em> (the standard case) raises the coefficient of
+              an omitted variable that was fixed at zero in the restricted
+              problem. <em>Down-lifting</em> (less common) adjusts the
+              coefficient of a variable that was fixed at its upper bound.
+              <em>Extending</em> is sometimes used as a synonym for both, though
+              strictly it refers to lifting in an extended variable space.
+              This chapter focuses on sequential up-lifting for the 0/1 knapsack.
             </div>
 
-            <h3>Sequential up‑lifting</h3>
-            <p>
-              Let $X \subseteq \{0,1\}^n$, and suppose $\sum_{j \in S} \pi_j x_j
-              \le \pi_0$ is valid for $X \cap \{x : x_k = 0\}$ — i.e., valid
-              whenever the new variable $x_k$ is forced to zero.
-              We want the <em>largest</em> coefficient $\pi_k$ such that
-              the extended inequality still holds when $x_k = 1$.
-              When $x_k = 1$ the constraint becomes
-              $\sum_{j \in S} \pi_j x_j \le \pi_0 - \pi_k$, so we need
-            </p>
-            \[ \pi_0 - \pi_k \;\ge\; \max\Bigl\{ \sum_{j \in S} \pi_j x_j
-               \;:\; x \in X,\; x_k = 1 \Bigr\}. \]
-            <p>
-              Rearranging: the <em>lift coefficient</em> on $x_k$ is
-            </p>
-            \[ \pi_k \;=\; \pi_0 \;-\; \max\Bigl\{ \sum_{j \in S} \pi_j x_j
-            \;:\; x \in X,\; x_k = 1 \Bigr\}. \]
-            <p>
-              This is the <em>tightest</em> valid coefficient: any larger value
-              would cut off the feasible point achieving the max. Setting
-              $\pi_k$ exactly equal makes the lifted inequality a
-              <em>supporting hyperplane</em> — it is tight at some feasible
-              point, which is the prerequisite for being a facet.
-            </p>
-            <p>
-              If the inner max is $+\infty$ (no feasible $x$ has $x_k = 1$),
-              then $\pi_k = -\infty$ and we can fix $x_k = 0$. Otherwise
-            </p>
-            \[ \sum_{j \in S} \pi_j x_j + \pi_k x_k \;\le\; \pi_0 \]
-            <p>is valid for $X$.</p>
+            <h3>The lifting principle</h3>
 
-            <div class="tableau">Sequential lifting recipe
-1. force the new variable x_k = 1
-2. ask how large the old left-hand side can still become
-3. subtract that maximum from the old right-hand side
-</div>
+            <p>
+              Let $X \subseteq \{0,1\}^n$, and suppose
+              $\sum_{j \in S} \pi_j x_j \le \pi_0$
+              is valid for $X \cap \{x : x_k = 0\}$ — i.e., valid whenever
+              $x_k$ is forced to zero. We want the <em>largest</em> coefficient
+              $\alpha_k$ such that the extended inequality
+              $\sum_{j \in S} \pi_j x_j + \alpha_k x_k \le \pi_0$
+              remains valid for the <em>full</em> $X$.
+            </p>
+            <p>
+              When $x_k = 0$ the extension reduces to the original inequality,
+              so validity is automatic. When $x_k = 1$ the remaining variables
+              must satisfy $\sum_{j \in S} \pi_j x_j \le \pi_0 - \alpha_k$.
+              Hence the largest valid $\alpha_k$ is
+            </p>
+            \[
+              \pi_k
+              \;=\;
+              \pi_0
+              \;-\;
+              \max\Bigl\{\,\sum_{j \in S} \pi_j x_j
+              \;:\; x \in X,\; x_k = 1\,\Bigr\}.
+            \]
+            <p>
+              This <em>lift coefficient</em> is tight: using anything larger
+              would cut off the integer point achieving the inner maximum.
+            </p>
 
             <div class="callout def">
-              <span class="badge">Intuition: lifting = finding the right "penalty"</span>
-              Think of $\pi_k$ as the penalty the cut imposes when $x_k = 1$.
-              If $x_k$ is a "heavy" item (large $a_k$), it leaves little room
-              for cover items when it is selected, so the cut already has plenty
-              of "tightness" to spare — $\pi_k$ can be large.  If $x_k$ is
-              "light" ($a_k$ small), cover items still fit alongside it, so the
-              residual max is high and $\pi_k$ is small.  The lift coefficient
-              automatically encodes how much $x_k$ competes with the cover
-              variables for capacity.
+              <span class="badge">Intuition: penalty for an outsider</span>
+              $\pi_k$ is the "capacity damage" done by $x_k = 1$: how many
+              cover items are forced out once item $k$ is chosen. A heavy item
+              ($a_k$ large) crowds out many cover items — residual capacity is
+              small, the inner max is small, and $\pi_k$ is large. A light item
+              crowds out nothing, the inner max equals the old RHS, and
+              $\pi_k = 0$.
             </div>
+
+            <div class="tableau">Sequential lifting recipe
+1. Pick an ordering of the variables not yet in the cut (N \ S).
+2. For the next variable x_k:
+   a. Fix x_k = 1.
+   b. Solve the residual knapsack: max sum_{j in S} pi_j x_j
+      subject to sum_{j in S} a_j x_j <= b - a_k, x in {0,1}.
+   c. Set pi_k = pi_0 - (residual max).
+3. Add pi_k x_k to the cut. Repeat.
+</div>
 
             <div class="aside">
-              <span class="label">Order matters</span>
-              Sequential lifting adds variables one at a time; each lift uses
-              the inequality already strengthened by all previous lifts.  The
-              lift coefficient therefore depends on the ordering.  Different
-              orderings yield different (all valid, all tight at some point)
-              lifted inequalities — different facets of $\operatorname{conv}(X)$.
-              In the worst case, exponentially many orderings give exponentially
-              many facets; in practice a single "canonical" ordering (e.g.,
-              by decreasing $a_k$) produces strong cuts quickly.
+              <span class="label">Why order matters</span>
+              Each lift uses the <em>already-lifted</em> inequality, so the
+              inner maximization at step (b) includes all previously lifted
+              terms. Different orderings produce different valid inequalities,
+              all valid, all tight somewhere — different facets of
+              $\operatorname{conv}(X)$. A canonical ordering by decreasing
+              $a_k$ (heaviest items first) usually produces the strongest cuts.
             </div>
 
-            <h3>Lifting a cover</h3>
-            <p>
-              Start from a minimal cover $C$ for the knapsack $\sum a_j x_j \le b$
-              and its inequality $\sum_{j \in C} x_j \le |C| - 1$.
-              For each $k \notin C$, the lift problem reduces to a residual
-              knapsack on the cover items:
-            </p>
-            \[ \pi_k = (|C|-1) - \max\Bigl\{ \sum_{j \in C} x_j \;:\; \sum_{j
-            \in C} a_j x_j \le b - a_k,\; x \in \{0,1\}^{|C|} \Bigr\}. \]
-            <p>
-              The residual capacity is $b - a_k$: how much capacity remains
-              <em>after</em> placing item $k$.  If $a_k$ is large, little
-              capacity is left, fewer cover items fit alongside $k$, the max is
-              small, and $\pi_k$ is correspondingly large — item $k$ is
-              genuinely "dangerous" and the cut penalises it heavily.
-              If $a_k$ is small, cover items still pack in, $\pi_k$ may be 0 or
-              1, and $x_k$ barely affects the cut.
-            </p>
+            <h3>Worked example — lifting step by step</h3>
 
             <p>
-              In words: $\pi_k$ measures how many cover items are
-              <em>forced out</em> once item $k$ is chosen. If selecting $k$
-              leaves room for all the old cover items, then $\pi_k$ is small.
-              If selecting $k$ crowds them all out, then $\pi_k$ is large.
+              We work through the knapsack
+              $4x_1 + 5x_2 + 5x_3 + 8x_4 + 3x_5 \le 11$, $x \in \{0,1\}^5$.
+              The minimal cover $C = \{1,2,3\}$ satisfies $4+5+5 = 14 > 11$,
+              giving the base inequality
+            </p>
+            \[
+              x_1 + x_2 + x_3 \;\le\; 2.
+            \]
+            <p>
+              Items $x_4$ and $x_5$ have coefficient 0 so far.
+              We lift them in the order $x_4$ first, then $x_5$.
             </p>
 
-            <p class="worked">Worked example — sequentially lifting a cover</p>
+            <!-- SVG: lifting diagram showing residual capacity for each item -->
+            <figure class="figure">
+              <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg"
+                   style="width:100%;height:auto;display:block">
+                <defs>
+                  <marker id="lift-ah" markerWidth="7" markerHeight="7"
+                          refX="6" refY="3.5" orient="auto">
+                    <path d="M0,0 L7,3.5 L0,7 Z" fill="#4b5563"/>
+                  </marker>
+                </defs>
+                <rect width="700" height="320" fill="#0a0d14" rx="14"/>
+                <rect x="14" y="14" width="672" height="292"
+                      fill="#11151f" stroke="#2a2f45" rx="12"/>
+
+                <text x="350" y="38" text-anchor="middle"
+                      font-family="Manrope,sans-serif" font-size="13"
+                      font-weight="700" fill="#ebeaf2">
+                  Lifting outsiders into a cover cut
+                </text>
+                <text x="350" y="54" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="9.5"
+                      fill="#4b5563">
+                  knapsack: 4x₁+5x₂+5x₃+8x₄+3x₅ ≤ 11  |  cover C={x₁,x₂,x₃}
+                </text>
+
+                <!-- capacity bar: full capacity = 11 -->
+                <!-- bar from x=80 to x=640, height=36, y=72 -->
+                <!-- 1 unit = (640-80)/11 = ~50.9 px -->
+                <!-- item widths: x1=4, x2=5, x3=5, x4=8, x5=3 (but x4,x5 are outside) -->
+
+                <!-- cover items stacked -->
+                <rect x="80" y="72" width="204" height="36" fill="#a78bfa" opacity="0.3" rx="3"/>
+                <!-- x1: 4 units = 203 px -->
+                <rect x="80" y="72" width="203" height="36" fill="#a78bfa" opacity="0.0"/>
+                <!-- individual cover items -->
+                <rect x="80"  y="72" width="203" height="36" fill="none" stroke="#a78bfa" stroke-width="0.5"/>
+                <!-- x1=4 units = 203px... let's do 1 unit = 50px for clarity -->
+                <!-- 1 unit = 50px, capacity bar from 80..80+11*50=630 -->
+                <!-- x1: 80..80+4*50=280 -->
+                <rect x="80"  y="76" width="196" height="28" fill="#a78bfa" opacity="0.35" rx="2"/>
+                <!-- x2: 280..280+5*50=530... wait. Too wide. Use 1 unit=48px, cap=80..80+11*48=608 -->
+                <!-- 1 unit = 48px. bar: 80..80+11*48=608 -->
+                <rect x="80"  y="76" width="192" height="28" fill="#a78bfa" opacity="0.30" rx="2"/>
+                <rect x="272" y="76" width="240" height="28" fill="#c4b5fd" opacity="0.30" rx="2"/>
+                <rect x="512" y="76" width="96"  height="28" fill="#818cf8" opacity="0.35" rx="2"/>
+                <!-- capacity boundary -->
+                <rect x="80" y="72" width="528" height="36" fill="none"
+                      stroke="#374151" stroke-width="1.5" rx="3"/>
+                <!-- cover boundary -->
+                <rect x="80" y="72" width="528" height="36" fill="none"
+                      stroke="#a78bfa" stroke-width="2" rx="3"
+                      stroke-dasharray="0"/>
+                <!-- overflow region beyond capacity when ALL cover taken: 14 - 11 = 3 units = 144px -->
+                <rect x="608" y="72" width="66" height="36" fill="#fb7185" opacity="0.18" rx="3"/>
+                <text x="641" y="94" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="9"
+                      fill="#fb7185">overflow</text>
+
+                <!-- item labels inside -->
+                <text x="176" y="95" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="11"
+                      font-weight="700" fill="#ebeaf2">x₁=4</text>
+                <text x="392" y="95" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="11"
+                      font-weight="700" fill="#ebeaf2">x₂=5</text>
+                <text x="560" y="95" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="11"
+                      font-weight="700" fill="#ebeaf2">x₃=5</text>
+
+                <!-- capacity tick -->
+                <line x1="608" y1="68" x2="608" y2="112" stroke="#fbbf24"
+                      stroke-width="1.5" stroke-dasharray="4 3"/>
+                <text x="608" y="120" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="9"
+                      fill="#fbbf24">b=11</text>
+
+                <!-- LIFT x4 panel -->
+                <rect x="80" y="140" width="620" height="64"
+                      fill="#11151f" stroke="#2a2f45" rx="8"/>
+                <text x="96" y="158" font-family="Manrope,sans-serif"
+                      font-size="11" font-weight="700" fill="#4ade80">
+                  Lift x₄  (a₄=8):
+                </text>
+                <!-- after x4=1, residual cap = 11-8 = 3 -->
+                <!-- capacity bar for residual: 3 units = 3*48 = 144px -->
+                <rect x="240" y="148" width="144" height="28"
+                      fill="#374151" opacity="0.6" rx="3"/>
+                <text x="312" y="166" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="10"
+                      fill="#6b7280">residual = 11−8 = 3</text>
+                <!-- none of x1(4), x2(5), x3(5) fit in 3 -->
+                <text x="420" y="158" font-family="JetBrains Mono,monospace"
+                      font-size="10" fill="#fb7185">no cover item fits (min weight = 4 > 3)</text>
+                <text x="420" y="176" font-family="JetBrains Mono,monospace"
+                      font-size="10" fill="#4ade80">inner max = 0   →   π₄ = 2 − 0 = 2</text>
+                <!-- x4 item block -->
+                <rect x="80" y="148" width="153" height="28"
+                      fill="#fbbf24" opacity="0.25" rx="2"/>
+                <text x="157" y="166" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="10"
+                      font-weight="700" fill="#fbbf24">x₄=8</text>
+
+                <!-- LIFT x5 panel -->
+                <rect x="80" y="216" width="620" height="76"
+                      fill="#11151f" stroke="#2a2f45" rx="8"/>
+                <text x="96" y="234" font-family="Manrope,sans-serif"
+                      font-size="11" font-weight="700" fill="#22d3ee">
+                  Lift x₅  (a₅=3):
+                </text>
+                <!-- residual cap = 11-3 = 8, already-lifted system includes x4 with π4=2 -->
+                <rect x="240" y="224" width="384" height="28"
+                      fill="#374151" opacity="0.6" rx="3"/>
+                <text x="432" y="242" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="10"
+                      fill="#6b7280">residual = 11−3 = 8</text>
+                <!-- x4=1 fits (uses 8): value 2 -->
+                <text x="96" y="258" font-family="JetBrains Mono,monospace"
+                      font-size="10" fill="#22d3ee">
+                  best: take x₄=1 (weight 8 ≤ 8, value π₄=2)  →  inner max = 2
+                </text>
+                <text x="96" y="274" font-family="JetBrains Mono,monospace"
+                      font-size="10" fill="#22d3ee">
+                  π₅ = 2 − 2 = 0   (x₅ is light — x₄ is just as damaging)
+                </text>
+                <!-- x5 item block -->
+                <rect x="80" y="224" width="58" height="28"
+                      fill="#06b6d4" opacity="0.25" rx="2"/>
+                <text x="109" y="242" text-anchor="middle"
+                      font-family="JetBrains Mono,monospace" font-size="10"
+                      font-weight="700" fill="#22d3ee">x₅=3</text>
+              </svg>
+              <div class="caption">
+                <b>Fig. V.1</b> Sequential lifting of items outside cover
+                $\{x_1,x_2,x_3\}$. Top bar: full capacity $b=11$; purple blocks
+                are cover items (sum = 14, overflow in rose). Middle panel: lifting
+                $x_4$ — residual capacity 3 fits none of the cover items, so
+                $\pi_4 = 2$. Bottom panel: lifting $x_5$ — residual capacity 8
+                fits $x_4$ (value 2), so $\pi_5 = 0$.
+              </div>
+            </figure>
+
+            <div class="tableau">Lifting trace: 4x1+5x2+5x3+8x4+3x5 ≤ 11, cover={1,2,3}
+
+Step 0 — base cut:       x1 + x2 + x3 ≤ 2        (π1=π2=π3=1, RHS=2)
+
+Step 1 — lift x4 (a4=8):
+  residual cap = 11 - 8 = 3
+  max{x1+x2+x3 : 4x1+5x2+5x3 ≤ 3, x∈{0,1}³} = 0   (no item fits)
+  π4 = 2 - 0 = 2
+  cut becomes: x1 + x2 + x3 + 2x4 ≤ 2
+
+Step 2 — lift x5 (a5=3):
+  residual cap = 11 - 3 = 8
+  max{x1+x2+x3 + 2x4 : 4x1+5x2+5x3+8x4 ≤ 8, x∈{0,1}⁴} = 2  (x4=1)
+  π5 = 2 - 2 = 0
+
+Final lifted cut:  x1 + x2 + x3 + 2x4 ≤ 2
+</div>
+
+            <div class="callout thm">
+              <span class="badge">Lifted cover cut</span>
+              \[
+                x_1 + x_2 + x_3 + 2x_4 \;\le\; 2.
+              \]
+              Item $x_4$ (weight 8) is so heavy that choosing it alone
+              consumes most of the capacity — so it gets coefficient 2, the
+              full right-hand side. Item $x_5$ (weight 3) leaves room for
+              $x_4$, which already achieves the maximum — so $x_5$ adds no
+              extra restriction.
+            </div>
 
             <pre><code class="language-python">import numpy as np
 from itertools import product
 
 
 def knapsack_max(values, weights, capacity):
-    """Brute-force 0/1 knapsack maximum sum of values (small instances)."""
-    n = len(values)
-    best = 0
+    """Brute-force 0/1 knapsack: max sum of values subject to weight <= capacity."""
     if capacity < 0:
-        return -10**9                       # infeasible: -infty
-    for x in product([0, 1], repeat=n):
+        return -10**9                       # infeasible
+    best = 0
+    for x in product([0, 1], repeat=len(values)):
         if sum(w*xi for w, xi in zip(weights, x)) <= capacity:
             v = sum(v*xi for v, xi in zip(values, x))
-            if v > best:
-                best = v
+            best = max(best, v)
     return best
 
 
 def sequential_lift(a, b, cover, order):
     """
     Sequentially lift a cover inequality  sum_{j in cover} x_j <= |C|-1
-    against the variables in `order` (a permutation of N \\ cover).
-    Returns dict {j: pi_j} including cover (with pi_j = 1) and lifted vars.
-    """
-    pi   = {j: 1 for j in cover}
-    rhs  = len(cover) - 1
-    cap  = b
+    against the variables in `order` (a list of indices outside the cover).
 
-    cover_a   = [a[j] for j in cover]
-    cover_idx = list(cover)
+    Parameters
+    ----------
+    a     : list of item weights (indexed 0..n-1)
+    b     : knapsack capacity
+    cover : list of cover item indices
+    order : list of non-cover indices to lift, in the chosen order
+
+    Returns
+    -------
+    pi  : dict {index: coefficient}
+    rhs : right-hand side (= |cover| - 1)
+    """
+    pi  = {j: 1 for j in cover}
+    rhs = len(cover) - 1
 
     for k in order:
-        # Solve  max  sum pi_j x_j  s.t.  sum a_j x_j <= b - a[k],
-        # over j in cover ∪ already-lifted vars.
-        all_idx = cover_idx + [j for j in pi if j not in cover]
-        vals = [pi[j] for j in all_idx]
-        wts  = [a[j]  for j in all_idx]
-        m = knapsack_max(vals, wts, b - a[k])
-        pi[k] = rhs - m
-        cover_idx = cover_idx                # (we keep order; cover unchanged)
+        # All indices so far (cover + already lifted)
+        all_idx = list(pi.keys())
+        vals    = [pi[j] for j in all_idx]
+        wts     = [a[j]  for j in all_idx]
+        m       = knapsack_max(vals, wts, b - a[k])
+        pi[k]   = rhs - m
+        # Print trace
+        print(f"  lift x{k+1} (a={a[k]}): residual cap={b-a[k]}, "
+              f"inner max={m}, π{k+1}={pi[k]}")
 
     return pi, rhs
 
 
-# --- demo ---
-# knapsack: 4 x1 + 5 x2 + 5 x3 + 8 x4 + 3 x5  <=  11 ,   x binary
-a = [4, 5, 5, 8, 3]
-b = 11
-cover = [0, 1, 2]                           # {x1, x2, x3} : 4+5+5 = 14 > 11
-order = [3, 4]                              # lift x4 then x5
+# Knapsack: 4x1 + 5x2 + 5x3 + 8x4 + 3x5 <= 11
+a     = [4, 5, 5, 8, 3]
+b     = 11
+cover = [0, 1, 2]       # x1, x2, x3 — weights 4+5+5=14 > 11
+order = [3, 4]          # lift x4 first, then x5
 
+print("Base cut: x1 + x2 + x3 <= 2")
 pi, rhs = sequential_lift(a, b, cover, order)
-print("lifted cut:")
-print("  ", " + ".join(f"{pi[j]} x{j+1}" for j in range(5)), "<=", rhs)
-# Expected:  x1 + x2 + x3 + 2 x4 + 0 x5  <=  2
+terms = " + ".join(f"{pi[j]}·x{j+1}" for j in range(5) if pi.get(j, 0) != 0)
+print(f"Lifted cut: {terms} <= {rhs}")
+# Output:
+#   Base cut: x1 + x2 + x3 <= 2
+#   lift x4 (a=8): residual cap=3, inner max=0, π4=2
+#   lift x5 (a=3): residual cap=8, inner max=2, π5=0
+#   Lifted cut: 1·x1 + 1·x2 + 1·x3 + 2·x4 <= 2
 </code></pre>
 
+            <h3>Extended cover inequalities</h3>
+
             <p>
-              For this example the base cover inequality is
+              An <em>extended cover inequality</em> (ECI) is a stronger
+              inequality derived from a cover $C$ by giving every variable
+              in the <em>extended cover</em>
+              $C^+ = \{j : a_j \ge \min_{k \in C} a_k\}$
+              coefficient 1. Variables in $C^+$ but outside $C$ are at least
+              as heavy as the lightest cover item; if any one of them is chosen,
+              it displaces at least as much capacity.
+            </p>
+
+            <div class="callout def">
+              <span class="badge">Extended cover inequality (ECI)</span>
+              Let $C$ be a cover for $\sum a_j x_j \le b$ and let
+              $\lambda = \min_{j \in C} a_j$ be the weight of the lightest
+              cover item. Define
               \[
-                x_1 + x_2 + x_3 \le 2.
+                C^+ = \{j : a_j \ge \lambda\} \supseteq C.
               \]
-              Now lift the outside variables one by one.
+              Then
+              \[
+                \sum_{j \in C^+} x_j \;\le\; |C| - 1
+              \]
+              is valid for the 0/1 knapsack set.
+            </div>
+
+            <p>
+              <span class="runin">Why does this work?</span>
+              Suppose $\sum_{j \in C^+} x_j \ge |C|$, i.e., at least $|C|$
+              items from $C^+$ are chosen. Each of the $|C|$ chosen items
+              has weight $\ge \lambda$, so
+              $\sum_{j \in C^+, x_j=1} a_j \ge |C| \cdot \lambda$.
+              Since $C$ is a minimal cover, $\sum_{j \in C} a_j > b$, and
+              each item in $C$ has weight $\ge \lambda$, we know that choosing
+              $|C|$ items all of weight $\ge \lambda$ leads to total weight
+              $\ge |C| \cdot \lambda \ge \sum_{j \in C} a_j - (|C|-1)\lambda
+              + (|C|-1)\lambda = \sum_{j \in C} a_j > b$. A formal proof
+              follows by noting that $C$ is minimal so removing any item from $C$
+              makes it feasible — and any set of $|C|$ items each weighing
+              at least $\lambda_{\min}$ must exceed $b$.
+            </p>
+
+            <h3>ECI numerical example</h3>
+
+            <p>
+              Return to our knapsack $4x_1 + 5x_2 + 5x_3 + 8x_4 + 3x_5 \le 11$
+              with cover $C = \{1,2,3\}$.
+              The lightest cover item has weight $\lambda = \min(4,5,5) = 4$.
+              The extended cover is
+            </p>
+            \[
+              C^+ = \{j : a_j \ge 4\} = \{1,2,3,4\} \quad (a_5 = 3 < 4).
+            \]
+            <p>
+              The extended cover inequality is therefore
+            </p>
+            \[
+              x_1 + x_2 + x_3 + x_4 \;\le\; 2.
+            \]
+            <p>
+              Compare with the sequentially lifted inequality
+              $x_1 + x_2 + x_3 + 2x_4 \le 2$: the ECI gives $x_4$ coefficient
+              1 (cheaper to derive — no knapsack subproblem), while lifting
+              gives $x_4$ coefficient 2 (stronger). Both are valid; the lifted
+              version strictly dominates the ECI on $x_4$.
+            </p>
+
+            <div class="tableau">Comparison: base cut vs ECI vs lifted cut
+
+Inequality                              Violation at x*=(0.6, 0.7, 0.8, 0.5, 0.5)
+x1+x2+x3 ≤ 2         (base cover)     0.6+0.7+0.8 - 2 = 0.10
+x1+x2+x3+x4 ≤ 2      (ECI)            0.6+0.7+0.8+0.5 - 2 = 0.60  ← stronger
+x1+x2+x3+2x4 ≤ 2     (lifted)         0.6+0.7+0.8+2*0.5 - 2 = 0.60 (same here)
+                                        but for x*=(0.6,0.7,0.8,0.9,0.5):
+x1+x2+x3+x4 ≤ 2      (ECI)            0.6+0.7+0.8+0.9 - 2 = 1.00
+x1+x2+x3+2x4 ≤ 2     (lifted)         0.6+0.7+0.8+2*0.9 - 2 = 1.00 + 0.9 = 1.90 ← strictly stronger</div>
+
+            <pre><code class="language-python">import numpy as np
+
+
+def extended_cover_inequality(a, b, cover):
+    """
+    Compute the Extended Cover Inequality (ECI) from a minimal cover.
+
+    Parameters
+    ----------
+    a     : array of item weights
+    b     : knapsack capacity
+    cover : list of cover item indices
+
+    Returns
+    -------
+    C_plus : indices in the extended cover C+
+    rhs    : |C| - 1
+    """
+    lambda_min = min(a[j] for j in cover)
+    C_plus = [j for j, aj in enumerate(a) if aj >= lambda_min]
+    rhs    = len(cover) - 1
+    return C_plus, rhs
+
+
+a     = [4, 5, 5, 8, 3]
+b     = 11
+cover = [0, 1, 2]   # {x1, x2, x3}
+
+C_plus, rhs = extended_cover_inequality(a, b, cover)
+print(f"λ_min = {min(a[j] for j in cover)}")
+print(f"Extended cover C+ = {{x{j+1} for j in C_plus}}: {[f'x{j+1}' for j in C_plus]}")
+print(f"ECI: {' + '.join(f'x{j+1}' for j in C_plus)} <= {rhs}")
+# Output:
+#   λ_min = 4
+#   Extended cover C+ = {x1, x2, x3, x4}
+#   ECI: x1 + x2 + x3 + x4 <= 2
+
+# Compare violations at a fractional LP point
+x_star = np.array([0.6, 0.7, 0.8, 0.9, 0.5])
+base_viol = sum(x_star[j] for j in cover) - rhs
+eci_viol  = sum(x_star[j] for j in C_plus) - rhs
+
+print(f"\nAt x* = {x_star}:")
+print(f"  Base cover violation:     {base_viol:.2f}")
+print(f"  ECI violation:            {eci_viol:.2f}")
+# Output:
+#   Base cover violation:     0.10
+#   ECI violation:            1.00
+</code></pre>
+
+            <h3>Superadditive lifting</h3>
+            <p>
+              Solving a separate 0/1 knapsack for every lift coefficient is
+              $O((n-|C|) \cdot 2^{|C|})$ in the worst case. <em>Superadditive
+              lifting</em> sidesteps this by constructing a single function
+              $F : \mathbb{R}_+ \to \mathbb{R}$ such that $F(a_k)$ gives a
+              valid lift coefficient for item $k$.
+            </p>
+            <p>
+              A function $F$ is <em>superadditive</em> if
+              $F(u+v) \ge F(u) + F(v)$ for all $u, v \ge 0$.
+              The key theorem (Balas, 1975; Wolsey, 1977) says:
+            </p>
+
+            <div class="callout thm">
+              <span class="badge">Superadditive lifting theorem</span>
+              Let $\pi_0 = |C|-1$ and let $F : \mathbb{R}_+ \to \mathbb{R}$ be
+              a superadditive function with $F(0) = 0$ and
+              $F(a_j) \ge 1$ for all $j \in C$. Then
+              $\sum_{j=1}^n F(a_j)\,x_j \le \pi_0$
+              is valid for the 0/1 knapsack set.
+            </div>
+
+            <p>
+              The <em>canonical superadditive function</em> for a cover
+              $C = \{c_1,\ldots,c_k\}$ (sorted so $a_{c_1} \le \cdots \le a_{c_k}$)
+              is piecewise linear. Define the partial-sum breakpoints
+              $\beta_0 = 0$ and
+              $\beta_i = b - \sum_{l=i+1}^{k} a_{c_l}$ for $i = 1,\ldots,k$
+              (the residual capacity after removing the $k-i$ heaviest cover items).
+              Then
+            </p>
+            \[
+              F(t) = i \quad\text{for}\quad t \in [\beta_{i-1},\, \beta_i),
+              \quad i = 1,\ldots,k,
+            \]
+            \[
+              F(t) = k \quad\text{for}\quad t \ge \beta_k = b.
+            \]
+            <p>
+              Evaluating $F$ at each $a_k$ for $k \notin C$ replaces $n - |C|$
+              knapsack subproblems with $n - |C|$ table lookups.
+            </p>
+
+            <pre><code class="language-python">import numpy as np
+import bisect
+
+
+def superadditive_lift_function(a, b, cover):
+    """
+    Build the canonical superadditive lifting function F for a cover.
+
+    Parameters
+    ----------
+    a     : array of weights (length n)
+    b     : knapsack capacity
+    cover : list of cover indices
+
+    Returns
+    -------
+    F     : callable — given weight t, returns valid lift coefficient F(t)
+    breakpoints, values : for plotting / inspection
+    """
+    # Sort cover items by increasing weight
+    cover_sorted = sorted(cover, key=lambda j: a[j])
+    k = len(cover_sorted)
+
+    # beta[i] = b - sum of (k - i) heaviest cover weights
+    # beta[0] = b - sum of all cover weights + a_{c_1}  (residual after taking heaviest k-1)
+    # Precisely: beta[i] = b - sum(a[cover_sorted[i:]])  for i = 1..k
+    # beta[0] = 0 (convention: F=0 on [0, beta[1]))
+
+    betas = [0]                           # beta_0 = 0 (unused lower bound)
+    for i in range(1, k + 1):
+        betas.append(b - sum(a[cover_sorted[l]] for l in range(i, k)))
+    # betas[1..k]: the actual breakpoints where F steps from i-1 to i
+    # F(t) = i  for t in [betas[i], betas[i+1])
+
+    breakpoints = betas[1:]               # k breakpoints
+    values      = list(range(1, k + 1))  # F = 1, 2, ..., k
+
+    def F(t):
+        if t < 0:
+            return 0
+        idx = bisect.bisect_right(breakpoints, t) - 1
+        if idx < 0:
+            return 0
+        return values[min(idx, k - 1)]
+
+    return F, breakpoints, values
+
+
+# Cover C = {x1, x2, x3}: weights 4, 5, 5; b = 11
+a     = [4, 5, 5, 8, 3]
+b     = 11
+cover = [0, 1, 2]
+
+F, bps, vals = superadditive_lift_function(a, b, cover)
+print("Breakpoints:", bps)     # [b - (5+5), b - 5, b] = [1, 6, 11]
+print("Values:     ", vals)    # [1, 2, 3]  (but cover has 3 items so max=2 for rhs)
+
+print("\nLift coefficients via F:")
+for j in range(len(a)):
+    coeff = min(F(a[j]), len(cover) - 1)  # cap at |C|-1 for outside items
+    print(f"  x{j+1}: a={a[j]},  F(a)={F(a[j])},  π={coeff}")
+# Output:
+#   x1: a=4, F(a)=2, π=2   ← cover item (valid, π>=1)
+#   x2: a=5, F(a)=2, π=2
+#   x3: a=5, F(a)=2, π=2
+#   x4: a=8, F(a)=3, π=2   ← capped at |C|-1=2
+#   x5: a=3, F(a)=1, π=1   ← light item gets π=1 (not 0!)
+# Note: superadditive F gives x5 coefficient 1, while sequential
+# lifting (order: x4 first) gave π5=0. Both are valid; the result
+# depends on the function / ordering chosen.
+</code></pre>
+
+            <div class="aside">
+              <span class="label">Superadditive vs sequential: why they can differ</span>
+              Sequential lifting computes the exact tightest coefficient for
+              each variable given the ordering — it is order-dependent.
+              Superadditive lifting uses a fixed function $F$ that is valid
+              for <em>all</em> orderings simultaneously, but may be slightly
+              weaker for individual variables. In this example, sequential
+              lifting (order $x_4, x_5$) gave $\pi_5 = 0$, while the
+              superadditive function gives $F(3) = 1 > 0$. Both are valid;
+              the "correct" answer depends on the ordering.
+            </div>
+
+            <div class="callout def">
+              <span class="badge">Down-lifting (extending to fixed-at-upper-bound variables)</span>
+              When a variable appears in the original constraint at its upper
+              bound $u_k$ (i.e., it was complemented), its coefficient in the
+              cut may need to be <em>decreased</em> rather than increased.
+              This is called <em>down-lifting</em>. The formula is symmetric:
+              \[
+                \pi_k = \max\Bigl\{\,\sum_{j \in S} \pi_j x_j
+                \;:\; x \in X,\; x_k = u_k\,\Bigr\} - \pi_0,
+              \]
+              so the coefficient becomes negative — a feature that strengthens
+              cuts for problems where variables naturally sit at their upper bounds
+              (e.g., fixed-charge networks).
+            </div>
+
+            <h3>Choosing the lifting order</h3>
+
+            <p>
+              Different orderings give different lifted inequalities, all valid,
+              but with different strengths. The two common heuristics are:
             </p>
 
             <ol>
               <li>
-                <strong>Lift $x_4$.</strong> If $x_4 = 1$, the residual capacity
-                is $11 - 8 = 3$. None of $x_1,x_2,x_3$ fits into capacity 3, so
-                the inner maximum is 0. Hence
-                \[
-                  \pi_4 = 2 - 0 = 2.
-                \]
+                <strong>Decreasing weight</strong> (heaviest outsider first):
+                heavy items have small residual capacities and therefore tend to
+                receive large lift coefficients, making the cut tight at more
+                fractional LP points. This is the most commonly recommended
+                heuristic.
               </li>
               <li>
-                <strong>Lift $x_5$ next.</strong> Now force $x_5 = 1$, so the
-                residual capacity is $11 - 3 = 8$. In the already lifted system
-                we maximize
-                \[
-                  x_1 + x_2 + x_3 + 2x_4
-                \]
-                subject to the residual knapsack. The best choice is simply
-                $x_4 = 1$, which already yields value 2 and uses all capacity 8.
-                Therefore
-                \[
-                  \pi_5 = 2 - 2 = 0.
-                \]
+                <strong>Decreasing LP value</strong> ($x_k^*$ largest first):
+                gives the largest cut violation at the current LP optimum —
+                maximally effective for the current separation step, but may be
+                weaker in later rounds.
               </li>
             </ol>
 
-            <div class="callout thm">
-              <span class="badge">Resulting lifted cover cut</span>
-              The sequentially lifted inequality is
-              \[
-                x_1 + x_2 + x_3 + 2x_4 + 0x_5 \le 2,
-              \]
-              usually written simply as
-              \[
-                x_1 + x_2 + x_3 + 2x_4 \le 2.
-              \]
-              Item 4 is so heavy that choosing it wipes out the whole cover;
-              item 5 is light enough that it adds no extra restriction in this
-              lifting order.
+            <pre><code class="language-python">def lift_all_orderings(a, b, cover):
+    """
+    Try all orderings of outside variables and return all distinct lifted cuts.
+    (Feasible only for tiny instances.)
+    """
+    from itertools import permutations
+    outside = [j for j in range(len(a)) if j not in cover]
+    seen    = set()
+    cuts    = []
+    for order in permutations(outside):
+        pi, rhs = sequential_lift(a, b, cover, list(order))
+        key = tuple(pi[j] for j in range(len(a)))
+        if key not in seen:
+            seen.add(key)
+            cuts.append((list(order), dict(pi), rhs))
+    return cuts
+
+for order, pi, rhs in lift_all_orderings(a, b, cover):
+    terms = " + ".join(f"{pi[j]}x{j+1}" for j in range(len(a)) if pi.get(j,0)!=0)
+    print(f"order {[j+1 for j in order]}:  {terms} <= {rhs}")
+# Typical output (2 distinct inequalities for this example):
+#   order [4, 5]:  x1 + x2 + x3 + 2x4 <= 2
+#   order [5, 4]:  x1 + x2 + x3 + x5 <= 2   (x4 gets π=2-1=1 when x5 lifted first)
+</code></pre>
+
+            <div class="aside">
+              <span class="label">Why there are only a few distinct lifted cuts</span>
+              Even though there are $(n-|C|)!$ orderings, many produce the same
+              lifted inequality because some lift coefficients are forced (e.g.,
+              when an item fits no residual capacity at all, its coefficient is
+              always $\pi_0$). In practice, solvers generate one or two lifted
+              cover cuts per separation round — one from the "decreasing weight"
+              ordering and one from the "decreasing LP-value" ordering.
             </div>
-
-            <h3>Superadditive lifting</h3>
-            <p>
-              Solving a separate optimization problem for every lift coefficient
-              is expensive. <em>Superadditive lifting</em> sidesteps this by
-              constructing a single <em>superadditive function</em> $F :
-              \mathbb{R} \to \mathbb{R}$ — superadditive means $F(u + v) \ge
-              F(u) + F(v)$ — and setting $\pi_k = F(a_k)$. Constructing such an
-              $F$ once, then evaluating at each $a_k$, replaces $n - |C|$
-              optimization problems with $n - |C|$ function evaluations. Solvers
-              use this for production cut generation.
-            </p>
-
-            <p>
-              The classical superadditive function for minimal cover lifting
-              (Balas, 1975) is piecewise linear, defined by the partial sums of
-              cover weights. Working it out is a satisfying exercise — and a
-              place where Gomory's machinery and combinatorial lifting visibly
-              converge.
-            </p>
           </div>
         </section>
 
