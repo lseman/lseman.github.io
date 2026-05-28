@@ -1,0 +1,2448 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mixture of Experts - routing, math, code, and practice</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500;8..60,600;8..60,700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"
+    />
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+      onload="
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\[', right: '\\]', display: true },
+            { left: '\\(', right: '\\)', display: false }
+          ],
+          throwOnError: false,
+          strict: false
+        })
+      "
+    ></script>
+
+    <style>
+      :root {
+        --paper: #f4ede1;
+        --paper-dark: #ebe2d2;
+        --ink: #1a1a2e;
+        --ink-soft: #3a3a52;
+        --ink-mute: #6e6a78;
+        --amber: #b8651b;
+        --amber-soft: #d9914a;
+        --teal: #1d3a3a;
+        --rust: #8b3a1f;
+        --line: #c9bda6;
+        --gold: #a47b3d;
+        --rose: #b54e72;
+        --sage: #56735f;
+        --slate: #607087;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        background: var(--ink);
+        font-family: "Source Serif 4", serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .stage {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(
+            ellipse at top left,
+            rgba(184, 101, 27, 0.06),
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at bottom right,
+            rgba(29, 58, 58, 0.08),
+            transparent 50%
+          ),
+          #0d0d18;
+      }
+
+      .deck {
+        position: relative;
+        width: min(94vw, 1280px);
+        height: min(88vh, 800px);
+        background: var(--paper);
+        background-image: radial-gradient(
+          circle at 1px 1px,
+          rgba(26, 26, 46, 0.07) 1px,
+          transparent 0
+        );
+        background-size: 24px 24px;
+        box-shadow:
+          0 30px 80px rgba(0, 0, 0, 0.5),
+          0 10px 30px rgba(0, 0, 0, 0.3),
+          inset 0 0 0 1px rgba(184, 101, 27, 0.15);
+        overflow: hidden;
+        border-radius: 2px;
+      }
+
+      .deck::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.012) 0,
+            rgba(0, 0, 0, 0.012) 1px,
+            transparent 1px,
+            transparent 3px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.012) 0,
+            rgba(0, 0, 0, 0.012) 1px,
+            transparent 1px,
+            transparent 3px
+          );
+        pointer-events: none;
+        z-index: 1;
+        mix-blend-mode: multiply;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        padding: 56px 74px 54px;
+        display: none;
+        flex-direction: column;
+        gap: 16px;
+        z-index: 2;
+      }
+
+      .slide.active {
+        display: flex;
+        animation: fadeIn 0.45s ease;
+      }
+
+      .slide.compact {
+        gap: 12px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .slide-header {
+        position: absolute;
+        top: 22px;
+        left: 74px;
+        right: 74px;
+        display: flex;
+        justify-content: space-between;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+        z-index: 3;
+      }
+
+      .slide-header .right {
+        display: flex;
+        gap: 16px;
+      }
+
+      .slide-footer {
+        position: absolute;
+        bottom: 22px;
+        left: 74px;
+        right: 74px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+        z-index: 3;
+      }
+
+      .section-tag {
+        color: var(--amber);
+        font-weight: 600;
+      }
+
+      .eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--amber);
+        font-weight: 500;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .eyebrow::before {
+        content: "";
+        display: inline-block;
+        width: 36px;
+        height: 1px;
+        background: var(--amber);
+      }
+
+      h1.title {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "opsz" 144;
+        font-size: clamp(50px, 6vw, 84px);
+        line-height: 0.95;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        margin-bottom: 24px;
+      }
+
+      h2.slide-title {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "opsz" 72;
+        font-size: clamp(32px, 3.3vw, 44px);
+        line-height: 1.04;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+
+      .compact h2.slide-title {
+        font-size: clamp(29px, 3vw, 39px);
+      }
+
+      h3 {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-size: 20px;
+        color: var(--ink);
+        margin: 0 0 8px;
+        letter-spacing: -0.01em;
+      }
+
+      p,
+      li {
+        font-size: 17px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+
+      ul,
+      ol {
+        padding-left: 20px;
+      }
+
+      li {
+        margin-bottom: 6px;
+      }
+
+      li::marker {
+        color: var(--amber);
+      }
+
+      .compact p,
+      .compact li {
+        font-size: 15px;
+        line-height: 1.42;
+      }
+
+      strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      em {
+        color: var(--rust);
+        font-style: italic;
+        font-weight: 500;
+      }
+
+      .lead {
+        font-size: 20px;
+        line-height: 1.46;
+        color: var(--ink-soft);
+      }
+
+      .subtitle {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 300;
+        font-size: 28px;
+        color: var(--ink-soft);
+        max-width: 48ch;
+        line-height: 1.28;
+        margin-top: 6px;
+      }
+
+      .title-meta {
+        display: flex;
+        gap: 52px;
+        margin-top: 38px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+      }
+
+      .title-meta div span {
+        display: block;
+        color: var(--ink);
+        font-family: "Source Serif 4", serif;
+        font-size: 16px;
+        letter-spacing: 0;
+        text-transform: none;
+        margin-top: 6px;
+      }
+
+      .ornament {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+
+      .ornament .line {
+        height: 1px;
+        background: var(--ink);
+        flex: 0 0 60px;
+      }
+
+      .ornament .dot {
+        width: 6px;
+        height: 6px;
+        background: var(--amber);
+        border-radius: 50%;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 26px;
+        align-items: start;
+      }
+
+      .two-col-wide {
+        display: grid;
+        grid-template-columns: 1.12fr 0.88fr;
+        gap: 26px;
+        align-items: start;
+      }
+
+      .two-col-code {
+        display: grid;
+        grid-template-columns: 1.22fr 0.78fr;
+        gap: 22px;
+        align-items: start;
+      }
+
+      .three-col {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        align-items: start;
+      }
+
+      .quad-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        align-items: start;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 10px 0 4px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        border: 1px solid rgba(184, 101, 27, 0.28);
+        background: rgba(184, 101, 27, 0.06);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      .pill::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--amber);
+      }
+
+      .card,
+      .plot-card,
+      .note-card,
+      .mini-card,
+      .diagram-card,
+      .math-block,
+      .warning-box,
+      .callout,
+      .code-block,
+      table.compare {
+        border-radius: 2px;
+      }
+
+      .card,
+      .note-card,
+      .mini-card,
+      .diagram-card,
+      .plot-card {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.42);
+      }
+
+      .card,
+      .note-card,
+      .mini-card {
+        padding: 16px 18px;
+      }
+
+      .mini-card p,
+      .note-card p {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .tag {
+        display: inline-block;
+        margin-bottom: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+
+      .callout {
+        background: rgba(184, 101, 27, 0.06);
+        border-left: 3px solid var(--amber);
+        padding: 14px 18px;
+        font-size: 16px;
+        color: var(--ink-soft);
+      }
+
+      .warning-box {
+        border: 1px solid rgba(139, 58, 31, 0.28);
+        background: rgba(139, 58, 31, 0.06);
+        padding: 14px 16px;
+      }
+
+      .warning-box p {
+        font-size: 15px;
+        line-height: 1.4;
+      }
+
+      .math-block {
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--teal);
+        padding: 16px 20px;
+      }
+
+      .math-block .label {
+        display: inline-block;
+        margin-bottom: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--teal);
+      }
+
+      .math-block p {
+        font-size: 15px;
+        line-height: 1.35;
+      }
+
+      .step-stack {
+        display: grid;
+        gap: 10px;
+      }
+
+      .step-row {
+        display: grid;
+        grid-template-columns: 30px 1fr;
+        gap: 12px;
+        align-items: start;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(201, 189, 166, 0.55);
+      }
+
+      .step-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .step-no {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: var(--paper);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+      }
+
+      .code-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+
+      .code-block {
+        background: var(--ink);
+        color: var(--paper);
+        border: 1px solid rgba(184, 101, 27, 0.25);
+        padding: 14px 16px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11.1px;
+        line-height: 1.46;
+        white-space: pre;
+        overflow: hidden;
+      }
+
+      .code-block.small {
+        font-size: 10.4px;
+        line-height: 1.42;
+      }
+
+      .code-title {
+        display: block;
+        margin-bottom: 10px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--amber-soft);
+      }
+
+      .code-note {
+        margin-top: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+      }
+
+      table.compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        background: rgba(255, 255, 255, 0.42);
+        border: 1px solid var(--line);
+      }
+
+      table.compare th,
+      table.compare td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      table.compare th {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+
+      table.compare td {
+        font-size: 13.5px;
+        line-height: 1.35;
+        color: var(--ink-soft);
+      }
+
+      table.compare td.label {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--ink);
+        width: 26%;
+      }
+
+      .plot-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        align-items: start;
+      }
+
+      .plot-card {
+        padding: 12px 12px 10px;
+      }
+
+      .plot-title {
+        margin-bottom: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+
+      .plot-caption,
+      .diagram-caption,
+      .rule-note {
+        margin-top: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+      }
+
+      .diagram-card {
+        padding: 14px 14px 10px;
+      }
+
+      .mono-list {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+
+      .legend-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--ink-soft);
+      }
+
+      .legend-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend-chip::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        display: inline-block;
+        border-radius: 2px;
+      }
+
+      .legend-chip.amber::before {
+        background: rgba(184, 101, 27, 0.7);
+      }
+
+      .legend-chip.teal::before {
+        background: rgba(29, 58, 58, 0.7);
+      }
+
+      .legend-chip.rose::before {
+        background: rgba(181, 78, 114, 0.7);
+      }
+
+      .legend-chip.slate::before {
+        background: rgba(96, 112, 135, 0.7);
+      }
+
+      .nav {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        background: rgba(13, 13, 24, 0.85);
+        backdrop-filter: blur(10px);
+        padding: 10px 20px;
+        border-radius: 100px;
+        z-index: 100;
+        border: 1px solid rgba(184, 101, 27, 0.25);
+      }
+
+      .nav button {
+        background: none;
+        border: none;
+        color: var(--paper);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .nav button:hover {
+        opacity: 1;
+        color: var(--amber-soft);
+      }
+
+      .nav .counter {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        color: var(--paper);
+      }
+
+      .nav .counter .sep {
+        opacity: 0.5;
+        margin: 0 4px;
+      }
+
+      .nav .counter .total {
+        opacity: 0.5;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 2px;
+        background: var(--amber);
+        z-index: 200;
+        transition: width 0.3s ease;
+      }
+
+      .kbd-hint {
+        position: fixed;
+        top: 20px;
+        right: 24px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: rgba(244, 237, 225, 0.55);
+        z-index: 100;
+      }
+
+      @media (max-width: 980px) {
+        body {
+          overflow: auto;
+        }
+
+        .stage {
+          position: static;
+          min-height: 100%;
+          padding: 22px 0;
+        }
+
+        .deck {
+          width: min(96vw, 1280px);
+          height: auto;
+          min-height: 100vh;
+        }
+
+        .slide {
+          position: relative;
+          inset: auto;
+          padding: 44px 30px 88px;
+          display: flex;
+        }
+
+        .slide-header,
+        .slide-footer {
+          left: 30px;
+          right: 30px;
+        }
+
+        .two-col,
+        .two-col-wide,
+        .two-col-code,
+        .three-col,
+        .quad-grid,
+        .code-grid,
+        .plot-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .title-meta {
+          gap: 24px;
+          flex-wrap: wrap;
+        }
+
+        .kbd-hint {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <div class="kbd-hint">← → or SPACE to navigate</div>
+
+    <div class="stage">
+      <div class="deck" id="deck">
+        <section class="slide active title-slide">
+          <div class="slide-header">
+            <span>Transformers · GOS Lab</span>
+            <div class="right"><span>Lecture Notes</span><span>2026</span></div>
+          </div>
+
+          <div class="ornament">
+            <div class="line"></div>
+            <div class="dot"></div>
+            <div class="line"></div>
+          </div>
+
+          <div class="eyebrow">Sparse routing for large transformer blocks</div>
+          <h1 class="title">
+            Mixture of<br />
+            Experts
+          </h1>
+          <p class="subtitle">
+            Detailed notes on why MoE works, how routers dispatch tokens, how
+            to implement top-k gating in PyTorch, and what usually breaks in
+            practice.
+          </p>
+
+          <div class="title-meta">
+            <div>Topic<span>Conditional computation</span></div>
+            <div>Focus<span>Router, top-k, balancing, dispatch</span></div>
+            <div>Goal<span>Capacity up without dense per-token FLOPs</span></div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section 00 · Cover</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">I · Motivation</span>
+            <div class="right"><span>02 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">Why sparse experts exist at all</div>
+          <h2 class="slide-title">
+            Dense FFNs make capacity and active compute grow together.
+          </h2>
+
+          <div class="two-col-wide">
+            <div>
+              <p class="lead">
+                In a standard transformer block, attention mixes tokens and the
+                FFN transforms every token with the same dense MLP. As models
+                scale, that FFN often becomes a major source of parameters and
+                FLOPs.
+              </p>
+
+              <ul>
+                <li>
+                  If we double FFN width, every token pays the full compute
+                  cost, even if only a small subset of patterns need that extra
+                  capacity.
+                </li>
+                <li>
+                  Rare structures such as code syntax, tables, formulas, or
+                  uncommon domain words may benefit from specialized pathways
+                  rather than one universal MLP.
+                </li>
+                <li>
+                  MoE separates <strong>total parameters</strong> from
+                  <strong>active per-token computation</strong>.
+                </li>
+              </ul>
+
+              <div class="pill-row">
+                <span class="pill">dense FFN</span>
+                <span class="pill">conditional compute</span>
+                <span class="pill">specialization</span>
+              </div>
+
+              <div class="callout">
+                The core bargain is simple: keep many expert FFNs in memory, but
+                run only a few of them for each token.
+              </div>
+            </div>
+
+            <div>
+              <div class="plot-card">
+                <div class="plot-title">Capacity scaling sketch</div>
+                <svg viewBox="0 0 420 250" width="100%" height="220">
+                  <line x1="48" y1="200" x2="392" y2="200" stroke="#6e6a78" stroke-width="1.2" />
+                  <line x1="48" y1="24" x2="48" y2="200" stroke="#6e6a78" stroke-width="1.2" />
+
+                  <text x="24" y="36" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">cost</text>
+                  <text x="346" y="230" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">number of experts</text>
+
+                  <line x1="48" y1="176" x2="112" y2="152" stroke="#1d3a3a" stroke-width="3" />
+                  <line x1="112" y1="152" x2="176" y2="122" stroke="#1d3a3a" stroke-width="3" />
+                  <line x1="176" y1="122" x2="240" y2="92" stroke="#1d3a3a" stroke-width="3" />
+                  <line x1="240" y1="92" x2="304" y2="60" stroke="#1d3a3a" stroke-width="3" />
+                  <line x1="304" y1="60" x2="368" y2="34" stroke="#1d3a3a" stroke-width="3" />
+
+                  <line x1="48" y1="148" x2="112" y2="148" stroke="#b8651b" stroke-width="3" />
+                  <line x1="112" y1="148" x2="176" y2="148" stroke="#b8651b" stroke-width="3" />
+                  <line x1="176" y1="148" x2="240" y2="148" stroke="#b8651b" stroke-width="3" />
+                  <line x1="240" y1="148" x2="304" y2="148" stroke="#b8651b" stroke-width="3" />
+                  <line x1="304" y1="148" x2="368" y2="148" stroke="#b8651b" stroke-width="3" />
+
+                  <circle cx="48" cy="176" r="4" fill="#1d3a3a" />
+                  <circle cx="112" cy="152" r="4" fill="#1d3a3a" />
+                  <circle cx="176" cy="122" r="4" fill="#1d3a3a" />
+                  <circle cx="240" cy="92" r="4" fill="#1d3a3a" />
+                  <circle cx="304" cy="60" r="4" fill="#1d3a3a" />
+                  <circle cx="368" cy="34" r="4" fill="#1d3a3a" />
+
+                  <circle cx="48" cy="148" r="4" fill="#b8651b" />
+                  <circle cx="112" cy="148" r="4" fill="#b8651b" />
+                  <circle cx="176" cy="148" r="4" fill="#b8651b" />
+                  <circle cx="240" cy="148" r="4" fill="#b8651b" />
+                  <circle cx="304" cy="148" r="4" fill="#b8651b" />
+                  <circle cx="368" cy="148" r="4" fill="#b8651b" />
+
+                  <text x="294" y="52" font-family="JetBrains Mono" font-size="10" fill="#1d3a3a">total parameters</text>
+                  <text x="252" y="141" font-family="JetBrains Mono" font-size="10" fill="#b8651b">active FLOPs when k is fixed</text>
+
+                  <text x="44" y="216" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">1</text>
+                  <text x="106" y="216" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">4</text>
+                  <text x="166" y="216" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">8</text>
+                  <text x="226" y="216" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">16</text>
+                  <text x="288" y="216" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">32</text>
+                  <text x="350" y="216" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">64</text>
+                </svg>
+                <div class="plot-caption">
+                  More experts raise total capacity. If top-k stays fixed,
+                  active compute stays comparatively flat.
+                </div>
+              </div>
+
+              <div class="three-col" style="margin-top: 14px">
+                <div class="mini-card">
+                  <span class="tag">Dense</span>
+                  <p>Every token runs one shared FFN.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">MoE</span>
+                  <p>Every token runs only its selected experts.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Tradeoff</span>
+                  <p>Routing quality and communication now matter.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section I · Motivation</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">II · Routing</span>
+            <div class="right"><span>03 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">One token through one MoE layer</div>
+          <h2 class="slide-title">
+            The router scores experts, keeps the top-k, and combines only the selected outputs.
+          </h2>
+
+          <div class="two-col">
+            <div class="diagram-card">
+              <svg viewBox="0 0 520 380" width="100%" height="300">
+                <defs>
+                  <marker id="arr-dark" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#1a1a2e" />
+                  </marker>
+                  <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#b8651b" />
+                  </marker>
+                  <marker id="arr-mute" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="#c9bda6" />
+                  </marker>
+                </defs>
+
+                <rect x="188" y="24" width="144" height="38" rx="9" fill="rgba(29,58,58,0.10)" stroke="#1d3a3a" stroke-width="1.6" />
+                <text x="260" y="48" text-anchor="middle" font-family="Fraunces" font-size="18" fill="#1a1a2e">
+                  token embedding x
+                </text>
+                <line x1="260" y1="62" x2="260" y2="88" stroke="#1a1a2e" stroke-width="1.6" marker-end="url(#arr-dark)" />
+
+                <rect x="148" y="90" width="224" height="56" rx="11" fill="rgba(184,101,27,0.10)" stroke="#b8651b" stroke-width="1.8" />
+                <text x="260" y="113" text-anchor="middle" font-family="JetBrains Mono" font-size="12" letter-spacing="1.4" fill="#b8651b">
+                  ROUTER / GATE
+                </text>
+                <text x="260" y="132" text-anchor="middle" font-family="Source Serif 4" font-size="15" fill="#8b3a1f">
+                  logits -> softmax -> top-k selection
+                </text>
+
+                <text x="36" y="102" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">scores</text>
+                <text x="36" y="118" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">0.51  0.09  0.28  0.12</text>
+
+                <line x1="204" y1="146" x2="108" y2="190" stroke="#b8651b" stroke-width="2" marker-end="url(#arr-amber)" />
+                <line x1="240" y1="146" x2="216" y2="190" stroke="#c9bda6" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr-mute)" />
+                <line x1="280" y1="146" x2="324" y2="190" stroke="#b8651b" stroke-width="2" marker-end="url(#arr-amber)" />
+                <line x1="316" y1="146" x2="432" y2="190" stroke="#c9bda6" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr-mute)" />
+
+                <rect x="34" y="190" width="112" height="72" rx="10" fill="rgba(29,58,58,0.12)" stroke="#1d3a3a" stroke-width="1.8" />
+                <text x="90" y="219" text-anchor="middle" font-family="Fraunces" font-size="18" fill="#1a1a2e">Expert 1</text>
+                <text x="90" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#56735f">active, g = 0.51</text>
+
+                <rect x="154" y="190" width="112" height="72" rx="10" fill="rgba(255,255,255,0.42)" stroke="#c9bda6" stroke-width="1.3" />
+                <text x="210" y="219" text-anchor="middle" font-family="Fraunces" font-size="18" fill="#6e6a78">Expert 2</text>
+                <text x="210" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">inactive</text>
+
+                <rect x="274" y="190" width="112" height="72" rx="10" fill="rgba(29,58,58,0.12)" stroke="#1d3a3a" stroke-width="1.8" />
+                <text x="330" y="219" text-anchor="middle" font-family="Fraunces" font-size="18" fill="#1a1a2e">Expert 3</text>
+                <text x="330" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#56735f">active, g = 0.28</text>
+
+                <rect x="394" y="190" width="92" height="72" rx="10" fill="rgba(255,255,255,0.42)" stroke="#c9bda6" stroke-width="1.3" />
+                <text x="440" y="219" text-anchor="middle" font-family="Fraunces" font-size="18" fill="#6e6a78">Expert 4</text>
+                <text x="440" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">inactive</text>
+
+                <line x1="90" y1="262" x2="222" y2="300" stroke="#1d3a3a" stroke-width="2" marker-end="url(#arr-dark)" />
+                <line x1="330" y1="262" x2="294" y2="300" stroke="#1d3a3a" stroke-width="2" marker-end="url(#arr-dark)" />
+                <line x1="210" y1="262" x2="246" y2="300" stroke="#c9bda6" stroke-width="1.2" stroke-dasharray="5 4" />
+                <line x1="440" y1="262" x2="318" y2="300" stroke="#c9bda6" stroke-width="1.2" stroke-dasharray="5 4" />
+
+                <rect x="184" y="300" width="152" height="44" rx="10" fill="rgba(181,78,114,0.10)" stroke="#b54e72" stroke-width="1.6" />
+                <text x="260" y="319" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" letter-spacing="1.3" fill="#b54e72">
+                  WEIGHTED SUM
+                </text>
+                <text x="260" y="336" text-anchor="middle" font-family="Source Serif 4" font-size="14.5" fill="#8b3a1f">
+                  y = sum selected gate * expert output
+                </text>
+              </svg>
+              <div class="diagram-caption">
+                Only selected experts execute. The rest contribute zero compute
+                for that token.
+              </div>
+            </div>
+
+            <div>
+              <div class="step-stack">
+                <div class="step-row">
+                  <div class="step-no">1</div>
+                  <div>
+                    <h3>Score</h3>
+                    <p>The router maps each token to one logit per expert.</p>
+                  </div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">2</div>
+                  <div>
+                    <h3>Select</h3>
+                    <p>Top-k keeps the strongest choices and renormalizes their weights.</p>
+                  </div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">3</div>
+                  <div>
+                    <h3>Dispatch</h3>
+                    <p>Tokens assigned to the same expert are packed into one batch.</p>
+                  </div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">4</div>
+                  <div>
+                    <h3>Merge</h3>
+                    <p>Expert outputs are weighted by gates and scattered back to token order.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rule-note">
+                This slide is about routing mechanics only. A fuller token
+                specialization example appears later in the deck.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section II · Routing</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">III · Math</span>
+            <div class="right"><span>04 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">Equations and tensor bookkeeping</div>
+          <h2 class="slide-title">
+            The math is short. The real complexity is shapes, capacity, and
+            renormalization.
+          </h2>
+
+          <div class="two-col">
+            <div>
+              <div class="math-block">
+                <span class="label">Router logits</span>
+                <p>$x_t \in \mathbb{R}^{d}$</p>
+                <p>$r_t = W_r x_t \in \mathbb{R}^{N}$</p>
+                <p>$S_t = \operatorname{TopK}(r_t, k)$</p>
+              </div>
+
+              <div class="math-block" style="margin-top: 12px">
+                <span class="label">Selected gates</span>
+                <p>$\hat g_{t,i} = \operatorname{softmax}(r_{t,S_t})_i$</p>
+                <p>$y_t = \sum_{i \in S_t} \hat g_{t,i} E_i(x_t)$</p>
+              </div>
+
+              <div class="math-block" style="margin-top: 12px">
+                <span class="label">Capacity per expert</span>
+                <p>$C = \left\lceil c_f \cdot \frac{T \cdot k}{N} \right\rceil$</p>
+                <p>
+                  with sequence tokens $T$, experts $N$, top-k routing $k$, and
+                  capacity factor $c_f$.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <table class="compare">
+                <thead>
+                  <tr>
+                    <th>Symbol</th>
+                    <th>Shape</th>
+                    <th>Meaning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="label">$x$</td>
+                    <td>$[B,T,d]$</td>
+                    <td>input token representations</td>
+                  </tr>
+                  <tr>
+                    <td class="label">$r$</td>
+                    <td>$[B,T,N]$</td>
+                    <td>router logits over experts</td>
+                  </tr>
+                  <tr>
+                    <td class="label">$S$</td>
+                    <td>$[B,T,k]$</td>
+                    <td>top-k expert indices</td>
+                  </tr>
+                  <tr>
+                    <td class="label">$\hat g$</td>
+                    <td>$[B,T,k]$</td>
+                    <td>renormalized selected gates</td>
+                  </tr>
+                  <tr>
+                    <td class="label">$E_i(x)$</td>
+                    <td>$[\le C,d]$</td>
+                    <td>batched tokens processed by expert $i$</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="three-col" style="margin-top: 14px">
+                <div class="mini-card">
+                  <span class="tag">Top-1</span>
+                  <p>Cheaper communication, simpler dispatch, sharper specialization.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Top-2</span>
+                  <p>Smoother gradients and redundancy, but more all-to-all traffic.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Noise</span>
+                  <p>Jitter or noisy logits can reduce early router collapse.</p>
+                </div>
+              </div>
+
+              <div class="rule-note">
+                The gating softmax is usually applied only over the selected
+                experts, not all experts after masking.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section III · Math</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">IV · Pseudocode</span>
+            <div class="right"><span>05 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">Forward pass and training logic</div>
+          <h2 class="slide-title">
+            Routing is conceptually simple even though distributed kernels are
+            not.
+          </h2>
+
+          <div class="code-grid">
+            <pre class="code-block"><span class="code-title">Forward pass pseudocode</span>for each token x_t:
+    logits[t] = router(x_t)
+    idx[t] = topk(logits[t], k)
+    gates[t] = softmax(logits[t][idx[t]])
+
+for each expert e:
+    bucket[e] = {tokens t where e in idx[t]}
+    x_e = gather(x_t for t in bucket[e])
+    y_e = expert_e(x_e)
+
+for each token t:
+    y_t = 0
+    for slot, e in enumerate(idx[t]):
+        y_t += gates[t, slot] * scatter(y_e, t, e)
+
+return y</pre>
+
+            <pre class="code-block"><span class="code-title">Training extras pseudocode</span>capacity = ceil(capacity_factor * tokens * k / n_experts)
+
+for each expert e:
+    if bucket[e] is larger than capacity:
+        overflow[e] = tokens after capacity
+        drop or reroute overflow tokens
+
+importance = mean(softmax(router_logits), axis=tokens)
+load = mean(one_hot(idx), axis=tokens and slots)
+
+aux_loss = n_experts * sum(importance * load)
+loss = task_loss + alpha * aux_loss + z_loss</pre>
+          </div>
+
+          <div class="three-col">
+            <div class="mini-card">
+              <span class="tag">Logical order</span>
+              <p>Score, pick, bucket, run expert MLPs, then scatter back.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Kernel reality</span>
+              <p>Production systems fuse gather, permutation, expert GEMMs, and scatter.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Why balancing</span>
+              <p>If one expert gets all traffic, MoE degenerates into a dense bottleneck.</p>
+            </div>
+          </div>
+
+          <div class="callout">
+            Educational pseudocode follows token logic. High-performance MoE
+            code is mostly about minimizing token movement and maximizing expert
+            batch efficiency.
+          </div>
+
+          <div class="slide-footer">
+            <span>Section IV · Pseudocode</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">V · Python</span>
+            <div class="right"><span>06 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">Minimal educational implementation</div>
+          <h2 class="slide-title">
+            A small PyTorch layer is enough to demonstrate top-k routing.
+          </h2>
+
+          <div class="two-col-code">
+            <pre class="code-block small"><span class="code-title">PyTorch: minimal MoE layer</span>import torch
+import torch.nn as nn
+
+class TopKMoE(nn.Module):
+    def __init__(self, d_model, d_hidden, n_experts, k=2):
+        super().__init__()
+        self.k = k
+        self.n_experts = n_experts
+        self.router = nn.Linear(d_model, n_experts, bias=False)
+        self.experts = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(d_model, d_hidden),
+                nn.GELU(),
+                nn.Linear(d_hidden, d_model),
+            )
+            for _ in range(n_experts)
+        ])
+
+    def forward(self, x):
+        b, t, d = x.shape
+        flat = x.reshape(b * t, d)
+        logits = self.router(flat)
+        topv, topi = torch.topk(logits, self.k, dim=-1)
+        gates = topv.softmax(dim=-1)
+
+        out = flat.new_zeros(flat.shape)
+        for e, expert in enumerate(self.experts):
+            pos, slot = (topi == e).nonzero(as_tuple=True)
+            if pos.numel() == 0:
+                continue
+            y = expert(flat[pos])
+            out.index_add_(0, pos, y * gates[pos, slot, None])
+
+        return out.view(b, t, d), logits, topi</pre>
+
+            <div>
+              <div class="card">
+                <span class="tag">Shapes</span>
+                <p>
+                  Input: <strong>[B, T, d]</strong><br />
+                  Router logits: <strong>[B*T, N]</strong><br />
+                  Top-k indices: <strong>[B*T, k]</strong>
+                </p>
+              </div>
+
+              <div class="card" style="margin-top: 12px">
+                <span class="tag">Why this version is useful</span>
+                <p>
+                  It is short, readable, and shows the exact ideas: router
+                  scores, top-k selection, per-expert token buckets, and gated
+                  recombination.
+                </p>
+              </div>
+
+              <div class="warning-box" style="margin-top: 12px">
+                <h3>Important limitation</h3>
+                <p>
+                  The Python loop over experts is pedagogical. Real MoE systems
+                  use grouped dispatch, fused kernels, and often all-to-all
+                  communication across devices.
+                </p>
+              </div>
+
+              <pre class="code-block small" style="margin-top: 12px"><span class="code-title">Example usage</span>x = torch.randn(8, 128, 512)
+moe = TopKMoE(512, 2048, n_experts=8, k=2)
+y, logits, topi = moe(x)</pre>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section V · Python</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">VI · Python</span>
+            <div class="right"><span>07 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">Balancing and overflow control</div>
+          <h2 class="slide-title">
+            Training needs an auxiliary loss and a capacity rule, not just a
+            router.
+          </h2>
+
+          <div class="two-col-code">
+            <pre class="code-block small"><span class="code-title">PyTorch: load balancing loss</span>import torch.nn.functional as F
+
+def load_balance_loss(logits, topi, n_experts):
+    probs = logits.softmax(dim=-1)
+    importance = probs.mean(dim=0)
+
+    dispatched = F.one_hot(topi, n_experts).float()
+    load = dispatched.sum(dim=1).mean(dim=0) / topi.size(1)
+
+    return n_experts * torch.sum(importance * load)
+
+task = criterion(y, target)
+aux = 1e-2 * load_balance_loss(logits, topi, moe.n_experts)
+loss = task + aux</pre>
+
+            <div>
+              <pre class="code-block small"><span class="code-title">Capacity handling sketch</span>tokens = batch_size * seq_len
+capacity = math.ceil(cf * tokens * moe.k / moe.n_experts)
+
+for expert_id in range(moe.n_experts):
+    assigned = bucket[expert_id]
+    keep = assigned[:capacity]
+    overflow = assigned[capacity:]
+    # common choices:
+    # 1. drop overflow
+    # 2. pad and mask
+    # 3. reroute to next expert</pre>
+
+              <div class="three-col" style="margin-top: 12px">
+                <div class="mini-card">
+                  <span class="tag">Importance</span>
+                  <p>Average gate probability per expert.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Load</span>
+                  <p>How many tokens actually got dispatched.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Goal</span>
+                  <p>Keep importance and load from collapsing onto a few experts.</p>
+                </div>
+              </div>
+
+              <div class="callout" style="margin-top: 12px">
+                Two different failures matter: <strong>collapsed routing</strong>
+                where only a few experts receive traffic, and
+                <strong>overflow</strong> where an expert receives more tokens
+                than its allotted capacity.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section VI · Python</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">VII · Plots</span>
+            <div class="right"><span>08 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">What to watch during training</div>
+          <h2 class="slide-title">
+            MoE buys sparse capacity, but poor routing can erase the benefit.
+          </h2>
+
+          <div class="plot-grid compact">
+            <div class="plot-card">
+              <div class="plot-title">Params vs active compute</div>
+              <svg viewBox="0 0 320 190" width="100%" height="165">
+                <line x1="34" y1="154" x2="294" y2="154" stroke="#6e6a78" stroke-width="1" />
+                <line x1="34" y1="20" x2="34" y2="154" stroke="#6e6a78" stroke-width="1" />
+                <polyline points="34,140 86,126 138,110 190,90 242,66 294,38" fill="none" stroke="#1d3a3a" stroke-width="3" />
+                <polyline points="34,120 86,120 138,120 190,120 242,120 294,120" fill="none" stroke="#b8651b" stroke-width="3" />
+                <text x="212" y="48" font-family="JetBrains Mono" font-size="9.5" fill="#1d3a3a">parameters</text>
+                <text x="180" y="113" font-family="JetBrains Mono" font-size="9.5" fill="#b8651b">active FLOPs</text>
+                <text x="30" y="170" font-family="JetBrains Mono" font-size="9" fill="#6e6a78">1</text>
+                <text x="82" y="170" font-family="JetBrains Mono" font-size="9" fill="#6e6a78">4</text>
+                <text x="132" y="170" font-family="JetBrains Mono" font-size="9" fill="#6e6a78">8</text>
+                <text x="180" y="170" font-family="JetBrains Mono" font-size="9" fill="#6e6a78">16</text>
+                <text x="232" y="170" font-family="JetBrains Mono" font-size="9" fill="#6e6a78">32</text>
+                <text x="280" y="170" font-family="JetBrains Mono" font-size="9" fill="#6e6a78">64</text>
+              </svg>
+              <div class="plot-caption">Best case story when top-k stays fixed.</div>
+            </div>
+
+            <div class="plot-card">
+              <div class="plot-title">Balanced utilization</div>
+              <svg viewBox="0 0 320 190" width="100%" height="165">
+                <line x1="28" y1="154" x2="294" y2="154" stroke="#6e6a78" stroke-width="1" />
+                <rect x="40" y="88" width="18" height="66" fill="rgba(29,58,58,0.75)" />
+                <rect x="72" y="84" width="18" height="70" fill="rgba(29,58,58,0.75)" />
+                <rect x="104" y="92" width="18" height="62" fill="rgba(29,58,58,0.75)" />
+                <rect x="136" y="86" width="18" height="68" fill="rgba(29,58,58,0.75)" />
+                <rect x="168" y="90" width="18" height="64" fill="rgba(29,58,58,0.75)" />
+                <rect x="200" y="85" width="18" height="69" fill="rgba(29,58,58,0.75)" />
+                <rect x="232" y="89" width="18" height="65" fill="rgba(29,58,58,0.75)" />
+                <rect x="264" y="87" width="18" height="67" fill="rgba(29,58,58,0.75)" />
+                <text x="34" y="28" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">tokens per expert</text>
+              </svg>
+              <div class="plot-caption">Healthy routing keeps expert batches similar.</div>
+            </div>
+
+            <div class="plot-card">
+              <div class="plot-title">Collapsed utilization</div>
+              <svg viewBox="0 0 320 190" width="100%" height="165">
+                <line x1="28" y1="154" x2="294" y2="154" stroke="#6e6a78" stroke-width="1" />
+                <rect x="40" y="38" width="18" height="116" fill="rgba(181,78,114,0.78)" />
+                <rect x="72" y="54" width="18" height="100" fill="rgba(181,78,114,0.78)" />
+                <rect x="104" y="132" width="18" height="22" fill="rgba(181,78,114,0.42)" />
+                <rect x="136" y="138" width="18" height="16" fill="rgba(181,78,114,0.42)" />
+                <rect x="168" y="144" width="18" height="10" fill="rgba(181,78,114,0.42)" />
+                <rect x="200" y="142" width="18" height="12" fill="rgba(181,78,114,0.42)" />
+                <rect x="232" y="146" width="18" height="8" fill="rgba(181,78,114,0.42)" />
+                <rect x="264" y="145" width="18" height="9" fill="rgba(181,78,114,0.42)" />
+                <text x="36" y="28" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">bad: two experts dominate</text>
+              </svg>
+              <div class="plot-caption">This increases overflow and wastes idle experts.</div>
+            </div>
+          </div>
+
+          <div class="legend-row">
+            <span class="legend-chip teal">healthy utilization</span>
+            <span class="legend-chip rose">collapsed routing</span>
+            <span class="legend-chip amber">active compute target</span>
+          </div>
+
+          <div class="three-col" style="margin-top: 10px">
+            <div class="mini-card">
+              <span class="tag">Metric 1</span>
+              <p>Load histogram across experts.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Metric 2</span>
+              <p>Overflow rate after capacity truncation.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Metric 3</span>
+              <p>Auxiliary loss trend and router entropy.</p>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section VII · Plots</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">VIII · Example</span>
+            <div class="right"><span>09 / 10</span></div>
+          </div>
+
+          <div class="eyebrow">A tiny batch routed by a toy gate</div>
+          <h2 class="slide-title">
+            A worked token example makes expert specialization easier to see.
+          </h2>
+
+          <div class="two-col">
+            <div>
+              <table class="compare">
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th>Top-2 experts</th>
+                    <th>Interpretation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="label">`for`</td>
+                    <td>2, 5</td>
+                    <td>common code syntax and short keyword pattern</td>
+                  </tr>
+                  <tr>
+                    <td class="label">`{`</td>
+                    <td>2, 6</td>
+                    <td>symbol-heavy structured token</td>
+                  </tr>
+                  <tr>
+                    <td class="label">`eigenvalue`</td>
+                    <td>3, 7</td>
+                    <td>technical scientific vocabulary</td>
+                  </tr>
+                  <tr>
+                    <td class="label">`2026`</td>
+                    <td>1, 4</td>
+                    <td>short numeric pattern</td>
+                  </tr>
+                  <tr>
+                    <td class="label">`SELECT`</td>
+                    <td>5, 6</td>
+                    <td>database or markup-like structure</td>
+                  </tr>
+                  <tr>
+                    <td class="label">`&lt;td&gt;`</td>
+                    <td>4, 6</td>
+                    <td>tag-like token with punctuation</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="callout" style="margin-top: 14px">
+                Human labels are only intuition. In training, the model sees
+                gradients, not semantic names. Experts specialize because some
+                routes consistently reduce loss better than others.
+              </div>
+            </div>
+
+            <div class="diagram-card">
+              <div class="plot-title">Toy router score heatmap</div>
+              <svg viewBox="0 0 360 290" width="100%" height="250">
+                <text x="100" y="20" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">E1</text>
+                <text x="150" y="20" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">E2</text>
+                <text x="200" y="20" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">E3</text>
+                <text x="250" y="20" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">E4</text>
+                <text x="300" y="20" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">E5</text>
+
+                <text x="14" y="48" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">for</text>
+                <text x="14" y="86" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">{</text>
+                <text x="14" y="124" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">eigen</text>
+                <text x="14" y="162" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">2026</text>
+                <text x="14" y="200" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">SELECT</text>
+                <text x="14" y="238" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">&lt;td&gt;</text>
+
+                <rect x="84" y="30" width="34" height="24" fill="rgba(184,101,27,0.25)" />
+                <rect x="134" y="30" width="34" height="24" fill="rgba(29,58,58,0.72)" />
+                <rect x="184" y="30" width="34" height="24" fill="rgba(184,101,27,0.18)" />
+                <rect x="234" y="30" width="34" height="24" fill="rgba(201,189,166,0.55)" />
+                <rect x="284" y="30" width="34" height="24" fill="rgba(29,58,58,0.58)" />
+
+                <rect x="84" y="68" width="34" height="24" fill="rgba(184,101,27,0.16)" />
+                <rect x="134" y="68" width="34" height="24" fill="rgba(29,58,58,0.66)" />
+                <rect x="184" y="68" width="34" height="24" fill="rgba(201,189,166,0.50)" />
+                <rect x="234" y="68" width="34" height="24" fill="rgba(184,101,27,0.08)" />
+                <rect x="284" y="68" width="34" height="24" fill="rgba(181,78,114,0.42)" />
+
+                <rect x="84" y="106" width="34" height="24" fill="rgba(201,189,166,0.45)" />
+                <rect x="134" y="106" width="34" height="24" fill="rgba(184,101,27,0.14)" />
+                <rect x="184" y="106" width="34" height="24" fill="rgba(29,58,58,0.74)" />
+                <rect x="234" y="106" width="34" height="24" fill="rgba(184,101,27,0.08)" />
+                <rect x="284" y="106" width="34" height="24" fill="rgba(181,78,114,0.38)" />
+
+                <rect x="84" y="144" width="34" height="24" fill="rgba(29,58,58,0.60)" />
+                <rect x="134" y="144" width="34" height="24" fill="rgba(201,189,166,0.50)" />
+                <rect x="184" y="144" width="34" height="24" fill="rgba(184,101,27,0.12)" />
+                <rect x="234" y="144" width="34" height="24" fill="rgba(181,78,114,0.66)" />
+                <rect x="284" y="144" width="34" height="24" fill="rgba(184,101,27,0.20)" />
+
+                <rect x="84" y="182" width="34" height="24" fill="rgba(184,101,27,0.18)" />
+                <rect x="134" y="182" width="34" height="24" fill="rgba(201,189,166,0.46)" />
+                <rect x="184" y="182" width="34" height="24" fill="rgba(184,101,27,0.16)" />
+                <rect x="234" y="182" width="34" height="24" fill="rgba(29,58,58,0.58)" />
+                <rect x="284" y="182" width="34" height="24" fill="rgba(29,58,58,0.70)" />
+
+                <rect x="84" y="220" width="34" height="24" fill="rgba(184,101,27,0.15)" />
+                <rect x="134" y="220" width="34" height="24" fill="rgba(201,189,166,0.40)" />
+                <rect x="184" y="220" width="34" height="24" fill="rgba(184,101,27,0.14)" />
+                <rect x="234" y="220" width="34" height="24" fill="rgba(29,58,58,0.55)" />
+                <rect x="284" y="220" width="34" height="24" fill="rgba(29,58,58,0.72)" />
+              </svg>
+              <div class="diagram-caption">
+                Darker cells mean higher router preference. Real models often
+                learn soft clusters like this implicitly.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section VIII · Example</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">IX · Block Design</span>
+            <div class="right"><span>10 / 14</span></div>
+          </div>
+
+          <div class="eyebrow">Where MoE sits inside the transformer</div>
+          <h2 class="slide-title">
+            MoE usually replaces the dense FFN sublayer, while attention stays
+            dense and global.
+          </h2>
+
+          <div class="two-col">
+            <div class="diagram-card">
+              <svg viewBox="0 0 420 360" width="100%" height="300">
+                <rect x="150" y="20" width="120" height="34" rx="8" fill="rgba(29,58,58,0.12)" stroke="#1d3a3a" stroke-width="1.5" />
+                <text x="210" y="42" text-anchor="middle" font-family="Fraunces" font-size="18" fill="#1a1a2e">input x</text>
+
+                <line x1="210" y1="54" x2="210" y2="74" stroke="#1a1a2e" stroke-width="1.5" />
+                <rect x="160" y="74" width="100" height="28" rx="8" fill="rgba(255,255,255,0.56)" stroke="#c9bda6" />
+                <text x="210" y="93" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">layer norm</text>
+
+                <line x1="210" y1="102" x2="210" y2="122" stroke="#1a1a2e" stroke-width="1.5" />
+                <rect x="122" y="122" width="176" height="42" rx="10" fill="rgba(184,101,27,0.10)" stroke="#b8651b" stroke-width="1.6" />
+                <text x="210" y="140" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" letter-spacing="1.2" fill="#b8651b">SELF-ATTENTION</text>
+                <text x="210" y="156" text-anchor="middle" font-family="Source Serif 4" font-size="14" fill="#8b3a1f">tokens interact with other tokens</text>
+
+                <line x1="210" y1="164" x2="210" y2="182" stroke="#1a1a2e" stroke-width="1.5" />
+                <circle cx="210" cy="194" r="13" fill="rgba(29,58,58,0.10)" stroke="#1d3a3a" stroke-width="1.5" />
+                <text x="210" y="199" text-anchor="middle" font-family="Fraunces" font-size="19" fill="#1a1a2e">+</text>
+                <path d="M82,194 C82,130 108,92 150,54" fill="none" stroke="#6e6a78" stroke-width="1.2" stroke-dasharray="5 4" />
+                <text x="32" y="112" font-family="JetBrains Mono" font-size="9.5" fill="#6e6a78">residual</text>
+
+                <line x1="210" y1="207" x2="210" y2="228" stroke="#1a1a2e" stroke-width="1.5" />
+                <rect x="160" y="228" width="100" height="28" rx="8" fill="rgba(255,255,255,0.56)" stroke="#c9bda6" />
+                <text x="210" y="247" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">layer norm</text>
+
+                <line x1="210" y1="256" x2="210" y2="276" stroke="#1a1a2e" stroke-width="1.5" />
+                <rect x="112" y="276" width="196" height="48" rx="11" fill="rgba(181,78,114,0.10)" stroke="#b54e72" stroke-width="1.7" />
+                <text x="210" y="294" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" letter-spacing="1.2" fill="#b54e72">MOE FFN</text>
+                <text x="210" y="311" text-anchor="middle" font-family="Source Serif 4" font-size="14" fill="#8b3a1f">router chooses experts for each token</text>
+              </svg>
+              <div class="diagram-caption">
+                Attention mixes information across tokens. MoE changes the
+                token-wise transformation after that mixing step.
+              </div>
+            </div>
+
+            <div>
+              <div class="three-col">
+                <div class="mini-card">
+                  <span class="tag">Attention</span>
+                  <p>Decides which tokens exchange information.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Dense FFN</span>
+                  <p>Would apply the same MLP to every token.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">MoE FFN</span>
+                  <p>Applies different expert pathways to different tokens.</p>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top: 14px">
+                <span class="tag">Key insight</span>
+                <p>
+                  MoE and attention are complementary. Attention handles
+                  <em>interaction structure</em>; experts handle
+                  <em>computation specialization</em>. This is why an MoE model
+                  can still use ordinary transformer attention.
+                </p>
+              </div>
+
+              <div class="callout" style="margin-top: 14px">
+                A useful mental model is: attention is the
+                <strong>communication layer</strong>, while MoE is the
+                <strong>conditional processing layer</strong>.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section IX · Block Design</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">X · Dispatch</span>
+            <div class="right"><span>11 / 14</span></div>
+          </div>
+
+          <div class="eyebrow">The systems view</div>
+          <h2 class="slide-title" style="font-size:clamp(24px,2.6vw,36px);margin-bottom:16px">
+            Dispatch groups tokens by expert, shuffles them across devices, runs GEMMs, then scatters back.
+          </h2>
+
+          <div class="two-col-code" style="gap:28px">
+            <div class="diagram-card" style="padding:14px 16px">
+              <svg viewBox="0 0 520 230" width="100%" height="210">
+                <!-- token order column -->
+                <text x="73" y="16" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">token order</text>
+                <rect x="18" y="22" width="110" height="150" rx="8" fill="rgba(255,255,255,0.46)" stroke="#c9bda6"/>
+                <rect x="36" y="34"  width="74" height="16" fill="rgba(29,58,58,0.28)"/>
+                <rect x="36" y="54"  width="74" height="16" fill="rgba(184,101,27,0.28)"/>
+                <rect x="36" y="74"  width="74" height="16" fill="rgba(181,78,114,0.28)"/>
+                <rect x="36" y="94"  width="74" height="16" fill="rgba(29,58,58,0.18)"/>
+                <rect x="36" y="114" width="74" height="16" fill="rgba(184,101,27,0.18)"/>
+                <rect x="36" y="134" width="74" height="16" fill="rgba(96,112,135,0.24)"/>
+                <text x="73" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6e6a78">t0 t1 t2 …</text>
+
+                <text x="157" y="103" text-anchor="middle" font-family="Fraunces" font-size="22" fill="#b8651b">→</text>
+
+                <!-- expert buckets column -->
+                <text x="260" y="16" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">expert buckets</text>
+                <rect x="188" y="22" width="144" height="150" rx="8" fill="rgba(255,255,255,0.46)" stroke="#c9bda6"/>
+                <rect x="206" y="34"  width="108" height="22" fill="rgba(29,58,58,0.28)"/>
+                <text x="260" y="49"  text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#1d3a3a">expert 0: t0, t3, t9</text>
+                <rect x="206" y="62"  width="108" height="22" fill="rgba(184,101,27,0.28)"/>
+                <text x="260" y="77"  text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8b3a1f">expert 1: t1, t4</text>
+                <rect x="206" y="90"  width="108" height="22" fill="rgba(181,78,114,0.22)"/>
+                <text x="260" y="105" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#b54e72">expert 2: t2, t7</text>
+                <rect x="206" y="118" width="108" height="22" fill="rgba(96,112,135,0.22)"/>
+                <text x="260" y="133" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#607087">expert 3: t5, t8</text>
+
+                <text x="362" y="103" text-anchor="middle" font-family="Fraunces" font-size="22" fill="#b8651b">→</text>
+
+                <!-- device shards column -->
+                <text x="446" y="16" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a78">device shards</text>
+                <rect x="390" y="22" width="112" height="150" rx="8" fill="rgba(255,255,255,0.46)" stroke="#c9bda6"/>
+                <rect x="406" y="34"  width="80" height="26" fill="rgba(29,58,58,0.28)"/>
+                <text x="446" y="51"  text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#1d3a3a">GPU 0</text>
+                <rect x="406" y="68"  width="80" height="26" fill="rgba(184,101,27,0.28)"/>
+                <text x="446" y="85"  text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#8b3a1f">GPU 1</text>
+                <rect x="406" y="102" width="80" height="26" fill="rgba(181,78,114,0.22)"/>
+                <text x="446" y="119" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#b54e72">GPU 2</text>
+                <rect x="406" y="136" width="80" height="26" fill="rgba(96,112,135,0.22)"/>
+                <text x="446" y="153" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#607087">GPU 3</text>
+              </svg>
+              <div class="diagram-caption" style="font-size:11px">
+                Routing is a permutation problem: gather → all-to-all → expert GEMMs → scatter back.
+              </div>
+            </div>
+
+            <div>
+              <pre class="code-block small" style="font-size:12px;line-height:1.55"><span class="code-title">Dispatch sketch</span>perm = topi.reshape(-1).argsort()
+packed_x = x.reshape(-1, d)[token_ids[perm]]
+offsets  = expert_prefix_counts(topi)
+packed_y = run_grouped_experts(
+    packed_x, offsets, expert_weights)
+y = scatter_back(packed_y, perm, gate_weights)</pre>
+
+              <div class="two-col" style="margin-top:12px;gap:10px">
+                <div class="mini-card">
+                  <span class="tag">Batch size</span>
+                  <p>Larger batches fill expert GEMMs — small batches leave GPUs idle.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">top-2 cost</span>
+                  <p>Each token duplicates into two streams, doubling dispatch traffic.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Interconnect</span>
+                  <p>All-to-all dominates step time when NVLink / IB bandwidth is limited.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Kernel efficiency</span>
+                  <p>Grouped GEMMs must be well-tuned; naive loops kill throughput.</p>
+                </div>
+              </div>
+
+              <div class="callout" style="margin-top:10px">
+                A model can be theoretically sparse yet practically slow. MoE wins
+                only when routing overhead is small relative to expert compute.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section X · Dispatch</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XI · Diagnostics</span>
+            <div class="right"><span>12 / 14</span></div>
+          </div>
+
+          <div class="eyebrow">What healthy training looks like</div>
+          <h2 class="slide-title" style="font-size:clamp(24px,2.6vw,36px);margin-bottom:16px">
+            Four curves usually tell you whether the router is learning or failing.
+          </h2>
+
+          <div class="quad-grid compact">
+            <div class="plot-card">
+              <div class="plot-title">Router entropy</div>
+              <svg viewBox="0 0 320 170" width="100%" height="145">
+                <line x1="28" y1="136" x2="296" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <line x1="28" y1="20" x2="28" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <polyline points="28,36 62,48 96,61 130,74 164,83 198,89 232,95 266,101 296,106" fill="none" stroke="#1d3a3a" stroke-width="3" />
+                <text x="178" y="32" font-family="JetBrains Mono" font-size="9.5" fill="#1d3a3a">high -> moderate</text>
+              </svg>
+              <div class="plot-caption">Entropy should fall from random routing, but not collapse to near-zero too early.</div>
+            </div>
+
+            <div class="plot-card">
+              <div class="plot-title">Overflow rate</div>
+              <svg viewBox="0 0 320 170" width="100%" height="145">
+                <line x1="28" y1="136" x2="296" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <line x1="28" y1="20" x2="28" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <polyline points="28,52 62,60 96,74 130,90 164,104 198,114 232,120 266,124 296,126" fill="none" stroke="#b54e72" stroke-width="3" />
+                <text x="188" y="42" font-family="JetBrains Mono" font-size="9.5" fill="#b54e72">want this down</text>
+              </svg>
+              <div class="plot-caption">Persistent overflow means capacity is too small or load balancing is poor.</div>
+            </div>
+
+            <div class="plot-card">
+              <div class="plot-title">Auxiliary balance loss</div>
+              <svg viewBox="0 0 320 170" width="100%" height="145">
+                <line x1="28" y1="136" x2="296" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <line x1="28" y1="20" x2="28" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <polyline points="28,44 62,58 96,76 130,86 164,91 198,94 232,96 266,99 296,101" fill="none" stroke="#b8651b" stroke-width="3" />
+                <text x="170" y="38" font-family="JetBrains Mono" font-size="9.5" fill="#b8651b">decreases, then stabilizes</text>
+              </svg>
+              <div class="plot-caption">A balanced router still needs a nontrivial signal; zero is not always the target.</div>
+            </div>
+
+            <div class="plot-card">
+              <div class="plot-title">Throughput</div>
+              <svg viewBox="0 0 320 170" width="100%" height="145">
+                <line x1="28" y1="136" x2="296" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <line x1="28" y1="20" x2="28" y2="136" stroke="#6e6a78" stroke-width="1" />
+                <polyline points="28,112 62,104 96,94 130,86 164,80 198,75 232,72 266,70 296,69" fill="none" stroke="#607087" stroke-width="3" />
+                <text x="192" y="52" font-family="JetBrains Mono" font-size="9.5" fill="#607087">effective systems tuning</text>
+              </svg>
+              <div class="plot-caption">Better packing and less overflow usually improve realized tokens/sec.</div>
+            </div>
+          </div>
+
+          <div class="three-col" style="margin-top: 10px">
+            <div class="mini-card">
+              <span class="tag">Failure signature</span>
+              <p>Entropy crashes, load histogram spikes, overflow stays high.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Healthy signature</span>
+              <p>Entropy declines gradually while expert utilization stays broad.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Common fix</span>
+              <p>Increase aux weight, add router noise, or raise capacity factor.</p>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section XI · Diagnostics</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XII · Variants</span>
+            <div class="right"><span>13 / 14</span></div>
+          </div>
+
+          <div class="eyebrow">Different routing choices, different tradeoffs</div>
+          <h2 class="slide-title">
+            Design variants trade stability, redundancy, communication, and simplicity.
+          </h2>
+
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Variant</th>
+                <th>Main idea</th>
+                <th>Strength</th>
+                <th>Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="label">Top-1 routing</td>
+                <td>Each token uses one expert only.</td>
+                <td>Cheapest dispatch and least duplication.</td>
+                <td>Can be brittle if routing mistakes are hard to recover from.</td>
+              </tr>
+              <tr>
+                <td class="label">Top-2 routing</td>
+                <td>Each token uses two experts and mixes both outputs.</td>
+                <td>More redundancy and smoother routing gradients.</td>
+                <td>More communication and more active compute.</td>
+              </tr>
+              <tr>
+                <td class="label">Shared expert hybrid</td>
+                <td>One dense shared expert runs for all tokens plus sparse experts.</td>
+                <td>Guarantees a common pathway for every token.</td>
+                <td>Partly gives back dense compute cost.</td>
+              </tr>
+              <tr>
+                <td class="label">Capacity-limited</td>
+                <td>Each expert has a token budget per batch.</td>
+                <td>Predictable memory and communication.</td>
+                <td>Dropped or rerouted overflow tokens can hurt quality.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="three-col" style="margin-top: 12px">
+            <div class="mini-card">
+              <span class="tag">Choose top-1 when</span>
+              <p>You need maximal efficiency and have robust balancing control.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Choose top-2 when</span>
+              <p>You want more stable specialization and can afford extra routing cost.</p>
+            </div>
+            <div class="mini-card">
+              <span class="tag">Choose hybrid when</span>
+              <p>You want a safety net so every token always gets a dense shared computation path.</p>
+            </div>
+          </div>
+
+          <div class="callout" style="margin-top: 12px">
+            The “best” MoE variant is often a systems decision as much as a modeling one. The router, network fabric, and batch shape all influence which design wins.
+          </div>
+
+          <div class="slide-footer">
+            <span>Section XII · Variants</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <!-- NEW: Auxiliary Loss Deep-dive -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XII-A · Auxiliary Loss</span>
+            <div class="right"><span></span></div>
+          </div>
+
+          <div class="eyebrow">Making load balancing precise</div>
+          <h2 class="slide-title">
+            The auxiliary loss has two terms — importance and load — and a z-loss that stabilises router logits.
+          </h2>
+
+          <div class="two-col compact">
+            <div>
+              <div class="math-block">
+                <span class="label">Importance term</span>
+                $$f_i = \frac{1}{T}\sum_{t=1}^{T} \mathbf{1}[i \in \text{top-}k(r_t)], \qquad
+                  P_i = \frac{1}{T}\sum_{t=1}^{T} \text{softmax}(r_t)_i$$
+                $$\mathcal{L}_\text{balance} = \alpha \cdot N \sum_{i=1}^{N} f_i \cdot P_i$$
+              </div>
+
+              <div class="math-block" style="margin-top:10px">
+                <span class="label">Z-loss (router logit regulariser)</span>
+                $$\mathcal{L}_z = \beta \cdot \frac{1}{T}\sum_{t=1}^{T}\left(\log \sum_{i=1}^{N} e^{r_{t,i}}\right)^2$$
+              </div>
+
+              <div class="callout" style="margin-top:12px">
+                $\mathcal{L}_z$ keeps logits from growing large, which stabilises softmax
+                and prevents routers from committing too hard too early. ST-MoE (2022)
+                showed it substantially reduces training instabilities.
+              </div>
+            </div>
+
+            <div>
+              <div class="note-card">
+                <span class="tag">Reading the terms</span>
+                <ul style="font-size:15px">
+                  <li><strong>$f_i$</strong> — fraction of tokens routed to expert $i$ (hard, discrete).</li>
+                  <li><strong>$P_i$</strong> — mean soft probability assigned to expert $i$ (differentiable).</li>
+                  <li><strong>$f_i \cdot P_i$</strong> — large when expert $i$ both wins tokens AND gets high confidence. Penalising the product keeps both terms modest.</li>
+                  <li><strong>$N \cdot \sum f_i P_i$</strong> — normalised so a perfectly balanced router gives 1.0 regardless of $N$.</li>
+                </ul>
+              </div>
+
+              <div class="three-col" style="margin-top:12px">
+                <div class="mini-card">
+                  <span class="tag">α too small</span>
+                  <p>Router collapses: two or three experts absorb all traffic.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">α too large</span>
+                  <p>Routing becomes near-uniform; expert specialisation is suppressed.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Typical α</span>
+                  <p>0.01 in Switch Transformer; tune with the diagnostic curves from slide XI.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section XII-A · Auxiliary Loss</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <!-- NEW: Router Initialisation & Training Tips -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XII-B · Router Init</span>
+            <div class="right"><span></span></div>
+          </div>
+
+          <div class="eyebrow">Getting training started right</div>
+          <h2 class="slide-title">
+            Router initialisation and the first few thousand steps determine whether expert specialisation ever emerges.
+          </h2>
+
+          <div class="two-col compact">
+            <div>
+              <div class="step-stack">
+                <div class="step-row">
+                  <div class="step-no">1</div>
+                  <div>
+                    <strong>Small weight initialisation.</strong> Initialise the router weight $W_r$ with a small standard deviation (e.g. 0.01). Large initial logits cause one expert to dominate immediately — specialisation that is hard to undo because gradient signal for losing experts vanishes.
+                  </div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">2</div>
+                  <div>
+                    <strong>Temperature annealing.</strong> Divide logits by temperature $\tau > 1$ early in training to soften routing and encourage exploration. Anneal $\tau \to 1$ over the first 5–10% of steps.
+                  </div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">3</div>
+                  <div>
+                    <strong>Jitter noise.</strong> Add uniform noise $\epsilon \sim \mathcal{U}(0, 1/N)$ to logits before top-$k$. Breaks symmetry cheaply and prevents deterministic early collapse without requiring any hyperparameter schedule.
+                  </div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">4</div>
+                  <div>
+                    <strong>Separate learning rate for the router.</strong> Routers often benefit from a 10× smaller learning rate than expert FFN weights. The router should adapt slowly relative to the experts it directs.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <pre class="code-block small"><span class="code-title">Router forward with jitter + temperature</span>def route(self, x, training=False):
+    logits = x @ self.W_r          # [B, T, N]
+    if training:
+        noise = torch.rand_like(logits)
+        noise = noise / self.n_experts
+        logits = logits + noise    # jitter
+    logits = logits / self.tau     # temperature
+    gates = logits.softmax(-1)
+    topi = logits.topk(self.k, -1).indices
+    return gates, topi</pre>
+
+              <div class="warning-box" style="margin-top:14px">
+                <h3>Early collapse is permanent</h3>
+                <p>If the router commits all tokens to expert 0 in the first 500 steps,
+                  the other experts receive zero gradient for their FFN weights.
+                  Restarting from scratch is often the only fix — not adjusting α.</p>
+              </div>
+
+              <div class="callout" style="margin-top:12px">
+                Watch the per-expert token count histogram in the first 1000 steps.
+                If one bar is already 10× the others, intervene early.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section XII-B · Router Init</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <!-- NEW: Capacity, Overflow, and Drop Strategies -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XII-C · Overflow</span>
+            <div class="right"><span></span></div>
+          </div>
+
+          <div class="eyebrow">What happens when an expert is full</div>
+          <h2 class="slide-title">
+            Capacity is a hard ceiling — tokens that exceed it must be dropped, rerouted, or padded.
+          </h2>
+
+          <div class="two-col compact">
+            <div>
+              <div class="math-block">
+                <span class="label">Expert capacity</span>
+                $$C = \left\lceil c_f \cdot \frac{T \cdot k}{N} \right\rceil$$
+                <div style="margin-top:6px;font-size:14px;color:var(--ink-mute)">
+                  $T$ = tokens in batch · $k$ = experts per token · $N$ = total experts · $c_f$ = capacity factor (typically 1.0–2.0)
+                </div>
+              </div>
+
+              <table class="compare" style="margin-top:14px;font-size:14px">
+                <thead>
+                  <tr><th>Strategy</th><th>What happens to overflow tokens</th><th>Trade-off</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="label">Drop</td>
+                    <td>Token skips the expert; output is a pass-through of the residual.</td>
+                    <td>Fast, zero extra memory. Gradient silent on dropped tokens.</td>
+                  </tr>
+                  <tr>
+                    <td class="label">Reroute</td>
+                    <td>Token is sent to its next-best expert (top-$k$+1).</td>
+                    <td>No information loss, but creates load cascades.</td>
+                  </tr>
+                  <tr>
+                    <td class="label">Pad &amp; mask</td>
+                    <td>Expert slot is padded; mask prevents its contribution.</td>
+                    <td>Keeps tensor shapes fixed; wastes compute on padding.</td>
+                  </tr>
+                  <tr>
+                    <td class="label">Expert choice</td>
+                    <td>Each expert picks its own top-$C$ tokens; no overflow by design.</td>
+                    <td>Token may be picked by 0 or multiple experts — needs post-hoc normalisation.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <div class="note-card">
+                <span class="tag">Capacity factor intuition</span>
+                <p style="margin-bottom:10px">
+                  With perfect balance, each expert sees exactly $T k / N$ tokens. $c_f = 1.0$ allows no slack — any imbalance causes drops. $c_f = 1.25$ gives 25% headroom at the cost of 25% more memory allocation per expert buffer.
+                </p>
+                <svg viewBox="0 0 220 120" width="100%" height="110">
+                  <!-- axes -->
+                  <line x1="20" y1="100" x2="200" y2="100" stroke="#c9bda6" stroke-width="1"/>
+                  <line x1="20" y1="10"  x2="20"  y2="100" stroke="#c9bda6" stroke-width="1"/>
+                  <!-- capacity line -->
+                  <line x1="20" y1="42" x2="200" y2="42" stroke="#b8651b" stroke-width="2" stroke-dasharray="5,3"/>
+                  <text x="148" y="38" font-family="JetBrains Mono" font-size="8" fill="#b8651b">capacity C</text>
+                  <!-- expert token bars -->
+                  <rect x="30"  y="68" width="18" height="32" fill="#1d3a3a" opacity="0.6" rx="2"/>
+                  <rect x="56"  y="58" width="18" height="42" fill="#1d3a3a" opacity="0.6" rx="2"/>
+                  <rect x="82"  y="30" width="18" height="70" fill="#8b3a1f" opacity="0.8" rx="2"/><!-- overflow -->
+                  <rect x="108" y="72" width="18" height="28" fill="#1d3a3a" opacity="0.6" rx="2"/>
+                  <rect x="134" y="62" width="18" height="38" fill="#1d3a3a" opacity="0.6" rx="2"/>
+                  <rect x="160" y="78" width="18" height="22" fill="#1d3a3a" opacity="0.6" rx="2"/>
+                  <!-- overflow annotation -->
+                  <line x1="91" y1="30" x2="91" y2="42" stroke="#8b3a1f" stroke-width="1.5"/>
+                  <text x="94" y="27" font-family="JetBrains Mono" font-size="8" fill="#8b3a1f">overflow</text>
+                  <!-- axis labels -->
+                  <text x="22"  y="110" font-family="JetBrains Mono" font-size="8" fill="#6e6a78">experts →</text>
+                  <text x="7"   y="52"  font-family="JetBrains Mono" font-size="8" fill="#6e6a78" transform="rotate(-90,12,72)">tokens</text>
+                </svg>
+              </div>
+
+              <div class="callout" style="margin-top:12px">
+                Drop-on-overflow is the standard in Switch Transformer and most production systems.
+                Rerouting is appealing but creates second-order load spikes that can be worse than the original imbalance.
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section XII-C · Overflow</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <!-- NEW: Scaling Laws — When Does MoE Win? -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XII-D · Scaling</span>
+            <div class="right"><span></span></div>
+          </div>
+
+          <div class="eyebrow">When does sparsity pay off?</div>
+          <h2 class="slide-title">
+            MoE wins when parameter count matters more than per-token FLOPs — and only when routing overhead is small.
+          </h2>
+
+          <div class="two-col compact">
+            <div>
+              <div class="note-card">
+                <span class="tag">The core trade</span>
+                <p style="margin-bottom:10px">A dense model with $P$ parameters uses $P$ parameters <em>and</em> $P$-worth of FLOPs per token. An MoE with the same active parameters but $N\times$ more total parameters can use a much larger capacity without extra per-token compute — at the cost of routing, memory, and communication.</p>
+              </div>
+
+              <div class="math-block" style="margin-top:12px">
+                <span class="label">Effective parameter count vs. active FLOPs</span>
+                $$\text{Active FLOPs} \approx \underbrace{2 \cdot d \cdot d_\text{ff} \cdot k}_{\text{expert FFNs}} + \underbrace{4 d^2}_{\text{attention}}$$
+                <div style="margin-top:6px;font-size:13px;color:var(--ink-mute)">Active FLOPs scale with $k$, not $N$. Total parameters scale with $N$.</div>
+              </div>
+
+              <div class="callout" style="margin-top:12px">
+                Empirically, MoE models match dense models at 3–5× lower training compute when $N \geq 8$ and the routing overhead is under 10% of step time. Below 8 experts the advantage shrinks considerably.
+              </div>
+            </div>
+
+            <div>
+              <div class="three-col" style="margin-top:0">
+                <div class="mini-card">
+                  <span class="tag">MoE wins when…</span>
+                  <p>Parameters are the bottleneck for quality and memory per GPU is large enough to shard experts.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">MoE breaks even when…</span>
+                  <p>Routing overhead ≥ 15% of step time, or expert count is so small that load balancing is near-trivial.</p>
+                </div>
+                <div class="mini-card">
+                  <span class="tag">Dense wins when…</span>
+                  <p>Inference latency matters more than throughput, or the serving batch is too small to fill expert buffers.</p>
+                </div>
+              </div>
+
+              <div class="warning-box" style="margin-top:14px">
+                <h3>Inference is harder than training</h3>
+                <p>At training time, large batch sizes keep experts busy. At inference with batch size 1, each expert step is a tiny GEMM — often slower than the equivalent dense matmul due to routing and memory access patterns.</p>
+              </div>
+
+              <div class="note-card" style="margin-top:12px">
+                <span class="tag">Rule of thumb</span>
+                <p>MoE is most attractive with $N \in \{8, 16, 32, 64\}$ experts, $k \in \{1, 2\}$, capacity factor 1.0–1.25, and a serving batch size large enough that every expert processes at least a few tokens per forward pass.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Section XII-D · Scaling</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XIII · Practice</span>
+            <div class="right"><span>14 / 14</span></div>
+          </div>
+
+          <div class="eyebrow">What matters in real systems</div>
+          <h2 class="slide-title">
+            In production, the hardest parts are balancing traffic and moving
+            tokens efficiently.
+          </h2>
+
+          <div class="three-col">
+            <div class="note-card">
+              <span class="tag">Good fits</span>
+              <ul>
+                <li>Very large language models where FFNs dominate parameters.</li>
+                <li>Workloads with diverse token families and enough data for specialization.</li>
+                <li>Clusters where expert parallelism and all-to-all are efficient enough.</li>
+              </ul>
+            </div>
+
+            <div class="note-card">
+              <span class="tag">Failure modes</span>
+              <ul>
+                <li>Router collapse: the same experts receive most tokens.</li>
+                <li>Overflow: experts exceed capacity and drop useful traffic.</li>
+                <li>Communication bottlenecks dominate saved compute.</li>
+              </ul>
+            </div>
+
+            <div class="note-card">
+              <span class="tag">Important knobs</span>
+              <ul>
+                <li>top-k choice, usually 1 or 2</li>
+                <li>capacity factor and overflow policy</li>
+                <li>auxiliary loss weight, router noise, expert count</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="two-col" style="margin-top: 2px">
+            <div class="card">
+              <span class="tag">Practical reading of the layer</span>
+              <p>
+                Attention answers <em>which tokens interact</em>. MoE answers
+                <em>which computation each token receives afterward</em>. They
+                solve different problems inside the same transformer block.
+              </p>
+            </div>
+            <div class="warning-box">
+              <h3>Bottom line</h3>
+              <p>
+                MoE is not a free lunch. It trades dense arithmetic for routing
+                decisions, token shuffling, and systems complexity. When that
+                trade is engineered well, model capacity can increase much
+                faster than active per-token compute.
+              </p>
+            </div>
+          </div>
+
+          <div class="rule-note">
+            Useful mental model: MoE is a sparse replacement for the transformer
+            MLP, not a replacement for attention.
+          </div>
+
+          <div class="slide-footer">
+            <span>Section XIII · Practice</span>
+            <span>Mixture of Experts</span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button id="prev" aria-label="Previous">←</button>
+      <div class="counter">
+        <span id="cur">01</span><span class="sep">/</span
+        ><span class="total" id="tot">14</span>
+      </div>
+      <button id="next" aria-label="Next">→</button>
+    </div>
+
+    <script>
+      (function () {
+        const slides = document.querySelectorAll(".slide");
+        const cur = document.getElementById("cur");
+        const tot = document.getElementById("tot");
+        const progress = document.getElementById("progress");
+        let i = 0;
+
+        tot.textContent = String(slides.length).padStart(2, "0");
+
+        slides.forEach((slide, index) => {
+          const right = slide.querySelector(".slide-header .right");
+          if (right && right.children.length === 1) {
+            right.children[0].textContent = `${String(index + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+          }
+          slide.setAttribute(
+            "aria-label",
+            `Slide ${index + 1} of ${slides.length}`,
+          );
+        });
+
+        function show(n) {
+          i = (n + slides.length) % slides.length;
+          slides.forEach((slide, index) => {
+            slide.classList.toggle("active", index === i);
+          });
+          cur.textContent = String(i + 1).padStart(2, "0");
+          progress.style.width = `${((i + 1) / slides.length) * 100}%`;
+        }
+
+        document.getElementById("next").onclick = () => show(i + 1);
+        document.getElementById("prev").onclick = () => show(i - 1);
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+            e.preventDefault();
+            show(i + 1);
+          } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+            e.preventDefault();
+            show(i - 1);
+          } else if (e.key === "Home") {
+            show(0);
+          } else if (e.key === "End") {
+            show(slides.length - 1);
+          }
+        });
+
+        let tx = 0;
+        document.addEventListener(
+          "touchstart",
+          (e) => (tx = e.changedTouches[0].screenX),
+        );
+        document.addEventListener("touchend", (e) => {
+          const dx = e.changedTouches[0].screenX - tx;
+          if (Math.abs(dx) > 50) {
+            show(i + (dx < 0 ? 1 : -1));
+          }
+        });
+
+        show(0);
+      })();
+    </script>
+  </body>
+</html>

@@ -14,20 +14,26 @@
     />
     <style>
       :root {
-        --paper: #0a0d14;
-        --paper-deep: #11151f;
-        --paper-edge: #181c28;
-        --ink: #ebeaf2;
-        --ink-soft: #8b8a99;
-        --ink-faint: #4d4e5c;
-        --red: #a78bfa;
-        --red-soft: #c4b5fd;
-        --blue: #2dd4bf;
-        --blue-soft: #67e8f9;
-        --gold: #fbbf24;
-        --green: #4ade80;
-        --rule: rgba(235, 234, 242, 0.14);
-        --rule-strong: rgba(235, 234, 242, 0.28);
+        --paper: #081017;
+        --paper-deep: #0f1821;
+        --paper-edge: #18242f;
+        --paper-lift: #1d2b36;
+        --ink: #f5f1ea;
+        --ink-soft: #a8b1ba;
+        --ink-faint: #5c6872;
+        --red: #ff7a59;
+        --red-soft: #ffb39a;
+        --blue: #67d5d0;
+        --blue-soft: #a5ece7;
+        --gold: #f2bf66;
+        --green: #7ce2a9;
+        --rule: rgba(245, 241, 234, 0.13);
+        --rule-strong: rgba(245, 241, 234, 0.24);
+        --panel: rgba(14, 22, 30, 0.82);
+        --panel-solid: rgba(20, 31, 40, 0.96);
+        --shadow-lg: 0 32px 80px rgba(0, 0, 0, 0.34);
+        --shadow-md: 0 22px 44px rgba(0, 0, 0, 0.24);
+        --shadow-sm: 0 12px 24px rgba(0, 0, 0, 0.18);
         --serif: "Newsreader", ui-serif, Georgia, serif;
         --sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
         --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -50,14 +56,19 @@
         -webkit-font-smoothing: antialiased;
         background-image:
           radial-gradient(
-            circle at 10% 5%,
-            rgba(167, 139, 250, 0.12),
-            transparent 38%
+            circle at 8% 8%,
+            rgba(255, 122, 89, 0.16),
+            transparent 34%
           ),
           radial-gradient(
-            circle at 90% 88%,
-            rgba(45, 212, 191, 0.1),
-            transparent 42%
+            circle at 88% 18%,
+            rgba(103, 213, 208, 0.12),
+            transparent 30%
+          ),
+          radial-gradient(
+            circle at 78% 86%,
+            rgba(242, 191, 102, 0.08),
+            transparent 28%
           ),
           repeating-linear-gradient(
             0deg,
@@ -75,6 +86,33 @@
           );
         min-height: 100vh;
         background-attachment: fixed;
+        color-scheme: dark;
+        scroll-behavior: smooth;
+        overflow-x: hidden;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: auto;
+        width: 34rem;
+        height: 34rem;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.16;
+        pointer-events: none;
+        z-index: 0;
+      }
+      body::before {
+        top: -12rem;
+        right: -8rem;
+        background: rgba(255, 122, 89, 0.65);
+      }
+      body::after {
+        left: -10rem;
+        bottom: -12rem;
+        background: rgba(103, 213, 208, 0.48);
       }
 
       ::selection {
@@ -84,10 +122,29 @@
 
       /* === Layout container === */
       .sheet {
-        max-width: 1240px;
+        max-width: 1320px;
         margin: 0 auto;
-        padding: 48px 56px 96px;
+        padding: 32px 56px 96px;
         position: relative;
+        z-index: 1;
+      }
+
+      .read-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        transform-origin: left center;
+        transform: scaleX(0);
+        background: linear-gradient(
+          90deg,
+          var(--red) 0%,
+          var(--gold) 42%,
+          var(--blue) 100%
+        );
+        box-shadow: 0 0 18px rgba(103, 213, 208, 0.35);
+        z-index: 60;
       }
 
       /* corner registration marks like engineering drawings */
@@ -115,9 +172,9 @@
       /* === Header === */
       .masthead {
         display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 24px;
-        align-items: end;
+        grid-template-columns: minmax(0, 1.3fr) minmax(260px, 360px);
+        gap: 32px;
+        align-items: start;
         padding-bottom: 28px;
         border-bottom: 1.5px solid var(--ink);
         margin-bottom: 36px;
@@ -174,12 +231,49 @@
         max-width: 13ch;
       }
 
+      .masthead-notes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .signal-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        backdrop-filter: blur(16px);
+      }
+      .signal-pill::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--red), var(--gold));
+        box-shadow: 0 0 12px rgba(255, 122, 89, 0.35);
+      }
+
       .meta {
         font-family: var(--mono);
         font-size: 11px;
         line-height: 1.7;
-        text-align: right;
+        text-align: left;
         color: var(--ink-soft);
+        background: var(--panel);
+        border: 1px solid var(--rule-strong);
+        border-radius: 24px;
+        padding: 18px 20px;
+        backdrop-filter: blur(20px);
+        box-shadow: var(--shadow-sm);
       }
       .meta strong {
         color: var(--ink);
@@ -195,7 +289,7 @@
       /* === Lede paragraph === */
       .lede {
         font-family: var(--serif);
-        font-size: 21px;
+        font-size: clamp(20px, 2vw, 24px);
         line-height: 1.55;
         max-width: 72ch;
         margin-bottom: 48px;
@@ -213,6 +307,225 @@
         letter-spacing: 0.04em;
         color: var(--ink-soft);
         text-transform: uppercase;
+      }
+
+      .overview-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.8fr);
+        gap: 20px;
+        margin-bottom: 28px;
+      }
+
+      .overview-panel {
+        position: relative;
+        padding: 24px 24px 22px;
+        border-radius: 28px;
+        border: 1px solid var(--rule-strong);
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.045) 0%,
+            rgba(255, 255, 255, 0.018) 100%
+          ),
+          var(--panel);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        backdrop-filter: blur(20px);
+      }
+      .overview-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 122, 89, 0.85),
+          rgba(103, 213, 208, 0.18)
+        );
+      }
+
+      .overview-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 0.82fr);
+        gap: 24px;
+      }
+
+      .panel-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--blue);
+        margin-bottom: 14px;
+      }
+      .panel-kicker::before {
+        content: "";
+        width: 24px;
+        height: 1px;
+        background: currentColor;
+      }
+
+      .panel-title {
+        font-family: var(--serif);
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.02;
+        letter-spacing: -0.03em;
+        max-width: 12ch;
+        margin-bottom: 12px;
+      }
+
+      .panel-body {
+        max-width: 54ch;
+        color: var(--ink-soft);
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .metric {
+        padding: 16px 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        min-height: 106px;
+      }
+
+      .metric-value {
+        display: block;
+        font-family: var(--serif);
+        font-size: 38px;
+        line-height: 0.92;
+        color: var(--ink);
+        letter-spacing: -0.04em;
+        margin-bottom: 8px;
+      }
+
+      .metric-label {
+        display: block;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      .stance-list {
+        list-style: none;
+        display: grid;
+        gap: 12px;
+        color: var(--ink-soft);
+      }
+      .stance-list li {
+        padding-left: 18px;
+        position: relative;
+      }
+      .stance-list li::before {
+        content: "+";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--green);
+        font-family: var(--mono);
+      }
+
+      .quick-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .quick-link {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--ink);
+        text-decoration: none;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition:
+          transform 160ms,
+          border-color 160ms,
+          background 160ms;
+      }
+      .quick-link:hover,
+      .quick-link.is-active {
+        transform: translateY(-1px);
+        border-color: var(--red);
+        background: rgba(255, 122, 89, 0.08);
+      }
+
+      .mode-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--rule-strong);
+        color: var(--ink-soft);
+        font-size: 13px;
+        line-height: 1.5;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .mode-chip b {
+        color: var(--ink);
+      }
+
+      .section-rail {
+        position: sticky;
+        top: 14px;
+        z-index: 30;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: max-content;
+        max-width: 100%;
+        padding: 12px;
+        margin: 0 0 32px auto;
+        border-radius: 22px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(8, 16, 23, 0.74);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .section-rail-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 14px;
+        color: var(--ink-soft);
+        text-decoration: none;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+        transition:
+          color 140ms,
+          border-color 140ms,
+          background 140ms;
+      }
+      .section-rail-link.is-active {
+        color: var(--ink);
+        border-color: rgba(255, 122, 89, 0.48);
+        background: rgba(255, 122, 89, 0.08);
       }
 
       /* === Section primitive === */
@@ -256,10 +569,17 @@
 
       /* === Diagram canvas === */
       .canvas-wrap {
-        background: var(--paper-deep);
-        border: 1px solid var(--ink);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02) 0%,
+          rgba(255, 255, 255, 0.01) 100%
+        );
+        border: 1px solid var(--rule-strong);
+        border-radius: 30px;
         position: relative;
         overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(14px);
       }
       .canvas-wrap::before {
         content: "";
@@ -286,9 +606,9 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 16px;
-        border-bottom: 1px solid var(--ink);
-        background: var(--paper);
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--rule-strong);
+        background: rgba(10, 17, 24, 0.92);
         position: relative;
         z-index: 2;
         flex-wrap: wrap;
@@ -316,6 +636,106 @@
         padding-top: 8px;
         border-top: 0.5px solid var(--rule);
       }
+      .mode-architecture {
+        position: relative;
+        display: grid;
+        gap: 10px;
+        width: auto;
+        margin: 14px 18px 0;
+        padding: 18px 18px 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.035);
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(255, 122, 89, 0.14),
+            transparent 30%
+          ),
+          radial-gradient(
+            circle at 85% 25%,
+            rgba(103, 213, 208, 0.12),
+            transparent 28%
+          ),
+          linear-gradient(
+            180deg,
+            rgba(17, 27, 36, 0.94) 0%,
+            rgba(11, 19, 27, 0.9) 100%
+          );
+        box-shadow:
+          0 18px 34px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        overflow: hidden;
+      }
+      .mode-architecture::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(
+            90deg,
+            rgba(255, 122, 89, 0.12),
+            transparent 28%,
+            transparent 72%,
+            rgba(103, 213, 208, 0.12)
+          ),
+          repeating-linear-gradient(
+            90deg,
+            transparent 0,
+            transparent 23px,
+            rgba(255, 255, 255, 0.018) 23px,
+            rgba(255, 255, 255, 0.018) 24px
+          );
+        pointer-events: none;
+      }
+      .mode-architecture-head {
+        display: grid;
+        position: relative;
+        z-index: 1;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--blue);
+      }
+      .mode-architecture-head #modeStatusChip {
+        width: fit-content;
+        color: var(--ink-soft);
+      }
+      .mode-architecture-grid {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .mode-architecture-card {
+        min-width: 0;
+        padding: 12px 13px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.05) 0%,
+          rgba(8, 16, 23, 0.5) 100%
+        );
+        backdrop-filter: blur(12px);
+      }
+      .mode-architecture-card .k {
+        display: block;
+        margin-bottom: 5px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .mode-architecture-card .v {
+        display: block;
+        color: var(--ink);
+        font-size: 13px;
+        line-height: 1.5;
+      }
       .mode-explainer-item {
         min-width: 0;
       }
@@ -341,8 +761,12 @@
       }
       .mode-switch {
         display: inline-flex;
-        border: 1px solid var(--ink);
-        background: var(--paper);
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 6px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 18px;
       }
       .mode-switch button {
         font-family: var(--mono);
@@ -350,21 +774,26 @@
         font-weight: 500;
         letter-spacing: 0.08em;
         background: transparent;
-        border: none;
-        padding: 7px 14px;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 9px 13px;
         cursor: pointer;
         color: var(--ink-soft);
-        border-right: 1px solid var(--ink);
         transition:
           background 120ms,
-          color 120ms;
-      }
-      .mode-switch button:last-child {
-        border-right: none;
+          color 120ms,
+          border-color 120ms,
+          transform 120ms;
       }
       .mode-switch button.on {
-        background: var(--red);
-        color: var(--paper);
+        background: linear-gradient(
+          135deg,
+          rgba(255, 122, 89, 0.18),
+          rgba(103, 213, 208, 0.12)
+        );
+        border-color: rgba(255, 122, 89, 0.45);
+        color: var(--ink);
+        transform: translateY(-1px);
       }
       .mode-switch button:hover:not(.on) {
         background: var(--paper-edge);
@@ -375,6 +804,184 @@
         position: relative;
         z-index: 1;
         padding: 8px;
+      }
+      .lifecycle-strip {
+        display: grid;
+        gap: 16px;
+        padding: 22px 22px 24px;
+        border-top: 1px solid var(--rule-strong);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02) 0%,
+          rgba(255, 255, 255, 0.01) 100%
+        );
+        position: relative;
+        z-index: 1;
+      }
+      .lifecycle-head {
+        position: relative;
+        display: grid;
+        gap: 8px;
+        padding-right: 272px;
+      }
+      .lifecycle-topline {
+        min-height: 38px;
+      }
+      .lifecycle-controls {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+      }
+      .lifecycle-status {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .lifecycle-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 92px;
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(255, 255, 255, 0.045);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+          background 120ms,
+          border-color 120ms,
+          transform 120ms;
+      }
+      .lifecycle-toggle:hover {
+        background: rgba(255, 122, 89, 0.08);
+        border-color: rgba(255, 122, 89, 0.4);
+        transform: translateY(-1px);
+      }
+      .lifecycle-head p {
+        max-width: 74ch;
+        color: var(--ink-soft);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .lifecycle-flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .lifecycle-step {
+        position: relative;
+        padding: 16px 16px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(8, 16, 23, 0.56);
+        min-height: 168px;
+        cursor: pointer;
+        transition:
+          border-color 140ms,
+          transform 140ms,
+          box-shadow 140ms,
+          background 140ms;
+      }
+      .lifecycle-step:hover {
+        transform: translateY(-2px);
+        border-color: rgba(103, 213, 208, 0.3);
+      }
+      .lifecycle-step.active {
+        border-color: rgba(255, 122, 89, 0.5);
+        background: rgba(255, 122, 89, 0.08);
+        box-shadow:
+          0 0 0 1px rgba(255, 122, 89, 0.28) inset,
+          0 16px 34px rgba(0, 0, 0, 0.18);
+        transform: translateY(-2px);
+        animation: lifecyclePulse 1.8s ease-in-out infinite;
+      }
+      .lifecycle-step:focus-visible {
+        outline: none;
+        box-shadow:
+          0 0 0 2px rgba(103, 213, 208, 0.42),
+          0 16px 34px rgba(0, 0, 0, 0.18);
+      }
+      .lifecycle-step::after {
+        content: "";
+        position: absolute;
+        top: 32px;
+        right: -10px;
+        width: 20px;
+        height: 1px;
+        background: rgba(103, 213, 208, 0.45);
+      }
+      .lifecycle-step:last-child::after {
+        display: none;
+      }
+      .lifecycle-step-num {
+        display: inline-flex;
+        margin-bottom: 10px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--red);
+      }
+      .lifecycle-step h3 {
+        font-family: var(--serif);
+        font-size: 24px;
+        font-weight: 300;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+      }
+      .lifecycle-step p {
+        color: var(--ink-soft);
+        font-size: 13px;
+        line-height: 1.58;
+        margin-bottom: 10px;
+      }
+      .lifecycle-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink);
+      }
+      @keyframes lifecyclePulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 0 1px rgba(255, 122, 89, 0.28) inset,
+            0 16px 34px rgba(0, 0, 0, 0.18);
+        }
+        50% {
+          box-shadow:
+            0 0 0 1px rgba(255, 122, 89, 0.4) inset,
+            0 0 0 10px rgba(255, 122, 89, 0.08),
+            0 18px 36px rgba(0, 0, 0, 0.22);
+        }
+      }
+      @keyframes nodePulse {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 0 rgba(255, 122, 89, 0));
+        }
+        50% {
+          filter: drop-shadow(0 0 8px rgba(255, 122, 89, 0.32));
+        }
       }
       svg.diagram {
         display: block;
@@ -437,6 +1044,28 @@
         stroke: var(--red);
         stroke-width: 2;
       }
+      svg.diagram g.node.active {
+        animation: nodePulse 1.8s ease-in-out infinite;
+      }
+      /* visited box during lifecycle walkthrough */
+      svg.diagram g.node.lc-visited .box {
+        fill: rgba(255, 122, 89, 0.07);
+      }
+      /* lifecycle token ripple ring (CSS-transitioned r) */
+      .token-ripple {
+        fill: none;
+        stroke: var(--red);
+        stroke-width: 1.8;
+        opacity: 0.85;
+        transition:
+          r 0.72s ease-out,
+          opacity 0.72s ease-out,
+          stroke-width 0.72s ease-out;
+      }
+      .token-ripple.expanded {
+        opacity: 0;
+        stroke-width: 0.4;
+      }
       svg.diagram .flow {
         stroke: var(--ink-soft);
         stroke-width: 1;
@@ -472,31 +1101,46 @@
       }
 
       .card {
-        background: var(--paper-deep);
-        border: 1px solid var(--ink);
-        padding: 18px 18px 14px;
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.045) 0%,
+            rgba(255, 255, 255, 0.015) 100%
+          ),
+          rgba(12, 20, 28, 0.88);
+        border: 1px solid var(--rule-strong);
+        border-radius: 26px;
+        padding: 20px 20px 16px;
         position: relative;
         display: flex;
         flex-direction: column;
         transition:
+          border-color 160ms,
           box-shadow 160ms,
           transform 160ms;
+        box-shadow: var(--shadow-sm);
       }
       .card::before {
         content: "";
         position: absolute;
-        top: 6px;
-        left: 6px;
-        right: 6px;
-        bottom: 6px;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
         border: 0.5px solid var(--rule);
+        border-radius: 20px;
         pointer-events: none;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(103, 213, 208, 0.32);
       }
       .card.active {
         box-shadow:
-          0 0 0 2px var(--red) inset,
-          4px 4px 0 rgba(0, 0, 0, 0.35);
-        transform: translate(-2px, -2px);
+          0 0 0 2px rgba(255, 122, 89, 0.45) inset,
+          0 20px 45px rgba(0, 0, 0, 0.28);
+        border-color: rgba(255, 122, 89, 0.52);
+        transform: translateY(-4px);
       }
 
       .card-head {
@@ -532,6 +1176,25 @@
         color: var(--ink-soft);
         margin-bottom: 12px;
       }
+      .card-current {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin-bottom: 12px;
+      }
+      .card-current span {
+        color: var(--ink);
+      }
       .card .desc {
         font-size: 15px;
         line-height: 1.65;
@@ -566,9 +1229,10 @@
       .variant {
         font-family: var(--mono);
         font-size: 11px;
-        padding: 3px 8px;
+        padding: 6px 10px;
         border: 1px solid var(--rule-strong);
-        background: var(--paper);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.03);
         cursor: pointer;
         color: var(--ink-soft);
         transition: all 100ms;
@@ -578,9 +1242,9 @@
         color: var(--ink);
       }
       .variant.picked {
-        background: var(--red);
-        color: var(--paper);
-        border-color: var(--red);
+        background: rgba(255, 122, 89, 0.14);
+        color: var(--ink);
+        border-color: rgba(255, 122, 89, 0.54);
       }
 
       .notes {
@@ -597,17 +1261,209 @@
         color: var(--red);
       }
 
+      .component-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(290px, 340px);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .component-controls {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: end;
+      }
+
+      .search-shell {
+        display: grid;
+        gap: 8px;
+      }
+
+      .search-label,
+      .results-meta {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      .search-shell input {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--ink);
+        font: inherit;
+        outline: none;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      }
+      .search-shell input:focus {
+        border-color: rgba(103, 213, 208, 0.42);
+        box-shadow: 0 0 0 4px rgba(103, 213, 208, 0.08);
+      }
+
+      .filter-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .filter-pill {
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+          border-color 120ms,
+          color 120ms,
+          background 120ms;
+      }
+      .filter-pill.is-active {
+        color: var(--ink);
+        border-color: rgba(255, 122, 89, 0.48);
+        background: rgba(255, 122, 89, 0.08);
+      }
+
+      .card.is-hidden {
+        display: none;
+      }
+
+      .inspector {
+        position: sticky;
+        top: 92px;
+        padding: 22px;
+        border-radius: 28px;
+        border: 1px solid var(--rule-strong);
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.045) 0%,
+            rgba(255, 255, 255, 0.015) 100%
+          ),
+          var(--panel-solid);
+        box-shadow: var(--shadow-md);
+        min-height: 300px;
+      }
+      .inspector h3 {
+        font-family: var(--serif);
+        font-size: 34px;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        margin-bottom: 12px;
+      }
+      .inspector p {
+        color: var(--ink-soft);
+        margin-bottom: 16px;
+      }
+      .inspector-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .inspector-meta span {
+        display: inline-flex;
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--rule);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .inspector-variant {
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--rule);
+      }
+      .inspector-label {
+        margin-bottom: 8px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--blue);
+      }
+      .inspector-variant-note {
+        color: var(--ink);
+        line-height: 1.6;
+      }
+
       /* === Decisions section === */
       .forks {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 36px;
+        gap: 22px;
       }
+
+      .decision-summary {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 22px;
+        padding: 22px 24px;
+        border-radius: 24px;
+        border: 1px solid var(--rule-strong);
+        background: var(--panel);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .decision-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .decision-chip {
+        display: inline-flex;
+        gap: 10px;
+        align-items: center;
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--rule-strong);
+        background: rgba(255, 255, 255, 0.04);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: var(--ink-soft);
+      }
+      .decision-chip b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
       .fork {
         display: grid;
         grid-template-columns: 220px 1fr;
         gap: 28px;
         align-items: start;
+        padding: 24px;
+        border-radius: 28px;
+        border: 1px solid var(--rule-strong);
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.015) 100%
+          ),
+          rgba(13, 21, 29, 0.84);
+        box-shadow: var(--shadow-sm);
       }
       @media (max-width: 800px) {
         .fork {
@@ -644,24 +1500,38 @@
         gap: 14px;
       }
       .option {
-        border-left: 2px solid var(--ink);
-        padding: 6px 0 6px 16px;
+        border: 1px solid var(--rule);
+        border-radius: 20px;
+        padding: 14px 16px 14px 18px;
         position: relative;
+        background: rgba(255, 255, 255, 0.025);
+        transition:
+          border-color 140ms,
+          transform 140ms,
+          background 140ms;
       }
       .option::before {
         content: "";
         position: absolute;
-        left: -6px;
-        top: 12px;
+        left: -7px;
+        top: 18px;
         width: 10px;
         height: 10px;
         background: var(--paper);
         border: 2px solid var(--ink);
         border-radius: 50%;
       }
+      .option:hover {
+        transform: translateY(-2px);
+        border-color: rgba(103, 213, 208, 0.28);
+      }
       .option.picked::before {
         background: var(--red);
         border-color: var(--red);
+      }
+      .option.picked {
+        border-color: rgba(255, 122, 89, 0.48);
+        background: rgba(255, 122, 89, 0.06);
       }
       .option-name {
         font-family: var(--mono);
@@ -719,7 +1589,51 @@
         display: inline-block;
       }
 
+      .reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 420ms ease,
+          transform 420ms ease;
+      }
+      .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
       /* small responsive */
+      @media (max-width: 1120px) {
+        .overview-grid,
+        .overview-split,
+        .component-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .section-rail {
+          width: 100%;
+          justify-content: flex-start;
+          margin-left: 0;
+        }
+
+        .inspector {
+          position: static;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .search-row {
+          grid-template-columns: 1fr;
+        }
+
+        .metric-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .lifecycle-flow {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
       @media (max-width: 700px) {
         .sheet {
           padding: 32px 24px 64px;
@@ -730,13 +1644,71 @@
         .masthead {
           grid-template-columns: 1fr;
         }
-        .meta {
-          text-align: left;
+        .overview-panel,
+        .decision-summary,
+        .fork,
+        .inspector,
+        .canvas-wrap {
+          border-radius: 24px;
+        }
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+        .section-rail {
+          top: 10px;
+          padding: 10px;
+        }
+        .mode-switch {
+          width: 100%;
+        }
+        .mode-switch button {
+          flex: 1 1 calc(50% - 6px);
+        }
+        .mode-explainer,
+        .mode-architecture-grid {
+          grid-template-columns: 1fr;
+        }
+        .mode-architecture {
+          margin: 12px 12px 0;
+          border-radius: 20px;
+        }
+        .lifecycle-strip {
+          padding: 18px;
+        }
+        .lifecycle-head {
+          padding-right: 0;
+        }
+        .lifecycle-topline {
+          min-height: 0;
+        }
+        .lifecycle-controls {
+          position: static;
+        }
+        .lifecycle-flow {
+          grid-template-columns: 1fr;
+        }
+        .lifecycle-step::after {
+          display: none;
+        }
+        .canvas-svg-wrap {
+          padding: 2px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .lifecycle-step.active,
+        .lifecycle-toggle,
+        .mode-switch button,
+        .card,
+        svg.diagram g.node.active {
+          animation: none !important;
+          transition: none !important;
         }
       }
     </style>
   </head>
   <body>
+    <div class="read-progress" id="readProgress"></div>
     <div class="sheet">
       <!-- ============ MASTHEAD ============ -->
       <header class="masthead">
@@ -786,7 +1758,7 @@
           <span class="section-aside">interactive · click to focus</span>
         </div>
 
-        <div class="canvas-wrap">
+        <div class="canvas-wrap reveal">
           <div class="canvas-toolbar">
             <span class="label">Execution mode</span>
             <div class="mode-switch" id="modeSwitch">
@@ -813,6 +1785,44 @@
                     and separation loop.</span
                   >
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mode-architecture" aria-live="polite">
+            <div class="mode-architecture-head">
+              <span id="modeStatusChip">Mode: sequential focus</span>
+              <span>How this architecture works</span>
+            </div>
+            <div class="mode-architecture-grid">
+              <div class="mode-architecture-card">
+                <span class="k">Node dispatch</span>
+                <span class="v" id="modeDispatch"
+                  >One driver owns the frontier, processes one node at a time,
+                  and decides immediately whether to prune, cut, or
+                  branch.</span
+                >
+              </div>
+              <div class="mode-architecture-card">
+                <span class="k">Cut sharing</span>
+                <span class="v" id="modeCuts"
+                  >Separators write into one in-process pool, so every cut is
+                  reusable on the very next node without synchronization.
+                </span>
+              </div>
+              <div class="mode-architecture-card">
+                <span class="k">Bound propagation</span>
+                <span class="v" id="modeBounds"
+                  >Incumbent and dual bound update in one memory image, so
+                  pruning decisions always see the freshest state.</span
+                >
+              </div>
+              <div class="mode-architecture-card">
+                <span class="k">Best fit</span>
+                <span class="v" id="modeFit"
+                  >Best first implementation for debugging, profiling, and
+                  deterministic experiments.</span
+                >
               </div>
             </div>
           </div>
@@ -853,6 +1863,27 @@
                 >
                   <path d="M0,0 L10,5 L0,10 z" fill="var(--blue)" />
                 </marker>
+                <!-- glow filter for the lifecycle node token -->
+                <filter
+                  id="tokenGlow"
+                  x="-80%"
+                  y="-80%"
+                  width="260%"
+                  height="260%"
+                  color-interpolation-filters="sRGB"
+                >
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feColorMatrix
+                    in="blur"
+                    type="matrix"
+                    values="1 0 0 0 1   0 0 0 0 0.48   0 0 0 0 0.35   0 0 0 0.85 0"
+                    result="coloredBlur"
+                  />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
 
               <!-- Frame around shared state band -->
@@ -1287,6 +2318,33 @@
                 </g>
               </g>
 
+              <!-- Lifecycle token overlay — animated by lifecycle walkthrough JS -->
+              <g id="tokenLayer" style="pointer-events: none">
+                <!-- travelling trail path (stroke-dashoffset animated) -->
+                <path
+                  id="tokenTrail"
+                  stroke="var(--red)"
+                  stroke-width="2.2"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-dasharray="1"
+                  stroke-dashoffset="1"
+                  opacity="0"
+                />
+                <!-- breadcrumb dots left at visited positions -->
+                <g id="breadcrumbLayer" />
+                <!-- the main token: halo + glowing core + white centre -->
+                <g
+                  id="lifecycleToken"
+                  transform="translate(450,138)"
+                  opacity="0"
+                >
+                  <circle r="22" fill="rgba(255,122,89,0.10)" />
+                  <circle r="8" fill="var(--red)" filter="url(#tokenGlow)" />
+                  <circle r="3" fill="white" opacity="0.9" />
+                </g>
+              </g>
+
               <!-- Bottom annotation -->
               <text class="annot" id="diagramLegend" x="60" y="725">
                 <tspan fill="var(--blue)">━ ━</tspan>
@@ -1297,6 +2355,130 @@
                 internal pipeline
               </text>
             </svg>
+          </div>
+
+          <div class="lifecycle-strip">
+            <div class="lifecycle-head">
+              <div class="lifecycle-topline">
+                <div class="panel-kicker">Request lifecycle</div>
+                <div class="lifecycle-controls">
+                  <span class="lifecycle-status" id="lifecycleStatus"
+                    >Auto walkthrough</span
+                  >
+                  <button
+                    class="lifecycle-toggle"
+                    id="lifecycleNext"
+                    type="button"
+                  >
+                    Next
+                  </button>
+                  <button
+                    class="lifecycle-toggle"
+                    id="lifecycleToggle"
+                    type="button"
+                    aria-pressed="true"
+                  >
+                    Pause
+                  </button>
+                </div>
+              </div>
+              <p>
+                One node enters the worker with a branching path and basis hint.
+                The driver tries the cheapest tightening passes first, spends LP
+                time only once the node still looks alive, then either extracts
+                an incumbent, strengthens the relaxation, or splits the node
+                into children.
+              </p>
+            </div>
+
+            <div class="lifecycle-flow" aria-label="Single node walkthrough">
+              <article
+                class="lifecycle-step"
+                data-component="presolve"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <span class="lifecycle-step-num">01</span>
+                <h3>Presolve</h3>
+                <p>
+                  The node inherits local bounds from its branch path. Cheap
+                  reductions remove fixed variables, tighten coefficients, and
+                  detect obvious infeasibility before any serious solve begins.
+                </p>
+                <span class="lifecycle-tag">shrink the node</span>
+              </article>
+
+              <article
+                class="lifecycle-step"
+                data-component="lp"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <span class="lifecycle-step-num">02</span>
+                <h3>LP Solve</h3>
+                <p>
+                  The LP engine warm-starts from the parent basis, reoptimizes
+                  under the new bounds, and produces the node's current dual
+                  bound plus a fractional relaxation point.
+                </p>
+                <span class="lifecycle-tag">produce a bound</span>
+              </article>
+
+              <article
+                class="lifecycle-step"
+                data-component="separator"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <span class="lifecycle-step-num">03</span>
+                <h3>Separation</h3>
+                <p>
+                  If the LP point violates known structure, separators generate
+                  cuts. Useful cuts are filtered, added back to the node LP, and
+                  the relaxation is solved again only if the node still looks
+                  promising.
+                </p>
+                <span class="lifecycle-tag">tighten the relaxation</span>
+              </article>
+
+              <article
+                class="lifecycle-step"
+                data-component="heuristics"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <span class="lifecycle-step-num">04</span>
+                <h3>Heuristics</h3>
+                <p>
+                  The fractional point is mined for primal candidates through
+                  rounding, diving, RINS, or polishing. A new incumbent updates
+                  the global cutoff and can prune other open nodes immediately.
+                </p>
+                <span class="lifecycle-tag">hunt for feasibility</span>
+              </article>
+
+              <article
+                class="lifecycle-step"
+                data-component="brancher"
+                role="button"
+                tabindex="0"
+                aria-pressed="false"
+              >
+                <span class="lifecycle-step-num">05</span>
+                <h3>Branching</h3>
+                <p>
+                  If the node remains fractional and worth exploring, the
+                  brancher picks a disjunction, creates child bounds, and pushes
+                  those children back into the node pool with updated scores and
+                  basis hints.
+                </p>
+                <span class="lifecycle-tag">split into children</span>
+              </article>
+            </div>
           </div>
         </div>
       </section>
@@ -1309,7 +2491,77 @@
           <span class="section-aside">interactive · pick variants</span>
         </div>
 
-        <div class="cards" id="cards"></div>
+        <div class="component-shell reveal">
+          <div>
+            <div class="component-controls">
+              <div class="search-row">
+                <label class="search-shell" for="componentSearch">
+                  <span class="search-label">Search components</span>
+                  <input
+                    id="componentSearch"
+                    type="search"
+                    placeholder="lp engine, brancher, shared, telemetry..."
+                  />
+                </label>
+                <div class="results-meta" id="resultsMeta">
+                  0 components shown
+                </div>
+              </div>
+              <div class="filter-pills" id="componentFilters">
+                <button
+                  class="filter-pill is-active"
+                  data-filter="all"
+                  aria-pressed="true"
+                >
+                  all
+                </button>
+                <button
+                  class="filter-pill"
+                  data-filter="shared"
+                  aria-pressed="false"
+                >
+                  shared state
+                </button>
+                <button
+                  class="filter-pill"
+                  data-filter="per worker"
+                  aria-pressed="false"
+                >
+                  per worker
+                </button>
+                <button
+                  class="filter-pill"
+                  data-filter="root"
+                  aria-pressed="false"
+                >
+                  root / hybrid
+                </button>
+              </div>
+            </div>
+
+            <div class="cards" id="cards"></div>
+          </div>
+
+          <aside class="inspector reveal" id="inspector">
+            <div class="panel-kicker">Active component</div>
+            <h3 id="inspectorTitle">No component pinned</h3>
+            <p id="inspectorBody">
+              Click the diagram or a catalog card to keep one subsystem in view
+              while you compare architecture choices.
+            </p>
+            <div class="inspector-meta">
+              <span id="inspectorRole">browse mode</span>
+              <span id="inspectorTag">atlas overview</span>
+            </div>
+            <div class="inspector-variant">
+              <div class="inspector-label">Current variant</div>
+              <div class="inspector-variant-note" id="inspectorVariant">
+                Selection-aware notes appear here, including the currently
+                chosen architecture variant and why it matters.
+              </div>
+            </div>
+          </aside>
+        </div>
       </section>
 
       <!-- ============ §3 ARCHITECTURAL DECISIONS ============ -->
@@ -1320,14 +2572,19 @@
           <span class="section-aside">click to commit</span>
         </div>
 
-        <div class="forks" id="forks"></div>
+        <div class="decision-summary reveal">
+          <div class="panel-kicker">Current defaults</div>
+          <div class="decision-tags" id="decisionTags"></div>
+        </div>
+
+        <div class="forks reveal" id="forks"></div>
       </section>
 
       <!-- ============ FOOTER ============ -->
       <footer>
         <div>
           <strong style="color: var(--ink)">INTERACTION NOTES</strong> — variant
-          chips and module toggles persist within this session.<br />
+          chips, execution mode, and decision picks persist in this browser.<br />
           Built as a thinking tool, not a spec. Adapt to your problem class
           (general MIP, VRP, scheduling, ...) and architecture (single-thread,
           shared-pool, partitioned).
@@ -1743,6 +3000,89 @@
         },
       ];
 
+      const STORAGE_KEY = "bc_atlas_state_v2";
+      const DEFAULT_MODE = "seq";
+
+      function loadStoredState() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        } catch (error) {
+          console.warn("Failed to parse saved atlas state.", error);
+          return {};
+        }
+      }
+
+      const SAVED_STATE = loadStoredState();
+
+      COMPONENTS.forEach((component) => {
+        const nextPick = SAVED_STATE.componentPicks?.[component.id];
+        if (
+          Number.isInteger(nextPick) &&
+          nextPick >= 0 &&
+          nextPick < component.variants.length
+        ) {
+          component.pick = nextPick;
+        }
+      });
+
+      FORKS.forEach((fork, index) => {
+        const pickedIndex = SAVED_STATE.forkPicks?.[index];
+        if (
+          Number.isInteger(pickedIndex) &&
+          pickedIndex >= 0 &&
+          pickedIndex < fork.options.length
+        ) {
+          fork.options.forEach((option, optionIndex) => {
+            option.picked = optionIndex === pickedIndex;
+          });
+        }
+      });
+
+      const VIEW_STATE = {
+        activeId: SAVED_STATE.activeId ?? null,
+        activeFilter: SAVED_STATE.activeFilter ?? "all",
+        search: SAVED_STATE.search ?? "",
+        mode: SAVED_STATE.mode ?? DEFAULT_MODE,
+      };
+
+      function persistState() {
+        const componentPicks = Object.fromEntries(
+          COMPONENTS.map((component) => [component.id, component.pick]),
+        );
+        const forkPicks = FORKS.map((fork) =>
+          fork.options.findIndex((option) => option.picked),
+        );
+
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              componentPicks,
+              forkPicks,
+              activeId: VIEW_STATE.activeId,
+              activeFilter: VIEW_STATE.activeFilter,
+              search: VIEW_STATE.search,
+              mode: VIEW_STATE.mode,
+            }),
+          );
+        } catch (error) {
+          console.warn("Failed to persist atlas state.", error);
+        }
+      }
+
+      function getComponentBucket(component) {
+        const tag = component.tag.toLowerCase();
+        if (tag.includes("shared")) return "shared";
+        if (tag.includes("per worker")) return "per worker";
+        return "root";
+      }
+
+      function stripHtml(value) {
+        const template = document.createElement("template");
+        template.innerHTML = value.trim();
+        return template.content.textContent?.trim() ?? "";
+      }
+
       /* ===================== RENDER ===================== */
       const cardsEl = document.getElementById("cards");
       const getVariantNote = (component, index) =>
@@ -1752,14 +3092,27 @@
 
       COMPONENTS.forEach((c) => {
         const card = document.createElement("article");
-        card.className = "card";
+        card.className = "card reveal";
         card.dataset.component = c.id;
+        card.dataset.bucket = getComponentBucket(c);
+        card.dataset.search = [
+          c.name,
+          c.tag,
+          c.role,
+          c.desc,
+          c.variants.join(" "),
+          (c.variantNotes || []).join(" "),
+        ]
+          .join(" ")
+          .toLowerCase();
+        card.tabIndex = 0;
         card.innerHTML = `
     <div class="card-head">
       <span class="card-tag">${c.tag}</span>
     </div>
     <h3>${c.name}</h3>
     <div class="role">${c.role}</div>
+    <div class="card-current">current <span>${c.variants[c.pick]}</span></div>
     <div class="desc">${c.desc}</div>
     <div class="variants">
       <div class="variants-label">variants</div>
@@ -1767,7 +3120,7 @@
         ${c.variants
           .map(
             (v, i) =>
-              `<button class="variant${i === c.pick ? " picked" : ""}" data-i="${i}">${v}</button>`,
+              `<button class="variant${i === c.pick ? " picked" : ""}" data-i="${i}" aria-pressed="${i === c.pick ? "true" : "false"}">${v}</button>`,
           )
           .join("")}
       </div>
@@ -1781,7 +3134,7 @@
       const forksEl = document.getElementById("forks");
       FORKS.forEach((f, fi) => {
         const wrap = document.createElement("div");
-        wrap.className = "fork";
+        wrap.className = "fork reveal";
         wrap.innerHTML = `
     <div class="fork-q">
       <div class="q-num">${f.num}</div>
@@ -1791,7 +3144,7 @@
       ${f.options
         .map(
           (o, oi) => `
-        <div class="option${o.picked ? " picked" : ""}" data-fork="${fi}" data-opt="${oi}">
+        <div class="option${o.picked ? " picked" : ""}" data-fork="${fi}" data-opt="${oi}" role="button" tabindex="0" aria-pressed="${o.picked ? "true" : "false"}">
           <div class="option-name">${o.name}</div>
           <div class="option-body">${o.body}</div>
           <div class="option-tradeoff"><b>+</b> ${o.good} &nbsp;·&nbsp; <i>−</i> ${o.bad}</div>
@@ -1805,20 +3158,147 @@
       });
 
       /* ===================== INTERACTIVITY ===================== */
+      const resultsMeta = document.getElementById("resultsMeta");
+      const componentSearch = document.getElementById("componentSearch");
+      const componentFilters = document.getElementById("componentFilters");
+      const inspectorTitle = document.getElementById("inspectorTitle");
+      const inspectorBody = document.getElementById("inspectorBody");
+      const inspectorRole = document.getElementById("inspectorRole");
+      const inspectorTag = document.getElementById("inspectorTag");
+      const inspectorVariant = document.getElementById("inspectorVariant");
+      const decisionTags = document.getElementById("decisionTags");
+      const readProgress = document.getElementById("readProgress");
+      const modeStatusChip = document.getElementById("modeStatusChip");
+      const modeDispatch = document.getElementById("modeDispatch");
+      const modeCuts = document.getElementById("modeCuts");
+      const modeBounds = document.getElementById("modeBounds");
+      const modeFit = document.getElementById("modeFit");
+      const lifecycleSteps = document.querySelectorAll(".lifecycle-step");
+      const lifecycleToggle = document.getElementById("lifecycleToggle");
+      const lifecycleNext = document.getElementById("lifecycleNext");
+      const lifecycleStatus = document.getElementById("lifecycleStatus");
+      const metricShared = document.getElementById("metricShared");
+      const metricWorkers = document.getElementById("metricWorkers");
+      const metricForks = document.getElementById("metricForks");
+      const sectionNavLinks = document.querySelectorAll(
+        ".section-rail-link, .quick-link",
+      );
+
+      componentSearch.value = VIEW_STATE.search;
+      componentFilters.querySelectorAll(".filter-pill").forEach((pill) => {
+        const isActive = pill.dataset.filter === VIEW_STATE.activeFilter;
+        pill.classList.toggle("is-active", isActive);
+        pill.setAttribute("aria-pressed", String(isActive));
+      });
+
+      if (metricShared) {
+        metricShared.textContent = String(
+          COMPONENTS.filter(
+            (component) => getComponentBucket(component) === "shared",
+          ).length,
+        );
+      }
+      if (metricWorkers) {
+        metricWorkers.textContent = String(
+          COMPONENTS.filter(
+            (component) => getComponentBucket(component) === "per worker",
+          ).length,
+        );
+      }
+      if (metricForks) {
+        metricForks.textContent = String(FORKS.length);
+      }
+
+      function renderDecisionSummary() {
+        decisionTags.innerHTML = "";
+        FORKS.forEach((fork) => {
+          const activeOption = fork.options.find((option) => option.picked);
+          const chip = document.createElement("div");
+          chip.className = "decision-chip";
+          chip.innerHTML = `
+            <b>${stripHtml(fork.num)}</b>
+            <span>${activeOption?.name.toLowerCase() ?? "unset"}</span>
+          `;
+          decisionTags.appendChild(chip);
+        });
+      }
+
+      function updateInspector(id) {
+        const component = COMPONENTS.find((item) => item.id === id);
+
+        if (!component) {
+          inspectorTitle.textContent = "No component pinned";
+          inspectorBody.textContent =
+            "Click the diagram or a catalog card to keep one subsystem in view while you compare architecture choices.";
+          inspectorRole.textContent = "browse mode";
+          inspectorTag.textContent = "atlas overview";
+          inspectorVariant.textContent =
+            "Selection-aware notes appear here, including the currently chosen architecture variant and why it matters.";
+          return;
+        }
+
+        inspectorTitle.textContent = component.name;
+        inspectorBody.textContent = component.desc;
+        inspectorRole.textContent = component.role;
+        inspectorTag.textContent = component.tag;
+        inspectorVariant.textContent = `${component.variants[component.pick]} — ${getVariantNote(component, component.pick)}`;
+      }
+
+      function applyComponentFilters() {
+        const needle = VIEW_STATE.search.trim().toLowerCase();
+        let visible = 0;
+
+        document.querySelectorAll(".card").forEach((card) => {
+          const matchesFilter =
+            VIEW_STATE.activeFilter === "all" ||
+            card.dataset.bucket === VIEW_STATE.activeFilter;
+          const matchesSearch =
+            !needle || card.dataset.search?.includes(needle);
+          const shouldShow = matchesFilter && matchesSearch;
+          card.classList.toggle("is-hidden", !shouldShow);
+          if (shouldShow) visible += 1;
+        });
+
+        resultsMeta.textContent = `${visible} component${visible === 1 ? "" : "s"} shown`;
+      }
+
+      function setActiveSectionLink(id) {
+        if (!sectionNavLinks.length) return;
+        sectionNavLinks.forEach((link) => {
+          const isActive = link.getAttribute("href") === `#${id}`;
+          link.classList.toggle("is-active", isActive);
+        });
+      }
 
       /* --- Card ↔ Diagram linkage --- */
-      function setActive(id) {
+      function setActive(id, { scroll = true } = {}) {
+        VIEW_STATE.activeId = id;
+        const activeIndex = LIFECYCLE_ORDER.indexOf(id);
+        if (activeIndex >= 0) lifecycleIndex = activeIndex;
         document.querySelectorAll(".card").forEach((c) => {
           c.classList.toggle("active", c.dataset.component === id);
         });
         document.querySelectorAll("svg.diagram g.node").forEach((g) => {
           g.classList.toggle("active", g.dataset.component === id);
         });
+        lifecycleSteps.forEach((step) => {
+          const isActive = step.dataset.component === id;
+          step.classList.toggle("active", isActive);
+          step.setAttribute("aria-pressed", String(isActive));
+        });
+        updateInspector(id);
         if (id) {
           const card = document.querySelector(`.card[data-component="${id}"]`);
-          if (card)
+          if (card && scroll)
             card.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
+        /* token animation — move the glowing dot to the active lifecycle node */
+        if (id && LIFECYCLE_POS[id]) {
+          animateTokenTo(id);
+        } else if (!id) {
+          resetTokenAnimation();
+        }
+        persistState();
       }
 
       document.querySelectorAll("svg.diagram g.node").forEach((g) => {
@@ -1833,10 +3313,71 @@
           if (e.target.closest("button")) return;
           setActive(card.dataset.component);
         });
+        card.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          if (e.target.closest("button")) return;
+          e.preventDefault();
+          setActive(card.dataset.component);
+        });
       });
 
+      lifecycleSteps.forEach((step) => {
+        step.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setLifecycleAutoplay(false);
+          setActive(step.dataset.component);
+        });
+        step.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          setLifecycleAutoplay(false);
+          setActive(step.dataset.component);
+        });
+      });
+
+      if (lifecycleToggle) {
+        lifecycleToggle.addEventListener("click", () => {
+          setLifecycleAutoplay(!isLifecycleAutoplay);
+        });
+      }
+
+      if (lifecycleNext) {
+        lifecycleNext.addEventListener("click", () => {
+          setLifecycleAutoplay(false);
+          runLifecycleStep(lifecycleIndex + 1, { scroll: false });
+        });
+      }
+
+      const lifecycleStrip = document.querySelector(".lifecycle-strip");
+      if (lifecycleStrip) {
+        lifecycleStrip.addEventListener("mouseenter", () => {
+          if (isLifecycleAutoplay) stopLifecycleAutoplay();
+        });
+        lifecycleStrip.addEventListener("mouseleave", () => {
+          if (isLifecycleAutoplay) startLifecycleAutoplay();
+        });
+        lifecycleStrip.addEventListener("focusin", () => {
+          if (isLifecycleAutoplay) stopLifecycleAutoplay();
+        });
+        lifecycleStrip.addEventListener("focusout", (e) => {
+          if (
+            isLifecycleAutoplay &&
+            lifecycleStrip &&
+            !lifecycleStrip.contains(e.relatedTarget)
+          ) {
+            startLifecycleAutoplay();
+          }
+        });
+      }
+
       document.body.addEventListener("click", (e) => {
-        if (!e.target.closest(".card, svg.diagram g.node")) setActive(null);
+        if (
+          !e.target.closest(
+            ".card, svg.diagram g.node, .lifecycle-step, .lifecycle-strip, .inspector, .component-controls, .section-rail, .canvas-toolbar, .overview-panel, .decision-summary",
+          )
+        ) {
+          setActive(null);
+        }
       });
 
       /* --- Variant picking --- */
@@ -1845,10 +3386,12 @@
           e.stopPropagation();
           const card = btn.closest(".card");
           const list = btn.parentElement;
-          list
-            .querySelectorAll(".variant")
-            .forEach((b) => b.classList.remove("picked"));
+          list.querySelectorAll(".variant").forEach((b) => {
+            b.classList.remove("picked");
+            b.setAttribute("aria-pressed", "false");
+          });
           btn.classList.add("picked");
+          btn.setAttribute("aria-pressed", "true");
 
           const component = COMPONENTS.find(
             (item) => item.id === card?.dataset.component,
@@ -1858,19 +3401,73 @@
 
           component.pick = nextIndex;
           const notesEl = card.querySelector(".notes");
+          const currentVariantEl = card.querySelector(".card-current span");
+          if (currentVariantEl)
+            currentVariantEl.textContent = component.variants[nextIndex];
           if (notesEl)
             notesEl.textContent = getVariantNote(component, nextIndex);
+          if (VIEW_STATE.activeId === component.id)
+            updateInspector(component.id);
+          persistState();
         });
       });
 
       /* --- Fork option picking --- */
+      function pickForkOption(optionEl) {
+        const forkIndex = Number(optionEl.dataset.fork);
+        const optionIndex = Number(optionEl.dataset.opt);
+        if (Number.isNaN(forkIndex) || Number.isNaN(optionIndex)) return;
+
+        FORKS[forkIndex].options.forEach((option, index) => {
+          option.picked = index === optionIndex;
+        });
+
+        document
+          .querySelectorAll(`.option[data-fork="${forkIndex}"]`)
+          .forEach((option) => {
+            const matches = Number(option.dataset.opt) === optionIndex;
+            option.classList.toggle("picked", matches);
+            option.setAttribute("aria-pressed", String(matches));
+          });
+
+        renderDecisionSummary();
+        persistState();
+      }
+
       document.querySelectorAll(".option").forEach((opt) => {
-        opt.addEventListener("click", () => {
-          const fork = opt.dataset.fork;
-          document
-            .querySelectorAll(`.option[data-fork="${fork}"]`)
-            .forEach((o) => o.classList.remove("picked"));
-          opt.classList.add("picked");
+        opt.addEventListener("click", () => pickForkOption(opt));
+        opt.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          pickForkOption(opt);
+        });
+      });
+
+      /* --- Search + filters --- */
+      componentSearch.addEventListener("input", (e) => {
+        VIEW_STATE.search = e.target.value;
+        applyComponentFilters();
+        persistState();
+      });
+
+      componentSearch.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        const firstVisible = document.querySelector(".card:not(.is-hidden)");
+        if (firstVisible) setActive(firstVisible.dataset.component);
+      });
+
+      componentFilters.querySelectorAll(".filter-pill").forEach((pill) => {
+        pill.addEventListener("click", () => {
+          VIEW_STATE.activeFilter = pill.dataset.filter || "all";
+          componentFilters
+            .querySelectorAll(".filter-pill")
+            .forEach((candidate) => {
+              const isActive = candidate === pill;
+              candidate.classList.toggle("is-active", isActive);
+              candidate.setAttribute("aria-pressed", String(isActive));
+            });
+          applyComponentFilters();
+          persistState();
         });
       });
 
@@ -1880,6 +3477,12 @@
         par: "N workers · shared cut & node pool · atomic-protected state",
         steal: "N workers · local deques · steal when idle · shared incumbent",
         dist: "N workers · partitioned pools · message-passed updates",
+      };
+      const MODE_LABELS = {
+        seq: "sequential focus",
+        par: "parallel · shared pool",
+        steal: "parallel · work stealing",
+        dist: "parallel · partitioned",
       };
 
       const MODE_EXPLAINERS = {
@@ -1900,6 +3503,65 @@
           con: "Knowledge sharing is delayed, so good cuts and incumbents propagate more slowly across workers.",
         },
       };
+
+      const MODE_ARCHITECTURE_COPY = {
+        seq: {
+          dispatch:
+            "One driver owns the frontier, processes one node at a time, and decides immediately whether to prune, cut, or branch.",
+          cuts: "Separators write into one in-process pool, so every cut is reusable on the very next node without synchronization.",
+          bounds:
+            "Incumbent and dual bound update in one memory image, so pruning decisions always see the freshest state.",
+          fit: "Best first implementation for debugging, profiling, and deterministic experiments.",
+        },
+        par: {
+          dispatch:
+            "Workers pop from one shared frontier, so the solver stays close to true global best-node order while multiple nodes are processed at once.",
+          cuts: "Globally valid cuts are published to a shared pool; workers re-check activity and orthogonality before loading them into local LPs.",
+          bounds:
+            "Incumbent and global bound live behind atomics or snapshot-backed shared state, so updates propagate quickly without fully stopping readers.",
+          fit: "Best when proof quality and cross-worker reuse matter more than absolute scalability at high core counts.",
+        },
+        steal: {
+          dispatch:
+            "Each worker mostly lives on its own deque and only steals when it runs dry, so locality and low-overhead pops beat perfect global ordering.",
+          cuts: "Cheap or local cuts stay near the worker that found them; only reusable high-value cuts get promoted to the shared layer.",
+          bounds:
+            "Incumbents propagate quickly, but queue quality is only approximately global because each worker prioritizes its own local frontier first.",
+          fit: "Best practical shared-memory default once a single global heap starts dominating contention.",
+        },
+        dist: {
+          dispatch:
+            "Each worker owns a partition of the search tree and explores it privately, communicating summaries rather than touching remote memory directly.",
+          cuts: "Cuts, incumbents, and no-goods move over channels or RPC, so the system only broadcasts knowledge worth the latency and bandwidth cost.",
+          bounds:
+            "Global progress is eventually consistent: workers may prune using slightly stale information until the next message merge arrives.",
+          fit: "Best for NUMA machines or distributed clusters where ownership, isolation, and explicit communication matter more than instant reuse.",
+        },
+      };
+
+      const LIFECYCLE_ORDER = [
+        "presolve",
+        "lp",
+        "separator",
+        "heuristics",
+        "brancher",
+      ];
+      /* SVG centre-point of each lifecycle component (viewBox coords) */
+      const LIFECYCLE_POS = {
+        nodepool: { x: 450, y: 138 },
+        presolve: { x: 680, y: 490 },
+        lp: { x: 440, y: 348 },
+        separator: { x: 680, y: 348 },
+        heuristics: { x: 440, y: 490 },
+        brancher: { x: 190, y: 490 },
+      };
+      const AUTOPLAY_MS = 2400;
+      let lifecycleTimer = null;
+      let lifecycleIndex = Math.max(
+        LIFECYCLE_ORDER.indexOf(VIEW_STATE.activeId),
+        0,
+      );
+      let isLifecycleAutoplay = true;
 
       const NODE_POOL_COPY = {
         seq: {
@@ -2085,31 +3747,296 @@
         conflictScope.textContent = copy.scope;
       }
 
-      function setMode(mode) {
+      function setModeArchitecture(mode) {
+        const copy = MODE_ARCHITECTURE_COPY[mode] ?? MODE_ARCHITECTURE_COPY.seq;
+        modeDispatch.textContent = copy.dispatch;
+        modeCuts.textContent = copy.cuts;
+        modeBounds.textContent = copy.bounds;
+        modeFit.textContent = copy.fit;
+      }
+
+      function updateLifecycleAutoplayUi() {
+        if (!lifecycleToggle || !lifecycleStatus) return;
+        lifecycleToggle.textContent = isLifecycleAutoplay ? "Pause" : "Play";
+        lifecycleToggle.setAttribute(
+          "aria-pressed",
+          String(isLifecycleAutoplay),
+        );
+        lifecycleStatus.textContent = isLifecycleAutoplay
+          ? "Auto walkthrough"
+          : "Manual walkthrough";
+      }
+
+      function stopLifecycleAutoplay() {
+        if (lifecycleTimer) {
+          window.clearInterval(lifecycleTimer);
+          lifecycleTimer = null;
+        }
+      }
+
+      function runLifecycleStep(index, options = {}) {
+        const normalizedIndex =
+          ((index % LIFECYCLE_ORDER.length) + LIFECYCLE_ORDER.length) %
+          LIFECYCLE_ORDER.length;
+        lifecycleIndex = normalizedIndex;
+        setActive(LIFECYCLE_ORDER[normalizedIndex], options);
+      }
+
+      function startLifecycleAutoplay() {
+        stopLifecycleAutoplay();
+        if (
+          !isLifecycleAutoplay ||
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ) {
+          return;
+        }
+        lifecycleTimer = window.setInterval(() => {
+          runLifecycleStep(lifecycleIndex + 1, { scroll: false });
+        }, AUTOPLAY_MS);
+      }
+
+      function setLifecycleAutoplay(nextState) {
+        isLifecycleAutoplay = nextState;
+        updateLifecycleAutoplayUi();
+        if (isLifecycleAutoplay) {
+          startLifecycleAutoplay();
+        } else {
+          stopLifecycleAutoplay();
+        }
+      }
+
+      /* ======================================================
+         LIFECYCLE TOKEN ANIMATION
+         A glowing orange token travels through the SVG diagram
+         as the walkthrough advances step by step.
+         ====================================================== */
+      (function () {
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const tokenLayer = document.getElementById("tokenLayer");
+        const tokenGroup = document.getElementById("lifecycleToken");
+        const tokenTrail = document.getElementById("tokenTrail");
+        const bcLayer = document.getElementById("breadcrumbLayer");
+
+        let _pos = { x: LIFECYCLE_POS.nodepool.x, y: LIFECYCLE_POS.nodepool.y };
+        let _current = null;
+        let _raf = null;
+
+        function _ease(t) {
+          return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        function _arcPath(ax, ay, bx, by) {
+          const dx = bx - ax,
+            dy = by - ay;
+          const len = Math.sqrt(dx * dx + dy * dy) || 1;
+          const bend = Math.min(50, len * 0.28);
+          const cx = (ax + bx) / 2 + (-dy / len) * bend;
+          const cy = (ay + by) / 2 + (dx / len) * bend;
+          return `M ${ax} ${ay} Q ${cx} ${cy} ${bx} ${by}`;
+        }
+
+        function _breadcrumb(x, y) {
+          if (!bcLayer) return;
+          const c = document.createElementNS(SVG_NS, "circle");
+          c.setAttribute("cx", x);
+          c.setAttribute("cy", y);
+          c.setAttribute("r", "6");
+          c.setAttribute("fill", "rgba(255,122,89,0.28)");
+          c.style.transition = "r 2.4s linear, opacity 2.4s linear";
+          bcLayer.appendChild(c);
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              c.setAttribute("r", "3");
+              c.style.opacity = "0";
+            }),
+          );
+          setTimeout(() => {
+            if (c.parentNode) c.parentNode.removeChild(c);
+          }, 2600);
+        }
+
+        function _ripple(group) {
+          if (!group) return;
+          [0, 320].forEach((delay) => {
+            setTimeout(() => {
+              const ring = document.createElementNS(SVG_NS, "circle");
+              ring.setAttribute("r", "9");
+              ring.setAttribute("cx", "0");
+              ring.setAttribute("cy", "0");
+              ring.classList.add("token-ripple");
+              group.appendChild(ring);
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => {
+                  ring.setAttribute("r", "34");
+                  ring.classList.add("expanded");
+                }),
+              );
+              setTimeout(() => {
+                if (ring.parentNode) ring.parentNode.removeChild(ring);
+              }, 850);
+            }, delay);
+          });
+        }
+
+        function _childTokens(fromX, fromY) {
+          if (!tokenLayer || !tokenGroup) return;
+          const toX = LIFECYCLE_POS.nodepool.x;
+          const toY = LIFECYCLE_POS.nodepool.y;
+          [-15, 15].forEach((offset, idx) => {
+            setTimeout(() => {
+              const g = document.createElementNS(SVG_NS, "g");
+              g.setAttribute(
+                "transform",
+                `translate(${fromX + offset},${fromY})`,
+              );
+              const c = document.createElementNS(SVG_NS, "circle");
+              c.setAttribute("r", "5");
+              c.setAttribute("fill", "var(--red)");
+              c.style.opacity = "0.72";
+              g.appendChild(c);
+              tokenLayer.insertBefore(g, tokenGroup);
+              const t0 = performance.now(),
+                DUR = 740;
+              function step(now) {
+                const t = _ease(Math.min((now - t0) / DUR, 1));
+                const nx = fromX + offset + (toX - fromX - offset) * t;
+                const ny = fromY + (toY - fromY) * t;
+                g.setAttribute("transform", `translate(${nx},${ny})`);
+                c.style.opacity = String(0.72 * (1 - t * 0.9));
+                if (t < 1) requestAnimationFrame(step);
+                else if (g.parentNode) g.parentNode.removeChild(g);
+              }
+              requestAnimationFrame(step);
+            }, idx * 150);
+          });
+        }
+
+        window.animateTokenTo = function (id) {
+          const dest = LIFECYCLE_POS[id];
+          if (!dest || !tokenGroup) return;
+          if (_raf) {
+            cancelAnimationFrame(_raf);
+            _raf = null;
+          }
+
+          const from = { ..._pos };
+          const to = { x: dest.x, y: dest.y };
+
+          /* breadcrumb at departure */
+          if (_current !== null) _breadcrumb(from.x, from.y);
+
+          /* draw & animate trail */
+          if (tokenTrail) {
+            const d = _arcPath(from.x, from.y, to.x, to.y);
+            tokenTrail.setAttribute("d", d);
+            let pLen = 200;
+            try {
+              pLen = tokenTrail.getTotalLength() || pLen;
+            } catch (e) {}
+            tokenTrail.setAttribute("stroke-dasharray", pLen);
+            tokenTrail.setAttribute("stroke-dashoffset", pLen);
+            tokenTrail.style.opacity = "0.72";
+            tokenTrail.style.transition = "none";
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                tokenTrail.style.transition =
+                  "stroke-dashoffset 0.54s ease-out";
+                tokenTrail.setAttribute("stroke-dashoffset", "0");
+              }),
+            );
+          }
+
+          tokenGroup.style.opacity = "1";
+
+          /* move token along curved arc */
+          const t0 = performance.now(),
+            DUR = 600;
+          function step(now) {
+            const t = _ease(Math.min((now - t0) / DUR, 1));
+            const cx = from.x + (to.x - from.x) * t;
+            const cy = from.y + (to.y - from.y) * t;
+            tokenGroup.setAttribute("transform", `translate(${cx},${cy})`);
+            if (t < 1) {
+              _raf = requestAnimationFrame(step);
+            } else {
+              _raf = null;
+              _pos = { ...to };
+              _current = id;
+              _ripple(tokenGroup);
+              /* mark box as visited */
+              document
+                .querySelector(`svg.diagram g.node[data-component="${id}"]`)
+                ?.classList.add("lc-visited");
+              /* brancher: shoot 2 child nodes back up to the pool */
+              if (id === "brancher")
+                setTimeout(() => _childTokens(to.x, to.y), 680);
+              /* fade trail */
+              if (tokenTrail)
+                setTimeout(() => {
+                  tokenTrail.style.transition = "opacity 0.7s ease-out";
+                  tokenTrail.style.opacity = "0";
+                }, 400);
+            }
+          }
+          _raf = requestAnimationFrame(step);
+        };
+
+        window.resetTokenAnimation = function () {
+          if (_raf) {
+            cancelAnimationFrame(_raf);
+            _raf = null;
+          }
+          if (bcLayer)
+            while (bcLayer.firstChild) bcLayer.removeChild(bcLayer.firstChild);
+          document
+            .querySelectorAll("svg.diagram g.node.lc-visited")
+            .forEach((g) => g.classList.remove("lc-visited"));
+          _current = null;
+          _pos = { x: LIFECYCLE_POS.nodepool.x, y: LIFECYCLE_POS.nodepool.y };
+          if (tokenGroup) {
+            tokenGroup.setAttribute(
+              "transform",
+              `translate(${_pos.x},${_pos.y})`,
+            );
+            tokenGroup.style.opacity = "0";
+          }
+          if (tokenTrail) tokenTrail.style.opacity = "0";
+        };
+      })();
+
+      function setMode(mode, { persist = true } = {}) {
+        const nextMode = MODE_HINTS[mode] ? mode : DEFAULT_MODE;
+        VIEW_STATE.mode = nextMode;
         document.querySelectorAll("#modeSwitch button").forEach((b) => {
-          b.classList.toggle("on", b.dataset.mode === mode);
+          b.classList.toggle("on", b.dataset.mode === nextMode);
+          b.setAttribute("aria-pressed", String(b.dataset.mode === nextMode));
         });
-        document.getElementById("modeHint").textContent = MODE_HINTS[mode];
-        setModeExplainer(mode);
-        setSharedBandCopy(mode);
-        setCtxCopy(mode);
-        setNodePoolCopy(mode);
-        setCutPoolCopy(mode);
-        setConflictCopy(mode);
+        document.getElementById("modeHint").textContent = MODE_HINTS[nextMode];
+        if (modeStatusChip) {
+          modeStatusChip.innerHTML = `<b>Mode:</b> ${MODE_LABELS[nextMode]}`;
+        }
+        setModeExplainer(nextMode);
+        setSharedBandCopy(nextMode);
+        setCtxCopy(nextMode);
+        setNodePoolCopy(nextMode);
+        setCutPoolCopy(nextMode);
+        setConflictCopy(nextMode);
+        setModeArchitecture(nextMode);
 
         // remove previously injected extra workers
         workersLayer
           .querySelectorAll(".worker-extra-dyn")
           .forEach((n) => n.remove());
 
-        if (mode === "seq") {
+        if (nextMode === "seq") {
           svg.setAttribute("viewBox", `0 0 1180 ${BASE_VIEWBOX_HEIGHT}`);
           diagramLegend.setAttribute("y", String(BASE_LEGEND_Y));
+          if (persist) persistState();
           return;
         }
 
         // For parallel modes, visualize extra workers as compact rows below.
-        const extras = mode === "par" ? 2 : 3;
+        const extras = nextMode === "par" ? 2 : 3;
         const extraGroup = document.createElementNS(
           "http://www.w3.org/2000/svg",
           "g",
@@ -2130,9 +4057,9 @@
         for (let i = 0; i < extras; i++) {
           const yi = y + i * 38;
           const tag =
-            mode === "dist"
+            nextMode === "dist"
               ? `WORKER ${i + 2} · private cut/node pool · sends updates over channel`
-              : mode === "steal"
+              : nextMode === "steal"
                 ? `WORKER ${i + 2} · owns deque · steals from peers when idle`
                 : `WORKER ${i + 2} · shares node pool & cut pool with worker 1`;
           const rect = document.createElementNS(
@@ -2147,7 +4074,10 @@
           rect.setAttribute("fill", "var(--paper-edge)");
           rect.setAttribute("stroke", "var(--ink)");
           rect.setAttribute("stroke-width", "1");
-          rect.setAttribute("stroke-dasharray", mode === "dist" ? "4 3" : "0");
+          rect.setAttribute(
+            "stroke-dasharray",
+            nextMode === "dist" ? "4 3" : "0",
+          );
           extraGroup.appendChild(rect);
 
           const txt = document.createElementNS(
@@ -2161,7 +4091,7 @@
           extraGroup.appendChild(txt);
 
           // small arrow up to shared band
-          if (mode === "par") {
+          if (nextMode === "par") {
             const line = document.createElementNS(
               "http://www.w3.org/2000/svg",
               "path",
@@ -2173,7 +4103,7 @@
             line.setAttribute("class", "flow shared-edge");
             line.setAttribute("marker-end", "url(#arrow-blue)");
             extraGroup.appendChild(line);
-          } else if (mode === "steal") {
+          } else if (nextMode === "steal") {
             const line = document.createElementNS(
               "http://www.w3.org/2000/svg",
               "path",
@@ -2209,6 +4139,7 @@
         workersLayer.appendChild(extraGroup);
 
         // reset to default height when leaving multi-worker mode is handled by next call
+        if (persist) persistState();
       }
 
       document.querySelectorAll("#modeSwitch button").forEach((b) => {
@@ -2217,6 +4148,67 @@
           setMode(mode);
         });
       });
+
+      function updateReadProgress() {
+        const maxScroll =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+        readProgress.style.transform = `scaleX(${Math.min(
+          Math.max(ratio, 0),
+          1,
+        )})`;
+      }
+
+      function initReveal() {
+        const revealObserver = new IntersectionObserver(
+          (entries, observer) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            });
+          },
+          { threshold: 0.12, rootMargin: "0px 0px -10% 0px" },
+        );
+
+        document.querySelectorAll(".reveal").forEach((node) => {
+          revealObserver.observe(node);
+        });
+      }
+
+      function initSectionSpy() {
+        if (!sectionNavLinks.length) return;
+        const sectionObserver = new IntersectionObserver(
+          (entries) => {
+            const visible = entries
+              .filter((entry) => entry.isIntersecting)
+              .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+            if (visible[0]) setActiveSectionLink(visible[0].target.id);
+          },
+          {
+            threshold: [0.2, 0.45, 0.7],
+            rootMargin: "-20% 0px -55% 0px",
+          },
+        );
+
+        document.querySelectorAll("section[id]").forEach((section) => {
+          sectionObserver.observe(section);
+        });
+      }
+
+      renderDecisionSummary();
+      applyComponentFilters();
+      initReveal();
+      initSectionSpy();
+      updateLifecycleAutoplayUi();
+      setMode(VIEW_STATE.mode, { persist: false });
+      setActive(VIEW_STATE.activeId, { scroll: false });
+      if (!VIEW_STATE.activeId) runLifecycleStep(0, { scroll: false });
+      startLifecycleAutoplay();
+      updateReadProgress();
+      window.addEventListener("scroll", updateReadProgress, { passive: true });
+      window.addEventListener("resize", updateReadProgress);
 
       /* --- Lightweight keyboard nav: Escape clears selection --- */
       document.addEventListener("keydown", (e) => {
