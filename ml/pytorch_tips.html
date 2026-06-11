@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PyTorch — None to Pro</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" />
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+      onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false,strict:false})"></script>
+
+    <style>
+      :root {
+        --paper: #f4ede1; --paper-dark: #ebe2d2;
+        --ink: #1a1a2e; --ink-soft: #3a3a52; --ink-mute: #6e6a78;
+        --amber: #b8651b; --amber-soft: #d9914a;
+        --teal: #1d3a3a; --rust: #8b3a1f;
+        --line: #c9bda6; --gold: #a47b3d; --rose: #b54e72;
+        --violet: #6c2eb0; --violet-soft: #a678f5; --violet-pale: #ede0fd;
+        --blue: #2d5be3; --green: #237a38; --sage: #56735f;
+        --orange: #c25c10;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; overflow: hidden; background: var(--ink);
+        font-family: "Source Serif 4", serif; color: var(--ink);
+        -webkit-font-smoothing: antialiased; }
+
+      .stage { position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 16px 16px 48px; }
+
+      .deck { position: relative; width: 100%; max-width: 1060px;
+        height: min(88vh, 800px); background: var(--paper); border-radius: 12px;
+        overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,.55); }
+
+      .progress-bar { position: absolute; top: 0; left: 0; height: 3px;
+        background: var(--amber); transition: width .35s ease; z-index: 10; }
+
+      .slide { position: absolute; inset: 0; padding: 18px 28px 14px;
+        display: none; flex-direction: column; overflow: hidden; }
+      .slide.active { display: flex; }
+
+      /* ── TITLE SLIDE ── */
+      .title-slide { justify-content: center; align-items: flex-start;
+        background: var(--ink); color: var(--paper); }
+      .title-slide .pre-title { font-family: "JetBrains Mono", monospace;
+        font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+        color: var(--amber); margin-bottom: 18px; }
+      .title-slide h1 { font-family: "Fraunces", serif; font-size: 46px;
+        font-weight: 300; line-height: 1.1; color: var(--paper); }
+      .title-slide h1 strong { color: var(--amber); font-weight: 600; }
+      .title-slide .subtitle { font-size: 15px; color: rgba(244,237,225,.65);
+        margin-top: 12px; max-width: 580px; line-height: 1.5; }
+      .title-slide .toc-grid { display: grid; grid-template-columns: 1fr 1fr;
+        gap: 7px 24px; margin-top: 18px; max-width: 620px; }
+      .title-slide .toc-item { display: flex; align-items: baseline; gap: 8px; }
+      .title-slide .toc-num { font-family: "JetBrains Mono", monospace;
+        font-size: 10px; color: var(--amber); min-width: 20px; }
+      .title-slide .toc-label { font-size: 13.5px; color: rgba(244,237,225,.8); }
+      .title-slide .corner { position: absolute; right: 40px; bottom: 36px;
+        font-family: "JetBrains Mono", monospace; font-size: 10px;
+        color: rgba(244,237,225,.3); letter-spacing: .08em; }
+
+      /* ── COMPACT SLIDES ── */
+      .slide.compact { background: var(--paper); }
+      .slide-header { display: flex; justify-content: space-between;
+        align-items: center; margin-bottom: 5px; }
+      .section-tag { font-family: "JetBrains Mono", monospace; font-size: 10px;
+        letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+        background: rgba(184,101,27,.1); padding: 2px 7px; border-radius: 3px; }
+      .slide-header .right { font-family: "JetBrains Mono", monospace;
+        font-size: 10px; color: var(--ink-mute); }
+      .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 10px;
+        color: var(--ink-mute); letter-spacing: .06em; text-transform: uppercase;
+        margin-bottom: 3px; }
+      .slide-title { font-family: "Fraunces", serif; font-size: 17px;
+        font-weight: 400; line-height: 1.25; color: var(--ink);
+        margin-bottom: 8px; max-width: 860px; }
+      .slide-footer { margin-top: auto; padding-top: 5px; display: flex;
+        justify-content: space-between; border-top: 1px solid var(--line);
+        font-family: "JetBrains Mono", monospace; font-size: 9px;
+        color: var(--ink-mute); }
+
+      /* ── LAYOUT ── */
+      .two-col { display: grid; grid-template-columns: 1fr 1fr;
+        gap: 12px; flex: 1; min-height: 0; }
+      .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+      .four-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; }
+      .code-grid { display: grid; grid-template-columns: 1.15fr 1fr;
+        gap: 12px; flex: 1; min-height: 0; }
+
+      /* ── CODE BLOCKS ── */
+      .code-block { background: #1a1a2e; color: #e8e0d4;
+        font-family: "JetBrains Mono", monospace; font-size: 11.5px;
+        line-height: 1.45; padding: 10px 13px; border-radius: 7px;
+        overflow-y: auto; white-space: pre; flex: 1; }
+      .code-block .code-title { display: block; font-size: 9.5px;
+        color: var(--amber); letter-spacing: .1em; text-transform: uppercase;
+        margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.08);
+        padding-bottom: 5px; }
+      .code-block .code-comment { color: #5a6a5a; }
+      .code-block .code-kw   { color: #a678f5; }
+      .code-block .code-fn   { color: #57b0e0; }
+      .code-block .code-str  { color: #7ec880; }
+      .code-block .code-num  { color: #d9914a; }
+      .code-block .code-warn { color: #e07070; }
+      .code-block .code-good { color: #7ec880; }
+
+      /* ── MATH BLOCKS ── */
+      .math-block { background: rgba(184,101,27,.07); border-left: 3px solid var(--amber);
+        border-radius: 0 6px 6px 0; padding: 8px 11px; font-size: 12.5px;
+        line-height: 1.45; color: var(--ink-soft); }
+      .math-block.violet { background: rgba(108,46,176,.07); border-left-color: var(--violet); }
+      .math-block.teal   { background: rgba(29,58,58,.07);  border-left-color: var(--teal); }
+      .math-block.green  { background: rgba(35,122,56,.07); border-left-color: var(--green); }
+      .math-block .label { display: block; font-family: "JetBrains Mono", monospace;
+        font-size: 9.5px; color: var(--amber); text-transform: uppercase;
+        letter-spacing: .1em; margin-bottom: 4px; }
+      .math-block p { margin-top: 3px; }
+      .callout p, .callout br { line-height: 1.5; }
+      .math-block.violet .label { color: var(--violet); }
+      .math-block.teal   .label { color: var(--teal); }
+      .math-block.green  .label { color: var(--green); }
+
+      /* ── CARDS ── */
+      .card { background: var(--paper-dark); border-radius: 6px;
+        padding: 8px 11px; font-size: 12px; line-height: 1.45;
+        color: var(--ink-soft); }
+      .card .tag { display: inline-block; font-family: "JetBrains Mono", monospace;
+        font-size: 9px; text-transform: uppercase; letter-spacing: .1em;
+        color: var(--amber); background: rgba(184,101,27,.12);
+        padding: 2px 5px; border-radius: 3px; margin-bottom: 4px; }
+      .mini-card { background: var(--paper-dark); border-radius: 5px;
+        padding: 7px 9px; font-size: 11.5px; line-height: 1.4; color: var(--ink-soft); }
+      .mini-card .tag { display: inline-block; font-family: "JetBrains Mono", monospace;
+        font-size: 8px; text-transform: uppercase; letter-spacing: .09em;
+        color: var(--ink-mute); margin-bottom: 3px; }
+
+      /* ── CALLOUTS ── */
+      .callout { background: rgba(184,101,27,.08); border-left: 3px solid var(--amber);
+        border-radius: 0 6px 6px 0; padding: 7px 11px; font-size: 12px;
+        line-height: 1.45; color: var(--ink-soft); }
+      .callout.teal   { background: rgba(29,58,58,.07);  border-left-color: var(--teal); }
+      .callout.violet { background: rgba(108,46,176,.07); border-left-color: var(--violet); }
+      .callout.green  { background: rgba(35,122,56,.07);  border-left-color: var(--green); }
+      .callout.rust   { background: rgba(139,58,31,.07);  border-left-color: var(--rust); }
+
+      /* ── TABLE ── */
+      .compare { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+      .compare thead tr { border-bottom: 1.5px solid var(--line); }
+      .compare th { font-family: "JetBrains Mono", monospace; font-size: 9.5px;
+        text-transform: uppercase; letter-spacing: .08em; color: var(--ink-mute);
+        padding: 4px 7px; text-align: left; font-weight: 500; }
+      .compare td { padding: 4px 7px; color: var(--ink-soft); border-bottom: 1px solid rgba(201,189,166,.4); }
+      .compare td.label { font-family: "JetBrains Mono", monospace; font-size: 11px;
+        color: var(--amber); font-weight: 500; white-space: nowrap; }
+      .compare tr:last-child td { border-bottom: none; }
+
+      /* ── STEP STACK ── */
+      .step-stack { display: flex; flex-direction: column; gap: 5px; }
+      .step-row { display: flex; gap: 9px; align-items: flex-start; }
+      .step-no { width: 20px; height: 20px; min-width: 20px; border-radius: 50%;
+        background: var(--amber); color: white; font-family: "JetBrains Mono", monospace;
+        font-size: 10px; font-weight: 600; display: flex; align-items: center;
+        justify-content: center; margin-top: 1px; }
+      .step-row h3 { font-family: "JetBrains Mono", monospace; font-size: 11px;
+        font-weight: 600; color: var(--ink); margin-bottom: 1px; }
+      .step-row p  { font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+
+      /* ── WARN / GOOD CHIPS ── */
+      .chip { display: inline-block; font-family: "JetBrains Mono", monospace;
+        font-size: 9.5px; padding: 1px 5px; border-radius: 3px; margin-right: 3px; }
+      .chip.bad  { background: rgba(139,58,31,.15); color: var(--rust); }
+      .chip.good { background: rgba(35,122,56,.12); color: var(--green); }
+      .chip.note { background: rgba(108,46,176,.12); color: var(--violet); }
+      /* chip lines inside callouts — tighter */
+      .callout .chip { display: inline; }
+      .callout br { line-height: 1.7; }
+
+      /* ── NAV ── */
+      .nav { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+        display: flex; align-items: center; gap: 14px; z-index: 20; }
+      .nav button { width: 34px; height: 34px; border-radius: 50%; border: none;
+        background: rgba(255,255,255,.12); color: white; font-size: 16px;
+        cursor: pointer; transition: background .2s; display: flex;
+        align-items: center; justify-content: center; }
+      .nav button:hover { background: rgba(255,255,255,.22); }
+      .counter { font-family: "JetBrains Mono", monospace; font-size: 12px;
+        color: rgba(255,255,255,.55); display: flex; align-items: center; gap: 3px; }
+      .counter .sep { color: rgba(255,255,255,.25); }
+      code { font-family: "JetBrains Mono", monospace; font-size: 11.5px;
+        background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
+      /* stacked code blocks — small gap */
+      pre.code-block + pre.code-block { margin-top: 5px; }
+      /* code blocks inside flex columns — scroll rather than overflow */
+      .two-col > div > pre.code-block { overflow-y: auto; flex-shrink: 1; min-height: 60px; }
+      /* all grid children become flex columns so overflow works */
+      .two-col > div, .code-grid > div, .two-col > pre,
+      .code-grid > pre { min-height: 0; overflow: hidden; }
+      .code-grid > pre.code-block { overflow-y: auto; flex: 1; }
+      .two-col > div { display: flex; flex-direction: column; overflow: hidden; }
+      /* a column that holds two code blocks — each gets half */
+      .dual-code { display: flex; flex-direction: column; gap: 5px; flex: 1; min-height: 0; }
+      .dual-code .code-block { flex: 1; min-height: 0; overflow-y: auto; }
+      /* single-code column — fill full height */
+      .solo-code { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+      .solo-code .code-block { flex: 1; min-height: 0; overflow-y: auto; }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="deck">
+        <div class="progress-bar" id="progress" style="width:4%"></div>
+
+        <!-- TITLE -->
+        <section class="slide active title-slide">
+          <div class="pre-title">Deep Learning Tools · Lecture Series</div>
+          <h1>PyTorch<br><strong>None to Pro</strong></h1>
+          <p class="subtitle">Tensors, autograd, the training loop, hidden tricks, debugging patterns, and production-level optimizations — everything you actually need.</p>
+          <div class="toc-grid">
+            <div class="toc-item"><span class="toc-num">I</span><span class="toc-label">Tensor fundamentals & dtypes</span></div>
+            <div class="toc-item"><span class="toc-num">II</span><span class="toc-label">Shape manipulation & broadcasting</span></div>
+            <div class="toc-item"><span class="toc-num">III</span><span class="toc-label">einsum & advanced indexing</span></div>
+            <div class="toc-item"><span class="toc-num">IV</span><span class="toc-label">Autograd internals</span></div>
+            <div class="toc-item"><span class="toc-num">V</span><span class="toc-label">The canonical training loop</span></div>
+            <div class="toc-item"><span class="toc-num">VI</span><span class="toc-label">Optimizer & scheduler tricks</span></div>
+            <div class="toc-item"><span class="toc-num">VII</span><span class="toc-label">Mixed precision & AMP</span></div>
+            <div class="toc-item"><span class="toc-num">VIII</span><span class="toc-label">Gradient accumulation</span></div>
+            <div class="toc-item"><span class="toc-num">IX</span><span class="toc-label">DataLoader & memory</span></div>
+            <div class="toc-item"><span class="toc-num">X</span><span class="toc-label">Debugging: NaN hunting</span></div>
+            <div class="toc-item"><span class="toc-num">XI</span><span class="toc-label">Debugging: gradient inspection</span></div>
+            <div class="toc-item"><span class="toc-num">XII</span><span class="toc-label">Profiling & torch.compile</span></div>
+          </div>
+          <div class="corner">PyTorch · None to Pro</div>
+        </section>
+
+        <!-- I · TENSOR FUNDAMENTALS -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">I · Tensors</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Dtypes, devices, and the things people get wrong first</div>
+          <h2 class="slide-title">Every PyTorch bug involving a type error or a device mismatch traces back to not understanding dtypes and the device abstraction from day one.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">Tensor creation — the right idioms</span><span class="code-comment"># Always specify dtype explicitly</span>
+x = torch.tensor([1.0, 2.0], dtype=torch.float32)
+
+<span class="code-comment"># zeros/ones/empty on the right device</span>
+device = <span class="code-str">"cuda"</span> if torch.cuda.is_available() else <span class="code-str">"cpu"</span>
+w = torch.zeros(64, 128, device=device, dtype=torch.float32)
+
+<span class="code-comment"># ✗ DON'T: creates on CPU, then .to(device) copies it</span>
+<span class="code-warn">w = torch.zeros(64, 128).to(device)   # extra alloc + copy</span>
+
+<span class="code-comment"># ✓ DO: allocate directly where you need it</span>
+<span class="code-good">w = torch.zeros(64, 128, device=device)  # one allocation</span>
+
+<span class="code-comment"># Tensor from numpy — shares memory (CPU only)</span>
+arr = np.ones((4, 4), dtype=np.float32)
+t = torch.from_numpy(arr)   <span class="code-comment"># zero-copy, shares buffer</span>
+arr[0, 0] = 99              <span class="code-comment"># t[0,0] is also 99 !</span>
+
+<span class="code-comment"># To break the link:</span>
+t = torch.from_numpy(arr).clone()</pre>
+
+              <div class="math-block" style="margin-top:6px">
+                <span class="label">dtype hierarchy</span>
+                <p><code>float32</code> — default, safe everywhere. <code>float16</code> / <code>bfloat16</code> — AMP training. <code>float64</code> — rarely needed, expensive. <code>int64</code> — indices, class labels. <code>bool</code> — masks. Mixing dtypes silently promotes or errors depending on op.</p>
+              </div>
+            </div>
+            <div>
+              <table class="compare">
+                <thead><tr><th>Creation fn</th><th>Initialized to</th><th>When to use</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">torch.zeros</td><td>0.0</td><td>bias init, masks, padding</td></tr>
+                  <tr><td class="label">torch.ones</td><td>1.0</td><td>scale init, attention bias baseline</td></tr>
+                  <tr><td class="label">torch.empty</td><td>garbage</td><td>when you'll overwrite immediately — fastest</td></tr>
+                  <tr><td class="label">torch.full</td><td>your value</td><td><code>torch.full((B,T), -inf)</code> for causal mask</td></tr>
+                  <tr><td class="label">torch.arange</td><td>0,1,2,…</td><td>position indices, time steps</td></tr>
+                  <tr><td class="label">torch.linspace</td><td>evenly spaced</td><td>grids, plotting, sinusoidal PE</td></tr>
+                  <tr><td class="label">torch.randn</td><td>$\mathcal{N}(0,1)$</td><td>weight init, noise injection</td></tr>
+                  <tr><td class="label">torch.rand</td><td>$\mathcal{U}(0,1)$</td><td>dropout masks, random gating</td></tr>
+                </tbody>
+              </table>
+              <div class="callout" style="margin-top:6px">
+                <strong>Rule of thumb:</strong> always pass <code>device=</code> and <code>dtype=</code> when creating tensors inside a model's <code>forward()</code>. Never hardcode <code>"cuda"</code> — use <code>x.device</code> to mirror the input's device.
+              </div>
+              <div class="three-col" style="margin-top:5px">
+                <div class="mini-card"><span class="tag">x.shape</span><p><code>torch.Size([B, T, D])</code> — tuple-like, use <code>x.shape[0]</code> or <code>B, T, D = x.shape</code></p></div>
+                <div class="mini-card"><span class="tag">x.numel()</span><p>Total number of elements. Useful for param counts and buffer sizes.</p></div>
+                <div class="mini-card"><span class="tag">x.is_contiguous()</span><p>Check before <code>view()</code>. If False, call <code>.contiguous()</code> first.</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section I · Tensor Fundamentals</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- II · SHAPE MANIPULATION & BROADCASTING -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">II · Shapes</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">view, reshape, squeeze, unsqueeze, permute, expand — and the broadcasting rules</div>
+          <h2 class="slide-title">Shape bugs are the most common PyTorch mistake. Master these five operations and broadcasting and 80% of shape errors disappear.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">The shape toolkit</span>x = torch.randn(4, 8, 16)   <span class="code-comment"># [B=4, T=8, D=16]</span>
+
+<span class="code-comment">## view vs reshape</span>
+x.view(4, 128)        <span class="code-comment"># fast, must be contiguous</span>
+x.reshape(4, 128)     <span class="code-comment"># safe, copies if needed — prefer this</span>
+x.reshape(4, -1)      <span class="code-comment"># -1 = infer from total numel</span>
+
+<span class="code-comment">## squeeze / unsqueeze</span>
+x.unsqueeze(0)        <span class="code-comment"># [1, 4, 8, 16] — add dim at 0</span>
+x.unsqueeze(-1)       <span class="code-comment"># [4, 8, 16, 1] — add at end</span>
+x.squeeze(0)          <span class="code-comment"># remove dim 0 IF size==1, else no-op</span>
+x.squeeze()           <span class="code-comment"># removes ALL size-1 dims — dangerous!</span>
+
+<span class="code-comment">## permute — reorder axes</span>
+x.permute(0, 2, 1)    <span class="code-comment"># [4, 16, 8] — swap T and D</span>
+x.T                   <span class="code-comment"># only for 2D, use permute for >2D</span>
+
+<span class="code-comment">## expand vs repeat</span>
+bias = torch.zeros(1, 8, 16)
+bias.expand(4, 8, 16) <span class="code-comment"># zero-copy view (strides=0)</span>
+bias.repeat(4, 1, 1)  <span class="code-comment"># physically copies data — avoid</span>
+
+<span class="code-comment">## flatten / unflatten</span>
+x.flatten(1)          <span class="code-comment"># [4, 128] — flatten from dim 1</span>
+x.unflatten(1,(2,4))  <span class="code-comment"># [4, 2, 4, 16] — split dim 1</span></pre>
+            </div>
+            <div>
+              <div class="math-block violet">
+                <span class="label">Broadcasting rules (memorize these)</span>
+                <p>PyTorch aligns shapes from the <strong>right</strong>. Two dims are compatible if they are equal or one of them is 1.</p>
+                <p style="margin-top:6px">$[B, T, D] + [D] \;\longrightarrow\; [B, T, D]$ — bias add ✓</p>
+                <p style="margin-top:3px">$[B, T, 1] \cdot [1, 1, D] \;\longrightarrow\; [B, T, D]$ — outer-like ✓</p>
+                <p style="margin-top:3px">$[B, T] + [B, D]$ — <strong>error</strong>: T ≠ D and neither is 1 ✗</p>
+                <p style="margin-top:7px">When in doubt: <code>torch.broadcast_shapes(a.shape, b.shape)</code></p>
+              </div>
+              <div class="card" style="margin-top:6px">
+                <span class="tag">Common pattern — attention mask broadcast</span>
+                <pre style="font-size:12px; background:rgba(0,0,0,0.04); padding:6px 8px; border-radius:5px; margin-top:5px; overflow-x:auto">mask = torch.ones(T, T).tril()     # [T, T]
+# needs to broadcast over [B, H, T, T]
+mask = mask.unsqueeze(0).unsqueeze(0)  # [1,1,T,T]
+attn = attn.masked_fill(mask == 0, float('-inf'))</pre>
+              </div>
+              <div class="callout teal" style="margin-top:6px">
+                <strong>Debugging shapes:</strong> add <code>print(x.shape)</code> after every operation while developing. Switch to <code>assert x.shape == (B, T, D), x.shape</code> in production to catch regressions early.
+              </div>
+              <div class="three-col" style="margin-top:5px">
+                <div class="mini-card"><span class="tag">view gotcha</span><p><code>view</code> fails on non-contiguous tensors. Always use <code>reshape</code> unless you need the zero-copy guarantee.</p></div>
+                <div class="mini-card"><span class="tag">permute gotcha</span><p>After <code>permute</code>, the tensor is non-contiguous. Call <code>.contiguous()</code> before <code>view()</code>.</p></div>
+                <div class="mini-card"><span class="tag">expand gotcha</span><p><code>expand</code> gives stride-0 tensors. Writing to them is undefined behavior. Only use for reads.</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section II · Shape Manipulation</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- III · EINSUM & ADVANCED INDEXING -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">III · einsum & Indexing</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">The two operations that unlock readable, fast tensor math</div>
+          <h2 class="slide-title">einsum replaces nested loops and confusing permute+matmul chains. Advanced indexing replaces Python for-loops over batch elements.</h2>
+
+          <div class="two-col">
+            <div class="dual-code">
+              <pre class="code-block"><span class="code-title">einsum — read it as a contraction spec</span><span class="code-comment"># Matrix multiply: (B,M,K) × (B,K,N) → (B,M,N)</span>
+out = torch.einsum(<span class="code-str">'bmk,bkn->bmn'</span>, A, B)
+<span class="code-comment"># same as: torch.bmm(A, B)</span>
+
+<span class="code-comment"># Attention scores: (B,H,T,D) × (B,H,D,T) → (B,H,T,T)</span>
+scores = torch.einsum(<span class="code-str">'bhid,bhjd->bhij'</span>, Q, K)
+
+<span class="code-comment"># Outer product: (N,) × (M,) → (N,M)</span>
+outer = torch.einsum(<span class="code-str">'i,j->ij'</span>, a, b)
+
+<span class="code-comment"># Trace: (N,N) → scalar</span>
+tr = torch.einsum(<span class="code-str">'ii->'</span>, A)
+
+<span class="code-comment"># Batch dot product: (B,D) × (B,D) → (B,)</span>
+dot = torch.einsum(<span class="code-str">'bd,bd->b'</span>, x, y)
+
+<span class="code-comment"># Diagonal: (N,N) → (N,)</span>
+diag = torch.einsum(<span class="code-str">'ii->i'</span>, A)</pre>
+
+              <pre class="code-block" style="margin-top:6px"><span class="code-title">Advanced indexing — gather, scatter, index_select</span><span class="code-comment"># gather: pick values at given indices</span>
+logits = torch.randn(B, T, V)         <span class="code-comment"># [B,T,vocab]</span>
+idx    = torch.randint(0, V, (B, T))  <span class="code-comment"># [B,T]</span>
+chosen = logits.gather(
+    2, idx.unsqueeze(-1)              <span class="code-comment"># [B,T,1]</span>
+).squeeze(-1)                         <span class="code-comment"># → [B,T]</span>
+
+<span class="code-comment"># boolean mask indexing</span>
+mask = x > 0.5                 <span class="code-comment"># bool tensor, any shape</span>
+vals = x[mask]                 <span class="code-comment"># 1-D, variable length — no grad path!</span>
+
+<span class="code-comment"># fancy indexing (grad-safe)</span>
+rows = torch.tensor([0, 2])
+x[rows, :]                     <span class="code-comment"># [2, D]</span></pre>
+            </div>
+            <div>
+              <div class="math-block">
+                <span class="label">How to read an einsum string</span>
+                <p>Each letter is an axis. Axes on the <strong>left of →</strong> are contracted (summed over) if they don't appear on the right. Axes on the <strong>right of →</strong> survive in the output.</p>
+                <p style="margin-top:6px"><code>'bik,bkj->bij'</code>: $b$ and $i,j$ survive; $k$ is summed — this is batched matrix multiply.</p>
+                <p style="margin-top:4px"><code>'bii->b'</code>: $i$ is both a row and column index (diagonal), summed — this is batched trace.</p>
+              </div>
+              <div class="card" style="margin-top:6px">
+                <span class="tag">Performance note</span>
+                <p style="font-size:12.5px; margin-top:4px">Under the hood, <code>torch.einsum</code> calls cuBLAS/BLAS for most contractions. For large tensors it is as fast as an explicit <code>matmul</code>. Use <code>opt_einsum</code> (or <code>torch.einsum</code> with <code>optimize=True</code> in PyTorch ≥ 2.0) when contracting three or more tensors — it finds the optimal contraction order, which can be orders-of-magnitude faster.</p>
+              </div>
+              <table class="compare" style="margin-top:6px">
+                <thead><tr><th>Operation</th><th>einsum equivalent</th><th>Also available as</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">matmul</td><td><code>'ij,jk->ik'</code></td><td><code>A @ B</code></td></tr>
+                  <tr><td class="label">batched mm</td><td><code>'bij,bjk->bik'</code></td><td><code>torch.bmm</code></td></tr>
+                  <tr><td class="label">dot product</td><td><code>'i,i->'</code></td><td><code>torch.dot</code></td></tr>
+                  <tr><td class="label">outer</td><td><code>'i,j->ij'</code></td><td><code>torch.outer</code></td></tr>
+                  <tr><td class="label">elementwise ×</td><td><code>'ij,ij->ij'</code></td><td><code>A * B</code></td></tr>
+                  <tr><td class="label">col sum</td><td><code>'ij->j'</code></td><td><code>A.sum(0)</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section III · einsum & Advanced Indexing</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- IV · AUTOGRAD -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">IV · Autograd</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">How gradients actually work — and five ways to break them silently</div>
+          <h2 class="slide-title">PyTorch autograd builds a computation graph dynamically. Understanding it lets you debug silent gradient bugs, control memory, and write custom differentiable ops.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">The computation graph</span>x = torch.randn(4, requires_grad=<span class="code-kw">True</span>)
+y = x ** 2 + 2 * x             <span class="code-comment"># graph: y → x</span>
+loss = y.mean()
+loss.backward()                 <span class="code-comment"># fills x.grad</span>
+print(x.grad)                   <span class="code-comment"># dy/dx = 2x + 2</span>
+
+<span class="code-comment"># MUST zero grads between steps — they accumulate!</span>
+optimizer.zero_grad()           <span class="code-comment"># or set_to_none=True (faster)</span>
+
+<span class="code-comment">## Detaching — stop gradient flow</span>
+target = model_ema(x).detach()  <span class="code-comment"># EMA target, no grad</span>
+z = x.detach().numpy()          <span class="code-comment"># safe numpy extraction</span>
+
+<span class="code-comment">## no_grad context — inference, evaluation</span>
+with torch.no_grad():
+    pred = model(x)             <span class="code-comment"># no graph built, faster</span>
+
+<span class="code-comment">## inference_mode — even faster (PyTorch ≥1.9)</span>
+with torch.inference_mode():
+    pred = model(x)
+
+<span class="code-comment">## retain_graph — only when you need to call</span>
+<span class="code-comment">## backward() more than once on same graph</span>
+loss.backward(retain_graph=<span class="code-kw">True</span>)</pre>
+            </div>
+            <div>
+              <div class="callout rust" style="margin-top:0">
+                <strong>5 silent gradient killers:</strong><br>
+                <span class="chip bad">1</span> Converting to NumPy mid-forward (<code>.numpy()</code> detaches silently)<br>
+                <span class="chip bad">2</span> In-place ops on leaf tensors with <code>requires_grad=True</code> — raises error or corrupts graph<br>
+                <span class="chip bad">3</span> Not zeroing grads → they <em>accumulate</em> across backward calls<br>
+                <span class="chip bad">4</span> <code>float(x)</code> or <code>x.item()</code> inside forward — detaches the value<br>
+                <span class="chip bad">5</span> Copying a tensor with <code>=</code> instead of <code>.clone()</code> — shared storage, in-place writes corrupt history
+              </div>
+              <div class="math-block" style="margin-top:6px">
+                <span class="label">The gradient tape mental model</span>
+                <p>Each operation records itself into a <em>function node</em> in the graph. <code>backward()</code> walks the graph in reverse, calling each node's gradient function (chain rule). The graph is freed after <code>backward()</code> unless <code>retain_graph=True</code>.</p>
+                <p style="margin-top:5px">Memory cost: the graph holds <strong>intermediate activations</strong> needed for the backward pass. With large models, this is the dominant memory consumer during training.</p>
+              </div>
+              <div class="three-col" style="margin-top:6px">
+                <div class="mini-card"><span class="tag">x.grad_fn</span><p>The function that created <code>x</code>. <code>None</code> means it's a leaf. Inspect to debug graph structure.</p></div>
+                <div class="mini-card"><span class="tag">x.requires_grad</span><p>Only leaf tensors need this set. It propagates to all downstream ops automatically.</p></div>
+                <div class="mini-card"><span class="tag">torch.autograd.grad</span><p>Compute gradients without accumulating into <code>.grad</code> — useful for Hessians and meta-learning.</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section IV · Autograd</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- V · CANONICAL TRAINING LOOP -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">V · Training Loop</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">The canonical loop — every line has a reason</div>
+          <h2 class="slide-title">There is one correct order for the six operations in a training step. Getting any one wrong produces bugs that are hard to notice until evaluation.</h2>
+
+          <div class="code-grid">
+            <pre class="code-block"><span class="code-title">The canonical PyTorch training step</span>model.train()          <span class="code-comment"># sets Dropout/BN to train mode</span>
+
+for batch in dataloader:
+    x, y = batch
+    x, y = x.to(device), y.to(device)
+
+    <span class="code-comment"># ── STEP 1: zero gradients ──────────────────</span>
+    optimizer.zero_grad(set_to_none=<span class="code-kw">True</span>)
+    <span class="code-comment"># set_to_none=True: frees memory instead of</span>
+    <span class="code-comment"># writing zeros → slightly faster</span>
+
+    <span class="code-comment"># ── STEP 2: forward pass ────────────────────</span>
+    logits = model(x)              <span class="code-comment"># graph builds here</span>
+
+    <span class="code-comment"># ── STEP 3: compute loss ────────────────────</span>
+    loss = criterion(logits, y)
+
+    <span class="code-comment"># ── STEP 4: backward pass ───────────────────</span>
+    loss.backward()                <span class="code-comment"># fills .grad on params</span>
+
+    <span class="code-comment"># ── STEP 5: (optional) gradient clipping ────</span>
+    torch.nn.utils.clip_grad_norm_(
+        model.parameters(), max_norm=1.0
+    )
+
+    <span class="code-comment"># ── STEP 6: optimizer step ──────────────────</span>
+    optimizer.step()               <span class="code-comment"># updates parameters</span>
+
+    <span class="code-comment"># ── STEP 7: scheduler step ──────────────────</span>
+    scheduler.step()   <span class="code-comment"># call AFTER optimizer.step()</span></pre>
+
+            <div>
+              <div class="step-stack">
+                <div class="step-row">
+                  <div class="step-no">!</div>
+                  <div><h3>zero_grad BEFORE forward</h3><p>Grads accumulate. If you forget, gradients from the previous batch add to this one — model converges to the wrong solution silently.</p></div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">!</div>
+                  <div><h3>model.train() vs model.eval()</h3><p><code>Dropout</code> is active only in train mode. <code>BatchNorm</code> uses running stats in eval mode. Forgetting <code>model.eval()</code> during validation gives wrong loss numbers.</p></div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">!</div>
+                  <div><h3>scheduler.step() order</h3><p>In PyTorch ≥ 1.1, call <code>scheduler.step()</code> <em>after</em> <code>optimizer.step()</code>. Doing it before causes a one-step offset in the LR schedule.</p></div>
+                </div>
+                <div class="step-row">
+                  <div class="step-no">!</div>
+                  <div><h3>clip_grad_norm_</h3><p>Returns the total gradient norm <em>before</em> clipping — log it. Consistently high norms signal instability. Set <code>max_norm=1.0</code> as a safe default for most transformers.</p></div>
+                </div>
+              </div>
+              <div class="callout" style="margin-top:6px">
+                Always wrap validation in <code>with torch.no_grad()</code> <em>and</em> call <code>model.eval()</code>. Both matter. <code>no_grad</code> skips the graph; <code>eval()</code> changes layer behavior.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section V · Training Loop</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- VI · OPTIMIZER & SCHEDULER TRICKS -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">VI · Optimizers</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Optimizer choices, weight decay gotcha, and LR scheduling</div>
+          <h2 class="slide-title">AdamW is not just Adam with weight decay — the difference matters. And your LR schedule is as important as your optimizer choice.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">AdamW — the correct way</span><span class="code-comment"># Adam adds weight decay to the gradient (wrong)</span>
+<span class="code-warn"># Adam: θ ← θ - lr*(m̂/√v̂) - lr*λ*(m̂/√v̂)  ← couples!</span>
+
+<span class="code-comment"># AdamW decouples weight decay from adaptive update</span>
+<span class="code-good"># AdamW: θ ← θ*(1-lr*λ) - lr*(m̂/√v̂)  ← correct!</span>
+
+optimizer = torch.optim.AdamW(
+    model.parameters(),
+    lr=3e-4,
+    betas=(0.9, 0.95),  <span class="code-comment"># β2=0.95 for transformers</span>
+    weight_decay=0.1,   <span class="code-comment"># 0.01–0.1 for transformers</span>
+    fused=<span class="code-kw">True</span>,         <span class="code-comment"># fused CUDA kernel, ~20% faster</span>
+)
+
+<span class="code-comment">## Don't apply weight decay to biases/LayerNorm!</span>
+no_decay = [<span class="code-str">'bias'</span>, <span class="code-str">'norm'</span>]
+params = [
+    {<span class="code-str">'params'</span>: [p for n,p in model.named_parameters()
+               if not any(nd in n for nd in no_decay)],
+     <span class="code-str">'weight_decay'</span>: 0.1},
+    {<span class="code-str">'params'</span>: [p for n,p in model.named_parameters()
+               if any(nd in n for nd in no_decay)],
+     <span class="code-str">'weight_decay'</span>: 0.0},
+]
+optimizer = torch.optim.AdamW(params, lr=3e-4)</pre>
+            </div>
+            <div>
+              <pre class="code-block"><span class="code-title">LR schedulers — the most useful ones</span><span class="code-comment">## Cosine annealing with linear warmup (transformer standard)</span>
+from torch.optim.lr_scheduler import (
+    LinearLR, CosineAnnealingLR, SequentialLR
+)
+warmup = LinearLR(optimizer, start_factor=0.01,
+                  end_factor=1.0, total_iters=500)
+cosine = CosineAnnealingLR(optimizer, T_max=10000, eta_min=1e-5)
+scheduler = SequentialLR(optimizer,
+    schedulers=[warmup, cosine], milestones=[500])
+
+<span class="code-comment">## OneCycleLR — great for fast experiments</span>
+scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    optimizer, max_lr=3e-4,
+    steps_per_epoch=len(loader), epochs=10
+)
+
+<span class="code-comment">## ReduceLROnPlateau — validation-aware</span>
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode=<span class="code-str">'min'</span>, patience=3, factor=0.5
+)
+scheduler.step(val_loss)  <span class="code-comment"># pass metric, not step count</span></pre>
+
+              <div class="callout" style="margin-top:6px">
+                <strong>Gradient clipping + AdamW:</strong> clip <em>before</em> <code>optimizer.step()</code>. Log <code>torch.nn.utils.clip_grad_norm_</code>'s return value — if the norm is always exactly 1.0 you're clipping every step, which is a sign your LR is too high.
+              </div>
+              <div class="three-col" style="margin-top:5px">
+                <div class="mini-card"><span class="tag">SGD+momentum</span><p>Still best for vision CNNs with careful LR tuning. AdamW wins on transformers.</p></div>
+                <div class="mini-card"><span class="tag">Muon / Shampoo</span><p>Second-order optimizers gaining traction in 2024–25. Worth watching for LLM training.</p></div>
+                <div class="mini-card"><span class="tag">param groups</span><p>Use separate LR for backbone vs head: <code>[{'params':..., 'lr':1e-5}, {'params':..., 'lr':1e-3}]</code></p></div>
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section VI · Optimizers & Schedulers</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- VII · MIXED PRECISION & AMP -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">VII · AMP</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Automatic mixed precision — 2× speed, same accuracy</div>
+          <h2 class="slide-title">Mixed precision runs the forward pass in float16/bfloat16 and keeps a float32 master copy for the optimizer. Three lines of code, significant speedup.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">AMP with GradScaler — the full pattern</span>from torch.amp import autocast, GradScaler
+
+scaler = GradScaler(<span class="code-str">"cuda"</span>)
+
+for x, y in loader:
+    optimizer.zero_grad(set_to_none=<span class="code-kw">True</span>)
+
+    <span class="code-comment">## autocast: ops run in float16 where safe</span>
+    with autocast(<span class="code-str">"cuda"</span>, dtype=torch.float16):
+        logits = model(x)
+        loss   = criterion(logits, y)
+
+    <span class="code-comment">## GradScaler: multiply loss to avoid fp16 underflow</span>
+    scaler.scale(loss).backward()
+
+    <span class="code-comment">## unscale before clipping so norms are in fp32 space</span>
+    scaler.unscale_(optimizer)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+
+    <span class="code-comment">## step + update scale factor</span>
+    scaler.step(optimizer)
+    scaler.update()
+    scheduler.step()
+
+<span class="code-comment">## bfloat16: no scaler needed (wider exponent range)</span>
+with autocast(<span class="code-str">"cuda"</span>, dtype=torch.bfloat16):
+    loss = criterion(model(x), y)
+loss.backward()   <span class="code-comment"># no scaler!</span></pre>
+            </div>
+            <div>
+              <div class="math-block">
+                <span class="label">Why float16 needs GradScaler but bfloat16 doesn't</span>
+                <p><strong>float16</strong>: 5-bit exponent, range $\approx [6\times10^{-5},\, 65504]$. Small gradients underflow to zero. GradScaler multiplies loss by a scale factor $S$ before backward, then divides by $S$ after — keeping gradients in representable range.</p>
+                <p style="margin-top:6px"><strong>bfloat16</strong>: 8-bit exponent (same as float32), range matches float32. No underflow problem. Preferred on A100/H100. Lower precision (7-bit mantissa vs 10) but fine for most training.</p>
+              </div>
+              <table class="compare" style="margin-top:6px">
+                <thead><tr><th>Format</th><th>Exponent bits</th><th>Mantissa bits</th><th>Needs scaler?</th><th>Best hardware</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">float32</td><td>8</td><td>23</td><td>No</td><td>All GPUs</td></tr>
+                  <tr><td class="label">float16</td><td>5</td><td>10</td><td>Yes</td><td>V100, RTX</td></tr>
+                  <tr><td class="label">bfloat16</td><td>8</td><td>7</td><td>No</td><td>A100, H100, TPU</td></tr>
+                </tbody>
+              </table>
+              <div class="callout" style="margin-top:6px">
+                <strong>Key rule:</strong> LayerNorm and loss functions should stay in float32. <code>autocast</code> handles this automatically — it has a whitelist of ops that run in fp16 and a blacklist that stays fp32 (softmax, layer norm, loss).
+              </div>
+              <div class="callout teal" style="margin-top:5px">
+                On A100/H100: use <code>dtype=torch.bfloat16</code> and drop the scaler entirely. On older GPUs (V100, RTX 20/30): use <code>float16</code> + scaler. Check with <code>torch.cuda.get_device_name()</code>.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section VII · Mixed Precision</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- VIII · GRADIENT ACCUMULATION -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">VIII · Grad Accum</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Simulating large batch sizes without the VRAM</div>
+          <h2 class="slide-title">Gradient accumulation lets you train with an effective batch of 512 on a GPU that can only fit 32. The trick is combining it correctly with AMP and normalization layers.</h2>
+
+          <div class="code-grid">
+            <pre class="code-block"><span class="code-title">Gradient accumulation — correct pattern</span>accum_steps = 16           <span class="code-comment"># effective batch = micro × accum</span>
+micro_batch  = 32
+<span class="code-comment"># effective batch size = 32 × 16 = 512</span>
+
+optimizer.zero_grad(set_to_none=<span class="code-kw">True</span>)
+
+for step, (x, y) in enumerate(loader):
+    x, y = x.to(device), y.to(device)
+
+    <span class="code-comment">## disable sync on intermediate steps (DDP)</span>
+    is_last = (step + 1) % accum_steps == 0
+    ctx = model.no_sync() if not is_last else nullcontext()
+
+    with ctx:
+        with autocast(<span class="code-str">"cuda"</span>, dtype=torch.bfloat16):
+            loss = criterion(model(x), y)
+
+        <span class="code-comment">## normalize loss by accum_steps so gradient</span>
+        <span class="code-comment">## magnitude matches a single large-batch step</span>
+        loss = loss / accum_steps
+        scaler.scale(loss).backward()
+        <span class="code-comment"># grads ACCUMULATE (not zeroed until is_last)</span>
+
+    if is_last:
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(
+            model.parameters(), 1.0
+        )
+        scaler.step(optimizer)
+        scaler.update()
+        scheduler.step()
+        optimizer.zero_grad(set_to_none=<span class="code-kw">True</span>)</pre>
+
+            <div>
+              <div class="math-block">
+                <span class="label">Why divide loss by accum_steps?</span>
+                <p>Gradients from <code>backward()</code> accumulate additively. After $K$ micro-batches the accumulated gradient equals $\sum_{k=1}^K \nabla_k$. To match a single batch of size $K \cdot m$, each term should contribute $\frac{1}{K}$ of its nominal value. So scale the loss (equivalently the gradient) by $\frac{1}{K}$.</p>
+                <p style="margin-top:6px">$$\tilde{\nabla} = \frac{1}{K}\sum_{k=1}^K \nabla_{L_k} \approx \nabla_{L_{\text{full batch}}}$$</p>
+              </div>
+              <div class="callout rust" style="margin-top:6px">
+                <strong>BatchNorm + gradient accumulation = broken.</strong> BN computes statistics per micro-batch, not the effective large batch. Use <strong>LayerNorm</strong> or <strong>GroupNorm</strong> instead when accumulating. This is one reason transformers prefer LayerNorm.
+              </div>
+              <div class="card" style="margin-top:6px">
+                <span class="tag">DDP note: model.no_sync()</span>
+                <p style="font-size:12.5px; margin-top:4px">In distributed training, each <code>backward()</code> triggers an all-reduce. With gradient accumulation, you want to all-reduce only on the last micro-step. <code>model.no_sync()</code> suppresses the sync on intermediate steps — without it you pay $K$ all-reduces instead of 1.</p>
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section VIII · Gradient Accumulation</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- IX · DATALOADER & MEMORY -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">IX · DataLoader</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Making data loading as fast as your GPU — and not OOMing</div>
+          <h2 class="slide-title">A slow DataLoader makes the GPU idle. Wrong memory management causes OOM crashes in the middle of long training runs. Both are fixable with the right settings.</h2>
+
+          <div class="two-col">
+            <div class="dual-code">
+              <pre class="code-block"><span class="code-title">DataLoader — production settings</span>loader = DataLoader(
+    dataset,
+    batch_size=32,
+    shuffle=<span class="code-kw">True</span>,
+    num_workers=4,          <span class="code-comment"># CPU workers for parallel prefetch</span>
+    pin_memory=<span class="code-kw">True</span>,         <span class="code-comment"># page-locked RAM → faster H2D copy</span>
+    persistent_workers=<span class="code-kw">True</span>, <span class="code-comment"># don't respawn workers each epoch</span>
+    prefetch_factor=2,      <span class="code-comment"># batches prefetched per worker</span>
+    drop_last=<span class="code-kw">True</span>,          <span class="code-comment"># avoid partial batch edge cases</span>
+)
+
+<span class="code-comment">## how many workers? rule of thumb:</span>
+<span class="code-comment">## num_workers = min(os.cpu_count(), 4 * num_gpus)</span>
+<span class="code-comment">## too many → CPU memory pressure</span>
+
+<span class="code-comment">## pin_memory only helps with CUDA — disable for CPU/MPS</span></pre>
+
+              <pre class="code-block" style="margin-top:6px"><span class="code-title">Memory management — avoiding OOM</span><span class="code-comment">## Check VRAM usage</span>
+print(torch.cuda.memory_summary(device))
+allocated = torch.cuda.memory_allocated()   <span class="code-comment"># bytes in use</span>
+reserved  = torch.cuda.memory_reserved()    <span class="code-comment"># bytes held by caching allocator</span>
+
+<span class="code-comment">## Free VRAM explicitly after inference</span>
+del logits, loss
+torch.cuda.empty_cache()   <span class="code-comment"># returns reserved to OS (slow!)</span>
+<span class="code-comment"># don't call empty_cache() in the training loop — it's slow</span>
+
+<span class="code-comment">## Gradient checkpointing — trade compute for memory</span>
+from torch.utils.checkpoint import checkpoint
+out = checkpoint(block, x)  <span class="code-comment"># recomputes activations in backward</span>
+<span class="code-comment"># use_reentrant=False is safer in modern PyTorch</span>
+out = checkpoint(block, x, use_reentrant=<span class="code-kw">False</span>)</pre>
+            </div>
+            <div>
+              <div class="math-block violet">
+                <span class="label">Memory breakdown during training</span>
+                <p>For a model with $P$ parameters and batch size $B$, sequence length $T$:</p>
+                <p style="margin-top:5px">Parameters (fp32): $4P$ bytes<br>
+                Gradients (fp32): $4P$ bytes<br>
+                Optimizer state (AdamW, fp32): $8P$ bytes (m + v)<br>
+                Activations: $\sim O(B \cdot T \cdot D \cdot L)$ bytes<br>
+                <strong>Total: $\approx 16P + \text{activations}$</strong></p>
+                <p style="margin-top:5px">For a 7B model: just parameters+optimizer ≈ $16 \times 7 \times 10^9 / 10^9$ = <strong>112 GB</strong>. That's why you need 8-bit Adam, LoRA, or ZeRO.</p>
+              </div>
+              <div class="callout" style="margin-top:6px">
+                <strong>Gradient checkpointing</strong> cuts activation memory by $\sim\sqrt{L}$ at the cost of one extra forward pass per layer during backward. Enable with <code>model.gradient_checkpointing_enable()</code> in HuggingFace, or manually with <code>torch.utils.checkpoint.checkpoint</code>.
+              </div>
+              <div class="three-col" style="margin-top:5px">
+                <div class="mini-card"><span class="tag">OOM triage</span><p>Print <code>torch.cuda.memory_summary()</code> at the crash point. Check for tensor accumulation in lists inside the training loop.</p></div>
+                <div class="mini-card"><span class="tag">tensor leak</span><p>Storing <code>loss</code> in a list for logging without <code>.item()</code> keeps the entire compute graph alive — classic OOM cause.</p></div>
+                <div class="mini-card"><span class="tag">PYTORCH_CUDA_ALLOC_CONF</span><p>Set <code>max_split_size_mb=512</code> to reduce fragmentation when OOM despite apparent free memory.</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section IX · DataLoader & Memory</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- X · DEBUGGING: NaN HUNTING -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">X · Debug: NaNs</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Finding where NaNs enter your model — a systematic protocol</div>
+          <h2 class="slide-title">NaNs propagate forward and backward, so the first NaN you see is never where the bug is. Here is the systematic protocol to find the source in minutes.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">NaN detection and localization</span><span class="code-comment">## 1. Enable anomaly detection (slow but precise)</span>
+torch.autograd.set_detect_anomaly(<span class="code-kw">True</span>)
+<span class="code-comment">## Will print the exact forward op that produced NaN</span>
+<span class="code-comment">## Disable in production — 2–3× slowdown</span>
+
+<span class="code-comment">## 2. Register forward hooks on every layer</span>
+def nan_hook(module, inp, out):
+    if isinstance(out, torch.Tensor):
+        if torch.isnan(out).any():
+            raise RuntimeError(
+                f<span class="code-str">"NaN in {module.__class__.__name__}"</span>)
+
+for layer in model.modules():
+    layer.register_forward_hook(nan_hook)
+
+<span class="code-comment">## 3. Check inputs before forward pass</span>
+assert not torch.isnan(x).any(), <span class="code-str">"NaN in input batch"</span>
+assert not torch.isinf(x).any(), <span class="code-str">"Inf in input batch"</span>
+
+<span class="code-comment">## 4. Check loss before backward</span>
+if torch.isnan(loss):
+    print(<span class="code-str">"NaN loss at step"</span>, step)
+    print(<span class="code-str">"logits stats:"</span>, logits.min(), logits.max())
+    raise ValueError
+
+<span class="code-comment">## 5. Check gradients after backward</span>
+for name, p in model.named_parameters():
+    if p.grad is not None and torch.isnan(p.grad).any():
+        print(<span class="code-str">f"NaN grad in {name}"</span>)</pre>
+            </div>
+            <div>
+              <div class="callout rust">
+                <strong>Most common NaN sources:</strong><br>
+                <span class="chip bad">log(0)</span> — cross-entropy on zero-probability logit. Fix: add epsilon or use <code>log_softmax</code><br>
+                <span class="chip bad">0/0</span> — division by near-zero norm. Fix: <code>norm = norm.clamp(min=1e-8)</code><br>
+                <span class="chip bad">sqrt(0)</span> — in layer norm or attention. Fix: add epsilon inside sqrt<br>
+                <span class="chip bad">exp(x) overflow</span> — large logits in softmax. Fix: <code>F.softmax</code> handles this; manual implementations don't<br>
+                <span class="chip bad">fp16 overflow</span> — value &gt;65504 in fp16. Fix: use bfloat16 or add gradient clipping
+              </div>
+              <div class="math-block" style="margin-top:6px">
+                <span class="label">Safe implementations of common numerically unstable ops</span>
+                <p style="font-size:13px"><code>F.cross_entropy(logits, y)</code> — use this, not manual log(softmax). It does the log-sum-exp trick internally.</p>
+                <p style="font-size:13px; margin-top:4px"><code>F.normalize(x, dim=-1, eps=1e-8)</code> — safe L2 norm with epsilon guard.</p>
+                <p style="font-size:13px; margin-top:4px"><code>torch.linalg.norm(x, dim=-1, keepdim=True).clamp(min=1e-8)</code> — explicit safe norm.</p>
+                <p style="font-size:13px; margin-top:4px">For attention: mask with <code>-1e4</code> not <code>-inf</code> in fp16 — <code>-inf</code> can produce NaN in softmax when all positions are masked.</p>
+              </div>
+              <div class="callout teal" style="margin-top:6px">
+                <strong>Protocol:</strong> (1) anomaly detection → find which layer; (2) inspect that layer's inputs/outputs; (3) identify the op (log, div, sqrt, exp); (4) add numerical guard. The anomaly detection message includes a stack trace — read it.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section X · Debugging: NaNs</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XI · GRADIENT INSPECTION -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XI · Debug: Gradients</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Reading gradient health — the signals that tell you training is wrong</div>
+          <h2 class="slide-title">Exploding gradients, vanishing gradients, and dead neurons each have a distinct signature in the gradient histogram. Know the patterns before they waste a week of training.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">Gradient monitoring utilities</span><span class="code-comment">## Per-layer gradient norm logging (log to wandb/tb)</span>
+def log_grad_norms(model, writer, step):
+    for name, p in model.named_parameters():
+        if p.grad is <span class="code-kw">not None</span>:
+            writer.add_histogram(
+                f<span class="code-str">"grad/{name}"</span>, p.grad, step)
+            writer.add_scalar(
+                f<span class="code-str">"grad_norm/{name}"</span>,
+                p.grad.norm().item(), step)
+
+<span class="code-comment">## Quick inline gradient check</span>
+for name, p in model.named_parameters():
+    if p.grad is <span class="code-kw">None</span>:
+        print(f<span class="code-str">"No grad: {name}"</span>)   <span class="code-comment"># disconnected!</span>
+        continue
+    g = p.grad
+    print(f<span class="code-str">"{name:40s} norm={g.norm():.3e}"</span>
+          f<span class="code-str">" max={g.abs().max():.3e}"</span>
+          f<span class="code-str">" frac_zero={( g==0).float().mean():.2f}"</span>)
+
+<span class="code-comment">## backward hook on a specific tensor</span>
+def save_grad(name):
+    def hook(grad):
+        grads[name] = grad.detach()
+    return hook
+
+grads = {}
+x.register_hook(save_grad(<span class="code-str">'x'</span>))
+loss.backward()
+print(grads[<span class="code-str">'x'</span>].norm())</pre>
+            </div>
+            <div>
+              <table class="compare">
+                <thead><tr><th>Symptom</th><th>What it means</th><th>Fix</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">grad norm → ∞</td><td>Exploding gradients</td><td><code>clip_grad_norm_(max=1.0)</code>, lower LR</td></tr>
+                  <tr><td class="label">grad norm → 0</td><td>Vanishing gradients</td><td>Skip connections, gradient scaling, check activations</td></tr>
+                  <tr><td class="label">grad is None</td><td>Parameter not in graph</td><td>Check <code>requires_grad</code>, check <code>detach()</code> calls in forward</td></tr>
+                  <tr><td class="label">frac_zero = 1.0</td><td>Dead neurons (ReLU)</td><td>Switch to GELU/SiLU, lower LR, check init</td></tr>
+                  <tr><td class="label">only early layers updating</td><td>Vanishing through depth</td><td>Add LayerNorm, residual connections</td></tr>
+                  <tr><td class="label">grad norm growing each step</td><td>LR too high</td><td>Reduce LR or add warmup</td></tr>
+                </tbody>
+              </table>
+              <div class="callout" style="margin-top:6px">
+                <strong>Healthy gradient norms</strong> for transformers are typically in $[10^{-3}, 10^{-1}]$ per layer. The first few layers (near the input) and last few (near the output) often have larger norms — that's normal. A sudden spike in a specific layer is the signal to investigate.
+              </div>
+              <div class="callout violet" style="margin-top:5px">
+                <strong>TensorBoard tip:</strong> log gradient histograms every 100 steps. A healthy histogram looks roughly Gaussian and stable over time. A histogram that collapses to a spike at zero means dead weights.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XI · Gradient Inspection</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XII · PROFILING & TORCH.COMPILE -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XII · Profiling</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Finding bottlenecks and unlocking torch.compile speedups</div>
+          <h2 class="slide-title">torch.compile (PyTorch 2.0+) is a graph compiler that can give 30–50% speedup for free. The profiler tells you where time actually goes — never guess.</h2>
+
+          <div class="two-col">
+            <div class="dual-code">
+              <pre class="code-block"><span class="code-title">torch.profiler — find the bottleneck</span>from torch.profiler import (
+    profile, record_function, ProfilerActivity
+)
+
+with profile(
+    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+    record_shapes=<span class="code-kw">True</span>,
+    with_flops=<span class="code-kw">True</span>,
+    profile_memory=<span class="code-kw">True</span>,
+) as prof:
+    with record_function(<span class="code-str">"forward"</span>):
+        loss = criterion(model(x), y)
+    with record_function(<span class="code-str">"backward"</span>):
+        loss.backward()
+
+print(prof.key_averages().table(
+    sort_by=<span class="code-str">"cuda_time_total"</span>, row_limit=15))
+
+<span class="code-comment">## Export to Chrome trace for visual timeline</span>
+prof.export_chrome_trace(<span class="code-str">"trace.json"</span>)
+<span class="code-comment">## Open chrome://tracing in Chrome browser</span></pre>
+
+              <pre class="code-block" style="margin-top:6px"><span class="code-title">torch.compile — drop-in 30–50% speedup</span><span class="code-comment">## Wrap any nn.Module or function</span>
+model = torch.compile(model)         <span class="code-comment"># default: "default" mode</span>
+model = torch.compile(model,
+    mode=<span class="code-str">"reduce-overhead"</span>)           <span class="code-comment"># minimize kernel launches</span>
+model = torch.compile(model,
+    mode=<span class="code-str">"max-autotune"</span>)             <span class="code-comment"># exhaustive tuning, slow compile</span>
+model = torch.compile(model,
+    fullgraph=<span class="code-kw">True</span>)                  <span class="code-comment"># error if graph breaks</span>
+
+<span class="code-comment">## Compile a single function</span>
+@torch.compile
+def my_loss(logits, targets):
+    return F.cross_entropy(logits, targets)</pre>
+            </div>
+            <div>
+              <div class="math-block teal">
+                <span class="label">What torch.compile actually does</span>
+                <p>1. <strong>TorchDynamo</strong> traces your Python code, capturing the computation graph while handling Python control flow via "graph breaks."</p>
+                <p style="margin-top:4px">2. <strong>TorchInductor</strong> compiles the graph to optimized CUDA/Triton kernels, fusing ops (e.g. linear + bias + activation → one kernel), eliminating redundant memory loads.</p>
+                <p style="margin-top:4px">3. First call is slow (compilation). Subsequent calls use the cached compiled graph.</p>
+              </div>
+              <div class="callout rust" style="margin-top:6px">
+                <strong>When torch.compile breaks:</strong> Python data-dependent control flow (e.g. <code>if x.sum() > 0</code>) causes graph breaks. Dynamic shapes (variable sequence lengths) cause recompilation. Use <code>torch.compile(dynamic=True)</code> for variable-length inputs.
+              </div>
+              <table class="compare" style="margin-top:6px">
+                <thead><tr><th>Mode</th><th>Compile time</th><th>Speedup</th><th>When to use</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">default</td><td>~30s</td><td>~1.3×</td><td>First try — safest</td></tr>
+                  <tr><td class="label">reduce-overhead</td><td>~60s</td><td>~1.5×</td><td>Inference serving</td></tr>
+                  <tr><td class="label">max-autotune</td><td>minutes</td><td>~1.8×</td><td>Long training runs</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XII · Profiling & torch.compile</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XIII · CUSTOM nn.MODULE -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XIII · Custom Modules</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Writing clean, re-usable nn.Module subclasses</div>
+          <h2 class="slide-title">nn.Module is the fundamental building block. Know what it tracks automatically, what you have to register explicitly, and the common pitfalls.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">nn.Module anatomy</span>class MyBlock(nn.Module):
+    def __init__(self, d_model, n_heads):
+        super().__init__()   <span class="code-comment"># REQUIRED — never skip</span>
+
+        <span class="code-comment">## nn.Parameter: tracked by .parameters()</span>
+        self.scale = nn.Parameter(torch.ones(d_model))
+
+        <span class="code-comment">## nn.Module: tracked by .modules() / .children()</span>
+        self.attn = nn.MultiheadAttention(d_model, n_heads)
+        self.norm = nn.LayerNorm(d_model)
+        self.ff   = nn.Linear(d_model, 4 * d_model)
+
+        <span class="code-comment">## nn.ModuleList: list of modules — DO use this</span>
+        self.layers = nn.ModuleList([
+            nn.Linear(d_model, d_model) for _ in range(4)
+        ])
+
+        <span class="code-comment">## WRONG: plain list is NOT tracked!</span>
+        <span class="code-warn">self.bad = [nn.Linear(d, d) for _ in range(4)]</span>
+
+        <span class="code-comment">## register_buffer: non-param state (e.g. masks)</span>
+        mask = torch.ones(64, 64).tril()
+        self.register_buffer(<span class="code-str">'causal_mask'</span>, mask)
+        <span class="code-comment">## self.causal_mask moves with .to(device) automatically</span>
+
+    def forward(self, x):
+        x = self.norm(x)
+        return x * self.scale   <span class="code-comment"># scale is on correct device</span></pre>
+            </div>
+            <div>
+              <table class="compare">
+                <thead><tr><th>Registration method</th><th>Included in</th><th>Moves with .to()</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">nn.Parameter</td><td><code>parameters()</code>, <code>state_dict()</code></td><td>Yes</td></tr>
+                  <tr><td class="label">nn.Module attr</td><td><code>modules()</code>, <code>state_dict()</code></td><td>Yes</td></tr>
+                  <tr><td class="label">nn.ModuleList/Dict</td><td><code>modules()</code>, <code>state_dict()</code></td><td>Yes</td></tr>
+                  <tr><td class="label">register_buffer</td><td><code>state_dict()</code>, <em>not</em> <code>parameters()</code></td><td>Yes</td></tr>
+                  <tr><td class="label">plain Python list</td><td>Nothing</td><td>No — moves break!</td></tr>
+                  <tr><td class="label">plain tensor attr</td><td>Nothing</td><td>No — stays on CPU!</td></tr>
+                </tbody>
+              </table>
+              <div class="callout" style="margin-top:6px">
+                <strong>Always use <code>register_buffer</code></strong> for tensors that are not parameters but need to live on the same device as the model — positional encodings, causal masks, running statistics. Plain <code>self.mask = mask</code> will stay on CPU when you call <code>model.to(device)</code>.
+              </div>
+              <div class="callout teal" style="margin-top:5px">
+                Use <code>nn.ModuleDict</code> when you have a variable number of named sub-modules (e.g. expert layers in MoE). Keys are accessible as <code>self.experts['expert_0']</code> and are properly tracked.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XIII · Custom Modules</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XIV · CHECKPOINTING & REPRODUCIBILITY -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XIV · Checkpointing</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Saving, loading, and making runs reproducible</div>
+          <h2 class="slide-title">Save the full training state, not just the weights. And control every random seed or results won't reproduce across machines.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">Full checkpoint — save and resume</span><span class="code-comment">## Save — include everything needed to resume</span>
+checkpoint = {
+    <span class="code-str">'epoch'</span>:      epoch,
+    <span class="code-str">'step'</span>:       global_step,
+    <span class="code-str">'model'</span>:      model.state_dict(),
+    <span class="code-str">'optimizer'</span>:  optimizer.state_dict(),
+    <span class="code-str">'scheduler'</span>:  scheduler.state_dict(),
+    <span class="code-str">'scaler'</span>:     scaler.state_dict(),    <span class="code-comment"># AMP</span>
+    <span class="code-str">'val_loss'</span>:   best_val_loss,
+    <span class="code-str">'rng_cpu'</span>:    torch.get_rng_state(),
+    <span class="code-str">'rng_cuda'</span>:   torch.cuda.get_rng_state(),
+}
+torch.save(checkpoint, <span class="code-str">'checkpoint.pt'</span>)
+
+<span class="code-comment">## Load and resume</span>
+ckpt = torch.load(<span class="code-str">'checkpoint.pt'</span>,
+                  map_location=device,
+                  weights_only=<span class="code-kw">True</span>)   <span class="code-comment"># safe load</span>
+model.load_state_dict(ckpt[<span class="code-str">'model'</span>])
+optimizer.load_state_dict(ckpt[<span class="code-str">'optimizer'</span>])
+scheduler.load_state_dict(ckpt[<span class="code-str">'scheduler'</span>])
+scaler.load_state_dict(ckpt[<span class="code-str">'scaler'</span>])
+torch.set_rng_state(ckpt[<span class="code-str">'rng_cpu'</span>])
+torch.cuda.set_rng_state(ckpt[<span class="code-str">'rng_cuda'</span>])</pre>
+            </div>
+            <div>
+              <pre class="code-block"><span class="code-title">Reproducibility — seed everything</span>def seed_everything(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)   <span class="code-comment"># multi-GPU</span>
+    <span class="code-comment">## These two lines make ops deterministic</span>
+    <span class="code-comment">## but can slow down training significantly</span>
+    torch.backends.cudnn.deterministic = <span class="code-kw">True</span>
+    torch.backends.cudnn.benchmark     = <span class="code-kw">False</span>
+
+<span class="code-comment">## For DataLoader reproducibility</span>
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+g = torch.Generator()
+g.manual_seed(42)
+loader = DataLoader(dataset,
+    worker_init_fn=seed_worker,
+    generator=g)</pre>
+
+              <div class="callout" style="margin-top:6px">
+                <strong>weights_only=True</strong> (PyTorch ≥2.0): prevents arbitrary code execution when loading checkpoints from untrusted sources. Use it always unless you're loading pre-2.0 checkpoints that contain non-tensor objects.
+              </div>
+              <div class="callout rust" style="margin-top:5px">
+                <strong><code>cudnn.benchmark = True</code></strong> auto-selects the fastest convolution algorithm for your input size. It's great for performance but non-deterministic and causes extra overhead on the first batch. Enable for production, disable for reproducibility experiments.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XIV · Checkpointing & Reproducibility</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XV · LESS-KNOWN BUT POWERFUL FUNCTIONS -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XV · Hidden Gems</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Functions most tutorials don't mention — but you'll use constantly</div>
+          <h2 class="slide-title">These are the operations that separate PyTorch beginners from practitioners. Each replaces a slow, verbose alternative.</h2>
+
+          <div class="two-col">
+            <div class="solo-code">
+              <pre class="code-block"><span class="code-title">Less-known but essential operations</span><span class="code-comment">## torch.where — conditional element-wise select</span>
+out = torch.where(mask, x, fill_value)   <span class="code-comment"># grad-safe</span>
+<span class="code-comment">## vs x[mask] = v  which is not grad-safe!</span>
+
+<span class="code-comment">## masked_fill — fills masked positions in-place</span>
+attn = attn.masked_fill(mask == 0, float(<span class="code-str">'-inf'</span>))
+
+<span class="code-comment">## scatter_ — set values at given indices</span>
+one_hot = torch.zeros(B, C)
+one_hot.scatter_(1, labels.unsqueeze(1), 1.0)
+<span class="code-comment">## or just: F.one_hot(labels, num_classes=C).float()</span>
+
+<span class="code-comment">## torch.topk — returns values AND indices</span>
+vals, idx = torch.topk(logits, k=5, dim=-1)
+
+<span class="code-comment">## torch.cdist — pairwise distances (no loops!)</span>
+dists = torch.cdist(queries, keys)   <span class="code-comment"># [B,N,M]</span>
+
+<span class="code-comment">## torch.bucketize — discretize continuous values</span>
+bins = torch.linspace(0, 1, 10)
+ids  = torch.bucketize(x, bins)
+
+<span class="code-comment">## torch.roll — cyclic shift</span>
+shifted = torch.roll(x, shifts=1, dims=1)
+
+<span class="code-comment">## torch.tril / triu — triangular masks</span>
+mask = torch.ones(T, T).tril()   <span class="code-comment"># causal mask</span>
+
+<span class="code-comment">## torch.linalg.norm, svd, eig, solve — full linear algebra</span>
+U, S, Vh = torch.linalg.svd(W, full_matrices=<span class="code-kw">False</span>)</pre>
+            </div>
+            <div class="solo-code">
+              <pre class="code-block"><span class="code-title">Functional API — stateless layers</span>import torch.nn.functional as F
+
+<span class="code-comment">## Useful for custom forward passes</span>
+y = F.linear(x, weight, bias)       <span class="code-comment"># like nn.Linear.forward</span>
+y = F.layer_norm(x, (D,), w, b)
+y = F.dropout(x, p=0.1, training=True)
+y = F.scaled_dot_product_attention(  <span class="code-comment"># flash-attention kernel</span>
+    Q, K, V,
+    attn_mask=<span class="code-kw">None</span>,
+    dropout_p=0.0,
+    is_causal=<span class="code-kw">True</span>,               <span class="code-comment"># no explicit mask needed</span>
+)
+
+<span class="code-comment">## Activation functions</span>
+F.gelu(x, approximate=<span class="code-str">'tanh'</span>)     <span class="code-comment"># fast approx (used in GPT-2)</span>
+F.silu(x)                           <span class="code-comment"># x*sigmoid(x), smooth</span>
+F.mish(x)                           <span class="code-comment"># x*tanh(softplus(x))</span>
+
+<span class="code-comment">## Loss functions (beyond cross-entropy)</span>
+F.binary_cross_entropy_with_logits  <span class="code-comment"># multi-label</span>
+F.cosine_embedding_loss             <span class="code-comment"># similarity learning</span>
+F.huber_loss                        <span class="code-comment"># robust regression</span>
+F.kl_div(F.log_softmax(p,-1), q)    <span class="code-comment"># KL divergence</span></pre>
+
+              <div class="callout violet" style="margin-top:6px">
+                <strong>F.scaled_dot_product_attention</strong> (PyTorch 2.0+) is the canonical way to compute attention. It dispatches to FlashAttention when available, falling back to the standard implementation otherwise. Always prefer it over manual <code>Q@K.T / sqrt(d)</code>.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XV · Hidden Gems</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XVI · INITIALIZATION & NORMS -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XVI · Init & Norms</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Weight initialization and normalization — the silent training-stability foundations</div>
+          <h2 class="slide-title">Bad initialization causes vanishing/exploding gradients before training even begins. Wrong normalization makes deep networks nearly untrainable.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">Weight initialization — the right choices</span>import torch.nn.init as init
+
+<span class="code-comment">## PyTorch defaults (often good enough)</span>
+<span class="code-comment">## nn.Linear: Kaiming Uniform (fan_in mode)</span>
+<span class="code-comment">## nn.Embedding: Normal(0, 1)</span>
+<span class="code-comment">## nn.LayerNorm: weight=1, bias=0</span>
+
+<span class="code-comment">## Xavier/Glorot — good for tanh/sigmoid activations</span>
+init.xavier_uniform_(layer.weight)
+init.xavier_normal_(layer.weight)
+<span class="code-comment">## var = 2/(fan_in + fan_out)</span>
+
+<span class="code-comment">## Kaiming/He — designed for ReLU/GELU</span>
+init.kaiming_uniform_(layer.weight, mode=<span class="code-str">'fan_in'</span>,
+                       nonlinearity=<span class="code-str">'relu'</span>)
+<span class="code-comment">## var = 2/fan_in</span>
+
+<span class="code-comment">## GPT-2 style: smaller init for residual projections</span>
+<span class="code-comment">## std = 0.02 / sqrt(2 * n_layers)</span>
+std = 0.02 / (2 * n_layers) ** 0.5
+init.normal_(proj.weight, mean=0, std=std)
+init.zeros_(proj.bias)
+
+<span class="code-comment">## Zero-init output projection → identity at init</span>
+init.zeros_(block.mlp.c_proj.weight)</pre>
+            </div>
+            <div>
+              <div class="math-block">
+                <span class="label">Xavier vs Kaiming — the key formula</span>
+                <p><strong>Xavier</strong>: $\text{Var}[w] = \dfrac{2}{n_\text{in} + n_\text{out}}$. Designed to preserve variance through linear + symmetric activation (tanh).</p>
+                <p style="margin-top:6px"><strong>Kaiming</strong>: $\text{Var}[w] = \dfrac{2}{n_\text{in}}$. Designed for ReLU which kills half of activations — doubles the variance to compensate.</p>
+                <p style="margin-top:6px">For GELU/SiLU (not exactly ReLU), Kaiming is still a good default. The key property: <strong>variance of activations should stay $\approx 1$</strong> through all layers at initialization.</p>
+              </div>
+              <table class="compare" style="margin-top:6px">
+                <thead><tr><th>Norm layer</th><th>Normalizes over</th><th>Best for</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">BatchNorm</td><td>Batch + spatial dims</td><td>CNNs, large-batch training</td></tr>
+                  <tr><td class="label">LayerNorm</td><td>Feature dim per sample</td><td>Transformers, RNNs, NLP</td></tr>
+                  <tr><td class="label">GroupNorm</td><td>Groups of channels</td><td>Small-batch CNNs, detection</td></tr>
+                  <tr><td class="label">RMSNorm</td><td>RMS of feature dim</td><td>LLaMA, modern LLMs — faster</td></tr>
+                  <tr><td class="label">No norm</td><td>—</td><td>With residuals + careful init</td></tr>
+                </tbody>
+              </table>
+              <div class="callout" style="margin-top:5px">
+                Modern LLMs (LLaMA, Mistral) use <strong>RMSNorm</strong> (no mean subtraction, no bias) — it's faster and equally stable. PyTorch doesn't have a built-in, but it's 3 lines: <code>x / x.pow(2).mean(-1, keepdim=True).add(eps).sqrt() * weight</code>.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XVI · Init & Norms</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XVII · PRODUCTION: DEPLOY & SERVE -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XVII · Production</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">From research code to deployed model</div>
+          <h2 class="slide-title">Research code and production code have different requirements. These are the patterns that bridge the gap — export formats, batching, and serving considerations.</h2>
+
+          <div class="two-col">
+            <div>
+              <pre class="code-block"><span class="code-title">Export formats</span><span class="code-comment">## TorchScript — portable, no Python runtime</span>
+<span class="code-comment">## Tracing: records ops for a specific input</span>
+example = torch.randn(1, 3, 224, 224)
+traced = torch.jit.trace(model, example)
+traced.save(<span class="code-str">"model_traced.pt"</span>)
+
+<span class="code-comment">## Scripting: handles control flow (if/for)</span>
+scripted = torch.jit.script(model)
+scripted.save(<span class="code-str">"model_scripted.pt"</span>)
+
+<span class="code-comment">## Load anywhere (C++/Python)</span>
+m = torch.jit.load(<span class="code-str">"model.pt"</span>)
+out = m(input)
+
+<span class="code-comment">## ONNX export — for TensorRT, ONNX Runtime</span>
+torch.onnx.export(
+    model, example,
+    <span class="code-str">"model.onnx"</span>,
+    input_names=[<span class="code-str">'input'</span>],
+    output_names=[<span class="code-str">'output'</span>],
+    dynamic_axes={<span class="code-str">'input'</span>:{0:<span class="code-str">'batch_size'</span>}},
+    opset_version=17,
+)
+
+<span class="code-comment">## torch.export (PyTorch 2.x, preferred over ONNX)</span>
+exported = torch.export.export(
+    model, (example,)
+)</pre>
+            </div>
+            <div class="solo-code">
+              <pre class="code-block"><span class="code-title">Inference optimization checklist</span><span class="code-comment">## 1. eval mode + no_grad (always!)</span>
+model.eval()
+with torch.inference_mode():
+    out = model(x)
+
+<span class="code-comment">## 2. torch.compile (free 30–50%)</span>
+model = torch.compile(model, mode=<span class="code-str">"reduce-overhead"</span>)
+
+<span class="code-comment">## 3. Quantization — 4× smaller, faster on CPU</span>
+<span class="code-comment">## Post-training quantization (PTQ)</span>
+from torch.quantization import quantize_dynamic
+qmodel = quantize_dynamic(
+    model, {nn.Linear}, dtype=torch.qint8
+)
+
+<span class="code-comment">## 4. Batch inference — amortize kernel launch</span>
+<span class="code-comment">## Always larger batch is faster until OOM</span>
+
+<span class="code-comment">## 5. torch.cuda.stream — pipeline host/device</span>
+s1 = torch.cuda.Stream()
+with torch.cuda.stream(s1):
+    out = model(x_prefetched)
+
+<span class="code-comment">## 6. Pin memory + async H2D for throughput</span>
+x = x.pin_memory()
+x_gpu = x.to(device, non_blocking=<span class="code-kw">True</span>)</pre>
+              <div class="callout" style="margin-top:6px">
+                <strong>Rule of thumb for serving:</strong> batch size 1 → throughput-limited (use async); batch size 32+ → compute-bound (use compile + AMP). The crossover depends on model size and GPU.
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XVII · Production</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+        <!-- XVIII · QUICK REFERENCE CHEAT-SHEET -->
+        <section class="slide compact">
+          <div class="slide-header">
+            <span class="section-tag">XVIII · Cheat-Sheet</span>
+            <div class="right"><span></span></div>
+          </div>
+          <div class="eyebrow">Everything on one slide — take a screenshot</div>
+          <h2 class="slide-title">The 20% of PyTorch that covers 80% of what you'll ever write.</h2>
+
+          <div class="two-col">
+            <div>
+              <table class="compare">
+                <thead><tr><th>Task</th><th>The right way</th></tr></thead>
+                <tbody>
+                  <tr><td class="label">Create tensor on GPU</td><td><code>torch.zeros(B,D, device=device, dtype=torch.float32)</code></td></tr>
+                  <tr><td class="label">Move model to GPU</td><td><code>model = model.to(device)</code></td></tr>
+                  <tr><td class="label">Match device in forward</td><td><code>mask = mask.to(x.device)</code> or <code>register_buffer</code></td></tr>
+                  <tr><td class="label">Reshape safely</td><td><code>x.reshape(B, -1)</code> (not <code>view</code>)</td></tr>
+                  <tr><td class="label">Scalar from tensor</td><td><code>loss.item()</code> — detaches from graph</td></tr>
+                  <tr><td class="label">Disable grad for eval</td><td><code>with torch.inference_mode():</code></td></tr>
+                  <tr><td class="label">Zero grads</td><td><code>optimizer.zero_grad(set_to_none=True)</code></td></tr>
+                  <tr><td class="label">Clip gradients</td><td><code>nn.utils.clip_grad_norm_(params, 1.0)</code></td></tr>
+                  <tr><td class="label">AMP forward</td><td><code>with autocast("cuda", dtype=torch.bfloat16):</code></td></tr>
+                  <tr><td class="label">Attention</td><td><code>F.scaled_dot_product_attention(Q,K,V,is_causal=True)</code></td></tr>
+                  <tr><td class="label">Save checkpoint</td><td><code>torch.save({'model':model.state_dict(),...}, path)</code></td></tr>
+                  <tr><td class="label">Load checkpoint</td><td><code>torch.load(path, map_location=device, weights_only=True)</code></td></tr>
+                  <tr><td class="label">Find NaN source</td><td><code>torch.autograd.set_detect_anomaly(True)</code></td></tr>
+                  <tr><td class="label">Count parameters</td><td><code>sum(p.numel() for p in model.parameters() if p.requires_grad)</code></td></tr>
+                  <tr><td class="label">Compile for speed</td><td><code>model = torch.compile(model)</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <table class="compare">
+                <thead><tr><th>Common mistake</th><th>Correct form</th></tr></thead>
+                <tbody>
+                  <tr><td class="label"><code>.to(device)</code> every op</td><td>Create on device, use <code>register_buffer</code></td></tr>
+                  <tr><td class="label">Plain list of modules</td><td><code>nn.ModuleList([...])</code></td></tr>
+                  <tr><td class="label">Plain tensor in <code>__init__</code></td><td><code>register_buffer('name', tensor)</code></td></tr>
+                  <tr><td class="label">Forget <code>zero_grad()</code></td><td>Call at start of every training step</td></tr>
+                  <tr><td class="label">Forget <code>model.eval()</code></td><td>Always set before validation loop</td></tr>
+                  <tr><td class="label">Store <code>loss</code> in list</td><td>Store <code>loss.item()</code> — frees graph</td></tr>
+                  <tr><td class="label"><code>x.numpy()</code> in forward</td><td>Never — detaches gradient silently</td></tr>
+                  <tr><td class="label">In-place on leaf tensor</td><td>Use out-of-place ops on params</td></tr>
+                  <tr><td class="label">Manual softmax + NLLLoss</td><td><code>F.cross_entropy(logits, y)</code></td></tr>
+                  <tr><td class="label"><code>scheduler.step()</code> before <code>optimizer.step()</code></td><td>Scheduler always comes after optimizer</td></tr>
+                  <tr><td class="label">Adam instead of AdamW</td><td>Use AdamW — decoupled weight decay</td></tr>
+                  <tr><td class="label"><code>x.view()</code> on non-contiguous</td><td>Use <code>x.reshape()</code> or call <code>.contiguous()</code></td></tr>
+                </tbody>
+              </table>
+              <div class="callout" style="margin-top:6px">
+                <strong>The three-line GPU check:</strong><br>
+                <code>assert next(model.parameters()).is_cuda</code><br>
+                <code>assert x.device == next(model.parameters()).device</code><br>
+                <code>assert y.device == x.device</code>
+              </div>
+            </div>
+          </div>
+          <div class="slide-footer"><span>Section XVIII · Cheat-Sheet</span><span>PyTorch — None to Pro</span></div>
+        </section>
+
+      </div><!-- /deck -->
+    </div><!-- /stage -->
+
+    <div class="nav">
+      <button id="prev" aria-label="Previous">←</button>
+      <div class="counter">
+        <span id="cur">01</span><span class="sep">/</span><span class="total" id="tot">18</span>
+      </div>
+      <button id="next" aria-label="Next">→</button>
+    </div>
+
+    <script>
+      (function () {
+        const slides   = document.querySelectorAll(".slide");
+        const cur      = document.getElementById("cur");
+        const tot      = document.getElementById("tot");
+        const progress = document.getElementById("progress");
+        let i = 0;
+
+        tot.textContent = String(slides.length).padStart(2, "0");
+
+        slides.forEach((slide, index) => {
+          const right = slide.querySelector(".slide-header .right");
+          if (right && right.children[0]) {
+            right.children[0].textContent =
+              String(index + 1).padStart(2, "0") + " / " + String(slides.length).padStart(2, "0");
+          }
+        });
+
+        function show(n) {
+          slides[i].classList.remove("active");
+          i = (n + slides.length) % slides.length;
+          slides[i].classList.add("active");
+          cur.textContent = String(i + 1).padStart(2, "0");
+          progress.style.width = `${((i + 1) / slides.length) * 100}%`;
+          document.title = `Slide ${i + 1} of ${slides.length} · PyTorch — None to Pro`;
+        }
+
+        document.getElementById("next").addEventListener("click", () => show(i + 1));
+        document.getElementById("prev").addEventListener("click", () => show(i - 1));
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") show(i + 1);
+          if (e.key === "ArrowLeft"  || e.key === "PageUp")                    show(i - 1);
+          if (e.key === "Home") show(0);
+          if (e.key === "End")  show(slides.length - 1);
+        });
+
+        let tx = 0;
+        document.querySelector(".deck").addEventListener("touchstart", (e) => { tx = e.touches[0].clientX; }, { passive: true });
+        document.querySelector(".deck").addEventListener("touchend", (e) => {
+          const dx = e.changedTouches[0].clientX - tx;
+          if (Math.abs(dx) > 50) show(dx < 0 ? i + 1 : i - 1);
+        }, { passive: true });
+      })();
+    </script>
+  </body>
+</html>
