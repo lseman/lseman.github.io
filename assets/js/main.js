@@ -1206,6 +1206,163 @@ function buildAndRenderCloudFrom(items) {
   setTimeout(tick, 1400);
 })();
 
+/* --------------------------------------------------------------------------
+   Hero name typewriter — types "Laio O. Seman" then blinks cursor
+   -------------------------------------------------------------------------- */
+(function initHeroNameTypewriter() {
+  const textEl = document.getElementById('hero-name-typed');
+  const cursorEl = document.getElementById('hero-name-cursor');
+  if (!textEl || !cursorEl) return;
+
+  const name = 'Laio O. Seman';
+  let i = 0;
+
+  cursorEl.style.opacity = '1';
+
+  function typeNext() {
+    if (i < name.length) {
+      textEl.textContent = name.slice(0, ++i);
+      setTimeout(typeNext, i === 1 ? 120 : 80 + Math.random() * 60);
+    }
+    // once done, cursor stays and blinks via CSS animation
+  }
+
+  setTimeout(typeNext, 300);
+})();
+
+/* --------------------------------------------------------------------------
+   Footer tetris — static "already played" board drawn once
+   -------------------------------------------------------------------------- */
+(function initFooterTetris() {
+  const canvas = document.getElementById('footer-tetris');
+  if (!canvas) return;
+
+  const SHAPES = [
+    [[0,0],[1,0],[2,0],[3,0]],
+    [[0,0],[1,0],[0,1],[1,1]],
+    [[1,0],[0,1],[1,1],[2,1]],
+    [[1,0],[2,0],[0,1],[1,1]],
+    [[0,0],[1,0],[1,1],[2,1]],
+    [[0,0],[0,1],[1,1],[2,1]],
+    [[2,0],[0,1],[1,1],[2,1]],
+  ];
+  const COLORS = ['#2dd4bf','#a78bfa','#fbbf24','#67e8f9','#f472b6','#86efac','#fb923c'];
+
+  function normalize(cells) {
+    const minX = Math.min(...cells.map(([x]) => x));
+    const minY = Math.min(...cells.map(([,y]) => y));
+    return cells.map(([x,y]) => [x - minX, y - minY]);
+  }
+
+  function rotate(cells) {
+    return normalize(cells.map(([x,y]) => [y,-x]));
+  }
+
+  function draw() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    if (W < 10 || H < 10) return;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const BLOCK = 28;
+    const COLS = Math.floor(W / BLOCK);
+    const ROWS = Math.floor(H / BLOCK);
+    if (COLS < 2 || ROWS < 2) return;
+
+    // build a settled board by simulating drops
+    const board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+
+    // deterministic-ish seeded random so it looks the same on every render
+    let seed = 0x9e3779b9;
+    function rand() {
+      seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
+      return (seed >>> 0) / 0xffffffff;
+    }
+
+    function dropPiece(cells, color, startCol) {
+      // find lowest valid row
+      let row = -1;
+      while (true) {
+        const next = row + 1;
+        const fits = cells.every(([dx, dy]) => {
+          const x = startCol + dx, y = next + dy;
+          return x >= 0 && x < COLS && y < ROWS && (y < 0 || !board[y][x]);
+        });
+        if (!fits) break;
+        row = next;
+      }
+      if (row < 0) return;
+      cells.forEach(([dx, dy]) => {
+        const x = startCol + dx, y = row + dy;
+        if (y >= 0 && y < ROWS && x >= 0 && x < COLS) board[y][x] = color;
+      });
+    }
+
+    // drop enough pieces to fill ~100% of the board
+    const attempts = COLS * ROWS * 4;
+    for (let i = 0; i < attempts; i++) {
+      let cells = normalize(SHAPES[Math.floor(rand() * SHAPES.length)]);
+      const rotations = Math.floor(rand() * 4);
+      for (let r = 0; r < rotations; r++) cells = rotate(cells);
+      const maxW = Math.max(...cells.map(([x]) => x)) + 1;
+      const col = Math.floor(rand() * Math.max(1, COLS - maxW + 1));
+      const color = COLORS[Math.floor(rand() * COLORS.length)];
+      dropPiece(cells, color, col);
+    }
+
+    // draw settled cells
+    board.forEach((row, ry) => {
+      row.forEach((color, cx) => {
+        if (!color) return;
+        const gap = Math.max(2, BLOCK * 0.08);
+        const x = cx * BLOCK + gap;
+        const y = ry * BLOCK + gap;
+        const sz = BLOCK - gap * 2;
+        const r = Math.max(4, BLOCK * 0.14);
+
+        // rounded rect path
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + sz - r, y);
+        ctx.quadraticCurveTo(x + sz, y, x + sz, y + r);
+        ctx.lineTo(x + sz, y + sz - r);
+        ctx.quadraticCurveTo(x + sz, y + sz, x + sz - r, y + sz);
+        ctx.lineTo(x + r, y + sz);
+        ctx.quadraticCurveTo(x, y + sz, x, y + sz - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+
+        function hexToRgba(hex, a) {
+          const v = hex.replace('#','');
+          return `rgba(${parseInt(v.slice(0,2),16)},${parseInt(v.slice(2,4),16)},${parseInt(v.slice(4,6),16)},${a})`;
+        }
+
+        ctx.fillStyle = hexToRgba(color, 0.55);
+        ctx.fill();
+        ctx.strokeStyle = hexToRgba(color, 0.9);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // subtle inner highlight
+        ctx.beginPath();
+        ctx.moveTo(x + r + 2, y + 2);
+        ctx.lineTo(x + sz - r - 2, y + 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    });
+  }
+
+  draw();
+  window.addEventListener('resize', draw, { passive: true });
+})();
+
 
 /* --------------------------------------------------------------------------
    Active nav highlight on scroll
