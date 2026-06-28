@@ -705,8 +705,8 @@ function renderRepos(repos) {
     if (GH_STATUS) GH_STATUS.textContent = 'No repositories';
     return;
   }
-  const top = repos
-    .filter(r => !r.fork)
+  const ownRepos = repos.filter(r => !r.fork);
+  const top = ownRepos
     .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
     .slice(0, 6);
 
@@ -746,8 +746,8 @@ function renderRepos(repos) {
   // Update profile stat with real repo count
   const reposEl = document.getElementById('stat-repos');
   if (reposEl) {
-    reposEl.dataset.target = top.length;
-    animateCountUp(reposEl, top.length, '');
+    reposEl.dataset.target = ownRepos.length;
+    animateCountUp(reposEl, ownRepos.length, '');
   }
 }
 
