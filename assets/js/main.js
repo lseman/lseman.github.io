@@ -101,26 +101,6 @@ document.documentElement.classList.add("js");
 })();
 
 /* --------------------------------------------------------------------------
-   Terminal typewriter effect
-   -------------------------------------------------------------------------- */
-(function initTerminal() {
-	const demo = document.getElementById("demo");
-	if (!demo) return;
-
-	const lines = [
-		'<span class="text-cyan-400">$</span> <span class="text-slate-300">pip install foreblocks</span>',
-		'<span class="text-green-400">Successfully installed foreblocks 0.1.0</span>',
-		'<span class="text-cyan-400">$</span> <span class="text-slate-300">pip install ipym</span>',
-		'<span class="text-green-400">Successfully installed ipym 0.0.1</span>',
-	];
-	let idx = 0;
-	setInterval(() => {
-		demo.innerHTML = lines[idx];
-		idx = (idx + 1) % lines.length;
-	}, 3000);
-})();
-
-/* --------------------------------------------------------------------------
    Publications, GitHub, Scholar metrics, Word Cloud
    -------------------------------------------------------------------------- */
 let cachedAuthorData = null;
