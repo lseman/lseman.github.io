@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Physics-Informed Neural Networks</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="./framework.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body data-duration="1200">
+
+<div class="progress" id="progress" title="Jump">
+  <div class="bar" id="bar"></div>
+  <div class="timer"></div>
+</div>
+
+<div class="deck-shell">
+  <main class="stage" id="stage">
+<section class="slide title-slide" data-sec="Title">
+  <svg class="title-figure" viewBox="0 0 420 340" aria-hidden="true"><defs><radialGradient id="ig" cx="45%" cy="50%" r="65%"><stop offset="0%" stop-color="var(--blue)" stop-opacity=".10"/><stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/></radialGradient></defs><circle cx="210" cy="170" r="170" fill="url(#ig)"/><g stroke="var(--line)" stroke-width=".7" opacity=".2"><line x1="50" y1="50" x2="50" y2="290"/><line x1="50" y1="290" x2="390" y2="290"/></g><line x1="210" y1="30" x2="210" y2="310" stroke="var(--vio)" stroke-width="1.6" stroke-dasharray="8 5" opacity=".7"/><g opacity=".8"><circle cx="130" cy="240" r="4.5" fill="var(--blue)"/><circle cx="100" cy="180" r="3.5" fill="var(--blue)"/><circle cx="150" cy="130" r="4" fill="var(--blue)"/><circle cx="80" cy="110" r="3" fill="var(--blue)"/><circle cx="170" cy="270" r="3" fill="var(--blue)"/><circle cx="110" cy="260" r="3.5" fill="var(--blue)"/><circle cx="160" cy="170" r="3" fill="var(--blue)"/><circle cx="290" cy="90" r="4.5" fill="var(--vio)"/><circle cx="320" cy="160" r="3.5" fill="var(--vio)"/><circle cx="280" cy="210" r="4" fill="var(--vio)"/><circle cx="340" cy="120" r="3" fill="var(--vio)"/><circle cx="300" cy="250" r="3" fill="var(--vio)"/><circle cx="330" cy="190" r="3.5" fill="var(--vio)"/><circle cx="260" cy="130" r="3" fill="var(--vio)"/></g><text x="125" y="300" fill="var(--blue)" font-family="IBM Plex Mono,monospace" font-size="10">class 0</text><text x="275" y="300" fill="var(--vio)" font-family="IBM Plex Mono,monospace" font-size="10">class 1</text></svg>
+  <div class="title-content">
+    <div class="super">From differential equations to deep learning — a complete walk-through</div>
+    <h1>Physics-Informed Neural Networks</h1>
+    <div class="by">Working Introduction</div>
+    <div class="topics"><span class="chip">PDEs</span><span class="chip">neural networks</span><span class="chip">autodiff</span><span class="chip">inverse problems</span><span class="chip">scientific ML</span></div>
+  </div>
+</section>
+<section class="slide" data-sec="Introduction">
+<div class="eyebrow"><span class="sec">01</span> Introduction <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">What's a PDE? (and why they're hard)</h2>
+<p>A <strong>partial differential equation</strong> describes how a field evolves in space and time.</p>
+<ul class="beats"><li><strong>Heat equation</strong>: <span class="eqwrap">\(\partial_t u = \alpha \nabla^2 u\)</span> — temperature diffusion</li><li><strong>Wave equation</strong>: <span class="eqwrap">\(\partial_{tt} u = c^2 \nabla^2 u\)</span> — vibrations, light, sound</li><li><strong>Navier-Stokes</strong>: <span class="eqwrap">\(\partial_t \mathbf{u} + (\mathbf{u}\cdot\nabla)\mathbf{u} = -\nabla p + \nu \nabla^2 \mathbf{u}\)</span> — fluid flow</li><li><strong>Schrodinger</strong>: <span class="eqwrap">\(i\hbar \partial_t \psi = -\frac{\hbar^2}{2m} \nabla^2 \psi + V\psi\)</span> — quantum mechanics</li></ul>
+<p>They're the language of physics. And solving them <strong>exactly</strong> is possible only for the simplest cases.</p>
+<div class="callout gold">The challenge: we need the solution <span class="eqwrap">\(u(x,t)\)</span> on a <strong>continuous</strong> domain, but we can only compute on <strong>discrete</strong> computers.</div>
+</div>
+</section>
+<section class="slide" data-sec="Classical Numerics">
+<div class="eyebrow"><span class="sec">02</span> Classical Numerics <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Classical numerics — the standard toolkit</h2>
+<p>Three families, all follow the same pattern:</p>
+<ol class="take"><li><strong>Discretize</strong> the domain into a mesh / grid</li><li><strong>Approximate</strong> derivatives with finite differences, integrals, or weak forms</li><li><strong>Solve</strong> the resulting (large) algebraic system</li></ol>
+<table class="cmp">
+<thead><tr>
+<th>Method</th>
+<th>How it works</th>
+<th>Best for</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>FDM</strong></td>
+<td>Derivatives → finite difference stencils</td>
+<td>Simple geometries, regular grids</td>
+</tr>
+<tr>
+<td><strong>FEM</strong></td>
+<td>Weak formulation + basis functions</td>
+<td>Complex geometries, structured meshes</td>
+</tr>
+<tr>
+<td><strong>FVM</strong></td>
+<td>Integral conservation on control volumes</td>
+<td>Conservation laws, CFD</td>
+</tr>
+</tbody>
+</table>
+<p>They all share the same bottleneck: <strong>you need a mesh first</strong>.</p>
+</div>
+<div data-notes="Set up the baseline — what everyone learns in school">Notes</div>
+</section>
+<section class="slide" data-sec="The Limitation">
+<div class="eyebrow"><span class="sec">03</span> The Limitation <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">The mesh bottleneck</h2>
+<p>Mesh generation costs scale badly in several dimensions:</p>
+<div class="stats-row">
+<div class="stat vio"><span class="val vio">1D</span><span class="label">Simple</span></div>
+<div class="stat blue"><span class="val blue">2D</span><span class="label">Moderate</span></div>
+<div class="stat red"><span class="val red">3D+</span><span class="label">Hard</span></div>
+</div>
+<p><em>Quality degrades with complex geometries, shocks, boundary layers</em></p>
+<p><em>High-dimensional problems (<span class="eqwrap">\(d \ge 5\)</span>) suffer the <strong>curse of dimensionality</strong> — mesh points explode exponentially.</em></p>
+<div class="callout gold">A 1D mesh with 100 points. A 3D mesh with 100 points per dimension = <strong>1 million points</strong>. Per 10D = <span class="eqwrap">\(10^{20}\)</span> points — impossible.</div>
+</div>
+</section>
+<section class="slide" data-sec="The Idea">
+<div class="eyebrow"><span class="sec">04</span> The Idea <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">The PINN idea — a different approach</h2>
+<p>Instead of discretizing the <strong>domain</strong>, discretize the <strong>solution</strong>.</p>
+<p>Replace <span class="eqwrap">\(u(x,t)\)</span> with a <strong>neural network</strong> <span class="eqwrap">\(u_\theta(x,t)\)</span>:</p>
+<div class="eqwrap eqcenter">\[\underbrace{u(x,t) \;\approx\; u_\theta(x,t;\theta)}_{\text{neural network approximates the field}}\]</div>
+<p>The network takes spatial and temporal coordinates as <strong>inputs</strong> and outputs the field value.</p>
+<p><strong>Key insight</strong>: We don't need a mesh to differentiate the network. We just call <code>autodiff(u_θ, x)</code>.</p>
+</div>
+<div data-notes="The big pivot — this is the key insight of the talk">Notes</div>
+</section>
+<section class="slide" data-sec="Universal Approximation">
+<div class="eyebrow"><span class="sec">05</span> Universal Approximation <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Why neural networks?</h2>
+<p>The <strong>universal approximation theorem</strong> (Cybenko, 1989):</p>
+<div class="callout gold">A feedforward network with at least one hidden layer and a smooth activation function can approximate any continuous function on a compact subset of <span class="eqwrap">\(\mathbb{R}^d\)</span> to arbitrary accuracy.</div>
+<p>This means:</p>
+<div class="eqwrap eqcenter">\[\forall \varepsilon > 0,\;\exists\; \theta \text{ such that } \sup_{x\in\Omega} |u(x) - u_\theta(x;\theta)| < \varepsilon\]</div>
+<p>The network is a <strong>flexible function ansatz</strong> — no assumptions about the shape of the solution.</p>
+<p>But approximation capacity alone doesn't solve a PDE. We need to <strong>constrain</strong> the network with physics.</p>
+</div>
+</section>
+<section class="slide" data-sec="The Enabler">
+<div class="eyebrow"><span class="sec">06</span> The Enabler <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Automatic differentiation — the magic</h2>
+<p>Traditional numerics approximate derivatives numerically:</p>
+<div class="eqwrap eqcenter">\[\frac{\partial u}{\partial x} \;\approx\; \frac{u(x+h) - u(x)}{h}
+\quad\text{(finite difference, $O(h)$ error)}\]</div>
+<p>Autodiff computes derivatives <strong>exactly</strong> (up to machine precision):</p>
+<div class="eqwrap eqcenter">\[\frac{\partial u_\theta}{\partial x} = \frac{\partial u_\theta}{\partial h_1} \cdot \frac{\partial h_1}{\partial x}
+\quad\text{(chain rule, applied by the framework)}\]</div>
+<p>Because <span class="eqwrap">\(u_\theta\)</span> is a composition of differentiable functions (matrix mult, activation), every derivative is just another forward or backward pass through the network.</p>
+<ul class="beats"><li><span class="eqwrap">\(\partial_x u_\theta\)</span> — forward-mode autodiff (Jacobian-vector product)</li><li><span class="eqwrap">\(\partial_{xx} u_\theta\)</span> — chain through again (Hessian-vector products)</li><li><strong>No stencil, no <span class="eqwrap">\(h\)</span>, no truncation error.</strong></li></ul>
+<div class="callout gold">This is why smooth activations matter. <code>tanh</code>, <code>silu</code>, <code>sin</code> are infinitely differentiable. <code>ReLU</code> is not — second derivatives don't exist at kinks.</div>
+</div>
+<div data-notes="This is the technical magic — spend time here">Notes</div>
+</section>
+<section class="slide" data-sec="Building the Residual">
+<div class="eyebrow"><span class="sec">07</span> Building the Residual <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Building the residual — step by step</h2>
+<p>Given a PDE <span class="eqwrap">\(\mathcal{N}[u](x,t) = 0\)</span>, the <strong>residual</strong> is what you get when you plug the network into the PDE:</p>
+<p><strong>Step 1</strong>: Forward pass — get the solution estimate</p>
+<div class="eqwrap eqcenter">\[\hat{u} = u_\theta(x, t)\]</div>
+<p><strong>Step 2</strong>: Autodiff — compute the derivatives the PDE needs</p>
+<div class="eqwrap eqcenter">\[\hat{u}_t = \frac{\partial u_\theta}{\partial t}, \quad \hat{u}_x = \frac{\partial u_\theta}{\partial x}, \quad \hat{u}_{xx} = \frac{\partial^2 u_\theta}{\partial x^2}\]</div>
+<p><strong>Step 3</strong>: Plug into the operator</p>
+<div class="eqwrap eqcenter">\[r_\theta(x,t) = \mathcal{N}[\hat{u}] = \hat{u}_t + \hat{u}\,\hat{u}_x - \nu\,\hat{u}_{xx}\]</div>
+<p>If the network is a good approximation, <span class="eqwrap">\(r_\theta \approx 0\)</span> everywhere. The residual <strong>measures</strong> how wrong it is.</p>
+</div>
+<div data-notes="Walk through the construction step by step">Notes</div>
+</section>
+<section class="slide" data-sec="Loss Function">
+<div class="eyebrow"><span class="sec">08</span> Loss Function <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">The loss function — physics as soft constraints</h2>
+<p>Training minimizes a <strong>weighted composite loss</strong>:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L}(\theta) = \lambda_r\,\mathcal{L}_r + \lambda_b\,\mathcal{L}_b + \lambda_0\,\mathcal{L}_0 + \lambda_d\,\mathcal{L}_d\]</div>
+<table class="cmp">
+<thead><tr>
+<th>Term</th>
+<th>Formula</th>
+<th>Enforces</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Physics</strong> <span class="eqwrap">\(\mathcal{L}_r\)</span></td>
+<td><span class="eqwrap">\(\displaystyle\frac{1}{N_r}\sum_i \|r_\theta(x_r^i,t_r^i)\|^2\)</span></td>
+<td>PDE satisfied at collocation points</td>
+</tr>
+<tr>
+<td><strong>Boundary</strong> <span class="eqwrap">\(\mathcal{L}_b\)</span></td>
+<td><span class="eqwrap">\(\displaystyle\frac{1}{N_b}\sum_i \|\mathcal{B}[u_\theta](x_b^i,t_b^i)\|^2\)</span></td>
+<td>Boundary conditions</td>
+</tr>
+<tr>
+<td><strong>Initial</strong> <span class="eqwrap">\(\mathcal{L}_0\)</span></td>
+<td><span class="eqwrap">\(\displaystyle\frac{1}{N_0}\sum_i \|u_\theta(x_0^i,0) - u_0(x_0^i)\|^2\)</span></td>
+<td>Initial conditions</td>
+</tr>
+<tr>
+<td><strong>Data</strong> <span class="eqwrap">\(\mathcal{L}_d\)</span></td>
+<td><span class="eqwrap">\(\displaystyle\frac{1}{N_d}\sum_j \|u_\theta(x_d^j,t_d^j) - u_{\text{obs}}^j\|^2\)</span></td>
+<td>Observational data (optional)</td>
+</tr>
+</tbody>
+</table>
+<p>Each term is an <strong>MSE over sampled points</strong> — different points for each term.</p>
+</div>
+<div data-notes="The loss function is the heart of PINNs">Notes</div>
+</section>
+<section class="slide" data-sec="The Training Loop">
+<div class="eyebrow"><span class="sec">09</span> The Training Loop <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">The full training loop — the concept</h2>
+<p><strong>One big computational graph.</strong> Five steps per iteration:</p>
+<ol class="take"><li><strong>Sample</strong> collocation points <span class="eqwrap">\((x, t)\)</span> randomly</li><li><strong>Forward pass</strong> — evaluate the network to get <span class="eqwrap">\(\hat{u}\)</span></li><li><strong>Autodiff</strong> — compute <span class="eqwrap">\(\hat{u}_t, \hat{u}_x, \hat{u}_{xx}\)</span> via chain rule</li><li><strong>Residual</strong> — plug into the PDE operator: <span class="eqwrap">\(r_\theta = \mathcal{N}[\hat{u}]\)</span></li><li><strong>Optimize</strong> — composite loss → backward pass → update</li></ol>
+<p>Every term is differentiable. Physics, BCs, ICs, data — all in one graph.</p>
+</div>
+<div data-notes="Walk through the actual loop — this is what engineers care about">Notes</div>
+</section>
+<section class="slide" data-sec="The Training Loop">
+<div class="eyebrow"><span class="sec">09</span> The Training Loop <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">The full training loop — the code</h2>
+<pre class="codeblock"><code>for each training step:
+    # Sample collocation points
+    (x_r, t_r) = sample(N_r)
+
+    # Forward pass
+    u = network(x_r, t_r)              # shape: (N_r, 1)
+
+    # Autodiff derivatives
+    u_t = grad(sum(u), t_r).sum()       # ∂u_θ/∂t
+    u_x = grad(sum(u), x_r).sum()       # ∂u_θ/∂x
+    u_xx = grad(sum(u_x), x_r).sum()    # ∂²u_θ/∂x²
+
+    # PDE residual
+    r = u_t + u * u_x - nu * u_xx      # Burgers residual
+    L_r = mean(r ** 2)
+
+    # Sample boundary/initial/data points
+    (x_b, t_b) = sample_boundary(N_b)
+    (x_0, )     = sample_initial(N_0)
+    L_b = mean((network(x_b, t_b) - u_BC) ** 2)
+    L_0 = mean((network(x_0, 0) - u_IC) ** 2)
+
+    # Composite loss
+    L = λ_r * L_r + λ_b * L_b + λ_0 * L_0
+
+    # Backward pass
+    L.backward()
+    optimizer.step()
+    optimizer.zero_grad()</code></pre>
+</div>
+</section>
+<section class="slide" data-sec="Architecture">
+<div class="eyebrow"><span class="sec">10</span> Architecture <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Architecture choices that matter — activation functions</h2>
+<p>The network structure affects <strong>everything</strong>: how well it can represent the solution, how fast it trains, how well it differentiates.</p>
+<p><strong>Activation functions</strong> (the #1 choice):</p>
+<table class="cmp">
+<thead><tr>
+<th>Activation</th>
+<th>Smooth?</th>
+<th>Best for</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>tanh</code></td>
+<td><span class="eqwrap">\(\infty\)</span></td>
+<td>Smooth solutions, baseline choice</td>
+</tr>
+<tr>
+<td><code>silu</code> / <code>swish</code></td>
+<td><span class="eqwrap">\(\infty\)</span></td>
+<td>Sometimes better gradient flow</td>
+</tr>
+<tr>
+<td><code>sin</code> (SIREN)</td>
+<td><span class="eqwrap">\(\infty\)</span></td>
+<td>Oscillatory solutions, high-frequency</td>
+</tr>
+<tr>
+<td><code>relu</code></td>
+<td><span class="eqwrap">\(C^0\)</span> only</td>
+<td>❌ Avoid for 2nd-order PDEs</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div data-notes="Practical architecture choices — engineers will care">Notes</div>
+</section>
+<section class="slide" data-sec="Architecture">
+<div class="eyebrow"><span class="sec">10</span> Architecture <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Architecture choices that matter — depth, width, normalization</h2>
+<p><strong>Depth / width</strong>:</p>
+<ul class="beats"><li><strong>8–10 layers, 100–256 neurons</strong> is a common starting point</li><li>Deeper ≠ always better — overfitting to collocation noise</li><li><strong>Positional encoding</strong> (Fourier features) helps high-frequency solutions</li></ul>
+<p><strong>Input normalization</strong>:</p>
+<div class="eqwrap eqcenter">\[\tilde{x} = 2\frac{x - x_{\min}}{x_{\max} - x_{\min}} - 1 \qquad\text{(map to [-1, 1])}\]</div>
+<div class="callout gold"><strong>Rule of thumb</strong>: normalize all inputs to roughly the same scale. A PDE with <span class="eqwrap">\(x \in [0, 10^6]\)</span> and <span class="eqwrap">\(t \in [0, 1]\)</span> will train terribly without normalization.</div>
+</div>
+</section>
+<section class="slide" data-sec="PIKANs">
+<div class="eyebrow"><span class="sec">11</span> PIKANs <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">PIKANs — Kolmogorov-Arnold networks for physics</h2>
+<p><strong>Reference</strong>: Liu, J. et al. (2024), <em>KAN: Kolmogorov-Arnold Networks</em> — and subsequent physics-informed variants</p>
+<p>Standard MLPs: fixed activation functions on edges, learnable weights at nodes:</p>
+<div class="eqwrap eqcenter">\[f(x) = \sum_k w_k \cdot \sigma(W_k x + b_k)\]</div>
+<p><strong>KANs flip this</strong>: learnable activation functions on edges, static weights at nodes:</p>
+<div class="eqwrap eqcenter">\[f(x) = \sum_k \phi_k(x_k)\]</div>
+<p>where <span class="eqwrap">\(\phi_k\)</span> are <strong>learnable spline functions</strong> (not fixed sigmoid/tanh). The network learns the <em>functions themselves</em>, not just scalar weights.</p>
+</div>
+<div data-notes="KANs — Kolmogorov-Arnold Networks for physics — Liu et al. 2024">Notes</div>
+</section>
+<section class="slide" data-sec="PIKANs">
+<div class="eyebrow"><span class="sec">11</span> PIKANs <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">PIKANs — why it matters for PINNs</h2>
+<p><strong>Why KANs for PINNs</strong>:</p>
+<ul class="beats"><li><strong>Fewer parameters</strong> for same accuracy — 10-100× fewer than MLPs</li><li><strong>Learnable activations</strong> adapt to solution structure — no guess <code>tanh</code> vs <code>sin</code> vs <code>silu</code></li><li><strong>Interpretability</strong> — learned activations reveal the underlying functional form</li><li><strong>Higher-order derivatives</strong> are more accurate — splines are <span class="eqwrap">\(C^\infty\)</span>, autodiff through splines is exact</li></ul>
+<p><strong>Trade-offs</strong>:</p>
+<ul class="beats"><li>Slower per step (spline eval > scalar mult)</li><li>Less mature tooling — MLPs have everything pre-built</li><li>Heavier memory per parameter (spline coefficients vs single weight)</li></ul>
+<div class="callout gold">For smooth solutions, a shallow KAN can outperform a deep MLP in accuracy with a fraction of parameters.</div>
+</div>
+</section>
+<section class="slide" data-sec="Burgers Equation">
+<div class="eyebrow"><span class="sec">12</span> Burgers Equation <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Concrete example — Burgers' equation</h2>
+<p>A minimal nonlinear PDE that captures real physics:</p>
+<div class="eqwrap eqcenter">\[\partial_t u + u\,\partial_x u = \nu\,\partial_{xx} u, \quad x\in[-1,1],\; t\in[0,1]\]</div>
+<ul class="beats"><li><strong>Viscosity</strong>: <span class="eqwrap">\(\nu = 0.01/\pi\)</span> (small → sharp shocks form)</li><li><strong>Initial condition</strong>: <span class="eqwrap">\(u(x,0) = -\sin(\pi x)\)</span></li><li><strong>Boundary condition</strong>: <span class="eqwrap">\(u(-1,t) = u(1,t) = 0\)</span></li></ul>
+<p><strong>Why Burgers?</strong> It's the simplest PDE with both:</p>
+<ul class="beats"><li>A <strong>nonlinear</strong> convective term (<span class="eqwrap">\(u\,u_x\)</span>)</li><li>A <strong>diffusive</strong> term (<span class="eqwrap">\(\nu\,u_{xx}\)</span>)</li><li>Shock formation when <span class="eqwrap">\(\nu\)</span> is small</li></ul>
+<p>The exact solution develops a <strong>shock layer</strong> near <span class="eqwrap">\(x \approx 0.5\)</span> — a steep gradient that challenges every numerics method.</p>
+</div>
+<div data-notes="First major concrete example — walk through it thoroughly">Notes</div>
+</section>
+<section class="slide" data-sec="Burgers Residual">
+<div class="eyebrow"><span class="sec">13</span> Burgers Residual <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Burgers' residual — the math operator</h2>
+<p>The PDE operator applied to the network:</p>
+<div class="eqwrap eqcenter">\[r_\theta = \underbrace{\partial_t u_\theta}_{\text{time derivative}} \;\;+\;\; \underbrace{u_\theta \cdot \partial_x u_\theta}_{\text{nonlinear convection}} \;\;-\;\; \underbrace{\nu \cdot \partial_{xx} u_\theta}_{\text{viscous diffusion}}\]</div>
+<p>Three pieces:</p>
+<ol class="take"><li><strong>Time derivative</strong> — <span class="eqwrap">\(\partial_t u_\theta\)</span> via autodiff</li><li><strong>Nonlinear convection</strong> — <span class="eqwrap">\(u_\theta \cdot \partial_x u_\theta\)</span> (this is what makes Burgers hard)</li><li><strong>Viscous diffusion</strong> — <span class="eqwrap">\(\nu \cdot \partial_{xx} u_\theta\)</span> (second derivative, needs smooth activations)</li></ol>
+<p>If the network is good, <span class="eqwrap">\(r_\theta \approx 0\)</span> everywhere. The residual <strong>measures</strong> how wrong it is.</p>
+</div>
+</section>
+<section class="slide" data-sec="Burgers Residual">
+<div class="eyebrow"><span class="sec">13</span> Burgers Residual <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Burgers' residual — from math to PyTorch</h2>
+<p>In PyTorch, this is <strong>four lines</strong>:</p>
+<pre class="codeblock" data-lang="python"><code class="language-python"># u_θ(x, t) — shape (N, 1)
+u = net(torch.cat([x, t], dim=1))
+
+# Derivatives via torch.autograd
+u_t = torch.autograd.grad(u, t, grad_outputs=torch.ones_like(u),
+                          create_graph=True, only_inputs=True)[0]
+u_x = torch.autograd.grad(u, x, grad_outputs=torch.ones_like(u),
+                          create_graph=True, only_inputs=True)[0]
+u_xx = torch.autograd.grad(u_x, x, grad_outputs=torch.ones_like(u_x),
+                           create_graph=True, only_inputs=True)[0]
+
+# Residual
+r = u_t + u * u_x - nu * u_xx</code></pre>
+<p><strong>That's it.</strong> The autodiff infrastructure handles every derivative, no matter how deep.</p>
+</div>
+</section>
+<section class="slide" data-sec="Burgers Training">
+<div class="eyebrow"><span class="sec">14</span> Burgers Training <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Training Burgers — what to expect</h2>
+<p>Typical training setup:</p>
+<table class="cmp">
+<thead><tr>
+<th>Hyperparameter</th>
+<th>Value</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Network</td>
+<td>8 layers × 100 neurons, <code>tanh</code></td>
+</tr>
+<tr>
+<td>Collocation points</td>
+<td><span class="eqwrap">\(N_r = 10{,}000\)</span> (Latin hypercube)</td>
+</tr>
+<tr>
+<td>BC / IC points</td>
+<td><span class="eqwrap">\(N_b = 500\)</span>, <span class="eqwrap">\(N_0 = 500\)</span></td>
+</tr>
+<tr>
+<td>Learning rate</td>
+<td><span class="eqwrap">\(10^{-3}\)</span> (Adam), then <span class="eqwrap">\(10^{-4}\)</span></td>
+</tr>
+<tr>
+<td>Epochs</td>
+<td>50 000 – 100 000</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What goes right</strong>:</p>
+<ul class="beats"><li>After <span class="eqwrap">\(\sim 10^4\)</span> steps, the solution looks roughly correct</li><li>The shock is visible but smeared</li></ul>
+<p><strong>What goes wrong</strong>:</p>
+<ul class="beats"><li>The shock region needs many more points → <strong>residual hotspot</strong></li><li>Low learning rate helps but training is slow</li><li>Final error in the shock: 5–10% of the peak gradient</li></ul>
+<div class="callout gold"><strong>Key insight</strong>: Burgers with small <span class="eqwrap">\(\nu\)</span> is a <em>hard</em> test case. Easy PDEs (smooth solutions, large <span class="eqwrap">\(\nu\)</span>) converge in a few thousand steps. The hard cases reveal the real limitations.</div>
+</div>
+</section>
+<section class="slide" data-sec="Heat Equation">
+<div class="eyebrow"><span class="sec">15</span> Heat Equation <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Example — 1D heat equation</h2>
+<div class="eqwrap eqcenter">\[\partial_t u = \alpha \, \partial_{xx} u, \quad x \in [0,1], \; t \in [0,0.1]\]</div>
+<ul class="beats"><li><strong>Diffusivity</strong>: <span class="eqwrap">\(\alpha = 0.01\)</span></li><li><strong>Initial condition</strong>: <span class="eqwrap">\(u(x,0) = \sin(\pi x)\)</span></li><li><strong>Boundary conditions</strong>: <span class="eqwrap">\(u(0,t) = u(1,t) = 0\)</span></li></ul>
+<p><strong>Exact solution</strong> (for verification):</p>
+<div class="eqwrap eqcenter">\[u(x,t) = e^{-\alpha \pi^2 t} \sin(\pi x)\]</div>
+<p>This is the simplest non-trivial PDE with time dependence. The solution smoothly decays — no shocks, no nonlinearities — making it a clean test of PINN basics.</p>
+</div>
+<div data-notes="Second example — linear, clean analytic solution">Notes</div>
+</section>
+<section class="slide" data-sec="Heat Equation">
+<div class="eyebrow"><span class="sec">15</span> Heat Equation <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Heat equation — PyTorch implementation</h2>
+<pre class="codeblock" data-lang="python"><code class="language-python">import torch
+
+# Network
+net = torch.nn.Sequential(
+    torch.nn.Linear(2, 128), torch.nn.Tanh(),
+    torch.nn.Linear(128, 128), torch.nn.Tanh(),
+    torch.nn.Linear(128, 1),
+)
+
+# Collocation points (training)
+x_col = torch.rand(2000, 1) * 1
+y_col = torch.rand(2000, 1) * 0.1
+x_col.requires_grad_(True)
+y_col.requires_grad_(True)
+
+# Residual: u_t - alpha * u_xx = 0
+v = net(torch.cat([x_col, y_col], dim=1))
+u_t = torch.autograd.grad(v.sum(), y_col,
+    grad_outputs=torch.ones_like(v),
+    create_graph=True, only_inputs=True)[0]
+u_xx = torch.autograd.grad(v.sum(), x_col,
+    grad_outputs=torch.ones_like(v),
+    create_graph=True, only_inputs=True)[0]
+u_xx = torch.autograd.grad(u_xx.sum(), x_col,
+    grad_outputs=torch.ones_like(u_xx),
+    create_graph=True, only_inputs=True)[0]
+r = u_t - alpha * u_xx
+
+# BC + IC residuals
+v_bc = net(torch.cat([torch.zeros(100,1), y_col[:100]], dim=1))
+v_ic = net(torch.cat([x_col[:100], torch.zeros(100,1)], dim=1))
+L = r.pow(2).mean() + v_bc.pow(2).mean() + (v_ic - u_exact(x_col[:100])).pow(2).mean()
+L.backward()
+opt.step()</code></pre>
+</div>
+</section>
+<section class="slide" data-sec="Circuit Example">
+<div class="eyebrow"><span class="sec">16</span> Circuit Example <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Inverse example — circuit voltage and current</h2>
+<p><strong>Telegrapher's equation</strong> for a lossy transmission line:</p>
+<div class="eqwrap eqcenter">\[\partial_{xx} V(x,t) = LC \, \partial_{tt} V + (RC + LG) \, \partial_t V + RG \, V\]</div>
+<p>Same equation for current <span class="eqwrap">\(I(x,t)\)</span> — just different boundary conditions.</p>
+<ul class="beats"><li><span class="eqwrap">\(L\)</span> = inductance per unit length, <span class="eqwrap">\(C\)</span> = capacitance per unit length</li><li><span class="eqwrap">\(R\)</span> = resistance per unit length, <span class="eqwrap">\(G\)</span> = conductance per unit length</li></ul>
+<p><strong>Why this is interesting for PINNs</strong>:</p>
+<ul class="beats"><li>Second-order in <strong>both</strong> space and time — two time derivatives</li><li>Damped wave equation — underdamped (oscillatory), critically damped, or overdamped regimes</li><li>Engineers measure <strong>voltage and current at ports</strong> — not the full field</li><li>Perfect for <strong>inverse problems</strong>: discover <span class="eqwrap">\(R, L, C, G\)</span> from port measurements</li></ul>
+</div>
+<div data-notes="Circuit — voltage and current in transmission line">Notes</div>
+</section>
+<section class="slide" data-sec="Circuit Example">
+<div class="eyebrow"><span class="sec">16</span> Circuit Example <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Circuit example — PyTorch implementation</h2>
+<pre class="codeblock" data-lang="python"><code class="language-python"># Telegrapher&#x27;s: V_xx = LC*V_tt + (RC+LG)*V_t + RG*V
+V = net(torch.cat([x_col, t_col], dim=1))
+
+# Derivatives
+V_x  = torch.autograd.grad(V.sum(), x_col, grad_outputs=torch.ones_like(V),
+                           create_graph=True, only_inputs=True)[0]
+V_xx = torch.autograd.grad(V_x.sum(), x_col, grad_outputs=torch.ones_like(V_x),
+                           create_graph=True, only_inputs=True)[0]
+V_t  = torch.autograd.grad(V.sum(), t_col, grad_outputs=torch.ones_like(V),
+                           create_graph=True, only_inputs=True)[0]
+V_tt = torch.autograd.grad(V_t.sum(), t_col, grad_outputs=torch.ones_like(V_t),
+                           create_graph=True, only_inputs=True)[0]
+
+# Residual
+L = L_param * C_param * V_tt + (R_param * C_param + L_param * G_param) * V_t \
+    + R_param * G_param * V - V_xx
+
+# Boundary: V(0,t) = V_source(t), V(L,t) = 0
+V_bc1 = net(torch.cat([torch.zeros(N,1), t_col], dim=1))
+V_bc2 = net(torch.cat([torch.ones(N,1)*L_line, t_col], dim=1))
+
+# Loss = PDE + BCs
+loss = L.pow(2).mean() + V_bc1.pow(2).mean() + V_bc2.pow(2).mean()
+loss.backward()
+opt.step()</code></pre>
+<div class="callout gold">The same residual pattern works for voltage <strong>and</strong> current — just swap the PDE coefficients. Inverse problem: make <span class="eqwrap">\(R, L, C, G\)</span> trainable and fit to oscilloscope measurements at the ports.</div>
+</div>
+</section>
+<section class="slide" data-sec="Inverse Problems">
+<div class="eyebrow"><span class="sec">17</span> Inverse Problems <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">The killer app — inverse problems</h2>
+<p>In classical numerics, <strong>forward</strong> and <strong>inverse</strong> problems are totally different:</p>
+<ul class="beats"><li>Forward: solve the PDE (one algorithm)</li><li>Inverse: design a whole separate optimization loop</li></ul>
+<p>In PINNs, they're <strong>the same code</strong> — just flip what's trained.</p>
+<p><strong>Forward</strong>: known <span class="eqwrap">\(\nu\)</span>, find <span class="eqwrap">\(u\)</span></p>
+<div class="eqwrap eqcenter">\[\min_\theta \mathcal{L}*r(u*\theta; \nu) + \mathcal{L}_b + \mathcal{L}_0\]</div>
+<p><strong>Inverse</strong>: unknown <span class="eqwrap">\(\nu\)</span>, find <span class="eqwrap">\(u\)</span> <em>and</em> <span class="eqwrap">\(\nu\)</span></p>
+<div class="eqwrap eqcenter">\[\min_{\theta,\,\nu} \mathcal{L}*r(u*\theta; \nu) + \mathcal{L}_b + \mathcal{L}_0 + \lambda_d\,\mathcal{L}_d\]</div>
+<p>The parameter <span class="eqwrap">\(\nu\)</span> becomes a <strong>trainable scalar</strong> in the residual computation. Same loop, one extra variable.</p>
+<div class="callout gold">This is genuinely hard for classical methods. You'd need a nested PDE solver inside an outer optimizer. PINNs do it <strong>natively</strong> — the autodiff graph includes the physics parameters.</div>
+</div>
+<div data-notes="The killer app — this is what makes PINNs special">Notes</div>
+</section>
+<section class="slide" data-sec="Inverse Example">
+<div class="eyebrow"><span class="sec">18</span> Inverse Example <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Inverse example — discovering the diffusion coefficient</h2>
+<p>Scenario: You have sparse, noisy measurements of a temperature field and want to discover the diffusivity <span class="eqwrap">\(\alpha\)</span>.</p>
+<p><strong>Setup</strong>:</p>
+<ul class="beats"><li>Measurements: <span class="eqwrap">\(100\)</span> points scattered in space-time, noise <span class="eqwrap">\(\sigma = 0.05\)</span></li><li>True <span class="eqwrap">\(\alpha = 0.001\)</span></li><li>Network: <span class="eqwrap">\(6 \times 128\)</span>, <code>tanh</code></li><li><span class="eqwrap">\(\alpha\)</span> is a <strong>trainable parameter</strong> (not fixed)</li></ul>
+<p><strong>Loss</strong>:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L} = \frac{1}{N_r}\sum_i (\partial_t u_\theta - \alpha\,\nabla^2 u_\theta)*i^2 + \frac{\lambda_d}{N_d}\sum_j (u*\theta(x_j) - u_j^{\text{obs}})^2\]</div>
+<p><strong>Result</strong>: The optimizer converges to <span class="eqwrap">\(\hat{\alpha} = 0.00102 \pm 0.00008\)</span> — within measurement noise.</p>
+<div class="callout gold">The physics term <strong>regularizes</strong> the parameter estimation. Without it, 100 noisy measurements can't identify <span class="eqwrap">\(\alpha\)</span>. The PDE is the structural prior that makes inference possible.</div>
+</div>
+</section>
+<section class="slide" data-sec="Spectral Bias">
+<div class="eyebrow"><span class="sec">19</span> Spectral Bias <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">The spectral bias problem</h2>
+<p>Neural networks have a well-known bias: <strong>they learn low-frequency functions first</strong>.</p>
+<p>Empirical observation (Raissi et al., 2020):</p>
+<div class="stats-row">
+<div class="stat vio"><span class="val vio">80%</span><span class="label">Low frequencies fitted</span></div>
+<div class="stat red"><span class="val red">20%</span><span class="label">High frequencies lag</span></div>
+</div>
+<p><strong>Why this matters for PINNs</strong>:</p>
+<ul class="beats"><li>Shock layers, boundary layers, and oscillatory solutions are <strong>high-frequency</strong></li><li>The network fits the smooth part first, takes thousands of steps to capture sharp features</li><li>The residual at the shock stays large → <strong>training stalls</strong></li></ul>
+<p><strong>Visual</strong>: imagine the network approximating a square wave. It fits the flat parts instantly, then slowly "squeezes" the transition. The Gibbs-like ringing appears late.</p>
+</div>
+<div data-notes="The most important limitation — explain clearly">Notes</div>
+</section>
+<section class="slide" data-sec="Fixing Spectral Bias">
+<div class="eyebrow"><span class="sec">20</span> Fixing Spectral Bias <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Fixing spectral bias — Fourier features</h2>
+<p><strong>Method 1: Fourier features</strong> (Mesnard et al., 2022)</p>
+<p>Pre-process inputs with random Fourier features before the network:</p>
+<div class="eqwrap eqcenter">\[\gamma(x) = [\sin(2\pi Bx),\;\cos(2\pi Bx)]\]</div>
+<p>where <span class="eqwrap">\(B\)</span> is a random projection matrix (scaled by a frequency parameter <span class="eqwrap">\(\sigma\)</span>).</p>
+<p>The network now operates on <strong>high-frequency inputs</strong> and learns a smooth mapping — effectively shifting the spectrum.</p>
+</div>
+<div data-notes="Method 1: Fourier features">Notes</div>
+</section>
+<section class="slide" data-sec="Fixing Spectral Bias">
+<div class="eyebrow"><span class="sec">20</span> Fixing Spectral Bias <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Fixing spectral bias — SIREN activations</h2>
+<p><strong>Method 2: SIREN activations</strong> (Sitzmann et al., 2020)</p>
+<p>Use <code>sin</code> activations instead of <code>tanh</code>:</p>
+<div class="eqwrap eqcenter">\[\text{SIREN}(x) = \sin(Wx)\]</div>
+<p>The derivative of <code>sin</code> is <code>cos</code> — same frequency band, no decay. <code>tanh</code> derivatives decay to zero for large inputs, killing gradient flow for high frequencies.</p>
+<p><strong>Result on Burgers' equation</strong>: SIREN + Fourier features can resolve shock layers <strong>10× sharper</strong> than vanilla tanh.</p>
+</div>
+</section>
+<section class="slide" data-sec="Loss Balancing">
+<div class="eyebrow"><span class="sec">21</span> Loss Balancing <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Loss balancing — the multi-term gradient problem</h2>
+<p>The composite loss has terms with wildly different scales:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L} = \lambda_r\,\mathcal{L}_r + \lambda_b\,\mathcal{L}_b + \lambda_0\,\mathcal{L}_0\]</div>
+<p>Typical magnitudes during training:</p>
+<table class="cmp">
+<thead><tr>
+<th>Term</th>
+<th>Typical range</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><span class="eqwrap">\(\mathcal{L}_r\)</span></td>
+<td><span class="eqwrap">\(10^{-1}\)</span> – <span class="eqwrap">\(10^2\)</span></td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(\mathcal{L}_b\)</span></td>
+<td><span class="eqwrap">\(10^{-3}\)</span> – <span class="eqwrap">\(10^0\)</span></td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(\mathcal{L}_0\)</span></td>
+<td><span class="eqwrap">\(10^{-2}\)</span> – <span class="eqwrap">\(10^1\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The problem</strong>: if <span class="eqwrap">\(\mathcal{L}_r \gg \mathcal{L}_b\)</span>, the gradient is dominated by the physics term. Boundary conditions are violated because the optimizer doesn't "see" them.</p>
+<p><strong>What NOT to do</strong>: set <span class="eqwrap">\(\lambda_r = \lambda_b = \lambda_0 = 1\)</span> and hope. This rarely works.</p>
+</div>
+<div data-notes="The problem — scale mismatch">Notes</div>
+</section>
+<section class="slide" data-sec="Loss Strategies">
+<div class="eyebrow"><span class="sec">22</span> Loss Strategies <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Loss balancing — heuristic and gradient strategies</h2>
+<p><strong>Strategy 1: Heuristic scaling</strong> (most common in practice)</p>
+<p>Normalize each term by its initial value:</p>
+<div class="eqwrap eqcenter">\[\lambda_r(t) = \frac{\mathcal{L}_r(0)}{\mathcal{L}_r(t)},\quad \lambda_b(t) = \frac{\mathcal{L}_b(0)}{\mathcal{L}_b(t)}\]</div>
+<p><strong>Strategy 2: Gradient balancing</strong> (Wang et al., 2021)</p>
+<p>Match the gradient norms of each term:</p>
+<div class="eqwrap eqcenter">\[\|\nabla_\theta (\lambda_r \mathcal{L}*r)\| = \|\nabla*\theta (\lambda_b \mathcal{L}_b)\|\]</div>
+<p>Solve for <span class="eqwrap">\(\lambda_r, \lambda_b\)</span> each step.</p>
+</div>
+<div data-notes="Strategy 1 + 2">Notes</div>
+</section>
+<section class="slide" data-sec="Loss Strategies">
+<div class="eyebrow"><span class="sec">22</span> Loss Strategies <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Loss balancing — NTK weights and practical advice</h2>
+<p><strong>Strategy 3: NTK-based weights</strong> (Shukla & Diost, 2021)</p>
+<p>Use the neural tangent kernel to estimate each term's learning speed and weight accordingly. More principled, but more expensive.</p>
+<div class="callout gold"><strong>Practical rule</strong>: start with heuristic scaling. If training is unstable, switch to gradient balancing. NTK methods are overkill for most applications.</div>
+</div>
+</section>
+<section class="slide" data-sec="Optimizers">
+<div class="eyebrow"><span class="sec">23</span> Optimizers <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">PINN optimizers — why Adam is not enough</h2>
+<p>Standard deep learning uses Adam. PINN training is fundamentally different:</p>
+<ul class="beats"><li><strong>Multi-objective loss</strong>: physics + boundary + initial + data terms with competing gradients</li><li><strong>Non-stationary</strong>: loss landscape shifts dramatically as training progresses</li><li><strong>No validation set</strong>: collocation points are the only signal — no test loss to monitor</li></ul>
+<p><strong>The standard two-stage approach</strong>:</p>
+<ol class="take"><li><strong>Adam</strong> (with LR warmup + cosine annealing) for <span class="eqwrap">\(\sim 50{,}000\)</span> steps — fast initial descent</li><li><strong>L-BFGS</strong> for <span class="eqwrap">\(\sim 5{,}000\)</span> steps — quasi-Newton refinement near the minimum</li></ol>
+<p><strong>Why two-stage</strong>:</p>
+<ul class="beats"><li>Adam handles the noisy, multi-term gradient well initially</li><li>L-BFGS converges to higher accuracy — critical for residual <span class="eqwrap">\(\approx 0\)</span> to machine precision</li><li>L-BFGS on its own from initialization fails (Hessian estimate too noisy)</li></ul>
+<p><strong>Easy win, widely reproducible</strong>.</p>
+</div>
+<div data-notes="Training optimizers — from baseline to research-grade">Notes</div>
+</section>
+<section class="slide" data-sec="Optimizers">
+<div class="eyebrow"><span class="sec">23</span> Optimizers <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">PINN optimizers — advanced methods</h2>
+<p><strong>The problem Adam/L-BFGS misses</strong>: the composite loss has <strong>conflicting gradients</strong> — the Hessian is ill-conditioned because physics, boundary, and data terms pull in different directions.</p>
+<p><strong>SOAP</strong> (Self-Scaled Quasi-Newton, Kiyani et al. 2019):</p>
+<ul class="beats"><li>Self-scaling factor adapts per-dimension, no manual Hessian pre-conditioning</li><li>Directly tackles multi-objective gradient conflicts</li><li>Empirically outperforms L-BFGS on PINN loss landscapes</li></ul>
+<p><strong>D-NGD</strong> (Deep Natural Gradient Descent, Sholokhov et al. 2022):</p>
+<ul class="beats"><li>Uses the <strong>Fisher information matrix</strong> as the metric — accounts for the function-space geometry, not parameter-space</li><li>Naturally preconditions the conflicting gradients in the composite loss</li><li>Best-possible error rates, but expensive (Fisher-vector products scale with model size)</li></ul>
+<p><strong>When to use which</strong>:</p>
+<table class="cmp">
+<thead><tr>
+<th>Method</th>
+<th>Cost</th>
+<th>Best for</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Adam + L-BFGS</strong></td>
+<td>Low</td>
+<td>Baseline, widely reproducible</td>
+</tr>
+<tr>
+<td><strong>SOAP / Self-Scaled quasi-Newton</strong></td>
+<td>Medium</td>
+<td>High recommendation — better preconditioning</td>
+</tr>
+<tr>
+<td><strong>D-NGD</strong></td>
+<td>High</td>
+<td>Research-grade, largest models, best possible error</td>
+</tr>
+</tbody>
+</table>
+<div class="callout gold">These methods shine because they better <strong>precondition the conflicting gradients</strong> that appear in the composite PINN loss. The physics term dominates early, boundary terms dominate late — a good optimizer adapts to this shift.</div>
+</div>
+</section>
+<section class="slide" data-sec="gPINNs">
+<div class="eyebrow"><span class="sec">24</span> gPINNs <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Gradient-enhanced PINNs (gPINNs) — the problem</h2>
+<p><strong>Reference</strong>: Yu, J., Lu, L., Meng, X., & Karniadakis, G. E. (2022), <em>CMAME</em> — DOI: 10.1016/j.cma.2022.114823</p>
+<p>The residual loss only penalizes <span class="eqwrap">\(r_\theta \approx 0\)</span> at collocation points. But in regions with steep gradients, the residual can be near-zero without the solution being accurate.</p>
+<p><strong>The fix</strong>: also penalize the gradient of the residual w.r.t. inputs:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L} = \frac{1}{N_r}\sum_i |r(\mathbf{x}*i;\theta)|^2 + \lambda \,\frac{1}{N_r}\sum_i |\nabla*{\mathbf{x}} r(\mathbf{x}_i;\theta)|^2\]</div>
+<p>This "second-gradient" regularization enforces both <strong><span class="eqwrap">\(r \approx 0\)</span></strong> and <strong><span class="eqwrap">\(\nabla r \approx 0\)</span></strong> at collocation points.</p>
+</div>
+<div data-notes="Gradient-enhanced PINNs — Yu et al. 2022">Notes</div>
+</section>
+<section class="slide" data-sec="gPINNs">
+<div class="eyebrow"><span class="sec">24</span> gPINNs <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Gradient-enhanced PINNs (gPINNs) — why it works</h2>
+<p><strong>Why gPINNs work</strong>:</p>
+<ul class="beats"><li><span class="eqwrap">\(\nabla_\mathbf{x} r = \nabla_\mathbf{x} \mathcal{N}[u_\theta]\)</span> involves <strong>third-order derivatives</strong> of <span class="eqwrap">\(u_\theta\)</span> — higher than the original PDE order</li><li>Penalizing it forces the solution to be <strong>smooth in its residual</strong>, not just small</li><li>Especially effective with steep gradients or <strong>fewer collocation points</strong></li><li>Helps <strong>inverse problems</strong> — extra gradient signal constrains parameter estimation</li></ul>
+<p><strong>Cost</strong>: one extra autodiff pass. Minimal overhead.</p>
+<div class="callout gold">gPINNs are the simplest high-accuracy upgrade to vanilla PINNs — just add a gradient term to the loss. Often more effective than spectral-bias fixes for shock-dominated problems.</div>
+</div>
+</section>
+<section class="slide" data-sec="RAR">
+<div class="eyebrow"><span class="sec">25</span> RAR <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Residual-Based Adaptive Refinement (RAR)</h2>
+<p><strong>Reference</strong>: Yu, J., Lu, L., Jin, L., & Karniadakis, G. E. (2020), <em>CMAME</em> — Residual-based adaptive refinement for PINNs</p>
+<p>Collocation points are <strong>static</strong> by default. But shocks live in tiny regions — wasting points on smooth areas.</p>
+<p><strong>RAR redistributes points during tra-ining</strong>:</p>
+<ol class="take"><li>Train for <span class="eqwrap">\(N\)</span> steps on current points</li><li>Evaluate residual <span class="eqwrap">\(|r_\theta(\mathbf{x}_i)|\)</span> at all collocation points</li><li><strong>Remove</strong> points in low-residual regions</li><li><strong>Generate new points</strong> in high-residual regions (e.g. Latin hypercube sampling weighted by <span class="eqwrap">\(|r_\theta|\)</span>)</li><li>Continue training with the updated point set</li><li>Repeat every <span class="eqwrap">\(K\)</span> steps</li></ol>
+<p><strong>Why it works</strong>:</p>
+<ul class="beats"><li>Points <strong>concentrate where the solution is hard</strong> — shocks, boundary layers, steep gradients</li><li>Same total <span class="eqwrap">\(N_r\)</span> but far more efficient allocation</li><li>Often <strong>2-5× faster convergence</strong> than uniform sampling</li><li>No extra hyperparameters beyond the redistribution interval <span class="eqwrap">\(K\)</span></li></ul>
+<p><strong>Cost</strong>: one extra residual evaluation pass + sampling step. Negligible.</p>
+<div class="callout gold">RAR + gPINNs together are the most impactful low-effort upgrades to vanilla PINNs for shock-dominated problems. Both cost almost nothing and give measurable gains.</div>
+</div>
+<div data-notes="Residual-Based Adaptive Refinement — Yu et al. 2020">Notes</div>
+</section>
+<section class="slide" data-sec="Causality">
+<div class="eyebrow"><span class="sec">26</span> Causality <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Causality violation in time-dependent PINNs</h2>
+<p>PINNs are <strong>global in time</strong> — the network sees all <span class="eqwrap">\(t \in [0,T]\)</span> in every batch.</p>
+<p>This can cause a subtle failure:</p>
+<p>The network fits <strong>late times well</strong> (where the residual is smaller) and <strong>ignores early times</strong> (where the initial condition and transients are harder).</p>
+<p>The PDE solution is causal — early times determine late times. But the PINN doesn't know this.</p>
+<p><strong>Mitigation</strong>:</p>
+<ol class="take"><li><strong>Causal training</strong> (Agarwal et al., 2022): sample <span class="eqwrap">\(t\)</span> in increasing order, use a masking loss</li><li><strong>Time-marching</strong>: solve in sub-domains <span class="eqwrap">\([0,T_1], [T_1,T_2], \ldots\)</span></li><li><strong>Weight early times more heavily</strong> in the loss</li></ol>
+<div class="callout gold">For steady-state problems (<span class="eqwrap">\(\partial_t = 0\)</span>), this issue doesn't arise. It's specific to time-dependent PDEs.</div>
+</div>
+<div data-notes="Time-dependent PINNs have a subtle problem">Notes</div>
+</section>
+<section class="slide" data-sec="Variants">
+<div class="eyebrow"><span class="sec">27</span> Variants <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">PINN variants — the family tree</h2>
+<table class="cmp">
+<thead><tr>
+<th>Variant</th>
+<th>Key idea</th>
+<th>When to use</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>cPINNs</strong> (Jagtap et al.)</td>
+<td>Conservation at subdomain interfaces</td>
+<td>Discontinuous solutions, shock tracking</td>
+</tr>
+<tr>
+<td><strong>XPINNs</strong></td>
+<td>Domain decomposition + parallel training</td>
+<td>Large domains, parallel compute</td>
+</tr>
+<tr>
+<td><strong>fPINNs</strong></td>
+<td>Weak formulation (integral form)</td>
+<td>Solutions with discontinuities</td>
+</tr>
+<tr>
+<td><strong>B-PINNs</strong></td>
+<td>Bayesian uncertainty quantification</td>
+<td>When you need confidence intervals</td>
+</tr>
+<tr>
+<td><strong>NN-PIM</strong> (Tang et al.)</td>
+<td>Neural networks + classical solvers hybrid</td>
+<td>When you have partial mesh data</td>
+</tr>
+</tbody>
+</table>
+<p>Each variant trades off something: accuracy, scalability, generality, or ease of implementation.</p>
+</div>
+<div data-notes="Show the family tree of PINN variants">Notes</div>
+</section>
+<section class="slide" data-sec="Variants">
+<div class="eyebrow"><span class="sec">27</span> Variants <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Domain decomposition — XPINNs</h2>
+<p><strong>Reference</strong>: Jagtap et al. — Extended PINNs</p>
+<p>Split <span class="eqwrap">\(\Omega\)</span> into <span class="eqwrap">\(k\)</span> non-overlapping subdomains <span class="eqwrap">\(\Omega_1, \ldots, \Omega_k\)</span>. Each subdomain gets its own network <span class="eqwrap">\(u_{\theta_i}\)</span>:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L} = \sum_{i=1}^k \bigg( \mathcal{L}*r(\Omega_i) + \mathcal{L}*b(\partial\Omega_i \cap \partial\Omega) + \sum*{\text{interfaces } \Gamma*{ij}} \gamma_{ij} \|u_{\theta_i} - u_{\theta_j}\|*{\Gamma*{ij}}^2 \bigg)\]</div>
+<p><strong>Key features</strong>:</p>
+<ul class="beats"><li>Each network trained <strong>independently</strong> → embarrassingly parallel</li><li>Interface continuity enforced via penalty terms</li><li>No global collocation points needed — each network only sees its own subdomain</li></ul>
+<p><strong>When it shines</strong>:</p>
+<ul class="beats"><li>Large domains where one network can't capture the solution</li><li>Parallel compute available (GPU clusters, HPC)</li><li>Subdomains can have <strong>different physics</strong> (different PDE operators)</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Variants">
+<div class="eyebrow"><span class="sec">27</span> Variants <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Domain decomposition — cPINNs (conservation) cPINNs</h2>
+<p><strong>Reference</strong>: Jagtap, Kaus & Karniadakis</p>
+<p>XPINNs enforce <strong>pointwise continuity</strong> at interfaces. cPINNs enforce <strong>weak conservation</strong>:</p>
+<div class="eqwrap eqcenter">\[\int_{\Gamma_{ij}} \big[ \mathbf{f}(u_{\theta_i}) - \mathbf{f}(u_{\theta_j}) \big] \cdot \mathbf{n} \; dS = 0\]</div>
+<p>Instead of <span class="eqwrap">\(u_i = u_j\)</span> pointwise, the <strong>flux is conserved</strong> across interfaces — a weaker, physically motivated constraint.</p>
+<p><strong>When cPINNs > XPINNs</strong>:</p>
+<ul class="beats"><li><strong>Conservation laws</strong> — shocks, discontinuities, Riemann problems</li><li>The flux-conservation constraint respects the <strong>integral form</strong> of the PDE</li><li>Pointwise continuity fails at discontinuities; flux conservation does not</li></ul>
+<p><strong>When XPINNs > cPINNs</strong>:</p>
+<ul class="beats"><li>Smooth solutions — pointwise continuity is tighter and simpler</li><li>Different PDEs on different subdomains (XPINNs allow different operators)</li></ul>
+<div class="callout gold">Domain decomposition is where PINNs converge with classical FEM. The networks are basis functions; the interfaces are the mesh boundaries. Same mathematics, different parameterization.</div>
+</div>
+</section>
+<section class="slide" data-sec="Operator Learning">
+<div class="eyebrow"><span class="sec">28</span> Operator Learning <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Beyond PINNs — operator learning</h2>
+<p>PINNs learn <strong>one solution</strong> for <strong>one problem instance</strong>.</p>
+<p><strong>Operator learning</strong> asks: can we learn the <strong>solution operator</strong> itself?</p>
+<div class="eqwrap eqcenter">\[\mathcal{G}: \text{IC/BC/coefficients} \;\mapsto\; \text{solution } u(x,t)\]</div>
+<table class="cmp">
+<thead><tr>
+<th>Method</th>
+<th>What it learns</th>
+<th>Inference cost</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>PINN</strong></td>
+<td>One solution, one PDE instance</td>
+<td>Slow (train per instance)</td>
+</tr>
+<tr>
+<td><strong>DeepONet</strong></td>
+<td>Solution operator from data</td>
+<td>Fast (evaluate network)</td>
+</tr>
+<tr>
+<td><strong>Fourier Neural Operator</strong></td>
+<td>Solution operator via Fourier layers</td>
+<td>Fast</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physics-informed DeepONets</strong>: Combine both — the operator is constrained by the PDE residual.</p>
+<div class="callout gold">Trade-off: PINNs = physics-accurate but per-instance cost. Operators = fast but need training data. <strong>Hybrids</strong> exist and are actively researched.</div>
+</div>
+<div data-notes="How PINNs relate to the broader scientific ML landscape">Notes</div>
+</section>
+<section class="slide" data-sec="Neural Laplace">
+<div class="eyebrow"><span class="sec">29</span> Neural Laplace <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Neural Laplace — frequency-domain PINNs</h2>
+<p><strong>Reference</strong>: Kharazmi, E., Shi, Z. & Karniadakis, G. E. (2021), <em>Neural Laplace</em></p>
+<p>Standard PINNs sample <span class="eqwrap">\(t\)</span> globally — all time steps in every batch. Neural Laplace transforms to the <strong>Laplace domain</strong>:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L}\{u(t)\}(s) = \int_0^\infty u(t) e^{-st} \, dt\]</div>
+<p>In the Laplace domain, time derivatives become <strong>algebraic multiplications</strong>:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L}\{\partial_t u\}(s) = s \, \hat{u}(s) - u(0)\]</div>
+<p>The PDE becomes an <strong>elliptic PDE in space + complex parameter <span class="eqwrap">\(s\)</span></strong> — solved once per <span class="eqwrap">\(s\)</span> value, then inverse-transformed.</p>
+<p><strong>Key advantages</strong>:</p>
+<ul class="beats"><li><strong>No time-stepping</strong> — solve for all <span class="eqwrap">\(t\)</span> at once via inverse Laplace transform</li><li><strong>Exponential convergence</strong> — analytic structure captured exactly</li><li><strong>Natural initial conditions</strong> — baked into the transform</li><li><strong>Efficient for stiff problems</strong> — no stability constraints on <span class="eqwrap">\(\Delta t\)</span></li></ul>
+<p><strong>Cost</strong>: inverse Laplace requires quadrature over <span class="eqwrap">\(\sim 10-20\)</span> complex <span class="eqwrap">\(s\)</span> values.</p>
+<div class="callout gold">Neural Laplace is the most elegant way to handle time-dependent PDEs. No more time-stepping, no more CFL constraints — just solve an elliptic PDE for complex parameters.</div>
+</div>
+<div data-notes="Frequency-domain PINNs — Kharazmi et al.">Notes</div>
+</section>
+<section class="slide" data-sec="Multi-fidelity">
+<div class="eyebrow"><span class="sec">30</span> Multi-fidelity <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Multi-fidelity PINNs (MF-PINNs)</h2>
+<p><strong>Reference</strong>: Wang, S., Wang, H. & Perdikaris, P. (2021), <em>J. Comput. Phys.</em></p>
+<p>Real-world data comes at <strong>different fidelities</strong>: coarse CFD simulations + sparse high-fidelity experiments. MF-PINNs combine them:</p>
+<div class="eqwrap eqcenter">\[\mathcal{L} = \lambda_1 \mathcal{L}*{r,1} + \lambda_2 \mathcal{L}*{r,2} + \lambda_c \mathcal{L}_{\text{correlation}}\]</div>
+<ul class="beats"><li><strong>Fidelity 1</strong> (coarse): cheap simulation, many collocation points, loose constraints</li><li><strong>Fidelity 2</strong> (fine): expensive measurements, few points, tight constraints</li><li><strong>Correlation term</strong>: enforces that the difference <span class="eqwrap">\(u_2 - u_1\)</span> is smooth and simple</li></ul>
+<p><strong>How it works</strong>:</p>
+<ol class="take"><li>Train two coupled networks: <span class="eqwrap">\(u_{\theta_1}\)</span> (coarse) + <span class="eqwrap">\(u_{\theta_2}\)</span> (fine)</li><li><span class="eqwrap">\(u_{\theta_1}\)</span> sees many collocation points (cheap residual)</li><li><span class="eqwrap">\(u_{\theta_2}\)</span> sees few data points but is <strong>regularized by <span class="eqwrap">\(u_{\theta_1}\)</span></strong></li><li>The correlation loss forces <span class="eqwrap">\(u_{\theta_2} - u_{\theta_1}\)</span> to be a simple function</li></ol>
+<p><strong>When it shines</strong>:</p>
+<ul class="beats"><li>You have expensive measurements + cheap approximations</li><li>High-fidelity data is <strong>sparse</strong> but low-fidelity data is dense</li><li>Computational budget is limited</li></ul>
+<div class="callout gold">MF-PINNs let you get 80% of the accuracy at 20% of the cost by leveraging cheap coarse models to guide expensive fine models.</div>
+</div>
+<div data-notes="Multi-fidelity PINNs — combine coarse + fine data">Notes</div>
+</section>
+<section class="slide" data-sec="Symmetry PINNs">
+<div class="eyebrow"><span class="sec">31</span> Symmetry PINNs <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Symmetry-preserving PINNs</h2>
+<p><strong>Reference</strong>: Raissi, M. (2020), <em>Hidden physics models</em> — and subsequent equivariant PINN work</p>
+<p>Standard PINNs <strong>break symmetries</strong> that the PDE has. A translation-invariant PDE should give a translation-invariant solution — but the neural network doesn't know this.</p>
+<p><strong>Equivariant architectures</strong> enforce known symmetries:</p>
+<ul class="beats"><li><strong>Translation invariance</strong> → weight sharing (convolutional layers)</li><li><strong>Rotation invariance</strong> → SO(2)/SO(3) equivariant layers</li><li><strong>Gauge invariance</strong> → covariant derivatives (gauge theory)</li><li><strong>Scaling invariance</strong> → homogeneous activation functions</li></ul>
+<p><strong>How to build</strong>:</p>
+<ol class="take"><li><strong>Identify symmetries</strong> of the PDE (Noether's theorem)</li><li><strong>Build equivariant layers</strong> — e.g., group-equivariant CNNs</li><li><strong>Train normally</strong> — symmetry is hard-coded, not learned</li></ol>
+<p><strong>Example</strong>: Navier-Stokes has Galilean invariance (physics looks the same in any inertial frame). A standard PINN won't respect this; an equivariant PINN enforces it by construction.</p>
+<p><strong>Cost</strong>: equivariant layers are more complex but <strong>fewer parameters</strong> — symmetry is a strong inductive bias.</p>
+<div class="callout gold">Symmetry preservation isn't a loss trick — it's an <strong>architectural constraint</strong>. The network can only learn what its structure allows.</div>
+</div>
+<div data-notes="Symmetry-preserving PINNs — equivariant architectures">Notes</div>
+</section>
+<section class="slide" data-sec="Fractional PINNs">
+<div class="eyebrow"><span class="sec">32</span> Fractional PINNs <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Fractional PINNs (fPINNs)</h2>
+<p><strong>Reference</strong>: Mao, Z., Ji, X., Karniadakis, G. E. (2020), <em>Fractional PINNs</em></p>
+<p>Standard derivatives are <strong>local</strong>: <span class="eqwrap">\(\partial_x u(x)\)</span> depends only on <span class="eqwrap">\(u\)</span> at <span class="eqwrap">\(x\)</span>. Fractional derivatives are <strong>non-local</strong>:</p>
+<div class="eqwrap eqcenter">\[{}^C_0D_x^\alpha u(x) = \frac{1}{\Gamma(1-\alpha)} \int_0^x (x-t)^{-\alpha} \partial_t u(t) \, dt\]</div>
+<p><strong>Where they appear</strong>:</p>
+<ul class="beats"><li><strong>Anomalous diffusion</strong> — mean-square displacement <span class="eqwrap">\(\sim t^\alpha\)</span>, not <span class="eqwrap">\(t\)</span> (<span class="eqwrap">\(\alpha \ne 1\)</span>)</li><li><strong>Viscoelastic materials</strong> — memory effects, power-law relaxation</li><li><strong>Long-range interactions</strong> — Lévy flights, peridynamics</li><li><strong>Fractional Schrödinger equation</strong> — quantum systems with power-law tunneling</li></ul>
+<p><strong>How to implement</strong>:</p>
+<ol class="take"><li><strong>Caputo derivative</strong>: approximate integral with quadrature</li><li><strong>Autodiff through the quadrature</strong> — the kernel <span class="eqwrap">\((x-t)^{-\alpha}\)</span> is differentiable</li><li><strong>Residual includes fractional terms</strong> — same loss framework</li></ol>
+<div class="eqwrap eqcenter">\[\partial_t^\alpha u - \nu \partial_{xx} u = 0 \quad \text{(time-fractional diffusion)}\]</div>
+<p><strong>Cost</strong>: quadrature adds <span class="eqwrap">\(O(N)\)</span> work per collocation point. Can be accelerated with FFT-based schemes.</p>
+<div class="callout gold">Fractional derivatives model <strong>memory and non-locality</strong> — physical phenomena that standard PDEs can't capture. PINNs handle them naturally with quadrature-based autodiff.</div>
+</div>
+<div data-notes="Fractional derivatives — anomalous diffusion">Notes</div>
+</section>
+<section class="slide" data-sec="Diffusion PINNs">
+<div class="eyebrow"><span class="sec">33</span> Diffusion PINNs <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Physics-guided diffusion models</h2>
+<p><strong>Reference</strong>: 2024-2025 — physics-informed generative models at the intersection of diffusion models and PINNs</p>
+<p><strong>Diffusion models</strong> generate data by learning to reverse a noising process. <strong>PINNs</strong> enforce physical constraints. Combining them:</p>
+<p><strong>Forward process</strong>: add noise to data <span class="eqwrap">\(\mathbf{x}_0 \to \mathbf{x}_T\)</span></p>
+<p><strong>Reverse process</strong>: denoise <span class="eqwrap">\(\mathbf{x}_T \to \mathbf{x}_0\)</span> with <strong>physics guidance</strong>:</p>
+<div class="eqwrap eqcenter">\[\nabla_{\mathbf{x}_t} \log p(\mathbf{x}*t | \text{physics}) = \nabla*{\mathbf{x}*t} \log p*{\text{gen}}(\mathbf{x}*t) + \lambda \, \nabla*{\mathbf{x}*t} \mathcal{L}*{\text{PDE}}(\mathbf{x}_t)\]</div>
+<p><strong>Key ideas</strong>:</p>
+<ul class="beats"><li>The denoiser network is guided by the <strong>PDE residual gradient</strong> at each step</li><li>Physics acts as a <strong>conditional prior</strong> during generation</li><li>Can handle <strong>highly noisy, sparse inverse problems</strong> that stump standard PINNs</li><li>Generates <strong>ensembles</strong> of solutions with built-in uncertainty</li></ul>
+<p><strong>When to use</strong>:</p>
+<ul class="beats"><li><strong>Heavy noise</strong> — standard PINNs fail with >10% noise</li><li><strong>Multiple solutions</strong> — diffusion models sample from the solution manifold</li><li><strong>Data scarcity</strong> — physics guides generation from near-zero data</li><li><strong>Uncertainty quantification</strong> — natural via sampling</li></ul>
+<div class="callout gold">Physics-guided diffusion models represent the frontier of PINN research. They combine the generative power of diffusion models with the physical fidelity of PINNs — handling noise, multimodality, and uncertainty that vanilla PINNs can't.</div>
+</div>
+<div data-notes="Physics-guided diffusion models — 2024/2025 direction">Notes</div>
+</section>
+<section class="slide" data-sec="Failure Modes">
+<div class="eyebrow"><span class="sec">34</span> Failure Modes <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Failure modes — diagnostics checklist</h2>
+<p><strong>Before you trust a PINN solution, check these</strong>:</p>
+<ol class="take"><li><strong>Residual map</strong> — plot <span class="eqwrap">\(\|r_\theta(x,t)\|\)</span> over the domain. Hotspots = problems.</li><li><strong>Loss curves</strong> — all four terms should converge to similar scales. One flat while others drop = imbalance.</li><li><strong>Solution sanity</strong> — does it respect maximum principles? Monotonicity? Conservation?</li><li><strong>Sensitivity to point count</strong> — double <span class="eqwrap">\(N_r\)</span>. If the solution changes significantly, it's under-resolved.</li><li><strong>Cross-validation</strong> — hold out data points. Overfitting to collocation points = bad generalization.</li></ol>
+</div>
+<div data-notes="Diagnostics — what to check">Notes</div>
+</section>
+<section class="slide" data-sec="Failure Modes">
+<div class="eyebrow"><span class="sec">34</span> Failure Modes <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Failure modes — common patterns</h2>
+<p><strong>What goes wrong</strong>:</p>
+<ul class="beats"><li><strong>Underfitting</strong> — smooth but wrong → network too small</li><li><strong>Overfitting</strong> — oscillates wildly → too many points/parameters, no regularization</li><li><strong>Stuck loss term</strong> — balance problem or unsatisfiable constraint</li><li><strong>Spectral bias</strong> — smooth part fits, sharp features lag → use Fourier features or SIREN</li><li><strong>Causality violation</strong> — late times fit, early times ignored → time-marching or causal sampling</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Practical Gotchas">
+<div class="eyebrow"><span class="sec">35</span> Practical Gotchas <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Practical implementation — gotchas and heuristics</h2>
+<p><strong>Point sampling</strong>:</p>
+<ul class="beats"><li><strong>Latin hypercube</strong> beats uniform for 1D marginals, but <strong>uniform random</strong> can be better in high dimensions</li><li><strong>Importance sampling</strong>: sample more densely where <span class="eqwrap">\(|r_\text{coarse}|\)</span> is large (coarse PINN first pass)</li><li><strong>Adaptive refinement</strong>: add points where residual is high — cheaper than increasing network width</li><li><strong>Boundary points</strong> matter more than you think — undersampling BCs causes oscillatory solutions</li></ul>
+<p><strong>Loss weighting heuristics</strong>:</p>
+<ul class="beats"><li>Start with <strong>equal weights</strong> → if one term dominates, reduce its weight or normalize by residual magnitude</li><li><strong>Normalize each loss term</strong> by its initial value: <span class="eqwrap">\(\mathcal{L}'_i = \mathcal{L}_i / \mathcal{L}_i(0)\)</span> — they start at similar scales</li><li><strong>Dynamic weighting</strong> (GradNorm, PCGrad): monitor gradient magnitudes and adjust weights per-step</li><li><strong>Rule of thumb</strong>: if one loss term is <span class="eqwrap">\(>10\times\)</span> larger than others, it controls the gradient</li></ul>
+<p><strong>Convergence diagnostics</strong>:</p>
+<ul class="beats"><li>Plot <strong>each loss term separately</strong> — one flat while others drop = imbalance</li><li>Monitor <strong>gradient norms</strong> per parameter group — exploding or vanishing gradients signal bad initialization</li><li>Check <strong>spectral content</strong> of the solution — if high frequencies are missing, you have spectral bias</li><li><strong>Double <span class="eqwrap">\(N_r\)</span></strong> and retrain — if the solution changes significantly, it was under-resolved</li></ul>
+<div class="callout gold">Most PINN failures are <strong>not</strong> fundamental — they're bad sampling, bad weighting, or under-training. Fix these before reaching for exotic architectures.</div>
+</div>
+<div data-notes="Hard-won practical tips — the stuff papers don&#x27;t always cover">Notes</div>
+</section>
+<section class="slide" data-sec="Mental Model">
+<div class="eyebrow"><span class="sec">36</span> Mental Model <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Mental model — what a PINN <em>is</em></h2>
+<p>A PINN is a <strong>function approximator constrained by a differential equation</strong>:</p>
+<div class="eqwrap eqcenter">\[\underbrace{u_\theta}*{\text{flexible neural network}}
+\;+\;
+\underbrace{\text{autodiff}}*{\text{exact derivatives, no mesh}}
+\;+\;
+\underbrace{\text{residual loss}}_{\text{physics as soft constraint}}\]</div>
+<p><strong>Three ingredients, no magic</strong>:</p>
+<ol class="take"><li>The network provides the <strong>ansatz</strong> — a parameterized family of functions rich enough to represent the solution.</li><li>Autodiff provides the <strong>derivatives</strong> — no discretization, no stencils, no truncation error.</li><li>The residual loss provides the <strong>constraint</strong> — the PDE is no longer solved, it's <strong>enforced</strong>.</li></ol>
+<div class="callout gold">The PDE stops being something you <em>discretize and solve</em>. It becomes something you <em>use to regularize a neural network</em>. This shift in perspective is what makes PINNs powerful.</div>
+</div>
+<div data-notes="The big-picture takeaway">Notes</div>
+</section>
+<section class="slide" data-sec="Takeaways">
+<div class="eyebrow"><span class="sec">37</span> Takeaways <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Key takeaways</h2>
+<ol class="take"><li>PINNs replace <strong>mesh-based discretization</strong> with <strong>neural network approximation + autodiff derivatives</strong>.</li></ol>
+<ol class="take"><li>The PDE residual becomes a <strong>loss term</strong> — physics is a soft constraint, not a hard discretization.</li></ol>
+<ol class="take"><li><strong>Autodiff is the enabler</strong> — exact derivatives with zero extra cost beyond the forward pass.</li></ol>
+<ol class="take"><li><strong>Inverse problems are native</strong> — unknown parameters are just extra trainable variables. Works for circuits, temperature fields, and more.</li></ol>
+<ol class="take"><li><strong>Training is the challenge</strong> — spectral bias, loss balancing, and causality are active research areas with practical fixes (Fourier features, SIREN, RAR, gPINNs).</li></ol>
+<ol class="take"><li><strong>Domain decomposition</strong> (XPINNs/cPINNs) enables parallel training and discontinuous solutions.</li></ol>
+<ol class="take"><li><strong>Frequency-domain methods</strong> (Neural Laplace) and <strong>multi-fidelity</strong> approaches push the boundaries of what PINNs can do efficiently.</li></ol>
+<ol class="take"><li><strong>Symmetry-preserving</strong> and <strong>fractional</strong> PINNs extend the framework to equivariant architectures and non-local physics.</li></ol>
+<ol class="take"><li>PINNs sit between <strong>classical numerics</strong> (mesh-based, accurate per-instance) and <strong>operator learning</strong> (data-driven, fast inference). They fill a middle ground: physics-faithful, flexible, good for small data.</li></ol>
+<ol class="take"><li><strong>Physics-guided diffusion models</strong> represent the frontier — combining generative power with physical fidelity for noisy, uncertain, multi-modal problems.</li></ol>
+</div>
+</section>
+<section class="slide" data-sec="References">
+<div class="eyebrow"><span class="sec">38</span> References <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">References and further reading</h2>
+<p><strong>Foundational</strong>:</p>
+<ul class="beats"><li>Raissi, Perdikaris & Karniadakis (2019), <em>Physics-informed neural networks</em>, <strong>J. Comput. Phys.</strong> — the original paper</li><li>Karniadakis et al. (2021), <em>Physics-informed machine learning</em>, <strong>Nat. Rev. Phys.</strong> — the comprehensive survey</li></ul>
+<p><strong>Training and failure modes</strong>:</p>
+<ul class="beats"><li>Wang, Teng & Perdikaris (2021), <em>Understanding and mitigating gradient pathologies in PINNs</em></li><li>Krishnapriyan et al. (2021), <em>Characterizing possible failure modes in PINNs</em></li></ul>
+<p><strong>Architecture and activations</strong>:</p>
+<ul class="beats"><li>Sitzmann et al. (2020), <em>SIREN: Sine networks for implicit representation</em></li><li>Mesnard et al. (2022), <em>Fourier features help PINNs learn PDEs with shocks</em></li></ul>
+<p><strong>Variants and extensions</strong>:</p>
+<ul class="beats"><li>Jagtap et al. — XPINNs / cPINNs (domain decomposition)</li><li>Lu et al. (2021), <em>DeepONet: Learning nonlinear operators</em></li><li>Fourier Neural Operator papers (Li et al., 2021)</li><li>Yu et al. (2022), <em>Gradient-enhanced PINNs</em>, <strong>CMAME</strong> — gPINNs</li><li>Yu et al. (2020), <em>Residual-based adaptive refinement</em>, <strong>CMAME</strong> — RAR</li><li>Kharazmi et al. (2021), <em>Neural Laplace</em> — frequency-domain PINNs</li><li>Wang, Wang & Perdikaris (2021), <em>Multi-fidelity PINNs</em>, <strong>J. Comput. Phys.</strong></li><li>Mao, Ji & Karniadakis (2020), <em>Fractional PINNs</em> — non-local derivatives</li><li>Raissi (2020), <em>Hidden physics models</em> — symmetry-preserving PINNs</li><li>2024-2025 — Physics-guided diffusion models (frontier direction)</li></ul>
+<p><strong>Practical implementation</strong>:</p>
+<ul class="beats"><li>Raissi's PINN tutorial and code: [github.com/maziarraissi/PINNs](https://github.com/maziarraissi/PINNs)</li><li>PINN documentation and benchmarks: [pinn.ai](https://pinn.ai)</li><li>KAN library: [github.com/KindXiaoming/pykan](https://github.com/KindXiaoming/pykan)</li></ul>
+</div>
+<div data-notes="Thank the audience.">Notes</div>
+</section>
+<section class="slide" data-sec="Summary">
+<div class="eyebrow"><span class="sec">39</span> Summary <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Summary</h2>
+<ul class="beats"><li>PINNs encode a PDE as a <strong>loss</strong> via the residual <span class="eqwrap">\(r_\theta = \mathcal{N}[u_\theta]\)</span>.</li><li><strong>Autodiff</strong> supplies exact derivatives — mesh-free by construction.</li><li>A <strong>composite loss</strong> blends physics, BC/IC, and optional data.</li><li><strong>Inverse problems</strong> are solved with the same code as forward problems.</li><li>Training requires care: <strong>loss balancing</strong>, <strong>spectral bias</strong> mitigation, and <strong>causality-aware</strong> sampling for time-dependent problems.</li><li>PINNs sit between <strong>classical numerics</strong> and <strong>operator learning</strong> — physics-faithful and flexible.</li></ul>
+<p><strong>Questions?</strong></p>
+</div>
+</section>
+    <div class="navzone l" id="nav-prev" aria-label="Previous slide"></div>
+    <div class="navzone r" id="nav-next" aria-label="Next slide"></div>
+    <div class="foot"><span>Slide Framework</span><span class="dots" data-dots></span><span data-num></span></div>
+  </main>
+</div>
+
+<div class="brand">Physics-Informed Neural Networks</div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">00</span></div>
+<button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" class="sun-icon"/><line x1="12" y1="1" x2="12" y2="3" class="sun-icon"/><line x1="12" y1="21" x2="12" y2="23" class="sun-icon"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="sun-icon"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="sun-icon"/><line x1="1" y1="12" x2="3" y2="12" class="sun-icon"/><line x1="21" y1="12" x2="23" y2="12" class="sun-icon"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="sun-icon"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="sun-icon"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-icon"/></svg>
+</button>
+<div class="hint" id="hint"><kbd>←</kbd><kbd>→</kbd> to move · <kbd>F</kbd> full screen · <kbd>Ctrl+K</kbd> search · <kbd>S</kbd> notes</div>
+
+<div class="search-overlay" id="search-overlay"></div>
+
+<div class="notes-overlay" id="notes-overlay">
+	<div class="notes-card">
+		<div class="notes-header">
+			<span class="title">Speaker Notes</span>
+			<button class="close-btn">Close (S)</button>
+		</div>
+		<div class="notes-body"></div>
+		<div class="notes-current"></div>
+	</div>
+</div>
+
+<script defer src="./deck.js"></script>
+</body>
+</html>
