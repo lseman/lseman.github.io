@@ -26,21 +26,32 @@ document.documentElement.classList.add("js");
 	const btn = document.getElementById("menu-toggle");
 	const nav = document.getElementById("mobile-nav");
 	if (!btn || !nav) return;
+	const closeMenu = () => {
+		btn.setAttribute("aria-expanded", "false");
+		btn.setAttribute("aria-label", "Open navigation menu");
+		btn.classList.remove("is-open");
+		nav.classList.remove("is-open");
+	};
 
 	btn.addEventListener("click", () => {
 		const isOpen = btn.getAttribute("aria-expanded") === "true";
 		btn.setAttribute("aria-expanded", String(!isOpen));
+		btn.setAttribute("aria-label", isOpen ? "Open navigation menu" : "Close navigation menu");
 		btn.classList.toggle("is-open", !isOpen);
 		nav.classList.toggle("is-open", !isOpen);
 	});
 
 	// Close when a link is tapped
 	nav.querySelectorAll("a").forEach((a) => {
-		a.addEventListener("click", () => {
-			btn.setAttribute("aria-expanded", "false");
-			btn.classList.remove("is-open");
-			nav.classList.remove("is-open");
-		});
+		a.addEventListener("click", closeMenu);
+	});
+
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape") closeMenu();
+	});
+
+	window.addEventListener("resize", () => {
+		if (window.innerWidth > 768) closeMenu();
 	});
 })();
 
