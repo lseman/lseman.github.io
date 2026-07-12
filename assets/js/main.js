@@ -96,8 +96,9 @@ document.documentElement.classList.add("js");
    Footer year
    -------------------------------------------------------------------------- */
 (function setYear() {
-	const el = document.getElementById("year");
-	if (el) el.textContent = new Date().getFullYear();
+	document.querySelectorAll(".current-year").forEach((el) => {
+		el.textContent = new Date().getFullYear();
+	});
 })();
 
 /* --------------------------------------------------------------------------
@@ -146,6 +147,44 @@ function safeExternalUrl(value) {
 function safeInteger(value) {
 	const number = Number(value);
 	return Number.isFinite(number) ? Math.max(0, Math.round(number)) : null;
+}
+
+/* --------------------------------------------------------------------------
+   Generate a pseudo git hash from a paper's title (deterministic)
+   -------------------------------------------------------------------------- */
+function generatePubHash(p) {
+	if (!p || !p.title) return "0000000";
+	let hash = 0;
+	const s = p.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+	for (let i = 0; i < s.length; i++) {
+		hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+	}
+	return (hash & 0x7fffffff).toString(16).padStart(7, "0");
+}
+
+/* --------------------------------------------------------------------------
+   Format date like git log: "Mar 15, 2026" or just the year
+   -------------------------------------------------------------------------- */
+function formatDate(year, month) {
+	if (!year) return "";
+	const months = [
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec",
+	];
+	if (month && month >= 1 && month <= 12) {
+		return `${months[month - 1]} ${month}, ${year}`;
+	}
+	return String(year);
 }
 
 /* — DOM refs — */
@@ -300,88 +339,64 @@ function renderPublications(items) {
 			const area = classifyPaper(p);
 			li.className = "pub-card reveal";
 			li.dataset.area = area;
-			const rawAuthors = Array.isArray(p.authors)
-				? p.authors.map((author) => String(author)).join(", ")
-				: p.authors || "";
-			const authors = escapeHtml(rawAuthors);
-			const abstract = escapeHtml(p.abstract || p.tldr || "");
 			const title = escapeHtml(p.title || "Untitled");
 			const venue = escapeHtml(p.venue || "");
 			const year = safeInteger(p.year);
+			const abstract = escapeHtml(p.abstract || p.tldr || "").slice(0, 160);
 			const url = safeExternalUrl(p.url);
 			const citationCount = safeInteger(p.citationCount);
 			const tagLabel = area === "or" ? "OR" : area === "ml" ? "ML" : "TS";
-			const titleMarkup = url
-				? `<a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>`
+
+			// Generate a pseudo git hash from the title
+			const hash = generatePubHash(p);
+
+			// Format date like git log: "Mar 15, 2026"
+			const dateStr = year ? formatDate(year, p.month) : "";
+
+			// Build tags
+			const tags = [tagLabel];
+			if (p.keywords && Array.isArray(p.keywords)) {
+				const kw = p.keywords.slice(0, 3).map(escapeHtml).join(" tag: ");
+				if (kw) tags.push("tag: " + kw);
+			}
+
+			// HEAD marker on most recent
+			const headMark = idx === 0 ? " (HEAD → latest)" : "";
+
+			// Split title into main + subtitle if it has " - "
+			let mainTitle = title;
+			let subtitle = "";
+			const dashIdx = title.indexOf(" - ");
+			if (dashIdx > 0) {
+				mainTitle = title.slice(0, dashIdx);
+				subtitle = title.slice(dashIdx + 3);
+			}
+
+			// Build the title line with link
+			const titleLine = url
+				? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="pub-link">${mainTitle}</a>${subtitle ? " - " + subtitle : ""}`
 				: title;
+
 			li.innerHTML = `
-        <div class="pub-card-left">
-          <span class="pub-index mono">${String(idx + 1).padStart(2, "0")}</span>
-          <div class="pub-card-line"></div>
-        </div>
-        <div class="pub-card-body">
-          <div class="pub-card-meta">
-            <span class="pub-tag pub-tag-${area}">${tagLabel}</span>
-            ${year ? `<span class="pub-year mono">${year}</span>` : ""}
+        <div class="pub-gitlog">
+          <div class="pub-gitlog-line">
+            <span class="pub-hash mono">${hash}</span>${headMark ? `<span class="pub-head mono">${headMark}</span>` : ""}
+            <span class="pub-title-main">${titleLine}</span>
+          </div>
+          <div class="pub-gitlog-meta">
+            ${dateStr ? `<span class="pub-date mono">${dateStr}</span>` : ""}
+            ${tags.map((t) => `<span class="pub-tag-git">tag: ${t}</span>`).join(" ")}
+          </div>
+          ${abstract ? `<div class="pub-gitlog-desc">${abstract}${abstract.length >= 160 ? "…" : ""}</div>` : ""}
+          <div class="pub-gitlog-footer">
             ${venue ? `<span class="pub-venue">${venue}</span>` : ""}
+            ${citationCount ? `<span class="pub-cite-badge">${citationCount} citations</span>` : ""}
+            ${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="pub-link-btn">↗</a>` : ""}
           </div>
-          <h3 class="pub-title">
-            ${titleMarkup}
-          </h3>
-          ${authors ? `<p class="pub-authors">${authors}</p>` : ""}
-          <div class="pub-card-footer">
-            ${
-							abstract
-								? `
-              <button type="button" class="pub-abstract-btn" data-toggle="abstract">
-                <svg class="pub-abstract-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Abstract
-                <svg class="pub-abstract-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-              </button>`
-								: ""
-						}
-            ${
-							citationCount
-								? `
-              <span class="pub-cite-badge">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h4l4 4"/>
-                </svg>
-                ${citationCount}
-              </span>`
-								: ""
-						}
-            ${
-							url
-								? `
-              <a href="${url}" target="_blank" rel="noopener noreferrer" class="pub-link-btn">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                </svg>
-                Read
-              </a>`
-								: ""
-						}
-          </div>
-          ${abstract ? `<div data-full class="pub-abstract-body hidden">${abstract}</div>` : ""}
         </div>
       `;
 			LIST.appendChild(li);
 			setTimeout(() => li.classList.add("show"), idx * 60);
-		});
-
-		LIST.addEventListener("click", (e) => {
-			const btn = e.target.closest('[data-toggle="abstract"]');
-			if (!btn) return;
-			const card = btn.closest(".pub-card-body");
-			const fullEl = card.querySelector("[data-full]");
-			const arrow = btn.querySelector(".pub-abstract-arrow");
-			fullEl.classList.toggle("hidden");
-			arrow.classList.toggle("rotate-180");
 		});
 	}
 
@@ -426,35 +441,29 @@ function renderRepos(repos) {
 
 	for (const r of top) {
 		const repoUrl = safeExternalUrl(r.html_url);
-		const repoName = escapeHtml(r.name || "Repository");
-		const repoDescription = escapeHtml(
+		const jsonText = (value) =>
+			escapeHtml(JSON.stringify(String(value)).slice(1, -1));
+		const repoName = jsonText(r.name || "Repository");
+		const repoDescription = jsonText(
 			r.description || "No description available",
 		);
-		const repoLanguage = escapeHtml(r.language || "");
+		const repoLanguage = r.language ? jsonText(r.language) : "";
 		const stars = safeInteger(r.stargazers_count) || 0;
-		const repoTitle = repoUrl
-			? `<a class="text-slate-700 hover:text-brand transition-colors" href="${repoUrl}" target="_blank" rel="noopener noreferrer">${repoName}</a>`
-			: repoName;
-		const card = document.createElement("article");
-		card.className = "card p-6 group";
+		const card = document.createElement(repoUrl ? "a" : "article");
+		card.className = "jcard";
+		if (repoUrl) {
+			card.href = repoUrl;
+			card.target = "_blank";
+			card.rel = "noopener noreferrer";
+		}
 		card.innerHTML = `
-      <div class="relative z-10">
-        <div class="flex items-start justify-between gap-3 mb-3">
-          <h3 class="text-lg font-semibold">
-            ${repoTitle}
-          </h3>
-          <div class="text-xs flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-1 rounded-full shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3 w-3">
-              <path d="M12 .587l3.668 7.431L24 9.753l-6 5.847 1.416 8.263L12 19.771l-7.416 4.092L6 15.6 0 9.753l8.332-1.735z"/>
-            </svg>
-            ${stars}
-          </div>
-        </div>
-        <p class="text-sm text-slate-600 leading-relaxed mb-4">${repoDescription}</p>
-        <div class="flex items-center gap-4 text-xs text-slate-500">
-          ${repoLanguage ? `<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full inline-block bg-neutral-400"></span>${repoLanguage}</span>` : ""}
-        </div>
-      </div>
+			<div class="jcard-inner">
+				<p><span class="jbrace">{</span></p>
+				<p class="jcard-field"><span class="j-key">"name"</span><span class="j-punc"> : </span><span class="jcard-name">"${repoName}"</span><span class="j-punc"> ,</span></p>
+				<p class="jcard-field"><span class="j-key">"what"</span><span class="j-punc"> : </span><span class="j-str">"${repoDescription}"</span><span class="j-punc"> ,</span></p>
+				<p class="jcard-field"><span class="j-key">"language"</span><span class="j-punc"> : </span>${repoLanguage ? `<span class="j-val">"${repoLanguage}"</span>` : `<span class="repo-json-null">null</span>`}<span class="j-punc"> , </span><span class="j-key">"stars"</span><span class="j-punc"> : </span><span class="repo-json-number">${stars}</span></p>
+				<p><span class="jbrace">}</span> ${repoUrl ? `<span class="jcard-arrow">↗</span>` : ""}</p>
+			</div>
     `;
 		GH_LIST.appendChild(card);
 	}
@@ -683,7 +692,8 @@ function renderTopTerms(list, data) {
 
 function renderWordCloud(pairs) {
 	const canvas = document.getElementById("wordcloud");
-	if (!canvas || !window.WordCloud) return;
+	if (!canvas) return false;
+	if (typeof window.WordCloud !== "function") return false;
 	const rect = canvas.getBoundingClientRect();
 	const ratio = window.devicePixelRatio || 1;
 	canvas.width = rect.width * ratio;
@@ -705,6 +715,7 @@ function renderWordCloud(pairs) {
 		origin: [rect.width / 2, rect.height / 2],
 		color: () => palette[Math.floor(Math.random() * palette.length)],
 	});
+	return true;
 }
 
 function buildAndRenderCloudFrom(items) {
@@ -715,8 +726,10 @@ function buildAndRenderCloudFrom(items) {
 			window.__updateHeroTetrisTerms(pairs.map(([term]) => term));
 		}
 		renderTopTerms(TOP_TERMS_OL, pairs);
-		renderWordCloud(pairs);
-		if (CLOUD_STATUS) CLOUD_STATUS.textContent = "Loaded";
+		const rendered = renderWordCloud(pairs);
+		if (CLOUD_STATUS) {
+			CLOUD_STATUS.textContent = rendered ? "Loaded" : "Unavailable";
+		}
 	} catch {
 		if (CLOUD_STATUS) CLOUD_STATUS.textContent = "Unavailable";
 	}
@@ -801,184 +814,17 @@ function buildAndRenderCloudFrom(items) {
 })();
 
 /* --------------------------------------------------------------------------
-   Space-flight background canvas
+   Hero role typewriter (terminal prompt) — cycles descriptions
    -------------------------------------------------------------------------- */
-(function initNeuralCanvas() {
-	const canvas = document.getElementById("neural-canvas");
-	if (!canvas) return;
-
-	const ctx = canvas.getContext("2d");
-	let W, H, stars, orbiters, raf;
-
-	const COLORS = ["#c4b5fd", "#2dd4bf", "#fbbf24", "#67e8f9"];
-
-	function resize() {
-		const section = canvas.closest("section") || canvas.parentElement;
-		const ratio = Math.min(window.devicePixelRatio || 1, 2);
-		W = section.offsetWidth;
-		H = section.offsetHeight;
-		canvas.width = Math.round(W * ratio);
-		canvas.height = Math.round(H * ratio);
-		canvas.style.width = `${W}px`;
-		canvas.style.height = `${H}px`;
-		ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-		createField();
-	}
-
-	function createField() {
-		const starCount = Math.round(Math.min(120, Math.max(64, W / 13)));
-		stars = Array.from({ length: starCount }, () => ({
-			x: Math.random() * W,
-			y: Math.random() * H,
-			size: 0.8 + Math.random() * 1.8,
-			phase: Math.random() * Math.PI * 2,
-			speed: 0.006 + Math.random() * 0.012,
-			color:
-				Math.random() > 0.72
-					? COLORS[Math.floor(Math.random() * COLORS.length)]
-					: "#ffffff",
-		}));
-
-		orbiters = Array.from({ length: W < 700 ? 3 : 6 }, (_, index) => ({
-			cx: W * (0.58 + Math.random() * 0.36),
-			cy: H * (0.2 + Math.random() * 0.58),
-			rx: W * (0.1 + Math.random() * 0.18),
-			ry: H * (0.035 + Math.random() * 0.095),
-			tilt: -0.45 + Math.random() * 0.9,
-			angle: Math.random() * Math.PI * 2,
-			speed: (0.0012 + Math.random() * 0.0014) * (index % 2 ? 1 : -1),
-			size: 6 + Math.random() * 4,
-			color: COLORS[index % COLORS.length],
-		}));
-	}
-
-	function drawStar(star) {
-		star.phase += star.speed;
-		const alpha = 0.28 + Math.max(0, Math.sin(star.phase)) * 0.5;
-		const size = star.size;
-		ctx.globalAlpha = alpha;
-		ctx.strokeStyle = star.color;
-		ctx.lineWidth = 0.8;
-		ctx.beginPath();
-		ctx.moveTo(star.x - size, star.y);
-		ctx.lineTo(star.x + size, star.y);
-		ctx.moveTo(star.x, star.y - size);
-		ctx.lineTo(star.x, star.y + size);
-		ctx.stroke();
-		ctx.globalAlpha = 1;
-	}
-
-	function drawOrbiter(orbiter) {
-		orbiter.angle += orbiter.speed;
-
-		ctx.save();
-		ctx.translate(orbiter.cx, orbiter.cy);
-		ctx.rotate(orbiter.tilt);
-		ctx.strokeStyle = "rgba(196,181,253,0.16)";
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		ctx.ellipse(0, 0, orbiter.rx, orbiter.ry, 0, 0, Math.PI * 2);
-		ctx.stroke();
-
-		const x = Math.cos(orbiter.angle) * orbiter.rx;
-		const y = Math.sin(orbiter.angle) * orbiter.ry;
-		const tangent = Math.atan2(
-			Math.cos(orbiter.angle) * orbiter.ry,
-			-Math.sin(orbiter.angle) * orbiter.rx,
-		);
-
-		ctx.translate(x, y);
-		ctx.rotate(tangent);
-		ctx.strokeStyle = "rgba(255,255,255,0.64)";
-		ctx.fillStyle = "rgba(235,234,242,0.86)";
-		ctx.lineWidth = 1;
-		ctx.fillRect(
-			-orbiter.size * 0.34,
-			-orbiter.size * 0.34,
-			orbiter.size * 0.68,
-			orbiter.size * 0.68,
-		);
-		ctx.strokeRect(
-			-orbiter.size * 0.34,
-			-orbiter.size * 0.34,
-			orbiter.size * 0.68,
-			orbiter.size * 0.68,
-		);
-
-		ctx.fillStyle = orbiter.color;
-		ctx.globalAlpha = 0.5;
-		ctx.fillRect(
-			-orbiter.size * 1.7,
-			-orbiter.size * 0.18,
-			orbiter.size * 1.05,
-			orbiter.size * 0.36,
-		);
-		ctx.fillRect(
-			orbiter.size * 0.65,
-			-orbiter.size * 0.18,
-			orbiter.size * 1.05,
-			orbiter.size * 0.36,
-		);
-		ctx.globalAlpha = 1;
-
-		ctx.strokeStyle = "rgba(255,255,255,0.28)";
-		ctx.beginPath();
-		ctx.moveTo(-orbiter.size * 0.65, 0);
-		ctx.lineTo(-orbiter.size * 1.7, 0);
-		ctx.moveTo(orbiter.size * 0.65, 0);
-		ctx.lineTo(orbiter.size * 1.7, 0);
-		ctx.stroke();
-		ctx.restore();
-	}
-
-	function draw() {
-		ctx.clearRect(0, 0, W, H);
-		stars.forEach(drawStar);
-		orbiters.forEach(drawOrbiter);
-	}
-
-	function loop() {
-		draw();
-		raf = requestAnimationFrame(loop);
-	}
-
-	function start() {
-		resize();
-		loop();
-	}
-
-	const obs = new IntersectionObserver((entries) => {
-		if (entries[0].isIntersecting && !raf) start();
-		else if (!entries[0].isIntersecting && raf) {
-			cancelAnimationFrame(raf);
-			raf = null;
-		}
-	});
-	obs.observe(canvas.closest("section") || canvas.parentElement);
-
-	window.addEventListener(
-		"resize",
-		() => {
-			resize();
-			if (!raf) start();
-		},
-		{ passive: true },
-	);
-})();
-
-/* --------------------------------------------------------------------------
-   Hero typewriter rotation
-   -------------------------------------------------------------------------- */
-(function initHeroTypewriter() {
-	const el = document.getElementById("hero-typewriter");
+(function initHeroRoleTypewriter() {
+	const el = document.getElementById("hero-role-typed");
 	if (!el) return;
 
 	const phrases = [
-		"better decisions",
-		"optimal forecasts",
-		"structured learning",
-		"smarter algorithms",
-		"rigorous ML systems",
+		"Researcher and lecturer working across Operations Research, Machine Learning, and time-series forecasting.",
+		"I build optimization algorithms, forecasting models, and research software.",
+		"Branch-and-price, decomposition, and learning-aware decision methods.",
+		"Interactive explainers for complex ideas in OR and ML.",
 	];
 
 	let phraseIdx = 0,
@@ -992,25 +838,24 @@ function buildAndRenderCloudFrom(items) {
 			el.textContent = current.slice(0, charIdx);
 			if (charIdx === current.length) {
 				deleting = true;
-				setTimeout(tick, 2200);
+				setTimeout(tick, 2500);
 				return;
 			}
-			setTimeout(tick, 68);
+			setTimeout(tick, 40);
 		} else {
 			charIdx--;
 			el.textContent = current.slice(0, charIdx);
 			if (charIdx === 0) {
 				deleting = false;
 				phraseIdx = (phraseIdx + 1) % phrases.length;
-				setTimeout(tick, 380);
+				setTimeout(tick, 500);
 				return;
 			}
-			setTimeout(tick, 38);
+			setTimeout(tick, 20);
 		}
 	}
 
-	// start after a short delay so the page has settled
-	setTimeout(tick, 1400);
+	setTimeout(tick, 2000);
 })();
 
 /* --------------------------------------------------------------------------
@@ -1038,23 +883,21 @@ function buildAndRenderCloudFrom(items) {
 })();
 
 /* --------------------------------------------------------------------------
-   Active nav highlight on scroll
+   Active nav highlight on scroll (IDE tab style)
    -------------------------------------------------------------------------- */
 (function initActiveNav() {
 	const header = document.getElementById("site-header");
-	const links = Array.from(
-		document.querySelectorAll('header nav a[href^="#"]'),
-	);
-	const secs = links
+	const tabs = Array.from(document.querySelectorAll('.ide-tab[href^="#"]'));
+	const secs = tabs
 		.map((a) => document.getElementById(a.getAttribute("href").slice(1)))
 		.filter(Boolean);
 
-	if (!header || !links.length || !secs.length) return;
+	if (!header || !tabs.length || !secs.length) return;
 
 	const setActive = (id) => {
-		const current = document.querySelector('header nav a[aria-current="page"]');
+		const current = document.querySelector('.ide-tab[aria-current="page"]');
 		const newActive = document.querySelector(
-			`header nav a[href="#${CSS.escape(id)}"]`,
+			`.ide-tab[href="#${CSS.escape(id)}"]`,
 		);
 		if (current === newActive) return;
 		if (current) current.removeAttribute("aria-current");
@@ -1062,7 +905,7 @@ function buildAndRenderCloudFrom(items) {
 	};
 
 	const pickMostVisible = () => {
-		const topPad = header.offsetHeight + 16;
+		const topPad = header.offsetHeight + 80; // extra offset for IDE chrome
 		let bestSection = null,
 			bestScore = -Infinity;
 		for (const section of secs) {
@@ -1094,4 +937,30 @@ function buildAndRenderCloudFrom(items) {
 	);
 
 	pickMostVisible();
+})();
+
+/* --------------------------------------------------------------------------
+   Terminal / Tetris click-to-bring-front
+   -------------------------------------------------------------------------- */
+(function initTerminalFocus() {
+	const windows = [...document.querySelectorAll("#top .terminal-window, #top .tetris-window")];
+	if (!windows.length) return;
+
+	const bringToFront = (activeWindow) => {
+		windows.forEach((windowEl) => {
+			const isActive = windowEl === activeWindow;
+			windowEl.classList.toggle("terminal-focused", isActive);
+			windowEl.closest(".hero-shell, .hero-tetris")?.classList.toggle("hero-window-front", isActive);
+		});
+	};
+
+	windows.forEach((windowEl) => {
+		windowEl.addEventListener("pointerdown", () => bringToFront(windowEl));
+		windowEl.addEventListener("focusin", () => bringToFront(windowEl));
+		windowEl.addEventListener("keydown", (event) => {
+			if (event.target !== windowEl || (event.key !== "Enter" && event.key !== " ")) return;
+			event.preventDefault();
+			bringToFront(windowEl);
+		});
+	});
 })();
