@@ -1,0 +1,10 @@
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { extname, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+const root=resolve(fileURLToPath(new URL(".",import.meta.url)));
+const types={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json"};
+const port=Number(process.env.PORT)||8780;
+const server=createServer(async(req,res)=>{const pathname=decodeURIComponent(new URL(req.url,"http://localhost").pathname);const file=resolve(root,pathname==="/"?"index.html":`.${pathname}`);if(file!==root&&!file.startsWith(root+sep)){res.writeHead(403).end("Forbidden");return}try{const body=await readFile(file);res.writeHead(200,{"Content-Type":types[extname(file)]||"application/octet-stream","Cache-Control":"no-store"}).end(body)}catch{res.writeHead(404).end("Not found")}});
+server.on("error",error=>{if(error.code==="EADDRINUSE"){console.error(`Porta ${port} já está em uso. Execute com outra porta: PORT=8781 npm start`);process.exitCode=1;return}throw error});
+server.listen(port,()=>console.log(`CommsLab: http://localhost:${port}`));
