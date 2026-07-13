@@ -1,4 +1,32 @@
 // ============================================================================
+// TOOLTIP CONTROLLER
+// ============================================================================
+const tooltipEl = document.getElementById('tooltip');
+let tooltipTimeout = null;
+
+function showTooltip(e, title, concept, formula) {
+	if (tooltipTimeout) clearTimeout(tooltipTimeout);
+	tooltipEl.innerHTML = `<h4>${title}</h4><p>${concept}</p><div class="concept">${formula}</div>`;
+	tooltipEl.classList.add('show');
+	tooltipEl.setAttribute('aria-hidden', 'false');
+	const rect = e.currentTarget.getBoundingClientRect();
+	const left = Math.min(rect.left, window.innerWidth - tooltipEl.offsetWidth - 12);
+	const below = rect.bottom + 8;
+	const top = below + tooltipEl.offsetHeight <= window.innerHeight - 12
+		? below
+		: Math.max(12, rect.top - tooltipEl.offsetHeight - 8);
+	tooltipEl.style.left = Math.max(12, left) + 'px';
+	tooltipEl.style.top = top + 'px';
+}
+
+function hideTooltip() {
+	tooltipTimeout = setTimeout(() => {
+		tooltipEl.classList.remove('show');
+		tooltipEl.setAttribute('aria-hidden', 'true');
+	}, 200);
+}
+
+// ============================================================================
 // UI CONTROLLER & RENDER LOOP
 // ============================================================================
 import { resize, S, canvas, ctx, W, H } from "../core/canvas.js";
@@ -31,6 +59,17 @@ const tabNames = [
 	"Faraday",
 	"Maxwell",
 	"Ondas EM",
+];
+
+const formulaTooltips = [
+	{title:"Operadores Vetoriais",concept:"Gradiente (∇f) mostra a direção de maior crescimento. Divergente (∇·F) mede o fluxo líquido, e rotacional (∇×F) mede a rotação do campo.",formula:"∇f = (∂f/∂x, ∂f/∂y) | ∇·F = ∂Fₓ/∂x + ∂Fᵧ/∂y | (∇×F)z = ∂Fᵧ/∂x − ∂Fₓ/∂y"},
+	{title:"Lei de Coulomb e Lei de Gauss",concept:"A força entre cargas é proporcional ao produto das cargas e inversamente proporcional ao quadrado da distância. O fluxo elétrico por uma superfície fechada depende da carga interna.",formula:"F = k·q₁q₂/r² · r̂ | ∮E·dA = Q/ε₀"},
+	{title:"Potencial Elétrico e Energia",concept:"Potencial é a energia potencial por unidade de carga. Linhas equipotenciais são perpendiculares às linhas de campo.",formula:"V = k·q/r | U = ½ε₀∫E²dV"},
+	{title:"Capacitância e Dielétricos",concept:"Capacitância é a razão Q/V. Um dielétrico aumenta a capacitância pelo fator κ, enquanto o capacitor armazena energia elétrica.",formula:"C = κε₀A/d | U = ½CV² | E = V/d"},
+	{title:"Biot–Savart e Lei de Ampère",concept:"Correntes geram campo magnético. A lei de Ampère relaciona a circulação de B à corrente envolvida pelo percurso.",formula:"B = (μ₀/4π)∫I dℓ×r̂/r² | ∮B·dℓ = μ₀Ienc"},
+	{title:"Lei de Faraday–Neumann",concept:"Uma variação do fluxo magnético induz força eletromotriz. O sinal negativo expressa a oposição à mudança descrita pela lei de Lenz.",formula:"ε = −N·dΦ/dt | Φ = ∫B·dA"},
+	{title:"Equações de Maxwell",concept:"As quatro equações relacionam cargas, correntes e campos elétricos e magnéticos, incluindo a indução causada por campos variáveis.",formula:"∇·D=ρ | ∇·B=0 | ∇×E=−∂B/∂t | ∇×H=J+∂D/∂t"},
+	{title:"Ondas Eletromagnéticas",concept:"Os campos E e B são perpendiculares entre si e à propagação. O vetor de Poynting representa a direção e a intensidade do fluxo de energia.",formula:"E(z,t)=E₀cos(kz−ωt+φ) | B=E/c | S=E×H"},
 ];
 
 let activeSim = sims[0],
@@ -107,9 +146,24 @@ function buildSidebar() {
 	const sb = document.getElementById("sidebar");
 	sb.innerHTML = "";
 	const panel = document.createElement("div");
-	panel.className = "panel";
+	panel.className = "panel tooltip-container";
 	activeSim.buildControls(panel);
 	sb.appendChild(panel);
+	// Attach tooltip events to formula elements
+	const tooltip = formulaTooltips[simIdx];
+	panel.querySelectorAll('.formula').forEach(el => {
+		if (tooltip) {
+			el.addEventListener('mouseenter', (e) => {
+				showTooltip(e, tooltip.title, tooltip.concept, tooltip.formula);
+			});
+			el.addEventListener('mouseleave', hideTooltip);
+			el.addEventListener('click', (e) => {
+				e.stopPropagation();
+				if (tooltipEl.classList.contains('show')) hideTooltip();
+				else showTooltip(e, tooltip.title, tooltip.concept, tooltip.formula);
+			});
+		}
+	});
 }
 
 buildSidebar();

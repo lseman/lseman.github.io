@@ -757,10 +757,14 @@ function renderChannelLabels() {
   })
 }
 function loop() {
-  if (playing)
-    simulate();
-  draw();
-  renderChannelLabels();
+  // The 3D workspace owns its render/physics loop. Avoid advancing a hidden
+  // TLM grid while it is active.
+  if (engine !== 'emc3d') {
+    if (playing)
+      simulate();
+    draw();
+    renderChannelLabels();
+  }
   frame = requestAnimationFrame(loop)
 }
 $('#play').onclick = () => {
@@ -784,15 +788,33 @@ $('#engine').onchange = e => {
   resetFields()
 };
 $('#search').oninput = e => renderLibrary(e.target.value);
+const exampleGroups = [
+  {name : 'Simulações 2D', dimension : '2d', items : examples},
+  {name : 'Ambientes 3D', dimension : '3d', items : {
+    room : {name : 'Sala com abertura', desc : 'Blindagem parcial e difração'},
+    free : {name : 'Espaço livre', desc : 'Propagação e sondas em distâncias diferentes'},
+    shielding : {name : 'Parede blindada', desc : 'Parede PEC completa entre fonte e vítima'},
+    absorber : {name : 'Tratamento absorvedor', desc : 'Comparação de caminhos com material dissipativo'}
+  }}
+];
 $('#example').onclick = () => {
   const m = $('#examples');
   m.hidden = !m.hidden;
-  m.innerHTML = Object.entries(examples)
-                    .map(([ k, v ]) => `<button data-example="${k}">${
-                             v.name}<small>${v.desc}</small></button>`)
-                    .join('');
+  if (m.hidden)
+    return;
+  m.innerHTML = exampleGroups.map(group => `<section class="example-category"><h3>${group.name}<span>${Object.keys(group.items).length}</span></h3>${Object.entries(group.items).map(([key,item]) => `<button data-example="${key}" data-dimension="${group.dimension}">${item.name}<small>${item.desc}</small></button>`).join('')}</section>`).join('');
   m.querySelectorAll('button').forEach(b => b.onclick = () => {
-    loadExample(b.dataset.example);
+    if (b.dataset.dimension === '3d') {
+      $('#engine').value = 'emc3d';
+      $('#engine').dispatchEvent(new Event('change'));
+      window.dispatchEvent(new CustomEvent('emc3d:load', {detail : b.dataset.example}))
+    } else {
+      if ($('#engine').value === 'emc3d') {
+        $('#engine').value = 'fdtd';
+        $('#engine').dispatchEvent(new Event('change'))
+      }
+      loadExample(b.dataset.example)
+    }
     m.hidden = true
   })
 };

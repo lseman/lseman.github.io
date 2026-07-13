@@ -3,7 +3,6 @@
 // ============================================================================
 import { Sim } from "../core/sim-base.js";
 import { PI, sin, cos, sqrt, abs, min, max, floor, log } from "../core/math.js";
-import { magColor } from "../core/colors.js";
 import { W, H, S } from "../core/canvas.js";
 
 export class VecCalcSim extends Sim {
@@ -18,6 +17,8 @@ export class VecCalcSim extends Sim {
 		this.showContours = true;
 		this.showStreamlines = false;
 		this.showTheorem = false;
+		this.scalarCache = null;
+		this.scalarCacheKey = "";
 		this.hint = "Mova o cursor para inspecionar o campo";
 	}
 	fieldF(x, y) {
@@ -114,55 +115,41 @@ export class VecCalcSim extends Sim {
 			dens = this.gridDens,
 			arrowSz = this.arrowSz,scale=this.scale;
 		if (this.showScalar) {
-			const img = c.createImageData(floor(W / 2), floor(H / 2));
-			const d = img.data;
-			for (let by = 0; by < H; by += 2)
-				for (let bx = 0; bx < W; bx += 2) {
-					const wx = (bx - W / 2) / scale,
-						wy = (H / 2-by) / scale,
-						v = mode === "grad" ? this.scalarF(wx, wy)
-							: mode === "div" ? this.divF(wx, wy) : this.curlF(wx, wy),
-						t = 0.5 + 0.5 * Math.tanh(v / (mode === "grad" ? 30 : 3));
-					const col = magColor(t, 1, mode === "grad" ? "plasma" : "hot");
-					const rgb = col.match(/\d+/g).map(Number);
-					for (let dy = 0; dy < 2 && by + dy < H; dy++)
-						for (let dx = 0; dx < 2 && bx + dx < W; dx++) {
-							const i =
-								(floor((by + dy) / 2) * floor(W / 2) + floor((bx + dx) / 2)) *
-								4;
-							d[i] = rgb[0];
-							d[i + 1] = rgb[1];
-							d[i + 2] = rgb[2];
-							d[i + 3] = 120;
-						}
+			const sample=3,key=`${floor(W)}:${floor(H)}:${mode}:${this.fldType}:${scale}`;
+			if(!this.scalarCache||this.scalarCacheKey!==key){
+				const sw=Math.ceil(W/sample),sh=Math.ceil(H/sample),tmp=document.createElement("canvas");tmp.width=sw;tmp.height=sh;
+				const tc=tmp.getContext("2d"),img=tc.createImageData(sw,sh),d=img.data;
+				const plasma=[[13,8,135],[126,3,168],[203,70,121],[248,148,65],[240,249,33]],balance=[[30,64,175],[38,154,210],[225,232,240],[244,114,106],[180,24,72]],palette=mode==="grad"?plasma:balance;
+				for(let py=0;py<sh;py++)for(let px=0;px<sw;px++){
+					const wx=(px*sample-W/2)/scale,wy=(H/2-py*sample)/scale,v=mode==="grad"?this.scalarF(wx,wy):mode==="div"?this.divF(wx,wy):this.curlF(wx,wy),t=.5+.5*Math.tanh(v/(mode==="grad"?30:3)),p=t*(palette.length-1),pi=min(palette.length-2,floor(p)),u=p-pi,a=palette[pi],b=palette[pi+1],i=(py*sw+px)*4;
+					d[i]=a[0]+(b[0]-a[0])*u;d[i+1]=a[1]+(b[1]-a[1])*u;d[i+2]=a[2]+(b[2]-a[2])*u;d[i+3]=150;
 				}
-			const tmp = document.createElement("canvas");
-			tmp.width = floor(W / 2);
-			tmp.height = floor(H / 2);
-			const tc = tmp.getContext("2d");
-			tc.putImageData(img, 0, 0);
+				tc.putImageData(img,0,0);this.scalarCache=tmp;this.scalarCacheKey=key;
+			}
 			c.imageSmoothingEnabled = true;
-			c.drawImage(tmp, 0, 0, W, H);
+			c.drawImage(this.scalarCache, 0, 0, W, H);
+			const shade=c.createRadialGradient(W/2,H/2,0,W/2,H/2,max(W,H)*.7);shade.addColorStop(.45,"rgba(7,10,18,0)");shade.addColorStop(1,"rgba(7,10,18,.42)");c.fillStyle=shade;c.fillRect(0,0,W,H);
 		}
 		// Cartesian grid and mathematical axes (positive y points upward).
 		c.strokeStyle = "rgba(255,255,255,0.04)";
 		c.lineWidth = 1;
-		const step = 50;
-		for (let x = 0; x < W; x += step) {
+		const step = scale;
+		for (let x = W/2%step; x < W; x += step) {
 			c.beginPath();
 			c.moveTo(x, 0);
 			c.lineTo(x, H);
 			c.stroke();
 		}
-		for (let y = 0; y < H; y += step) {
+		for (let y = H/2%step; y < H; y += step) {
 			c.beginPath();
 			c.moveTo(0, y);
 			c.lineTo(W, y);
 			c.stroke();
 		}
 		c.strokeStyle="rgba(226,232,240,.2)";c.lineWidth=1.2;c.beginPath();c.moveTo(0,H/2);c.lineTo(W,H/2);c.moveTo(W/2,0);c.lineTo(W/2,H);c.stroke();
+		c.fillStyle="rgba(203,213,225,.42)";c.font="9px monospace";c.fillText("x",W-14,H/2-7);c.fillText("y",W/2+7,12);
 		// Scalar contours using marching-square edge intersections.
-		if(this.showContours){const gs=22,cols=Math.ceil(W/gs),rows=Math.ceil(H/gs),vals=[];let lo=Infinity,hi=-Infinity;for(let j=0;j<=rows;j++){vals[j]=[];for(let i=0;i<=cols;i++){const x=min(W,i*gs),y=min(H,j*gs),wx=(x-W/2)/scale,wy=(H/2-y)/scale,v=this.scalarF(wx,wy);vals[j][i]=v;lo=min(lo,v);hi=max(hi,v)}}const levels=Array.from({length:10},(_,i)=>lo+(i+1)*(hi-lo)/11),cross=(x1,y1,v1,x2,y2,v2,L)=>{const u=(L-v1)/(v2-v1||1e-12);return{x:x1+(x2-x1)*u,y:y1+(y2-y1)*u}};c.strokeStyle="rgba(226,232,240,.22)";c.lineWidth=.8;for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const x=i*gs,y=j*gs,x2=min(W,x+gs),y2=min(H,y+gs),v=[vals[j][i],vals[j][i+1],vals[j+1][i+1],vals[j+1][i]];for(const L of levels){const pts=[];if((v[0]-L)*(v[1]-L)<0)pts.push(cross(x,y,v[0],x2,y,v[1],L));if((v[1]-L)*(v[2]-L)<0)pts.push(cross(x2,y,v[1],x2,y2,v[2],L));if((v[2]-L)*(v[3]-L)<0)pts.push(cross(x2,y2,v[2],x,y2,v[3],L));if((v[3]-L)*(v[0]-L)<0)pts.push(cross(x,y2,v[3],x,y,v[0],L));for(let k=0;k+1<pts.length;k+=2){c.beginPath();c.moveTo(pts[k].x,pts[k].y);c.lineTo(pts[k+1].x,pts[k+1].y);c.stroke()}}}}
+		if(this.showContours){const gs=22,cols=Math.ceil(W/gs),rows=Math.ceil(H/gs),vals=[];let lo=Infinity,hi=-Infinity;for(let j=0;j<=rows;j++){vals[j]=[];for(let i=0;i<=cols;i++){const x=min(W,i*gs),y=min(H,j*gs),wx=(x-W/2)/scale,wy=(H/2-y)/scale,v=this.scalarF(wx,wy);vals[j][i]=v;lo=min(lo,v);hi=max(hi,v)}}const levels=Array.from({length:10},(_,i)=>lo+(i+1)*(hi-lo)/11),cross=(x1,y1,v1,x2,y2,v2,L)=>{const u=(L-v1)/(v2-v1||1e-12);return{x:x1+(x2-x1)*u,y:y1+(y2-y1)*u}};c.strokeStyle="rgba(226,232,240,.24)";c.lineWidth=.8;c.beginPath();for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const x=i*gs,y=j*gs,x2=min(W,x+gs),y2=min(H,y+gs),v=[vals[j][i],vals[j][i+1],vals[j+1][i+1],vals[j+1][i]];for(const L of levels){const pts=[];if((v[0]-L)*(v[1]-L)<0)pts.push(cross(x,y,v[0],x2,y,v[1],L));if((v[1]-L)*(v[2]-L)<0)pts.push(cross(x2,y,v[1],x2,y2,v[2],L));if((v[2]-L)*(v[3]-L)<0)pts.push(cross(x2,y2,v[2],x,y2,v[3],L));if((v[3]-L)*(v[0]-L)<0)pts.push(cross(x,y2,v[3],x,y,v[0],L));for(let k=0;k+1<pts.length;k+=2){c.moveTo(pts[k].x,pts[k].y);c.lineTo(pts[k+1].x,pts[k+1].y)}}}c.stroke()}
 		// Streamlines integrate the selected vector field in world coordinates.
 		if(this.showStreamlines){const starts=[];for(let i=1;i<9;i++){starts.push({x:-W/(2*scale)+.2,y:(i/9-.5)*H/scale},{x:(i/9-.5)*W/scale,y:-H/(2*scale)+.2})}c.strokeStyle="rgba(94,234,212,.42)";c.lineWidth=1.1;for(const start of starts){let p={...start};c.beginPath();for(let k=0;k<220;k++){const sx=W/2+p.x*scale,sy=H/2-p.y*scale;if(k===0)c.moveTo(sx,sy);else c.lineTo(sx,sy);const f=this.fieldF(p.x,p.y),m=sqrt(f.x*f.x+f.y*f.y);if(m<1e-8||sx<0||sx>W||sy<0||sy>H)break;p={x:p.x+f.x/m*.07,y:p.y+f.y/m*.07}}c.stroke()}}
 		// Vector arrows
@@ -229,7 +216,7 @@ export class VecCalcSim extends Sim {
 		const centerValue = mode === "div" ? this.divF(px, py) : mode === "curl" ? this.curlF(px, py) : this.scalarF(px, py);
 		c.fillText(`valor no centro: ${centerValue.toFixed(3)}`, 10, 38);
 		// Cursor probe reports all local differential quantities.
-		const mx=max(0,min(W,S.mouse.x)),my=max(0,min(H,S.mouse.y)),wx=(mx-W/2)/scale,wy=(H/2-my)/scale,F=this.fieldF(wx,wy),G=this.gradF(wx,wy);c.fillStyle="rgba(7,10,18,.82)";c.fillRect(12,H-82,292,66);c.strokeStyle="rgba(103,232,249,.18)";c.strokeRect(12,H-82,292,66);c.fillStyle="#cbd5e1";c.font="10px monospace";c.fillText(`sonda: (x,y)=(${wx.toFixed(2)}, ${wy.toFixed(2)})`,22,H-62);c.fillText(`f=${this.scalarF(wx,wy).toFixed(3)}  ∇f=(${G.x.toFixed(2)}, ${G.y.toFixed(2)})`,22,H-45);c.fillText(`F=(${F.x.toFixed(2)}, ${F.y.toFixed(2)})  div=${this.divF(wx,wy).toFixed(2)}  rot=${this.curlF(wx,wy).toFixed(2)}`,22,H-28);
+		const mx=max(0,min(W,S.mouse.x)),my=max(0,min(H,S.mouse.y)),wx=(mx-W/2)/scale,wy=(H/2-my)/scale,F=this.fieldF(wx,wy),G=this.gradF(wx,wy);c.strokeStyle="rgba(103,232,249,.55)";c.lineWidth=1;c.beginPath();c.arc(mx,my,5,0,2*PI);c.moveTo(mx-10,my);c.lineTo(mx-4,my);c.moveTo(mx+4,my);c.lineTo(mx+10,my);c.moveTo(mx,my-10);c.lineTo(mx,my-4);c.moveTo(mx,my+4);c.lineTo(mx,my+10);c.stroke();c.fillStyle="rgba(7,10,18,.88)";c.beginPath();c.roundRect(12,H-86,306,70,10);c.fill();c.strokeStyle="rgba(103,232,249,.22)";c.stroke();c.fillStyle="#67e8f9";c.font="600 10px monospace";c.fillText(`SONDA  x ${wx.toFixed(2)}  y ${wy.toFixed(2)}`,22,H-64);c.fillStyle="#cbd5e1";c.font="10px monospace";c.fillText(`f ${this.scalarF(wx,wy).toFixed(3)}   ∇f (${G.x.toFixed(2)}, ${G.y.toFixed(2)})`,22,H-46);c.fillText(`F (${F.x.toFixed(2)}, ${F.y.toFixed(2)})   div ${this.divF(wx,wy).toFixed(2)}   rot ${this.curlF(wx,wy).toFixed(2)}`,22,H-28);
 		if(this.showTheorem){const R=min(W,H)*.22/scale,n=160,dth=2*PI/n;let flux=0,circ=0;for(let i=0;i<n;i++){const a=(i+.5)*dth,x=R*cos(a),y=R*sin(a),f=this.fieldF(x,y);flux+=(f.x*cos(a)+f.y*sin(a))*R*dth;circ+=(-f.x*sin(a)+f.y*cos(a))*R*dth}const h=2*R/36;let idiv=0,icurl=0;for(let x=-R+h/2;x<R;x+=h)for(let y=-R+h/2;y<R;y+=h)if(x*x+y*y<=R*R){idiv+=this.divF(x,y)*h*h;icurl+=this.curlF(x,y)*h*h}c.beginPath();c.arc(W/2,H/2,R*scale,0,2*PI);c.setLineDash([7,5]);c.strokeStyle="rgba(52,211,153,.85)";c.lineWidth=2;c.stroke();c.setLineDash([]);const bw=310,bx=W-bw-14,by=54;c.fillStyle="rgba(7,10,18,.84)";c.fillRect(bx,by,bw,58);c.fillStyle="#6ee7b7";c.font="10px monospace";c.fillText(`Gauss: ∮F·n ds=${flux.toFixed(3)}  ∬div F dA=${idiv.toFixed(3)}`,bx+10,by+23);c.fillText(`Green: ∮F·dl=${circ.toFixed(3)}  ∬rot F dA=${icurl.toFixed(3)}`,bx+10,by+43)}
 	}
 }

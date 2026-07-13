@@ -97,15 +97,17 @@ export class FaradaySim extends Sim {
 		const emfPeak = max(1e-12, N * this.fieldB * area * omega);
 		// Uniform B field represented by a regular arrow lattice.
 		if (this.showFlux) {
-			c.strokeStyle = "rgba(129,140,248,0.28)"; c.lineWidth = 1;
+			const drift=this.playing?(this.time*18)%70:0;
+			c.strokeStyle = "rgba(129,140,248,0.3)"; c.lineWidth = 1;
 			for (let y = 38; y < H - 42; y += 48) for (let x = 24; x < W; x += 70) {
-				c.beginPath();c.moveTo(x,y);c.lineTo(x+26,y);c.lineTo(x+20,y-4);c.moveTo(x+26,y);c.lineTo(x+20,y+4);c.stroke();
+				const ax=(x+drift)%W;c.beginPath();c.moveTo(ax,y);c.lineTo(ax+26,y);c.lineTo(ax+20,y-4);c.moveTo(ax+26,y);c.lineTo(ax+20,y+4);c.stroke();
 			}
-			c.fillStyle = "rgba(165,180,252,.85)";c.font = "600 12px sans-serif";c.fillText(`B = ${this.fieldB.toFixed(1)} T`, 18, 25);
+			const bg=c.createLinearGradient(0,0,W,0);bg.addColorStop(0,"rgba(99,102,241,.07)");bg.addColorStop(.5,"rgba(56,189,248,.025)");bg.addColorStop(1,"rgba(99,102,241,.07)");c.fillStyle=bg;c.fillRect(0,0,W,H);
+			c.fillStyle = "rgba(165,180,252,.9)";c.font = "600 12px sans-serif";c.fillText(`CAMPO UNIFORME  B = ${this.fieldB.toFixed(1)} T  →`, 18, 25);
 		}
 		// Orthographic projection of a rectangular N-turn coil rotating about y.
 		const halfProjected=max(3,abs(projection)*coilW/2), direction=projection>=0?1:-1;
-		c.save();c.translate(bx,cy);
+		c.save();c.translate(bx,cy);c.shadowColor="rgba(251,191,36,.28)";c.shadowBlur=12;
 		c.fillStyle=`rgba(52,211,153,${.04+.16*abs(projection)})`;c.fillRect(-halfProjected,-coilH/2,halfProjected*2,coilH);
 		for(let turn=0;turn<N;turn++){
 			const inset=(turn-(N-1)/2)*min(2.2,12/max(1,N)),hw=max(2,halfProjected+inset);
@@ -114,14 +116,15 @@ export class FaradaySim extends Sim {
 		// Moving carriers indicate the Lenz-law current direction.
 		if(this.playing&&abs(emf/emfPeak)>.03){const phase=((this.time*1.8*direction*Math.sign(emf))%1+1)%1;for(let k=0;k<8;k++){const u=(phase+k/8)%1;let x,y;if(u<.25){x=-halfProjected+u*4*halfProjected*2;y=-coilH/2}else if(u<.5){x=halfProjected;y=-coilH/2+(u-.25)*4*coilH}else if(u<.75){x=halfProjected-(u-.5)*4*halfProjected*2;y=coilH/2}else{x=-halfProjected;y=coilH/2-(u-.75)*4*coilH}c.beginPath();c.arc(x,y,2.3,0,2*PI);c.fillStyle="#fef3c7";c.fill();}}
 		// Surface normal n rotates with the coil and makes Φ=B·A explicit.
-		const nx=cos(theta),ny=-sin(theta),nl=58;c.beginPath();c.moveTo(0,0);c.lineTo(nx*nl,ny*nl);c.lineTo(nx*nl-nx*7+ny*4,ny*nl-ny*7-nx*4);c.moveTo(nx*nl,ny*nl);c.lineTo(nx*nl-nx*7-ny*4,ny*nl-ny*7+nx*4);c.strokeStyle="#67e8f9";c.lineWidth=2;c.stroke();c.fillStyle="#a5f3fc";c.font="11px monospace";c.fillText("n̂",nx*nl+5,ny*nl-4);c.restore();
+		c.shadowBlur=0;const nx=cos(theta),ny=-sin(theta),nl=58;c.beginPath();c.moveTo(0,0);c.lineTo(nx*nl,ny*nl);c.lineTo(nx*nl-nx*7+ny*4,ny*nl-ny*7-nx*4);c.moveTo(nx*nl,ny*nl);c.lineTo(nx*nl-nx*7-ny*4,ny*nl-ny*7+nx*4);c.strokeStyle="#67e8f9";c.lineWidth=2;c.stroke();c.fillStyle="#a5f3fc";c.font="11px monospace";c.fillText("n̂",nx*nl+5,ny*nl-4);
+		const phase=((theta%(2*PI))+2*PI)%(2*PI),arcR=34;c.beginPath();c.arc(0,0,arcR,0,-phase,phase>PI);c.strokeStyle="rgba(103,232,249,.42)";c.lineWidth=1;c.stroke();c.fillStyle="rgba(165,243,252,.8)";c.fillText(`θ ${(phase*180/PI).toFixed(0)}°`,arcR+5,-8);c.restore();
 		// Center-zero EMF meter.
 		if (this.showEMF) {
-			const meterY=min(H-72,cy+coilH/2+30),meterW=120;c.fillStyle="rgba(15,23,42,.85)";c.fillRect(bx-meterW/2,meterY-9,meterW,18);c.fillStyle="rgba(148,163,184,.5)";c.fillRect(bx-1,meterY-12,2,24);c.fillStyle=emf>=0?"rgba(52,211,153,.9)":"rgba(251,113,133,.9)";const ew=(emf/emfPeak)*(meterW/2-3);c.fillRect(ew<0?bx+ew:bx,meterY-6,abs(ew),12);c.fillStyle="#cbd5e1";c.font="10px monospace";c.textAlign="center";c.fillText(`ε = ${emf.toExponential(2)} V`,bx,meterY+24);c.textAlign="start";
+			const meterY=min(H-72,cy+coilH/2+30),meterW=132;c.fillStyle="rgba(15,23,42,.88)";c.beginPath();c.roundRect(bx-meterW/2,meterY-11,meterW,22,7);c.fill();c.fillStyle="rgba(148,163,184,.5)";c.fillRect(bx-1,meterY-12,2,24);c.fillStyle=emf>=0?"rgba(52,211,153,.95)":"rgba(251,113,133,.95)";const ew=(emf/emfPeak)*(meterW/2-5);c.fillRect(ew<0?bx+ew:bx,meterY-6,abs(ew),12);c.fillStyle="#cbd5e1";c.font="10px monospace";c.textAlign="center";c.fillText(`ε = ${emf.toExponential(2)} V`,bx,meterY+27);c.fillStyle=abs(emf/emfPeak)<.03?"#94a3b8":"#fde68a";c.fillText(abs(emf/emfPeak)<.03?"corrente ≈ 0":`corrente induzida ${emf>0?"↻":"↺"}`,bx,meterY+42);c.textAlign="start";
 		}
 		// Scrolling normalized waveform: flux linkage and induced EMF are 90° apart.
-		if(this.playing){this._historyClock+=dt;if(this._historyClock>=1/30){this._historyClock=0;this.history.push({f:projection,e:emf/emfPeak});if(this.history.length>180)this.history.shift();}}
-		if(this.showEMF&&this.history.length>1){const gw=min(300,W*.38),gh=94,gx=W-gw-16,gy=16;c.fillStyle="rgba(7,10,18,.78)";c.fillRect(gx,gy,gw,gh);c.strokeStyle="rgba(148,163,184,.18)";c.strokeRect(gx,gy,gw,gh);c.beginPath();c.moveTo(gx,gy+gh/2);c.lineTo(gx+gw,gy+gh/2);c.stroke();for(const [key,color] of [["f","#34d399"],["e","#fb7185"]]){c.beginPath();this.history.forEach((v,i)=>{const x=gx+i/(179)*gw,y=gy+gh/2-v[key]*(gh*.38);i?c.lineTo(x,y):c.moveTo(x,y)});c.strokeStyle=color;c.lineWidth=1.7;c.stroke();}c.fillStyle="#94a3b8";c.font="9px monospace";c.fillText("Φ/Φmáx",gx+8,gy+13);c.fillStyle="#34d399";c.fillRect(gx+50,gy+8,12,2);c.fillStyle="#94a3b8";c.fillText("ε/εmáx",gx+70,gy+13);c.fillStyle="#fb7185";c.fillRect(gx+108,gy+8,12,2);}
+		if(this.playing){this._historyClock+=dt;while(this._historyClock>=1/30){this._historyClock-=1/30;this.history.push({f:projection,e:emf/emfPeak});if(this.history.length>240)this.history.shift();}}
+		if(this.showEMF){const gw=min(340,W*.42),gh=126,gx=W-gw-16,gy=16;c.fillStyle="rgba(7,10,18,.86)";c.beginPath();c.roundRect(gx,gy,gw,gh,12);c.fill();c.strokeStyle="rgba(148,163,184,.2)";c.stroke();const plotTop=gy+28,plotH=gh-38;c.strokeStyle="rgba(148,163,184,.11)";c.lineWidth=1;for(let i=0;i<=4;i++){const y=plotTop+i*plotH/4;c.beginPath();c.moveTo(gx+8,y);c.lineTo(gx+gw-8,y);c.stroke()}for(let i=1;i<6;i++){const x=gx+i*gw/6;c.beginPath();c.moveTo(x,plotTop);c.lineTo(x,plotTop+plotH);c.stroke()}const count=this.history.length,span=max(239,count-1);for(const [key,color] of [["f","#34d399"],["e","#fb7185"]]){c.beginPath();this.history.forEach((v,i)=>{const x=gx+10+(i+span-(count-1))/span*(gw-20),y=plotTop+plotH/2-v[key]*(plotH*.43);i?c.lineTo(x,y):c.moveTo(x,y)});c.strokeStyle=color;c.lineWidth=2;c.stroke();if(count){const v=this.history[count-1],x=gx+gw-10,y=plotTop+plotH/2-v[key]*(plotH*.43);c.beginPath();c.arc(x,y,3,0,2*PI);c.fillStyle=color;c.fill()}}c.font="600 9px monospace";c.fillStyle="#34d399";c.fillText("● FLUXO Φ",gx+10,gy+17);c.fillStyle="#fb7185";c.fillText("● FEM ε",gx+88,gy+17);c.fillStyle="#64748b";c.fillText("TEMPO →",gx+gw-62,gy+17);}
 		// Update stats
 		const fv = document.querySelector("#fVal"),
 			ev = document.querySelector("#eVal");

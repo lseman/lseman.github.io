@@ -268,6 +268,11 @@ class VecCalcSim extends Sim {
 		this.arrowSz = 28;
 		this.showScalar = true;
 		this.gridDens = 18;
+		this.formulaTooltip = {
+			title: "Operadores Vetoriais",
+			concept: "Gradiente (∇f) mostra direção de maior crescimento. Divergente (∇·F) mede fluxo líquido por volume. Rotacional (∇×F) mede rotação do campo.",
+			formula: "∇f = (∂f/∂x, ∂f/∂y) | ∇·F = ∂Fx/∂x + ∂Fy/∂y | ∇×F = ∂Fy/∂x - ∂Fx/∂y"
+		};
 	}
 	fieldF(x, y) {
 		if (this.fldType === 0) return { x: 2 * x, y: -2 * y };
@@ -300,7 +305,7 @@ class VecCalcSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">∇</span> ${this.name}</h3>
-<div class="formula">∇f = (∂f/∂x, ∂f/∂y)</div>
+<div class="formula">∇f = (∂f/∂x, ∂f/∂y)<span class="tooltip-trigger">ℹ</span></div>
 <div class="control"><label>Operador</label><select id="mode"><option value="grad">Gradiente</option><option value="div">Divergente</option><option value="curl">Rotacional</option></select></div>
 <div class="control"><label>Campo</label><select id="fld"><option value="0">f = x² − y²</option><option value="1">f = xy</option><option value="2">f = e^(−r²)</option></select></div>
 <div class="control"><label>Setas <span class="val" id="aV">28</span></label><input type="range" id="asize" min="10" max="50" value="28"></div>
@@ -444,10 +449,15 @@ class ElectroStaticSim extends Sim {
 		this.showLines = true;
 		this.fluxSurf = false;
 		this.dens = 24;
+		this.formulaTooltip = {
+			title: "Lei de Coulomb & Lei de Gauss",
+			concept: "Força entre cargas proporcional ao produto das cargas e inversamente ao quadrado da distância. Lei de Gauss: fluxo elétrico através de superfície fechada = carga interna/ε₀.",
+			formula: "F = k·q₁q₂/r² · r̂ | ∮E·dA = Q/ε₀"
+		};
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">🔴</span> ${this.name}</h3>
-<div class="formula">F = k·q₁q₂/r² · r̂</div>
+<div class="formula">F = k·q₁q₂/r² · r̂<span class="tooltip-trigger">ℹ</span></div>
 <div class="btn-row"><button class="btn primary" id="addP">+ Adicionar +</button><button class="btn" id="addN">− Adicionar −</button><button class="btn danger" id="clr">Limpar</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="field">Campo Elétrico</option><option value="flux">Lei de Gauss</option><option value="pot">Potencial</option></select></div>
 <div class="control"><label>Carga (nC) <span class="val" id="qV">1.0</span></label><input type="range" id="q" min="0.1" max="5" step="0.1" value="1"></div>
@@ -639,10 +649,15 @@ class PotentialSim extends Sim {
 		this.maxV = 5;
 		this.showLines = true;
 		this.showHeat = true;
+		this.formulaTooltip = {
+			title: "Potencial Elétrico & Energia",
+			concept: "Potencial V é energia potencial por unidade de carga. Linhas equipotenciais são perpendiculares às linhas de campo. Energia U = ½CV² para sistemas de cargas.",
+			formula: "V = k·q/r | U = ½ε₀∫E²dV | Linhas equipotenciais ⊥ linhas de campo"
+		};
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⊕</span> ${this.name}</h3>
-<div class="formula">V = k·q/r &nbsp;|&nbsp; U = ½ε₀∫E²dV</div>
+<div class="formula">V = k·q/r &nbsp;|&nbsp; U = ½ε₀∫E²dV<span class="tooltip-trigger">ℹ</span></div>
 <div class="btn-row"><button class="btn primary" id="addP">+ Carga</button><button class="btn" id="addN">− Carga</button><button class="btn" id="dip">Dipolo</button><button class="btn danger" id="clr">Limpar</button></div>
 <div class="control"><label>Potencial máx <span class="val" id="mV">5</span></label><input type="range" id="maxV" min="1" max="20" value="5"></div>
 <div class="control"><label>Níveis equipotenciais <span class="val" id="lV">15</span></label><input type="range" id="lev" min="5" max="30" value="15"></div>
@@ -828,10 +843,15 @@ class CapSim extends Sim {
 		this.diel = false;
 		this.kappa = 2.2;
 		this.anim = false;
+		this.formulaTooltip = {
+			title: "Capacitância & Dielétricos",
+			concept: "Capacitância C = Q/V. Dielétricos aumentam capacitância por fator κ (constante dielétrica). Energia armazenada U = ½CV². Campo E diminui com dielétrico.",
+			formula: "C = ε₀A/d | C' = κC | U = ½CV² | E = V/d"
+		};
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⊞</span> ${this.name}</h3>
-<div class="formula">C = ε₀A/d &nbsp;|&nbsp; U = ½CV²</div>
+<div class="formula">C = ε₀A/d &nbsp;|&nbsp; U = ½CV²<span class="tooltip-trigger">ℹ</span></div>
 <div class="control"><label>Configuração</label><select id="tp"><option value="parallel">Placas Paralelas</option><option value="cyl">Cilíndrica</option><option value="sph">Esférica</option></select></div>
 <div class="control"><label>Tensão V (V) <span class="val" id="vV">10</span></label><input type="range" id="V" min="1" max="50" value="10"></div>
 <div class="control"><label>Distância d (mm) <span class="val" id="dV">80</span></label><input type="range" id="d" min="30" max="200" value="80"></div>
@@ -1012,10 +1032,15 @@ class MagnetStaticSim extends Sim {
 		this.I = 1;
 		this.showLines = true;
 		this.dens = 20;
+		this.formulaTooltip = {
+			title: "Lei de Biot-Savart & Lei de Ampère",
+			concept: "Campo magnético gerado por corrente. Biot-Savart: campo de elemento de corrente. Ampère: circulação de B ao longo de curva fechada = μ₀I_enc.",
+			formula: "B = (μ₀/4π)∫Idl×r̂/r² | ∮B·dl = μ₀I_enc"
+		};
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">🧲</span> ${this.name}</h3>
-<div class="formula">B = (μ₀/4π)∫Idl×r̂/r²</div>
+<div class="formula">B = (μ₀/4π)∫Idl×r̂/r²<span class="tooltip-trigger">ℹ</span></div>
 <div class="btn-row"><button class="btn primary" id="wire">+ Fio</button><button class="btn" id="loop">⭕ Laço</button><button class="btn" id="sol">🔩 Solenóide</button><button class="btn danger" id="clr">Limpar</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="field">Campo B</option><option value="bihar">Biot-Savart</option><option value="ampere">Ampère</option><option value="hel">Helmholtz</option></select></div>
 <div class="control"><label>Corrente I (A) <span class="val" id="iV">1.0</span></label><input type="range" id="I" min="0.1" max="5" step="0.1" value="1"></div>
@@ -1253,10 +1278,15 @@ class FaradaySim extends Sim {
 		this.speed = 1;
 		this.showFlux = true;
 		this.showEMF = true;
+		this.formulaTooltip = {
+			title: "Lei de Faraday-Neumann",
+			concept: "Força eletromotriz induzida é igual à taxa de variação temporal do fluxo magnético. Sinal negativo indica oposição à mudança (Lei de Lenz).",
+			formula: "ε = −dΦ/dt | Φ = ∫B·dA | Lei de Lenz: ε se opõe à variação de Φ"
+		};
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⚡</span> ${this.name}</h3>
-<div class="formula">ε = −dΦ/dt</div>
+<div class="formula">ε = −dΦ/dt<span class="tooltip-trigger">ℹ</span></div>
 <div class="control"><label>Campo B (T) <span class="val" id="bV">1.0</span></label><input type="range" id="B" min="0.1" max="3" step="0.1" value="1"></div>
 <div class="control"><label>Velocidade <span class="val" id="sV">1.0</span></label><input type="range" id="spd" min="0.1" max="3" step="0.1" value="1"></div>
 <div class="control"><label>Número de voltas <span class="val" id="nV">5</span></label><input type="range" id="n" min="1" max="20" value="5"></div>
@@ -1396,10 +1426,15 @@ class MaxwellSim extends Sim {
 		this.showB = true;
 		this.showE = true;
 		this.showH = true;
+		this.formulaTooltip = {
+			title: "Equações de Maxwell",
+			concept: "4 equações fundamentais: 1) Gauss E: cargas geram campo elétrico. 2) Gauss B: sem monopolos magnéticos. 3) Faraday: campo variável gera E. 4) Ampère-Maxwell: corrente e E variável geram B.",
+			formula: "∇·D=ρ | ∇·B=0 | ∇×E=−∂B/∂t | ∇×H=J+∂D/∂t"
+		};
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">∿</span> ${this.name}</h3>
-<div class="formula">∇·D=ρ &nbsp; ∇·B=0 &nbsp; ∇×E=−∂B/∂t &nbsp; ∇×H=J+∂D/∂t</div>
+<div class="formula">∇·D=ρ &nbsp; ∇·B=0 &nbsp; ∇×E=−∂B/∂t &nbsp; ∇×H=J+∂D/∂t<span class="tooltip-trigger">ℹ</span></div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button><button class="btn danger" id="clr">Limpar</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="all">Todas</option><option value="gauss_e">Gauss (E)</option><option value="gauss_b">Gauss (B)</option><option value="faraday">Faraday</option><option value="ampere">Ampère-Maxwell</option></select></div>
 <div class="control"><label>Cargas <span class="val" id="cV">5</span></label><input type="range" id="nc" min="1" max="15" value="5"></div>
@@ -1586,10 +1621,15 @@ class WaveSim extends Sim {
 		this.showB = true;
 		this.showPoynting = false;
 		this.mode = "propagation";
+		this.formulaTooltip = {
+			title: "Ondas Eletromagnéticas",
+			concept: "Ondas E e B perpendiculares entre si e à direção de propagação. Velocidade c = 1/√(ε₀μ₀). Vetor de Poynting S = E×H representa fluxo de energia.",
+			formula: "E(z,t) = E₀cos(kz−ωt+φ) | B = E/c | S = E×H/μ₀ | u_E = u_B"
+		};
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">∿</span> ${this.name}</h3>
-<div class="formula">E(z,t) = E₀cos(kz−ωt+φ) &nbsp;|&nbsp; B = E/c</div>
+<div class="formula">E(z,t) = E₀cos(kz−ωt+φ) &nbsp;|&nbsp; B = E/c<span class="tooltip-trigger">ℹ</span></div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="propagation">Propagação</option><option value="polarization">Polarização</option><option value="energy">Energia</option></select></div>
 <div class="control"><label>Frequência <span class="val" id="fV">1.0</span></label><input type="range" class="pink" id="freq" min="0.2" max="3" step="0.1" value="1"></div>
