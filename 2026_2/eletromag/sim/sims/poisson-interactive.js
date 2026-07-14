@@ -141,6 +141,29 @@ export class PoissonInteractiveSim extends Sim {
 		}
 		return boundaryGrid;
 	}
+	drawGeometryBorder(c, dx, dy) {
+		const cx = W / 2, cy = H / 2;
+		c.strokeStyle = "rgba(251,191,36,0.7)";
+		c.lineWidth = 2.5;
+
+		if (this.geometry === "rect") {
+			const w = W / 3, h = H / 3;
+			c.strokeRect(cx - w/2, cy - h/2, w, h);
+		} else if (this.geometry === "circle") {
+			const r = min(W, H) / 4;
+			c.beginPath();
+			c.arc(cx, cy, r, 0, 2 * PI);
+			c.stroke();
+		} else if (this.geometry === "lshape") {
+			const w = W / 3, h = H / 3;
+			c.beginPath();
+			// Vertical part
+			c.rect(cx - w/2, cy - h/2, w, h);
+			// Horizontal extension
+			c.rect(cx, cy, w/3 + w/3, h/2);
+			c.stroke();
+		}
+	}
 	buildSourceGrid(rows, cols, dx, dy) {
 		let sourceGrid = new Float64Array(rows * cols);
 		for (const src of this.sources) {
@@ -304,6 +327,9 @@ export class PoissonInteractiveSim extends Sim {
 				c.stroke();
 			}
 		}
+
+		// Draw geometry border
+		this.drawGeometryBorder(c, this.dx, this.dy);
 
 		// Draw sources
 		for (let i = 0; i < this.sources.length; i++) {
