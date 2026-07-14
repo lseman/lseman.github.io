@@ -215,6 +215,62 @@ export class PoissonInteractiveSim extends Sim {
 		this.Ex = Ex;
 		this.Ey = Ey;
 	}
+	snapToGeometry(x, y) {
+		const cx = W / 2, cy = H / 2;
+
+		if (this.geometry === "rect") {
+			const w = W / 3, h = H / 3;
+			const left = cx - w/2, right = cx + w/2;
+			const top = cy - h/2, bottom = cy + h/2;
+
+			// Find closest boundary
+			const dLeft = abs(x - left);
+			const dRight = abs(x - right);
+			const dTop = abs(y - top);
+			const dBottom = abs(y - bottom);
+			const minD = min(dLeft, dRight, dTop, dBottom);
+
+			if (minD < 50) {
+				if (minD === dLeft) return { x: left, y: max(top, min(bottom, y)) };
+				if (minD === dRight) return { x: right, y: max(top, min(bottom, y)) };
+				if (minD === dTop) return { x: max(left, min(right, x)), y: top };
+				if (minD === dBottom) return { x: max(left, min(right, x)), y: bottom };
+			}
+		} else if (this.geometry === "circle") {
+			const r = min(W, H) / 4;
+			const dx = x - cx, dy = y - cy;
+			const d = sqrt(dx * dx + dy * dy);
+			if (d > r * 0.7 && d < r * 1.3) {
+				const scale = r / (d || 1);
+				return { x: cx + dx * scale, y: cy + dy * scale };
+			}
+		} else if (this.geometry === "lshape") {
+			const w = W / 3, h = H / 3;
+			const vLeft = cx - w/2, vRight = cx + w/2;
+			const vTop = cy - h/2, vBottom = cy + h/2;
+			const hRight = cx + w/3 + w/3;
+
+			// Check proximity to L-shape edges
+			const edges = [
+				{ x1: vLeft, y1: vTop, x2: vLeft, y2: vBottom },
+				{ x1: vLeft, y1: vBottom, x2: vRight, y2: vBottom },
+				{ x1: vRight, y1: vTop, x2: vRight, y2: vBottom },
+				{ x1: vRight, y1: cy, x2: hRight, y2: cy },
+				{ x1: hRight, y1: cy, x2: hRight, y2: vBottom }
+			];
+
+			let minDist = Infinity, closest = null;
+			for (const e of edges) {
+				const t = max(0, min(1, ((x - e.x1) * (e.x2 - e.x1) + (y - e.y1) * (e.y2 - e.y1)) / ((e.x2 - e.x1) ** 2 + (e.y2 - e.y1) ** 2 || 1)));
+				const px = e.x1 + t * (e.x2 - e.x1);
+				const py = e.y1 + t * (e.y2 - e.y1);
+				const dist = sqrt((x - px) ** 2 + (y - py) ** 2);
+				if (dist < minDist) { minDist = dist; closest = { x: px, y: py }; }
+			}
+			if (minDist < 50 && closest) return closest;
+		}
+		return { x, y };
+	}
 	onMouseDown(x, y) {
 		// Check if clicking on existing source
 		for (let i = 0; i < this.sources.length; i++) {
@@ -223,17 +279,19 @@ export class PoissonInteractiveSim extends Sim {
 				return;
 			}
 		}
-		// Add new source
+		// Add new source snapped to geometry
+		const snapped = this.snapToGeometry(x, y);
 		this.sources.push({
-			x, y, type: this.sourceMode, strength: this.sourceStrength,
+			x: snapped.x, y: snapped.y, type: this.sourceMode, strength: this.sourceStrength,
 			len: 30, ang: 0, r: 15
 		});
 		this.computeSolution();
 	}
 	onMouseMove(x, y) {
 		if (this.dragSource !== null) {
-			this.sources[this.dragSource].x = x;
-			this.sources[this.dragSource].y = y;
+			const snapped = this.snapToGeometry(x, y);
+			this.sources[this.dragSource].x = snapped.x;
+			this.sources[this.dragSource].y = snapped.y;
 			this.computeSolution();
 		}
 	}
