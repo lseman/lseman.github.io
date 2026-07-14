@@ -90,7 +90,6 @@ export class CapSim extends Sim {
 		this.diel = false;
 		this.kappa = 2.2;
 		this.anim = false;
-		this.showSORField = false;
 		this.hint = "Ajuste geometria, tensão e dielétrico; os resultados atualizam ao vivo";
 	}
 	buildControls(el) {
@@ -111,7 +110,6 @@ export class CapSim extends Sim {
 <div class="control"><label>Dielétrico</label><label class="toggle"><input type="checkbox" id="diel"><span class="track"></span></label></div>
 <div class="control"><label>Permissividade relativa κ <span class="val" id="kV">2.2</span></label><input type="range" id="kap" min="1" max="10" step="0.1" value="2.2"></div>
 <div class="control"><label>Animar cargas</label><label class="toggle"><input type="checkbox" id="anim"><span class="track"></span></label></div>
-<div class="control"><label>Mostrar campo V/E (SOR)</label><label class="toggle"><input type="checkbox" id="showSORField"><span class="track"></span></label></div>
 <div class="btn-row"><button class="btn primary" id="calc">Calcular</button></div>
 <div class="stat-grid" id="stats"></div>`;
 		el.querySelector("#tp").value = this.type;
@@ -127,7 +125,6 @@ export class CapSim extends Sim {
 		el.querySelector("#kap").value = String(this.kappa);
 		el.querySelector("#kV").textContent = this.kappa.toFixed(1);
 		el.querySelector("#anim").checked = this.anim;
-		el.querySelector("#showSORField").checked = this.showSORField;
 		const formulas={parallel:"C = κε₀A/d &nbsp;|&nbsp; ∇²V=0",cyl:"C = 2πκε₀L/ln(b/a)",sph:"C = 4πκε₀ab/(b−a)"};
 		const showGeometry=()=>{el.querySelector("#parallel-params").hidden=this.type!=="parallel";el.querySelector("#cyl-params").hidden=this.type!=="cyl";el.querySelector("#sph-params").hidden=this.type!=="sph";};
 		showGeometry();
@@ -154,7 +151,6 @@ export class CapSim extends Sim {
 		el.querySelector("#diel").onchange = (e) => { this.diel = e.target.checked; this.calc(el); };
 		el.querySelector("#kap").oninput = (e) => { this.kappa=+e.target.value; el.querySelector("#kV").textContent=this.kappa.toFixed(1); this.calc(el); };
 		el.querySelector("#anim").onchange = (e) => (this.anim = e.target.checked);
-		el.querySelector("#showSORField").onchange = (e) => (this.showSORField = e.target.checked);
 		el.querySelector("#calc").onclick = () => this.calc(el);
 		this.calc(el);
 	}
