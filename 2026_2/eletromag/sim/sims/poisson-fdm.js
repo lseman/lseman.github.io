@@ -150,6 +150,7 @@ export class PoissonFDMSim extends Sim {
 
 		const result = solvePoissonFDM(gridRows, gridCols, sourceGrid, this.boundaryType, this.boundaryVal, null, 300, 1e-4);
 		this.V = result.V;
+		this.sourceGrid = sourceGrid;
 		this.gridRows = gridRows;
 		this.gridCols = gridCols;
 		this.dx = dx;
@@ -195,6 +196,29 @@ export class PoissonFDMSim extends Sim {
 			tc.putImageData(img, 0, 0);
 			c.imageSmoothingEnabled = true;
 			c.drawImage(tmp, 0, 0, W, H);
+		}
+
+		// Boundary visualization
+		c.strokeStyle = "rgba(251,191,36,0.5)";
+		c.lineWidth = 2;
+		c.strokeRect(0, 0, W, H);
+		c.fillStyle = "rgba(251,191,36,0.3)";
+		c.font = "9px monospace";
+		c.fillText(this.boundaryType === "dirichlet" ? `V=${this.boundaryVal}V` : "∂V/∂n=0", 6, 14);
+
+		// Source visualization
+		if (this.sourceGrid && this.sourceMode !== "none") {
+			for (let j = 0; j < gridRows; j++) {
+				for (let i = 0; i < gridCols; i++) {
+					const src = this.sourceGrid[j * gridCols + i];
+					if (src !== 0) {
+						const intensity = min(1, abs(src) / (this.sourceStrength * 100));
+						const color = src > 0 ? `rgba(52,211,153,${0.6 * intensity})` : `rgba(251,113,133,${0.6 * intensity})`;
+						c.fillStyle = color;
+						c.fillRect(i * dx - 1, j * dy - 1, 2, 2);
+					}
+				}
+			}
 		}
 
 		// Electric field vectors
@@ -252,9 +276,18 @@ export class PoissonFDMSim extends Sim {
 		}
 
 		// Info display
-		c.fillStyle = "rgba(255,255,255,0.6)";
-		c.font = "10px monospace";
-		c.fillText(`Iterações: ${this.iterations}  |  Resíduo: ${this.residual.toExponential(2)}`, 10, 20);
-		c.fillText(`Grid: ${this.gridCols}×${this.gridRows}  |  Condição: ${this.boundaryType}`, 10, 35);
+		const infoX = W - 320, infoY = 16, infoW = 310, infoH = 60;
+		c.fillStyle = "rgba(7,10,18,.8)";
+		c.beginPath();
+		c.roundRect(infoX, infoY, infoW, infoH, 8);
+		c.fill();
+		c.strokeStyle = "rgba(148,163,184,.2)";
+		c.stroke();
+		c.fillStyle = "rgba(255,255,255,0.7)";
+		c.font = "9px monospace";
+		c.fillText(`Grid: ${this.gridCols}×${this.gridRows}  Resolução: ${(1/this.gridRes).toFixed(3)}`, infoX + 8, infoY + 18);
+		c.fillText(`Iterações: ${this.iterations}  Resíduo: ${this.residual.toExponential(2)}`, infoX + 8, infoY + 32);
+		c.fillText(`Fonte: ${this.sourceMode}  Intensidade: ${this.sourceStrength.toFixed(1)}`, infoX + 8, infoY + 46);
+		c.fillText(`Borda: ${this.boundaryType === "dirichlet" ? `V=${this.boundaryVal}V` : "Neumann"}`, infoX + 8, infoY + 60);
 	}
 }
