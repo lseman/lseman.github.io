@@ -213,14 +213,20 @@ export class CapSim extends Sim {
 			// Field lines and equipotentials using SOR solution
 			if (this.showSORField) {
 				const gridRows = 60, gridCols = 80;
-				let padX, padY, plotW, plotH, dx, dy;
+				let padX, padY, plotW, plotH, dx, dy, topY, bottomY;
 
 				if (this.type === "parallel") {
 					padX = 60; padY = 40;
 					plotW = W - 2 * padX; plotH = H - 2 * padY;
+					topY = parallelGeometry.topY;
+					bottomY = parallelGeometry.bottomY;
 				} else {
-					padX = W / 2 - 85; padY = H / 2 - 115;
+					// Cylindrical/Spherical: center grid on coil center
 					plotW = 170; plotH = 230;
+					padX = cx - plotW / 2;
+					padY = cy - plotH / 2;
+					topY = padY;
+					bottomY = padY + plotH;
 				}
 				dx = plotW / (gridCols - 1); dy = plotH / (gridRows - 1);
 				
@@ -335,8 +341,8 @@ export class CapSim extends Sim {
 						
 						cx_plot += (h / 6) * (k1x + 2 * k2x + 2 * k3x + k4x);
 						cy_plot += (h / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
-						
-						if (cx_plot < padX || cx_plot > W - padX || cy_plot < topY || cy_plot > bottomY) break;
+
+						if (cx_plot < padX || cx_plot > padX + plotW || cy_plot < topY || cy_plot > bottomY) break;
 						c.lineTo(cx_plot, cy_plot);
 					}
 					c.stroke();
