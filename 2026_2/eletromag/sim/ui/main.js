@@ -39,6 +39,7 @@ import { FaradaySim } from "../sims/faraday.js";
 import { MaxwellSim } from "../sims/maxwell.js";
 import { WaveSim } from "../sims/waves.js";
 import { PoissonFDMSim } from "../sims/poisson-fdm.js";
+import { PoissonInteractiveSim } from "../sims/poisson-interactive.js";
 import { BoundaryDielSim } from "../sims/boundary-diel.js";
 
 const sims = [
@@ -51,6 +52,7 @@ const sims = [
 	new MaxwellSim(),
 	new WaveSim(),
 	new PoissonFDMSim(),
+	new PoissonInteractiveSim(),
 	new BoundaryDielSim(),
 ];
 
@@ -64,6 +66,7 @@ const tabNames = [
 	"Maxwell",
 	"Ondas EM",
 	"Poisson FDM",
+	"Poisson Interativo",
 	"Fronteira Diel.",
 ];
 
