@@ -9,7 +9,7 @@ npm start -- --host 0.0.0.0
 
 Abra `http://localhost:8790`. Se a porta estiver ocupada, o servidor tenta as seguintes automaticamente. Uma porta explícita pode ser escolhida com `--port 9000` ou `PORT=9000`.
 
-## Uso
+# Uso
 
 Arraste fontes, sondas, vítimas, dielétricos, materiais dissipativos, paredes PEC e absorvedores para o domínio. Selecione um objeto para editar dimensões, permissividade e perda. Os exemplos demonstram propagação livre, fenda em blindagem, interface dielétrica, absorção e cavidade ressonante.
 

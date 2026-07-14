@@ -2,7 +2,7 @@
 
 Interface didática de blocos para montar e executar sistemas de comunicações no navegador.
 
-## Executar
+# Executar
 
 ```bash
 cd /data/apostilas/comunicacoes/blocklab
@@ -25,7 +25,7 @@ No canvas, arraste o fundo para navegar e use a roda do mouse ou os botões **�
 
 Selecione um bloco e use **Ctrl+C / Ctrl+V** (ou **Cmd+C / Cmd+V** no macOS) para duplicá-lo com todos os parâmetros. A cópia é independente e não replica conexões, facilitando anexar um segundo osciloscópio ou analisador a outro ponto do fluxo.
 
-## Famílias disponíveis
+# Famílias disponíveis
 
 - Fontes digitais, padrões e mensagens senoidais
 - Codificação por repetição, Hamming (7,4), SECDED (8,4), CRC e convolucional (7,5)₈ com Viterbi duro
@@ -44,7 +44,7 @@ Use **Exportar JSON** para entregar ou compartilhar um workflow e **Importar JSO
 
 As cores das portas e conexões indicam o tipo de dado. Conexões incompatíveis são recusadas antes da execução. Clique em uma conexão existente para removê-la.
 
-## Convenções numéricas
+# Convenções numéricas
 
 - QAM quadrada é normalizada para energia média de símbolo unitária e usa Gray por eixo.
 - O canal AWGN pode ser configurado por `Eb/N0` ou SNR por amostra.
@@ -63,7 +63,7 @@ As cores das portas e conexões indicam o tipo de dado. Conexões incompatíveis
 - O painel de resultados funciona como um dock: arraste sua borda superior para mudar a altura ou use a seta no cabeçalho para ocultá-lo/restaurá-lo. A preferência é preservada localmente e os gráficos são redesenhados na nova resolução.
 - O botão **⛶** abre o gráfico em um modal centralizado. Feche pelo botão ×, pela tecla Esc ou clicando no fundo; zoom e pan feitos no modal são preservados no cartão original.
 
-### Domínio de símbolo versus domínio de waveform
+# Domínio de símbolo versus domínio de waveform
 
 BPSK, QPSK, M-PSK e QAM produzem um item complexo por símbolo. Isso é matematicamente adequado para BER em AWGN sem memória e para constelações, mas ainda não é uma forma de onda temporal com conformação de pulso. O espectro desses símbolos crus não deve ser interpretado como largura de banda ocupada. Para estudos de waveform, olho e espectro, use **RRC Transmissor → canal → RRC Receptor**. Com taxa de símbolos `Rs`, a largura unilateral em banda base é `(1+α)Rs/2`.
 
