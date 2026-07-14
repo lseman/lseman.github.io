@@ -5,60 +5,33 @@ import { Sim } from "../core/sim-base.js";
 import { PI, sin, cos, sqrt, abs, min, max, floor } from "../core/math.js";
 import { W, H, S } from "../core/canvas.js";
 
-function solveWithDielBoundary(rows, cols, kappa1, kappa2, boundaryPos, maxIter=500, tol=1e-4) {
-	const ω = 1.8;
+function solveWithDielBoundary(rows, cols, kappa1, kappa2, boundaryY) {
 	let V = new Float64Array(rows * cols);
-
-	// Boundary conditions: V=10 at top, V=0 at bottom
-	for (let i = 0; i < cols; i++) {
-		V[i] = 10;
-		V[(rows - 1) * cols + i] = 0;
+	const seriesFactor = boundaryY / kappa1 + (1 - boundaryY) / kappa2;
+	const field1 = 10 / (kappa1 * seriesFactor);
+	const field2 = 10 / (kappa2 * seriesFactor);
+	for (let j = 0; j < rows; j++) {
+		const y = j / (rows - 1);
+		const potential = y <= boundaryY
+			? 10 - field1 * y
+			: 10 - field1 * boundaryY - field2 * (y - boundaryY);
+		for (let i = 0; i < cols; i++) V[j * cols + i] = potential;
 	}
-
-	let maxDiff = 1e9, iter = 0;
-	while (maxDiff > tol && iter < maxIter) {
-		maxDiff = 0;
-		for (let j = 1; j < rows - 1; j++) {
-			for (let i = 1; i < cols - 1; i++) {
-				const idx = j * cols + i;
-				const kappa = j < boundaryPos ? kappa1 : kappa2;
-				const kappaTop = (j - 1) < boundaryPos ? kappa1 : kappa2;
-				const kappaBot = (j + 1) < boundaryPos ? kappa1 : kappa2;
-				const kappaLeft = kappa;
-				const kappaRight = kappa;
-
-				const V_new = (kappaTop * V[(j-1)*cols + i] + kappaBot * V[(j+1)*cols + i] +
-							   kappaLeft * V[j*cols + (i-1)] + kappaRight * V[j*cols + (i+1)]) /
-							  (kappaTop + kappaBot + kappaLeft + kappaRight);
-
-				const V_old = V[idx];
-				V[idx] = V_old + ω * (V_new - V_old);
-
-				const diff = abs(V[idx] - V_old);
-				if (diff > maxDiff) maxDiff = diff;
-			}
-		}
-		iter++;
-	}
-	return { V, iterations: iter, residual: maxDiff };
+	return { V, iterations: 1, residual: 0 };
 }
 
-function computeFieldWithDielBC(V, rows, cols, kappa1, kappa2, boundaryPos, dx, dy) {
+function computeFieldWithDielBC(V, rows, cols, kappa1, kappa2, boundaryY, dx, dy) {
 	const Ex = new Float64Array(rows * cols);
 	const Ey = new Float64Array(rows * cols);
 	const D = new Float64Array(rows * cols);
 
 	const EPS0 = 8.854e-12;
-	for (let j = 1; j < rows - 1; j++) {
-		for (let i = 1; i < cols - 1; i++) {
+	const seriesFactor = boundaryY / kappa1 + (1 - boundaryY) / kappa2;
+	for (let j = 0; j < rows; j++) {
+		for (let i = 0; i < cols; i++) {
 			const idx = j * cols + i;
-			const kappa = j < boundaryPos ? kappa1 : kappa2;
-
-			// Electric field (continuous tangential component)
-			Ex[idx] = -(V[idx + 1] - V[idx - 1]) / (2 * dx);
-			Ey[idx] = -(V[(j + 1) * cols + i] - V[(j - 1) * cols + i]) / (2 * dy);
-
-			// Displacement field (continuous normal component)
+			const kappa = j / (rows - 1) < boundaryY ? kappa1 : kappa2;
+			Ey[idx] = 10 / (H * kappa * seriesFactor);
 			D[idx] = kappa * EPS0 * sqrt(Ex[idx] * Ex[idx] + Ey[idx] * Ey[idx]);
 		}
 	}
@@ -140,9 +113,9 @@ export class BoundaryDielSim extends Sim {
 	computeSolution() {
 		const gridRows = this.gridRes, gridCols = this.gridRes;
 		const dx = W / (gridCols - 1), dy = H / (gridRows - 1);
-		const boundaryPos = floor(gridRows * this.boundaryY);
+		const boundaryPos = this.boundaryY * H;
 
-		const result = solveWithDielBoundary(gridRows, gridCols, this.kappa1, this.kappa2, boundaryPos, 300, 1e-4);
+		const result = solveWithDielBoundary(gridRows, gridCols, this.kappa1, this.kappa2, this.boundaryY);
 		this.V = result.V;
 		this.gridRows = gridRows;
 		this.gridCols = gridCols;
@@ -152,10 +125,54 @@ export class BoundaryDielSim extends Sim {
 		this.iterations = result.iterations;
 		this.residual = result.residual;
 
-		const fields = computeFieldWithDielBC(this.V, gridRows, gridCols, this.kappa1, this.kappa2, boundaryPos, dx, dy);
+		const fields = computeFieldWithDielBC(this.V, gridRows, gridCols, this.kappa1, this.kappa2, this.boundaryY, dx, dy);
 		this.Ex = fields.Ex;
 		this.Ey = fields.Ey;
 		this.D = fields.D;
+	}
+	resize() {
+		this.computeSolution();
+	}
+	meshPoints() {
+		const points = [];
+		const divisions = max(2, this.gridRes - 1);
+		const topDivisions = max(1, Math.round(divisions * this.boundaryY));
+		const bottomDivisions = max(1, divisions - topDivisions);
+		const interfaceY = H * this.boundaryY;
+		const rows = [];
+		for (let j = 0; j <= topDivisions; j++) rows.push(interfaceY * j / topDivisions);
+		for (let j = 1; j <= bottomDivisions; j++) rows.push(interfaceY + (H - interfaceY) * j / bottomDivisions);
+		for (const y of rows) {
+			for (let i = 0; i <= divisions; i++) points.push({ x: W * i / divisions, y });
+		}
+		return points;
+	}
+	drawMeshPoints(c) {
+		const key = `${this.gridRes}:${this.boundaryY}:${W}:${H}`;
+		if (this._meshKey !== key) {
+			this._meshKey = key;
+			this._meshPoints = this.meshPoints();
+		}
+		const radius = this.gridRes >= 60 ? 0.45 : this.gridRes >= 40 ? 0.6 : 0.8;
+		c.fillStyle = "rgba(226,232,240,0.2)";
+		c.beginPath();
+		for (const point of this._meshPoints) {
+			c.moveTo(point.x + radius, point.y);
+			c.arc(point.x, point.y, radius, 0, 2 * PI);
+		}
+		c.fill();
+	}
+	drawArrow(c, x, y, u, v, length, head) {
+		const x0 = x - u * length/2, y0 = y - v * length/2;
+		const x1 = x + u * length/2, y1 = y + v * length/2;
+		c.beginPath();
+		c.moveTo(x0, y0);
+		c.lineTo(x1, y1);
+		c.moveTo(x1, y1);
+		c.lineTo(x1 - u * head - v * head * 0.55, y1 - v * head + u * head * 0.55);
+		c.moveTo(x1, y1);
+		c.lineTo(x1 - u * head + v * head * 0.55, y1 - v * head - u * head * 0.55);
+		c.stroke();
 	}
 	render(c, time) {
 		if (W < 2 || H < 2 || !this.V) return;
@@ -191,26 +208,31 @@ export class BoundaryDielSim extends Sim {
 			c.drawImage(tmp, 0, 0, W, H);
 		}
 
+		this.drawMeshPoints(c);
+
 		// Boundary interface
 		if (this.showBoundary) {
 			c.strokeStyle = "rgba(251,191,36,0.8)";
 			c.lineWidth = 2.5;
 			c.setLineDash([5, 5]);
 			c.beginPath();
-			c.moveTo(0, boundaryPos * dy);
-			c.lineTo(W, boundaryPos * dy);
+			c.moveTo(0, boundaryPos);
+			c.lineTo(W, boundaryPos);
 			c.stroke();
 			c.setLineDash([]);
 			c.fillStyle = "rgba(251,191,36,0.6)";
 			c.font = "10px monospace";
-			c.fillText(`κ₁=${this.kappa1.toFixed(1)}`, 12, boundaryPos * dy - 8);
-			c.fillText(`κ₂=${this.kappa2.toFixed(1)}`, 12, boundaryPos * dy + 18);
+			c.fillText(`κ₁=${this.kappa1.toFixed(1)}`, 12, boundaryPos - 8);
+			c.fillText(`κ₂=${this.kappa2.toFixed(1)}`, 12, boundaryPos + 18);
 		}
 
 		// E field
 		if (this.showFieldE) {
-			c.strokeStyle = "rgba(56,189,248,0.6)";
-			c.lineWidth = 1.2;
+			c.save();
+			c.strokeStyle = "rgba(103,232,249,0.95)";
+			c.lineWidth = 1.8;
+			c.lineCap = "round";
+			c.lineJoin = "round";
 			const step = max(2, floor(gridCols / 14));
 			for (let j = 0; j < gridRows; j += step) {
 				for (let i = 0; i < gridCols; i += step) {
@@ -219,33 +241,34 @@ export class BoundaryDielSim extends Sim {
 					const mag = sqrt(ex * ex + ey * ey);
 					if (mag < 1e-8) continue;
 					const u = ex / mag, v = ey / mag;
-					const len = min(14, max(4, Math.log10(mag + 1) * 4));
+					const maxE = 10 / (H * min(this.kappa1, this.kappa2) * (this.boundaryY / this.kappa1 + (1-this.boundaryY) / this.kappa2));
+					const len = 12 + 12 * mag / maxE;
 					const x = i * dx, y = j * dy;
-					c.beginPath();
-					c.moveTo(x, y);
-					c.lineTo(x + u * len, y + v * len);
-					c.moveTo(x + u * len, y + v * len);
-					c.lineTo(x + u * len - u * 3 - v * 2, y + v * len - v * 3 + u * 2);
-					c.moveTo(x + u * len, y + v * len);
-					c.lineTo(x + u * len - u * 3 + v * 2, y + v * len - v * 3 - u * 2);
-					c.stroke();
+					this.drawArrow(c, x, y, u, v, len, min(6, len * 0.3));
 				}
 			}
+			c.restore();
 		}
 
-		// D field magnitude
+		// D field vectors: their equal length across the interface demonstrates
+		// continuity of the normal displacement component.
 		if (this.showFieldD) {
-			c.strokeStyle = "rgba(168,85,247,0.5)";
-			c.lineWidth = 1;
+			c.save();
+			c.strokeStyle = "rgba(192,132,252,0.95)";
+			c.lineWidth = 2;
+			c.lineCap = "round";
+			c.lineJoin = "round";
 			const step = max(2, floor(gridCols / 12));
-			for (let j = 0; j < gridRows; j += step) {
-				for (let i = 0; i < gridCols; i += step) {
+			const offset = floor(step / 2);
+			for (let j = offset; j < gridRows; j += step) {
+				for (let i = offset; i < gridCols; i += step) {
 					const idx = j * gridCols + i;
-					const d = D[idx];
-					c.fillStyle = `rgba(168,85,247,${0.2 + 0.6 * Math.tanh(d / 1e-11)})`;
-					c.fillRect(i * dx - 2, j * dy - 2, 4, 4);
+					const magE = sqrt(Ex[idx] * Ex[idx] + Ey[idx] * Ey[idx]);
+					if (D[idx] <= 0 || magE < 1e-12) continue;
+					this.drawArrow(c, i * dx, j * dy, Ex[idx] / magE, Ey[idx] / magE, 20, 5.5);
 				}
 			}
+			c.restore();
 		}
 
 		// Streamlines

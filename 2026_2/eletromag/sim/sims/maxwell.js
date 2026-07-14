@@ -26,6 +26,8 @@ export class MaxwellSim extends Sim {
 		this.time = 0;
 		this.playing = true;
 		this.mode = "all";
+		this.currentDirection = "mixed";
+		this.chargePolarity = "mixed";
 		this.NC = 5;
 		this.NI = 3;
 		this.dens = 16;
@@ -37,12 +39,22 @@ export class MaxwellSim extends Sim {
 <div class="formula">∇·D=ρ &nbsp; ∇·B=0 &nbsp; ∇×E=−∂B/∂t &nbsp; ∇×H=J+∂D/∂t</div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button><button class="btn danger" id="clr">Limpar</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="all">Todas</option><option value="gauss_e">Gauss (E)</option><option value="gauss_b">Gauss (B)</option><option value="faraday">Faraday</option><option value="ampere">Ampère-Maxwell</option></select></div>
+<div class="control"><label>Sentido da corrente</label><select id="currentDir"><option value="mixed">Misto (• e ×)</option><option value="out">Saindo do plano (•)</option><option value="in">Entrando no plano (×)</option></select></div>
+<div class="control"><label>Polaridade das cargas</label><select id="chargePol"><option value="mixed">Mista (+ e −)</option><option value="positive">Somente positivas (+)</option><option value="negative">Somente negativas (−)</option></select></div>
 <div class="control"><label>Cargas <span class="val" id="cV">5</span></label><input type="range" id="nc" min="0" max="15" value="5"></div>
 <div class="control"><label>Correntes <span class="val" id="c2">3</span></label><input type="range" id="ni" min="0" max="8" value="3"></div>
 <div class="control"><label>Densidade <span class="val" id="dV">16</span></label><input type="range" id="dens" min="8" max="28" value="16"></div>
-<div class="legend"><span class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span>∇·D=ρf</span><span class="legend-item"><span class="legend-dot" style="background:#818cf8"></span>∇·B=0</span><span class="legend-item"><span class="legend-dot" style="background:#f472b6"></span>∇×E=−∂B/∂t</span><span class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>∇×H=J+∂D/∂t</span></div>`;
-		el.querySelector("#mode").value=this.mode;el.querySelector("#nc").value=String(this.NC);el.querySelector("#ni").value=String(this.NI);el.querySelector("#dens").value=String(this.dens);el.querySelector("#cV").textContent=String(this.NC);el.querySelector("#c2").textContent=String(this.NI);el.querySelector("#dV").textContent=String(this.dens);el.querySelector("#play").disabled=this.playing;el.querySelector("#pause").disabled=!this.playing;
+<div class="legend"><span class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span>∇·D=ρf</span><span class="legend-item"><span class="legend-dot" style="background:#818cf8"></span>∇·B=0</span><span class="legend-item"><span class="legend-dot" style="background:#f472b6"></span>∇×E=−∂B/∂t</span><span class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>∇×H=J+∂D/∂t</span><span class="legend-item">• saindo do plano</span><span class="legend-item">× entrando no plano</span></div>`;
+		el.querySelector("#mode").value=this.mode;el.querySelector("#currentDir").value=this.currentDirection;el.querySelector("#chargePol").value=this.chargePolarity;el.querySelector("#nc").value=String(this.NC);el.querySelector("#ni").value=String(this.NI);el.querySelector("#dens").value=String(this.dens);el.querySelector("#cV").textContent=String(this.NC);el.querySelector("#c2").textContent=String(this.NI);el.querySelector("#dV").textContent=String(this.dens);el.querySelector("#play").disabled=this.playing;el.querySelector("#pause").disabled=!this.playing;
 		el.querySelector("#mode").onchange = (e) => (this.mode = e.target.value);
+		el.querySelector("#currentDir").onchange = (e) => {
+			this.currentDirection = e.target.value;
+			this.applyCurrentDirection();
+		};
+		el.querySelector("#chargePol").onchange = (e) => {
+			this.chargePolarity = e.target.value;
+			this.applyChargePolarity();
+		};
 		el.querySelector("#play").onclick = () => {
 			this.playing = true;
 			el.querySelector("#play").disabled=true;el.querySelector("#pause").disabled=false;
@@ -62,16 +74,18 @@ export class MaxwellSim extends Sim {
 			el.querySelector("#c2").textContent = "0";
 		};
 		el.querySelector("#nc").oninput = (e) => {
-			this.NC = +e.target.value;
+			const target = +e.target.value;
 			el.querySelector("#cV").textContent = e.target.value;
-			while (this.charges.length > this.NC) this.charges.pop();
-			while (this.charges.length < this.NC) this.addRandomCharge();
+			while (this.charges.length > target) this.charges.pop();
+			while (this.charges.length < target) this.addRandomCharge();
+			this.NC = target;
 		};
 		el.querySelector("#ni").oninput = (e) => {
-			this.NI = +e.target.value;
+			const target = +e.target.value;
 			el.querySelector("#c2").textContent = e.target.value;
-			while (this.currents.length > this.NI) this.currents.pop();
-			while (this.currents.length < this.NI) this.addRandomCurrent();
+			while (this.currents.length > target) this.currents.pop();
+			while (this.currents.length < target) this.addRandomCurrent();
+			this.NI = target;
 		};
 		el.querySelector("#dens").oninput = (e) => {
 			this.dens = +e.target.value;
@@ -83,23 +97,40 @@ export class MaxwellSim extends Sim {
 			this.initialized = true;
 		}
 	}
+	applyCurrentDirection() {
+		this.currents.forEach((current, index) => {
+			current.I = this.currentDirection === "out" ? 1 : this.currentDirection === "in" ? -1 : index % 2 === 0 ? 1 : -1;
+		});
+	}
+	applyChargePolarity() {
+		this.charges.forEach((charge, index) => {
+			const positive = this.chargePolarity === "positive" || (this.chargePolarity === "mixed" && index % 2 === 0);
+			charge.positive = positive;
+			charge.q = (positive ? 1 : -1) * abs(charge.q || 1);
+		});
+	}
+	addCurrent(x, y, direction) {
+		this.currents.push({ t: "point", x, y, I: direction >= 0 ? 1 : -1 });
+		this.NI = this.currents.length;
+	}
+	addCharge(x, y, positive) {
+		this.charges.push(new Charge(x, y, 1, positive));
+		this.NC = this.charges.length;
+	}
 	addRandomCurrent() {
 		const width=Number.isFinite(W)?W:800,height=Number.isFinite(H)?H:600;
 		const x = 70 + Math.random() * max(1, width - 140), y=70+Math.random()*max(1,height-140);
-		this.currents.push({
-			t: "point", x, y,
-			I: Math.random() > 0.5 ? 1 : -1,
-		});
+		const direction = this.currentDirection === "out" ? 1 : this.currentDirection === "in" ? -1 : Math.random() > 0.5 ? 1 : -1;
+		this.addCurrent(x, y, direction);
 	}
 	addRandomCharge() {
 		const width=Number.isFinite(W)?W:800,height=Number.isFinite(H)?H:600;
-		const positive = Math.random() > 0.5;
-		this.charges.push(new Charge(
+		const positive = this.chargePolarity === "positive" || (this.chargePolarity === "mixed" && Math.random() > 0.5);
+		this.addCharge(
 			50 + Math.random() * max(1, width - 100),
 			50 + Math.random() * max(1, height - 100),
-			1,
 			positive,
-		));
+		);
 	}
 	onMouseDown(x,y){
 		this.sel=null;
@@ -125,9 +156,9 @@ export class MaxwellSim extends Sim {
 			samples.push({x,y,ci,cj,ex,ey,bx,by,me:sqrt(ex*ex+ey*ey),mb:sqrt(bx*bx+by*by)});
 		}
 		const maxE=max(1e-9,...samples.map(s=>s.me)),maxB=max(1e-9,...samples.map(s=>s.mb));
-		const arrow=(x,y,vx,vy,len,color,alpha)=>{const m=sqrt(vx*vx+vy*vy);if(m<1e-12)return;const ux=vx/m,uy=vy/m,ex=x+ux*len,ey=y+uy*len;c.beginPath();c.moveTo(x-ux*len*.18,y-uy*len*.18);c.lineTo(ex,ey);c.lineTo(ex-ux*5-uy*3,ey-uy*5+ux*3);c.moveTo(ex,ey);c.lineTo(ex-ux*5+uy*3,ey-uy*5-ux*3);c.strokeStyle=color.replace("ALPHA",alpha.toFixed(2));c.lineWidth=1.25;c.stroke()};
+		const arrow=(x,y,vx,vy,len,color,alpha)=>{const m=sqrt(vx*vx+vy*vy);if(m<1e-12)return;const ux=vx/m,uy=vy/m,ex=x+ux*len,ey=y+uy*len,head=7,wing=4;c.beginPath();c.moveTo(x-ux*len*.22,y-uy*len*.22);c.lineTo(ex,ey);c.lineTo(ex-ux*head-uy*wing,ey-uy*head+ux*wing);c.moveTo(ex,ey);c.lineTo(ex-ux*head+uy*wing,ey-uy*head-ux*wing);c.strokeStyle=color.replace("ALPHA",alpha.toFixed(2));c.lineWidth=1.8;c.lineCap="round";c.lineJoin="round";c.stroke()};
 		const showE=mode==="all"||mode==="gauss_e"||mode==="faraday",showB=mode==="all"||mode==="gauss_b"||mode==="ampere";
-		for(const s of samples){if(showE&&s.me>1e-12){const n=s.me/maxE,len=6+18*sqrt(n);arrow(s.x,s.y,s.ex,s.ey,len,"rgba(56,189,248,ALPHA)",.34+.58*n);if((s.ci+s.cj)%5===0){const u=s.ex/s.me,v=s.ey/s.me,travel=((this.time*.7+s.ci*.13+s.cj*.07)%1+1)%1;c.beginPath();c.arc(s.x+u*len*travel,s.y+v*len*travel,2,0,2*PI);c.fillStyle="rgba(125,211,252,.9)";c.fill()}}if(showB&&s.mb>1e-12){const n=s.mb/maxB,len=6+17*sqrt(n);arrow(s.x,s.y,s.bx,s.by,len,"rgba(167,139,250,ALPHA)",.3+.58*n);if((s.ci*2+s.cj)%7===0){const u=s.bx/s.mb,v=s.by/s.mb,travel=((this.time*.55+s.ci*.09)%1+1)%1;c.beginPath();c.arc(s.x+u*len*travel,s.y+v*len*travel,2,0,2*PI);c.fillStyle="rgba(196,181,253,.9)";c.fill()}}}
+		for(const s of samples){if(showE&&s.me>1e-12){const n=s.me/maxE,len=10+24*sqrt(n);arrow(s.x,s.y,s.ex,s.ey,len,"rgba(56,189,248,ALPHA)",.4+.56*n);if((s.ci+s.cj)%5===0){const u=s.ex/s.me,v=s.ey/s.me,travel=((this.time*.7+s.ci*.13+s.cj*.07)%1+1)%1;c.beginPath();c.arc(s.x+u*len*travel,s.y+v*len*travel,2.5,0,2*PI);c.fillStyle="rgba(125,211,252,.9)";c.fill()}}if(showB&&s.mb>1e-12){const n=s.mb/maxB,len=10+23*sqrt(n);arrow(s.x,s.y,s.bx,s.by,len,"rgba(167,139,250,ALPHA)",.38+.56*n);if((s.ci*2+s.cj)%7===0){const u=s.bx/s.mb,v=s.by/s.mb,travel=((this.time*.55+s.ci*.09)%1+1)%1;c.beginPath();c.arc(s.x+u*len*travel,s.y+v*len*travel,2.5,0,2*PI);c.fillStyle="rgba(196,181,253,.9)";c.fill()}}}
 		// Sources are drawn after the field so they never disappear behind it.
 		for(const ch of this.charges){const selected=this.sel?.kind==="charge"&&this.sel.value===ch;if(this.playing){c.beginPath();c.arc(ch.pos.x,ch.pos.y,20+3*sin(this.time*2+ch.pos.x*.01),0,2*PI);c.strokeStyle=ch.q>0?"rgba(251,113,133,.25)":"rgba(56,189,248,.25)";c.stroke()}ch.draw(c,selected)}
 		for(const w of this.currents){const x=w.x??w.p1?.x??W/2,y=w.y??H/2,selected=this.sel?.kind==="current"&&this.sel.value===w;if(this.playing){c.beginPath();c.arc(x,y,22+4*sin(this.time*1.8+x*.01),0,2*PI);c.strokeStyle="rgba(251,191,36,.28)";c.stroke()}c.beginPath();c.arc(x,y,15,0,2*PI);c.fillStyle="rgba(15,23,42,.95)";c.fill();c.strokeStyle=selected?"#67e8f9":"#fbbf24";c.lineWidth=selected?3:2;c.stroke();c.fillStyle="#fde68a";c.font="bold 18px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(w.I>=0?"•":"×",x,y-1)}c.textAlign="start";c.textBaseline="alphabetic";

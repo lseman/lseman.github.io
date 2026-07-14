@@ -5,17 +5,9 @@ import { Sim } from "../core/sim-base.js";
 import { PI, sin, cos, sqrt, abs, min, max, floor } from "../core/math.js";
 import { W, H, S } from "../core/canvas.js";
 
-function solvePoissonFDM(rows, cols, sourceGrid, boundaryGrid, maxIter=500, tol=1e-4) {
+function solvePoissonFDM(rows, cols, sourceGrid, domainMask, maxIter=500, tol=1e-4) {
 	const ω = 1.8;
 	let V = new Float64Array(rows * cols);
-
-	// Initialize with boundary values
-	for (let j = 0; j < rows; j++) {
-		for (let i = 0; i < cols; i++) {
-			const idx = j * cols + i;
-			V[idx] = boundaryGrid ? boundaryGrid[idx] : 0;
-		}
-	}
 
 	let maxDiff = 1e9, iter = 0;
 	while (maxDiff > tol && iter < maxIter) {
@@ -23,11 +15,11 @@ function solvePoissonFDM(rows, cols, sourceGrid, boundaryGrid, maxIter=500, tol=
 		for (let j = 1; j < rows - 1; j++) {
 			for (let i = 1; i < cols - 1; i++) {
 				const idx = j * cols + i;
-				if (boundaryGrid && boundaryGrid[idx] !== 0) continue; // Skip boundary cells
+				if (domainMask && !domainMask[idx]) continue;
 
 				const source = sourceGrid ? sourceGrid[idx] : 0;
 				const V_new = (V[(j-1)*cols + i] + V[(j+1)*cols + i] +
-							   V[j*cols + (i-1)] + V[j*cols + (i+1)]) / 4 - source / 4;
+							   V[j*cols + (i-1)] + V[j*cols + (i+1)] + source) / 4;
 
 				const V_old = V[idx];
 				V[idx] = V_old + ω * (V_new - V_old);
@@ -41,12 +33,13 @@ function solvePoissonFDM(rows, cols, sourceGrid, boundaryGrid, maxIter=500, tol=
 	return { V, iterations: iter, residual: maxDiff };
 }
 
-function computeElectricField(V, rows, cols, dx, dy) {
+function computeElectricField(V, rows, cols, dx, dy, domainMask) {
 	const Ex = new Float64Array(rows * cols);
 	const Ey = new Float64Array(rows * cols);
 	for (let j = 1; j < rows - 1; j++) {
 		for (let i = 1; i < cols - 1; i++) {
 			const idx = j * cols + i;
+			if (domainMask && !domainMask[idx]) continue;
 			Ex[idx] = -(V[idx + 1] - V[idx - 1]) / (2 * dx);
 			Ey[idx] = -(V[(j + 1) * cols + i] - V[(j - 1) * cols + i]) / (2 * dy);
 		}
@@ -70,7 +63,7 @@ export class PoissonInteractiveSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">∇²</span> ${this.name}</h3>
-<div class="formula" id="formula">∇²V = ρ/ε₀  |  Geometria interativa</div>
+<div class="formula" id="formula">∇²V = −ρ/ε₀  |  Geometria interativa</div>
 <div class="control"><label>Geometria</label><select id="geom"><option value="rect">Retângulo</option><option value="circle">Círculo</option><option value="lshape">L-Shape</option></select></div>
 <div class="control"><label>Tipo de fonte</label><select id="src"><option value="point">Ponto</option><option value="line">Linha</option><option value="disk">Disco</option></select></div>
 <div class="control"><label>Intensidade <span class="val" id="sV">1.0</span></label><input type="range" id="sstr" min="0.1" max="5" step="0.1" value="1"></div>
@@ -109,60 +102,104 @@ export class PoissonInteractiveSim extends Sim {
 		this.computeSolution();
 	}
 	buildGeometryGrid(rows, cols) {
-		let boundaryGrid = new Float64Array(rows * cols);
-		const cx = cols / 2, cy = rows / 2;
-
-		if (this.geometry === "rect") {
-			const w = cols / 3, h = rows / 3;
-			for (let j = 0; j < rows; j++) {
-				for (let i = 0; i < cols; i++) {
-					if (j < cy - h/2 || j > cy + h/2 || i < cx - w/2 || i > cx + w/2) {
-						boundaryGrid[j * cols + i] = 10;
-					}
-				}
-			}
-		} else if (this.geometry === "circle") {
-			const r = min(cols, rows) / 4;
-			for (let j = 0; j < rows; j++) {
-				for (let i = 0; i < cols; i++) {
-					const d = sqrt((i - cx) ** 2 + (j - cy) ** 2);
-					if (d > r) boundaryGrid[j * cols + i] = 10;
-				}
-			}
-		} else if (this.geometry === "lshape") {
-			const w = cols / 3, h = rows / 3;
-			for (let j = 0; j < rows; j++) {
-				for (let i = 0; i < cols; i++) {
-					const inV = j >= cy - h/2 && j <= cy + h/2 && i >= cx - w/2 && i <= cx + w/2;
-					const inH = j >= cy && j <= cy + h/2 && i >= cx && i <= cx + w/2 + w/3;
-					if (!inV && !inH) boundaryGrid[j * cols + i] = 10;
-				}
+		let domainMask = new Uint8Array(rows * cols);
+		const dx = W / (cols - 1), dy = H / (rows - 1);
+		for (let j = 0; j < rows; j++) {
+			for (let i = 0; i < cols; i++) {
+				if (this.isInsideGeometry(i * dx, j * dy)) domainMask[j * cols + i] = 1;
 			}
 		}
-		return boundaryGrid;
+		return domainMask;
+	}
+	isInsideGeometry(x, y) {
+		const cx = W / 2, cy = H / 2, w = W / 3, h = H / 3;
+		if (this.geometry === "circle") {
+			const r = min(W, H) / 4;
+			return (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
+		}
+		const inRect = x >= cx - w/2 && x <= cx + w/2 && y >= cy - h/2 && y <= cy + h/2;
+		if (this.geometry === "rect") return inRect;
+		return inRect || (x >= cx && x <= cx + 2*w/3 && y >= cy && y <= cy + h/2);
+	}
+	geometryPath() {
+		const cx = W / 2, cy = H / 2, w = W / 3, h = H / 3;
+		const path = new Path2D();
+		if (this.geometry === "rect") path.rect(cx - w/2, cy - h/2, w, h);
+		else if (this.geometry === "circle") path.arc(cx, cy, min(W, H) / 4, 0, 2 * PI);
+		else {
+			path.moveTo(cx - w/2, cy - h/2);
+			path.lineTo(cx + w/2, cy - h/2);
+			path.lineTo(cx + w/2, cy);
+			path.lineTo(cx + 2*w/3, cy);
+			path.lineTo(cx + 2*w/3, cy + h/2);
+			path.lineTo(cx - w/2, cy + h/2);
+			path.closePath();
+		}
+		return path;
 	}
 	drawGeometryBorder(c, dx, dy) {
-		const cx = W / 2, cy = H / 2;
 		c.strokeStyle = "rgba(251,191,36,0.7)";
 		c.lineWidth = 2.5;
+		c.stroke(this.geometryPath());
+	}
+	meshPoints() {
+		const points = [];
+		const cx = W / 2, cy = H / 2, w = W / 3, h = H / 3;
+		const left = cx - w/2, right = cx + w/2;
+		const top = cy - h/2, bottom = cy + h/2;
+		const divisions = max(2, this.gridRes - 1);
 
-		if (this.geometry === "rect") {
-			const w = W / 3, h = H / 3;
-			c.strokeRect(cx - w/2, cy - h/2, w, h);
-		} else if (this.geometry === "circle") {
-			const r = min(W, H) / 4;
-			c.beginPath();
-			c.arc(cx, cy, r, 0, 2 * PI);
-			c.stroke();
-		} else if (this.geometry === "lshape") {
-			const w = W / 3, h = H / 3;
-			c.beginPath();
-			// Vertical part
-			c.rect(cx - w/2, cy - h/2, w, h);
-			// Horizontal extension
-			c.rect(cx, cy, w/3 + w/3, h/2);
-			c.stroke();
+		if (this.geometry === "circle") {
+			const radius = min(W, H) / 4;
+			// gridRes describes points across the diameter; half as many radial
+			// divisions gives approximately the same point density as a square grid.
+			const radialDivisions = max(1, Math.round(divisions / 2));
+			const spacing = radius / radialDivisions;
+			points.push({ x: cx, y: cy });
+			for (let ring = 1; ring <= radialDivisions; ring++) {
+				const r = radius * ring / radialDivisions;
+				const count = max(6, Math.round(2 * PI * r / spacing));
+				for (let k = 0; k < count; k++) {
+					const angle = 2 * PI * k / count;
+					points.push({ x: cx + r * cos(angle), y: cy + r * sin(angle) });
+				}
+			}
+			return points;
 		}
+
+		// Build every row from its exact endpoints. This guarantees that the
+		// first/last nodes stay on the same boundary as density is increased.
+		const nominalSpacing = h / divisions;
+		for (let row = 0; row <= divisions; row++) {
+			const y = top + h * row / divisions;
+			const rowRight = this.geometry === "lshape" && y >= cy ? cx + 2*w/3 : right;
+			const columns = max(1, Math.round((rowRight - left) / nominalSpacing));
+			for (let column = 0; column <= columns; column++) {
+				points.push({
+					x: left + (rowRight - left) * column / columns,
+					y,
+				});
+			}
+		}
+		return points;
+	}
+	getMeshPoints() {
+		const key = `${this.geometry}:${this.gridRes}:${W}:${H}`;
+		if (this._meshKey !== key) {
+			this._meshKey = key;
+			this._meshPoints = this.meshPoints();
+		}
+		return this._meshPoints;
+	}
+	drawMeshPoints(c) {
+		const radius = this.gridRes >= 60 ? 0.45 : this.gridRes >= 35 ? 0.6 : 0.8;
+		c.fillStyle = "rgba(226,232,240,0.22)";
+		c.beginPath();
+		for (const point of this.getMeshPoints()) {
+			c.moveTo(point.x + radius, point.y);
+			c.arc(point.x, point.y, radius, 0, 2 * PI);
+		}
+		c.fill();
 	}
 	buildSourceGrid(rows, cols, dx, dy) {
 		let sourceGrid = new Float64Array(rows * cols);
@@ -184,9 +221,10 @@ export class PoissonInteractiveSim extends Sim {
 				}
 			} else if (src.type === "disk") {
 				const r = src.r || 20;
-				for (let j = max(0, cj - r); j <= min(rows - 1, cj + r); j++) {
-					for (let i = max(0, ci - r); i <= min(cols - 1, ci + r); i++) {
-						if ((i - ci) ** 2 + (j - cj) ** 2 <= r * r) {
+				const rx = Math.ceil(r / dx), ry = Math.ceil(r / dy);
+				for (let j = max(0, cj - ry); j <= min(rows - 1, cj + ry); j++) {
+					for (let i = max(0, ci - rx); i <= min(cols - 1, ci + rx); i++) {
+						if ((i * dx - src.x) ** 2 + (j * dy - src.y) ** 2 <= r * r) {
 							sourceGrid[j * cols + i] = src.strength * 5;
 						}
 					}
@@ -199,21 +237,27 @@ export class PoissonInteractiveSim extends Sim {
 		const gridRows = this.gridRes, gridCols = this.gridRes;
 		const dx = W / (gridCols - 1), dy = H / (gridRows - 1);
 
-		const boundaryGrid = this.buildGeometryGrid(gridRows, gridCols);
+		const domainMask = this.buildGeometryGrid(gridRows, gridCols);
 		const sourceGrid = this.buildSourceGrid(gridRows, gridCols, dx, dy);
 
-		const result = solvePoissonFDM(gridRows, gridCols, sourceGrid, boundaryGrid, 300, 1e-4);
+		const result = solvePoissonFDM(gridRows, gridCols, sourceGrid, domainMask, 300, 1e-4);
 		this.V = result.V;
 		this.gridRows = gridRows;
 		this.gridCols = gridCols;
 		this.dx = dx;
 		this.dy = dy;
+		this.domainMask = domainMask;
 		this.iterations = result.iterations;
 		this.residual = result.residual;
 
-		const { Ex, Ey } = computeElectricField(this.V, gridRows, gridCols, dx, dy);
+		const { Ex, Ey } = computeElectricField(this.V, gridRows, gridCols, dx, dy, domainMask);
 		this.Ex = Ex;
 		this.Ey = Ey;
+	}
+	resize() {
+		// Canvas dimensions define the physical geometry, so rebuild its sampling
+		// after a layout change while preserving the selected resolution.
+		this.computeSolution();
 	}
 	onMouseDown(x, y) {
 		// Check if clicking on existing source
@@ -327,33 +371,49 @@ export class PoissonInteractiveSim extends Sim {
 			}
 			tc.putImageData(img, 0, 0);
 			c.imageSmoothingEnabled = true;
+			c.save();
+			c.clip(this.geometryPath());
 			c.drawImage(tmp, 0, 0, W, H);
+			c.restore();
 		}
+
+		// Shape-fitted sample nodes. Resolution changes their spacing/count only;
+		// the outermost nodes always remain on the exact same geometry boundary.
+		this.drawMeshPoints(c);
 
 		// E field
 		if (this.showField) {
-			c.strokeStyle = "rgba(56,189,248,0.6)";
-			c.lineWidth = 1.2;
+			c.save();
+			c.clip(this.geometryPath());
+			c.strokeStyle = "rgba(103,232,249,0.95)";
+			c.lineWidth = 1.8;
+			c.lineCap = "round";
+			c.lineJoin = "round";
 			const step = max(2, floor(gridCols / 14));
 			for (let j = 0; j < gridRows; j += step) {
 				for (let i = 0; i < gridCols; i += step) {
+					if (!this.isInsideGeometry(i * dx, j * dy)) continue;
 					const idx = j * gridCols + i;
 					const ex = Ex[idx], ey = Ey[idx];
 					const mag = sqrt(ex * ex + ey * ey);
 					if (mag < 1e-8) continue;
 					const u = ex / mag, v = ey / mag;
-					const len = min(14, max(4, Math.log10(mag + 1) * 4));
+					const len = min(26, max(12, Math.log10(mag + 1) * 8));
+					const head = min(6, len * 0.3);
 					const x = i * dx, y = j * dy;
+					const x0 = x - u * len/2, y0 = y - v * len/2;
+					const x1 = x + u * len/2, y1 = y + v * len/2;
 					c.beginPath();
-					c.moveTo(x, y);
-					c.lineTo(x + u * len, y + v * len);
-					c.moveTo(x + u * len, y + v * len);
-					c.lineTo(x + u * len - u * 3 - v * 2, y + v * len - v * 3 + u * 2);
-					c.moveTo(x + u * len, y + v * len);
-					c.lineTo(x + u * len - u * 3 + v * 2, y + v * len - v * 3 - u * 2);
+					c.moveTo(x0, y0);
+					c.lineTo(x1, y1);
+					c.moveTo(x1, y1);
+					c.lineTo(x1 - u * head - v * head * 0.55, y1 - v * head + u * head * 0.55);
+					c.moveTo(x1, y1);
+					c.lineTo(x1 - u * head + v * head * 0.55, y1 - v * head - u * head * 0.55);
 					c.stroke();
 				}
 			}
+			c.restore();
 		}
 
 		// Streamlines
