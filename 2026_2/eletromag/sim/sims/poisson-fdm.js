@@ -304,7 +304,7 @@ export class PoissonFDMSim extends Sim {
 		}
 
 		// Info display
-		const infoX = W - 320, infoY = 16, infoW = 310, infoH = 60;
+		const infoX = W - 320, infoY = 16, infoW = 310, infoH = 80;
 		c.fillStyle = "rgba(7,10,18,.8)";
 		c.beginPath();
 		c.roundRect(infoX, infoY, infoW, infoH, 8);
@@ -313,9 +313,9 @@ export class PoissonFDMSim extends Sim {
 		c.stroke();
 		c.fillStyle = "rgba(255,255,255,0.7)";
 		c.font = "9px monospace";
-		c.fillText(`Grid: ${this.gridCols}×${this.gridRows}  Resolução: ${(1/this.gridRes).toFixed(3)}`, infoX + 8, infoY + 18);
+		c.fillText(`Grid: ${this.gridCols}×${this.gridRows}  Resolução: ${(1/this.gridRes).toFixed(3)}`, infoX + 8, infoY + 16);
 		c.fillText(`Iterações: ${this.iterations}  Resíduo: ${this.residual.toExponential(2)}`, infoX + 8, infoY + 32);
-		c.fillText(`Fonte: ${this.sourceMode}  Intensidade: ${this.sourceStrength.toFixed(1)}`, infoX + 8, infoY + 46);
-		c.fillText(`Borda: ${this.boundaryType === "dirichlet" ? `V=${this.boundaryVal}V` : "Neumann"}`, infoX + 8, infoY + 60);
+		c.fillText(`Fonte: ${this.sourceMode}  Intensidade: ${this.sourceStrength.toFixed(1)}`, infoX + 8, infoY + 48);
+		c.fillText(`Borda: ${this.boundaryType === "dirichlet" ? `V=${this.boundaryVal}V` : "Neumann"}`, infoX + 8, infoY + 64);
 	}
 }

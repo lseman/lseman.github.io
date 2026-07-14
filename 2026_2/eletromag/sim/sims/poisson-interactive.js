@@ -335,15 +335,15 @@ export class PoissonInteractiveSim extends Sim {
 		const infoX = W - 310, infoY = 16;
 		c.fillStyle = "rgba(7,10,18,.8)";
 		c.beginPath();
-		c.roundRect(infoX, infoY, 300, 60, 8);
+		c.roundRect(infoX, infoY, 300, 80, 8);
 		c.fill();
 		c.strokeStyle = "rgba(148,163,184,.2)";
 		c.stroke();
 		c.fillStyle = "rgba(255,255,255,0.7)";
 		c.font = "9px monospace";
-		c.fillText(`Fontes: ${this.sources.length}  Grid: ${this.gridCols}×${this.gridRows}`, infoX + 8, infoY + 18);
+		c.fillText(`Fontes: ${this.sources.length}  Grid: ${this.gridCols}×${this.gridRows}`, infoX + 8, infoY + 16);
 		c.fillText(`Iterações: ${this.iterations}  Resíduo: ${this.residual.toExponential(2)}`, infoX + 8, infoY + 32);
-		c.fillText(`Geometria: ${this.geometry}  Tipo: ${this.sourceMode}`, infoX + 8, infoY + 46);
-		c.fillText(`Clique no canvas para adicionar fontes. Arraste para mover.`, infoX + 8, infoY + 60);
+		c.fillText(`Geometria: ${this.geometry}  Tipo: ${this.sourceMode}`, infoX + 8, infoY + 48);
+		c.fillText(`Clique no canvas para adicionar fontes. Arraste para mover.`, infoX + 8, infoY + 64);
 	}
 }
