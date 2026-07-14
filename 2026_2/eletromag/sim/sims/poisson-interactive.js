@@ -60,29 +60,28 @@ export class PoissonInteractiveSim extends Sim {
 		this.geometry = "rect";
 		this.sourceMode = "point";
 		this.sourceStrength = 1;
-		this.numSources = 6;
+		this.sources = [];
 		this.showPotential = true;
 		this.showField = true;
 		this.showStreamlines = false;
 		this.gridRes = 40;
 		this.dragSource = null;
-		this.hint = "Ajuste número de fontes na borda. Arraste para mover ao longo da geometria.";
+		this.hint = "Clique para adicionar fontes. Arraste para mover. Geometria se alinha à malha.";
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">∇²</span> ${this.name}</h3>
-<div class="formula" id="formula">∇²V = ρ/ε₀  |  Fontes na borda</div>
+<div class="formula" id="formula">∇²V = ρ/ε₀  |  Geometria interativa</div>
 <div class="control"><label>Geometria</label><select id="geom"><option value="rect">Retângulo</option><option value="circle">Círculo</option><option value="lshape">L-Shape</option></select></div>
-<div class="control"><label>Número de fontes <span class="val" id="nV">6</span></label><input type="range" id="nsrc" min="3" max="20" value="6"></div>
+<div class="control"><label>Tipo de fonte</label><select id="src"><option value="point">Ponto</option><option value="line">Linha</option><option value="disk">Disco</option></select></div>
 <div class="control"><label>Intensidade <span class="val" id="sV">1.0</span></label><input type="range" id="sstr" min="0.1" max="5" step="0.1" value="1"></div>
 <div class="control"><label>Mostrar potencial</label><label class="toggle"><input type="checkbox" id="showV" checked><span class="track"></span></label></div>
 <div class="control"><label>Campo E</label><label class="toggle"><input type="checkbox" id="showE" checked><span class="track"></span></label></div>
 <div class="control"><label>Linhas de fluxo</label><label class="toggle"><input type="checkbox" id="showS"><span class="track"></span></label></div>
 <div class="control"><label>Resolução <span class="val" id="gV">40</span></label><input type="range" id="gres" min="20" max="80" value="40"></div>
-<div class="btn-row"><button class="btn primary" id="solve">Resolver</button></div>
+<div class="btn-row"><button class="btn primary" id="solve">Resolver</button><button class="btn" id="clear">Limpar fontes</button></div>
 <div class="stat-grid" id="stats"></div>`;
 		el.querySelector("#geom").value = this.geometry;
-		el.querySelector("#nsrc").value = String(this.numSources);
-		el.querySelector("#nV").textContent = String(this.numSources);
+		el.querySelector("#src").value = this.sourceMode;
 		el.querySelector("#sstr").value = String(this.sourceStrength);
 		el.querySelector("#sV").textContent = this.sourceStrength.toFixed(1);
 		el.querySelector("#showV").checked = this.showPotential;
@@ -91,13 +90,8 @@ export class PoissonInteractiveSim extends Sim {
 		el.querySelector("#gres").value = String(this.gridRes);
 		el.querySelector("#gV").textContent = String(this.gridRes);
 
-		el.querySelector("#geom").onchange = (e) => { this.geometry = e.target.value; this.generateSourcesOnBoundary(); this.computeSolution(); };
-		el.querySelector("#nsrc").oninput = (e) => {
-			this.numSources = +e.target.value;
-			el.querySelector("#nV").textContent = e.target.value;
-			this.generateSourcesOnBoundary();
-			this.computeSolution();
-		};
+		el.querySelector("#geom").onchange = (e) => { this.geometry = e.target.value; this.computeSolution(); };
+		el.querySelector("#src").onchange = (e) => (this.sourceMode = e.target.value);
 		el.querySelector("#sstr").oninput = (e) => {
 			this.sourceStrength = +e.target.value;
 			el.querySelector("#sV").textContent = e.target.value;
@@ -111,7 +105,7 @@ export class PoissonInteractiveSim extends Sim {
 			this.computeSolution();
 		};
 		el.querySelector("#solve").onclick = () => this.computeSolution();
-		this.generateSourcesOnBoundary();
+		el.querySelector("#clear").onclick = () => { this.sources = []; this.computeSolution(); };
 		this.computeSolution();
 	}
 	buildGeometryGrid(rows, cols) {
@@ -221,69 +215,30 @@ export class PoissonInteractiveSim extends Sim {
 		this.Ex = Ex;
 		this.Ey = Ey;
 	}
-	generateSourcesOnBoundary() {
-		this.sources = [];
-		const cx = W / 2, cy = H / 2;
-		const n = this.numSources;
-
-		if (this.geometry === "rect") {
-			const w = W / 3, h = H / 3;
-			const perimeter = 2 * (w + h);
-			const step = perimeter / n;
-			for (let i = 0; i < n; i++) {
-				let dist = i * step;
-				let x, y;
-				if (dist < w) {
-					x = cx - w/2 + dist;
-					y = cy - h/2;
-				} else if (dist < w + h) {
-					x = cx + w/2;
-					y = cy - h/2 + (dist - w);
-				} else if (dist < 2*w + h) {
-					x = cx + w/2 - (dist - w - h);
-					y = cy + h/2;
-				} else {
-					x = cx - w/2;
-					y = cy + h/2 - (dist - 2*w - h);
-				}
-				this.sources.push({ x, y, type: "point", strength: this.sourceStrength, len: 30, ang: 0, r: 15 });
-			}
-		} else if (this.geometry === "circle") {
-			const r = min(W, H) / 4;
-			for (let i = 0; i < n; i++) {
-				const ang = (2 * PI * i) / n;
-				const x = cx + r * cos(ang);
-				const y = cy + r * sin(ang);
-				this.sources.push({ x, y, type: "point", strength: this.sourceStrength, len: 30, ang, r: 15 });
-			}
-		} else if (this.geometry === "lshape") {
-			const w = W / 3, h = H / 3;
-			const vEdge = w;
-			const hEdge = w/3 + w/3;
-			const perimeter = 2*h + w + h/2 + hEdge;
-			const step = perimeter / n;
-			for (let i = 0; i < n; i++) {
-				let dist = i * step;
-				let x, y;
-				if (dist < h) {
-					x = cx - w/2;
-					y = cy - h/2 + dist;
-				} else if (dist < h + w) {
-					x = cx - w/2 + (dist - h);
-					y = cy + h/2;
-				} else if (dist < h + w + h/2) {
-					x = cx + w/2;
-					y = cy + h/2 - (dist - h - w);
-				} else if (dist < h + w + h/2 + hEdge) {
-					x = cx + w/2 + (dist - h - w - h/2);
-					y = cy;
-				} else {
-					x = cx + w/2 + hEdge;
-					y = cy - (dist - h - w - h/2 - hEdge);
-				}
-				this.sources.push({ x, y, type: "point", strength: this.sourceStrength, len: 30, ang: 0, r: 15 });
+	onMouseDown(x, y) {
+		// Check if clicking on existing source
+		for (let i = 0; i < this.sources.length; i++) {
+			if (abs(this.sources[i].x - x) < 12 && abs(this.sources[i].y - y) < 12) {
+				this.dragSource = i;
+				return;
 			}
 		}
+		// Add new source
+		this.sources.push({
+			x, y, type: this.sourceMode, strength: this.sourceStrength,
+			len: 30, ang: 0, r: 15
+		});
+		this.computeSolution();
+	}
+	onMouseMove(x, y) {
+		if (this.dragSource !== null) {
+			this.sources[this.dragSource].x = x;
+			this.sources[this.dragSource].y = y;
+			this.computeSolution();
+		}
+	}
+	onMouseUp() {
+		this.dragSource = null;
 	}
 	snapToGeometry(x, y) {
 		const cx = W / 2, cy = H / 2;
@@ -341,9 +296,6 @@ export class PoissonInteractiveSim extends Sim {
 		}
 		return { x, y };
 	}
-	onMouseDown(x, y) {}
-	onMouseMove(x, y) {}
-	onMouseUp() {}
 	render(c, time) {
 		if (W < 2 || H < 2 || !this.V) return;
 		c.fillStyle = "#0a0e17";
