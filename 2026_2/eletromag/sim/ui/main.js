@@ -38,6 +38,8 @@ import { MagnetStaticSim } from "../sims/magnetostatics.js";
 import { FaradaySim } from "../sims/faraday.js";
 import { MaxwellSim } from "../sims/maxwell.js";
 import { WaveSim } from "../sims/waves.js";
+import { PoissonFDMSim } from "../sims/poisson-fdm.js";
+import { BoundaryDielSim } from "../sims/boundary-diel.js";
 
 const sims = [
 	new VecCalcSim(),
@@ -48,6 +50,8 @@ const sims = [
 	new FaradaySim(),
 	new MaxwellSim(),
 	new WaveSim(),
+	new PoissonFDMSim(),
+	new BoundaryDielSim(),
 ];
 
 const tabNames = [
@@ -59,6 +63,8 @@ const tabNames = [
 	"Faraday",
 	"Maxwell",
 	"Ondas EM",
+	"Poisson FDM",
+	"Fronteira Diel.",
 ];
 
 const formulaTooltips = [
@@ -70,6 +76,8 @@ const formulaTooltips = [
 	{title:"Lei de Faraday–Neumann",concept:"Uma variação do fluxo magnético induz força eletromotriz. O sinal negativo expressa a oposição à mudança descrita pela lei de Lenz.",formula:"ε = −N·dΦ/dt | Φ = ∫B·dA"},
 	{title:"Equações de Maxwell",concept:"As quatro equações relacionam cargas, correntes e campos elétricos e magnéticos, incluindo a indução causada por campos variáveis.",formula:"∇·D=ρ | ∇·B=0 | ∇×E=−∂B/∂t | ∇×H=J+∂D/∂t"},
 	{title:"Ondas Eletromagnéticas",concept:"Os campos E e B são perpendiculares entre si e à propagação. O vetor de Poynting representa a direção e a intensidade do fluxo de energia.",formula:"E(z,t)=E₀cos(kz−ωt+φ) | B=E/c | S=E×H"},
+	{title:"Equação de Poisson",concept:"Extensão da equação de Laplace que inclui fontes. Resolvida numericamente por diferenças finitas com diferentes condições de contorno.",formula:"∇²V = ρ/ε₀ | Dirichlet: V=const | Neumann: ∂V/∂n=const"},
+	{title:"Condições de Contorno em Dielétricos",concept:"Na interface entre dois dielétricos, a componente tangencial de E é contínua, enquanto a componente normal de D é contínua (sem carga superficial).",formula:"E₁_tan = E₂_tan | D₁_n = D₂_n | D = κε₀E"},
 ];
 
 let activeSim = sims[0],
