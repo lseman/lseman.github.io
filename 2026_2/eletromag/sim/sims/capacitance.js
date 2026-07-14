@@ -364,6 +364,8 @@ export class CapSim extends Sim {
 			c.font = "11px sans-serif";
 			c.fillText("r₁", cx - a / 2 - 10, cy + 4);
 			c.fillText("r₂", cx + b / 2 - 3, cy + 12);
+			c.fillText(`r₁ = ${this.r1} mm`, cx - b - 8, cy - b - 20);
+			c.fillText(`r₂ = ${this.r2} mm`, cx + b + 8, cy - b - 20);
 		}
 		if (this.anim) {
 			const n = 20;
