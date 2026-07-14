@@ -573,7 +573,7 @@ class ElectroStaticSim extends Sim {
 			c.imageSmoothingEnabled = true;
 			c.drawImage(tmp, 0, 0, W, H);
 		}
-		// Field lines
+		// Field lines with RK4 integration
 		if (this.showLines && this.charges.length > 0) {
 			const starts = [];
 			this.charges.forEach((ch) => {
@@ -586,12 +586,23 @@ class ElectroStaticSim extends Sim {
 				c.beginPath();
 				let p = st.clone();
 				c.moveTo(p.x, p.y);
-				for (let s = 0; s < 200; s++) {
-					const e = this.E(p),
-						m = e.len();
-					if (m < 1e-6) break;
-					p = p.add(e.norm().mul(min(3, 10 / m)));
-					if (p.x < 0 || p.x > W || p.y < 0 || p.y > H) break;
+				for (let s = 0; s < 300; s++) {
+					const e = this.E(p), m = e.len();
+					if (m < 1e-6 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) break;
+					// RK4 integration
+					const h = min(3, 10 / m) * 0.5;
+					const en = e.norm();
+					const k1x = en.x, k1y = en.y;
+					const p2 = p.add(new V(k1x * h * 0.5, k1y * h * 0.5));
+					const e2 = this.E(p2), m2 = e2.len();
+					const k2x = m2 > 1e-6 ? e2.norm().x : 0, k2y = m2 > 1e-6 ? e2.norm().y : 0;
+					const p3 = p.add(new V(k2x * h * 0.5, k2y * h * 0.5));
+					const e3 = this.E(p3), m3 = e3.len();
+					const k3x = m3 > 1e-6 ? e3.norm().x : 0, k3y = m3 > 1e-6 ? e3.norm().y : 0;
+					const p4 = p.add(new V(k3x * h, k3y * h));
+					const e4 = this.E(p4), m4 = e4.len();
+					const k4x = m4 > 1e-6 ? e4.norm().x : 0, k4y = m4 > 1e-6 ? e4.norm().y : 0;
+					p = p.add(new V((h / 6) * (k1x + 2 * k2x + 2 * k3x + k4x), (h / 6) * (k1y + 2 * k2y + 2 * k3y + k4y)));
 					c.lineTo(p.x, p.y);
 				}
 				const e = this.E(st);
@@ -626,15 +637,15 @@ class ElectroStaticSim extends Sim {
 					const d = ch.pos.distTo(new V(cx, cy));
 					return s + (d < 120 ? ch.q : 0);
 				}, 0) * 1e-9;
+			// Flux info at top right
+			const fluxInfoW=260,fluxInfoH=64,fluxInfoX=W-fluxInfoW-16,fluxInfoY=16;
+			c.fillStyle="rgba(7,10,18,.82)";c.beginPath();c.roundRect(fluxInfoX,fluxInfoY,fluxInfoW,fluxInfoH,8);c.fill();
+			c.strokeStyle="rgba(52,211,153,.3)";c.lineWidth=1;c.stroke();
 			c.fillStyle = "rgba(52,211,153,0.8)";
-			c.font = "12px monospace";
-			c.fillText(`Fluxo ≈ ${flux.toFixed(2)}`, cx - 60, cy - 130);
-			c.fillText(`Q_int ≈ ${(Qenv * 1e9).toFixed(1)} nC`, cx - 70, cy + 140);
-			c.fillText(
-				`Φ = Q/ε₀ ≈ ${(Qenv / EPS0).toExponential(2)}`,
-				cx - 80,
-				cy + 156,
-			);
+			c.font = "11px monospace";
+			c.fillText(`Fluxo ≈ ${flux.toFixed(2)}`, fluxInfoX + 8, fluxInfoY + 20);
+			c.fillText(`Q_int ≈ ${(Qenv * 1e9).toFixed(1)} nC`, fluxInfoX + 8, fluxInfoY + 38);
+			c.fillText(`Φ = Q/ε₀ ≈ ${(Qenv / EPS0).toExponential(2)}`, fluxInfoX + 8, fluxInfoY + 56);
 		}
 		this.charges.forEach((ch) => ch.draw(c, this.sel === ch));
 	}
@@ -777,7 +788,7 @@ class PotentialSim extends Sim {
 			c.lineWidth = 1;
 			c.stroke();
 		}
-		// Field lines
+		// Field lines with RK4 integration
 		if (this.showLines) {
 			const starts = [];
 			this.charges.forEach((ch) => {
@@ -793,12 +804,23 @@ class PotentialSim extends Sim {
 				c.beginPath();
 				let p = st.clone();
 				c.moveTo(p.x, p.y);
-				for (let s = 0; s < 150; s++) {
-					const e = this.E(p),
-						m = e.len();
-					if (m < 1e-6) break;
-					p = p.add(e.norm().mul(min(2, 8 / m)));
-					if (p.x < 0 || p.x > W || p.y < 0 || p.y > H) break;
+				for (let s = 0; s < 250; s++) {
+					const e = this.E(p), m = e.len();
+					if (m < 1e-6 || p.x < 0 || p.x > W || p.y < 0 || p.y > H) break;
+					// RK4 integration
+					const h = min(2, 8 / m) * 0.5;
+					const en = e.norm();
+					const k1x = en.x, k1y = en.y;
+					const p2 = p.add(new V(k1x * h * 0.5, k1y * h * 0.5));
+					const e2 = this.E(p2), m2 = e2.len();
+					const k2x = m2 > 1e-6 ? e2.norm().x : 0, k2y = m2 > 1e-6 ? e2.norm().y : 0;
+					const p3 = p.add(new V(k2x * h * 0.5, k2y * h * 0.5));
+					const e3 = this.E(p3), m3 = e3.len();
+					const k3x = m3 > 1e-6 ? e3.norm().x : 0, k3y = m3 > 1e-6 ? e3.norm().y : 0;
+					const p4 = p.add(new V(k3x * h, k3y * h));
+					const e4 = this.E(p4), m4 = e4.len();
+					const k4x = m4 > 1e-6 ? e4.norm().x : 0, k4y = m4 > 1e-6 ? e4.norm().y : 0;
+					p = p.add(new V((h / 6) * (k1x + 2 * k2x + 2 * k3x + k4x), (h / 6) * (k1y + 2 * k2y + 2 * k3y + k4y)));
 					c.lineTo(p.x, p.y);
 				}
 				c.strokeStyle = "rgba(56,189,248,0.35)";
@@ -814,9 +836,11 @@ class PotentialSim extends Sim {
 				const d = this.charges[i].pos.distTo(this.charges[j].pos);
 				if (d > 0) u += (this.charges[i].q * this.charges[j].q) / (d * 20);
 			}
+		const infoW=140,infoH=22,infoX=W-infoW-16,infoY=16;
+		c.fillStyle="rgba(7,10,18,.72)";c.beginPath();c.roundRect(infoX,infoY,infoW,infoH,8);c.fill();
 		c.fillStyle = "rgba(255,255,255,0.6)";
 		c.font = "11px monospace";
-		c.fillText(`U = ${u.toFixed(4)} J`, 10, H - 10);
+		c.fillText(`U = ${u.toFixed(4)} J`, infoX + 8, infoY + 15);
 	}
 	drawCont(c, lv) {
 		const r = 2;
@@ -1017,9 +1041,11 @@ class CapSim extends Sim {
 				c.fill();
 			}
 		}
+		const infoW=100,infoH=22,infoX=W-infoW-16,infoY=16;
+		c.fillStyle="rgba(7,10,18,.72)";c.beginPath();c.roundRect(infoX,infoY,infoW,infoH,8);c.fill();
 		c.fillStyle = "rgba(255,255,255,0.5)";
 		c.font = "11px monospace";
-		c.fillText(`V = ${this.V}V`, 10, 20);
+		c.fillText(`V = ${this.V}V`, infoX + 8, infoY + 15);
 	}
 }
 
@@ -1259,10 +1285,12 @@ class MagnetStaticSim extends Sim {
 				c.stroke();
 			});
 		}
-		// Labels
+		// Labels at top right
+		const infoW=100,infoH=22,infoX=W-infoW-16,infoY=16;
+		c.fillStyle="rgba(7,10,18,.72)";c.beginPath();c.roundRect(infoX,infoY,infoW,infoH,8);c.fill();
 		c.fillStyle = "rgba(255,255,255,0.5)";
 		c.font = "11px monospace";
-		c.fillText(`B = ${this.I}A`, 10, 20);
+		c.fillText(`B = ${this.I}A`, infoX + 8, infoY + 15);
 	}
 }
 
@@ -1390,10 +1418,12 @@ class FaradaySim extends Sim {
 			ev = document.querySelector("#eVal");
 		if (fv) fv.textContent = flux.toExponential(3);
 		if (ev) ev.textContent = emf.toExponential(3);
-		// Time label
+		// Time label at top right
+		const infoW=110,infoH=22,infoX=W-infoW-16,infoY=16;
+		c.fillStyle="rgba(7,10,18,.72)";c.beginPath();c.roundRect(infoX,infoY,infoW,infoH,8);c.fill();
 		c.fillStyle = "rgba(255,255,255,0.4)";
 		c.font = "10px monospace";
-		c.fillText(`t=${this.time.toFixed(1)}s`, 10, 20);
+		c.fillText(`t=${this.time.toFixed(1)}s`, infoX + 8, infoY + 15);
 		// Animate
 		if (this.playing) this.time += 0.016;
 	}
@@ -1812,9 +1842,12 @@ class WaveSim extends Sim {
 			c.strokeStyle = "#fbbf24";
 			c.lineWidth = 2;
 			c.stroke();
+			// Energy density info at top right
+			const energyInfoW=160,energyInfoH=54,energyInfoX=W-energyInfoW-16,energyInfoY=16;
+			c.fillStyle="rgba(7,10,18,.82)";c.beginPath();c.roundRect(energyInfoX,energyInfoY,energyInfoW,energyInfoH,8);c.fill();
 			c.fillStyle = "rgba(251,191,36,0.6)";
-			c.font = "12px sans-serif";
-			c.fillText("u_E = ½εE²", W - 120, midY - 30);
+			c.font = "11px sans-serif";
+			c.fillText("u_E = ½εE²", energyInfoX + 8, energyInfoY + 20);
 			if (this.showB) {
 				c.beginPath();
 				for (let x = 0; x < W; x++) {
@@ -1826,11 +1859,11 @@ class WaveSim extends Sim {
 				c.lineWidth = 1.5;
 				c.stroke();
 				c.fillStyle = "rgba(56,189,248,0.6)";
-				c.fillText("u_B = ½B²/μ", W - 120, midY + 35);
+				c.fillText("u_B = ½B²/μ", energyInfoX + 8, energyInfoY + 38);
 			}
 			c.fillStyle = "rgba(255,255,255,0.5)";
-			c.font = "11px monospace";
-			c.fillText("u_E = u_B (onda plana)", 10, 20);
+			c.font = "10px monospace";
+			c.fillText("u_E = u_B (onda plana)", energyInfoX + 8, energyInfoY + 52);
 		}
 	}
 	onMouseDown(x, y) {}

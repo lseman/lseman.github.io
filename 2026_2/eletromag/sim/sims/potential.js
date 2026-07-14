@@ -189,8 +189,12 @@ export class PotentialSim extends Sim {
 			}
 		c.fillStyle = "rgba(255,255,255,0.6)";
 		c.font = "11px monospace";
-		c.fillText(`U = ${(u * 1e9).toFixed(3)} nJ`, 10, 20);
-		if(this.showProbe){const p=new V(S.mouse.x,S.mouse.y),e=this.E(p),v=this.V(p);c.fillStyle="rgba(7,10,18,.82)";c.fillRect(12,H-78,295,55);c.fillStyle="#cbd5e1";c.font="10px monospace";c.fillText(`sonda: V=${v.toFixed(3)} V`,22,H-59);c.fillText(`E=−∇V=(${e.x.toExponential(2)}, ${e.y.toExponential(2)}) V/m`,22,H-42);c.fillText(`|E|=${e.len().toExponential(2)} V/m`,22,H-27)}
+		const infoW=140,infoH=22,infoX=W-infoW-16,infoY=16;
+		c.fillStyle="rgba(7,10,18,.72)";c.beginPath();c.roundRect(infoX,infoY,infoW,infoH,8);c.fill();
+		c.fillStyle = "rgba(255,255,255,0.6)";
+		c.font = "11px monospace";
+		c.fillText(`U = ${(u * 1e9).toFixed(3)} nJ`, infoX + 8, infoY + 15);
+		if(this.showProbe){const p=new V(S.mouse.x,S.mouse.y),e=this.E(p),v=this.V(p);const probeW=295,probeH=55,probeX=W-probeW-16,probeY=42;c.fillStyle="rgba(7,10,18,.82)";c.beginPath();c.roundRect(probeX,probeY,probeW,probeH,8);c.fill();c.strokeStyle="rgba(103,232,249,.22)";c.stroke();c.fillStyle="#cbd5e1";c.font="10px monospace";c.fillText(`sonda: V=${v.toFixed(3)} V`,probeX+10,probeY+20);c.fillText(`E=−∇V=(${e.x.toExponential(2)}, ${e.y.toExponential(2)}) V/m`,probeX+10,probeY+37);c.fillText(`|E|=${e.len().toExponential(2)} V/m`,probeX+10,probeY+52)}
 	}
 	drawContours(c) {
 		const step=14,cols=Math.ceil(W/step),rows=Math.ceil(H/step),values=[];for(let j=0;j<=rows;j++){values[j]=[];for(let i=0;i<=cols;i++)values[j][i]=this.V(new V(min(W,i*step),min(H,j*step)))}const levels=Array.from({length:this.levels*2+1},(_,i)=>(i-this.levels)*this.maxV/this.levels),cross=(x1,y1,v1,x2,y2,v2,L)=>{const t=(L-v1)/(v2-v1||1e-12);return{x:x1+(x2-x1)*t,y:y1+(y2-y1)*t}};for(const L of levels){c.beginPath();for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const x=i*step,y=j*step,x2=min(W,x+step),y2=min(H,y+step),v=[values[j][i],values[j][i+1],values[j+1][i+1],values[j+1][i]],p=[];if((v[0]-L)*(v[1]-L)<0)p.push(cross(x,y,v[0],x2,y,v[1],L));if((v[1]-L)*(v[2]-L)<0)p.push(cross(x2,y,v[1],x2,y2,v[2],L));if((v[2]-L)*(v[3]-L)<0)p.push(cross(x2,y2,v[2],x,y2,v[3],L));if((v[3]-L)*(v[0]-L)<0)p.push(cross(x,y2,v[3],x,y,v[0],L));for(let k=0;k+1<p.length;k+=2){c.moveTo(p[k].x,p[k].y);c.lineTo(p[k+1].x,p[k+1].y)}}c.strokeStyle=L===0?"rgba(226,232,240,.65)":"rgba(165,180,252,.28)";c.lineWidth=L===0?1.5:.8;c.stroke()}

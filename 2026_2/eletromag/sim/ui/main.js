@@ -122,7 +122,6 @@ function switchSim(i) {
 		});
 	buildSidebar();
 	buildLibrary();
-	document.getElementById("canvas-title").textContent = activeSim.name;
 	activeSim.resize();
 }
 
@@ -168,7 +167,6 @@ function buildSidebar() {
 
 buildSidebar();
 buildLibrary();
-document.getElementById("canvas-title").textContent = activeSim.name;
 tabsEl.querySelector(".tab")?.classList.add("active");
 setTimeout(() => {
 	resize();
@@ -243,8 +241,6 @@ wrap.addEventListener('dragleave',()=>wrap.classList.remove('drop-ready'));
 wrap.addEventListener('drop',e=>{const key=e.dataTransfer.getData('em-tool');if(!key)return;e.preventDefault();wrap.classList.remove('drop-ready');const p=scenePoint(e.clientX,e.clientY);runTool(key,p.x,p.y);});
 
 document.getElementById('library-search').oninput=e=>buildLibrary(e.target.value);
-document.getElementById('remove-selected').onclick=()=>{activeSim.removeSelected?.();buildSidebar();};
-document.getElementById('clear-scene').onclick=()=>{if('charges' in activeSim){activeSim.charges=[];activeSim.NC=0;activeSim.sel=null;}if('currents' in activeSim){activeSim.currents=[];activeSim.NI=0;}if('sources' in activeSim){activeSim.sources=[];activeSim.sel=null;}buildSidebar();};
 document.getElementById('reset-view').onclick=()=>{S.zoom=1;if(activeSim.pan)activeSim.pan={x:0,y:0};activeSim.resize();};
 
 // FPS counter
@@ -287,15 +283,21 @@ function loop(ts) {
 	}
 	// Info bar
 	const bar = document.getElementById("info-bar");
-	const info = [
-			`${fps} FPS`,
-			tabNames[simIdx],
-			activeSim.hint || "Clique e arraste para interagir",
-			"Shift+arraste para deslocar a visualização",
-		];
-	if (bar.dataset.value !== info.join("|")) {
-		bar.dataset.value = info.join("|");
-		bar.replaceChildren(...info.map((text) => Object.assign(document.createElement("span"), {textContent: text})));
+	const infoKey = `${fps}|${simIdx}|${activeSim.hint || "Clique e arraste para interagir"}`;
+	if (bar.dataset.value !== infoKey) {
+		bar.dataset.value = infoKey;
+		const toolbar = document.createElement("div");
+		toolbar.className = "toolbar";
+		toolbar.innerHTML = `<span class="live-dot"></span><strong id="canvas-title">${activeSim.name}</strong><button id="remove-selected" title="Remover objeto selecionado">⌫</button><button id="clear-scene" title="Limpar cena">Limpar</button>`;
+
+		const status = document.createElement("div");
+		status.className = "status";
+		status.innerHTML = `<span>${fps} FPS</span><span>${tabNames[simIdx]}</span><span>${activeSim.hint || "Clique e arraste para interagir"}</span><span>Shift+arraste para deslocar a visualização</span>`;
+
+		bar.replaceChildren(toolbar, status);
+
+		document.getElementById("remove-selected").onclick = () => {activeSim.removeSelected?.(); buildSidebar();};
+		document.getElementById("clear-scene").onclick = () => {if('charges' in activeSim){activeSim.charges=[];activeSim.NC=0;activeSim.sel=null;}if('currents' in activeSim){activeSim.currents=[];activeSim.NI=0;}if('sources' in activeSim){activeSim.sources=[];activeSim.sel=null;}buildSidebar();};
 	}
 	requestAnimationFrame(loop);
 }

@@ -128,6 +128,44 @@ export class WaveSim extends Sim {
 			c.fillText(`u_E = ${uE.toExponential(2)} J/m³`, ex, ey - 5);
 			c.fillStyle = "rgba(129,140,248,0.8)";
 			c.fillText(`u_B = ${uB.toExponential(2)} J/m³`, ex + barW * (uE / total), ey - 5);
+			// Energy density map visualization
+			const mapW = 160, mapH = 100;
+			const mapX = W - mapW - 20, mapY = 60;
+			c.fillStyle = "rgba(7,10,18,.8)";
+			c.beginPath();
+			c.roundRect(mapX, mapY, mapW, mapH, 8);
+			c.fill();
+			c.strokeStyle = "rgba(148,163,184,.2)";
+			c.stroke();
+			c.fillStyle = "#94a3b8";
+			c.font = "9px monospace";
+			c.fillText("Densidade de Energia", mapX + 5, mapY + 14);
+			// Draw u_E and u_B as stacked heatmap
+			for (let x = 0; x < mapW; x++) {
+				const t = this.time + (x / mapW) * 4 * PI * this.freq;
+				const eVal = 0.5 * EPS0 * (e0 * cos(t)) ** 2;
+				const bVal = (b0 * cos(t)) ** 2 / (2 * MU0);
+				const uE_frac = eVal / (uE + 1e-15);
+				const uB_frac = bVal / (uB + 1e-15);
+				
+				// u_E (red)
+				const uEH = mapH * 0.45 * uE_frac;
+				c.fillStyle = `rgba(248,113,113,${0.3 + 0.5 * uE_frac})`;
+				c.fillRect(mapX + x, mapY + mapH - uEH, 1, uEH);
+				// u_B (blue)
+				const uBH = mapH * 0.45 * uB_frac;
+				c.fillStyle = `rgba(129,140,248,${0.3 + 0.5 * uB_frac})`;
+				c.fillRect(mapX + x, mapY + mapH * 0.45 - uBH, 1, uBH);
+			}
+			// Legend
+			c.fillStyle = "rgba(248,113,113,0.7)";
+			c.fillRect(mapX + 5, mapY + mapH - 12, 8, 8);
+			c.fillStyle = "#cbd5e1";
+			c.fillText("u_E", mapX + 17, mapY + mapH - 2);
+			c.fillStyle = "rgba(129,140,248,0.7)";
+			c.fillRect(mapX + 50, mapY + mapH - 12, 8, 8);
+			c.fillStyle = "#cbd5e1";
+			c.fillText("u_B", mapX + 62, mapY + mapH - 2);
 		}
 		c.fillStyle = "rgba(255,255,255,0.4)";
 		c.font = "10px monospace";

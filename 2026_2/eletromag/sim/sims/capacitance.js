@@ -18,6 +18,63 @@ import {
 import { magColor } from "../core/colors.js";
 import { W, H } from "../core/canvas.js";
 
+// SOR solver for Laplace equation: ∇²V = 0
+// 5-point stencil with relaxation factor ω
+function solveLaplaceSOR(rows, cols, V_top, V_bottom, kappaGrid, maxIter=500, tol=1e-4) {
+	const ω = 1.8; // Optimal relaxation factor
+	let V = new Float64Array(rows * cols);
+	
+	// Initialize boundary conditions
+	for (let j = 0; j < rows; j++) {
+		for (let i = 0; i < cols; i++) {
+			if (j === 0) V[j * cols + i] = V_top;
+			else if (j === rows - 1) V[j * cols + i] = V_bottom;
+			else V[j * cols + i] = 0;
+		}
+	}
+	
+	let maxDiff = 1e9;
+	let iter = 0;
+	
+	while (maxDiff > tol && iter < maxIter) {
+		maxDiff = 0;
+		for (let j = 1; j < rows - 1; j++) {
+			for (let i = 1; i < cols - 1; i++) {
+				const idx = j * cols + i;
+				const vTop = kappaGrid ? (kappaGrid[(j-1)*cols + i] || 1.0) : 1.0;
+				const vBot = kappaGrid ? (kappaGrid[(j+1)*cols + i] || 1.0) : 1.0;
+				const vLeft = kappaGrid ? (kappaGrid[j*cols + (i-1)] || 1.0) : 1.0;
+				const vRight = kappaGrid ? (kappaGrid[j*cols + (i+1)] || 1.0) : 1.0;
+				
+				const V_new = (vTop * V[(j-1)*cols + i] + vBot * V[(j+1)*cols + i] +
+							   vLeft * V[j*cols + (i-1)] + vRight * V[j*cols + (i+1)]) /
+							  (vTop + vBot + vLeft + vRight);
+				
+				const V_old = V[idx];
+				V[idx] = V_old + ω * (V_new - V_old);
+				
+				const diff = abs(V[idx] - V_old);
+				if (diff > maxDiff) maxDiff = diff;
+			}
+		}
+		iter++;
+	}
+	return V;
+}
+
+function computeElectricField(V, rows, cols, dx, dy) {
+	const Ex = new Float64Array(rows * cols);
+	const Ey = new Float64Array(rows * cols);
+	for (let j = 1; j < rows - 1; j++) {
+		for (let i = 1; i < cols - 1; i++) {
+			const idx = j * cols + i;
+			Ex[idx] = -(V[idx + 1] - V[idx - 1]) / (2 * dx);
+			Ey[idx] = -(V[(j + 1) * cols + i] - V[(j - 1) * cols + i]) / (2 * dy);
+		}
+	}
+	return { Ex, Ey };
+}
+
 export class CapSim extends Sim {
 	constructor() {
 		super("Capacitância", "⊞");
@@ -33,6 +90,7 @@ export class CapSim extends Sim {
 		this.diel = false;
 		this.kappa = 2.2;
 		this.anim = false;
+		this.showSORField = false;
 		this.hint = "Ajuste geometria, tensão e dielétrico; os resultados atualizam ao vivo";
 	}
 	buildControls(el) {
@@ -53,6 +111,7 @@ export class CapSim extends Sim {
 <div class="control"><label>Dielétrico</label><label class="toggle"><input type="checkbox" id="diel"><span class="track"></span></label></div>
 <div class="control"><label>Permissividade relativa κ <span class="val" id="kV">2.2</span></label><input type="range" id="kap" min="1" max="10" step="0.1" value="2.2"></div>
 <div class="control"><label>Animar cargas</label><label class="toggle"><input type="checkbox" id="anim"><span class="track"></span></label></div>
+<div class="control"><label>Mostrar campo V/E (SOR)</label><label class="toggle"><input type="checkbox" id="showSORField"><span class="track"></span></label></div>
 <div class="btn-row"><button class="btn primary" id="calc">Calcular</button></div>
 <div class="stat-grid" id="stats"></div>`;
 		el.querySelector("#tp").value = this.type;
@@ -68,7 +127,8 @@ export class CapSim extends Sim {
 		el.querySelector("#kap").value = String(this.kappa);
 		el.querySelector("#kV").textContent = this.kappa.toFixed(1);
 		el.querySelector("#anim").checked = this.anim;
-		const formulas={parallel:"C = κε₀A/d",cyl:"C = 2πκε₀L/ln(b/a)",sph:"C = 4πκε₀ab/(b−a)"};
+		el.querySelector("#showSORField").checked = this.showSORField;
+		const formulas={parallel:"C = κε₀A/d &nbsp;|&nbsp; ∇²V=0",cyl:"C = 2πκε₀L/ln(b/a)",sph:"C = 4πκε₀ab/(b−a)"};
 		const showGeometry=()=>{el.querySelector("#parallel-params").hidden=this.type!=="parallel";el.querySelector("#cyl-params").hidden=this.type!=="cyl";el.querySelector("#sph-params").hidden=this.type!=="sph";};
 		showGeometry();
 		el.querySelector("#tp").onchange = (e) => { this.type = e.target.value; el.querySelector("#formula").textContent=`${formulas[this.type]}  |  U = ½CV²`; showGeometry(); this.calc(el); };
@@ -94,6 +154,7 @@ export class CapSim extends Sim {
 		el.querySelector("#diel").onchange = (e) => { this.diel = e.target.checked; this.calc(el); };
 		el.querySelector("#kap").oninput = (e) => { this.kappa=+e.target.value; el.querySelector("#kV").textContent=this.kappa.toFixed(1); this.calc(el); };
 		el.querySelector("#anim").onchange = (e) => (this.anim = e.target.checked);
+		el.querySelector("#showSORField").onchange = (e) => (this.showSORField = e.target.checked);
 		el.querySelector("#calc").onclick = () => this.calc(el);
 		this.calc(el);
 	}
@@ -148,6 +209,111 @@ export class CapSim extends Sim {
 				c.font = "11px sans-serif";
 				c.fillText(`κ=${this.kappa}`, cx - 15, cy + 4);
 			}
+			
+			// Field lines and equipotentials using SOR solution
+			if (this.showSORField && this.type === "parallel") {
+				const gridRows = 60, gridCols = 80;
+				const padX = 60, padY = 40;
+				const plotW = W - 2 * padX, plotH = H - 2 * padY;
+				const dx = plotW / (gridCols - 1), dy = plotH / (gridRows - 1);
+				
+				// Build kappa grid for dielectric
+				let kappaGrid = null;
+				if (this.diel) {
+					kappaGrid = new Float64Array(gridRows * gridCols);
+					const topY_rel = (topY - padY) / dy;
+					const botY_rel = (bottomY - padY) / dy;
+					const midY = (topY_rel + botY_rel) / 2;
+					for (let j = 0; j < gridRows; j++) {
+						for (let i = 0; i < gridCols; i++) {
+							if (j > midY - 2 && j < midY + 2) {
+								kappaGrid[j * gridCols + i] = this.kappa;
+							} else {
+								kappaGrid[j * gridCols + i] = 1.0;
+							}
+						}
+					}
+				}
+				
+				// Solve Laplace equation
+				const V_top = this.V, V_bottom = 0;
+				const V = solveLaplaceSOR(gridRows, gridCols, V_top, V_bottom, kappaGrid, 300, 1e-3);
+				const { Ex, Ey } = computeElectricField(V, gridRows, gridCols, dx, dy);
+				
+				// Draw field lines using streamline integration
+				c.strokeStyle = "rgba(251,191,36,0.4)";
+				c.lineWidth = 1;
+				const nFieldLines = 7;
+				for (let i = 0; i < nFieldLines; i++) {
+					const startX = padX + (i + 1) * plotW / (nFieldLines + 1);
+					let cx_plot = startX;
+					let cy_plot = topY + 8;
+					
+					c.beginPath();
+					c.moveTo(cx_plot, cy_plot);
+					
+					// RK4 integration
+					for (let step = 0; step < 120; step++) {
+						const gi = floor((cx_plot - padX) / dx);
+						const gj = floor((cy_plot - padY) / dy);
+						
+						if (gi < 1 || gi >= gridCols - 2 || gj < 1 || gj >= gridRows - 2) break;
+						
+						const idx = gj * gridCols + gi;
+						let ex = Ex[idx] / dx;
+						let ey = Ey[idx] / dy;
+						const emag = sqrt(ex * ex + ey * ey);
+						if (emag < 1e-6) break;
+						ex /= emag; ey /= emag;
+						
+						// RK4 step
+						const h = min(dx, dy) * 0.4;
+						
+						const k1x = ex, k1y = ey;
+						
+						const gi2 = floor((cx_plot + k1x * h * 0.5 - padX) / dx);
+						const gj2 = floor((cy_plot + k1y * h * 0.5 - padY) / dy);
+						let ex2=0, ey2=0;
+						if (gi2 >= 1 && gi2 < gridCols - 2 && gj2 >= 1 && gj2 < gridRows - 2) {
+							const idx2 = gj2 * gridCols + gi2;
+							ex2 = Ex[idx2] / dx; ey2 = Ey[idx2] / dy;
+							const emag2 = sqrt(ex2 * ex2 + ey2 * ey2);
+							if (emag2 > 1e-6) { ex2 /= emag2; ey2 /= emag2; }
+						}
+						const k2x = ex2, k2y = ey2;
+						
+						const gi3 = floor((cx_plot + k2x * h * 0.5 - padX) / dx);
+						const gj3 = floor((cy_plot + k2y * h * 0.5 - padY) / dy);
+						let ex3=0, ey3=0;
+						if (gi3 >= 1 && gi3 < gridCols - 2 && gj3 >= 1 && gj3 < gridRows - 2) {
+							const idx3 = gj3 * gridCols + gi3;
+							ex3 = Ex[idx3] / dx; ey3 = Ey[idx3] / dy;
+							const emag3 = sqrt(ex3 * ex3 + ey3 * ey3);
+							if (emag3 > 1e-6) { ex3 /= emag3; ey3 /= emag3; }
+						}
+						const k3x = ex3, k3y = ey3;
+						
+						const gi4 = floor((cx_plot + k3x * h - padX) / dx);
+						const gj4 = floor((cy_plot + k3y * h - padY) / dy);
+						let ex4=0, ey4=0;
+						if (gi4 >= 1 && gi4 < gridCols - 2 && gj4 >= 1 && gj4 < gridRows - 2) {
+							const idx4 = gj4 * gridCols + gi4;
+							ex4 = Ex[idx4] / dx; ey4 = Ey[idx4] / dy;
+							const emag4 = sqrt(ex4 * ex4 + ey4 * ey4);
+							if (emag4 > 1e-6) { ex4 /= emag4; ey4 /= emag4; }
+						}
+						const k4x = ex4, k4y = ey4;
+						
+						cx_plot += (h / 6) * (k1x + 2 * k2x + 2 * k3x + k4x);
+						cy_plot += (h / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
+						
+						if (cx_plot < padX || cx_plot > W - padX || cy_plot < topY || cy_plot > bottomY) break;
+						c.lineTo(cx_plot, cy_plot);
+					}
+					c.stroke();
+				}
+			}
+			
 			c.fillStyle = "rgba(255,255,255,0.3)";
 			c.font = "10px monospace";
 			c.textAlign = "center";
