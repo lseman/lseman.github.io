@@ -210,79 +210,41 @@ export class CapSim extends Sim {
 				c.fillText(`κ=${this.kappa}`, cx - 15, cy + 4);
 			}
 			
-			// Field lines and equipotentials using SOR solution
-			if (this.showSORField) {
+			// Field lines and equipotentials using SOR solution (parallel only)
+			if (this.showSORField && this.type === "parallel") {
 				const gridRows = 60, gridCols = 80;
-				let padX, padY, plotW, plotH, dx, dy, topY, bottomY;
-
-				if (this.type === "parallel") {
-					padX = 60; padY = 40;
-					plotW = W - 2 * padX; plotH = H - 2 * padY;
-					topY = parallelGeometry.topY;
-					bottomY = parallelGeometry.bottomY;
-				} else {
-					// Cylindrical/Spherical: center grid on coil center
-					plotW = 170; plotH = 230;
-					padX = cx - plotW / 2;
-					padY = cy - plotH / 2;
-					topY = padY;
-					bottomY = padY + plotH;
-				}
-				dx = plotW / (gridCols - 1); dy = plotH / (gridRows - 1);
+				const padX = 60, padY = 40;
+				const plotW = W - 2 * padX, plotH = H - 2 * padY;
+				const dx = plotW / (gridCols - 1), dy = plotH / (gridRows - 1);
+				const topY = parallelGeometry.topY;
+				const bottomY = parallelGeometry.bottomY;
 				
 				// Build kappa grid for dielectric
 				let kappaGrid = null;
 				if (this.diel) {
 					kappaGrid = new Float64Array(gridRows * gridCols);
+					const topY_rel = (topY - padY) / dy;
+					const botY_rel = (bottomY - padY) / dy;
+					const midY = (topY_rel + botY_rel) / 2;
 					for (let j = 0; j < gridRows; j++) {
 						for (let i = 0; i < gridCols; i++) {
-							let inDiel = false;
-							const px = padX + i * dx;
-							const py = padY + j * dy;
-
-							if (this.type === "parallel") {
-								const topY_rel = (topY - padY) / dy;
-								const botY_rel = (bottomY - padY) / dy;
-								inDiel = j > topY_rel + 1 && j < botY_rel - 1;
-							} else if (this.type === "cyl") {
-								const dist = sqrt((px - cx) ** 2 + (py - cy) ** 2);
-								inDiel = dist > this.a && dist < this.b;
-							} else {
-								const dist = sqrt((px - cx) ** 2 + (py - cy) ** 2);
-								inDiel = dist > this.r1 && dist < this.r2;
-							}
-
-							kappaGrid[j * gridCols + i] = inDiel ? this.kappa : 1.0;
+							kappaGrid[j * gridCols + i] = (j > midY - 2 && j < midY + 2) ? this.kappa : 1.0;
 						}
 					}
 				}
-				
+
 				// Solve Laplace equation
 				const V_top = this.V, V_bottom = 0;
 				const V = solveLaplaceSOR(gridRows, gridCols, V_top, V_bottom, kappaGrid, 300, 1e-3);
 				const { Ex, Ey } = computeElectricField(V, gridRows, gridCols, dx, dy);
-				
+
 				// Draw field lines using streamline integration
 				c.strokeStyle = "rgba(251,191,36,0.4)";
 				c.lineWidth = 1;
-				const nFieldLines = this.type === "parallel" ? 7 : 8;
+				const nFieldLines = 7;
 				for (let i = 0; i < nFieldLines; i++) {
-					let cx_plot, cy_plot;
-
-					if (this.type === "parallel") {
-						cx_plot = padX + (i + 1) * plotW / (nFieldLines + 1);
-						cy_plot = topY + 8;
-					} else if (this.type === "cyl") {
-						const ang = (2 * PI * i) / nFieldLines;
-						const r = (this.a + this.b) / 2;
-						cx_plot = cx + r * cos(ang);
-						cy_plot = cy + r * sin(ang);
-					} else {
-						const ang = (2 * PI * i) / nFieldLines;
-						const r = (this.r1 + this.r2) / 2;
-						cx_plot = cx + r * cos(ang);
-						cy_plot = cy + r * sin(ang);
-					}
+					const cx_plot = padX + (i + 1) * plotW / (nFieldLines + 1);
+					const cy_plot = topY + 8;
 					
 					c.beginPath();
 					c.moveTo(cx_plot, cy_plot);
@@ -407,16 +369,41 @@ export class CapSim extends Sim {
 			c.fillText("r₁", cx - a / 2 - 10, cy + 4);
 			c.fillText("r₂", cx + b / 2 - 3, cy + 12);
 		}
-		if (this.anim && this.type === "parallel") {
-			const {pw,gap}=parallelGeometry,n=20;
-			for (let i = 0; i < n; i++) {
-				const ag = (2 * PI * i) / n + time * 2,
-					x = cx + ((cos(ag) * pw) / 2) * 0.8,
-					y = cy + sin(ag) * gap * 0.35;
-				c.beginPath();
-				c.arc(x, y, 3, 0, 2 * PI);
-				c.fillStyle = i % 2 ? "#f87171" : "#38bdf8";
-				c.fill();
+		if (this.anim) {
+			const n = 20;
+			if (this.type === "parallel") {
+				const {pw,gap}=parallelGeometry;
+				for (let i = 0; i < n; i++) {
+					const ag = (2 * PI * i) / n + time * 2,
+						x = cx + ((cos(ag) * pw) / 2) * 0.8,
+						y = cy + sin(ag) * gap * 0.35;
+					c.beginPath();
+					c.arc(x, y, 3, 0, 2 * PI);
+					c.fillStyle = i % 2 ? "#f87171" : "#38bdf8";
+					c.fill();
+				}
+			} else if (this.type === "cyl") {
+				const r = (this.a + this.b) / 2;
+				for (let i = 0; i < n; i++) {
+					const ag = (2 * PI * i) / n + time * 2;
+					const x = cx + r * cos(ag);
+					const y = cy + r * sin(ag);
+					c.beginPath();
+					c.arc(x, y, 3, 0, 2 * PI);
+					c.fillStyle = i % 2 ? "#f87171" : "#38bdf8";
+					c.fill();
+				}
+			} else {
+				const r = (this.r1 + this.r2) / 2;
+				for (let i = 0; i < n; i++) {
+					const ag = (2 * PI * i) / n + time * 2;
+					const x = cx + r * cos(ag);
+					const y = cy + r * sin(ag);
+					c.beginPath();
+					c.arc(x, y, 3, 0, 2 * PI);
+					c.fillStyle = i % 2 ? "#f87171" : "#38bdf8";
+					c.fill();
+				}
 			}
 		}
 		c.fillStyle = "rgba(255,255,255,0.5)";
