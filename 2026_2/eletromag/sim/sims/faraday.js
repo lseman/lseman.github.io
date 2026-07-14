@@ -133,7 +133,9 @@ export class FaradaySim extends Sim {
 		// Time label
 		c.fillStyle = "rgba(255,255,255,0.4)";
 		c.font = "10px monospace";
-		c.fillText(`θ=${(theta%(2*PI)).toFixed(2)} rad · A=${area.toFixed(4)} m² · NΦ=${linkage.toExponential(2)} Wb`, 12, H-48);
+		const infoStr = `θ=${(theta%(2*PI)).toFixed(2)} rad · A=${area.toFixed(4)} m² · NΦ=${linkage.toExponential(2)} Wb`;
+		const metrics = c.measureText(infoStr);
+		c.fillText(infoStr, W - metrics.width - 16, 28);
 	}
 	onMouseDown(x, y) {
 		if (abs(x - this.coilPos) < 85 && abs(y - H * .46) < 115) {

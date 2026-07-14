@@ -211,26 +211,42 @@ export class CapSim extends Sim {
 			}
 			
 			// Field lines and equipotentials using SOR solution
-			if (this.showSORField && this.type === "parallel") {
+			if (this.showSORField) {
 				const gridRows = 60, gridCols = 80;
-				const padX = 60, padY = 40;
-				const plotW = W - 2 * padX, plotH = H - 2 * padY;
-				const dx = plotW / (gridCols - 1), dy = plotH / (gridRows - 1);
+				let padX, padY, plotW, plotH, dx, dy;
+
+				if (this.type === "parallel") {
+					padX = 60; padY = 40;
+					plotW = W - 2 * padX; plotH = H - 2 * padY;
+				} else {
+					padX = W / 2 - 85; padY = H / 2 - 115;
+					plotW = 170; plotH = 230;
+				}
+				dx = plotW / (gridCols - 1); dy = plotH / (gridRows - 1);
 				
 				// Build kappa grid for dielectric
 				let kappaGrid = null;
 				if (this.diel) {
 					kappaGrid = new Float64Array(gridRows * gridCols);
-					const topY_rel = (topY - padY) / dy;
-					const botY_rel = (bottomY - padY) / dy;
-					const midY = (topY_rel + botY_rel) / 2;
 					for (let j = 0; j < gridRows; j++) {
 						for (let i = 0; i < gridCols; i++) {
-							if (j > midY - 2 && j < midY + 2) {
-								kappaGrid[j * gridCols + i] = this.kappa;
+							let inDiel = false;
+							const px = padX + i * dx;
+							const py = padY + j * dy;
+
+							if (this.type === "parallel") {
+								const topY_rel = (topY - padY) / dy;
+								const botY_rel = (bottomY - padY) / dy;
+								inDiel = j > topY_rel + 1 && j < botY_rel - 1;
+							} else if (this.type === "cyl") {
+								const dist = sqrt((px - cx) ** 2 + (py - cy) ** 2);
+								inDiel = dist > this.a && dist < this.b;
 							} else {
-								kappaGrid[j * gridCols + i] = 1.0;
+								const dist = sqrt((px - cx) ** 2 + (py - cy) ** 2);
+								inDiel = dist > this.r1 && dist < this.r2;
 							}
+
+							kappaGrid[j * gridCols + i] = inDiel ? this.kappa : 1.0;
 						}
 					}
 				}
@@ -243,11 +259,24 @@ export class CapSim extends Sim {
 				// Draw field lines using streamline integration
 				c.strokeStyle = "rgba(251,191,36,0.4)";
 				c.lineWidth = 1;
-				const nFieldLines = 7;
+				const nFieldLines = this.type === "parallel" ? 7 : 8;
 				for (let i = 0; i < nFieldLines; i++) {
-					const startX = padX + (i + 1) * plotW / (nFieldLines + 1);
-					let cx_plot = startX;
-					let cy_plot = topY + 8;
+					let cx_plot, cy_plot;
+
+					if (this.type === "parallel") {
+						cx_plot = padX + (i + 1) * plotW / (nFieldLines + 1);
+						cy_plot = topY + 8;
+					} else if (this.type === "cyl") {
+						const ang = (2 * PI * i) / nFieldLines;
+						const r = (this.a + this.b) / 2;
+						cx_plot = cx + r * cos(ang);
+						cy_plot = cy + r * sin(ang);
+					} else {
+						const ang = (2 * PI * i) / nFieldLines;
+						const r = (this.r1 + this.r2) / 2;
+						cx_plot = cx + r * cos(ang);
+						cy_plot = cy + r * sin(ang);
+					}
 					
 					c.beginPath();
 					c.moveTo(cx_plot, cy_plot);

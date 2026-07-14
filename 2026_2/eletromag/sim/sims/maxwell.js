@@ -146,6 +146,9 @@ export class MaxwellSim extends Sim {
 		c.fillStyle = "rgba(255,255,255,0.5)";
 		c.font = "11px monospace";
 		c.fillText(names[mode] || mode, 10, 20);
-		c.fillStyle=this.playing?"rgba(52,211,153,.8)":"rgba(251,191,36,.8)";c.fillText(this.playing?`▶ t=${this.time.toFixed(2)} s · fluxo de campo ativo`:`⏸ t=${this.time.toFixed(2)} s · campo congelado`,10,H-18);
+		c.fillStyle=this.playing?"rgba(52,211,153,.8)":"rgba(251,191,36,.8)";
+		const statusStr=this.playing?`▶ t=${this.time.toFixed(2)} s · fluxo de campo ativo`:`⏸ t=${this.time.toFixed(2)} s · campo congelado`;
+		const metrics=c.measureText(statusStr);
+		c.fillText(statusStr,W-metrics.width-16,28);
 	}
 }
