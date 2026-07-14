@@ -207,17 +207,45 @@ export class PoissonFDMSim extends Sim {
 		c.fillText(this.boundaryType === "dirichlet" ? `V=${this.boundaryVal}V` : "∂V/∂n=0", 6, 14);
 
 		// Source visualization
-		if (this.sourceGrid && this.sourceMode !== "none") {
-			for (let j = 0; j < gridRows; j++) {
-				for (let i = 0; i < gridCols; i++) {
-					const src = this.sourceGrid[j * gridCols + i];
-					if (src !== 0) {
-						const intensity = min(1, abs(src) / (this.sourceStrength * 100));
-						const color = src > 0 ? `rgba(52,211,153,${0.6 * intensity})` : `rgba(251,113,133,${0.6 * intensity})`;
-						c.fillStyle = color;
-						c.fillRect(i * dx - 1, j * dy - 1, 2, 2);
-					}
-				}
+		if (this.sourceMode !== "none") {
+			if (this.sourceMode === "point") {
+				const ci = floor(gridCols / 2), cj = floor(gridRows / 2);
+				const px = ci * dx, py = cj * dy;
+				c.fillStyle = "rgba(52,211,153,0.8)";
+				c.beginPath();
+				c.arc(px, py, 6, 0, 2 * PI);
+				c.fill();
+				c.strokeStyle = "rgba(52,211,153,0.9)";
+				c.lineWidth = 2;
+				c.stroke();
+			} else if (this.sourceMode === "line") {
+				const y = floor(gridRows / 2) * dy;
+				const x1 = floor(gridCols * 0.3) * dx;
+				const x2 = floor(gridCols * 0.7) * dx;
+				c.strokeStyle = "rgba(251,191,36,0.8)";
+				c.lineWidth = 3;
+				c.beginPath();
+				c.moveTo(x1, y);
+				c.lineTo(x2, y);
+				c.stroke();
+				// Markers at ends
+				c.fillStyle = "rgba(251,191,36,0.9)";
+				c.beginPath();
+				c.arc(x1, y, 4, 0, 2 * PI);
+				c.fill();
+				c.beginPath();
+				c.arc(x2, y, 4, 0, 2 * PI);
+				c.fill();
+			} else if (this.sourceMode === "disk") {
+				const ci = gridCols / 2, cj = gridRows / 2, r = gridCols / 6;
+				const cx = ci * dx, cy = cj * dy, radius = r * dx;
+				c.fillStyle = "rgba(168,85,247,0.2)";
+				c.beginPath();
+				c.arc(cx, cy, radius, 0, 2 * PI);
+				c.fill();
+				c.strokeStyle = "rgba(168,85,247,0.9)";
+				c.lineWidth = 2.5;
+				c.stroke();
 			}
 		}
 
