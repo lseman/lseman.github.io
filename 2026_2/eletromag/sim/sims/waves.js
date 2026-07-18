@@ -26,6 +26,8 @@ export class WaveSim extends Sim {
 		this.polar = "linear";
 		this.freq = 1;
 		this.amp = 1;
+		this.epsr = 1;
+		this.mur = 1;
 		this.showB = true;
 		this.showPoynting = false;
 		this.mode = "propagation";
@@ -36,16 +38,20 @@ export class WaveSim extends Sim {
 <div class="formula">E(z,t) = E₀cos(kz−ωt+φ) &nbsp;|&nbsp; B = E/c</div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="propagation">Propagação</option><option value="polarization">Polarização</option><option value="energy">Energia</option></select></div>
-<div class="control"><label>Frequência <span class="val" id="fV">1.0</span></label><input type="range" id="freq" min="0.2" max="3" step="0.1" value="1"></div>
-<div class="control"><label>Amplitude <span class="val" id="aV">1.0</span></label><input type="range" id="amp" min="0.2" max="2" step="0.1" value="1"></div>
+<div class="control"><label>Frequência <span class="val" id="fV">1.0 MHz</span></label><input type="range" id="freq" min="0.5" max="5" step="0.1" value="1"></div>
+<div class="control"><label>Amplitude E₀ <span class="val" id="aV">1.0 V/m</span></label><input type="range" id="amp" min="0.2" max="2" step="0.1" value="1"></div>
+<div class="control"><label>Permissividade relativa εᵣ <span class="val" id="erV">1.0</span></label><input type="range" id="epsr" min="1" max="12" step="0.1" value="1"></div>
+<div class="control"><label>Permeabilidade relativa μᵣ <span class="val" id="mrV">1.0</span></label><input type="range" id="mur" min="1" max="5" step="0.1" value="1"></div>
 <div class="control"><label>Polarização</label><select id="pol"><option value="linear">Linear</option><option value="circular">Circular</option><option value="elliptical">Elíptica</option></select></div>
 <div class="control"><label>Campo B</label><label class="toggle"><input type="checkbox" id="showB" checked><span class="track"></span></label></div>
-<div class="control"><label>Vetor Poynting</label><label class="toggle"><input type="checkbox" id="poy"><span class="track"></span></label></div>`;
+<div class="control"><label>Vetor Poynting</label><label class="toggle"><input type="checkbox" id="poy"><span class="track"></span></label></div>
+${this.measurementPanel("Parâmetros da onda", [["Velocidade","—"],["Comprimento λ","—"],["Constante β","—"],["Impedância η","—"],["Amplitude H₀","—"]])}`;
 		el.querySelector("#mode").value = this.mode;
 		el.querySelector("#freq").value = String(this.freq);
-		el.querySelector("#fV").textContent = this.freq.toFixed(1);
+		el.querySelector("#fV").textContent = `${this.freq.toFixed(1)} MHz`;
 		el.querySelector("#amp").value = String(this.amp);
-		el.querySelector("#aV").textContent = this.amp.toFixed(1);
+		el.querySelector("#aV").textContent = `${this.amp.toFixed(1)} V/m`;
+		for(const id of ["epsr","mur"]){el.querySelector(`#${id}`).value=String(this[id]);el.querySelector(`#${id}`).oninput=e=>{this[id]=+e.target.value;el.querySelector(`#${id==="epsr"?"erV":"mrV"}`).textContent=this[id].toFixed(1);};}
 		el.querySelector("#pol").value = this.polar;
 		el.querySelector("#showB").checked = this.showB;
 		el.querySelector("#poy").checked = this.showPoynting;
@@ -58,11 +64,11 @@ export class WaveSim extends Sim {
 		};
 		el.querySelector("#freq").oninput = (e) => {
 			this.freq = +e.target.value;
-			el.querySelector("#fV").textContent = e.target.value;
+			el.querySelector("#fV").textContent = `${(+e.target.value).toFixed(1)} MHz`;
 		};
 		el.querySelector("#amp").oninput = (e) => {
 			this.amp = +e.target.value;
-			el.querySelector("#aV").textContent = e.target.value;
+			el.querySelector("#aV").textContent = `${(+e.target.value).toFixed(1)} V/m`;
 		};
 		el.querySelector("#pol").onchange = (e) => (this.polar = e.target.value);
 		el.querySelector("#showB").onchange = (e) =>
@@ -78,13 +84,15 @@ export class WaveSim extends Sim {
 		const freq = this.freq,
 			amp = this.amp,
 			pol = this.polar;
+		const fHz=freq*1e6,omega=2*PI*fHz,velocity=C0/sqrt(this.epsr*this.mur),lambda=velocity/fHz,beta=2*PI/lambda,eta=sqrt(MU0*this.mur/(EPS0*this.epsr)),h0=amp/eta,displayTime=this.time*1e-6,axisLength=600;
+		this.updateMeasurements([`${(velocity/1e8).toFixed(3)}×10⁸ m/s`,`${lambda.toFixed(2)} m`,`${beta.toFixed(4)} rad/m`,`${eta.toFixed(2)} Ω`,`${h0.toExponential(3)} A/m`]);
 		if (this.mode === "propagation") {
 			// Perspective scene. Propagation is the depth axis; the two screen
 			// transverse bases represent mutually orthogonal E and B directions.
 			const near={x:W*.12,y:H*.72},far={x:W*.88,y:H*.28},dx=far.x-near.x,dy=far.y-near.y,dl=sqrt(dx*dx+dy*dy),depth={x:dx/dl,y:dy/dl};
 			const eAxis={x:0,y:-1},bAxis={x:-depth.y,y:depth.x},base=t=>({x:near.x+dx*t,y:near.y+dy*t}),persp=t=>1-.38*t;
 			const components=phase=>pol==="linear"?{a:sin(phase),b:0}:pol==="circular"?{a:sin(phase),b:cos(phase)}:{a:sin(phase),b:.5*cos(phase)};
-			const point=(t,field)=>{const p=base(t),phase=2*PI*(freq*2.1*t-this.time),v=components(phase),scale=amp*min(74,H*.16)*persp(t);let a,b;if(field==="E"){a=v.a;b=v.b}else{a=-v.b*.72;b=v.a*.72}return{x:p.x+eAxis.x*a*scale+bAxis.x*b*scale,y:p.y+eAxis.y*a*scale+bAxis.y*b*scale};};
+			const point=(t,field)=>{const p=base(t),phase=beta*axisLength*t-omega*displayTime,v=components(phase),scale=amp*min(74,H*.16)*persp(t);let a,b;if(field==="E"){a=v.a;b=v.b}else{a=-v.b*.72;b=v.a*.72}return{x:p.x+eAxis.x*a*scale+bAxis.x*b*scale,y:p.y+eAxis.y*a*scale+bAxis.y*b*scale};};
 			// Depth grid creates a readable 3D reference frame.
 			c.strokeStyle="rgba(148,163,184,.10)";c.lineWidth=1;
 			for(let i=0;i<=12;i++){const t=i/12,p=base(t),w=105*persp(t);c.beginPath();c.moveTo(p.x-bAxis.x*w,p.y-bAxis.y*w);c.lineTo(p.x+bAxis.x*w,p.y+bAxis.y*w);c.stroke();}
@@ -102,7 +110,7 @@ export class WaveSim extends Sim {
 		} else if (this.mode === "polarization") {
 			// Polarization ellipse drawn as a tilted transverse plane with a
 			// time-dependent E vector and a short helical history behind it.
-			const cx=W*.52,cy=H*.5,rx=min(130,W*.18)*amp,ry=pol==="linear"?0:rx*(pol==="circular"?1:.5),skew=.48;c.save();c.translate(cx,cy);c.transform(1,skew,-.45,.78,0,0);c.beginPath();c.ellipse(0,0,rx,max(1,ry),0,0,2*PI);c.strokeStyle="rgba(103,232,249,.38)";c.lineWidth=1.2;c.stroke();c.restore();const phase=this.time*2*PI,ex=cos(phase)*rx,ey=sin(phase)*ry,px=cx+ex-.45*ey,py=cy+skew*ex+.78*ey;c.beginPath();c.moveTo(cx,cy);c.lineTo(px,py);c.strokeStyle="#fb7185";c.lineWidth=3;c.stroke();c.beginPath();c.arc(px,py,5,0,2*PI);c.fillStyle="#fecdd3";c.fill();c.fillStyle="#94a3b8";c.font="11px monospace";c.fillText(`Trajetória de E · ${pol}`,cx-rx,cy+max(80,ry)+45);
+			const cx=W*.52,cy=H*.5,rx=min(130,W*.18)*amp,ry=pol==="linear"?0:rx*(pol==="circular"?1:.5),skew=.48;c.save();c.translate(cx,cy);c.transform(1,skew,-.45,.78,0,0);c.beginPath();c.ellipse(0,0,rx,max(1,ry),0,0,2*PI);c.strokeStyle="rgba(103,232,249,.38)";c.lineWidth=1.2;c.stroke();c.restore();const phase=omega*displayTime,ex=cos(phase)*rx,ey=sin(phase)*ry,px=cx+ex-.45*ey,py=cy+skew*ex+.78*ey;c.beginPath();c.moveTo(cx,cy);c.lineTo(px,py);c.strokeStyle="#fb7185";c.lineWidth=3;c.stroke();c.beginPath();c.arc(px,py,5,0,2*PI);c.fillStyle="#fecdd3";c.fill();c.fillStyle="#94a3b8";c.font="11px monospace";c.fillText(`Trajetória de E · ${pol}`,cx-rx,cy+max(80,ry)+45);
 		} else if (this.mode === "energy") {
 			// Energy density mode: u_E = u_B equality
 			const e0 = this.amp;
@@ -169,6 +177,6 @@ export class WaveSim extends Sim {
 		}
 		c.fillStyle = "rgba(255,255,255,0.4)";
 		c.font = "10px monospace";
-		c.fillText(`f=${this.freq}Hz A=${this.amp}`, 10, 20);
+		c.fillText(`f=${this.freq.toFixed(1)} MHz · λ=${lambda.toFixed(2)} m · E₀=${this.amp.toFixed(1)} V/m`, 10, 20);
 	}
 }

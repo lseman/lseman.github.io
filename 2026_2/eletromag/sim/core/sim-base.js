@@ -23,4 +23,15 @@ export class Sim {
 		this._lastFrame = now;
 		return dt;
 	}
+	measurementPanel(title, rows = []) {
+		return `<section class="measurement-panel" data-measurements><h4>${title}</h4>${rows.map(([label, value], i) => `<div><span>${label}</span><output data-measure="${i}">${value}</output></div>`).join("")}</section>`;
+	}
+	updateMeasurements(values) {
+		const panel = document.querySelector("[data-measurements]");
+		if (!panel) return;
+		values.forEach((value, i) => {
+			const output = panel.querySelector(`[data-measure="${i}"]`);
+			if (output) output.textContent = value;
+		});
+	}
 }

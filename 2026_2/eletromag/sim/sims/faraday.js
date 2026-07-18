@@ -37,13 +37,15 @@ export class FaradaySim extends Sim {
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⚡</span> ${this.name}</h3>
 <div class="formula">ε = −N·dΦ/dt, &nbsp; Φ = B·A·cos θ</div>
+<div class="learning-card"><strong>Experimento guiado · Lei de Faraday</strong>Preveja quando Φ é máximo e quando |ε| é máximo durante uma volta.<em>Compare as curvas: fluxo e fem devem estar defasados de 90°.</em></div>
 <div class="control"><label>Campo B (T) <span class="val" id="bV">1.0</span></label><input type="range" id="B" min="0.1" max="3" step="0.1" value="1"></div>
 <div class="control"><label>Velocidade angular ω <span class="val" id="sV">2.0 rad/s</span></label><input type="range" id="spd" min="0.2" max="6" step="0.1" value="2"></div>
 <div class="control"><label>Número de voltas <span class="val" id="nV">5</span></label><input type="range" id="n" min="1" max="20" value="5"></div>
 <div class="control"><label>Mostrar fluxo</label><label class="toggle"><input type="checkbox" id="flux" checked><span class="track"></span></label></div>
 <div class="control"><label>Mostrar EMF</label><label class="toggle"><input type="checkbox" id="emf" checked><span class="track"></span></label></div>
 <div class="btn-row"><button class="btn primary" id="play">▶ Animar</button><button class="btn" id="reset">↺ Reset</button></div>
-<div class="stat-grid" id="stats"><div class="stat"><div class="num" id="fVal">0</div><div class="lbl">NΦ (Wb·volta)</div></div><div class="stat"><div class="num" id="eVal">0</div><div class="lbl">ε (V)</div></div></div>`;
+<div class="stat-grid" id="stats"><div class="stat"><div class="num" id="fVal">0</div><div class="lbl">NΦ (Wb·volta)</div></div><div class="stat"><div class="num" id="eVal">0</div><div class="lbl">ε (V)</div></div></div>
+${this.measurementPanel("Previsão analítica", [["Fluxo máximo NΦ₀","—"],["FEM máxima ε₀","—"],["Fase Φ → ε","90°"],["Lei de Lenz","opõe ΔΦ"]])}`;
 		el.querySelector("#B").value = String(this.fieldB);
 		el.querySelector("#bV").textContent = this.fieldB.toFixed(1);
 		el.querySelector("#spd").value = String(this.speed * 2);
@@ -95,6 +97,7 @@ export class FaradaySim extends Sim {
 		const linkage = N * flux;
 		const emf = N * this.fieldB * area * omega * sin(theta);
 		const emfPeak = max(1e-12, N * this.fieldB * area * omega);
+		this.updateMeasurements([`${(N*this.fieldB*area).toExponential(3)} Wb·volta`,`${emfPeak.toExponential(3)} V`,`90°`,`opõe ΔΦ`]);
 		// Uniform B field represented by a regular arrow lattice.
 		if (this.showFlux) {
 			const drift=this.playing?(this.time*18)%70:0;

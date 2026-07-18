@@ -40,6 +40,11 @@ import { MaxwellSim } from "../sims/maxwell.js";
 import { WaveSim } from "../sims/waves.js";
 import { PoissonInteractiveSim } from "../sims/poisson-interactive.js";
 import { BoundaryDielSim } from "../sims/boundary-diel.js";
+import { MagneticForceSim } from "../sims/magnetic-force.js";
+import { CoordinateSystemsSim } from "../sims/coordinates.js";
+import { ContinuousChargeSim } from "../sims/continuous-charge.js";
+import { MethodImagesSim } from "../sims/method-images.js";
+import { BiotSavartSim } from "../sims/biot-savart.js";
 
 const sims = [
 	new VecCalcSim(),
@@ -52,6 +57,11 @@ const sims = [
 	new WaveSim(),
 	new PoissonInteractiveSim(),
 	new BoundaryDielSim(),
+	new MagneticForceSim(),
+	new CoordinateSystemsSim(),
+	new ContinuousChargeSim(),
+	new MethodImagesSim(),
+	new BiotSavartSim(),
 ];
 
 const tabNames = [
@@ -65,6 +75,11 @@ const tabNames = [
 	"Ondas EM",
 	"Poisson Interativo",
 	"Fronteira Diel.",
+	"Força Magnética",
+	"Coordenadas",
+	"Distribuições Contínuas",
+	"Método das Imagens",
+	"Biot–Savart",
 ];
 
 const formulaTooltips = [
@@ -78,6 +93,11 @@ const formulaTooltips = [
 	{title:"Ondas Eletromagnéticas",concept:"Os campos E e B são perpendiculares entre si e à propagação. O vetor de Poynting representa a direção e a intensidade do fluxo de energia.",formula:"E(z,t)=E₀cos(kz−ωt+φ) | B=E/c | S=E×H"},
 	{title:"Equação de Poisson",concept:"Extensão da equação de Laplace que inclui fontes. Resolvida numericamente por diferenças finitas com diferentes condições de contorno.",formula:"∇²V = −ρ/ε₀ | Dirichlet: V=const | Neumann: ∂V/∂n=const"},
 	{title:"Condições de Contorno em Dielétricos",concept:"Na interface entre dois dielétricos, a componente tangencial de E é contínua, enquanto a componente normal de D é contínua (sem carga superficial).",formula:"E₁_tan = E₂_tan | D₁_n = D₂_n | D = κε₀E"},
+	{title:"Força Magnética e Movimento de Cargas",concept:"A força magnética é perpendicular à velocidade e ao campo. Ela curva a trajetória sem alterar a energia cinética da partícula.",formula:"F = q(v×B) | r = mv⊥/(|q|B) | ωc = |q|B/m"},
+	{title:"Sistemas de Coordenadas",concept:"Um mesmo ponto ou vetor pode ser descrito em bases cartesianas, cilíndricas ou esféricas. As bases curvilíneas variam com a posição.",formula:"x=ρcosφ | y=ρsinφ | r²=x²+y²+z² | dV=r²sinθ drdθdφ"},
+	{title:"Distribuições Contínuas de Carga",concept:"Uma distribuição contínua é dividida em elementos dq. A soma numérica converge para a integral de Coulomb e pode ser comparada a soluções de simetria.",formula:"E=(1/4πε₀)∫dq R̂/R² | dq=λdl | dq=σdS"},
+	{title:"Método das Imagens",concept:"Uma carga imagem fictícia reproduz as condições de contorno de um condutor aterrado na região física.",formula:"V=kq(1/R₊−1/R₋) | F=−kq²/(4a²)"},
+	{title:"Integração de Biot–Savart",concept:"O campo de um condutor é obtido somando as contribuições vetoriais de pequenos elementos de corrente.",formula:"dB=μ₀I/(4π) dl×R̂/R²"},
 ];
 
 let activeSim = sims[0],
@@ -108,16 +128,20 @@ const toolCatalog = {
 
 // Build tabs
 const tabsEl = document.getElementById("tabs");
-tabNames.forEach((name, i) => {
-	const t = document.createElement("button");
-	t.type = "button";
-	t.className = "tab";
-	t.textContent = tabNames[i];
-	t.setAttribute("role", "tab");
-	t.setAttribute("aria-selected", String(i === 0));
-	t.onclick = () => switchSim(i);
-	tabsEl.appendChild(t);
-});
+const labGroups = [
+	{title:"Fundamentos",subtitle:"Ferramentas matemáticas",labs:[0,11]},
+	{title:"Campos elétricos",subtitle:"Cargas, potencial e materiais",labs:[1,2,3,9,12,13]},
+	{title:"Campos magnéticos",subtitle:"Correntes, forças e movimento",labs:[4,10,14]},
+	{title:"Campos variáveis",subtitle:"Indução e equações de Maxwell",labs:[5,6]},
+	{title:"Ondas e métodos numéricos",subtitle:"Propagação e solução de campos",labs:[7,8]},
+];
+tabsEl.innerHTML=`<button class="lab-launcher" type="button" aria-expanded="false" aria-controls="lab-menu"><span class="lab-launcher-icon">${sims[0].icon}</span><span><small>LABORATÓRIO ATIVO</small><strong>${sims[0].name}</strong></span><b>⌄</b></button><div id="lab-menu" class="lab-menu" hidden><div class="lab-menu-head"><span>Explorar laboratórios</span><small>${sims.length} experiências interativas</small></div><div class="lab-groups">${labGroups.map(group=>`<section class="lab-group"><header><strong>${group.title}</strong><small>${group.subtitle}</small></header><div>${group.labs.map(i=>`<button type="button" class="tab lab-card${i===0?' active':''}" role="tab" aria-selected="${i===0}" data-sim="${i}"><i>${sims[i].icon}</i><span><strong>${sims[i].name}</strong><small>${formulaTooltips[i]?.concept||tabNames[i]}</small></span><em>→</em></button>`).join('')}</div></section>`).join('')}</div></div>`;
+const launcher=tabsEl.querySelector('.lab-launcher'),labMenu=tabsEl.querySelector('#lab-menu');
+function setLabMenu(open){launcher.setAttribute('aria-expanded',String(open));labMenu.hidden=!open;tabsEl.classList.toggle('menu-open',open)}
+launcher.onclick=()=>setLabMenu(labMenu.hidden);
+tabsEl.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{setLabMenu(false);switchSim(+t.dataset.sim)});
+document.addEventListener('pointerdown',e=>{if(!tabsEl.contains(e.target))setLabMenu(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setLabMenu(false)});
 
 function switchSim(i) {
 	if (!Number.isInteger(i) || i < 0 || i >= sims.length || i === simIdx) return;
@@ -126,10 +150,13 @@ function switchSim(i) {
 	activeSim = sims[i];
 	tabsEl
 		.querySelectorAll(".tab")
-		.forEach((t, j) => {
-			t.className = j === i ? "tab active" : "tab";
-			t.setAttribute("aria-selected", String(j === i));
+		.forEach((t) => {
+			const selected=+t.dataset.sim===i;
+			t.classList.toggle("active",selected);
+			t.setAttribute("aria-selected", String(selected));
 		});
+	launcher.querySelector('.lab-launcher-icon').textContent=activeSim.icon;
+	launcher.querySelector('strong').textContent=activeSim.name;
 	buildSidebar();
 	buildLibrary();
 	activeSim.resize();

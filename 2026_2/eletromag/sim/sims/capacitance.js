@@ -95,6 +95,7 @@ export class CapSim extends Sim {
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⊞</span> ${this.name}</h3>
 <div class="formula" id="formula">C = κε₀A/d &nbsp;|&nbsp; U = ½CV²</div>
+<div class="learning-card"><strong>Experimento guiado · Capacitância</strong>Preveja o efeito de dobrar A, d, V ou κ antes de mover o controle.<em>Verifique quais mudanças afetam C, Q e a energia armazenada.</em></div>
 <div class="control"><label>Configuração</label><select id="tp"><option value="parallel">Placas Paralelas</option><option value="cyl">Cilíndrica</option><option value="sph">Esférica</option></select></div>
 <div class="control"><label>Tensão V (V) <span class="val" id="vV">10</span></label><input type="range" id="V" min="1" max="50" value="10"></div>
 <div id="parallel-params">
@@ -182,11 +183,11 @@ export class CapSim extends Sim {
 		const cx = W / 2,
 			cy = H / 2,
 			t = 0.5 * (1 - cos((2 * PI * time) / 2));
-		let parallelGeometry=null;
+		let parallelGeometry=null,radialGeometry=null;
 		if (this.type === "parallel") {
 			// Area controls plate size around a fixed center. Perspective depth is
 			// visual only and must never translate the capacitor vertically.
-			const pw=min(max(76,sqrt(this.A)*1.65),min(230,W*.48)),depth=min(38,max(18,pw*.22)),gap=min(max(34,this.d*.55),min(132,H*.36)),skew=depth*.48;
+			const pw=min(max(180,sqrt(this.A)*4),min(560,W*.78)),depth=min(82,max(32,pw*.16)),gap=min(max(70,this.d*.9),min(230,H*.48)),skew=depth*.48;
 			const topY=cy-gap/2,bottomY=cy+gap/2;parallelGeometry={pw,depth,gap,skew,topY,bottomY};
 			const platePath=(y)=>{c.beginPath();c.moveTo(cx-pw/2,y);c.lineTo(cx+pw/2,y);c.lineTo(cx+pw/2+skew,y-depth);c.lineTo(cx-pw/2+skew,y-depth);c.closePath()};
 			// Dielectric volume sits exactly between the plates.
@@ -314,8 +315,8 @@ export class CapSim extends Sim {
 			c.fillText(`A = ${this.A} mm²`, cx, topY-depth-12);
 			c.textAlign = "start";
 		} else if (this.type === "cyl") {
-			const a = this.a,
-				b = this.b;
+			const maxOuter=min(W*.36,H*.37),b=max(105,maxOuter*(.46+.54*this.b/80)),a=b*(this.a/this.b);
+			radialGeometry={a,b};
 			c.beginPath();
 			c.arc(cx, cy, a, 0, 2 * PI);
 			c.fillStyle = "#64748b";
@@ -340,8 +341,8 @@ export class CapSim extends Sim {
 			c.fillText("b", cx + b / 2 - 3, cy + 12);
 			c.fillText(`L = ${this.L} mm`, cx-b, cy+b+24);
 		} else {
-			const a = this.r1,
-				b = this.r2;
+			const maxOuter=min(W*.36,H*.37),b=max(105,maxOuter*(.46+.54*this.r2/80)),a=b*(this.r1/this.r2);
+			radialGeometry={a,b};
 			c.beginPath();
 			c.arc(cx, cy, a, 0, 2 * PI);
 			c.fillStyle = "#64748b";
@@ -381,7 +382,7 @@ export class CapSim extends Sim {
 					c.fill();
 				}
 			} else if (this.type === "cyl") {
-				const r = (this.a + this.b) / 2;
+				const r = (radialGeometry.a + radialGeometry.b) / 2;
 				for (let i = 0; i < n; i++) {
 					const ag = (2 * PI * i) / n + time * 2;
 					const x = cx + r * cos(ag);
@@ -392,7 +393,7 @@ export class CapSim extends Sim {
 					c.fill();
 				}
 			} else {
-				const r = (this.r1 + this.r2) / 2;
+				const r = (radialGeometry.a + radialGeometry.b) / 2;
 				for (let i = 0; i < n; i++) {
 					const ag = (2 * PI * i) / n + time * 2;
 					const x = cx + r * cos(ag);

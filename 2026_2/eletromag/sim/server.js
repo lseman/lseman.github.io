@@ -28,7 +28,7 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
 		const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
-		const relative = pathname === "/" ? "simulator.html" : pathname.replace(/^\/+/, "");
+		const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
 		const fp = path.resolve(__dirname, relative);
 		if (fp !== __dirname && !fp.startsWith(`${__dirname}${path.sep}`)) {
 			res.statusCode = 403;

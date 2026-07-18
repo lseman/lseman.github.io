@@ -1,3 +1,6 @@
+import { SmithChart } from './smith-chart.js';
+import { parseSpiceNumber, SpiceTLMSimulator } from './spice-tlm.js';
+
 const $ = s => document.querySelector(s), canvas = $('#field'),
       ctx = canvas.getContext('2d'), plots = $('#plots'),
       labelLayer = $('#canvas-labels');
@@ -925,7 +928,517 @@ document.addEventListener('keydown', e => {
   }
 });
 window.onresize = resize;
+window.onresize = resize;
 window.onbeforeunload = () => saveScene();
+
+let smithChart = null;
+let smithViewActive = false;
+
+function initSmithChart() {
+  if (smithChart) return;
+  smithChart = new SmithChart('smith-canvas', { width: 0, height: 0, hidden: true });
+}
+
+function toggleSmithView() {
+  const fieldCanvas = $('#field');
+  const smithCanvas = $('#smith-canvas');
+  const smithBtn = $('#smith-btn');
+  const stageHead = $('.stage-head');
+  const stageHelp = $('.stage-help');
+
+  smithViewActive = !smithViewActive;
+
+  if (smithViewActive) {
+    if (spiceViewActive) toggleSpiceView();
+    document.body.classList.add('aux-workspace');
+    fieldCanvas.hidden = true;
+    smithCanvas.hidden = false;
+    if (stageHead) stageHead.hidden = true;
+    if (stageHelp) stageHelp.hidden = true;
+    smithBtn.textContent = '← Campos';
+    smithBtn.title = 'Voltar aos campos';
+
+    // Add smith chart overlay
+    let overlay = $('#smith-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'smith-overlay';
+      overlay.className = 'smith-chart-overlay';
+      overlay.innerHTML = '<button id="smith-close">✕ Fechar Smith</button>';
+      $('#stage').appendChild(overlay);
+
+      $('#smith-close').onclick = () => {
+        toggleSmithView();
+      };
+    }
+
+    // Initialize smith chart with stage dimensions
+    setTimeout(() => {
+      const r = $('#stage').getBoundingClientRect();
+      if (smithChart) {
+        smithChart.resize(r.width, r.height);
+      }
+    }, 50);
+  } else {
+    document.body.classList.remove('aux-workspace');
+    fieldCanvas.hidden = false;
+    smithCanvas.hidden = true;
+    const overlay = $('#smith-overlay');
+    if (overlay) overlay.remove();
+    if (stageHead) stageHead.hidden = false;
+    if (stageHelp) stageHelp.hidden = false;
+    smithBtn.textContent = '📊 Smith';
+    smithBtn.title = 'Gráfico de Smith';
+  }
+}
+
+$('#smith-btn').onclick = toggleSmithView;
+
+let spiceViewActive = false;
+let spiceSimulator = null;
+
+const spiceExampleGroups = [
+  {name: 'Linhas de Transmissão', items: {
+    'matched-line': {name: 'Linha casada 50Ω', desc: 'Fonte e carga casadas sem reflexão'},
+    'open-line': {name: 'Linha em circuito aberto', desc: 'Reflexão total positiva na extremidade aberta'},
+    'short-line': {name: 'Linha em curto-circuito', desc: 'Reflexão total negativa na extremidade curta'},
+    'mismatch-line': {name: 'Linha descasada (100Ω)', desc: 'Reflexão parcial com carga de 100Ω'}
+  }},
+  {name: 'Filtros EMC', items: {
+    'rc-lowpass': {name: 'Filtro passa-baixas RC', desc: 'Atenuação de alta frequência'},
+    'rc-highpass': {name: 'Filtro passa-altas RC', desc: 'Bloqueio de DC e baixas frequências'},
+    'lc-pi-filter': {name: 'Filtro Pi LC (EMI)', desc: 'Filtro de modo comum/diferencial para supressão de EMI'},
+    'rlc-resonant': {name: 'Circuito RLC ressonante', desc: 'Ressonância e seletividade de frequência'}
+  }},
+  {name: 'Problemas EMC/EMI', items: {
+    'ground-bounce': {name: 'Ground bounce / Ruído de terra', desc: 'Indutância de terra com comutação rápida'},
+    'esd-clamp': {name: 'Proteção ESD (clamp simplificado)', desc: 'Limitação de tensão com capacitância parasita'}
+  }}
+];
+
+const spiceExamples = {
+  'matched-line': {
+    name: 'Linha casada 50Ω',
+    desc: 'Fonte e carga casadas sem reflexão',
+    netlist: `* Linha de transmissão casada
+V1 src 0 PULSE(0 5 0 0.5n 0.5n 5n 10n)
+Rsrc src a 50
+Lline a b TLIN Z0=50 TD=3n
+Rload b 0 50
+.tran 0.05n 20n
+.probe V(b)
+.end`
+  },
+  'open-line': {
+    name: 'Linha em circuito aberto',
+    desc: 'Reflexão total positiva na extremidade aberta',
+    netlist: `* Linha em circuito aberto
+V1 src 0 PULSE(0 5 0 0.5n 0.5n 5n 10n)
+Rsrc src a 50
+Lline a b TLIN Z0=50 TD=3n
+Ropen b 0 1Meg
+.tran 0.05n 20n
+.probe V(b)
+.end`
+  },
+  'short-line': {
+    name: 'Linha em curto-circuito',
+    desc: 'Reflexão total negativa na extremidade curta',
+    netlist: `* Linha em curto-circuito
+V1 src 0 PULSE(0 5 0 0.5n 0.5n 5n 10n)
+Rsrc src a 50
+Lline a b TLIN Z0=50 TD=3n
+Rshort b 0 0.1
+.tran 0.05n 20n
+.probe V(b)
+.end`
+  },
+  'mismatch-line': {
+    name: 'Linha descasada (100Ω)',
+    desc: 'Reflexão parcial com carga de 100Ω',
+    netlist: `* Linha descasada
+V1 src 0 PULSE(0 5 0 0.5n 0.5n 5n 10n)
+Rsrc src a 50
+Lline a b TLIN Z0=50 TD=3n
+Rload b 0 100
+.tran 0.05n 20n
+.probe V(b)
+.end`
+  },
+  'rc-lowpass': {
+    name: 'Filtro passa-baixas RC',
+    desc: 'Atenuação de alta frequência',
+    netlist: `* Filtro RC passa-baixas
+V1 in 0 SINE(0 5 1Meg)
+R1 in out 1k
+C1 out 0 10p
+.tran 0.1n 500n
+.probe V(out)
+.end`
+  },
+  'rc-highpass': {
+    name: 'Filtro passa-altas RC',
+    desc: 'Bloqueio de DC e baixas frequências',
+    netlist: `* Filtro RC passa-altas
+V1 in 0 SINE(0 5 1Meg)
+C1 in out 10p
+R1 out 0 1k
+.tran 0.1n 500n
+.probe V(out)
+.end`
+  },
+  'lc-pi-filter': {
+    name: 'Filtro Pi LC (EMI)',
+    desc: 'Filtro de modo comum/diferencial para supressão de EMI',
+    netlist: `* Filtro Pi LC - Supressão EMI
+V1 in 0 SINE(0 5 10Meg)
+Rsrc in a 50
+L1 a b 1u
+C1 b 0 10n
+L2 b c 1u
+C2 c 0 10n
+Rload c 0 50
+.tran 0.01n 500n
+.probe V(c)
+.end`
+  },
+  'rlc-resonant': {
+    name: 'Circuito RLC ressonante',
+    desc: 'Ressonância e seletividade de frequência',
+    netlist: `* Circuito RLC série ressonante
+V1 in 0 SINE(0 5 1Meg)
+R1 in out 10
+L1 out out2 1u
+C1 out2 0 10n
+.tran 0.1n 2u
+.probe V(out2)
+.end`
+  },
+  'ground-bounce': {
+    name: 'Ground bounce / Ruído de terra',
+    desc: 'Indutância de terra com comutação rápida',
+    netlist: `* Simulação de ground bounce
+V1 vdd 0 DC 3.3
+Lgnd vdd gnd 10n
+Rload gnd 0 100
+Sw gnd 0 PULSE(0 3.3 0 0.1n 0.1n 1n 2n)
+.tran 0.01n 5n
+.probe V(gnd)
+.end`
+  },
+  'esd-clamp': {
+    name: 'Proteção ESD (clamp simplificado)',
+    desc: 'Limitação de tensão com diodo e capacitância parasita',
+    netlist: `* Modelo simplificado de clamp ESD
+V1 in 0 PULSE(0 15 0 0.2n 0.2n 2n 5n)
+Rsrc in a 50
+Cpar a 0 2p
+Rclamp a 0 1k
+Rload a 0 50
+.tran 0.01n 5n
+.probe V(a)
+.end`
+  }
+};
+
+function initSpiceView() {
+  const spiceView = $('#spice-view');
+  const spiceRunBtn = $('#spice-run');
+  const spiceClearBtn = $('#spice-clear');
+  const spiceCloseBtn = $('#spice-close');
+  const spiceNetlist = $('#spice-netlist');
+  const spicePlots = $('#spice-plots');
+  const spiceStep = $('#spice-step');
+  const spiceStop = $('#spice-stop');
+  const spiceStatus = $('#spice-status');
+  const spiceExamplesSelect = $('#spice-examples-select');
+
+  const setStatus = (message, state = '') => {
+    spiceStatus.textContent = message;
+    spiceStatus.className = state;
+  };
+  const updateStepCount = () => {
+    try {
+      const count = Math.ceil(parseSpiceNumber(spiceStop.value) / parseSpiceNumber(spiceStep.value));
+      if (!(count > 0)) throw new Error();
+      $('#spice-step-count').textContent = `${count.toLocaleString('pt-BR')} passos`;
+      setStatus(count > 1_000_000 ? 'Passos demais' : 'Pronto', count > 1_000_000 ? 'error' : '');
+    } catch {
+      $('#spice-step-count').textContent = '— passos';
+      setStatus('Tempo inválido', 'error');
+    }
+  };
+  const syncTranToNetlist = () => {
+    const directive = `.tran ${spiceStep.value.trim()} ${spiceStop.value.trim()}`;
+    if (/^\s*\.tran\b.*$/im.test(spiceNetlist.value)) {
+      spiceNetlist.value = spiceNetlist.value.replace(/^\s*\.tran\b.*$/im, directive);
+    } else if (/^\s*\.end\b/im.test(spiceNetlist.value)) {
+      spiceNetlist.value = spiceNetlist.value.replace(/^\s*\.end\b/im, `${directive}\n.end`);
+    } else {
+      spiceNetlist.value += `\n${directive}\n.end`;
+    }
+    updateStepCount();
+  };
+  const syncControlsFromNetlist = () => {
+    const match = spiceNetlist.value.match(/^\s*\.tran\s+(\S+)\s+(\S+)/im);
+    if (match) { spiceStep.value = match[1]; spiceStop.value = match[2]; }
+    updateStepCount();
+  };
+  spiceStep.onchange = syncTranToNetlist;
+  spiceStop.onchange = syncTranToNetlist;
+  spiceNetlist.addEventListener('input', syncControlsFromNetlist);
+  syncControlsFromNetlist();
+
+  if (spiceRunBtn) {
+    spiceRunBtn.onclick = () => {
+      const netlistText = spiceNetlist.value;
+      if (!netlistText.trim()) {
+        alert('Insira um netlist SPICE válido');
+        return;
+      }
+
+      try {
+        syncTranToNetlist();
+        // Honour the .tran step so delay lines and reactive elements use the
+        // same time base the author requested.
+        spiceSimulator = new SpiceTLMSimulator(netlistText);
+
+        // Run simulation
+        const stopTime = spiceSimulator.netlist.simulation.stop || 1e-6;
+        spicePlots.innerHTML = '<div class="spice-running">Simulando...</div>';
+        setStatus('Simulando…', 'running');
+
+        // Use setTimeout to allow UI to update
+        setTimeout(() => {
+          try {
+            spiceSimulator.simulate(stopTime);
+
+            // Render spice plots
+            renderSpicePlots(spicePlots, spiceSimulator);
+            requestAnimationFrame(renderSpiceCanvasPlots);
+            setStatus(`Concluído em ${spiceSimulator.time.toExponential(3)} s`, 'success');
+          } catch (err) {
+            spicePlots.innerHTML = `<div class="spice-error">Erro na simulação: ${err.message}</div>`;
+            console.error('SPICE simulation error:', err);
+            setStatus(err.message, 'error');
+          }
+        }, 50);
+      } catch (err) {
+        spicePlots.innerHTML = `<div class="spice-error">Erro ao parsear netlist: ${err.message}</div>`;
+        console.error('SPICE parse error:', err);
+        setStatus(err.message, 'error');
+      }
+    };
+  }
+
+  if (spiceClearBtn) {
+    spiceClearBtn.onclick = () => {
+      spiceNetlist.value = '';
+      spicePlots.innerHTML = '';
+      spiceSimulator = null;
+      setStatus('Pronto');
+    };
+  }
+
+  if (spiceCloseBtn) {
+    spiceCloseBtn.onclick = () => {
+      toggleSpiceView();
+    };
+  }
+
+  const spiceExamplesBtn = $('#spice-examples-btn');
+  const spiceExamplesPopover = $('#spice-examples-popover');
+
+  if (spiceExamplesBtn && spiceExamplesPopover) {
+    spiceExamplesBtn.onclick = () => {
+      const isHidden = spiceExamplesPopover.hidden;
+      if (isHidden) {
+        // Populate popover
+        spiceExamplesPopover.innerHTML = spiceExampleGroups.map(group =>
+          `<section class="example-category"><h3>${group.name}<span>${Object.keys(group.items).length}</span></h3>${
+            Object.entries(group.items).map(([key, item]) =>
+              `<button data-spice-example="${key}">${item.name}<small>${item.desc}</small></button>`
+            ).join('')
+          }</section>`
+        ).join('');
+        spiceExamplesPopover.querySelectorAll('button').forEach(b => {
+          b.onclick = () => {
+            const exampleKey = b.dataset.spiceExample;
+            if (exampleKey && spiceExamples[exampleKey]) {
+              spiceNetlist.value = spiceExamples[exampleKey].netlist;
+              syncControlsFromNetlist();
+              // Reset plots and simulator
+              spicePlots.innerHTML = '';
+              spiceSimulator = null;
+              setStatus('Pronto');
+            }
+            spiceExamplesPopover.hidden = true;
+            spiceExamplesPopover.classList.remove('active');
+          };
+        });
+        spiceExamplesPopover.hidden = false;
+        spiceExamplesPopover.classList.add('active');
+      } else {
+        spiceExamplesPopover.hidden = true;
+        spiceExamplesPopover.classList.remove('active');
+      }
+    };
+
+    // Close popover when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!spiceExamplesBtn.contains(e.target) && !spiceExamplesPopover.contains(e.target)) {
+        spiceExamplesPopover.hidden = true;
+        spiceExamplesPopover.classList.remove('active');
+      }
+    });
+  }
+}
+
+function toggleSpiceView() {
+  const fieldCanvas = $('#field');
+  const smithCanvas = $('#smith-canvas');
+  const spiceView = $('#spice-view');
+  const spiceBtn = $('#spice-btn');
+  const stageHead = $('.stage-head');
+  const stageHelp = $('.stage-help');
+
+  spiceViewActive = !spiceViewActive;
+
+  if (spiceViewActive) {
+    if (smithViewActive) toggleSmithView();
+    document.body.classList.add('aux-workspace');
+    fieldCanvas.hidden = true;
+    smithCanvas.hidden = true;
+    if (stageHead) stageHead.hidden = true;
+    if (stageHelp) stageHelp.hidden = true;
+    spiceView.classList.add('active');
+    spiceBtn.textContent = '← Campos';
+    spiceBtn.title = 'Voltar aos campos';
+  } else {
+    document.body.classList.remove('aux-workspace');
+    fieldCanvas.hidden = false;
+    smithCanvas.hidden = true;
+    spiceView.classList.remove('active');
+    if (stageHead) stageHead.hidden = false;
+    if (stageHelp) stageHelp.hidden = false;
+    spiceBtn.textContent = '⚡ SPICE';
+    spiceBtn.title = 'SPICE Netlist';
+  }
+}
+
+function renderSpicePlots(container, simulator) {
+  const probes = simulator.netlist.probes || [];
+  const transmissionLines = simulator.netlist.transmissionLines || [];
+
+  let plotsHTML = '';
+
+  // Plot for each probe node
+  for (const probeNode of probes) {
+    const history = simulator.history[probeNode] || [];
+    if (history.length > 1) {
+      plotsHTML += renderSpicePlot(probeNode, history);
+    }
+  }
+
+  // Plot for transmission lines
+  for (const tl of transmissionLines) {
+    if (tl.model) {
+      plotsHTML += `<article class="plot-card spice-tl"><div class="plot-head"><span>TL: ${tl.name} (Z0=${tl.z0}Ω, TD=${(tl.td*1e9).toFixed(1)}ns)</span></div></article>`;
+    }
+  }
+
+  if (plotsHTML === '') {
+    plotsHTML = '<div class="plots-empty">Adicione fontes e sondas (.probe V(node)) ao netlist para ver os gráficos.</div>';
+  }
+
+  container.innerHTML = plotsHTML;
+}
+
+function renderSpicePlot(nodeName, history) {
+  const { min, max, final } = spiceWaveStats(history);
+  const safeNode = String(nodeName).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  return `<article class="plot-card spice-probe">
+    <div class="spice-plot-head"><div><span class="spice-trace-dot"></span><strong>V(${safeNode})</strong><small>Tensão do nó</small></div>
+      <div class="spice-measures"><span><small>VPP</small>${formatVoltage(max - min)}</span><span><small>FINAL</small>${formatVoltage(final)}</span></div>
+    </div>
+    <canvas data-spice-probe="${safeNode}" aria-label="Forma de onda de tensão no nó ${safeNode}"></canvas>
+  </article>`;
+}
+
+function spiceWaveStats(history) {
+  let min = Infinity, max = -Infinity;
+  for (const point of history) { min = Math.min(min, point.voltage); max = Math.max(max, point.voltage); }
+  return { min, max, final: history.at(-1)?.voltage ?? 0 };
+}
+
+function formatVoltage(value) {
+  const a = Math.abs(value);
+  if (a >= 1) return `${value.toFixed(3)} V`;
+  if (a >= 1e-3) return `${(value * 1e3).toFixed(2)} mV`;
+  if (a >= 1e-6) return `${(value * 1e6).toFixed(2)} µV`;
+  return `${value.toExponential(2)} V`;
+}
+
+function formatTime(value) {
+  if (value >= 1) return `${value.toFixed(2)} s`;
+  if (value >= 1e-3) return `${(value * 1e3).toFixed(2)} ms`;
+  if (value >= 1e-6) return `${(value * 1e6).toFixed(2)} µs`;
+  if (value >= 1e-9) return `${(value * 1e9).toFixed(2)} ns`;
+  return `${(value * 1e12).toFixed(2)} ps`;
+}
+
+// Render spice plot canvases
+function renderSpiceCanvasPlots() {
+  const canvases = [...document.querySelectorAll('canvas[data-spice-probe]')];
+  for (const c of canvases) {
+    const nodeName = c.dataset.spiceProbe;
+    const g = c.getContext('2d');
+    const history = spiceSimulator?.history[nodeName] || [];
+
+    if (history.length < 2) continue;
+    const W = Math.max(420, c.clientWidth), H = Math.max(210, c.clientHeight);
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const pad = { l: 62, r: 18, t: 18, b: 32 }, pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+    const t0 = history[0].time, t1 = history.at(-1).time, span = t1 - t0 || 1;
+    const stats = spiceWaveStats(history);
+    let lo = Math.min(0, stats.min), hi = Math.max(0, stats.max);
+    const vrange = Math.max(hi - lo, 1e-9), margin = vrange * .12;
+    lo -= margin; hi += margin;
+    const xOf = t => pad.l + (t - t0) / span * pw;
+    const yOf = v => pad.t + (hi - v) / (hi - lo) * ph;
+
+    const bg = g.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#07101b'); bg.addColorStop(1, '#03070d');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.font = '10px JetBrains Mono, monospace';
+    g.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.t + ph * i / 4, value = hi - (hi - lo) * i / 4;
+      g.strokeStyle = Math.abs(value) < vrange / 10 ? 'rgba(103,232,249,.25)' : 'rgba(100,116,139,.14)';
+      g.beginPath(); g.moveTo(pad.l, y + .5); g.lineTo(W - pad.r, y + .5); g.stroke();
+      g.fillStyle = '#718096'; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(formatVoltage(value), pad.l - 9, y);
+    }
+    for (let i = 0; i <= 5; i++) {
+      const x = pad.l + pw * i / 5, time = t0 + span * i / 5;
+      g.strokeStyle = 'rgba(100,116,139,.12)'; g.beginPath(); g.moveTo(x + .5, pad.t); g.lineTo(x + .5, H - pad.b); g.stroke();
+      g.fillStyle = '#718096'; g.textAlign = i === 0 ? 'left' : i === 5 ? 'right' : 'center'; g.textBaseline = 'top'; g.fillText(formatTime(time), x, H - pad.b + 10);
+    }
+    const fill = g.createLinearGradient(0, pad.t, 0, H - pad.b);
+    fill.addColorStop(0, 'rgba(103,232,249,.18)'); fill.addColorStop(1, 'rgba(103,232,249,0)');
+    const stride = Math.max(1, Math.floor(history.length / Math.max(1000, pw * 2)));
+    const trace = history.filter((_, i) => i % stride === 0 || i === history.length - 1);
+    g.beginPath();
+    trace.forEach((h, i) => i ? g.lineTo(xOf(h.time), yOf(h.voltage)) : g.moveTo(xOf(h.time), yOf(h.voltage)));
+    g.lineTo(xOf(t1), yOf(0)); g.lineTo(xOf(t0), yOf(0)); g.closePath(); g.fillStyle = fill; g.fill();
+    g.beginPath(); trace.forEach((h, i) => i ? g.lineTo(xOf(h.time), yOf(h.voltage)) : g.moveTo(xOf(h.time), yOf(h.voltage)));
+    g.strokeStyle = '#67e8f9'; g.lineWidth = 2; g.lineJoin = 'round'; g.shadowColor = 'rgba(103,232,249,.55)'; g.shadowBlur = 8; g.stroke(); g.shadowBlur = 0;
+  }
+}
+
+$('#spice-btn').onclick = toggleSpiceView;
+
 renderLibrary();
 globalControls();
 initTheme();
@@ -934,4 +1447,6 @@ if (!loadScene()) {
   loadExample('shield')
 }
 resize();
+initSmithChart();
+initSpiceView();
 requestAnimationFrame(loop);

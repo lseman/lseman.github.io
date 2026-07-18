@@ -37,6 +37,7 @@ export class ElectroStaticSim extends Sim {
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">🔴</span> ${this.name}</h3>
 <div class="formula">F = k·q₁q₂/r² · r̂</div>
+<div class="learning-card"><strong>Experimento guiado · Lei de Gauss</strong>Coloque cargas dentro e fora da superfície. Antes de alterar o raio, preveja: o fluxo muda se Q<sub>int</sub> não mudar?<em>Compare a integral numérica com Q<sub>int</sub>/ε₀.</em></div>
 <div class="btn-row"><button class="btn primary" id="addP">+ Positiva</button><button class="btn" id="addN">− Negativa</button><button class="btn danger" id="del">Remover</button><button class="btn danger" id="clr">Limpar</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="field">Campo Elétrico</option><option value="flux">Lei de Gauss</option><option value="pot">Potencial</option></select></div>
 <div class="control"><label>Carga (nC) <span class="val" id="qV">1.0</span></label><input type="range" id="q" min="0.1" max="5" step="0.1" value="1"></div>
@@ -46,7 +47,8 @@ export class ElectroStaticSim extends Sim {
 <div class="control"><label>Força sobre as cargas</label><label class="toggle"><input type="checkbox" id="forces" checked><span class="track"></span></label></div>
 <div class="control"><label>Sonda no cursor</label><label class="toggle"><input type="checkbox" id="probe" checked><span class="track"></span></label></div>
 <div class="control"><label>Densidade <span class="val" id="dV">24</span></label><input type="range" id="dens" min="8" max="48" value="24"></div>
-<div class="legend"><span class="legend-item"><span class="legend-dot" style="background:#f87171"></span>+ Positiva</span><span class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span>− Negativa</span></div>`;
+<div class="legend"><span class="legend-item"><span class="legend-dot" style="background:#f87171"></span>+ Positiva</span><span class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span>− Negativa</span></div>
+${this.measurementPanel("Teoria × medição", [["Q interno","0 nC"],["Fluxo teórico","0 N·m²/C"],["Fluxo numérico","0 N·m²/C"],["Erro relativo","0%"]])}`;
 		el.querySelector("#mode").value = this.mode;
 		el.querySelector("#lines").checked = this.showLines;
 		el.querySelector("#flux").checked = this.fluxSurf;
@@ -116,6 +118,14 @@ export class ElectroStaticSim extends Sim {
 			v += (K_E * c.q * 1e-9) / dMeters;
 		});
 		return v;
+	}
+	gaussMeasurement() {
+		const cx=W/2,cy=H/2,radius=this.gaussRadius,ppm=1000,R=radius/ppm;
+		const enclosed=this.charges.reduce((sum,ch)=>sum+(ch.pos.distTo(new V(cx,cy))<radius?ch.q:0),0)*1e-9;
+		let flux=0;const nt=32,np=64,dth=PI/nt,dph=2*PI/np;
+		for(let it=0;it<nt;it++){const th=(it+.5)*dth,st=sin(th),ct=cos(th);for(let ip=0;ip<np;ip++){const ph=(ip+.5)*dph,nx=st*cos(ph),ny=st*sin(ph),nz=ct;let ex=0,ey=0,ez=0;for(const ch of this.charges){const rx=(cx+radius*nx-ch.pos.x)/ppm,ry=(cy+radius*ny-ch.pos.y)/ppm,rz=R*nz,r=max(1e-6,sqrt(rx*rx+ry*ry+rz*rz)),scale=K_E*ch.q*1e-9/(r*r*r);ex+=scale*rx;ey+=scale*ry;ez+=scale*rz}flux+=(ex*nx+ey*ny+ez*nz)*R*R*st*dth*dph;}}
+		const theory=enclosed/EPS0,error=abs(theory)>1e-9?abs((flux-theory)/theory)*100:abs(flux)<1e-6?0:null;
+		return {enclosed,theory,flux,error};
 	}
 	onMouseDown(x, y) {
 		this.sel = null;
@@ -246,11 +256,7 @@ export class ElectroStaticSim extends Sim {
 			c.setLineDash([]);
 			c.fillStyle = "rgba(52,211,153,0.08)";
 			c.fill();
-			const Qenv =
-				this.charges.reduce((s, ch) => {
-					const d = ch.pos.distTo(new V(cx, cy));
-					return s + (d < radius ? ch.q : 0);
-				}, 0) * 1e-9;
+			const measurement=this.gaussMeasurement(),Qenv=measurement.enclosed;
 			c.fillStyle = "rgba(52,211,153,0.8)";
 			c.font = "12px monospace";
 			c.fillText(`Superfície gaussiana (projeção)`, cx - 110, cy - radius-13);
@@ -260,6 +266,7 @@ export class ElectroStaticSim extends Sim {
 				cx - 90,
 				cy + radius+37,
 			);
+			this.updateMeasurements([`${(Qenv*1e9).toFixed(2)} nC`,`${measurement.theory.toExponential(3)} N·m²/C`,`${measurement.flux.toExponential(3)} N·m²/C`,measurement.error===null?"— (teoria = 0)":`${measurement.error.toFixed(2)}%`]);
 		}
 		if(this.showForces){for(const ch of this.charges){let f=new V();for(const other of this.charges){if(other===ch)continue;const r=ch.pos.sub(other.pos),dm=max(r.len(),20)/1000;f=f.add(r.norm().mul(K_E*ch.q*other.q*1e-18/(dm*dm)))}const m=f.len();if(m>1e-18){const u=f.norm(),len=min(42,max(10,8+Math.log10(m*1e12+1)*9)),ex=ch.pos.x+u.x*len,ey=ch.pos.y+u.y*len;c.beginPath();c.moveTo(ch.pos.x,ch.pos.y);c.lineTo(ex,ey);c.lineTo(ex-u.x*6-u.y*3,ey-u.y*6+u.x*3);c.moveTo(ex,ey);c.lineTo(ex-u.x*6+u.y*3,ey-u.y*6-u.x*3);c.strokeStyle="#fbbf24";c.lineWidth=2;c.stroke()}}}
 		this.charges.forEach((ch) => ch.draw(c, this.sel === ch));
