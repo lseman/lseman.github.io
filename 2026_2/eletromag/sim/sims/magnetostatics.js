@@ -60,11 +60,15 @@ export class MagnetStaticSim extends Sim {
 			return new V((-dy/r)*b,(dx/r)*b);
 		}
 		if (source.t === "loop") {
-			// Magnetic-dipole approximation in the loop's equatorial display plane.
-			const radius=source.r/PX_PER_METER, moment=source.I*PI*radius*radius;
-			const mx=moment, dot=mx*dx/r;
-			const factor=MU0/(4*PI*r*r*r);
-			return new V(factor*(3*(dot/r)*dx-mx),factor*(3*(dot/r)*dy));
+			// Edge-on cross-section: the loop pierces the display plane as two
+			// antiparallel wires at x ± r, giving the correct field topology
+			// (through-center flux, closed lines around each conductor).
+			const a=source.r/PX_PER_METER;let bx=0,by=0;
+			for(const [off,sign] of [[-a,1],[a,-1]]){
+				const wx=dx-off,rw=max(.006,sqrt(wx*wx+dy*dy)),b=MU0*source.I*sign/(2*PI*rw);
+				bx+=(-dy/rw)*b;by+=(wx/rw)*b;
+			}
+			return new V(bx,by);
 		}
 		const halfW=source.w/(2*PX_PER_METER), halfH=source.h/(2*PX_PER_METER);
 		if (abs(dx)<halfW && abs(dy)<halfH) return new V(MU0*(source.n/(source.w/PX_PER_METER))*source.I,0);
@@ -103,7 +107,8 @@ export class MagnetStaticSim extends Sim {
 		for(const s of this.sources) this.drawSource(c,s);
 		if(this.mode==="ampere") {
 			const acx=this.sel?.x??W/2,acy=this.sel?.y??H/2,R=this.ampereRadius;c.beginPath();c.arc(acx,acy,R,0,2*PI);c.setLineDash([7,5]);c.strokeStyle="rgba(52,211,153,.8)";c.lineWidth=2;c.stroke();c.setLineDash([]);
-			const enclosed=this.sources.filter(s=>s.t==="wire"&&sqrt((s.x-acx)**2+(s.y-acy)**2)<R).reduce((sum,s)=>sum+s.I,0);let numerical=0,n=180;for(let i=0;i<n;i++){const a=(i+.5)*2*PI/n,p=new V(acx+R*cos(a),acy+R*sin(a)),tangent=new V(-sin(a),cos(a));numerical+=this.B(p).dot(tangent)*(R/PX_PER_METER)*2*PI/n}c.fillStyle="#6ee7b7";c.font="11px monospace";c.fillText(`I_enc = ${enclosed.toFixed(2)} A`,acx-R,acy-R-30);c.fillText(`∮B·dl num. = ${numerical.toExponential(2)} T·m`,acx-R,acy-R-15);c.fillText(`μ₀I_enc = ${(MU0*enclosed).toExponential(2)} T·m`,acx-R,acy+R+20);
+			const inside=(x,y)=>sqrt((x-acx)**2+(y-acy)**2)<R;
+			const enclosed=this.sources.reduce((sum,s)=>{if(s.t==="wire")return sum+(inside(s.x,s.y)?s.I:0);if(s.t==="loop")return sum+(inside(s.x-s.r,s.y)?s.I:0)+(inside(s.x+s.r,s.y)?-s.I:0);return sum},0);let numerical=0,n=180;for(let i=0;i<n;i++){const a=(i+.5)*2*PI/n,p=new V(acx+R*cos(a),acy+R*sin(a)),tangent=new V(-sin(a),cos(a));numerical+=this.B(p).dot(tangent)*(R/PX_PER_METER)*2*PI/n}c.fillStyle="#6ee7b7";c.font="11px monospace";c.fillText(`I_enc = ${enclosed.toFixed(2)} A`,acx-R,acy-R-30);c.fillText(`∮B·dl num. = ${numerical.toExponential(2)} T·m`,acx-R,acy-R-15);c.fillText(`μ₀I_enc = ${(MU0*enclosed).toExponential(2)} T·m`,acx-R,acy+R+20);
 		}
 		const probe=this.B(S.mouse), microT=probe.len()*1e6;
 		if(this.showProbe){const probeW=315,probeH=64,probeX=W-probeW-16,probeY=16;c.fillStyle="rgba(7,10,18,.82)";c.beginPath();c.roundRect(probeX,probeY,probeW,probeH,8);c.fill();c.strokeStyle="rgba(103,232,249,.22)";c.stroke();c.fillStyle="rgba(226,232,240,.8)";c.font="10px monospace";c.fillText(`sonda (${S.mouse.x.toFixed(0)}, ${S.mouse.y.toFixed(0)}) px`,probeX+10,probeY+20);c.fillText(`B=(${(probe.x*1e6).toFixed(3)}, ${(probe.y*1e6).toFixed(3)}) µT`,probeX+10,probeY+36);c.fillText(`|B|=${microT.toFixed(3)} µT`,probeX+10,probeY+52)}
@@ -112,7 +117,7 @@ export class MagnetStaticSim extends Sim {
 	drawSource(c,s) {
 		const selected=s===this.sel;c.save();c.translate(s.x,s.y);
 		if(s.t==="wire") { c.beginPath();c.arc(0,0,15,0,2*PI);c.fillStyle="#111827";c.fill();c.strokeStyle=selected?"#67e8f9":"#fbbf24";c.lineWidth=selected?3:2;c.stroke();c.fillStyle="#fbbf24";c.font="bold 18px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(s.I>=0?"•":"×",0,-1); }
-		else if(s.t==="loop") { c.beginPath();c.ellipse(0,0,s.r,s.r*.35,0,0,2*PI);c.strokeStyle=selected?"#67e8f9":"#fbbf24";c.lineWidth=selected?4:2.5;c.stroke();c.fillStyle="#fbbf24";c.fillText(s.I>=0?"↻":"↺",s.r-8,-8); }
+		else if(s.t==="loop") { c.beginPath();c.ellipse(0,0,s.r,s.r*.35,0,0,2*PI);c.strokeStyle=selected?"#67e8f9":"#fbbf24";c.lineWidth=selected?4:2.5;c.stroke();for(const [off,out] of [[-s.r,s.I>=0],[s.r,s.I<0]]){c.beginPath();c.arc(off,0,8,0,2*PI);c.fillStyle="#111827";c.fill();c.strokeStyle="#fbbf24";c.lineWidth=1.5;c.stroke();c.fillStyle="#fde68a";c.font="bold 11px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(out?"•":"×",off,-1);}c.textAlign="start";c.textBaseline="alphabetic"; }
 		else { c.strokeStyle=selected?"#67e8f9":"#fbbf24";c.lineWidth=2;c.strokeRect(-s.w/2,-s.h/2,s.w,s.h);for(let x=-s.w/2+8;x<s.w/2;x+=12){c.beginPath();c.ellipse(x,0,5,s.h/2,0,0,2*PI);c.stroke();} }
 		c.restore();c.textAlign="start";c.textBaseline="alphabetic";
 	}

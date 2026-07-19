@@ -112,11 +112,11 @@ ${this.measurementPanel("Parâmetros da onda", [["Velocidade","—"],["Comprimen
 			// time-dependent E vector and a short helical history behind it.
 			const cx=W*.52,cy=H*.5,rx=min(130,W*.18)*amp,ry=pol==="linear"?0:rx*(pol==="circular"?1:.5),skew=.48;c.save();c.translate(cx,cy);c.transform(1,skew,-.45,.78,0,0);c.beginPath();c.ellipse(0,0,rx,max(1,ry),0,0,2*PI);c.strokeStyle="rgba(103,232,249,.38)";c.lineWidth=1.2;c.stroke();c.restore();const phase=omega*displayTime,ex=cos(phase)*rx,ey=sin(phase)*ry,px=cx+ex-.45*ey,py=cy+skew*ex+.78*ey;c.beginPath();c.moveTo(cx,cy);c.lineTo(px,py);c.strokeStyle="#fb7185";c.lineWidth=3;c.stroke();c.beginPath();c.arc(px,py,5,0,2*PI);c.fillStyle="#fecdd3";c.fill();c.fillStyle="#94a3b8";c.font="11px monospace";c.fillText(`Trajetória de E · ${pol}`,cx-rx,cy+max(80,ry)+45);
 		} else if (this.mode === "energy") {
-			// Energy density mode: u_E = u_B equality
+			// Energy density mode: u_E = u_B equality (holds in any simple medium)
 			const e0 = this.amp;
-			const b0 = e0 / C0;
-			const uE = 0.5 * EPS0 * e0 * e0;
-			const uB = (b0 * b0) / (2 * MU0);
+			const b0 = e0 / velocity;
+			const uE = 0.5 * EPS0 * this.epsr * e0 * e0;
+			const uB = (b0 * b0) / (2 * MU0 * this.mur);
 			const total = uE + uB;
 			const barW = 200,
 				barH = 30;
@@ -151,8 +151,8 @@ ${this.measurementPanel("Parâmetros da onda", [["Velocidade","—"],["Comprimen
 			// Draw u_E and u_B as stacked heatmap
 			for (let x = 0; x < mapW; x++) {
 				const t = this.time + (x / mapW) * 4 * PI * this.freq;
-				const eVal = 0.5 * EPS0 * (e0 * cos(t)) ** 2;
-				const bVal = (b0 * cos(t)) ** 2 / (2 * MU0);
+				const eVal = 0.5 * EPS0 * this.epsr * (e0 * cos(t)) ** 2;
+				const bVal = (b0 * cos(t)) ** 2 / (2 * MU0 * this.mur);
 				const uE_frac = eVal / (uE + 1e-15);
 				const uB_frac = bVal / (uB + 1e-15);
 				

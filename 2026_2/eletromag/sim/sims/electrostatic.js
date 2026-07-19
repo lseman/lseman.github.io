@@ -192,9 +192,12 @@ ${this.measurementPanel("Teoria × medição", [["Q interno","0 nC"],["Fluxo te�
 		// Field lines
 		if (this.showLines && this.charges.length > 0) {
 			const starts = [];
+			// Line count per charge scales with |q| (line density convention).
+			const qMax = max(...this.charges.map((ch) => abs(ch.q)), 1e-9);
 			this.charges.forEach((ch) => {
-				for (let i = 0; i < this.dens; i++) {
-					const a = (2 * PI * i) / this.dens;
+				const nLines = max(4, Math.round(this.dens * abs(ch.q) / qMax));
+				for (let i = 0; i < nLines; i++) {
+					const a = (2 * PI * i) / nLines;
 					starts.push({p:ch.pos.add(new V(cos(a), sin(a)).mul(12)),direction:ch.q>0?1:-1});
 				}
 			});

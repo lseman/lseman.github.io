@@ -45,6 +45,12 @@ import { CoordinateSystemsSim } from "../sims/coordinates.js";
 import { ContinuousChargeSim } from "../sims/continuous-charge.js";
 import { MethodImagesSim } from "../sims/method-images.js";
 import { BiotSavartSim } from "../sims/biot-savart.js";
+import { ConductionSim } from "../sims/conduction.js";
+import { MagneticTorqueSim } from "../sims/magnetic-torque.js";
+import { MagneticMaterialsSim } from "../sims/magnetic-materials.js";
+import { InductanceSim } from "../sims/inductance.js";
+import { LossyWaveSim } from "../sims/lossy-waves.js";
+import { ReflectionSim } from "../sims/reflection.js";
 
 const sims = [
 	new VecCalcSim(),
@@ -62,6 +68,12 @@ const sims = [
 	new ContinuousChargeSim(),
 	new MethodImagesSim(),
 	new BiotSavartSim(),
+	new ConductionSim(),
+	new MagneticTorqueSim(),
+	new MagneticMaterialsSim(),
+	new InductanceSim(),
+	new LossyWaveSim(),
+	new ReflectionSim(),
 ];
 
 const tabNames = [
@@ -80,6 +92,12 @@ const tabNames = [
 	"Distribuições Contínuas",
 	"Método das Imagens",
 	"Biot–Savart",
+	"Condução",
+	"Torque Magnético",
+	"Materiais Magnéticos",
+	"Indutância",
+	"Meios com Perdas",
+	"Reflexão de Ondas",
 ];
 
 const formulaTooltips = [
@@ -98,6 +116,12 @@ const formulaTooltips = [
 	{title:"Distribuições Contínuas de Carga",concept:"Uma distribuição contínua é dividida em elementos dq. A soma numérica converge para a integral de Coulomb e pode ser comparada a soluções de simetria.",formula:"E=(1/4πε₀)∫dq R̂/R² | dq=λdl | dq=σdS"},
 	{title:"Método das Imagens",concept:"Uma carga imagem fictícia reproduz as condições de contorno de um condutor aterrado na região física.",formula:"V=kq(1/R₊−1/R₋) | F=−kq²/(4a²)"},
 	{title:"Integração de Biot–Savart",concept:"O campo de um condutor é obtido somando as contribuições vetoriais de pequenos elementos de corrente.",formula:"dB=μ₀I/(4π) dl×R̂/R²"},
+	{title:"Corrente de Condução e Relaxação",concept:"Em um material com condutividade σ, o campo elétrico produz densidade de corrente J=σE. A carga livre no interior decai com o tempo de relaxação τ=ε/σ.",formula:"J = σE | R = ℓ/(σS) | τᵣ = ε/σ | ρᵥ(t)=ρ₀e^(−t/τᵣ)"},
+	{title:"Torque sobre Espira de Corrente",concept:"Uma espira percorrida por corrente em campo uniforme sofre torque que tende a alinhar o momento de dipolo magnético m com B — base do motor CC.",formula:"m = NIS·n̂ | τ = m×B | U = −m·B"},
+	{title:"Magnetização e Histerese",concept:"Materiais magnéticos respondem ao campo H com magnetização M. Ferromagnéticos exibem saturação, remanência e coercividade na curva B–H.",formula:"M = χₘH | B = μ₀(H+M) = μ₀μᵣH | μᵣ = 1+χₘ"},
+	{title:"Indutância e Circuitos Magnéticos",concept:"A força magnetomotriz NI impulsiona o fluxo Φ contra a relutância ℛ, em analogia com o circuito elétrico. A indutância mede o fluxo concatenado por ampère.",formula:"ℛ = ℓ/(μS) | Φ = NI/ℛ | L = N²/ℛ | W = ½LI²"},
+	{title:"Propagação em Meios com Perdas",concept:"Em um meio condutor a onda se atenua com e^(−αz). A tangente de perdas classifica o meio, e a profundidade pelicular δ mede a penetração.",formula:"γ = α+jβ | tan δ = σ/(ωε) | δ = 1/α"},
+	{title:"Reflexão com Incidência Normal",concept:"Na interface entre dois meios, parte da onda reflete e parte transmite conforme o descasamento de impedâncias intrínsecas. A interferência gera onda estacionária.",formula:"Γ = (η₂−η₁)/(η₂+η₁) | τ = 1+Γ | s = (1+|Γ|)/(1−|Γ|)"},
 ];
 
 let activeSim = sims[0],
@@ -130,10 +154,10 @@ const toolCatalog = {
 const tabsEl = document.getElementById("tabs");
 const labGroups = [
 	{title:"Fundamentos",subtitle:"Ferramentas matemáticas",labs:[0,11]},
-	{title:"Campos elétricos",subtitle:"Cargas, potencial e materiais",labs:[1,2,3,9,12,13]},
-	{title:"Campos magnéticos",subtitle:"Correntes, forças e movimento",labs:[4,10,14]},
+	{title:"Campos elétricos",subtitle:"Cargas, potencial e materiais",labs:[1,2,3,9,12,13,15]},
+	{title:"Campos magnéticos",subtitle:"Correntes, forças e materiais",labs:[4,10,14,16,17,18]},
 	{title:"Campos variáveis",subtitle:"Indução e equações de Maxwell",labs:[5,6]},
-	{title:"Ondas e métodos numéricos",subtitle:"Propagação e solução de campos",labs:[7,8]},
+	{title:"Ondas e métodos numéricos",subtitle:"Propagação e solução de campos",labs:[7,19,20,8]},
 ];
 tabsEl.innerHTML=`<button class="lab-launcher" type="button" aria-expanded="false" aria-controls="lab-menu"><span class="lab-launcher-icon">${sims[0].icon}</span><span><small>LABORATÓRIO ATIVO</small><strong>${sims[0].name}</strong></span><b>⌄</b></button><div id="lab-menu" class="lab-menu" hidden><div class="lab-menu-head"><span>Explorar laboratórios</span><small>${sims.length} experiências interativas</small></div><div class="lab-groups">${labGroups.map(group=>`<section class="lab-group"><header><strong>${group.title}</strong><small>${group.subtitle}</small></header><div>${group.labs.map(i=>`<button type="button" class="tab lab-card${i===0?' active':''}" role="tab" aria-selected="${i===0}" data-sim="${i}"><i>${sims[i].icon}</i><span><strong>${sims[i].name}</strong><small>${formulaTooltips[i]?.concept||tabNames[i]}</small></span><em>→</em></button>`).join('')}</div></section>`).join('')}</div></div>`;
 const launcher=tabsEl.querySelector('.lab-launcher'),labMenu=tabsEl.querySelector('#lab-menu');

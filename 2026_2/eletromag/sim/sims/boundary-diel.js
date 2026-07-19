@@ -17,7 +17,7 @@ function solveWithDielBoundary(rows, cols, kappa1, kappa2, boundaryY) {
 			: 10 - field1 * boundaryY - field2 * (y - boundaryY);
 		for (let i = 0; i < cols; i++) V[j * cols + i] = potential;
 	}
-	return { V, iterations: 1, residual: 0 };
+	return { V };
 }
 
 function computeFieldWithDielBC(V, rows, cols, kappa1, kappa2, boundaryY, dx, dy) {
@@ -54,7 +54,7 @@ export class BoundaryDielSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⟂</span> ${this.name}</h3>
-<div class="formula" id="formula">E_tan contínuo  |  D_n contínuo</div>
+<div class="formula" id="formula">D₁ₙ = D₂ₙ (contínuo)  |  E₁/E₂ = κ₂/κ₁  ·  campo ⊥ interface</div>
 <div class="control"><label>κ₁ (topo) <span class="val" id="k1V">2.2</span></label><input type="range" id="k1" min="1" max="10" step="0.1" value="2.2"></div>
 <div class="control"><label>κ₂ (base) <span class="val" id="k2V">5.5</span></label><input type="range" id="k2" min="1" max="10" step="0.1" value="5.5"></div>
 <div class="control"><label>Posição interface <span class="val" id="byV">50%</span></label><input type="range" id="by" min="20" max="80" value="50"></div>
@@ -122,13 +122,20 @@ export class BoundaryDielSim extends Sim {
 		this.dx = dx;
 		this.dy = dy;
 		this.boundaryPos = boundaryPos;
-		this.iterations = result.iterations;
-		this.residual = result.residual;
 
 		const fields = computeFieldWithDielBC(this.V, gridRows, gridCols, this.kappa1, this.kappa2, this.boundaryY, dx, dy);
 		this.Ex = fields.Ex;
 		this.Ey = fields.Ey;
 		this.D = fields.D;
+		// Analytic values for V=10 V across d=1 m (series capacitor)
+		const EPS0 = 8.854e-12;
+		const sf = this.boundaryY / this.kappa1 + (1 - this.boundaryY) / this.kappa2;
+		const E1 = 10 / (this.kappa1 * sf), E2 = 10 / (this.kappa2 * sf), Dn = EPS0 * 10 / sf;
+		const stats = document.querySelector("#stats");
+		if (stats) stats.innerHTML = `<div class="stat"><div class="num">${E1.toFixed(2)}</div><div class="lbl">E₁ (V/m)</div></div>
+<div class="stat"><div class="num">${E2.toFixed(2)}</div><div class="lbl">E₂ (V/m)</div></div>
+<div class="stat"><div class="num">${(Dn * 1e12).toFixed(2)}</div><div class="lbl">D_n (pC/m²)</div></div>
+<div class="stat"><div class="num">${(E1 / E2).toFixed(2)} = ${(this.kappa2 / this.kappa1).toFixed(2)}</div><div class="lbl">E₁/E₂ = κ₂/κ₁</div></div>`;
 	}
 	resize() {
 		this.computeSolution();
@@ -301,6 +308,6 @@ export class BoundaryDielSim extends Sim {
 
 		c.fillStyle = "rgba(255,255,255,0.6)";
 		c.font = "9px monospace";
-		c.fillText(`Iterações: ${this.iterations}  |  Resíduo: ${this.residual.toExponential(2)}`, 10, 20);
+		c.fillText(`Solução analítica — capacitor em série (V=10 V no topo, 0 V na base)`, 10, 20);
 	}
 }

@@ -153,7 +153,7 @@ export class VecCalcSim extends Sim {
 		// Streamlines integrate the selected vector field in world coordinates using RK4.
 		if(this.showStreamlines){const starts=[];for(let i=1;i<9;i++){starts.push({x:-W/(2*scale)+.2,y:(i/9-.5)*H/scale},{x:(i/9-.5)*W/scale,y:-H/(2*scale)+.2})}c.strokeStyle="rgba(94,234,212,.42)";c.lineWidth=1.1;for(const start of starts){let p={...start};c.beginPath();for(let k=0;k<300;k++){const sx=W/2+p.x*scale,sy=H/2-p.y*scale;if(k===0)c.moveTo(sx,sy);else c.lineTo(sx,sy);const f=this.fieldF(p.x,p.y),m=sqrt(f.x*f.x+f.y*f.y);if(m<1e-8||sx<0||sx>W||sy<0||sy>H)break;// RK4 integration
 				const h=0.05;
-				const k1x=f.x, k1y=f.y;
+				const k1x=f.x/m, k1y=f.y/m;
 				const f2=this.fieldF(p.x+k1x*h*0.5, p.y+k1y*h*0.5), m2=sqrt(f2.x*f2.x+f2.y*f2.y);
 				const k2x=m2>1e-8?f2.x/m2:0, k2y=m2>1e-8?f2.y/m2:0;
 				const f3=this.fieldF(p.x+k2x*h*0.5, p.y+k2y*h*0.5), m3=sqrt(f3.x*f3.x+f3.y*f3.y);
