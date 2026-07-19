@@ -89,7 +89,7 @@ export class SpiceNetlistParser {
         if (p.length < 3) throw new Error(`Linha ${number + 1}: Diodo (D) requer n+ e n-`);
         const diode = { type: 'diode', name: p[0], nPlus: p[1], nMinus: p[2], is: 1e-14, n: 1, vt: 0.02585, vPrev: 0 };
         for (let k = 3; k < p.length; k++) {
-          const paramMatch = p[k].match(/^(IS|N|VT)=([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)$/i);
+          const paramMatch = p[k].match(/^(IS|N|VT)=(.+)$/i);
           if (paramMatch) {
             const paramKey = paramMatch[1].toUpperCase();
             const paramVal = parseSpiceNumber(paramMatch[2]);
@@ -98,16 +98,23 @@ export class SpiceNetlistParser {
             else if (paramKey === 'VT') diode.vt = paramVal;
           }
         }
+        if (!(diode.is > 0) || !(diode.n > 0) || !(diode.vt > 0)) throw new Error(`Linha ${number + 1}: parâmetros do diodo devem ser positivos`);
         netlist.elements.push(diode);
       } else if (designator === 'V' || designator === 'I') {
         const src = { type: designator === 'V' ? 'voltage' : 'current', name: p[0], nPlus: p[1], nMinus: p[2], dcValue: 0 };
+        const dcMatch = line.match(/\bDC\s+([^\s()]+)/i);
+        const acMatch = line.match(/\bAC\s+([^\s()]+)(?:\s+([^\s()]+))?/i);
+        if (dcMatch) src.dcValue = parseSpiceNumber(dcMatch[1]);
+        else if (!/^(?:AC|PULSE|SINE|PWL)(?:$|\()/i.test(p[3])) src.dcValue = parseSpiceNumber(p[3]);
+        if (acMatch) {
+          src.acMagnitude = parseSpiceNumber(acMatch[1]);
+          // AC phase is expressed in degrees and is deliberately not a SPICE-scaled value.
+          src.acPhase = acMatch[2] && /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(acMatch[2])
+            ? Number(acMatch[2]) : 0;
+        }
         if (/\bPULSE\s*\(/i.test(line)) { src.waveform = 'pulse'; src.params = this.parsePulseParams(line); }
         else if (/\bSINE\s*\(/i.test(line)) { src.waveform = 'sine'; src.params = this.parseSineParams(line); }
         else if (/\bPWL\s*\(/i.test(line)) { src.waveform = 'pwl'; src.params = this.parsePWLParams(line); }
-        else {
-          const valueToken = p[3].toLowerCase() === 'dc' ? p[4] : p[3];
-          src.dcValue = parseSpiceNumber(valueToken);
-        }
         netlist.sources.push(src);
       } else if (designator === 'E') {
         // VCVS: Ename n+ n- nc+ nc- gain
@@ -200,6 +207,59 @@ export class TransmissionLineModel {
   reset() { this.forward.fill(0); this.reverse.fill(0); this.index = 0; }
 }
 
+// Sparse row-oriented LU with scaled partial pivoting. MNA stamps are often
+// extremely sparse; keeping fill-in in Maps avoids the O(n²) storage cost of a
+// dense factorization while retaining robust pivoting for teaching-sized nets.
+export function solveSparseLU(matrix, rightHandSide, pivotTolerance = 1e-14) {
+  const n = rightHandSide.length;
+  if (matrix.length !== n) throw new Error('Matriz MNA incompatível com o vetor independente');
+  const rows = matrix.map(row => {
+    const sparse = new Map();
+    for (let col = 0; col < n; col++) if (row[col]) sparse.set(col, row[col]);
+    return sparse;
+  });
+  const rhs = Float64Array.from(rightHandSide);
+  const scales = rows.map(row => Math.max(0, ...Array.from(row.values(), Math.abs)));
+  let fillIn = rows.reduce((sum, row) => sum + row.size, 0);
+
+  for (let col = 0; col < n; col++) {
+    let pivot = -1, best = 0;
+    for (let row = col; row < n; row++) {
+      const score = scales[row] ? Math.abs(rows[row].get(col) || 0) / scales[row] : 0;
+      if (score > best) { best = score; pivot = row; }
+    }
+    if (pivot < 0 || best <= pivotTolerance) throw new Error('Circuito singular: verifique terra, nós flutuantes e fontes ideais conflitantes');
+    if (pivot !== col) {
+      [rows[col], rows[pivot]] = [rows[pivot], rows[col]];
+      [rhs[col], rhs[pivot]] = [rhs[pivot], rhs[col]];
+      [scales[col], scales[pivot]] = [scales[pivot], scales[col]];
+    }
+    const diagonal = rows[col].get(col);
+    for (let row = col + 1; row < n; row++) {
+      const entry = rows[row].get(col);
+      if (!entry) continue;
+      const factor = entry / diagonal;
+      rows[row].delete(col);
+      for (const [j, value] of rows[col]) {
+        if (j <= col) continue;
+        const previous = rows[row].get(j) || 0;
+        const next = previous - factor * value;
+        if (Math.abs(next) <= Number.EPSILON * Math.max(1, Math.abs(previous), Math.abs(factor * value))) rows[row].delete(j);
+        else { if (!rows[row].has(j)) fillIn++; rows[row].set(j, next); }
+      }
+      rhs[row] -= factor * rhs[col];
+    }
+  }
+  const solution = new Float64Array(n);
+  for (let row = n - 1; row >= 0; row--) {
+    let sum = rhs[row];
+    for (const [col, value] of rows[row]) if (col > row) sum -= value * solution[col];
+    solution[row] = sum / rows[row].get(row);
+  }
+  if (!solution.every(Number.isFinite)) throw new Error('A solução numérica divergiu');
+  return { solution, stats: { dimension: n, nonzeros: fillIn } };
+}
+
 export class MNASolver {
   constructor(netlist, dt) {
     this.netlist = netlist; this.dt = dt; this.nodeMap = new Map([['0', -1], ['gnd', -1]]);
@@ -218,218 +278,181 @@ export class MNASolver {
     if (a >= 0 && b >= 0) { A[a][b] -= g; A[b][a] -= g; }
   }
   stampCurrent(rhs, a, b, current) { if (a >= 0) rhs[a] -= current; if (b >= 0) rhs[b] += current; }
+  diodeLinearization(e, voltage) {
+    const nvt = Math.max(1e-12, (e.n || 1) * (e.vt || 0.02585));
+    const saturation = Math.max(0, e.is || 1e-14);
+    // Limiting the exponential is the compact-model equivalent of SPICE's
+    // junction-voltage limiting: it keeps a poor Newton guess from overflowing.
+    const exponent = Math.max(-40, Math.min(40, voltage / nvt));
+    const expValue = Math.exp(exponent);
+    const current = saturation * (expValue - 1);
+    const conductance = Math.max(1e-12, saturation * expValue / nvt);
+    return { conductance, current, equivalentCurrent: current - conductance * voltage, nvt };
+  }
   solve(time = 0) {
     const n = this.numNodes + this.numVoltageSources;
     if (!n) return new Float64Array();
-    const A = Array.from({ length: n }, () => new Float64Array(n));
-    const rhs = new Float64Array(n);
+    // Dynamic companion histories belong to the time step, not to an individual
+    // Newton iteration. Calculate them exactly once before rebuilding the MNA.
     for (const e of this.netlist.elements) {
-      const a = this.node(e.nPlus), b = this.node(e.nMinus);
-      if (e.type === 'resistor') this.stampConductance(A, a, b, 1 / e.value);
-      else if (e.type === 'capacitor') {
+      if (e.type === 'capacitor') {
         const g_c = 2 * e.value / this.dt;
-        if (e.J_hist === undefined) { e.J_hist = -g_c * e.voltagePrev; } else { e.J_hist = -2 * g_c * e.voltagePrev - e.J_hist; }
-        this.stampConductance(A, a, b, g_c);
-        this.stampCurrent(rhs, a, b, e.J_hist);
-      }
-      else if (e.type === 'inductor') {
+        // Physical current state keeps the trapezoidal companion valid when dt changes.
+        e.J_hist = -g_c * (e.voltagePrev || 0) - (e.currentPrev || 0);
+        e.g_c_store = g_c;
+      } else if (e.type === 'inductor') {
         const g_L = this.dt / (2 * e.value);
         const I_hist = e.currentPrev + g_L * (e.voltagePrev || 0);
-        this.stampConductance(A, a, b, g_L);
-        this.stampCurrent(rhs, a, b, I_hist);
         e.I_hist_store = I_hist;
         e.g_L_store = g_L;
       }
-      else if (e.type === 'diode') {
-        const vdPrev = e.vPrev || 0;
-        const vt = e.vt || 0.02585;
-        const n = e.n || 1;
-        const is = e.is || 1e-14;
-        let gd, idPrev;
-        if (vdPrev > -4 * vt) {
-          const expArg = vdPrev / (n * vt);
-          const expVal = Math.exp(expArg);
-          idPrev = is * (expVal - 1);
-          gd = (is / (n * vt)) * expVal;
-        } else {
-          idPrev = -is;
-          gd = Math.max(is / (n * vt) * Math.exp(-4), 1e-12);
-        }
-        e.gd_store = gd;
-        e.idPrev_store = idPrev;
-        this.stampConductance(A, a, b, gd);
-        const jEq = idPrev - gd * vdPrev;
-        this.stampCurrent(rhs, a, b, jEq);
-      }
     }
-    for (const tl of this.netlist.transmissionLines) {
-      const a = this.node(tl.nPlus), b = this.node(tl.nMinus), g = 1 / tl.z0;
-      const { vF_arrived, vR_arrived } = tl.model.getArrivedWaves();
-      if (a >= 0) { A[a][a] += g; rhs[a] += 2 * g * vR_arrived; }
-      if (b >= 0) { A[b][b] += g; rhs[b] += 2 * g * vF_arrived; }
-    }
-    for (const src of this.netlist.sources.filter(s => s.type === 'current')) this.stampCurrent(rhs, this.node(src.nPlus), this.node(src.nMinus), sourceValue(src, time));
-    // Stamp dependent sources
-    for (const src of this.netlist.elements) {
-      if (src.type === 'vccs') {
-        const g = src.transconductance;
-        const a = this.node(src.nPlus), b = this.node(src.nMinus);
-        const nc_a = this.node(src.ncPlus), nc_b = this.node(src.ncMinus);
-        if (a >= 0) { if (nc_a >= 0) A[a][nc_a] += g; if (nc_b >= 0) A[a][nc_b] -= g; }
-        if (b >= 0) { if (nc_a >= 0) A[b][nc_a] -= g; if (nc_b >= 0) A[b][nc_b] += g; }
-      } else if (src.type === 'cccs') {
-        const gain = src.currentGain;
-        const a = this.node(src.nPlus), b = this.node(src.nMinus);
-        const vSrcIdx = this.voltageSourceMap.get(src.vSourceName);
-        if (vSrcIdx !== undefined) {
-          const srcRow = this.numNodes + vSrcIdx;
-          if (a >= 0) A[a][srcRow] -= gain;
-          if (b >= 0) A[b][srcRow] += gain;
+    let guess = this.lastSolution?.length === n ? Float64Array.from(this.lastSolution) : new Float64Array(n);
+    const nonlinear = this.netlist.elements.some(e => e.type === 'diode');
+    const maxIterations = nonlinear ? 60 : 1, relTol = 1e-6, absTol = 1e-9;
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      const A = Array.from({ length: n }, () => new Float64Array(n));
+      const rhs = new Float64Array(n);
+      for (const e of this.netlist.elements) {
+        const a = this.node(e.nPlus), b = this.node(e.nMinus);
+        if (e.type === 'resistor') this.stampConductance(A, a, b, 1 / e.value);
+        else if (e.type === 'capacitor') { this.stampConductance(A, a, b, e.g_c_store); this.stampCurrent(rhs, a, b, e.J_hist); }
+        else if (e.type === 'inductor') { this.stampConductance(A, a, b, e.g_L_store); this.stampCurrent(rhs, a, b, e.I_hist_store); }
+        else if (e.type === 'diode') {
+          const voltage = (a >= 0 ? guess[a] : 0) - (b >= 0 ? guess[b] : 0);
+          const model = this.diodeLinearization(e, voltage);
+          e.gd_store = model.conductance; e.idPrev_store = model.current;
+          this.stampConductance(A, a, b, model.conductance);
+          this.stampCurrent(rhs, a, b, model.equivalentCurrent);
         }
       }
-    }
-    this.voltageSources.forEach((src, k) => {
-      const row = this.numNodes + k, a = this.node(src.nPlus), b = this.node(src.nMinus);
-      if (a >= 0) A[a][row] = A[row][a] = 1;
-      if (b >= 0) A[b][row] = A[row][b] = -1;
-      if (src.type === 'vcvs') {
-        const nc_a = this.node(src.ncPlus), nc_b = this.node(src.ncMinus);
-        if (nc_a >= 0) A[row][nc_a] = -src.gain;
-        if (nc_b >= 0) A[row][nc_b] = +src.gain;
-        rhs[row] = 0;
-      } else if (src.type === 'ccvs') {
-        const vSrcIdx = this.voltageSourceMap.get(src.vSourceName);
-        if (vSrcIdx !== undefined) {
-          const srcRow = this.numNodes + vSrcIdx;
-          A[row][srcRow] = -src.transresistance;
-        }
-        rhs[row] = 0;
-      } else {
-        rhs[row] = sourceValue(src, time);
+      for (const tl of this.netlist.transmissionLines) {
+        const a = this.node(tl.nPlus), b = this.node(tl.nMinus), g = 1 / tl.z0;
+        const { vF_arrived, vR_arrived } = tl.model.getArrivedWaves();
+        if (a >= 0) { A[a][a] += g; rhs[a] += 2 * g * vR_arrived; }
+        if (b >= 0) { A[b][b] += g; rhs[b] += 2 * g * vF_arrived; }
       }
-    });
-    return this.gaussianElimination(A, rhs);
+      for (const src of this.netlist.sources.filter(s => s.type === 'current')) this.stampCurrent(rhs, this.node(src.nPlus), this.node(src.nMinus), sourceValue(src, time));
+      for (const src of this.netlist.elements) {
+        if (src.type === 'vccs') {
+          const g = src.transconductance, a = this.node(src.nPlus), b = this.node(src.nMinus), ca = this.node(src.ncPlus), cb = this.node(src.ncMinus);
+          if (a >= 0) { if (ca >= 0) A[a][ca] += g; if (cb >= 0) A[a][cb] -= g; }
+          if (b >= 0) { if (ca >= 0) A[b][ca] -= g; if (cb >= 0) A[b][cb] += g; }
+        } else if (src.type === 'cccs') {
+          const k = this.voltageSourceMap.get(src.vSourceName), a = this.node(src.nPlus), b = this.node(src.nMinus);
+          if (k !== undefined) { const branch = this.numNodes + k; if (a >= 0) A[a][branch] += src.currentGain; if (b >= 0) A[b][branch] -= src.currentGain; }
+        }
+      }
+      this.voltageSources.forEach((src, k) => {
+        const row = this.numNodes + k, a = this.node(src.nPlus), b = this.node(src.nMinus);
+        if (a >= 0) A[a][row] = A[row][a] = 1;
+        if (b >= 0) A[b][row] = A[row][b] = -1;
+        if (src.type === 'vcvs') {
+          const ca = this.node(src.ncPlus), cb = this.node(src.ncMinus);
+          if (ca >= 0) A[row][ca] = -src.gain; if (cb >= 0) A[row][cb] = src.gain;
+        } else if (src.type === 'ccvs') {
+          const control = this.voltageSourceMap.get(src.vSourceName);
+          if (control !== undefined) A[row][this.numNodes + control] = -src.transresistance;
+        } else rhs[row] = sourceValue(src, time);
+      });
+      const next = this.gaussianElimination(A, rhs);
+      if (!nonlinear) { this.lastSolution = next; return next; }
+      let converged = true;
+      for (let i = 0; i < n; i++) {
+        const tolerance = absTol + relTol * Math.max(Math.abs(next[i]), Math.abs(guess[i]));
+        if (Math.abs(next[i] - guess[i]) > tolerance) converged = false;
+      }
+      if (converged) { this.lastSolution = next; return next; }
+      // Damp large Newton moves; this is particularly important at source steps.
+      for (let i = 0; i < n; i++) {
+        const delta = next[i] - guess[i];
+        guess[i] = i < this.numNodes ? guess[i] + Math.max(-0.5, Math.min(0.5, delta)) : next[i];
+      }
+    }
+    throw new Error(`Newton–Raphson não convergiu em ${maxIterations} iterações (t=${time}s)`);
   }
   gaussianElimination(A, rhs) {
-    const n = rhs.length, x = new Float64Array(n), scale = Math.max(1, ...A.flatMap(row => Array.from(row, Math.abs)));
-    for (let col = 0; col < n; col++) {
-      let pivot = col;
-      for (let row = col + 1; row < n; row++) if (Math.abs(A[row][col]) > Math.abs(A[pivot][col])) pivot = row;
-      if (Math.abs(A[pivot][col]) < 1e-14 * scale) throw new Error('Circuito singular: verifique terra, nós flutuantes e fontes ideais conflitantes');
-      [A[col], A[pivot]] = [A[pivot], A[col]]; [rhs[col], rhs[pivot]] = [rhs[pivot], rhs[col]];
-      for (let row = col + 1; row < n; row++) { const f = A[row][col] / A[col][col]; if (!f) continue;
-        for (let j = col; j < n; j++) A[row][j] -= f * A[col][j]; rhs[row] -= f * rhs[col]; }
-    }
-    for (let row = n - 1; row >= 0; row--) { let sum = rhs[row]; for (let j = row + 1; j < n; j++) sum -= A[row][j] * x[j]; x[row] = sum / A[row][row]; }
-    if (!x.every(Number.isFinite)) throw new Error('A solução numérica divergiu');
-    return x;
+    const result = solveSparseLU(A, rhs);
+    this.linearStats = result.stats;
+    return result.solution;
   }
   solveDC() {
     const n = this.numNodes + this.numVoltageSources;
     if (!n) return new Float64Array();
-    const A = Array.from({ length: n }, () => new Float64Array(n));
-    const rhs = new Float64Array(n);
-    for (const e of this.netlist.elements) {
-      const a = this.node(e.nPlus), b = this.node(e.nMinus);
-      if (e.type === 'resistor') this.stampConductance(A, a, b, 1 / e.value);
-      else if (e.type === 'capacitor') {
-        // Capacitors are open circuits at DC: do nothing
-      }
-      else if (e.type === 'inductor') {
-        // Inductors are short circuits at DC: use a large conductance
-        const g_dc = 1e12;
-        this.stampConductance(A, a, b, g_dc);
-      } else if (e.type === 'diode') {
-        const vdPrev = e.vPrev || 0;
-        const vt = e.vt || 0.02585;
-        const n = e.n || 1;
-        const is = e.is || 1e-14;
-        let gd, idPrev;
-        if (vdPrev > -4 * vt) {
-          const expArg = vdPrev / (n * vt);
-          const expVal = Math.exp(expArg);
-          idPrev = is * (expVal - 1);
-          gd = (is / (n * vt)) * expVal;
-        } else {
-          idPrev = -is;
-          gd = Math.max(is / (n * vt) * Math.exp(-4), 1e-12);
+    const nonlinear = this.netlist.elements.some(e => e.type === 'diode');
+    let dcVector = this.lastSolution?.length === n ? Float64Array.from(this.lastSolution) : new Float64Array(n);
+    // Source stepping finds the low-energy branch first; gmin stepping then
+    // removes the artificial path to ground without abruptly changing topology.
+    const stages = nonlinear
+      ? [[.1, 1e-3], [.25, 1e-4], [.5, 1e-5], [.75, 1e-7], [1, 1e-9], [1, 0]]
+      : [[1, 0]];
+    const stageStats = [];
+    for (const [sourceScale, gmin] of stages) {
+      let converged = false, iterations = 0;
+      for (let iteration = 0; iteration < (nonlinear ? 80 : 1); iteration++) {
+        iterations++;
+        const A = Array.from({ length: n }, () => new Float64Array(n));
+        const rhs = new Float64Array(n);
+        for (let node = 0; node < this.numNodes; node++) A[node][node] += gmin;
+        for (const e of this.netlist.elements) {
+          const a = this.node(e.nPlus), b = this.node(e.nMinus);
+          if (e.type === 'resistor') this.stampConductance(A, a, b, 1 / e.value);
+          else if (e.type === 'inductor') this.stampConductance(A, a, b, 1e12);
+          else if (e.type === 'diode') {
+            const voltage = (a >= 0 ? dcVector[a] : 0) - (b >= 0 ? dcVector[b] : 0);
+            const model = this.diodeLinearization(e, voltage);
+            this.stampConductance(A, a, b, model.conductance);
+            this.stampCurrent(rhs, a, b, model.equivalentCurrent);
+          }
         }
-        e.gd_store = gd;
-        e.idPrev_store = idPrev;
-        this.stampConductance(A, a, b, gd);
-        const jEq = idPrev - gd * vdPrev;
-        this.stampCurrent(rhs, a, b, jEq);
-      } else if (e.type === 'vccs') {
-        const g = e.transconductance;
-        const nc_a = this.node(e.ncPlus), nc_b = this.node(e.ncMinus);
-        if (a >= 0) { if (nc_a >= 0) A[a][nc_a] += g; if (nc_b >= 0) A[a][nc_b] -= g; }
-        if (b >= 0) { if (nc_a >= 0) A[b][nc_a] -= g; if (nc_b >= 0) A[b][nc_b] += g; }
-      }
-    }
-    for (const src of this.netlist.sources.filter(s => s.type === 'current')) {
-      this.stampCurrent(rhs, this.node(src.nPlus), this.node(src.nMinus), sourceValueDC(src));
-    }
-    // Stamp dependent sources for DC
-    for (const src of this.netlist.elements) {
-      if (src.type === 'vccs') {
-        const g = src.transconductance;
-        const a = this.node(src.nPlus), b = this.node(src.nMinus);
-        const nc_a = this.node(src.ncPlus), nc_b = this.node(src.ncMinus);
-        if (a >= 0) { if (nc_a >= 0) A[a][nc_a] += g; if (nc_b >= 0) A[a][nc_b] -= g; }
-        if (b >= 0) { if (nc_a >= 0) A[b][nc_a] -= g; if (nc_b >= 0) A[b][nc_b] += g; }
-      } else if (src.type === 'cccs') {
-        const gain = src.currentGain;
-        const a = this.node(src.nPlus), b = this.node(src.nMinus);
-        const vSrcIdx = this.voltageSourceMap.get(src.vSourceName);
-        if (vSrcIdx !== undefined) {
-          const srcRow = this.numNodes + vSrcIdx;
-          if (a >= 0) A[a][srcRow] -= gain;
-          if (b >= 0) A[b][srcRow] += gain;
+        for (const src of this.netlist.sources.filter(s => s.type === 'current')) this.stampCurrent(rhs, this.node(src.nPlus), this.node(src.nMinus), sourceScale * sourceValueDC(src));
+        for (const src of this.netlist.elements) {
+          if (src.type === 'vccs') {
+            const g = src.transconductance, a = this.node(src.nPlus), b = this.node(src.nMinus), ca = this.node(src.ncPlus), cb = this.node(src.ncMinus);
+            if (a >= 0) { if (ca >= 0) A[a][ca] += g; if (cb >= 0) A[a][cb] -= g; }
+            if (b >= 0) { if (ca >= 0) A[b][ca] -= g; if (cb >= 0) A[b][cb] += g; }
+          } else if (src.type === 'cccs') {
+            const control = this.voltageSourceMap.get(src.vSourceName), a = this.node(src.nPlus), b = this.node(src.nMinus);
+            if (control !== undefined) { const branch = this.numNodes + control; if (a >= 0) A[a][branch] += src.currentGain; if (b >= 0) A[b][branch] -= src.currentGain; }
+          }
         }
+        this.voltageSources.forEach((src, k) => {
+          const row = this.numNodes + k, a = this.node(src.nPlus), b = this.node(src.nMinus);
+          if (a >= 0) A[a][row] = A[row][a] = 1;
+          if (b >= 0) A[b][row] = A[row][b] = -1;
+          if (src.type === 'vcvs') {
+            const ca = this.node(src.ncPlus), cb = this.node(src.ncMinus);
+            if (ca >= 0) A[row][ca] = -src.gain; if (cb >= 0) A[row][cb] = src.gain;
+          } else if (src.type === 'ccvs') {
+            const control = this.voltageSourceMap.get(src.vSourceName);
+            if (control !== undefined) A[row][this.numNodes + control] = -src.transresistance;
+          } else rhs[row] = sourceScale * sourceValueDC(src);
+        });
+        const next = this.gaussianElimination(A, rhs);
+        converged = true;
+        for (let i = 0; i < n; i++) if (Math.abs(next[i] - dcVector[i]) > 1e-9 + 1e-6 * Math.max(Math.abs(next[i]), Math.abs(dcVector[i]))) converged = false;
+        if (converged || !nonlinear) { dcVector = next; converged = true; break; }
+        for (let i = 0; i < n; i++) { const delta = next[i] - dcVector[i]; dcVector[i] = i < this.numNodes ? dcVector[i] + Math.max(-.5, Math.min(.5, delta)) : next[i]; }
       }
+      if (!converged) throw new Error(`Ponto de operação DC não convergiu (source=${sourceScale}, gmin=${gmin})`);
+      stageStats.push({ sourceScale, gmin, iterations });
     }
-    this.voltageSources.forEach((src, k) => {
-      const row = this.numNodes + k, a = this.node(src.nPlus), b = this.node(src.nMinus);
-      if (a >= 0) A[a][row] = A[row][a] = 1;
-      if (b >= 0) A[b][row] = A[row][b] = -1;
-      if (src.type === 'vcvs') {
-        const nc_a = this.node(src.ncPlus), nc_b = this.node(src.ncMinus);
-        if (nc_a >= 0) A[row][nc_a] = -src.gain;
-        if (nc_b >= 0) A[row][nc_b] = +src.gain;
-        rhs[row] = 0;
-      } else if (src.type === 'ccvs') {
-        const vSrcIdx = this.voltageSourceMap.get(src.vSourceName);
-        if (vSrcIdx !== undefined) {
-          const srcRow = this.numNodes + vSrcIdx;
-          A[row][srcRow] = -src.transresistance;
-        }
-        rhs[row] = 0;
-      } else {
-        rhs[row] = sourceValueDC(src);
-      }
-    });
-    let dcVector;
-    try {
-      dcVector = this.gaussianElimination(A, rhs);
-    } catch (e) {
-      // If singular, fall back to zero initial conditions
-      for (const e of this.netlist.elements) {
-        if (e.type === 'capacitor') { e.voltagePrev = 0; e.J_hist = undefined; }
-        else if (e.type === 'inductor') { e.currentPrev = 0; e.voltagePrev = 0; e.I_hist_store = undefined; e.g_L_store = undefined; }
-      }
-      return new Float64Array();
-    }
+    this.dcStats = { nonlinear, stages: stageStats, totalIterations: stageStats.reduce((sum, stage) => sum + stage.iterations, 0) };
+    this.lastSolution = Float64Array.from(dcVector);
     // Update initial conditions for capacitors and inductors
     for (const e of this.netlist.elements) {
       const voltage = (this.node(e.nPlus) >= 0 ? dcVector[this.node(e.nPlus)] : 0) - (this.node(e.nMinus) >= 0 ? dcVector[this.node(e.nMinus)] : 0);
       if (e.type === 'capacitor') {
         e.voltagePrev = voltage;
+        e.currentPrev = 0;
         e.J_hist = undefined; // Will be initialized in first transient step
       } else if (e.type === 'inductor') {
         e.currentPrev = 0;
         e.voltagePrev = 0;
         e.I_hist_store = undefined;
         e.g_L_store = undefined;
+      } else if (e.type === 'diode') {
+        e.vPrev = voltage;
       }
     }
     return dcVector;
@@ -439,6 +462,8 @@ export class MNASolver {
     for (const e of this.netlist.elements) {
       const voltage = (this.node(e.nPlus) >= 0 ? v[this.node(e.nPlus)] : 0) - (this.node(e.nMinus) >= 0 ? v[this.node(e.nMinus)] : 0);
       if (e.type === 'capacitor') {
+        const previousVoltage = e.voltagePrev || 0, previousCurrent = e.currentPrev || 0;
+        e.currentPrev = (e.g_c_store || 2 * e.value / this.dt) * (voltage - previousVoltage) - previousCurrent;
         e.voltagePrev = voltage;
       } else if (e.type === 'inductor') {
         const g_L = e.g_L_store || (this.dt / (2 * e.value));
@@ -483,75 +508,51 @@ function sourceValueDC(src) {
 }
 
 function generateACFrequencies(type, points, fstart, fstop) {
+  if (!Number.isInteger(points) || points <= 0) throw new Error('.ac requer um número inteiro positivo de pontos');
+  if (!(fstop >= fstart)) throw new Error('.ac requer fstop maior ou igual a fstart');
   const freqs = [];
   if (type === 'lin') {
     const step = (fstop - fstart) / Math.max(1, points - 1);
     for (let i = 0; i < points; i++) freqs.push(fstart + i * step);
   } else if (type === 'dec') {
     if (fstart <= 0 || fstop <= 0) throw new Error('.ac dec requer frequências positivas');
-    const startLog = Math.log10(fstart);
-    const stopLog = Math.log10(fstop);
-    const step = (stopLog - startLog) / Math.max(1, points - 1);
-    for (let i = 0; i < points; i++) { freqs.push(Math.pow(10, startLog + i * step)); }
+    const intervals = Math.ceil(points * Math.log10(fstop / fstart) - 1e-12);
+    for (let i = 0; i <= intervals; i++) freqs.push(Math.min(fstop, fstart * 10 ** (i / points)));
   } else if (type === 'oct') {
     if (fstart <= 0 || fstop <= 0) throw new Error('.ac oct requer frequências positivas');
-    const startLog2 = Math.log2(fstart);
-    const stopLog2 = Math.log2(fstop);
-    const step = (stopLog2 - startLog2) / Math.max(1, points - 1);
-    for (let i = 0; i < points; i++) { freqs.push(Math.pow(2, startLog2 + i * step)); }
+    const intervals = Math.ceil(points * Math.log2(fstop / fstart) - 1e-12);
+    for (let i = 0; i <= intervals; i++) freqs.push(Math.min(fstop, fstart * 2 ** (i / points)));
   } else { throw new Error(`.ac tipo não suportado: ${type}`); }
   return freqs;
 }
 
-function solveComplexMNA(G, B, A_rows, A_cols, V_src_r, V_src_i, n_nodes, n_sources) {
-  const n_c = n_nodes + n_sources;
+function solveComplexMNA(G, B, rhsReal, rhsImag) {
+  // Complex system (Gc + jBc) x = rhs solved as the real 2n system [Gc -Bc; Bc Gc].
+  // Gc/Bc span nodes plus voltage-source branch currents; B only has node entries.
+  const n_c = rhsReal.length;
   const sz = 2 * n_c;
   const M = Array.from({ length: sz }, () => new Float64Array(sz));
   const rhs = new Float64Array(sz);
 
-  for (let i = 0; i < n_nodes; i++) {
-    for (let j = 0; j < n_nodes; j++) {
-      M[i][j] = G[i][j] || 0;
-      M[i][j + n_nodes] = -(B[i][j] || 0);
-      M[i + n_nodes][j] = (B[i][j] || 0);
-      M[i + n_nodes][j + n_nodes] = (G[i][j] || 0);
+  for (let i = 0; i < n_c; i++) {
+    for (let j = 0; j < n_c; j++) {
+      const g = G[i][j] || 0, b = B[i][j] || 0;
+      M[i][j] = g;
+      M[i][j + n_c] = -b;
+      M[i + n_c][j] = b;
+      M[i + n_c][j + n_c] = g;
     }
+    rhs[i] = rhsReal[i] || 0;
+    rhs[i + n_c] = rhsImag[i] || 0;
   }
 
-  for (let k = 0; k < n_sources; k++) {
-    const row = n_nodes + k;
-    const r_real = row;
-    const r_imag = row + n_nodes;
-    const a = A_rows[k], b = A_cols[k];
-    if (a >= 0) { M[r_real][a] += 1; M[r_imag][a] += 1; }
-    if (b >= 0) { M[r_real][b] -= 1; M[r_imag][b] -= 1; }
-    M[r_real][r_real] = 1; M[r_imag][r_imag] = 1;
-    rhs[r_real] = V_src_r[k] || 0;
-    rhs[r_imag] = V_src_i[k] || 0;
-  }
+  let x;
+  try { x = solveSparseLU(M, rhs).solution; }
+  catch (error) { throw new Error(`Falha na solução AC: ${error.message}`); }
 
-  const n = rhs.length, x = new Float64Array(n), scale = Math.max(1, ...M.flatMap(row => Array.from(row, Math.abs)));
-  for (let col = 0; col < n; col++) {
-    let pivot = col;
-    for (let row = col + 1; row < n; row++) if (Math.abs(M[row][col]) > Math.abs(M[pivot][col])) pivot = row;
-    if (Math.abs(M[pivot][col]) < 1e-14 * scale) throw new Error('Circuito singular em AC: verifique terra, nós flutuantes e fontes ideais conflitantes');
-    [M[col], M[pivot]] = [M[pivot], M[col]]; [rhs[col], rhs[pivot]] = [rhs[pivot], rhs[col]];
-    for (let row = col + 1; row < n; row++) {
-      const f = M[row][col] / M[col][col]; if (!f) continue;
-      for (let j = col; j < n; j++) M[row][j] -= f * M[col][j];
-      rhs[row] -= f * rhs[col];
-    }
-  }
-  for (let row = n - 1; row >= 0; row--) {
-    let sum = rhs[row];
-    for (let j = row + 1; j < n; j++) sum -= M[row][j] * x[j];
-    x[row] = sum / M[row][row];
-  }
-  if (!x.every(Number.isFinite)) throw new Error('A solução AC divergiu');
-
-  const V_r = new Float64Array(n_nodes);
-  const V_i = new Float64Array(n_nodes);
-  for (let i = 0; i < n_nodes; i++) { V_r[i] = x[i]; V_i[i] = x[i + n_nodes]; }
+  const V_r = new Float64Array(n_c);
+  const V_i = new Float64Array(n_c);
+  for (let i = 0; i < n_c; i++) { V_r[i] = x[i]; V_i[i] = x[i + n_c]; }
   return { V_r, V_i };
 }
 
@@ -565,60 +566,70 @@ export class SpiceTLMSimulator {
     try { this.solver.solveDC(); } catch (e) { /* Fall back to zero initial conditions */ }
   }
 
-  simulateAdaptive(stopTime = this.netlist.simulation.stop, callback, tol = 1e-6) {
-    let t = this.time;
-    let dt = this.dt;
-    const minDt = dt * 1e-4;
-    const maxDt = dt * 100;
-
-    while (t < stopTime) {
-      const remaining = stopTime - t;
-      const stepDt = Math.min(dt, remaining);
-
-      // Save state
-      const voltagesPrev = { ...this.voltages };
-      const timePrev = this.time;
-
-      // Try step with current dt
-      this.dt = stepDt;
-      this.solver = new MNASolver(this.netlist, stepDt);
-      // Re-initialize DC ICs for new dt
-      try { this.solver.solveDC(); } catch (e) {}
-
-      // Perform trapezoidal step
-      const vector = this.solver.solve(t + stepDt);
-      const voltages = { 0: 0, gnd: 0 };
-      for (const [node, index] of this.solver.nodeMap) {
-        if (index >= 0) voltages[node] = vector[index];
-      }
-      this.solver.updateHistory(vector);
-
-      // Estimate error (simplified: compare with previous voltage scaled by dt change)
-      let maxErr = 0;
+  captureDynamicState() {
+    const keys = ['voltagePrev', 'J_hist', 'g_c_store', 'currentPrev', 'I_hist_store', 'g_L_store', 'vPrev', 'gd_store', 'idPrev_store'];
+    return {
+      time: this.time, dt: this.dt, voltages: { ...this.voltages },
+      lastSolution: this.solver.lastSolution ? Float64Array.from(this.solver.lastSolution) : null,
+      devices: this.netlist.elements.map(e => Object.fromEntries(keys.map(key => [key, e[key]])))
+    };
+  }
+  restoreDynamicState(state) {
+    this.time = state.time; this.dt = state.dt; this.voltages = { ...state.voltages };
+    state.devices.forEach((saved, index) => Object.assign(this.netlist.elements[index], saved));
+    this.solver = new MNASolver(this.netlist, this.dt);
+    if (state.lastSolution) this.solver.lastSolution = Float64Array.from(state.lastSolution);
+  }
+  trialStep(dt, targetTime, seed = null) {
+    this.dt = dt;
+    this.solver = new MNASolver(this.netlist, dt);
+    if (seed) this.solver.lastSolution = Float64Array.from(seed);
+    const vector = this.solver.solve(targetTime);
+    const voltages = { 0: 0, gnd: 0 };
+    for (const [node, index] of this.solver.nodeMap) if (index >= 0) voltages[node] = vector[index];
+    this.solver.updateHistory(vector);
+    this.time = targetTime; this.voltages = voltages;
+    return { vector, voltages };
+  }
+  simulateAdaptive(stopTime = this.netlist.simulation.stop, callback, tolerance = 1e-4) {
+    if (this.netlist.transmissionLines.length) throw new Error('Passo adaptativo não é compatível com linhas TLM discretas; use simulate() com passo fixo');
+    const options = typeof tolerance === 'object' ? tolerance : { relTol: tolerance };
+    const relTol = options.relTol ?? 1e-4, absTol = options.absTol ?? 1e-7;
+    if (!(relTol > 0) || !(absTol > 0)) throw new Error('Tolerâncias adaptativas devem ser positivas');
+    const nominalDt = this.dt, minDt = options.minDt ?? nominalDt * 1e-6, maxDt = options.maxDt ?? nominalDt * 100;
+    let proposedDt = Math.min(nominalDt, maxDt), attempts = 0, accepted = 0, rejected = 0;
+    while (this.time < stopTime) {
+      if (++attempts > 2_000_000) throw new Error('Análise adaptativa excedeu o limite de passos');
+      const base = this.captureDynamicState(), t0 = this.time;
+      const dt = Math.min(proposedDt, stopTime - t0);
+      if (dt < minDt && stopTime - t0 > minDt) throw new Error('Passo de tempo mínimo atingido durante controle LTE');
+      // One full step and two half steps start from the exact same state. The
+      // difference estimates the local truncation error of trapezoidal order 2.
+      const full = this.trialStep(dt, t0 + dt, base.lastSolution);
+      this.restoreDynamicState(base);
+      const half1 = this.trialStep(dt / 2, t0 + dt / 2, base.lastSolution);
+      const half2 = this.trialStep(dt / 2, t0 + dt, half1.vector);
+      let errorNorm = 0;
       for (const node of this.netlist.nodeList) {
         if (GROUND.has(node.toLowerCase())) continue;
-        const vNew = voltages[node] ?? 0;
-        const vOld = voltagesPrev[node] ?? 0;
-        const err = Math.abs(vNew - vOld);
-        const scale = 1 + Math.max(Math.abs(vNew), Math.abs(vOld));
-        maxErr = Math.max(maxErr, err / scale);
+        const fine = half2.voltages[node] ?? 0, coarse = full.voltages[node] ?? 0;
+        // Richardson divisor 2^p-1 for p=2 trapezoidal integration.
+        const lte = Math.abs(fine - coarse) / 3;
+        errorNorm = Math.max(errorNorm, lte / (absTol + relTol * Math.max(Math.abs(fine), Math.abs(coarse))));
       }
-
-      if (maxErr <= tol) {
-        // Accept step
-        this.voltages = voltages;
-        this.time = t + stepDt;
-        for (const node of this.netlist.probes) (this.history[node] ||= []).push({ time: this.time, voltage: voltages[node] ?? 0 });
+      const factor = errorNorm === 0 ? 2 : Math.max(.2, Math.min(2, .9 * errorNorm ** (-1 / 3)));
+      if (errorNorm <= 1) {
+        accepted++;
+        for (const node of this.netlist.probes) (this.history[node] ||= []).push({ time: this.time, voltage: this.voltages[node] ?? 0 });
         callback?.(this.time, this.voltages, this.netlist.transmissionLines);
-        t = this.time;
-        // Increase dt for next step
-        dt = Math.min(maxDt, dt * 1.5);
+        proposedDt = Math.min(maxDt, Math.max(minDt, dt * factor));
       } else {
-        // Reject step, reduce dt
-        dt = Math.max(minDt, dt * 0.5);
-        if (dt < minDt) throw new Error('Passo de tempo muito pequeno para convergência');
+        rejected++;
+        this.restoreDynamicState(base);
+        proposedDt = Math.max(minDt, dt * factor);
       }
     }
+    this.adaptiveStats = { accepted, rejected, attempts, lastDt: this.dt, relTol, absTol };
     return this.voltages;
   }
   getSourceVoltage(src, t) { return sourceValue(src, t); }
@@ -626,9 +637,10 @@ export class SpiceTLMSimulator {
   sineVoltage(src, t) { return sourceValue(src, t); }
   pwlVoltage(src, t) { return sourceValue(src, t); }
   step() {
-    const vector = this.solver.solve(this.time); this.voltages = { 0: 0, gnd: 0 };
+    const targetTime = this.time + this.dt;
+    const vector = this.solver.solve(targetTime); this.voltages = { 0: 0, gnd: 0 };
     for (const [node, index] of this.solver.nodeMap) if (index >= 0) this.voltages[node] = vector[index];
-    this.solver.updateHistory(vector); this.time += this.dt; return this.voltages;
+    this.solver.updateHistory(vector); this.time = targetTime; return this.voltages;
   }
   simulate(stopTime = this.netlist.simulation.stop, callback) {
     const steps = Math.ceil((stopTime - this.time) / this.dt);
@@ -648,21 +660,16 @@ export class SpiceTLMSimulator {
     const results = [];
     const n_nodes = this.solver.numNodes;
     const n_sources = this.solver.numVoltageSources;
-    const A_rows = this.solver.voltageSources.map(src => this.solver.node(src.nPlus));
-    const A_cols = this.solver.voltageSources.map(src => this.solver.node(src.nMinus));
-    const V_src_r = this.solver.voltageSources.map(src => {
-      if (src.waveform === 'sine') return src.params.vAmpl * Math.cos(src.params.phi * Math.PI / 180);
-      return 0;
-    });
-    const V_src_i = this.solver.voltageSources.map(src => {
-      if (src.waveform === 'sine') return src.params.vAmpl * Math.sin(src.params.phi * Math.PI / 180);
-      return 0;
-    });
+    const dimension = n_nodes + n_sources;
+    // Small-signal device values are evaluated at the DC operating point.
+    let dcVector = this.solver.lastSolution;
+    if (!dcVector?.length) dcVector = this.solver.solveDC();
 
     for (const f of freqs) {
       const omega = 2 * Math.PI * f;
-      const G = Array.from({ length: n_nodes }, () => new Float64Array(n_nodes));
-      const B = Array.from({ length: n_nodes }, () => new Float64Array(n_nodes));
+      const G = Array.from({ length: dimension }, () => new Float64Array(dimension));
+      const B = Array.from({ length: dimension }, () => new Float64Array(dimension));
+      const rhsReal = new Float64Array(dimension), rhsImag = new Float64Array(dimension);
 
       for (const e of this.netlist.elements) {
         const a = this.solver.node(e.nPlus), b = this.solver.node(e.nMinus);
@@ -678,6 +685,10 @@ export class SpiceTLMSimulator {
           const bl = -1 / (omega * e.value);
           if (a >= 0) B[a][a] += bl; if (b >= 0) B[b][b] += bl;
           if (a >= 0 && b >= 0) { B[a][b] -= bl; B[b][a] -= bl; }
+        } else if (e.type === 'diode') {
+          const voltage = (a >= 0 ? dcVector[a] : 0) - (b >= 0 ? dcVector[b] : 0);
+          const gd = this.solver.diodeLinearization(e, voltage).conductance;
+          this.solver.stampConductance(G, a, b, gd);
         } else if (e.type === 'transmissionLine') {
           const beta_td = omega * e.td;
           const invZ0 = 1 / e.z0;
@@ -687,8 +698,9 @@ export class SpiceTLMSimulator {
           else {
             const cot_bd = cos_bd / sin_bd;
             const csc_bd = 1 / sin_bd;
-            const b11 = invZ0 * cot_bd;
-            const b12 = -invZ0 * csc_bd;
+            // Lossless line 2-port admittance: Y11 = -j cot(bl)/Z0, Y12 = +j csc(bl)/Z0
+            const b11 = -invZ0 * cot_bd;
+            const b12 = invZ0 * csc_bd;
             if (a >= 0) { B[a][a] += b11; }
             if (b >= 0) { B[b][b] += b11; }
             if (a >= 0 && b >= 0) { B[a][b] += b12; B[b][a] += b12; }
@@ -696,8 +708,46 @@ export class SpiceTLMSimulator {
         }
       }
 
+      for (const src of this.netlist.sources) {
+        const phase = (src.acPhase || 0) * Math.PI / 180;
+        const real = (src.acMagnitude || 0) * Math.cos(phase);
+        const imag = (src.acMagnitude || 0) * Math.sin(phase);
+        if (src.type === 'current') {
+          this.solver.stampCurrent(rhsReal, this.solver.node(src.nPlus), this.solver.node(src.nMinus), real);
+          this.solver.stampCurrent(rhsImag, this.solver.node(src.nPlus), this.solver.node(src.nMinus), imag);
+        }
+      }
+      for (const src of this.netlist.elements) {
+        const a = this.solver.node(src.nPlus), b = this.solver.node(src.nMinus);
+        if (src.type === 'vccs') {
+          const ca = this.solver.node(src.ncPlus), cb = this.solver.node(src.ncMinus), gain = src.transconductance;
+          if (a >= 0) { if (ca >= 0) G[a][ca] += gain; if (cb >= 0) G[a][cb] -= gain; }
+          if (b >= 0) { if (ca >= 0) G[b][ca] -= gain; if (cb >= 0) G[b][cb] += gain; }
+        } else if (src.type === 'cccs') {
+          const control = this.solver.voltageSourceMap.get(src.vSourceName);
+          if (control !== undefined) { const branch = n_nodes + control; if (a >= 0) G[a][branch] += src.currentGain; if (b >= 0) G[b][branch] -= src.currentGain; }
+        }
+      }
+      this.solver.voltageSources.forEach((src, k) => {
+        const row = n_nodes + k, a = this.solver.node(src.nPlus), b = this.solver.node(src.nMinus);
+        if (a >= 0) G[a][row] = G[row][a] = 1;
+        if (b >= 0) G[b][row] = G[row][b] = -1;
+        if (src.type === 'vcvs') {
+          const ca = this.solver.node(src.ncPlus), cb = this.solver.node(src.ncMinus);
+          if (ca >= 0) G[row][ca] = -src.gain;
+          if (cb >= 0) G[row][cb] = src.gain;
+        } else if (src.type === 'ccvs') {
+          const control = this.solver.voltageSourceMap.get(src.vSourceName);
+          if (control !== undefined) G[row][n_nodes + control] = -src.transresistance;
+        } else {
+          const phase = (src.acPhase || 0) * Math.PI / 180;
+          rhsReal[row] = (src.acMagnitude || 0) * Math.cos(phase);
+          rhsImag[row] = (src.acMagnitude || 0) * Math.sin(phase);
+        }
+      });
+
       try {
-        const { V_r, V_i } = solveComplexMNA(G, B, A_rows, A_cols, V_src_r, V_src_i, n_nodes, n_sources);
+        const { V_r, V_i } = solveComplexMNA(G, B, rhsReal, rhsImag);
         const voltages = { 0: 0, gnd: 0 };
         for (const [node, index] of this.solver.nodeMap) {
           if (index >= 0) {
@@ -745,8 +795,7 @@ export class SpiceTLMSimulator {
     }
 
     const harmonics = [];
-    let thdNum = 0, thdDen = Math.hypot(a_k[1], b_k[1]);
-    if (thdDen === 0) thdDen = 1e-12;
+    let thdNum = 0;
 
     for (let k = 1; k <= maxHarmonics; k++) {
       const mag = 2 * Math.hypot(a_k[k], b_k[k]) / Math.sqrt(2); // RMS
@@ -754,6 +803,7 @@ export class SpiceTLMSimulator {
       harmonics.push({ harmonic: k, frequency: k * fundFreq, mag, phase });
       if (k > 1) thdNum += mag * mag;
     }
+    const thdDen = harmonics[0].mag || 1e-12;
     const thd = Math.sqrt(thdNum) / thdDen * 100;
 
     return { fundamental: fundFreq, dc, fundamental_rms: Math.hypot(a_k[1], b_k[1]) * 2 / Math.sqrt(2), harmonics, thd };

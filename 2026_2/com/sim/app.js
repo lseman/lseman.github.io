@@ -153,8 +153,11 @@ function bindNodes() {
                 if (!drag || drag.id !== id) return;
                 drag.frame = 0;
                 const n = nodes.find(x => x.id === id), r = workspace.getBoundingClientRect();
-                n.x = Math.max(8, (drag.lastX - r.left - drag.offsetX - viewport.x) / viewport.zoom);
-                n.y = Math.max(8, (drag.lastY - r.top - drag.offsetY - viewport.y) / viewport.zoom);
+                // The workspace is pannable, so graph coordinates must be allowed
+                // on either side of its origin. Clamping here created an invisible
+                // wall at x/y = 8 when users dragged a block upward or leftward.
+                n.x = (drag.lastX - r.left - drag.offsetX - viewport.x) / viewport.zoom;
+                n.y = (drag.lastY - r.top - drag.offsetY - viewport.y) / viewport.zoom;
                 el.style.transform = `translate3d(${n.x - parseFloat(el.style.left)}px,${n.y - parseFloat(el.style.top)}px,0)`;
                 renderEdgesDuringDrag(el, n);
             });
@@ -164,7 +167,7 @@ function bindNodes() {
             const moved = drag.moved;
             if (drag.frame) cancelAnimationFrame(drag.frame);
             const n = nodes.find(x => x.id === id);
-            if (moved) { const r = workspace.getBoundingClientRect(); n.x = Math.max(8, (e.clientX - r.left - drag.offsetX - viewport.x) / viewport.zoom); n.y = Math.max(8, (e.clientY - r.top - drag.offsetY - viewport.y) / viewport.zoom) }
+            if (moved) { const r = workspace.getBoundingClientRect(); n.x = (e.clientX - r.left - drag.offsetX - viewport.x) / viewport.zoom; n.y = (e.clientY - r.top - drag.offsetY - viewport.y) / viewport.zoom }
             el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.style.transform = '';
             el.classList.remove('dragging');
             if (head.hasPointerCapture?.(e.pointerId)) head.releasePointerCapture(e.pointerId);

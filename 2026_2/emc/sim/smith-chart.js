@@ -6,6 +6,7 @@ export class SmithChart {
     this.width = options.width || 520;
     this.height = options.height || 420;
     this.padding = options.padding || 40;
+    this.referenceImpedance = options.referenceImpedance || 50;
     this.radius = Math.min(this.width, this.height) / 2 - this.padding;
     this.cx = this.width / 2;
     this.cy = this.height / 2;
@@ -76,7 +77,7 @@ export class SmithChart {
       return { zReal, zImag, u, v, r2 };
     };
 
-    this.canvas.addEventListener('mousemove', (e) => {
+    this.canvas.addEventListener('pointermove', (e) => {
       const point = getPointFromEvent(e);
       if (point) {
         this.hoverPoint = point;
@@ -86,12 +87,12 @@ export class SmithChart {
       this.draw();
     });
 
-    this.canvas.addEventListener('mouseleave', () => {
+    this.canvas.addEventListener('pointerleave', () => {
       this.hoverPoint = null;
       this.draw();
     });
 
-    this.canvas.addEventListener('click', (e) => {
+    this.canvas.addEventListener('pointerdown', (e) => {
       const point = getPointFromEvent(e);
       if (point) {
         this.currentPoint = { zReal: point.zReal, zImag: point.zImag };
@@ -108,6 +109,14 @@ export class SmithChart {
   clearMeasuredImpedance() {
     this.currentPoint = null;
     this.draw();
+  }
+
+  setReferenceImpedance(value) {
+    const z0 = Number(value);
+    if (!Number.isFinite(z0) || z0 <= 0) return false;
+    this.referenceImpedance = z0;
+    this.draw();
+    return true;
   }
 
   resize(width, height) {
@@ -139,6 +148,9 @@ export class SmithChart {
     // Draw Smith chart grid
     this.drawSmithGrid(ctx);
 
+    // A constant-|Γ| circle makes the selected mismatch immediately visible.
+    if (this.currentPoint) this.drawVswrCircle(ctx, this.currentPoint.zReal, this.currentPoint.zImag);
+
     // Draw current measured point
     if (this.currentPoint) {
       this.drawPoint(ctx, this.currentPoint.zReal, this.currentPoint.zImag, '#fb7185', 'Medida');
@@ -147,8 +159,13 @@ export class SmithChart {
     // Draw hover point
     if (this.hoverPoint) {
       this.drawPoint(ctx, this.hoverPoint.zReal, this.hoverPoint.zImag, '#67e8f9', 'Hover');
-      this.drawHoverInfo(ctx, this.hoverPoint);
     }
+
+    const inspected = this.hoverPoint || (this.currentPoint && {
+      ...this.currentPoint,
+      ...this.impedanceToGamma(this.currentPoint.zReal, this.currentPoint.zImag)
+    });
+    if (inspected) this.drawHoverInfo(ctx, inspected, this.hoverPoint ? 'CURSOR' : 'PONTO SELECIONADO');
 
     // Draw title and pedagogical info
     this.drawInfo(ctx);
@@ -199,74 +216,66 @@ export class SmithChart {
       ctx.lineWidth = rVal === 1 ? 1.5 : 1;
       ctx.stroke();
 
-      // Label
+      // Label at the circle's intersection with the real axis. The old labels
+      // used each circle's left edge, which is Γ=-1 for every resistance.
       if (rVal <= 5) {
-        const labelX = cx + (centerU - circleR) * r - 20;
-        const labelY = cy + 3;
+        const gamma = (rVal - 1) / (rVal + 1);
+        const labelX = cx + gamma * r;
+        const labelY = cy + 12;
         ctx.fillStyle = '#a78bfa';
         ctx.font = '9px JetBrains Mono, monospace';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`r=${rVal}`, labelX, labelY);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`${rVal}`, labelX, labelY);
       }
     }
 
-    // Draw constant reactance circles (upper half - inductive)
+    // Constant reactance arcs, clipped to the |Γ| = 1 disc.
+    // Γ-plane circle for reactance x: center (1, 1/x), radius 1/|x|.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Upper half - inductive (x > 0)
     for (const xVal of this.reactanceCircles) {
-      // Center: (1, 1/x) in Γ plane
-      // Radius: 1/x
-      const centerU = 1;
-      const centerV = -1 / xVal; // Negative because canvas Y is inverted
+      const centerV = 1 / xVal;
       const circleR = 1 / xVal;
 
       ctx.beginPath();
-      // Only draw the arc that's within the Smith chart
-      const startAngle = Math.PI / 2;
-      const endAngle = -Math.PI / 2;
-
-      ctx.arc(cx + centerU * r, cy - centerV * r, circleR * r, startAngle, endAngle, true);
+      ctx.arc(cx + r, cy - centerV * r, circleR * r, 0, Math.PI * 2);
       ctx.strokeStyle = `rgba(52, 211, 153, ${0.3 + (xVal > 1 ? 0.1 : 0.15)})`;
       ctx.lineWidth = xVal === 1 ? 1.5 : 1;
       ctx.stroke();
-
-      // Label
-      if (xVal <= 2) {
-        const labelX = cx + r - 3;
-        const labelY = cy - circleR * r + 10;
-        ctx.fillStyle = '#34d399';
-        ctx.font = '9px JetBrains Mono, monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`x=${xVal}`, labelX, labelY);
-      }
     }
 
-    // Draw constant reactance circles (lower half - capacitive)
+    // Lower half - capacitive (x < 0)
     for (const xVal of this.reactanceCircles) {
-      const xNeg = -xVal;
-      const centerU = 1;
-      const centerV = -1 / xNeg; // Positive for capacitive
-      const circleR = 1 / Math.abs(xNeg);
+      const centerV = -1 / xVal;
+      const circleR = 1 / xVal;
 
       ctx.beginPath();
-      const startAngle = -Math.PI / 2;
-      const endAngle = Math.PI / 2;
-
-      ctx.arc(cx + centerU * r, cy - centerV * r, circleR * r, startAngle, endAngle, false);
+      ctx.arc(cx + r, cy - centerV * r, circleR * r, 0, Math.PI * 2);
       ctx.strokeStyle = `rgba(251, 191, 36, ${0.3 + (xVal > 1 ? 0.1 : 0.15)})`;
       ctx.lineWidth = xVal === 1 ? 1.5 : 1;
       ctx.stroke();
+    }
+    ctx.restore();
 
-      // Label
-      if (xVal <= 2) {
-        const labelX = cx + r - 3;
-        const labelY = cy + circleR * r - 5;
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = '9px JetBrains Mono, monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`x=-${xVal}`, labelX, labelY);
-      }
+    // Labels at the arcs' intersections with the outer circle.
+    // Γ circle |Γ|=1 meets reactance-x arc at angle θ where Γ = e^{jθ}, z = jx:
+    // Γ = (jx-1)/(jx+1) → θ = atan2(2x, x²-1).
+    for (const xVal of this.reactanceCircles) {
+      if (xVal > 2) continue;
+      const theta = Math.atan2(2 * xVal, xVal * xVal - 1);
+      const lx = cx + Math.cos(theta) * (r + 14);
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#34d399';
+      ctx.fillText(`x=${xVal}`, lx, cy - Math.sin(theta) * (r + 10));
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(`x=-${xVal}`, lx, cy + Math.sin(theta) * (r + 10));
     }
 
     // Key points labels
@@ -275,13 +284,13 @@ export class SmithChart {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('Curto-circuito', cx - r, cy + 8);
-    ctx.fillText('Ajuste', cx, cy - 10);
+    ctx.fillText('Casado', cx, cy - 18);
     ctx.fillText('Circuito aberto', cx + r, cy + 8);
 
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText('j∞', cx + 8, cy - r + 10);
-    ctx.fillText('-j∞', cx + 8, cy + r - 10);
+    ctx.fillText('+j1', cx + 8, cy - r + 10);
+    ctx.fillText('−j1', cx + 8, cy + r - 10);
   }
 
   drawPoint(ctx, zReal, zImag, color, label) {
@@ -323,14 +332,40 @@ export class SmithChart {
     ctx.arc(px, py, 10, 0, Math.PI * 2);
     ctx.fillStyle = color + '33';
     ctx.fill();
+
+    // Crosshair remains legible over dense grid regions.
+    ctx.beginPath();
+    ctx.moveTo(px - 9, py); ctx.lineTo(px + 9, py);
+    ctx.moveTo(px, py - 9); ctx.lineTo(px, py + 9);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
 
-  drawHoverInfo(ctx, point) {
+  drawVswrCircle(ctx, zReal, zImag) {
+    const { u, v } = this.impedanceToGamma(zReal, zImag);
+    const magnitude = Math.hypot(u, v);
+    if (!Number.isFinite(magnitude) || magnitude <= 0 || magnitude > 1) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(this.cx, this.cy, magnitude * this.radius, 0, Math.PI * 2);
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#fb718577';
+    ctx.lineWidth = 1.25;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawHoverInfo(ctx, point, heading = 'CURSOR') {
     const { zReal, zImag, u, v } = point;
 
     // Calculate reflection coefficient magnitude and angle
     const mag = Math.sqrt(u * u + v * v);
     const angle = Math.atan2(v, u) * 180 / Math.PI;
+    const vswr = mag >= 1 ? Infinity : (1 + mag) / (1 - mag);
+    const returnLoss = mag > 0 ? -20 * Math.log10(mag) : Infinity;
+    const zr = zReal * this.referenceImpedance;
+    const zi = zImag * this.referenceImpedance;
 
     const infoY = this.height - 25;
 
@@ -338,8 +373,8 @@ export class SmithChart {
     ctx.fillStyle = 'rgba(10, 15, 26, 0.9)';
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 1;
-    const boxWidth = 220;
-    const boxHeight = 70;
+    const boxWidth = Math.min(430, this.width - 24);
+    const boxHeight = 58;
     const boxX = this.cx - boxWidth / 2;
     const boxY = infoY - boxHeight - 10;
 
@@ -354,15 +389,15 @@ export class SmithChart {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
+    const signed = value => `${value < 0 ? '−' : '+'} j${Math.abs(value).toFixed(2)}`;
+    const finite = (value, digits = 2) => Number.isFinite(value) ? value.toFixed(digits) : '∞';
     const lines = [
-      `Γ = ${mag.toFixed(3)}∠${angle.toFixed(1)}°`,
-      `Re{Z} = ${zReal.toFixed(3)}`,
-      `Im{Z} = ${zImag.toFixed(3)}j`,
-      `Z = ${zReal.toFixed(3)} + ${zImag.toFixed(3)}j`
+      `${heading}   z = ${zReal.toFixed(3)} ${signed(zImag)}   ·   Z = ${zr.toFixed(2)} ${signed(zi)} Ω`,
+      `Γ = ${mag.toFixed(3)} ∠ ${angle.toFixed(1)}°   ·   VSWR ${finite(vswr)}:1   ·   RL ${finite(returnLoss)} dB`
     ];
 
     lines.forEach((line, i) => {
-      ctx.fillText(line, boxX + 12, boxY + 12 + i * 14);
+      ctx.fillText(line, boxX + 12, boxY + 12 + i * 20);
     });
   }
 
@@ -372,7 +407,7 @@ export class SmithChart {
     ctx.font = 'bold 12px DM Sans, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('Gráfico de Smith — Impedância Normalizada', this.padding, this.padding - 20);
+    ctx.fillText(`Gráfico de Smith — Impedância normalizada · Z₀ ${this.referenceImpedance} Ω`, this.padding, this.padding - 20);
 
     // Pedagogical description
     ctx.fillStyle = '#64748b';

@@ -686,6 +686,36 @@ const examples = {
       }
       make('probe', 95, 46)
     }
+  },
+  cutoff : {
+    name : 'Guia abaixo do corte',
+    desc : 'Canal PEC com abertura menor que λ/2: campo evanescente',
+    build() {
+      make('source', 25, 46);
+      const a = make('pec', 95, 41);
+      a.w = 110;
+      a.h = 4;
+      const b = make('pec', 95, 51);
+      b.w = 110;
+      b.h = 4;
+      make('probe', 45, 46);
+      make('victim', 120, 46)
+    }
+  },
+  slot : {
+    name : 'Fenda estreita vs λ/2',
+    desc : 'Fenda ressonante vaza muito mais que fenda estreita',
+    build() {
+      make('source', 75, 46);
+      for (const [x, y, w, h] of [[ 45, 23, 4, 40 ], [ 45, 67, 4, 42 ],
+                                  [ 105, 22, 4, 38 ], [ 105, 70, 4, 38 ]]) {
+        const p = make('pec', x, y);
+        p.w = w;
+        p.h = h
+      }
+      make('victim', 20, 46);
+      make('victim', 130, 46)
+    }
   }
 };
 function loadExample(k) {
@@ -964,9 +994,11 @@ function toggleSmithView() {
       overlay = document.createElement('div');
       overlay.id = 'smith-overlay';
       overlay.className = 'smith-chart-overlay';
-      overlay.innerHTML = '<button id="smith-close">✕ Fechar Smith</button>';
+      overlay.innerHTML = '<label>Z₀ <input id="smith-z0" type="number" min="0.01" step="1" value="50"> Ω</label><button id="smith-clear">Limpar ponto</button><button id="smith-close">✕ Fechar Smith</button>';
       $('#stage').appendChild(overlay);
 
+      $('#smith-z0').oninput = e => smithChart?.setReferenceImpedance(e.target.value);
+      $('#smith-clear').onclick = () => smithChart?.clearMeasuredImpedance();
       $('#smith-close').onclick = () => {
         toggleSmithView();
       };
@@ -1117,13 +1149,43 @@ C1 out2 0 10n
   'ground-bounce': {
     name: 'Ground bounce / Ruído de terra',
     desc: 'Indutância de terra com comutação rápida',
-    netlist: `* Simulação de ground bounce
+    netlist: `* Ground bounce: corrente de chaveamento retorna pela
+* indutância do terra do encapsulamento (dgnd = terra do die)
 V1 vdd 0 DC 3.3
-Lgnd vdd gnd 10n
-Rload gnd 0 100
-Sw gnd 0 PULSE(0 3.3 0 0.1n 0.1n 1n 2n)
-.tran 0.01n 5n
-.probe V(gnd)
+Isw vdd dgnd PULSE(0 0.05 1n 0.5n 0.5n 2n 8n)
+Lgnd dgnd 0 5n
+Rpkg dgnd 0 50
+.tran 0.02n 20n
+.probe V(dgnd)
+.end`
+  },
+  'decap-resonance': {
+    name: 'Decap real (ESL/ESR) e PDN',
+    desc: 'Ressonância da rede de distribuição e limite do capacitor de desacoplo',
+    netlist: `* PDN: decap real (C + ESL + ESR) segura o trilho vdd
+* durante um degrau de corrente do circuito
+V1 vrm 0 DC 1
+Lvrm vrm vdd 20n
+C1 vdd n1 100n
+Lesl n1 n2 2n
+Resr n2 0 0.02
+Isw vdd 0 PULSE(0 0.2 20n 1n 1n 60n 400n)
+.tran 0.5n 1.2u
+.probe V(vdd)
+.end`
+  },
+  'crosstalk': {
+    name: 'Crosstalk capacitivo',
+    desc: 'Acoplamento Cm injeta picos na vítima nas bordas do agressor',
+    netlist: `* Crosstalk capacitivo entre trilhas vizinhas
+V1 drv 0 PULSE(0 3.3 2n 1n 1n 20n 50n)
+Rdrv drv ag 33
+Cag ag 0 5p
+Cm ag vt 2p
+Cvt vt 0 5p
+Rterm vt 0 50
+.tran 0.05n 60n
+.probe V(ag) V(vt)
 .end`
   },
   'esd-clamp': {
