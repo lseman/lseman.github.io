@@ -101,27 +101,27 @@ const tabNames = [
 ];
 
 const formulaTooltips = [
-	{title:"Operadores Vetoriais",concept:"Gradiente (∇f) mostra a direção de maior crescimento. Divergente (∇·F) mede o fluxo líquido, e rotacional (∇×F) mede a rotação do campo.",formula:"∇f = (∂f/∂x, ∂f/∂y) | ∇·F = ∂Fₓ/∂x + ∂Fᵧ/∂y | (∇×F)z = ∂Fᵧ/∂x − ∂Fₓ/∂y"},
-	{title:"Lei de Coulomb e Lei de Gauss",concept:"A força entre cargas é proporcional ao produto das cargas e inversamente proporcional ao quadrado da distância. O fluxo elétrico por uma superfície fechada depende da carga interna.",formula:"F = k·q₁q₂/r² · r̂ | ∮E·dA = Q/ε₀"},
-	{title:"Potencial Elétrico e Energia",concept:"Potencial é a energia potencial por unidade de carga. Linhas equipotenciais são perpendiculares às linhas de campo.",formula:"V = k·q/r | U = ½ε₀∫E²dV"},
-	{title:"Capacitância e Dielétricos",concept:"Capacitância é a razão Q/V. Um dielétrico aumenta a capacitância pelo fator κ, enquanto o capacitor armazena energia elétrica.",formula:"C = κε₀A/d | U = ½CV² | E = V/d"},
-	{title:"Biot–Savart e Lei de Ampère",concept:"Correntes geram campo magnético. A lei de Ampère relaciona a circulação de B à corrente envolvida pelo percurso.",formula:"B = (μ₀/4π)∫I dℓ×r̂/r² | ∮B·dℓ = μ₀Ienc"},
-	{title:"Lei de Faraday–Neumann",concept:"Uma variação do fluxo magnético induz força eletromotriz. O sinal negativo expressa a oposição à mudança descrita pela lei de Lenz.",formula:"ε = −N·dΦ/dt | Φ = ∫B·dA"},
-	{title:"Equações de Maxwell",concept:"As quatro equações relacionam cargas, correntes e campos elétricos e magnéticos, incluindo a indução causada por campos variáveis.",formula:"∇·D=ρ | ∇·B=0 | ∇×E=−∂B/∂t | ∇×H=J+∂D/∂t"},
-	{title:"Ondas Eletromagnéticas",concept:"Os campos E e B são perpendiculares entre si e à propagação. O vetor de Poynting representa a direção e a intensidade do fluxo de energia.",formula:"E(z,t)=E₀cos(kz−ωt+φ) | B=E/c | S=E×H"},
-	{title:"Equação de Poisson",concept:"Extensão da equação de Laplace que inclui fontes. Resolvida numericamente por diferenças finitas com diferentes condições de contorno.",formula:"∇²V = −ρ/ε₀ | Dirichlet: V=const | Neumann: ∂V/∂n=const"},
-	{title:"Condições de Contorno em Dielétricos",concept:"Na interface entre dois dielétricos, a componente tangencial de E é contínua, enquanto a componente normal de D é contínua (sem carga superficial).",formula:"E₁_tan = E₂_tan | D₁_n = D₂_n | D = κε₀E"},
-	{title:"Força Magnética e Movimento de Cargas",concept:"A força magnética é perpendicular à velocidade e ao campo. Ela curva a trajetória sem alterar a energia cinética da partícula.",formula:"F = q(v×B) | r = mv⊥/(|q|B) | ωc = |q|B/m"},
-	{title:"Sistemas de Coordenadas",concept:"Um mesmo ponto ou vetor pode ser descrito em bases cartesianas, cilíndricas ou esféricas. As bases curvilíneas variam com a posição.",formula:"x=ρcosφ | y=ρsinφ | r²=x²+y²+z² | dV=r²sinθ drdθdφ"},
-	{title:"Distribuições Contínuas de Carga",concept:"Uma distribuição contínua é dividida em elementos dq. A soma numérica converge para a integral de Coulomb e pode ser comparada a soluções de simetria.",formula:"E=(1/4πε₀)∫dq R̂/R² | dq=λdl | dq=σdS"},
-	{title:"Método das Imagens",concept:"Uma carga imagem fictícia reproduz as condições de contorno de um condutor aterrado na região física.",formula:"V=kq(1/R₊−1/R₋) | F=−kq²/(4a²)"},
+	{title:"Operadores Vetoriais",concept:"Gradiente (∇f) mostra a direção de maior crescimento. Divergente (∇·F) mede o fluxo líquido, e rotacional (∇×F) mede a rotação do campo.",formula:"∇f = (∂f/∂x, ∂f/∂y)<br>∇·F = ∂Fₓ/∂x + ∂Fᵧ/∂y<br>(∇×F)z = ∂Fᵧ/∂x − ∂Fₓ/∂y"},
+	{title:"Lei de Coulomb e Lei de Gauss",concept:"A força entre cargas é proporcional ao produto das cargas e inversamente proporcional ao quadrado da distância. O fluxo elétrico por uma superfície fechada depende da carga interna.",formula:"F = k·q₁q₂/r² · r̂<br>∮E·dA = Q/ε₀"},
+	{title:"Potencial Elétrico e Energia",concept:"Potencial é a energia potencial por unidade de carga. Linhas equipotenciais são perpendiculares às linhas de campo.",formula:"V = k·q/r<br>U = ½ε₀∫E²dV"},
+	{title:"Capacitância e Dielétricos",concept:"Capacitância é a razão Q/V. Um dielétrico aumenta a capacitância pelo fator κ, enquanto o capacitor armazena energia elétrica.",formula:"C = κε₀A/d<br>U = ½CV²<br>E = V/d"},
+	{title:"Biot–Savart e Lei de Ampère",concept:"Correntes geram campo magnético. A lei de Ampère relaciona a circulação de B à corrente envolvida pelo percurso.",formula:"B = (μ₀/4π)∫I dℓ×r̂/r²<br>∮B·dℓ = μ₀Ienc"},
+	{title:"Lei de Faraday–Neumann",concept:"Uma variação do fluxo magnético induz força eletromotriz. O sinal negativo expressa a oposição à mudança descrita pela lei de Lenz.",formula:"ε = −N·dΦ/dt<br>Φ = ∫B·dA"},
+	{title:"Equações de Maxwell",concept:"As quatro equações relacionam cargas, correntes e campos elétricos e magnéticos, incluindo a indução causada por campos variáveis.",formula:"∇·D=ρ<br>∇·B=0<br>∇×E=−∂B/∂t<br>∇×H=J+∂D/∂t"},
+	{title:"Ondas Eletromagnéticas",concept:"Os campos E e B são perpendiculares entre si e à propagação. O vetor de Poynting representa a direção e a intensidade do fluxo de energia.",formula:"E(z,t)=E₀cos(kz−ωt+φ)<br>B=E/c<br>S=E×H"},
+	{title:"Equação de Poisson",concept:"Extensão da equação de Laplace que inclui fontes. Resolvida numericamente por diferenças finitas com diferentes condições de contorno.",formula:"∇²V = −ρ/ε₀<br>Dirichlet: V=const<br>Neumann: ∂V/∂n=const"},
+	{title:"Condições de Contorno em Dielétricos",concept:"Na interface entre dois dielétricos, a componente tangencial de E é contínua, enquanto a componente normal de D é contínua (sem carga superficial).",formula:"E₁_tan = E₂_tan<br>D₁_n = D₂_n<br>D = κε₀E"},
+	{title:"Força Magnética e Movimento de Cargas",concept:"A força magnética é perpendicular à velocidade e ao campo. Ela curva a trajetória sem alterar a energia cinética da partícula.",formula:"F = q(v×B)<br>r = mv⊥/(|q|B)<br>ωc = |q|B/m"},
+	{title:"Sistemas de Coordenadas",concept:"Um mesmo ponto ou vetor pode ser descrito em bases cartesianas, cilíndricas ou esféricas. As bases curvilíneas variam com a posição.",formula:"x=ρcosφ<br>y=ρsinφ<br>r²=x²+y²+z²<br>dV=r²sinθ drdθdφ"},
+	{title:"Distribuições Contínuas de Carga",concept:"Uma distribuição contínua é dividida em elementos dq. A soma numérica converge para a integral de Coulomb e pode ser comparada a soluções de simetria.",formula:"E=(1/4πε₀)∫dq R̂/R²<br>dq=λdl<br>dq=σdS"},
+	{title:"Método das Imagens",concept:"Uma carga imagem fictícia reproduz as condições de contorno de um condutor aterrado na região física.",formula:"V=kq(1/R₊−1/R₋)<br>F=−kq²/(4a²)"},
 	{title:"Integração de Biot–Savart",concept:"O campo de um condutor é obtido somando as contribuições vetoriais de pequenos elementos de corrente.",formula:"dB=μ₀I/(4π) dl×R̂/R²"},
-	{title:"Corrente de Condução e Relaxação",concept:"Em um material com condutividade σ, o campo elétrico produz densidade de corrente J=σE. A carga livre no interior decai com o tempo de relaxação τ=ε/σ.",formula:"J = σE | R = ℓ/(σS) | τᵣ = ε/σ | ρᵥ(t)=ρ₀e^(−t/τᵣ)"},
-	{title:"Torque sobre Espira de Corrente",concept:"Uma espira percorrida por corrente em campo uniforme sofre torque que tende a alinhar o momento de dipolo magnético m com B — base do motor CC.",formula:"m = NIS·n̂ | τ = m×B | U = −m·B"},
-	{title:"Magnetização e Histerese",concept:"Materiais magnéticos respondem ao campo H com magnetização M. Ferromagnéticos exibem saturação, remanência e coercividade na curva B–H.",formula:"M = χₘH | B = μ₀(H+M) = μ₀μᵣH | μᵣ = 1+χₘ"},
-	{title:"Indutância e Circuitos Magnéticos",concept:"A força magnetomotriz NI impulsiona o fluxo Φ contra a relutância ℛ, em analogia com o circuito elétrico. A indutância mede o fluxo concatenado por ampère.",formula:"ℛ = ℓ/(μS) | Φ = NI/ℛ | L = N²/ℛ | W = ½LI²"},
-	{title:"Propagação em Meios com Perdas",concept:"Em um meio condutor a onda se atenua com e^(−αz). A tangente de perdas classifica o meio, e a profundidade pelicular δ mede a penetração.",formula:"γ = α+jβ | tan δ = σ/(ωε) | δ = 1/α"},
-	{title:"Reflexão com Incidência Normal",concept:"Na interface entre dois meios, parte da onda reflete e parte transmite conforme o descasamento de impedâncias intrínsecas. A interferência gera onda estacionária.",formula:"Γ = (η₂−η₁)/(η₂+η₁) | τ = 1+Γ | s = (1+|Γ|)/(1−|Γ|)"},
+	{title:"Corrente de Condução e Relaxação",concept:"Em um material com condutividade σ, o campo elétrico produz densidade de corrente J=σE. A carga livre no interior decai com o tempo de relaxação τ=ε/σ.",formula:"J = σE<br>R = ℓ/(σS)<br>τᵣ = ε/σ<br>ρᵥ(t)=ρ₀e^(−t/τᵣ)"},
+	{title:"Torque sobre Espira de Corrente",concept:"Uma espira percorrida por corrente em campo uniforme sofre torque que tende a alinhar o momento de dipolo magnético m com B — base do motor CC.",formula:"m = NIS·n̂<br>τ = m×B<br>U = −m·B"},
+	{title:"Magnetização e Histerese",concept:"Materiais magnéticos respondem ao campo H com magnetização M. Ferromagnéticos exibem saturação, remanência e coercividade na curva B–H.",formula:"M = χₘH<br>B = μ₀(H+M) = μ₀μᵣH<br>μᵣ = 1+χₘ"},
+	{title:"Indutância e Circuitos Magnéticos",concept:"A força magnetomotriz NI impulsiona o fluxo Φ contra a relutância ℛ, em analogia com o circuito elétrico. A indutância mede o fluxo concatenado por ampère.",formula:"ℛ = ℓ/(μS)<br>Φ = NI/ℛ<br>L = N²/ℛ<br>W = ½LI²"},
+	{title:"Propagação em Meios com Perdas",concept:"Em um meio condutor a onda se atenua com e^(−αz). A tangente de perdas classifica o meio, e a profundidade pelicular δ mede a penetração.",formula:"γ = α+jβ<br>tan δ = σ/(ωε)<br>δ = 1/α"},
+	{title:"Reflexão com Incidência Normal",concept:"Na interface entre dois meios, parte da onda reflete e parte transmite conforme o descasamento de impedâncias intrínsecas. A interferência gera onda estacionária.",formula:"Γ = (η₂−η₁)/(η₂+η₁)<br>τ = 1+Γ<br>s = (1+|Γ|)/(1−|Γ|)"},
 ];
 
 let activeSim = sims[0],
@@ -385,3 +385,18 @@ document.addEventListener("keydown", (e) => {
 		e.preventDefault();document.getElementById('library-search').focus();
 	}
 });
+
+// ===== THEME TOGGLE =====
+const root = document.documentElement;
+function toggleTheme() {
+	const isDark = root.getAttribute('data-theme') === 'dark';
+	root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+	localStorage.setItem('eletromag-theme', isDark ? 'light' : 'dark');
+}
+function initTheme() {
+	const saved = localStorage.getItem('eletromag-theme') ||
+		(window.matchMedia?.('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+	root.setAttribute('data-theme', saved);
+}
+initTheme();
+document.getElementById('theme-btn').onclick = toggleTheme;

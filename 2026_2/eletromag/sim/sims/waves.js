@@ -35,7 +35,7 @@ export class WaveSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">∿</span> ${this.name}</h3>
-<div class="formula">E(z,t) = E₀cos(kz−ωt+φ) &nbsp;|&nbsp; B = E/c</div>
+<div class="formula">E(z,t) = E₀cos(kz−ωt+φ) <br> B = E/c</div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="propagation">Propagação</option><option value="polarization">Polarização</option><option value="energy">Energia</option></select></div>
 <div class="control"><label>Frequência <span class="val" id="fV">1.0 MHz</span></label><input type="range" id="freq" min="0.5" max="5" step="0.1" value="1"></div>

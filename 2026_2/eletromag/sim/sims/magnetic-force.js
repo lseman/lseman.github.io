@@ -15,7 +15,7 @@ export class MagneticForceSim extends Sim {
 	}
 	buildControls(el){
 		el.innerHTML=`<h3><span class="icon">⊗</span> ${this.name}</h3>
-<div class="formula">F = q(v × B) &nbsp;|&nbsp; r = mv⊥/(|q|B)</div>
+<div class="formula">F = q(v × B) <br> r = mv⊥/(|q|B)</div>
 <div class="learning-card"><strong>Experimento guiado · Força de Lorentz</strong>Preveja como o raio e o sentido da órbita mudam ao inverter a carga ou aumentar B.<em>A força magnética muda a direção, mas não realiza trabalho.</em></div>
 <div class="control"><label>Partícula</label><select id="species"><option value="electron">Elétron</option><option value="proton">Próton</option></select></div>
 <div class="control"><label>Direção do campo B</label><div class="direction-picker" role="group" aria-label="Direção do campo magnético"><button type="button" data-direction="1"><i>⊙</i><span>Saindo<small>da tela</small></span></button><button type="button" data-direction="-1"><i>⊗</i><span>Entrando<small>na tela</small></span></button></div></div>

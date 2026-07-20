@@ -4,7 +4,7 @@ import { W, H } from "../core/canvas.js";
 
 export class MethodImagesSim extends Sim {
 	constructor(){super("Método das Imagens","◫");this.charge=5;this.height=12;this.probeX=18;this.probeY=10;this.showImage=true;this.showField=true;this.hint="A carga imagem reproduz V=0 no plano condutor aterrado"}
-	buildControls(el){el.innerHTML=`<h3><span class="icon">◫</span> ${this.name}</h3><div class="formula">V = kq(1/R₊ − 1/R₋) &nbsp;|&nbsp; V(plano)=0</div><div class="learning-card"><strong>Experimento guiado · Método das imagens</strong>Substitua o condutor por uma carga imagem −q e verifique o potencial no plano.<em>A imagem é uma construção matemática; somente a região acima do condutor é física.</em></div>
+	buildControls(el){el.innerHTML=`<h3><span class="icon">◫</span> ${this.name}</h3><div class="formula">V = kq(1/R₊ − 1/R₋) <br> V(plano)=0</div><div class="learning-card"><strong>Experimento guiado · Método das imagens</strong>Substitua o condutor por uma carga imagem −q e verifique o potencial no plano.<em>A imagem é uma construção matemática; somente a região acima do condutor é física.</em></div>
 <div class="control"><label>Carga q (nC) <span class="val" id="qV">5.0</span></label><input id="charge" type="range" min="-10" max="10" step="0.5" value="5"></div>
 <div class="control"><label>Altura a (cm) <span class="val" id="hV">12</span></label><input id="height" type="range" min="3" max="30" value="12"></div>
 <div class="control"><label>Sonda x (cm) <span class="val" id="pxV">18</span></label><input id="probeX" type="range" min="-35" max="35" value="18"></div>

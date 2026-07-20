@@ -15,7 +15,7 @@ export class ReflectionSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⇄</span> ${this.name}</h3>
-<div class="formula">Γ = (η₂−η₁)/(η₂+η₁) &nbsp;|&nbsp; τ = 1+Γ &nbsp;|&nbsp; s = (1+|Γ|)/(1−|Γ|)</div>
+<div class="formula">Γ = (η₂−η₁)/(η₂+η₁) <br> τ = 1+Γ <br> s = (1+|Γ|)/(1−|Γ|)</div>
 <div class="learning-card"><strong>Experimento guiado · Incidência normal</strong>Varie εᵣ dos dois meios e observe onda refletida e transmitida. Com condutor perfeito, Γ = −1: reflexão total e onda puramente estacionária.<em>Os nós da envoltória distam λ/2; E = 0 sempre na superfície do condutor.</em></div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button></div>
 <div class="control"><label>εᵣ meio 1 <span class="val" id="e1V">1</span></label><input id="epsr1" type="range" min="1" max="20" step="1" value="1"></div>

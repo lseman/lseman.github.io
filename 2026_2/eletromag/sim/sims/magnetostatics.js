@@ -30,7 +30,11 @@ export class MagnetStaticSim extends Sim {
 <div class="control"><label>Raio de Ampère <span class="val" id="rV">90 px</span></label><input type="range" id="radius" min="35" max="220" value="90"></div>
 <div class="control"><label>Densidade <span class="val" id="dV">18</span></label><input type="range" id="dens" min="8" max="30" value="18"></div>
 <div class="legend"><span class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>corrente</span><span class="legend-item"><span class="legend-dot" style="background:#67e8f9"></span>campo B</span><span class="legend-item"><span class="legend-dot" style="background:#fb7185"></span>maior |B|</span></div>`;
-		const formulas = {vectors:"B = μ₀I/(2πr) φ̂",magnitude:"|B| em tesla",ampere:"∮ B·dl = μ₀ I_enc"};
+		const formulas = {
+			vectors:"B = μ₀I/(2πr) φ̂",
+			magnitude:"<br>|B| em tesla",
+			ampere:"∮ B·dl = μ₀ I_enc"
+		};
 		for (const [id, value] of [["mode",this.mode],["I",this.I],["dens",this.dens]]) el.querySelector(`#${id}`).value = String(value);
 		el.querySelector("#iV").textContent = `${this.I.toFixed(1)} A`;
 		el.querySelector("#dV").textContent = String(this.dens);

@@ -15,7 +15,7 @@ export class MagneticTorqueSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⟳</span> ${this.name}</h3>
-<div class="formula">m = NIS·n̂ &nbsp;|&nbsp; τ = m×B &nbsp;|&nbsp; U = −m·B</div>
+<div class="formula">m = NIS·n̂ <br> τ = m×B <br> U = −m·B</div>
 <div class="learning-card"><strong>Experimento guiado · Espira em campo uniforme</strong>Ajuste o ângulo e solte (▶). O torque gira a espira até alinhar m com B — princípio do motor CC e do galvanômetro.<em>Em campo uniforme a força resultante é nula; só existe torque.</em></div>
 <div class="btn-row"><button class="btn primary" id="play">▶ Liberar</button><button class="btn" id="pause">⏸</button><button class="btn" id="reset">↺</button></div>
 <div class="control"><label>Corrente I (A) <span class="val" id="iV">2.0</span></label><input id="current" type="range" min="0.2" max="10" step="0.2" value="2"></div>

@@ -6,7 +6,7 @@ export class CoordinateSystemsSim extends Sim {
 	constructor(){super("Sistemas de Coordenadas","⌖");this.system="cartesian";this.x=3;this.y=2;this.z=2;this.showBasis=true;this.yaw=-.65;this.pitch=.48;this.dragCamera=false;this.lastPointer=null;this.hint="Arraste para girar a cena 3D · transforme o ponto entre os três sistemas"}
 	buildControls(el){
 		el.innerHTML=`<h3><span class="icon">⌖</span> ${this.name}</h3>
-<div class="formula">x = ρ cosφ &nbsp; y = ρ sinφ &nbsp;|&nbsp; r² = x²+y²+z²</div>
+<div class="formula">x = ρ cosφ &nbsp; y = ρ sinφ <br> r² = x²+y²+z²</div>
 <div class="learning-card"><strong>Experimento guiado · Coordenadas</strong>Mova o ponto e preveja quais coordenadas mudam em cada sistema.<em>Observe que os vetores unitários cilíndricos e esféricos dependem da posição.</em></div>
 <div class="control"><label>Sistema em destaque</label><select id="system"><option value="cartesian">Cartesiano (x, y, z)</option><option value="cylindrical">Cilíndrico (ρ, φ, z)</option><option value="spherical">Esférico (r, θ, φ)</option></select></div>
 <div class="control"><label><span id="coord0Label">x</span><span class="val" id="coord0V">3.0</span></label><input id="coord0" type="range" min="-5" max="5" step="0.1" value="3"></div>

@@ -23,7 +23,7 @@ export class MagneticMaterialsSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">🧲</span> ${this.name}</h3>
-<div class="formula">M = χₘH &nbsp;|&nbsp; B = μ₀(H + M) = μ₀μᵣH &nbsp;|&nbsp; μᵣ = 1 + χₘ</div>
+<div class="formula">M = χₘH <br> B = μ₀(H + M) = μ₀μᵣH <br> μᵣ = 1 + χₘ</div>
 <div class="learning-card"><strong>Experimento guiado · Curva B–H</strong>Aplique um campo H senoidal e observe a resposta B do material. Nos ferromagnéticos, o laço de histerese revela remanência Bᵣ e coercividade H꜀.<em>A área do laço é a energia dissipada por ciclo — relevante em núcleos de transformadores.</em></div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button><button class="btn" id="clear">Limpar traço</button></div>
 <div class="control"><label>Material</label><select id="material">${MATERIALS.map((m, i) => `<option value="${i}">${m.name}</option>`).join("")}</select></div>

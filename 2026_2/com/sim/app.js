@@ -492,3 +492,19 @@ resultsResizer.onpointermove = e => { if (!resultsResize || resultsResize.pointe
 const finishResultsResize = e => { if (!resultsResize || resultsResize.pointerId !== e.pointerId) return; resultsResize = null; resultsPanel.classList.remove('resizing'); if (resultsResizer.hasPointerCapture?.(e.pointerId)) resultsResizer.releasePointerCapture(e.pointerId); localStorage.setItem(RESULTS_HEIGHT_KEY, `${Math.round(resultsHeight)}`); redrawResultPlots() }; resultsResizer.onpointerup = finishResultsResize; resultsResizer.onpointercancel = finishResultsResize;
 setResultsCollapsed(localStorage.getItem(RESULTS_COLLAPSED_KEY) === '1', false);
 renderLibrary(); load(); if (!nodes.length) loadTemplate('bpsk'); else render(); applyViewport(); updateHistoryButtons();
+
+// ===== THEME TOGGLE =====
+const root = document.documentElement;
+function toggleTheme() {
+	const isDark = root.getAttribute('data-theme') === 'dark';
+	root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+	localStorage.setItem('commslab-theme', isDark ? 'light' : 'dark');
+}
+function initTheme() {
+	const saved = localStorage.getItem('commslab-theme') ||
+		(window.matchMedia?.('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+	root.setAttribute('data-theme', saved);
+	console.log('[CommsLab] theme:', saved, 'attr:', root.getAttribute('data-theme'));
+}
+initTheme();
+$('#theme-btn').onclick = toggleTheme;

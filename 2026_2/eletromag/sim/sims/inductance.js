@@ -14,7 +14,7 @@ export class InductanceSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">◎</span> ${this.name}</h3>
-<div class="formula">ℛ = ℓ/(μS) &nbsp;|&nbsp; Φ = NI/ℛ &nbsp;|&nbsp; L = N²/ℛ &nbsp;|&nbsp; W = ½LI²</div>
+<div class="formula">ℛ = ℓ/(μS) <br> Φ = NI/ℛ <br> L = N²/ℛ <br> W = ½LI²</div>
 <div class="learning-card"><strong>Experimento guiado · Núcleo com entreferro</strong>Aumente o entreferro e veja o fluxo cair: alguns milímetros de ar dominam a relutância total, mesmo com núcleo de μᵣ alto.<em>Analogia: fmm NI ↔ fem, fluxo Φ ↔ corrente, relutância ℛ ↔ resistência.</em></div>
 <div class="control"><label>Espiras N <span class="val" id="nV">200</span></label><input id="turns" type="range" min="10" max="1000" step="10" value="200"></div>
 <div class="control"><label>Corrente I (A) <span class="val" id="iV">1.0</span></label><input id="current" type="range" min="0.1" max="10" step="0.1" value="1"></div>

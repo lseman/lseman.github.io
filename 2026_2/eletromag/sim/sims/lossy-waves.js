@@ -23,7 +23,7 @@ export class LossyWaveSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">≈</span> ${this.name}</h3>
-<div class="formula">γ = α + jβ &nbsp;|&nbsp; E = E₀e^(−αz)cos(ωt−βz) &nbsp;|&nbsp; δ = 1/α</div>
+<div class="formula">γ = α + jβ <br> E = E₀e^(−αz)cos(ωt−βz) <br> δ = 1/α</div>
 <div class="learning-card"><strong>Experimento guiado · Atenuação e efeito pelicular</strong>Escolha um meio e varie a frequência: observe a envoltória e^(−αz) e a profundidade pelicular δ. Compare água do mar em 1 kHz e 1 GHz.<em>tan δ ≫ 1: bom condutor · tan δ ≪ 1: bom dielétrico.</em></div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button></div>
 <div class="control"><label>Meio (preset)</label><select id="preset">${PRESETS.map((p, i) => `<option value="${i}">${p.name}</option>`).join("")}</select></div>

@@ -23,7 +23,7 @@ export class ConductionSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⇉</span> ${this.name}</h3>
-<div class="formula">J = σE &nbsp;|&nbsp; R = ℓ/(σS) &nbsp;|&nbsp; τᵣ = ε/σ</div>
+<div class="formula">J = σE <br> R = ℓ/(σS) <br> τᵣ = ε/σ</div>
 <div class="learning-card"><strong>Experimento guiado · Corrente de condução</strong>Compare condutores e dielétricos: mesma tensão, correntes muito diferentes. No modo relaxação, veja a carga volumétrica decair com ρᵥ(t)=ρ₀e^(−t/τᵣ).<em>Em bons condutores τᵣ ≈ 10⁻¹⁹ s: carga livre migra quase instantaneamente para a superfície.</em></div>
 <div class="btn-row"><button class="btn primary" id="play">▶</button><button class="btn" id="pause">⏸</button></div>
 <div class="control"><label>Modo</label><select id="mode"><option value="conduction">Corrente de condução</option><option value="relaxation">Relaxação de carga</option></select></div>

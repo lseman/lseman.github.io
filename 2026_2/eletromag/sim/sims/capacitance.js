@@ -36,7 +36,7 @@ export class CapSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⊞</span> ${this.name}</h3>
-<div class="formula" id="formula">C = κε₀A/d &nbsp;|&nbsp; U = ½CV²</div>
+<div class="formula" id="formula">C = κε₀A/d <br> U = ½CV²</div>
 <div class="learning-card"><strong>Experimento guiado · Capacitância</strong>Preveja o efeito de dobrar A, d, V ou κ antes de mover o controle.<em>Verifique quais mudanças afetam C, Q e a energia armazenada.</em></div>
 <div class="control"><label>Configuração</label><select id="tp"><option value="parallel">Placas Paralelas</option><option value="cyl">Cilíndrica</option><option value="sph">Esférica</option></select></div>
 <div class="control"><label>Tensão V (V) <span class="val" id="vV">10</span></label><input type="range" id="V" min="1" max="50" value="10"></div>
@@ -68,10 +68,10 @@ export class CapSim extends Sim {
 		el.querySelector("#kap").value = String(this.kappa);
 		el.querySelector("#kV").textContent = this.kappa.toFixed(1);
 		el.querySelector("#anim").checked = this.anim;
-		const formulas={parallel:"C = κε₀A/d &nbsp;|&nbsp; ∇²V=0",cyl:"C = 2πκε₀L/ln(b/a)",sph:"C = 4πκε₀ab/(b−a)"};
+		const formulas={parallel:"C = κε₀A/d <br> ∇²V=0",cyl:"C = 2πκε₀L/ln(b/a)",sph:"C = 4πκε₀ab/(b−a)"};
 		const showGeometry=()=>{el.querySelector("#parallel-params").hidden=this.type!=="parallel";el.querySelector("#cyl-params").hidden=this.type!=="cyl";el.querySelector("#sph-params").hidden=this.type!=="sph";};
 		showGeometry();
-		el.querySelector("#tp").onchange = (e) => { this.type = e.target.value; el.querySelector("#formula").textContent=`${formulas[this.type]}  |  U = ½CV²`; showGeometry(); this.calc(el); };
+		el.querySelector("#tp").onchange = (e) => { this.type = e.target.value; el.querySelector("#formula").textContent=`${formulas[this.type]}<br>U = ½CV²`; showGeometry(); this.calc(el); };
 		el.querySelector("#V").oninput = (e) => {
 			this.V = +e.target.value;
 			el.querySelector("#vV").textContent = e.target.value;

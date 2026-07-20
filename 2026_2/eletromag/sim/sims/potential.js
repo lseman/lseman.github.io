@@ -22,7 +22,7 @@ export class PotentialSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⊕</span> ${this.name}</h3>
-<div class="formula">V = k·q/r &nbsp;|&nbsp; U = ½ε₀∫E²dV</div>
+<div class="formula">V = k·q/r <br> U = ½ε₀∫E²dV</div>
 <div class="btn-row"><button class="btn primary" id="addP">+ Carga</button><button class="btn" id="addN">− Carga</button><button class="btn" id="dip">Dipolo</button><button class="btn danger" id="del">Remover</button><button class="btn danger" id="clr">Limpar</button></div>
 <div class="control"><label>Escala potencial <span class="val" id="mV">150 V</span></label><input type="range" id="maxV" min="20" max="500" step="10" value="150"></div>
 <div class="control"><label>Níveis equipotenciais <span class="val" id="lV">15</span></label><input type="range" id="lev" min="5" max="30" value="15"></div>

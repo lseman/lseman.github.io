@@ -63,7 +63,7 @@ export class PoissonInteractiveSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">∇²</span> ${this.name}</h3>
-<div class="formula" id="formula">∇²V = −ρ/ε₀  |  Geometria interativa</div>
+<div class="formula" id="formula">∇²V = −ρ/ε₀<br>Geometria interativa</div>
 <div class="control"><label>Geometria</label><select id="geom"><option value="rect">Retângulo</option><option value="circle">Círculo</option><option value="lshape">L-Shape</option></select></div>
 <div class="control"><label>Tipo de fonte</label><select id="src"><option value="point">Ponto</option><option value="line">Linha</option><option value="disk">Disco</option></select></div>
 <div class="control"><label>Intensidade <span class="val" id="sV">1.0</span></label><input type="range" id="sstr" min="0.1" max="5" step="0.1" value="1"></div>

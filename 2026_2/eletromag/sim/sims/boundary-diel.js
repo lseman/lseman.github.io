@@ -54,7 +54,7 @@ export class BoundaryDielSim extends Sim {
 	}
 	buildControls(el) {
 		el.innerHTML = `<h3><span class="icon">⟂</span> ${this.name}</h3>
-<div class="formula" id="formula">D₁ₙ = D₂ₙ (contínuo)  |  E₁/E₂ = κ₂/κ₁  ·  campo ⊥ interface</div>
+<div class="formula" id="formula">D₁ₙ = D₂ₙ (contínuo)<br>E₁/E₂ = κ₂/κ₁  ·  campo ⊥ interface</div>
 <div class="control"><label>κ₁ (topo) <span class="val" id="k1V">2.2</span></label><input type="range" id="k1" min="1" max="10" step="0.1" value="2.2"></div>
 <div class="control"><label>κ₂ (base) <span class="val" id="k2V">5.5</span></label><input type="range" id="k2" min="1" max="10" step="0.1" value="5.5"></div>
 <div class="control"><label>Posição interface <span class="val" id="byV">50%</span></label><input type="range" id="by" min="20" max="80" value="50"></div>
