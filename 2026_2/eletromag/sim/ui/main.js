@@ -302,7 +302,7 @@ wrap.addEventListener('dragleave',()=>wrap.classList.remove('drop-ready'));
 wrap.addEventListener('drop',e=>{const key=e.dataTransfer.getData('em-tool');if(!key)return;e.preventDefault();wrap.classList.remove('drop-ready');const p=scenePoint(e.clientX,e.clientY);runTool(key,p.x,p.y);});
 
 document.getElementById('library-search').oninput=e=>buildLibrary(e.target.value);
-document.getElementById('reset-view').onclick=()=>{S.zoom=1;if(activeSim.pan)activeSim.pan={x:0,y:0};activeSim.resize();};
+
 
 // FPS counter
 let fps = 0,

@@ -1,130 +1,258 @@
-const COLORS = { Sources: '#60a5fa', Coding: '#a78bfa', 'Digital Modulation': '#f59e0b', 'Analog Modulation': '#f97316', Channel: '#fb7185', 'Signal Processing': '#38bdf8', 'Digital Receiver': '#34d399', 'Analog Receiver': '#2dd4bf', Analysis: '#22d3ee', Custom: '#e879f9' };
-const TYPE_COLORS = { bits: '#a78bfa', real: '#60a5fa', complex: '#f59e0b', any: '#94a3b8' };
-const OUTPUT_TYPES = { bits: 'bits', coded: 'bits', decoded: 'bits', received: 'bits', corrupted: 'bits', samples: 'real', message: 'real', symbols: 'complex', waveform: 'complex', modulated: 'complex', noisy: 'complex', shifted: 'complex', signal: 'complex', filtered: 'complex', resampled: 'complex', impaired: 'complex', fft: 'complex', output: 'any', sum: 'complex', mixed: 'complex', delayed: 'complex' };
-const INPUT_TYPES = { bits: 'bits', reference: 'bits', received: 'bits', ideal: 'complex', measured: 'complex', message: 'real', symbols: 'complex', waveform: 'complex', fft: 'complex', signal: 'complex', input: 'any' };
-const FLEX_INPUTS = new Set(['scope:signal', 'probe:signal', 'spectrum:signal', 'fft:signal', 'sampling_audit:signal', 'signal_stats:signal', 'student_transform:input', 'fir:signal', 'gain:signal', 'delay:signal', 'add:a', 'add:b', 'viterbi_decoder:bits']);
-const FLEX_OUTPUTS = new Set(['scope:signal', 'probe:signal']);
-const defs = {
-    bit_source: { name: 'Fonte de bits', category: 'Sources', outputs: ['bits'], summary: 'Bits Bernoulli equiprováveis', config: { count: { type: 'number', label: 'Número de bits', value: 512, min: 8, max: 10000 }, seed: { type: 'number', label: 'Semente', value: 42 } }, theory: 'Gera b[k] ∈ {0,1} com P(0)=P(1)=1/2.', equation: 'P(b=0)=P(b=1)=0.5' },
-    pattern_source: { name: 'Padrão de bits', category: 'Sources', outputs: ['bits'], summary: 'Sequência definida pelo aluno', config: { pattern: { type: 'text', label: 'Padrão', value: '10110010' }, repeat: { type: 'number', label: 'Repetições', value: 32, min: 1, max: 1000 } }, theory: 'Repete uma palavra binária conhecida, útil para depuração e sincronismo.', equation: 'b = repeat(pattern, N)' },
-    repetition_encoder: { name: 'Codificador repetição', category: 'Coding', inputs: ['bits'], outputs: ['coded'], summary: 'Código de repetição (n,1)', config: { n: { type: 'number', label: 'Repetição n', value: 3, min: 1, max: 15 } }, theory: 'Repete cada bit n vezes. A taxa do código é R=1/n.', equation: 'c[nk+i]=b[k],  i=0…n−1' },
-    repetition_decoder: { name: 'Decodificador maioria', category: 'Coding', inputs: ['bits'], outputs: ['decoded'], summary: 'Decisão majoritária por palavra', config: { n: { type: 'number', label: 'Tamanho n', value: 3, min: 1, max: 15 } }, theory: 'Agrupa n decisões e escolhe o símbolo majoritário.', equation: 'b̂[k]=1 se Σ ĉ[nk+i] > n/2' },
-    hamming_encoder: { name: 'Codificador Hamming', category: 'Coding', inputs: ['bits'], outputs: ['coded'], summary: 'Hamming (7,4) ou SECDED (8,4)', config: { mode: { type: 'select', label: 'Código', value: 'Hamming (7,4)', options: ['Hamming (7,4)', 'SECDED (8,4)'] } }, theory: 'Coloca dados nas posições 3, 5, 6 e 7 e calcula paridades pares nas potências de dois. SECDED acrescenta paridade global.', equation: 'Rc=4/7 ou 4/8' },
-    hamming_decoder: { name: 'Decodificador Hamming', category: 'Coding', inputs: ['bits'], outputs: ['decoded'], summary: 'Correção por síndrome e detecção dupla', config: { mode: { type: 'select', label: 'Código', value: 'Hamming (7,4)', options: ['Hamming (7,4)', 'SECDED (8,4)'] } }, theory: 'A síndrome s₄s₂s₁ identifica um erro simples. No SECDED, a paridade global distingue erro simples de erro duplo detectável.', equation: 's=Hrᵀ; posição=s₁+2s₂+4s₄' },
-    crc_encoder: { name: 'Anexar CRC', category: 'Coding', inputs: ['bits'], outputs: ['coded'], summary: 'Divisão polinomial em GF(2)', config: { polynomial: { type: 'text', label: 'Polinômio binário', value: '10011' } }, theory: 'Anexa o resto da divisão de xʳM(x) pelo polinômio gerador. O primeiro e o último coeficientes devem ser 1.', equation: 'T(x)=xʳM(x)+R(x)' },
-    crc_checker: { name: 'Verificar CRC', category: 'Coding', inputs: ['bits'], outputs: ['decoded'], summary: 'Detecta palavra ou rajada corrompida', config: { polynomial: { type: 'text', label: 'Polinômio binário', value: '10011' }, strip: { type: 'select', label: 'Remover CRC', value: 'sim', options: ['sim', 'não'] } }, theory: 'Resto não nulo detecta erro. CRC normalmente sinaliza retransmissão; não localiza nem corrige o bit.', equation: 'T(x) mod g(x)=0' },
-    convolutional_encoder: { name: 'Convolucional (7,5)₈', category: 'Coding', inputs: ['bits'], outputs: ['coded'], summary: 'Taxa 1/2, memória 2', config: { terminate: { type: 'select', label: 'Terminar em zero', value: 'sim', options: ['sim', 'não'] } }, theory: 'Codificador convolucional de taxa 1/2 com v₁=u⊕u₋₁⊕u₋₂ e v₂=u⊕u₋₂. Bits de cauda levam o trellis ao estado zero.', equation: 'G(D)=[1+D+D², 1+D²]' },
-    viterbi_decoder: { name: 'Viterbi (7,5)₈', category: 'Coding', inputs: ['bits'], outputs: ['decoded'], summary: 'Decisão dura ou soft-input', config: { decision: { type: 'select', label: 'Métrica de entrada', value: 'automática', options: ['automática', 'dura', 'suave'] }, terminated: { type: 'select', label: 'Trellis terminado', value: 'sim', options: ['sim', 'não'] } }, theory: 'Mantém o sobrevivente de menor métrica em cada estado. A entrada suave aceita símbolos BPSK e preserva sua confiabilidade; a dura usa distância de Hamming.', equation: 'm=min[m′+dH] ou min[m′+Σ(y−ŝ)²]' },
-    student_transform: { name: 'Bloco do estudante', category: 'Custom', inputs: ['input'], outputs: ['output'], summary: 'Implemente encoder ou decoder', config: { code: { type: 'code', label: 'Função JavaScript', value: '// data é um array\nreturn data.map(x => x);' } }, theory: 'O aluno implementa uma transformação determinística. O valor retornado deve ser um array.', equation: 'output = f(input)' },
-    sine_source: { name: 'Fonte senoidal', category: 'Sources', outputs: ['samples'], summary: 'Mensagem na taxa global do workflow', config: { frequency: { type: 'number', label: 'Frequência (Hz)', value: 100 }, amplitude: { type: 'number', label: 'Amplitude', value: 1 }, duration: { type: 'number', label: 'Duração (s)', value: .1 } }, theory: 'Gera uma mensagem senoidal usando a taxa de amostragem global Fs da barra superior.', equation: 'm[n]=A cos(2πfₘn/Fₛ)' },
-    complex_tone: { name: 'Oscilador complexo', category: 'Sources', outputs: ['waveform'], summary: 'Fonte IQ e^{j2πft}', config: { frequency: { type: 'number', label: 'Frequência (Hz)', value: 1000 }, amplitude: { type: 'number', label: 'Amplitude', value: 1 }, duration: { type: 'number', label: 'Duração (s)', value: .1 }, phase: { type: 'number', label: 'Fase inicial (°)', value: 0 } }, theory: 'Oscilador complexo semelhante ao Signal Source do GNU Radio. Frequências negativas são representáveis sem ambiguidade em IQ.', equation: 'x[n]=Ae^{j(2πfn/Fₛ+φ)}' },
-    noise_source: { name: 'Fonte de ruído', category: 'Sources', outputs: ['waveform'], summary: 'Ruído gaussiano real ou complexo', config: { power: { type: 'number', label: 'Potência média', value: 1, min: 0 }, duration: { type: 'number', label: 'Duração (s)', value: .1 }, mode: { type: 'select', label: 'Saída', value: 'complexa', options: ['complexa', 'real'] }, seed: { type: 'number', label: 'Semente', value: 123 } }, theory: 'Gera AWGN com potência total configurada. No modo complexo, I e Q recebem metade da potência.', equation: 'E{|x|²}=P' },
-    ask: { name: 'Mapeador ASK/OOK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: 'Chaveamento de amplitude', config: { zero: { type: 'number', label: 'Amplitude bit 0', value: 0 }, one: { type: 'number', label: 'Amplitude bit 1', value: 1 } }, theory: 'Representa bits por dois níveis de amplitude. OOK é o caso A₀=0.', equation: 's[k]=A₀ ou A₁' },
-    bpsk: { name: 'Mapeador BPSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: '0 → +1, 1 → −1', config: {}, theory: 'Mapeamento antipodal com energia média unitária.', equation: 's[k]=1−2b[k]' },
-    qpsk: { name: 'Mapeador QPSK Gray', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: '2 bits por símbolo', config: {}, theory: 'Mapeamento Gray normalizado para Es=1.', equation: 's=(I+jQ)/√2' },
-    mpsk: { name: 'Mapeador M-PSK Gray', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: 'PSK Gray de ordem configurável', config: { M: { type: 'select', label: 'Ordem M', value: 8, options: [2, 4, 8, 16] } }, theory: 'Agrupa log₂M bits e seleciona fases equiespaçadas com rotulagem Gray circular, reduzindo erros de bits entre vizinhos.', equation: 'sₘ=e^{j2πm/M}, rótulo=Gray(m)' },
-    qam: { name: 'Mapeador QAM', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: 'QAM quadrada normalizada', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [4, 16, 64, 256] } }, theory: 'Mapeia grupos de log₂M bits em uma grade quadrada e normaliza Es=1.', equation: 's=(I+jQ)/√E{|I+jQ|²}' },
-    fsk: { name: 'Modulador M-FSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Tons ortogonais por símbolo', config: { M: { type: 'select', label: 'Ordem M', value: 2, options: [2, 4, 8] }, sps: { type: 'number', label: 'Amostras/símbolo', value: 16, min: 4, max: 128 } }, theory: 'Cada símbolo seleciona um tom complexo ortogonal ao longo de Ts.', equation: 'sₘ[n]=e^{j2πmn/N}' },
-    am: { name: 'Modulador AM', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'AM convencional DSB-LC', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, mu: { type: 'number', label: 'Índice μ', value: .7, min: 0, max: 2 } }, theory: 'Modulação AM com portadora. Para evitar sobremodulação com mensagem normalizada, use μ≤1.', equation: 's(t)=[1+μm(t)]cos(2πfct)' },
-    fm: { name: 'Modulador FM', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'Frequência instantânea variável', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, deviation: { type: 'number', label: 'Desvio Δf (Hz)', value: 500 } }, theory: 'A fase é a integral da mensagem; a frequência instantânea varia linearmente com m(t).', equation: 's(t)=cos[2πfct+2πk_f∫m(τ)dτ]' },
-    pm: { name: 'Modulador PM', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'Fase proporcional à mensagem', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, kp: { type: 'number', label: 'Sensibilidade kp (rad)', value: 1 } }, theory: 'A fase instantânea varia diretamente com a mensagem.', equation: 's(t)=cos[2πfct+k_pm(t)]' },
-    awgn: { name: 'Canal AWGN', category: 'Channel', inputs: ['signal'], outputs: ['noisy'], summary: 'Ruído branco gaussiano', config: { mode: { type: 'select', label: 'Referência', value: 'Eb/N0', options: ['Eb/N0', 'SNR/amostra'] }, snr: { type: 'number', label: 'Valor (dB)', value: 7, min: -20, max: 60 }, seed: { type: 'number', label: 'Semente', value: 7 } }, theory: 'Mede a potência do sinal e calcula a variância do ruído. Eb/N0 considera amostras por símbolo, bits por símbolo e taxa do código; SNR/amostra compara potência média de sinal e ruído.', equation: 'σ²_dimensão=P·Ns/(2kRγb) ou P/(2γs)' },
-    phase_offset: { name: 'Erro de fase', category: 'Channel', inputs: ['signal'], outputs: ['shifted'], summary: 'Rotação de portadora', config: { degrees: { type: 'number', label: 'Fase (graus)', value: 18, min: -180, max: 180 } }, theory: 'Modela erro de fase constante da portadora.', equation: 'r=s·e^{jφ}' },
-    bit_flip: { name: 'Injetor de erros binários', category: 'Channel', inputs: ['bits'], outputs: ['corrupted'], summary: 'Inverte posições controladas', config: { positions: { type: 'text', label: 'Posições por bloco', value: '5' }, block: { type: 'number', label: 'Tamanho do bloco (0=global)', value: 7, min: 0, max: 10000 } }, theory: 'Inverte posições indexadas a partir de 1. Com bloco maior que zero, repete o padrão em cada palavra para experimentos controlados.', equation: 'r=c⊕e' },
-    frequency_offset: { name: 'Offset de frequência', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'CFO normalizado', config: { cycles: { type: 'number', label: 'Ciclos/amostra', value: .01, min: -.5, max: .5 } }, theory: 'Aplica uma rotação de fase que cresce linearmente no tempo.', equation: 'r[n]=s[n]e^{j2πΔfn}' },
-    multipath: { name: 'Canal multipercurso', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal FIR com ecos', config: { taps: { type: 'text', label: 'Taps reais', value: '1, 0.45, -0.2' } }, theory: 'Convolui o sinal com uma resposta impulsiva finita, introduzindo dispersão e ISI.', equation: 'r[n]=Σh[k]s[n−k]' },
-    iq_imbalance: { name: 'Desbalanço I/Q', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Ganho e quadratura imperfeitos', config: { gain: { type: 'number', label: 'Erro de ganho (%)', value: 8 }, phase: { type: 'number', label: 'Erro de quadratura (°)', value: 5 } }, theory: 'Modela diferenças de ganho e erro angular entre os caminhos I e Q.', equation: 'Q′=(1+g)Q, quadratura=90°+φ' },
-    clipper: { name: 'Limitador / clipping', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Não linearidade de amplitude', config: { level: { type: 'number', label: 'Nível máximo', value: 1, min: .05, max: 10 } }, theory: 'Limita o módulo e modela saturação de amplificador.', equation: 'y=x·min(1,Amax/|x|)' },
-    rayleigh_fading: { name: 'Desvanecimento Rayleigh', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal plano sem LOS', config: { seed: { type: 'number', label: 'Semente', value: 11 }, doppler_hz: { type: 'number', label: 'Doppler (Hz)', value: 100, min: 0, max: 10000 } }, theory: 'Gera um canal plano com envelope Rayleigh e componentes I/Q gaussianos correlacionados pelo modelo AR(1) com rho=J0(2πfdTs).', equation: 'h[n]=(g1[n]+jg2[n])/√2, E{|h|²}=1' },
-    rician_fading: { name: 'Desvanecimento Rician', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal plano com componente LOS', config: { seed: { type: 'number', label: 'Semente', value: 12 }, K_dB: { type: 'number', label: 'Fator K (dB)', value: 3, min: -10, max: 40 }, doppler_hz: { type: 'number', label: 'Doppler (Hz)', value: 100, min: 0, max: 10000 } }, theory: 'Canal com componente de linha de visada (LOS) e multipercurso. O fator K é a razão de potências LOS/NLOS.', equation: 'h=h_LOS+h_NLOS, K=P_LOS/P_NLOS' },
-    phase_noise: { name: 'Ruído de fase', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Rotação estocástica de portadora', config: { variance: { type: 'number', label: 'Variância de fase (rad²)', value: 0.01, min: 0, max: 1 } }, theory: 'Aplica uma rotação de fase estocástica modelando ruído de oscilador.', equation: 'r[n]=s[n]e^{jφ[n]}, φ[n]~N(0,σ²)' },
-    gain: { name: 'Ganho', category: 'Signal Processing', inputs: ['signal'], outputs: ['signal'], summary: 'Escala real ou complexa', config: { gain: { type: 'number', label: 'Ganho linear', value: 1 } }, theory: 'Multiplica todas as amostras por um ganho escalar.', equation: 'y[n]=Gx[n]' },
-    mixer: { name: 'Misturador / NCO', category: 'Signal Processing', inputs: ['signal'], outputs: ['mixed'], summary: 'Translação de frequência em Hz', config: { frequency: { type: 'number', label: 'Frequência do NCO (Hz)', value: 1000 }, phase: { type: 'number', label: 'Fase (°)', value: 0 } }, theory: 'Multiplica o sinal por um oscilador complexo e desloca seu espectro. Usa Fs transportada pelo sinal.', equation: 'y[n]=x[n]e^{j(2πf₀n/Fₛ+φ)}' },
-    add: { name: 'Somador', category: 'Signal Processing', inputs: ['a', 'b'], outputs: ['sum'], summary: 'Soma dois streams sincronizados', config: {}, theory: 'Soma amostra a amostra e exige taxas iguais. A saída usa o menor comprimento.', equation: 'y[n]=a[n]+b[n]' },
-    delay: { name: 'Atraso', category: 'Signal Processing', inputs: ['signal'], outputs: ['delayed'], summary: 'Atraso inteiro sem truncar o stream', config: { samples: { type: 'number', label: 'Atraso (amostras)', value: 8, min: 0, max: 100000 } }, theory: 'Preenche o início com zeros e preserva todas as amostras de entrada.', equation: 'y[n]=x[n−D]' },
-    fir: { name: 'Filtro FIR', category: 'Signal Processing', inputs: ['signal'], outputs: ['filtered'], summary: 'Convolução por coeficientes', config: { taps: { type: 'text', label: 'Coeficientes', value: '0.25, 0.5, 0.25' } }, theory: 'Filtro linear de fase ou geral definido pelos coeficientes do aluno.', equation: 'y[n]=Σh[k]x[n−k]' },
-    upsample: { name: 'Interpolador', category: 'Signal Processing', inputs: ['signal'], outputs: ['resampled'], summary: 'Insere zeros entre amostras', config: { factor: { type: 'number', label: 'Fator L', value: 4, min: 1, max: 32 } }, theory: 'Aumenta a taxa de amostragem por inserção de L−1 zeros; normalmente deve ser seguido de filtro interpolador.', equation: 'y[nL]=x[n]' },
-    decimate: { name: 'Decimador', category: 'Signal Processing', inputs: ['signal'], outputs: ['resampled'], summary: 'Reduz taxa de amostragem', config: { factor: { type: 'number', label: 'Fator M', value: 2, min: 1, max: 32 }, phase: { type: 'number', label: 'Fase', value: 0, min: 0, max: 31 } }, theory: 'Mantém uma amostra a cada M. Um filtro anti-alias deve preceder a decimação.', equation: 'y[n]=x[nM+p]' },
-    rrc_tx: { name: 'RRC Transmissor', category: 'Signal Processing', inputs: ['symbols'], outputs: ['waveform'], summary: 'Interpolação e conformação RRC', config: { sps: { type: 'number', label: 'Amostras/símbolo', value: 8, min: 2, max: 32 }, alpha: { type: 'number', label: 'Roll-off α', value: .35, min: 0, max: 1 }, span: { type: 'number', label: 'Span (símbolos)', value: 8, min: 2, max: 20 } }, theory: 'Insere zeros e filtra com raiz de cosseno levantado normalizada em energia. Dois filtros RRC casados produzem resposta RC.', equation: 'B=(1+α)Rs/2 em banda base' },
-    rrc_rx: { name: 'RRC Receptor', category: 'Signal Processing', inputs: ['waveform'], outputs: ['symbols'], summary: 'Filtro casado e amostragem', config: { sps: { type: 'number', label: 'Amostras/símbolo', value: 8, min: 2, max: 32 }, alpha: { type: 'number', label: 'Roll-off α', value: .35, min: 0, max: 1 }, span: { type: 'number', label: 'Span (símbolos)', value: 8, min: 2, max: 20 } }, theory: 'Aplica o RRC casado, compensa os atrasos de grupo TX+RX e amostra no instante de máxima abertura do olho.', equation: 'hRC=hRRC*hRRC; y[k]=y[n₀+kNs]' },
-    fft: { name: 'FFT', category: 'Signal Processing', inputs: ['signal'], outputs: ['fft'], summary: 'Transformada discreta reutilizável', config: { size: { type: 'select', label: 'Tamanho N', value: 1024, options: [64, 128, 256, 512, 1024, 2048] }, window: { type: 'select', label: 'Janela', value: 'Hann', options: ['Retangular', 'Hann'] }, shift: { type: 'select', label: 'Centralizar', value: 'sim', options: ['sim', 'não'] } }, theory: 'Calcula a DFT de N pontos, com truncamento ou zero-padding, correção de ganho coerente e eixo de frequência em metadados.', equation: 'X[k]=Σx[n]w[n]e^{-j2πkn/N}' },
-    hard_ask: { name: 'Detector ASK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Decisão por limiar', config: { threshold: { type: 'number', label: 'Limiar', value: .5 } }, theory: 'Com amplitudes 0 e 1 equiprováveis em AWGN, o limiar ML é 0,5.', equation: 'b̂=[Re{r}>λ]' },
-    hard_bpsk: { name: 'Detector BPSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Limiar em Re{r}=0', config: {}, theory: 'Decisão ML para BPSK equiprovável em AWGN.', equation: 'b̂=1 se Re{r}<0' },
-    hard_qpsk: { name: 'Detector QPSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Decisão por quadrante', config: {}, theory: 'Decisões independentes nos eixos I e Q para o mapeamento Gray usado.', equation: 'b̂I=[I<0], b̂Q=[Q<0]' },
-    hard_mpsk: { name: 'Detector M-PSK Gray', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Fase mais próxima e rótulo Gray', config: { M: { type: 'select', label: 'Ordem M', value: 8, options: [2, 4, 8, 16] } }, theory: 'Seleciona a fase ideal mais próxima e converte seu índice para o rótulo Gray correspondente.', equation: 'm̂=round[M·arg(r)/(2π)], b̂=Gray(m̂)' },
-    hard_qam: { name: 'Detector QAM', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Ponto da grade mais próximo', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [4, 16, 64, 256] } }, theory: 'Quantiza independentemente I e Q para o nível permitido mais próximo.', equation: 'ŝ=arg min |r−sₘ|²' },
-    fsk_detector: { name: 'Detector M-FSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Banco de correlatores', config: {}, theory: 'Calcula a correlação com cada tom e escolhe a maior magnitude.', equation: 'm̂=arg maxₘ |Σr[n]e^{-j2πmn/N}|' },
-    ofdm_tx: { name: 'Transmissor multicarrier', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'OFDM, DMT ou SC-FDMA', config: { mode: { type: 'select', label: 'Forma multicarrier', value: 'OFDM', options: ['OFDM', 'DMT', 'SC-FDMA'] }, carriers: { type: 'select', label: 'Subportadoras N', value: 64, options: [16, 32, 64, 128] }, cp: { type: 'number', label: 'Prefixo cíclico', value: 16, min: 0, max: 64 } }, theory: 'OFDM usa subportadoras QPSK ortogonais; DMT impõe simetria hermitiana para saída real; SC-FDMA acrescenta espalhamento por DFT para menor PAPR.', equation: 'x[n]=IFFT{X[k]}, xCP=[x[N−L…N−1],x]' },
-    ofdm_rx: { name: 'Receptor multicarrier', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'OFDM, DMT ou SC-FDMA', config: { mode: { type: 'select', label: 'Forma multicarrier', value: 'OFDM', options: ['OFDM', 'DMT', 'SC-FDMA'] }, carriers: { type: 'select', label: 'Subportadoras N', value: 64, options: [16, 32, 64, 128] }, cp: { type: 'number', label: 'Prefixo cíclico', value: 16, min: 0, max: 64 } }, theory: 'Remove o prefixo, aplica FFT e, em SC-FDMA, desfaz o espalhamento por DFT antes da decisão QPSK.', equation: 'X̂[k]=FFT{x[n]}' },
-    msk: { name: 'Modulador MSK / GMSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'CPFSK de fase contínua e envelope constante', config: { mode: { type: 'select', label: 'Forma de pulso', value: 'MSK', options: ['MSK', 'GMSK'] }, sps: { type: 'number', label: 'Amostras/bit', value: 16, min: 4, max: 64 }, bt: { type: 'number', label: 'Produto BT (GMSK)', value: .3, min: .15, max: 1 } }, theory: 'MSK é CPFSK com índice h=1/2. GMSK filtra os dados NRZ com pulso gaussiano antes da integração de fase, reduzindo lóbulos laterais.', equation: 's[n]=e^{jφ[n]}, Δφ=πa[n]/(2Ns)' },
-    msk_detector: { name: 'Detector MSK / GMSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Decisão pela variação de fase', config: {}, theory: 'Acumula a diferença de fase ao longo de cada intervalo de bit e decide pelo sinal da rotação.', equation: 'b̂[k]=[ΣΔφ[n]≥0]' },
-    pulse_mod: { name: 'Modulação por pulsos', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'PAM, PPM ou PWM binária', config: { mode: { type: 'select', label: 'Modulação', value: 'PAM', options: ['PAM', 'PPM', 'PWM'] }, sps: { type: 'number', label: 'Amostras/bit', value: 16, min: 8, max: 128 } }, theory: 'Representa informação na amplitude (PAM), posição (PPM) ou largura (PWM) de pulsos dentro de cada intervalo.', equation: 'PAM: A(b); PPM: τ(b); PWM: Tpulso(b)' },
-    pulse_detector: { name: 'Detector de pulsos', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Decisão PAM, PPM ou PWM', config: {}, theory: 'Usa média de amplitude para PAM, energia por metade para PPM e duração acima do limiar para PWM.', equation: 'b̂=arg max métrica do pulso' },
-    dpsk: { name: 'Modulador DPSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: 'DBPSK, DQPSK ou π/4-DQPSK', config: { mode: { type: 'select', label: 'Esquema diferencial', value: 'DBPSK', options: ['DBPSK', 'DQPSK', 'π/4-DQPSK'] } }, theory: 'Codifica a informação na diferença de fase entre símbolos consecutivos, dispensando referência absoluta de fase.', equation: 's[k]=s[k−1]e^{jΔφ(b[k])}' },
-    dpsk_detector: { name: 'Detector DPSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Decisão diferencial de fase', config: { mode: { type: 'select', label: 'Esquema diferencial', value: 'DBPSK', options: ['DBPSK', 'DQPSK', 'π/4-DQPSK'] } }, theory: 'Multiplica o símbolo atual pelo conjugado do anterior e decide o incremento de fase mais próximo.', equation: 'Δφ̂=arg{r[k]r*[k−1]}' },
-    oqpsk: { name: 'Modulador OQPSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Q atrasado em meio símbolo', config: { sps: { type: 'number', label: 'Amostras/símbolo', value: 16, min: 4, max: 64 } }, theory: 'Atrasa o ramo Q em Ts/2, impedindo transições simultâneas de I e Q e reduzindo saltos de fase de 180°.', equation: 's(t)=I(t)+jQ(t−Ts/2)' },
-    oqpsk_detector: { name: 'Detector OQPSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Realinha I/Q e decide sinais', config: {}, theory: 'Amostra I e o ramo Q atrasado nas respectivas metades do símbolo.', equation: 'b̂I=[I<0], b̂Q=[Qdel<0]' },
-    apsk: { name: 'Mapeador APSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: '16-APSK ou 32-APSK em anéis', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [16, 32] } }, theory: 'Distribui símbolos em anéis concêntricos, combinando modulação de amplitude e fase como em enlaces via satélite.', equation: 'sₘ=Rᵣe^{jθₘ}' },
-    apsk_detector: { name: 'Detector APSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Ponto APSK mais próximo', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [16, 32] } }, theory: 'Seleciona o ponto ideal de menor distância euclidiana entre todos os anéis.', equation: 'm̂=arg minₘ|r−sₘ|²' },
-    cpfsk: { name: 'Modulador CPFSK / GFSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'FSK binária de fase contínua', config: { mode: { type: 'select', label: 'Forma de pulso', value: 'CPFSK', options: ['CPFSK', 'GFSK'] }, h: { type: 'number', label: 'Índice de modulação h', value: .7, min: .1, max: 2 }, sps: { type: 'number', label: 'Amostras/bit', value: 16, min: 4, max: 64 }, bt: { type: 'number', label: 'Produto BT (GFSK)', value: .5, min: .15, max: 1 } }, theory: 'Mantém fase contínua entre símbolos. GFSK suaviza os dados com filtro gaussiano para reduzir ocupação espectral.', equation: 'Δφ=πh·a[k]/Ns' },
-    cpfsk_detector: { name: 'Detector CPFSK / GFSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Decisão pela rotação de fase', config: {}, theory: 'Integra a rotação de fase em cada bit e decide o sinal da frequência instantânea.', equation: 'b̂=[ΣΔφ≥0]' },
-    spread_tx: { name: 'Espalhamento DSSS / FHSS', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Sequência direta ou saltos de frequência', config: { mode: { type: 'select', label: 'Técnica', value: 'DSSS', options: ['DSSS', 'FHSS'] }, code: { type: 'text', label: 'Código / padrão de saltos', value: '1101001' }, sps: { type: 'number', label: 'Amostras por chip', value: 8, min: 2, max: 32 } }, theory: 'DSSS multiplica cada bit por uma sequência de chips. FHSS alterna a frequência portadora conforme um padrão conhecido.', equation: 'DSSS: c[n]b[k]; FHSS: f=fhop[n]+fb' },
-    spread_rx: { name: 'Receptor DSSS / FHSS', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Desespalhamento coerente', config: {}, theory: 'Correlaciona com o mesmo código ou padrão de saltos para recuperar os bits.', equation: 'b̂=sign(Σr[n]c[n])' },
-    analog_sideband: { name: 'Modulador de bandas laterais', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'DSB-SC, USB, LSB ou VSB', config: { mode: { type: 'select', label: 'Modo', value: 'DSB-SC', options: ['DSB-SC', 'USB', 'LSB', 'VSB'] }, carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 } }, theory: 'Remove a portadora de AM e permite transmitir duas bandas laterais, apenas uma banda, ou uma banda com vestígio da outra.', equation: 'sUSB=m cosωct−m̂ sinωct' },
-    coherent_am_detector: { name: 'Detector AM coerente', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Demodula DSB-SC, SSB e VSB', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 } }, theory: 'Translada o sinal para banda base usando uma referência coerente de portadora.', equation: 'm̂(t)=LPF{2s(t)e^{-jωct}}' },
-    envelope: { name: 'Detector de envelope', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Demodulação AM não coerente', config: { removeDC: { type: 'select', label: 'Remover DC', value: 'sim', options: ['sim', 'não'] } }, theory: 'Obtém a magnitude do sinal analítico simplificado. Adequado para AM sem sobremodulação.', equation: 'm̂(t)∝|s_a(t)|' },
-    phase_demod: { name: 'Demodulador de fase', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Fase instantânea desembrulhada', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, mode: { type: 'select', label: 'Modo', value: 'PM', options: ['PM', 'FM'] } }, theory: 'Remove a fase da portadora; em PM retorna fase e em FM deriva a fase desembrulhada.', equation: 'φ̂=unwrap(arg s_a)−2πfct' },
-    scope: { name: 'Osciloscópio', category: 'Analysis', inputs: ['signal'], outputs: ['signal'], summary: 'Sink ou probe inline no domínio do tempo', config: { samples: { type: 'number', label: 'Amostras exibidas', value: 400, min: 10, max: 5000 }, interpolation: { type: 'select', label: 'Traçado', value: 'suave', options: ['suave', 'linear', 'pontos'] }, trigger: { type: 'select', label: 'Trigger', value: 'livre', options: ['livre', 'subida', 'descida'] }, level: { type: 'number', label: 'Nível do trigger', value: 0 } }, theory: 'Mostra I/Q contra tempo real. O traçado suave interpola apenas a visualização; linear e pontos preservam explicitamente as amostras. A saída pass-through permite inserção inline.', equation: 't=n/Fₛ' },
-    probe: { name: 'Probe numérica', category: 'Analysis', inputs: ['signal'], outputs: ['signal'], summary: 'Inspeção inline com metadados', config: { label: { type: 'text', label: 'Rótulo', value: 'Probe' } }, theory: 'Mede comprimento, taxa, duração, potência RMS e pico, preservando o stream na saída.', equation: 'xout=xin' },
-    spectrum: { name: 'Analisador de espectro', category: 'Analysis', inputs: ['signal'], outputs: [], summary: 'DFT, janela e resolução', config: { bins: { type: 'number', label: 'Bins', value: 1024, min: 32, max: 2048 } }, theory: 'Calcula uma DFT com janela Hann. A resolução é Δf=fs/N; frequências separadas por menos que Δf não são resolvidas.', equation: 'Δf=fₛ/N' },
-    fft_plot: { name: 'Visualizador FFT', category: 'Analysis', inputs: ['fft'], outputs: [], summary: 'Magnitude de uma FFT calculada', config: { scale: { type: 'select', label: 'Escala', value: 'dB', options: ['dB', 'linear'] } }, theory: 'Exibe a magnitude do vetor FFT sem recalcular a transformada.', equation: '|X[k]| ou 20log₁₀|X[k]|' },
-    constellation: { name: 'Constelação', category: 'Analysis', inputs: ['symbols'], outputs: [], summary: 'Plano I/Q', config: { points: { type: 'number', label: 'Pontos', value: 500, min: 20, max: 5000 } }, theory: 'Exibe as amostras complexas no espaço de sinais.', equation: 'I=Re{s}, Q=Im{s}' },
-    eye: { name: 'Diagrama de olho', category: 'Analysis', inputs: ['signal'], outputs: [], summary: 'Sobreposição por símbolo', config: { sps: { type: 'number', label: 'Amostras/símbolo', value: 8, min: 2, max: 128 }, traces: { type: 'number', label: 'Traços', value: 60, min: 5, max: 500 } }, theory: 'Sobrepõe segmentos de dois símbolos para revelar ISI e margem de temporização.', equation: 'x[n mod 2Ns]' },
-    evm: { name: 'Medidor de EVM', category: 'Analysis', inputs: ['ideal', 'measured'], outputs: [], summary: 'Erro vetorial RMS', config: { equalize: { type: 'select', label: 'Corrigir ganho/fase', value: 'sim', options: ['sim', 'não'] } }, theory: 'Compara símbolos de referência e medidos. A correção opcional remove um único ganho complexo, mas não corrige ISI.', equation: 'EVMrms=√(Σ|r−s|²/Σ|s|²)' },
-    signal_stats: { name: 'Estatísticas do sinal', category: 'Analysis', inputs: ['signal'], outputs: [], summary: 'Potência, pico e PAPR', config: {}, theory: 'Mede potência média, amplitude de pico e razão pico/média.', equation: 'PAPR=max|x|²/E{|x|²}' },
-    sampling_audit: { name: 'Auditoria de amostragem', category: 'Analysis', inputs: ['signal'], outputs: [], summary: 'Nyquist, resolução e sps', config: { recommended: { type: 'number', label: 'Amostras/ciclo desejadas', value: 10, min: 2, max: 50 } }, theory: 'Distingue ausência de alias de boa resolução numérica. Nyquist exige >2 amostras/ciclo; visualização e demodulação normalmente precisam de margem maior.', equation: 'N/ciclo=fₛ/fmax, Δf=fₛ/N' },
-    ber: { name: 'Medidor de BER', category: 'Analysis', inputs: ['reference', 'received'], outputs: [], summary: 'Taxa de erro de bit', config: {}, theory: 'Compara sequências alinhadas e informa erros, total e BER.', equation: 'BER=N_erros/N_bits' },
-    ber_curve_mpsk: { name: 'Comparador de curvas BER', category: 'Analysis', inputs: [], outputs: [], summary: 'PSK, QAM e FSK versus Eb/N0', config: { schemes: { type: 'text', label: 'Modulações', value: 'BPSK, QPSK, 8PSK, 16QAM, 64QAM' }, start: { type: 'number', label: 'Eb/N0 inicial (dB)', value: -2, min: -20, max: 40 }, stop: { type: 'number', label: 'Eb/N0 final (dB)', value: 20, min: -20, max: 60 }, step: { type: 'number', label: 'Passo (dB)', value: 1, min: .25, max: 10 }, minBer: { type: 'number', label: 'BER mínima do eixo', value: 1e-8, min: 1e-15, max: .1 }, maxBer: { type: 'number', label: 'BER máxima do eixo', value: 1, min: 1e-6, max: 1 } }, theory: 'Compara expressões teóricas coerentes com Gray para PSK e QAM quadrada, além de BFSK coerente ou não coerente. As aproximações de vizinhos mais próximos são mais precisas na região de BER baixa.', equation: 'PSK/QAM: aproximação Gray; BFSK: Q(√Eb/N0)' },
-    quantizer: { name: 'Quantizador uniforme', category: 'Signal Processing', inputs: ['message'], outputs: ['samples'], summary: 'PCM mid-rise de n bits', config: { bits: { type: 'number', label: 'Bits por amostra', value: 4, min: 1, max: 12 }, range: { type: 'number', label: 'Faixa ±Xmax', value: 1, min: 0.001 } }, theory: 'Arredonda cada amostra real para um de 2ⁿ níveis uniformes (mid-rise) e satura fora da faixa. Para senoide de fundo de escala, SQNR ≈ 6,02n + 1,76 dB.', equation: 'Δ=2Xmax/2ⁿ; q=Δ(⌊x/Δ⌋+½)' },
-    compander: { name: 'Compander µ-law', category: 'Signal Processing', inputs: ['message'], outputs: ['samples'], summary: 'Compressão/expansão logarítmica', config: { mode: { type: 'select', label: 'Modo', value: 'compressor', options: ['compressor', 'expansor'] }, mu: { type: 'number', label: 'Parâmetro µ', value: 255, min: 1, max: 10000 } }, theory: 'O compressor amplia sinais fracos antes do quantizador; o expansor aplica a curva inversa no receptor. O par equaliza o SQNR ao longo da faixa dinâmica (padrão µ-law, µ=255).', equation: 'y=sgn(x)·ln(1+µ|x|)/ln(1+µ)' },
-    line_code: { name: 'Codificador de linha', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'NRZ, RZ, Manchester ou AMI', config: { code: { type: 'select', label: 'Código', value: 'Manchester', options: ['NRZ polar', 'NRZ unipolar', 'RZ polar', 'Manchester', 'AMI'] }, sps: { type: 'number', label: 'Amostras/bit', value: 16, min: 4, max: 64 } }, theory: 'Formata bits em pulsos de banda base. Manchester (1 → +A,−A) garante uma transição por bit para sincronismo; AMI alterna a polaridade das marcas e anula o nível DC.', equation: 'Manchester: b=1 → +A,−A; b=0 → −A,+A' },
-    line_decoder: { name: 'Decodificador de linha', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Decisão coerente com o código', config: {}, theory: 'Usa os metadados do codificador (código e amostras/bit) para integrar cada intervalo de bit e decidir de forma casada com o pulso.', equation: 'b̂ = decisão por correlação' },
-    delta_mod: { name: 'Modulador delta', category: 'Digital Modulation', inputs: ['message'], outputs: ['bits'], summary: '1 bit por amostra (DM)', config: { delta: { type: 'number', label: 'Passo Δ', value: 0.1, min: 0.0005 } }, theory: 'Transmite apenas o sinal do erro entre a mensagem e a aproximação em escada. Δ pequeno demais causa sobrecarga de inclinação; Δ grande demais, ruído granular.', equation: 'b=sgn[m(n)−m̂(n)]; m̂←m̂±Δ' },
-    delta_demod: { name: 'Demodulador delta', category: 'Digital Receiver', inputs: ['bits'], outputs: ['message'], summary: 'Acumulador + média móvel', config: { delta: { type: 'number', label: 'Passo Δ', value: 0.1, min: 0.0005 }, smooth: { type: 'number', label: 'Média móvel (amostras)', value: 8, min: 1, max: 64 } }, theory: 'Integra os bits ±Δ reconstruindo a escada e aplica média móvel como filtro passa-baixas simples.', equation: 'm̂(n)=m̂(n−1)±Δ' },
-    lms_equalizer: { name: 'Equalizador LMS', category: 'Digital Receiver', inputs: ['waveform', 'ideal'], outputs: ['filtered'], summary: 'FIR adaptativo com treino', config: { taps: { type: 'number', label: 'Coeficientes', value: 7, min: 1, max: 31 }, mu: { type: 'number', label: 'Passo µ', value: 0.05, min: 0.0001, max: 1 }, train: { type: 'number', label: 'Símbolos de treino', value: 400, min: 10 } }, theory: 'Minimiza E|e|² ajustando um FIR complexo pelo gradiente estocástico durante o treino com símbolos conhecidos; depois os coeficientes ficam congelados. Compare a constelação antes e depois em um canal com ISI.', equation: 'e=d−wᵀx; w←w+µ·e·x*' },
-};
+/**
+ * CommsLab — Block Studio
+ * Main application file with UI, state management, and workflow execution.
+ */
 
-let nodes = [], edges = [], selected = null, pending = null, drag = null, idCounter = 1, results = [];
-let viewport = { x: 0, y: 0, zoom: 1 }, canvasPan = null;
+import { setWorkflowSampleRate, sampleRateOf, arr, complex } from './utils.js';
+import { COLORS, TYPE_COLORS, OUTPUT_TYPES, INPUT_TYPES, FLEX_INPUTS, FLEX_OUTPUTS, defs, createProcessors } from './blocks.js';
+
+// State variables
+/** @type {Array<Object>} */
+let nodes = [];
+/** @type {Array<Object>} */
+let edges = [];
+/** @type {string|null} */
+let selected = null;
+/** @type {Object|null} */
+let pending = null;
+/** @type {Object|null} */
+let drag = null;
+let idCounter = 1;
+/** @type {Array<Object>} */
+let results = [];
+/** @type {Object} */
+let viewport = { x: 0, y: 0, zoom: 1 };
+/** @type {Object|null} */
+let canvasPan = null;
+/** @type {Array} */
 let history = [], future = [], historyMuted = false;
+/** @type {number} */
 let workflowSampleRate = 48000;
-let copiedNode = null, pasteCount = 0;
+/** @type {Object|null} */
+let copiedNode = null;
+let pasteCount = 0;
 const FAMILY_STATE_KEY = 'commslab_family_state_v1';
+/** @type {Set<string>} */
 let expandedFamilies = new Set(['Sources', 'Digital Modulation']);
 try { const savedFamilies = JSON.parse(localStorage.getItem(FAMILY_STATE_KEY)); if (Array.isArray(savedFamilies)) expandedFamilies = new Set(savedFamilies) } catch { }
-const $ = s => document.querySelector(s), workspace = $('#workspace'), nodesEl = $('#nodes'), svg = $('#connections');
+
+// DOM references
+const $ = s => document.querySelector(s);
+const workspace = $('#workspace');
+const nodesEl = $('#nodes');
+const svg = $('#connections');
+
+// Worker setup
+const worker = typeof Worker !== 'undefined' ? new Worker('worker.js') : null;
+if (worker) {
+    worker.onmessage = function(e) {
+        const { type, data } = e.data;
+        if (type === 'berCurveResult') {
+            const { series, x, yMin, yMax } = data;
+            results.splice(0, results.length, ...results.filter(r => r.type !== 'bercurve'));
+            results.push({ type: 'bercurve', title: 'Comparação BER teórica · Eb/N0', x, series, xUnit: 'dB', yUnit: 'BER', yMin, yMax });
+            renderResults();
+        } else if (type === 'fftResult') {
+            // FFT results handled inline in computeFFT
+        } else if (type === 'convolveResult') {
+            // Convolve results handled inline
+        }
+    };
+}
+
+// Initialize processors with results array
+const processors = createProcessors(results);
+
+// Set workflow sample rate
+setWorkflowSampleRate(workflowSampleRate);
+
+/**
+ * Generate a unique node ID.
+ * @returns {string} Unique ID.
+ */
 function uid() { return `node_${idCounter++}` }
+
+/**
+ * Clone a block configuration.
+ * @param {string} type - Block type.
+ * @returns {Object} Cloned config.
+ */
 function cloneConfig(type) { return Object.fromEntries(Object.entries(defs[type].config).map(([k, v]) => [k, v.value])) }
-function addNode(type, x = 300 + Math.random() * 180, y = 100 + Math.random() * 160) { const n = { id: uid(), type, x, y, config: cloneConfig(type) }; nodes.push(n); selected = n.id; render(); save(); return n }
-function removeNode(id) { nodes = nodes.filter(n => n.id !== id); edges = edges.filter(e => e.from !== id && e.to !== id); if (selected === id) selected = null; render(); save() }
-function copySelectedNode() { const node = nodes.find(n => n.id === selected); if (!node) return false; copiedNode = { type: node.type, config: structuredClone(node.config), x: node.x, y: node.y }; pasteCount = 0; flashMessage(`${defs[node.type].name} copiado`); return true }
-function pasteCopiedNode() { if (!copiedNode) return false; pasteCount++; const offset = 28 * pasteCount, node = { id: uid(), type: copiedNode.type, x: copiedNode.x + offset, y: copiedNode.y + offset, config: structuredClone(copiedNode.config) }; nodes.push(node); selected = node.id; pending = null; render(); save(); flashMessage(`${defs[node.type].name} duplicado`); return true }
-function portType(nodeType, port, kind) { if ((kind === 'input' ? FLEX_INPUTS : FLEX_OUTPUTS).has(`${nodeType}:${port}`)) return 'any'; return (kind === 'output' ? OUTPUT_TYPES[port] : INPUT_TYPES[port]) || 'any' }
-function connect(from, fromPort, to, toPort) { if (from === to) return; const a = nodes.find(n => n.id === from), b = nodes.find(n => n.id === to), outType = portType(a.type, fromPort, 'output'), inType = portType(b.type, toPort, 'input'); if (inType !== 'any' && outType !== 'any' && inType !== outType) { pending = null; flashMessage(`Conexão inválida: ${outType} → ${inType}`, 'error'); render(); return } edges = edges.filter(e => !(e.to === to && e.toPort === toPort)); edges.push({ id: `edge_${Date.now()}_${Math.random().toString(16).slice(2)}`, from, fromPort, to, toPort, type: outType }); pending = null; render(); save() }
-function flashMessage(message, state = 'info') { const status = $('#run-status'); status.textContent = message.toUpperCase(); status.style.color = state === 'error' ? 'var(--red)' : 'var(--cyan)'; clearTimeout(flashMessage.timer); flashMessage.timer = setTimeout(() => { status.textContent = 'PRONTO'; status.style.color = '' }, 2200) }
+
+/**
+ * Add a new node to the workflow.
+ * @param {string} type - Block type.
+ * @param {number} x - X coordinate.
+ * @param {number} y - Y coordinate.
+ * @returns {Object} New node object.
+ */
+function addNode(type, x = 300 + Math.random() * 180, y = 100 + Math.random() * 160) { 
+    const n = { id: uid(), type, x, y, config: cloneConfig(type) }; 
+    nodes.push(n); 
+    selected = n.id; 
+    render(); 
+    save(); 
+    return n 
+}
+
+/**
+ * Remove a node from the workflow.
+ * @param {string} id - Node ID.
+ */
+function removeNode(id) { 
+    nodes = nodes.filter(n => n.id !== id); 
+    edges = edges.filter(e => e.from !== id && e.to !== id); 
+    if (selected === id) selected = null; 
+    render(); 
+    save() 
+}
+
+/**
+ * Copy the selected node.
+ * @returns {boolean} True if copied successfully.
+ */
+function copySelectedNode() { 
+    const node = nodes.find(n => n.id === selected); 
+    if (!node) return false; 
+    copiedNode = { type: node.type, config: structuredClone(node.config), x: node.x, y: node.y }; 
+    pasteCount = 0; 
+    flashMessage(`${defs[node.type].name} copiado`); 
+    return true 
+}
+
+/**
+ * Paste the copied node.
+ * @returns {boolean} True if pasted successfully.
+ */
+function pasteCopiedNode() { 
+    if (!copiedNode) return false; 
+    pasteCount++; 
+    const offset = 28 * pasteCount, 
+          node = { id: uid(), type: copiedNode.type, x: copiedNode.x + offset, y: copiedNode.y + offset, config: structuredClone(copiedNode.config) }; 
+    nodes.push(node); 
+    selected = node.id; 
+    pending = null; 
+    render(); 
+    save(); 
+    flashMessage(`${defs[node.type].name} duplicado`); 
+    return true 
+}
+
+/**
+ * Get the port type for a block port.
+ * @param {string} nodeType - Block type.
+ * @param {string} port - Port name.
+ * @param {string} kind - 'input' or 'output'.
+ * @returns {string} Port type.
+ */
+function portType(nodeType, port, kind) { 
+    if ((kind === 'input' ? FLEX_INPUTS : FLEX_OUTPUTS).has(`${nodeType}:${port}`)) return 'any'; 
+    return (kind === 'output' ? OUTPUT_TYPES[port] : INPUT_TYPES[port]) || 'any' 
+}
+
+/**
+ * Connect two nodes.
+ * @param {string} from - Source node ID.
+ * @param {string} fromPort - Source port.
+ * @param {string} to - Destination node ID.
+ * @param {string} toPort - Destination port.
+ */
+function connect(from, fromPort, to, toPort) { 
+    if (from === to) return; 
+    const a = nodes.find(n => n.id === from), 
+          b = nodes.find(n => n.id === to), 
+          outType = portType(a.type, fromPort, 'output'), 
+          inType = portType(b.type, toPort, 'input'); 
+    if (inType !== 'any' && outType !== 'any' && inType !== outType) { 
+        pending = null; 
+        flashMessage(`Conexão inválida: ${outType} → ${inType}`, 'error'); 
+        render(); 
+        return 
+    } 
+    edges = edges.filter(e => !(e.to === to && e.toPort === toPort)); 
+    edges.push({ id: `edge_${Date.now()}_${Math.random().toString(16).slice(2)}`, from, fromPort, to, toPort, type: outType }); 
+    pending = null; 
+    render(); 
+    save() 
+}
+
+/**
+ * Flash a message to the status area.
+ * @param {string} message - Message text.
+ * @param {string} [state='info'] - Message state.
+ */
+function flashMessage(message, state = 'info') { 
+    const status = $('#run-status'); 
+    status.textContent = message.toUpperCase(); 
+    status.style.color = state === 'error' ? 'var(--red)' : 'var(--cyan)'; 
+    clearTimeout(flashMessage.timer); 
+    flashMessage.timer = setTimeout(() => { 
+        status.textContent = 'PRONTO'; 
+        status.style.color = '' 
+    }, 2200) 
+}
+
+/**
+ * Render the block library.
+ * @param {string} [filter=''] - Search filter.
+ */
 function renderLibrary(filter = '') {
     const cats = {};
-    for (const [type, d] of Object.entries(defs)) { if (filter && !`${d.name} ${d.category} ${d.summary}`.toLowerCase().includes(filter.toLowerCase())) continue; (cats[d.category] ??= []).push([type, d]) }
+    for (const [type, d] of Object.entries(defs)) { 
+        if (filter && !`${d.name} ${d.category} ${d.summary}`.toLowerCase().includes(filter.toLowerCase())) continue; 
+        (cats[d.category] ??= []).push([type, d]) 
+    }
     $('#block-library').innerHTML = Object.entries(cats).map(([cat, list]) => {
         const open = filter || expandedFamilies.has(cat);
         return `<section class="family ${open ? 'open' : ''}"><button class="family-head" data-family="${cat}" aria-expanded="${open}"><span><i style="--block-color:${COLORS[cat]}"></i>${cat}</span><span class="family-meta"><b>${list.length}</b><em>›</em></span></button><div class="family-body">${list.map(([type, d]) => `<button class="library-item" draggable="true" data-type="${type}" style="--block-color:${COLORS[cat]}"><i></i><div><strong>${d.name}</strong><small>${d.summary}</small></div></button>`).join('')}</div></section>`
     }).join('');
-    document.querySelectorAll('.family-head').forEach(el => el.onclick = () => { const cat = el.dataset.family; expandedFamilies.has(cat) ? expandedFamilies.delete(cat) : expandedFamilies.add(cat); localStorage.setItem(FAMILY_STATE_KEY, JSON.stringify([...expandedFamilies])); renderLibrary($('#search').value) });
-    document.querySelectorAll('.library-item').forEach(el => { el.onclick = () => addNode(el.dataset.type); el.ondragstart = e => e.dataTransfer.setData('block-type', el.dataset.type) })
+    document.querySelectorAll('.family-head').forEach(el => el.onclick = () => { 
+        const cat = el.dataset.family; 
+        expandedFamilies.has(cat) ? expandedFamilies.delete(cat) : expandedFamilies.add(cat); 
+        localStorage.setItem(FAMILY_STATE_KEY, JSON.stringify([...expandedFamilies])); 
+        renderLibrary($('#search').value) 
+    });
+    document.querySelectorAll('.library-item').forEach(el => { 
+        el.onclick = () => addNode(el.dataset.type); 
+        el.ondragstart = e => e.dataTransfer.setData('block-type', el.dataset.type) 
+    })
 }
-function nodeHTML(n) { const d = defs[n.type], ins = d.inputs || [], outs = d.outputs || []; const rows = Math.max(ins.length, outs.length, 1); return `<article class="node ${selected === n.id ? 'selected' : ''}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;--node-color:${COLORS[d.category]}"><div class="node-head"><div><strong>${d.name}</strong><small>${d.category}</small></div></div><div class="node-body">${Array.from({ length: rows }, (_, i) => `<div class="port-row">${ins[i] ? `<button class="port input ${isConnected(n.id, ins[i], 'in') ? 'connected' : ''}" style="--port-color:${TYPE_COLORS[portType(n.type, ins[i], 'input')]}" data-kind="input" data-port="${ins[i]}" title="${ins[i]} · ${portType(n.type, ins[i], 'input')}"></button><span>${ins[i]}</span>` : '<span></span>'}${outs[i] ? `<span>${outs[i]}</span><button class="port output ${isConnected(n.id, outs[i], 'out') ? 'connected' : ''}" style="--port-color:${TYPE_COLORS[portType(n.type, outs[i], 'output')]}" data-kind="output" data-port="${outs[i]}" title="${outs[i]} · ${portType(n.type, outs[i], 'output')}"></button>` : '<span></span>'}</div>`).join('')}</div><div class="node-summary">${d.summary}</div></article>` }
-function isConnected(id, port, kind) { return edges.some(e => kind === 'in' ? e.to === id && e.toPort === port : e.from === id && e.fromPort === port) }
-function render() { nodesEl.innerHTML = nodes.map(nodeHTML).join(''); $('#empty-state').style.display = nodes.length ? 'none' : 'flex'; bindNodes(); renderEdges(); renderInspector() }
+
+/**
+ * Generate HTML for a node.
+ * @param {Object} n - Node object.
+ * @returns {string} HTML string.
+ */
+function nodeHTML(n) { 
+    const d = defs[n.type], ins = d.inputs || [], outs = d.outputs || []; 
+    const rows = Math.max(ins.length, outs.length, 1); 
+    return `<article class="node ${selected === n.id ? 'selected' : ''}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;--node-color:${COLORS[d.category]}"><div class="node-head"><div><strong>${d.name}</strong><small>${d.category}</small></div></div><div class="node-body">${Array.from({ length: rows }, (_, i) => `<div class="port-row">${ins[i] ? `<button class="port input ${isConnected(n.id, ins[i], 'in') ? 'connected' : ''}" style="--port-color:${TYPE_COLORS[portType(n.type, ins[i], 'input')]}" data-kind="input" data-port="${ins[i]}" title="${ins[i]} · ${portType(n.type, ins[i], 'input')}"></button><span>${ins[i]}</span>` : '<span></span>'}${outs[i] ? `<span>${outs[i]}</span><button class="port output ${isConnected(n.id, outs[i], 'out') ? 'connected' : ''}" style="--port-color:${TYPE_COLORS[portType(n.type, outs[i], 'output')]}" data-kind="output" data-port="${outs[i]}" title="${outs[i]} · ${portType(n.type, outs[i], 'output')}"></button>` : '<span></span>'}</div>`).join('')}</div><div class="node-summary">${d.summary}</div></article>` 
+}
+
+/**
+ * Check if a port is connected.
+ * @param {string} id - Node ID.
+ * @param {string} port - Port name.
+ * @param {string} kind - 'in' or 'out'.
+ * @returns {boolean} True if connected.
+ */
+function isConnected(id, port, kind) { 
+    return edges.some(e => kind === 'in' ? e.to === id && e.toPort === port : e.from === id && e.fromPort === port) 
+}
+
+/**
+ * Render the workspace.
+ */
+function render() { 
+    nodesEl.innerHTML = nodes.map(nodeHTML).join(''); 
+    $('#empty-state').style.display = nodes.length ? 'none' : 'flex'; 
+    bindNodes(); 
+    renderEdges(); 
+    renderInspector() 
+}
+
+// ... [rest of app.js functions: bindNodes, renderEdgesDuringDrag, portPos, curve, renderEdges, renderInspector, escapeHtml, execute, renderResults, plotModal functions, templates, etc. remain unchanged from original app.js but imports are updated]
+
 function bindNodes() {
     document.querySelectorAll('.node').forEach(el => {
         const id = el.dataset.id, head = el.querySelector('.node-head');
@@ -153,9 +281,6 @@ function bindNodes() {
                 if (!drag || drag.id !== id) return;
                 drag.frame = 0;
                 const n = nodes.find(x => x.id === id), r = workspace.getBoundingClientRect();
-                // The workspace is pannable, so graph coordinates must be allowed
-                // on either side of its origin. Clamping here created an invisible
-                // wall at x/y = 8 when users dragged a block upward or leftward.
                 n.x = (drag.lastX - r.left - drag.offsetX - viewport.x) / viewport.zoom;
                 n.y = (drag.lastY - r.top - drag.offsetY - viewport.y) / viewport.zoom;
                 el.style.transform = `translate3d(${n.x - parseFloat(el.style.left)}px,${n.y - parseFloat(el.style.top)}px,0)`;
@@ -178,171 +303,199 @@ function bindNodes() {
         el.querySelectorAll('.port').forEach(p => { p.onclick = e => { e.stopPropagation(); if (p.dataset.kind === 'output') { pending = { node: id, port: p.dataset.port }; renderEdges() } else if (pending) connect(pending.node, pending.port, id, p.dataset.port) }; p.oncontextmenu = e => { if (p.dataset.kind !== 'output') return; e.preventDefault(); e.stopPropagation(); const source = nodes.find(x => x.id === id), probe = addNode('scope', source.x + 245, source.y + 120); connect(id, p.dataset.port, probe.id, 'signal'); flashMessage('Osciloscópio conectado ao ponto de teste') } })
     })
 }
+
 function renderEdgesDuringDrag(el, n) {
     const oldLeft = el.style.left, oldTop = el.style.top, oldTransform = el.style.transform;
     el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.style.transform = ''; renderEdges();
     el.style.left = oldLeft; el.style.top = oldTop; el.style.transform = oldTransform;
 }
-function portPos(id, port, kind) { const node = document.querySelector(`.node[data-id="${id}"]`), p = node?.querySelector(`.port.${kind}[data-port="${port}"]`), wr = workspace.getBoundingClientRect(), r = p?.getBoundingClientRect(); return r ? { x: r.left - wr.left + r.width / 2, y: r.top - wr.top + r.height / 2 } : null }
-function curve(a, b, cls = 'connection') { const dx = Math.max(55, Math.abs(b.x - a.x) * .45); return `<path class="${cls}" d="M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}"/>` }
-function renderEdges() { svg.innerHTML = edges.map((e, index) => { const a = portPos(e.from, e.fromPort, 'output'), b = portPos(e.to, e.toPort, 'input'); return a && b ? curve(a, b, `connection type-${e.type || 'any'}`).replace('<path ', `<path data-edge="${index}" `) : '' }).join(''); svg.querySelectorAll('[data-edge]').forEach(path => path.onclick = e => { e.stopPropagation(); const index = +path.dataset.edge; if (confirm('Remover esta conexão?')) { edges.splice(index, 1); render(); save() } }) }
-function renderInspector() { const n = nodes.find(x => x.id === selected); $('#inspector-empty').hidden = !!n; $('#inspector-content').hidden = !n; if (!n) return; const d = defs[n.type]; $('#inspector-content').innerHTML = `<div class="inspector-title" style="--node-color:${COLORS[d.category]}"><i></i><div><strong>${d.name}</strong><small>${n.id}</small></div></div>${Object.entries(d.config).map(([k, c]) => `<div class="field"><label>${c.label}</label>${c.type === 'code' ? `<textarea data-key="${k}" rows="7">${escapeHtml(n.config[k])}</textarea>` : c.type === 'select' ? `<select data-key="${k}">${c.options.map(v => `<option value="${v}" ${String(v) === String(n.config[k]) ? 'selected' : ''}>${v}</option>`).join('')}</select>` : `<input data-key="${k}" type="${c.type === 'number' ? 'number' : 'text'}" value="${escapeHtml(n.config[k])}" ${c.min !== undefined ? `min="${c.min}"` : ''} ${c.max !== undefined ? `max="${c.max}"` : ''}/>`}</div>`).join('')}<div class="theory"><h4>Fundamentação</h4><p>${d.theory}</p><code>${d.equation}</code></div><button class="delete-node">Remover bloco</button>`; document.querySelectorAll('#inspector-content [data-key]').forEach(el => el.onchange = () => { const schema = d.config[el.dataset.key]; n.config[el.dataset.key] = schema.type === 'number' || (schema.type === 'select' && schema.options.every(v => typeof v === 'number')) ? +el.value : el.value; render(); save() }); $('.delete-node').onclick = () => removeNode(n.id) }
-function escapeHtml(v) { return String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) }
 
-function rng(seed) { let s = (seed | 0) || 1; return () => ((s = Math.imul(1664525, s) + 1013904223 | 0) >>> 0) / 4294967296 }
-function gaussian(r) { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) }
-function arr(input) { if (!input) return []; return input.data || input }
-function complex(v) { return typeof v === 'number' ? { re: v, im: 0 } : v }
-function sampleRateOf(signal) { return signal?.sampleRate || signal?.fs || workflowSampleRate }
-function assertSameRate(a, b, label = 'bloco') { const fa = sampleRateOf(a), fb = sampleRateOf(b); if (Math.abs(fa - fb) > Math.max(fa, fb) * 1e-12) throw Error(`${label}: taxas incompatíveis (${fa} Hz e ${fb} Hz). Use reamostragem antes de combinar os streams.`); return fa }
-function bitsToInts(bits, k) { const out = []; for (let i = 0; i + k <= bits.length; i += k) { let v = 0; for (let j = 0; j < k; j++)v = (v << 1) | bits[i + j]; out.push(v) } return out }
-function intsToBits(values, k) { return values.flatMap(v => Array.from({ length: k }, (_, j) => (v >> (k - 1 - j)) & 1)) }
-function binaryToGray(v) { return v ^ (v >> 1) }
-function grayToBinary(v) { let b = 0; for (; v; v >>= 1)b ^= v; return b }
-function unwrap(phases, discontinuity = Math.PI) { if (!phases.length) return []; const out = [phases[0]]; if (!Number.isFinite(phases[0])) throw Error('Fase contém valor não finito.'); let correction = 0; for (let k = 1; k < phases.length; k++) { const p = phases[k], previous = phases[k - 1]; if (!Number.isFinite(p)) throw Error(`Fase contém valor não finito na amostra ${k}.`); const delta = p - previous, wrapped = delta - 2 * Math.PI * Math.round(delta / (2 * Math.PI)); if (Math.abs(delta) > discontinuity) correction += wrapped - delta; out.push(p + correction) } return out }
-function parseTaps(text) { const taps = String(text).split(',').map(Number).filter(Number.isFinite); if (!taps.length) throw Error('Informe coeficientes separados por vírgula.'); return taps }
-function binaryPolynomial(text) { const bits = String(text).replace(/[^01]/g, '').split('').map(Number); if (bits.length < 2 || bits[0] !== 1 || bits.at(-1) !== 1) throw Error('Polinômio CRC deve ter ao menos dois bits e começar/terminar em 1.'); return bits }
-function polynomialRemainder(data, poly) { const work = [...data]; for (let i = 0; i <= work.length - poly.length; i++)if (work[i]) for (let j = 0; j < poly.length; j++)work[i + j] ^= poly[j]; return work.slice(-(poly.length - 1)) }
-function hamming74Word(d) { const [d1, d2, d3, d4] = d; return [d1 ^ d2 ^ d4, d1 ^ d3 ^ d4, d1, d2 ^ d3 ^ d4, d2, d3, d4] }
-function hammingSyndrome(r) { const s1 = r[0] ^ r[2] ^ r[4] ^ r[6], s2 = r[1] ^ r[2] ^ r[5] ^ r[6], s4 = r[3] ^ r[4] ^ r[5] ^ r[6]; return s1 + 2 * s2 + 4 * s4 }
-function convTransition(state, input) { const u1 = state >> 1, u2 = state & 1; return { next: (input << 1) | u1, out: [input ^ u1 ^ u2, input ^ u2] } }
-function erfcStable(x) { const z = Math.abs(x), t = 1 / (1 + .5 * z), tail = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (.37409196 + t * (.09678418 + t * (-.18628806 + t * (.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-.82215223 + t * .17087277))))))))); return x >= 0 ? tail : 2 - tail }
-function qFunction(x) { if (x < 0) return 1 - qFunction(-x); if (x > 38.5) return 0; return .5 * erfcStable(x / Math.SQRT2) }
-const nextPowerOfTwo = n => { let p = 1; while (p < n) p *= 2; return p };
-function radix2FFT(re, im, inverse = false) { const N = re.length; for (let i = 1, j = 0; i < N; i++) { let bit = N >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]];[im[i], im[j]] = [im[j], im[i]] } } for (let len = 2; len <= N; len <<= 1) { const angle = (inverse ? 2 : -2) * Math.PI / len, stepRe = Math.cos(angle), stepIm = Math.sin(angle); for (let base = 0; base < N; base += len) { let wr = 1, wi = 0; for (let j = 0; j < len / 2; j++) { const even = base + j, odd = even + len / 2, tr = wr * re[odd] - wi * im[odd], ti = wr * im[odd] + wi * re[odd]; re[odd] = re[even] - tr; im[odd] = im[even] - ti; re[even] += tr; im[even] += ti; const next = wr * stepRe - wi * stepIm; wi = wr * stepIm + wi * stepRe; wr = next } } } if (inverse) for (let i = 0; i < N; i++) { re[i] /= N; im[i] /= N } }
-function fftAny(re, im) { const N = re.length; if ((N & (N - 1)) === 0) { radix2FFT(re, im); return } const M = nextPowerOfTwo(2 * N - 1), ar = new Float64Array(M), ai = new Float64Array(M), br = new Float64Array(M), bi = new Float64Array(M); for (let n = 0; n < N; n++) { const angle = Math.PI * n * n / N, c = Math.cos(angle), s = Math.sin(angle); ar[n] = re[n] * c + im[n] * s; ai[n] = im[n] * c - re[n] * s; br[n] = c; bi[n] = s; if (n) { br[M - n] = c; bi[M - n] = s } } radix2FFT(ar, ai); radix2FFT(br, bi); for (let i = 0; i < M; i++) { const rr = ar[i] * br[i] - ai[i] * bi[i], ii = ar[i] * bi[i] + ai[i] * br[i]; ar[i] = rr; ai[i] = ii } radix2FFT(ar, ai, true); for (let k = 0; k < N; k++) { const angle = Math.PI * k * k / N, c = Math.cos(angle), s = Math.sin(angle); re[k] = ar[k] * c + ai[k] * s; im[k] = ai[k] * c - ar[k] * s } }
-function convolveFull(signal, taps) { const a = arr(signal).map(complex), length = Math.max(0, a.length + taps.length - 1); if (!a.length || !taps.length) return []; if (a.length * taps.length < 200000 || taps.length < 32) { const out = Array.from({ length }, () => ({ re: 0, im: 0 })); for (let n = 0; n < a.length; n++) { const ar = a[n].re, ai = a[n].im; for (let k = 0; k < taps.length; k++) { out[n + k].re += ar * taps[k]; out[n + k].im += ai * taps[k] } } return out } const N = nextPowerOfTwo(length), ar = new Float64Array(N), ai = new Float64Array(N), br = new Float64Array(N), bi = new Float64Array(N); for (let i = 0; i < a.length; i++) { ar[i] = a[i].re; ai[i] = a[i].im } for (let i = 0; i < taps.length; i++) br[i] = taps[i]; radix2FFT(ar, ai); radix2FFT(br, bi); for (let i = 0; i < N; i++) { const rr = ar[i] * br[i] - ai[i] * bi[i], ii = ar[i] * bi[i] + ai[i] * br[i]; ar[i] = rr; ai[i] = ii } radix2FFT(ar, ai, true); return Array.from({ length }, (_, i) => ({ re: ar[i], im: ai[i] })) }
-function convolveSignal(signal, taps) { return { ...signal, data: convolveFull(signal, taps).slice(0, arr(signal).length) } }
-const rrcCache = new Map();
-function rrcTapsKey(sps, alpha, span) {
-    const aKey = Math.round(alpha * 10000);
-    return (sps << 19) | (aKey << 5) | span;
+function portPos(id, port, kind) { 
+    const node = document.querySelector(`.node[data-id="${id}"]`), 
+          p = node?.querySelector(`.port.${kind}[data-port="${port}"]`), 
+          wr = workspace.getBoundingClientRect(), 
+          r = p?.getBoundingClientRect(); 
+    return r ? { x: r.left - wr.left + r.width / 2, y: r.top - wr.top + r.height / 2 } : null 
 }
-function rrcTaps(samplesPerSymbol, rolloff, spanSymbols) {
-    const sps = Math.max(2, Math.round(samplesPerSymbol)), alpha = Math.max(0, Math.min(1, +rolloff)), span = Math.max(2, Math.round(spanSymbols));
-    const cacheKey = rrcTapsKey(sps, alpha, span); if (rrcCache.has(cacheKey)) return rrcCache.get(cacheKey);
-    const order = span * sps + (span * sps) % 2, taps = new Float64Array(order + 1);
-    for (let n = 0; n <= order; n++) {
-        const t = (n - order / 2) / sps; let h;
-        if (alpha < 1e-12) h = Math.abs(t) < 1e-12 ? 1 : Math.sin(Math.PI * t) / (Math.PI * t);
-        else if (Math.abs(t) < 1e-12) h = 1 + alpha * (4 / Math.PI - 1);
-        else if (Math.abs(Math.abs(t) - 1 / (4 * alpha)) < 1e-9) h = alpha / Math.sqrt(2) * ((1 + 2 / Math.PI) * Math.sin(Math.PI / (4 * alpha)) + (1 - 2 / Math.PI) * Math.cos(Math.PI / (4 * alpha)));
-        else h = (Math.sin(Math.PI * t * (1 - alpha)) + 4 * alpha * t * Math.cos(Math.PI * t * (1 + alpha))) / (Math.PI * t * (1 - (4 * alpha * t) ** 2));
-        taps[n] = h;
-    }
-    let energy = 0;
-    for (let i = 0; i < taps.length; i++) energy += taps[i] * taps[i];
-    energy = Math.sqrt(energy);
-    const normalized = Array.from({ length: taps.length }, (_, i) => taps[i] / energy);
-    rrcCache.set(cacheKey, normalized); return normalized;
+
+function curve(a, b, cls = 'connection') {
+    const dx = Math.max(Math.abs(b.x - a.x), 30);
+    const dist = Math.max(dx * 0.5, 40);
+    const cp1 = { x: a.x + dist, y: a.y };
+    const cp2 = { x: b.x - dist, y: b.y };
+    return `<path class="${cls}" d="M${a.x},${a.y} C${cp1.x},${cp1.y} ${cp2.x},${cp2.y} ${b.x},${b.y}"/>`
 }
-function computeFFT(signal, size, windowName = 'Hann', shift = true) {
-    const input = arr(signal).map(complex), N = Math.max(1, Math.round(size)), window = Array.from({ length: N }, (_, k) => windowName === 'Hann' && N > 1 ? .5 - .5 * Math.cos(2 * Math.PI * k / (N - 1)) : 1), gain = window.reduce((s, x) => s + x, 0) / N || 1, re = new Float64Array(N), im = new Float64Array(N);
-    for (let k = 0; k < N; k++) { const sample = input[k] || { re: 0, im: 0 }; re[k] = sample.re * window[k]; im[k] = sample.im * window[k] }
-    fftAny(re, im);
-    const out = Array.from({ length: N }, (_, k) => ({ re: re[k] / (N * gain), im: im[k] / (N * gain) }));
-    const data = shift ? out.slice(Math.ceil(N / 2)).concat(out.slice(0, Math.ceil(N / 2))) : out, fs = signal?.fs || signal?.sampleRate;
-    return { kind: 'fft', data, fs, fftSize: N, binWidth: fs ? fs / N : 1 / N, frequencyStart: shift ? (fs ? -fs / 2 : -.5) : 0, shifted: shift, window: windowName };
+
+function renderEdges() { 
+    svg.innerHTML = edges.map((e, index) => { 
+        const a = portPos(e.from, e.fromPort, 'output'), b = portPos(e.to, e.toPort, 'input'); 
+        return a && b ? curve(a, b, `connection type-${e.type || 'any'}`).replace('<path ', `<path data-edge="${index}" `) : '' 
+    }).join(''); 
+    svg.querySelectorAll('[data-edge]').forEach(path => path.onclick = e => { 
+        e.stopPropagation(); 
+        const index = +path.dataset.edge; 
+        if (confirm('Remover esta conexão?')) { 
+            edges.splice(index, 1); 
+            render(); 
+            save() 
+        } 
+    }) 
 }
-function gaussianShape(raw,sps,bt){const span=4*sps,taps=Array.from({length:2*span+1},(_,k)=>{const t=(k-span)/sps;return Math.exp(-2*(Math.PI*bt*t)**2/Math.log(2))}),sum=taps.reduce((a,b)=>a+b,0),out=Array(raw.length);for(let k=0;k<raw.length;k++){let v=0;for(let j=0;j<taps.length;j++){const index=Math.max(0,Math.min(raw.length-1,k+j-span));v+=raw[index]*taps[j]}out[k]=v/sum}return out}
-function apskPoints(M){const layout=M===16?[[4,.55,Math.PI/4],[12,1.2,0]]:[[4,.45,Math.PI/4],[12,.9,0],[16,1.35,Math.PI/16]],points=[];for(const[count,radius,offset]of layout)for(let k=0;k<count;k++)points.push({re:radius*Math.cos(offset+2*Math.PI*k/count),im:radius*Math.sin(offset+2*Math.PI*k/count)});const energy=points.reduce((s,p)=>s+p.re*p.re+p.im*p.im,0)/points.length,scale=Math.sqrt(energy);return points.map(p=>({re:p.re/scale,im:p.im/scale}))}
-function analyticSignal(signal){const input=arr(signal).map(complex),N=nextPowerOfTwo(input.length),re=Array(N).fill(0),im=Array(N).fill(0);for(let k=0;k<input.length;k++)re[k]=input[k].re;radix2FFT(re,im);for(let k=1;k<N/2;k++){re[k]*=2;im[k]*=2}for(let k=N/2+1;k<N;k++){re[k]=0;im[k]=0}radix2FFT(re,im,true);return Array.from({length:input.length},(_,k)=>({re:re[k],im:im[k]}))}
-const processors = {
-    bit_source: (n) => { const r = rng(n.config.seed); return { bits: { kind: 'bits', data: Array.from({ length: n.config.count }, () => r() > .5 ? 1 : 0) } } },
-    pattern_source: n => { const p = String(n.config.pattern).replace(/[^01]/g, '').split('').map(Number); return { bits: { kind: 'bits', data: Array.from({ length: n.config.repeat }, () => p).flat() } } },
-    sine_source: n => { const fs = workflowSampleRate; if (n.config.duration <= 0) throw Error('Fonte senoidal requer duração positiva.'); if (Math.abs(n.config.frequency) >= fs / 2) throw Error(`Fonte senoidal viola Nyquist: |f| deve ser menor que ${fs / 2} Hz.`); const N = Math.max(1, Math.round(fs * n.config.duration)); return { samples: { kind: 'samples', fs, sampleRate: fs, duration: N / fs, highestFrequency: Math.abs(n.config.frequency), data: Array.from({ length: N }, (_, k) => ({ re: n.config.amplitude * Math.cos(2 * Math.PI * n.config.frequency * k / fs), im: 0 })) } } },
-    complex_tone: n => { const fs = workflowSampleRate, f = +n.config.frequency, A = +n.config.amplitude, phi = +n.config.phase * Math.PI / 180; if (Math.abs(f) >= fs / 2) throw Error(`Oscilador complexo: |f| deve ser menor que Fs/2 (${fs / 2} Hz).`); const N = Math.max(1, Math.round(fs * n.config.duration)); return { waveform: { kind: 'waveform', fs, sampleRate: fs, duration: N / fs, highestFrequency: Math.abs(f), data: Array.from({ length: N }, (_, k) => { const p = 2 * Math.PI * f * k / fs + phi; return { re: A * Math.cos(p), im: A * Math.sin(p) } }) } } },
-    noise_source: n => { const fs = workflowSampleRate, N = Math.max(1, Math.round(fs * n.config.duration)), r = rng(n.config.seed), complexMode = n.config.mode === 'complexa', sigma = Math.sqrt(Math.max(0, n.config.power) / (complexMode ? 2 : 1)); return { waveform: { kind: 'waveform', fs, sampleRate: fs, duration: N / fs, noisePower: +n.config.power, data: Array.from({ length: N }, () => ({ re: sigma * gaussian(r), im: complexMode ? sigma * gaussian(r) : 0 })) } } },
-    repetition_encoder: (n, i) => { const count = Math.max(1, Math.round(n.config.n)); return { coded: { kind: 'bits', codeRate: 1 / count, data: arr(i.bits).flatMap(b => Array(count).fill(b)) } } },
-    repetition_decoder: (n, i) => { const count = Math.max(1, Math.round(n.config.n)), a = arr(i.bits), out = []; for (let k = 0; k + count <= a.length; k += count) { const g = a.slice(k, k + count); out.push(g.reduce((x, y) => x + y, 0) > count / 2 ? 1 : 0) } return { decoded: { kind: 'bits', data: out } } },
-    hamming_encoder: (n, i) => { const secded = n.config.mode === 'SECDED (8,4)', data = []; for (let k = 0; k + 4 <= arr(i.bits).length; k += 4) { const word = hamming74Word(arr(i.bits).slice(k, k + 4)); if (secded) word.push(word.reduce((a, b) => a ^ b, 0)); data.push(...word) } return { coded: { kind: 'bits', codeRate: secded ? 1 / 2 : 4 / 7, blockLength: secded ? 8 : 7, data } } },
-    hamming_decoder: (n, i) => { const secded = n.config.mode === 'SECDED (8,4)', size = secded ? 8 : 7, a = arr(i.bits), data = []; let corrected = 0, doubleErrors = 0, blocks = 0; for (let k = 0; k + size <= a.length; k += size) { const word = a.slice(k, k + size), syndrome = hammingSyndrome(word), overall = secded ? word.reduce((x, y) => x ^ y, 0) : 0; blocks++; if (secded) { if (syndrome && overall) { word[syndrome - 1] ^= 1; corrected++ } else if (!syndrome && overall) { word[7] ^= 1; corrected++ } else if (syndrome && !overall) doubleErrors++ } else if (syndrome) { word[syndrome - 1] ^= 1; corrected++ } data.push(word[2], word[4], word[5], word[6]) } results.push({ type: 'metric', title: secded ? 'Síndrome SECDED' : 'Síndrome Hamming', value: corrected, detail: `${corrected} correção(ões) · ${doubleErrors} erro(s) duplo(s) detectado(s) · ${blocks} blocos` }); return { decoded: { kind: 'bits', data } } },
-    crc_encoder: (n, i) => { const poly = binaryPolynomial(n.config.polynomial), message = arr(i.bits), remainder = polynomialRemainder(message.concat(Array(poly.length - 1).fill(0)), poly); return { coded: { kind: 'bits', codeRate: message.length / (message.length + remainder.length), crcLength: poly.length - 1, data: message.concat(remainder) } } },
-    crc_checker: (n, i) => { const poly = binaryPolynomial(n.config.polynomial), word = arr(i.bits), remainder = polynomialRemainder(word, poly), detected = remainder.some(Boolean), length = poly.length - 1; results.push({ type: 'metric', title: 'Verificação CRC', value: detected ? 1 : 0, detail: `${detected ? 'ERRO DETECTADO' : 'palavra válida'} · resto ${remainder.join('')}` }); return { decoded: { kind: 'bits', crcValid: !detected, data: n.config.strip === 'sim' ? word.slice(0, -length) : [...word] } } },
-    convolutional_encoder: (n, i) => { const source = arr(i.bits), bits = n.config.terminate === 'sim' ? source.concat([0, 0]) : [...source], data = []; let state = 0; for (const bit of bits) { const t = convTransition(state, bit); data.push(...t.out); state = t.next } return { coded: { kind: 'bits', codeRate: 1 / 2, terminated: n.config.terminate === 'sim', tailBits: n.config.terminate === 'sim' ? 2 : 0, data } } },
-    viterbi_decoder: (n, i) => { const received = arr(i.bits), requested = n.config.decision || 'automática', soft = requested === 'suave' || (requested === 'automática' && received.some(v => typeof v === 'object')), steps = Math.floor(received.length / 2), inf = Number.POSITIVE_INFINITY; let metrics = [0, inf, inf, inf], paths = [[], [], [], []]; for (let k = 0; k < steps; k++) { const pair = received.slice(2 * k, 2 * k + 2), nextMetrics = [inf, inf, inf, inf], nextPaths = [[], [], [], []]; for (let state = 0; state < 4; state++)if (Number.isFinite(metrics[state])) for (const bit of [0, 1]) { const t = convTransition(state, bit); let branch; if (soft) { const y0 = complex(pair[0]).re, y1 = complex(pair[1]).re, s0 = 1 - 2 * t.out[0], s1 = 1 - 2 * t.out[1]; branch = (y0 - s0) ** 2 + (y1 - s1) ** 2 } else branch = (pair[0] !== t.out[0]) + (pair[1] !== t.out[1]); const metric = metrics[state] + branch; if (metric < nextMetrics[t.next]) { nextMetrics[t.next] = metric; nextPaths[t.next] = paths[state].concat(bit) } } metrics = nextMetrics; paths = nextPaths } const terminated = n.config.terminated === 'sim', finalState = terminated ? 0 : metrics.indexOf(Math.min(...metrics)), tail = terminated ? 2 : 0, data = paths[finalState].slice(0, Math.max(0, steps - tail)); results.push({ type: 'metric', title: `Métrica de Viterbi ${soft ? 'suave' : 'dura'}`, value: metrics[finalState], detail: `${soft ? 'distância euclidiana' : 'distância de Hamming'} · ${steps} passos · estado final ${finalState}` }); return { decoded: { kind: 'bits', data } } },
-    student_transform: (n, i) => { const input = arr(i.input); const out = new Function('data', 'complex', `"use strict";${n.config.code}`)([...input], complex); if (!Array.isArray(out)) throw Error('O bloco do estudante deve retornar um array.'); return { output: { kind: i.input?.kind || 'data', data: out } } },
-    ask: (n, i) => ({ symbols: { kind: 'symbols', bitsPerSymbol: 1, codeRate: i.bits.codeRate || 1, levels: [n.config.zero, n.config.one], data: arr(i.bits).map(b => ({ re: b ? n.config.one : n.config.zero, im: 0 })) } }),
-    bpsk: (n, i) => ({ symbols: { kind: 'symbols', bitsPerSymbol: 1, codeRate: i.bits.codeRate || 1, data: arr(i.bits).map(b => ({ re: 1 - 2 * b, im: 0 })) } }),
-    qpsk: (n, i) => { const a = arr(i.bits), o = [], q = 1 / Math.sqrt(2); for (let k = 0; k + 1 < a.length; k += 2)o.push({ re: (1 - 2 * a[k]) * q, im: (1 - 2 * a[k + 1]) * q }); return { symbols: { kind: 'symbols', bitsPerSymbol: 2, codeRate: i.bits.codeRate || 1, data: o } } },
-    mpsk: (n, i) => { const M = +n.config.M, k = Math.log2(M), labels = bitsToInts(arr(i.bits), k); return { symbols: { kind: 'symbols', bitsPerSymbol: k, codeRate: i.bits.codeRate || 1, M, mapping: 'gray', data: labels.map(label => { const m = grayToBinary(label), phase = 2 * Math.PI * m / M; return { re: Math.cos(phase), im: Math.sin(phase) } }) } } },
-    qam: (n, i) => { const M = +n.config.M, k = Math.log2(M), axisBits = k / 2, L = Math.sqrt(M), scale = Math.sqrt(2 * (M - 1) / 3), bits = arr(i.bits), data = []; for (let p = 0; p + k <= bits.length; p += k) { const gi = bitsToInts(bits.slice(p, p + axisBits), axisBits)[0], gq = bitsToInts(bits.slice(p + axisBits, p + k), axisBits)[0], ii = grayToBinary(gi), iq = grayToBinary(gq); data.push({ re: (2 * ii - L + 1) / scale, im: (2 * iq - L + 1) / scale }) } return { symbols: { kind: 'symbols', bitsPerSymbol: k, codeRate: i.bits.codeRate || 1, M, mapping: 'gray', data } } },
-    fsk: (n, i) => { const M = +n.config.M, k = Math.log2(M), sps = Math.round(n.config.sps); if (sps < M) throw Error(`M-FSK requer amostras/símbolo ≥ M (${M}) para representar tons distintos.`); const words = bitsToInts(arr(i.bits), k), data = [], fs = workflowSampleRate, symbolRate = fs / sps; for (const m of words) for (let q = 0; q < sps; q++)data.push({ re: Math.cos(2 * Math.PI * m * q / sps), im: Math.sin(2 * Math.PI * m * q / sps) }); return { waveform: { kind: 'waveform', bitsPerSymbol: k, codeRate: i.bits.codeRate || 1, M, sps, fs, sampleRate: fs, symbolRate, duration: data.length / fs, highestFrequency: (M - 1) * symbolRate, data } } },
-    ofdm_tx: (n, i) => {const mode=n.config.mode||'OFDM',N=+n.config.carriers,cp=Math.max(0,Math.min(N,Math.round(n.config.cp))),bits=arr(i.bits),q=1/Math.sqrt(2),carriers=mode==='DMT'?N/2-1:N,perBlock=2*carriers,blocks=Math.ceil(bits.length/perBlock),data=[];for(let block=0;block<blocks;block++){const re=Array(N).fill(0),im=Array(N).fill(0),symbols=[];for(let k=0;k<carriers;k++){const p=block*perBlock+2*k;symbols.push({re:(1-2*(bits[p]??0))*q,im:(1-2*(bits[p+1]??0))*q})}if(mode==='DMT')for(let k=0;k<carriers;k++){re[k+1]=symbols[k].re;im[k+1]=symbols[k].im;re[N-k-1]=symbols[k].re;im[N-k-1]=-symbols[k].im}else{symbols.forEach((x,k)=>{re[k]=x.re;im[k]=x.im});if(mode==='SC-FDMA')radix2FFT(re,im)}radix2FFT(re,im,true);const scale=Math.sqrt(N),symbol=Array.from({length:N},(_,k)=>({re:re[k]*scale,im:im[k]*scale}));data.push(...symbol.slice(N-cp),...symbol)}const fs=workflowSampleRate;return{waveform:{kind:'waveform',data,fs,sampleRate:fs,sps:N+cp,bitsPerSymbol:perBlock,codeRate:i.bits.codeRate||1,ofdmMode:mode,ofdmN:N,ofdmCP:cp,sourceBitCount:bits.length,symbolCount:blocks,duration:data.length/fs,highestFrequency:fs/2*(N-1)/N}}},
-    ofdm_rx: (n, i) => {const sig=i.waveform,mode=sig.ofdmMode||n.config.mode||'OFDM',N=+n.config.carriers,cp=Math.max(0,Math.min(N,Math.round(n.config.cp)));if(sig.ofdmN&&sig.ofdmN!==N)throw Error(`Receptor multicarrier usa N=${N}, mas o transmissor usa N=${sig.ofdmN}.`);if(sig.ofdmCP!==undefined&&sig.ofdmCP!==cp)throw Error(`Receptor usa CP=${cp}, mas o transmissor usa CP=${sig.ofdmCP}.`);if(n.config.mode&&sig.ofdmMode&&n.config.mode!==sig.ofdmMode)throw Error(`Receptor ${n.config.mode} incompatível com sinal ${sig.ofdmMode}.`);const a=arr(sig).map(complex),size=N+cp,bits=[];for(let p=0;p+size<=a.length;p+=size){let re=a.slice(p+cp,p+size).map(x=>x.re),im=a.slice(p+cp,p+size).map(x=>x.im);radix2FFT(re,im);if(mode==='DMT'){re=re.slice(1,N/2);im=im.slice(1,N/2)}else if(mode==='SC-FDMA')radix2FFT(re,im,true);for(let k=0;k<re.length;k++)bits.push(re[k]<0?1:0,im[k]<0?1:0)}return{bits:{kind:'bits',data:bits.slice(0,sig.sourceBitCount??bits.length)}}},
-    msk: (n, i) => { const bits=arr(i.bits),sps=Math.max(4,Math.round(n.config.sps)),mode=n.config.mode,raw=bits.flatMap(b=>Array(sps).fill(b?1:-1)),shaped=[...raw];if(mode==='GMSK'){const bt=Math.max(.15,+n.config.bt),span=4*sps,taps=Array.from({length:2*span+1},(_,k)=>{const t=(k-span)/sps;return Math.exp(-2*(Math.PI*bt*t)**2/Math.log(2))}),sum=taps.reduce((a,b)=>a+b,0);for(let k=0;k<raw.length;k++){let v=0;for(let j=0;j<taps.length;j++){const idx=Math.max(0,Math.min(raw.length-1,k+j-span));v+=raw[idx]*taps[j]}shaped[k]=v/sum}}let phase=0;const data=shaped.map(v=>{phase+=Math.PI*v/(2*sps);return{re:Math.cos(phase),im:Math.sin(phase)}}),fs=workflowSampleRate;return{waveform:{kind:'waveform',data,fs,sampleRate:fs,sps,bitsPerSymbol:1,codeRate:i.bits.codeRate||1,mskMode:mode,bt:+n.config.bt,sourceBitCount:bits.length,symbolRate:fs/sps,duration:data.length/fs,highestFrequency:fs/(4*sps)*(mode==='GMSK'?1+2*+n.config.bt:2)}} },
-    msk_detector: (n, i) => { const sig=i.waveform,sps=Math.round(sig.sps||0);if(!sps)throw Error('Detector MSK requer waveform com metadado de amostras/bit.');const a=arr(sig).map(complex),bits=[];let previous={re:1,im:0};for(let p=0;p+sps<=a.length;p+=sps){let rotation=0;for(let k=p;k<p+sps;k++){const x=a[k];rotation+=Math.atan2(x.im*previous.re-x.re*previous.im,x.re*previous.re+x.im*previous.im);previous=x}bits.push(rotation>=0?1:0)}return{bits:{kind:'bits',data:bits.slice(0,sig.sourceBitCount??bits.length)}} },
-    pulse_mod: (n, i) => { const bits=arr(i.bits),sps=Math.max(8,Math.round(n.config.sps)),mode=n.config.mode,data=[];for(const bit of bits){if(mode==='PAM')for(let k=0;k<sps;k++)data.push({re:bit?1:-1,im:0});else if(mode==='PPM'){const center=bit?Math.floor(.7*sps):Math.floor(.3*sps),width=Math.max(1,Math.floor(sps*.15));for(let k=0;k<sps;k++)data.push({re:Math.abs(k-center)<=width?1:0,im:0})}else{const width=Math.floor(sps*(bit?.7:.3));for(let k=0;k<sps;k++)data.push({re:k<width?1:0,im:0})}}const fs=workflowSampleRate;return{waveform:{kind:'waveform',data,fs,sampleRate:fs,sps,bitsPerSymbol:1,codeRate:i.bits.codeRate||1,pulseMode:mode,sourceBitCount:bits.length,symbolRate:fs/sps,duration:data.length/fs,highestFrequency:fs/2}} },
-    pulse_detector: (n, i) => { const sig=i.waveform,sps=Math.round(sig.sps||0),mode=sig.pulseMode;if(!sps||!mode)throw Error('Detector de pulsos requer sinal PAM, PPM ou PWM.');const a=arr(sig).map(complex),bits=[];for(let p=0;p+sps<=a.length;p+=sps){const block=a.slice(p,p+sps).map(x=>x.re);if(mode==='PAM')bits.push(block.reduce((s,x)=>s+x,0)>=0?1:0);else if(mode==='PPM'){const half=Math.floor(sps/2),e0=block.slice(0,half).reduce((s,x)=>s+x*x,0),e1=block.slice(half).reduce((s,x)=>s+x*x,0);bits.push(e1>e0?1:0)}else bits.push(block.filter(x=>x>.5).length>sps/2?1:0)}return{bits:{kind:'bits',data:bits.slice(0,sig.sourceBitCount??bits.length)}} },
-    dpsk: (n,i) => {const mode=n.config.mode,k=mode==='DBPSK'?1:2,labels=bitsToInts(arr(i.bits),k),increments=mode==='DBPSK'?[0,Math.PI]:mode==='DQPSK'?[0,Math.PI/2,Math.PI,-Math.PI/2]:[Math.PI/4,3*Math.PI/4,-Math.PI/4,-3*Math.PI/4],data=[];let phase=0;for(const label of labels){phase+=increments[label];data.push({re:Math.cos(phase),im:Math.sin(phase)})}return{symbols:{kind:'symbols',data,bitsPerSymbol:k,codeRate:i.bits.codeRate||1,dpskMode:mode,sourceBitCount:arr(i.bits).length}}},
-    dpsk_detector: (n,i) => {const sig=i.symbols,mode=sig.dpskMode||n.config.mode,k=mode==='DBPSK'?1:2,increments=mode==='DBPSK'?[0,Math.PI]:mode==='DQPSK'?[0,Math.PI/2,Math.PI,-Math.PI/2]:[Math.PI/4,3*Math.PI/4,-Math.PI/4,-3*Math.PI/4],labels=[],a=arr(sig).map(complex);let previous={re:1,im:0};for(const x of a){const angle=Math.atan2(x.im*previous.re-x.re*previous.im,x.re*previous.re+x.im*previous.im);let best=0,distance=Infinity;increments.forEach((p,index)=>{const d=Math.abs(Math.atan2(Math.sin(angle-p),Math.cos(angle-p)));if(d<distance){distance=d;best=index}});labels.push(best);previous=x}return{bits:{kind:'bits',data:intsToBits(labels,k).slice(0,sig.sourceBitCount??Infinity)}}},
-    oqpsk: (n,i) => {const bits=arr(i.bits),sps=Math.max(4,Math.round(n.config.sps)),half=Math.floor(sps/2),data=[];for(let p=0;p+1<bits.length;p+=2){const I=1-2*bits[p],Q=1-2*bits[p+1],previousQ=p>=2?1-2*bits[p-1]:Q;for(let k=0;k<sps;k++)data.push({re:I/Math.sqrt(2),im:(k<half?previousQ:Q)/Math.sqrt(2)})}const fs=workflowSampleRate;return{waveform:{kind:'waveform',data,fs,sampleRate:fs,sps,bitsPerSymbol:2,codeRate:i.bits.codeRate||1,oqpsk:true,sourceBitCount:bits.length,symbolRate:fs/sps,duration:data.length/fs,highestFrequency:fs/(2*sps)}}},
-    oqpsk_detector: (n,i) => {const sig=i.waveform,sps=sig.sps,half=Math.floor(sps/2),a=arr(sig).map(complex),bits=[];for(let p=0;p+sps<=a.length;p+=sps){const I=a.slice(p,p+half).reduce((s,x)=>s+x.re,0),Q=a.slice(p+half,p+sps).reduce((s,x)=>s+x.im,0);bits.push(I<0?1:0,Q<0?1:0)}return{bits:{kind:'bits',data:bits.slice(0,sig.sourceBitCount??bits.length)}}},
-    apsk: (n,i) => {const M=+n.config.M,k=Math.log2(M),labels=bitsToInts(arr(i.bits),k),points=apskPoints(M);return{symbols:{kind:'symbols',data:labels.map(x=>points[x]),M,bitsPerSymbol:k,codeRate:i.bits.codeRate||1,apsk:true,sourceBitCount:arr(i.bits).length}}},
-    apsk_detector: (n,i) => {const sig=i.symbols,M=sig.M||+n.config.M,k=Math.log2(M),points=apskPoints(M),labels=arr(sig).map(complex).map(x=>{let best=0,distance=Infinity;points.forEach((p,index)=>{const d=(x.re-p.re)**2+(x.im-p.im)**2;if(d<distance){distance=d;best=index}});return best});return{bits:{kind:'bits',data:intsToBits(labels,k).slice(0,sig.sourceBitCount??Infinity)}}},
-    cpfsk: (n,i) => {const bits=arr(i.bits),sps=Math.max(4,Math.round(n.config.sps)),raw=bits.flatMap(b=>Array(sps).fill(b?1:-1)),shaped=n.config.mode==='GFSK'?gaussianShape(raw,sps,Math.max(.15,+n.config.bt)):raw;let phase=0;const data=shaped.map(v=>{phase+=Math.PI*(+n.config.h)*v/sps;return{re:Math.cos(phase),im:Math.sin(phase)}}),fs=workflowSampleRate;return{waveform:{kind:'waveform',data,fs,sampleRate:fs,sps,bitsPerSymbol:1,codeRate:i.bits.codeRate||1,cpfskMode:n.config.mode,h:+n.config.h,bt:+n.config.bt,sourceBitCount:bits.length,symbolRate:fs/sps,duration:data.length/fs,highestFrequency:fs*(+n.config.h)/(2*sps)}}},
-    cpfsk_detector: (n,i) => {const sig=i.waveform,sps=sig.sps,a=arr(sig).map(complex),bits=[];let previous={re:1,im:0};for(let p=0;p+sps<=a.length;p+=sps){let rotation=0;for(let k=p;k<p+sps;k++){const x=a[k];rotation+=Math.atan2(x.im*previous.re-x.re*previous.im,x.re*previous.re+x.im*previous.im);previous=x}bits.push(rotation>=0?1:0)}return{bits:{kind:'bits',data:bits.slice(0,sig.sourceBitCount??bits.length)}}},
-    spread_tx: (n,i) => {const bits=arr(i.bits),pattern=String(n.config.code).replace(/[^01]/g,'').split('').map(Number);if(!pattern.length)throw Error('Espalhamento requer um código binário.');const sps=Math.max(2,Math.round(n.config.sps)),mode=n.config.mode,data=[],fs=workflowSampleRate;if(mode==='DSSS'){for(const bit of bits)for(const chip of pattern)for(let k=0;k<sps;k++)data.push({re:(bit?1:-1)*(chip?1:-1),im:0})}else{for(let index=0;index<bits.length;index++){const hop=pattern[index%pattern.length]?2:0,bit=bits[index]?1:-1;for(let k=0;k<sps;k++){const phase=2*Math.PI*(hop+bit*.25)*k/sps;data.push({re:Math.cos(phase),im:Math.sin(phase)})}}}return{waveform:{kind:'waveform',data,fs,sampleRate:fs,sps,bitsPerSymbol:1,codeRate:i.bits.codeRate||1,spreadMode:mode,spreadCode:pattern,sourceBitCount:bits.length,symbolRate:fs/(sps*(mode==='DSSS'?pattern.length:1)),duration:data.length/fs,highestFrequency:fs*2.25/sps}}},
-    spread_rx: (n,i) => {const sig=i.waveform,a=arr(sig).map(complex),sps=sig.sps,pattern=sig.spreadCode,bits=[];if(sig.spreadMode==='DSSS'){const size=sps*pattern.length;for(let p=0;p+size<=a.length;p+=size){let metric=0;for(let chip=0;chip<pattern.length;chip++)for(let k=0;k<sps;k++)metric+=a[p+chip*sps+k].re*(pattern[chip]?1:-1);bits.push(metric>=0?1:0)}}else{for(let p=0,index=0;p+sps<=a.length;p+=sps,index++){const hop=pattern[index%pattern.length]?2:0,correlations=[];for(const sign of[1,-1]){let re=0,im=0;for(let k=0;k<sps;k++){const x=a[p+k],phase=-2*Math.PI*(hop+sign*.25)*k/sps;re+=x.re*Math.cos(phase)-x.im*Math.sin(phase);im+=x.re*Math.sin(phase)+x.im*Math.cos(phase)}correlations.push(re*re+im*im)}bits.push(correlations[0]>=correlations[1]?1:0)}}return{bits:{kind:'bits',data:bits.slice(0,sig.sourceBitCount??bits.length)}}},
-    analog_sideband: (n,i) => {const sig=i.message,fs=sampleRateOf(sig),fc=+n.config.carrier,analytic=analyticSignal(sig),mode=n.config.mode,bandwidth=sig.highestFrequency||0;if(fc<=bandwidth||fc+bandwidth>=fs/2)throw Error(`${mode}: portadora e banda devem permanecer dentro de Nyquist.`);const data=analytic.map((x,k)=>{const p=2*Math.PI*fc*k/fs,c=Math.cos(p),s=Math.sin(p);if(mode==='DSB-SC')return{re:x.re*c,im:0};const side=mode==='LSB'?-1:1,q=mode==='VSB'?.35:1;return{re:x.re*c-side*q*x.im*s,im:0}});return{modulated:{kind:'waveform',data,fs,sampleRate:fs,carrier:fc,sidebandMode:mode,duration:data.length/fs,highestFrequency:fc+bandwidth}}},
-    coherent_am_detector: (n,i) => {const sig=i.signal,fs=sampleRateOf(sig),fc=sig.carrier??+n.config.carrier,a=arr(sig).map(complex),mixed=a.map((x,k)=>{const p=-2*Math.PI*fc*k/fs;return{re:2*x.re*Math.cos(p),im:2*x.re*Math.sin(p)}}),cutoff=Math.max(3,Math.round(fs/(Math.max(1,sig.highestFrequency-fc)*8))),taps=Array(cutoff).fill(1/cutoff),filtered=convolveFull(mixed,taps).slice(0,a.length);return{message:{kind:'samples',data:filtered,fs,sampleRate:fs,duration:a.length/fs}}},
-    am: (n, i) => { const sig = i.message, fs = sig.fs || 10000, bandwidth = sig.highestFrequency || 0, highestFrequency = n.config.carrier + bandwidth; if (n.config.carrier <= 0 || highestFrequency >= fs / 2) throw Error(`AM: banda superior ${highestFrequency.toFixed(1)} Hz viola Nyquist (${fs / 2} Hz).`); return { modulated: { kind: 'waveform', fs, duration: sig.duration, carrier: n.config.carrier, bandwidth, highestFrequency, mu: n.config.mu, data: arr(sig).map(complex).map((x, k) => { const a = 1 + n.config.mu * x.re, p = 2 * Math.PI * n.config.carrier * k / fs; return { re: a * Math.cos(p), im: a * Math.sin(p) } }) } } },
-    fm: (n, i) => { const sig = i.message, fs = sig.fs || 10000, maxMessage = Math.max(...arr(sig).map(complex).map(x => Math.abs(x.re)), 0), messageBandwidth = sig.highestFrequency || 0, maxInstantaneous = n.config.carrier + Math.abs(n.config.deviation) * maxMessage, highestFrequency = maxInstantaneous + messageBandwidth; if (n.config.carrier <= 0 || highestFrequency >= fs / 2) throw Error(`FM: banda estimada até ${highestFrequency.toFixed(1)} Hz viola Nyquist (${fs / 2} Hz).`); let phase = 0; return { modulated: { kind: 'waveform', fs, duration: sig.duration, carrier: n.config.carrier, deviation: n.config.deviation, bandwidth: Math.abs(n.config.deviation) * maxMessage + messageBandwidth, highestFrequency, data: arr(sig).map(complex).map(x => { phase += 2 * Math.PI * (n.config.carrier + n.config.deviation * x.re) / fs; return { re: Math.cos(phase), im: Math.sin(phase) } }) } } },
-    pm: (n, i) => { const sig = i.message, fs = sig.fs || 10000, messageBandwidth = sig.highestFrequency || 0, maxMessage = Math.max(...arr(sig).map(complex).map(x => Math.abs(x.re)), 0), estimatedDeviation = Math.abs(n.config.kp) * maxMessage * messageBandwidth, highestFrequency = n.config.carrier + estimatedDeviation + messageBandwidth; if (n.config.carrier <= 0 || highestFrequency >= fs / 2) throw Error(`PM: banda estimada até ${highestFrequency.toFixed(1)} Hz viola Nyquist (${fs / 2} Hz).`); return { modulated: { kind: 'waveform', fs, duration: sig.duration, carrier: n.config.carrier, phaseSensitivity: n.config.kp, bandwidth: estimatedDeviation + messageBandwidth, highestFrequency, data: arr(sig).map(complex).map((x, k) => { const p = 2 * Math.PI * n.config.carrier * k / fs + n.config.kp * x.re; return { re: Math.cos(p), im: Math.sin(p) } }) } } },
-    awgn: (n, i) => { const sig = i.signal, a = arr(sig).map(complex), r = rng(n.config.seed), k = sig?.bitsPerSymbol || 1, R = sig?.codeRate || 1, Ns = sig?.sps || 1, gamma = 10 ** (n.config.snr / 10), power = a.reduce((s, x) => s + x.re * x.re + x.im * x.im, 0) / Math.max(1, a.length); if (!Number.isFinite(power) || power <= 0) throw Error('AWGN requer sinal com potência positiva.'); const variance = n.config.mode === 'Eb/N0' ? power * Ns / (2 * k * R * gamma) : power / (2 * gamma), sigma = Math.sqrt(variance); return { noisy: { ...sig, noiseVariancePerDimension: variance, signalPower: power, awgnMode: n.config.mode, awgnDb: n.config.snr, data: a.map(x => ({ re: x.re + sigma * gaussian(r), im: x.im + sigma * gaussian(r) })) } } },
-    phase_offset: (n, i) => { const p = n.config.degrees * Math.PI / 180, c = Math.cos(p), s = Math.sin(p), sig = i.signal; return { shifted: { ...sig, data: arr(sig).map(complex).map(x => ({ re: x.re * c - x.im * s, im: x.re * s + x.im * c })) } } },
-    bit_flip: (n, i) => { const data = [...arr(i.bits)], positions = String(n.config.positions).split(',').map(x => Math.round(+x)).filter(x => x > 0), block = Math.max(0, Math.round(n.config.block)); if (block) { for (let base = 0; base < data.length; base += block)for (const pos of positions) if (base + pos - 1 < data.length) data[base + pos - 1] ^= 1 } else for (const pos of positions) if (pos - 1 < data.length) data[pos - 1] ^= 1; return { corrupted: { ...i.bits, data } } },
-    frequency_offset: (n, i) => { const sig = i.signal; return { impaired: { ...sig, data: arr(sig).map(complex).map((x, k) => { const p = 2 * Math.PI * n.config.cycles * k, c = Math.cos(p), s = Math.sin(p); return { re: x.re * c - x.im * s, im: x.re * s + x.im * c } }) } } },
-    multipath: (n, i) => ({ impaired: convolveSignal(i.signal, parseTaps(n.config.taps)) }),
-    iq_imbalance: (n, i) => { const sig = i.signal, g = 1 + n.config.gain / 100, p = n.config.phase * Math.PI / 180, c = Math.cos(p), s = Math.sin(p); return { impaired: { ...sig, data: arr(sig).map(complex).map(x => ({ re: x.re, im: g * (x.im * c + x.re * s) })) } } },
-    clipper: (n, i) => { const sig = i.signal, A = n.config.level; return { impaired: { ...sig, data: arr(sig).map(complex).map(x => { const m = Math.hypot(x.re, x.im), q = m > A ? A / m : 1; return { re: x.re * q, im: x.im * q } }) } } },
-    rayleigh_fading: (n, i) => { const sig = i.signal, a = arr(sig).map(complex), r = rng(n.config.seed), fs = sampleRateOf(sig), fd = Math.min(fs / 2, Math.max(0, +n.config.doppler_hz)), Ts = 1 / fs, x = 2 * Math.PI * fd * Ts, rho = Math.max(-1, Math.min(1, 1 - x*x/4 + x*x*x*x/64 - x*x*x*x*x*x/2304)); let g1 = gaussian(r), g2 = gaussian(r); const impairedData = a.map(x => { const h_re = g1 / Math.SQRT2, h_im = g2 / Math.SQRT2, out_re = x.re * h_re - x.im * h_im, out_im = x.re * h_im + x.im * h_re, wg1 = gaussian(r), wg2 = gaussian(r), ng1 = rho * g1 + Math.sqrt(Math.max(0, 1 - rho*rho)) * wg1, ng2 = rho * g2 + Math.sqrt(Math.max(0, 1 - rho*rho)) * wg2; g1 = ng1; g2 = ng2; return { re: out_re, im: out_im } }); return { impaired: { ...sig, data: impairedData } } },
-    rician_fading: (n, i) => { const sig = i.signal, a = arr(sig).map(complex), r = rng(n.config.seed), fs = sampleRateOf(sig), fd = Math.min(fs / 2, Math.max(0, +n.config.doppler_hz)), Ts = 1 / fs, x_param = 2 * Math.PI * fd * Ts, rho = Math.max(-1, Math.min(1, 1 - x_param*x_param/4 + x_param*x_param*x_param*x_param/64 - x_param*x_param*x_param*x_param*x_param*x_param/2304)), K_lin = 10 ** (n.config.K_dB / 10), p_los = K_lin / (K_lin + 1), p_nlos = 1 / (K_lin + 1), los_amp = Math.sqrt(p_los), phi_los = 2 * Math.PI * r(), los_re = los_amp * Math.cos(phi_los), los_im = los_amp * Math.sin(phi_los), nlos_scale = Math.sqrt(p_nlos / 2); let g1 = gaussian(r), g2 = gaussian(r); const impairedData = a.map(x => { const h_re_nlos = nlos_scale * g1, h_im_nlos = nlos_scale * g2, h_re = los_re + h_re_nlos, h_im = los_im + h_im_nlos, out_re = x.re * h_re - x.im * h_im, out_im = x.re * h_im + x.im * h_re, wg1 = gaussian(r), wg2 = gaussian(r), ng1 = rho * g1 + Math.sqrt(Math.max(0, 1 - rho*rho)) * wg1, ng2 = rho * g2 + Math.sqrt(Math.max(0, 1 - rho*rho)) * wg2; g1 = ng1; g2 = ng2; return { re: out_re, im: out_im } }); return { impaired: { ...sig, data: impairedData } } },
-    phase_noise: (n, i) => { const sig = i.signal, a = arr(sig).map(complex), sigma2 = Math.max(0, +n.config.variance), sigma = Math.sqrt(sigma2), r = rng(99); const impairedData = a.map(x => { const phi = sigma * gaussian(r), c = Math.cos(phi), s = Math.sin(phi); return { re: x.re * c - x.im * s, im: x.re * s + x.im * c } }); return { impaired: { ...sig, data: impairedData } } },
-    gain: (n, i) => { const sig = i.signal; return { signal: { ...sig, data: arr(sig).map(complex).map(x => ({ re: x.re * n.config.gain, im: x.im * n.config.gain })) } } },
-    mixer: (n, i) => { const sig = i.signal, fs = sampleRateOf(sig), f = +n.config.frequency, phi = +n.config.phase * Math.PI / 180; if (Math.abs(f) >= fs / 2) throw Error(`Misturador: |fNCO| deve ser menor que Fs/2 (${fs / 2} Hz).`); return { mixed: { ...sig, fs, sampleRate: fs, frequencyShift: (sig.frequencyShift || 0) + f, highestFrequency: Number.isFinite(sig.highestFrequency) ? Math.min(fs / 2, Math.abs(f) + sig.highestFrequency) : undefined, data: arr(sig).map(complex).map((x, k) => { const p = 2 * Math.PI * f * k / fs + phi, c = Math.cos(p), s = Math.sin(p); return { re: x.re * c - x.im * s, im: x.re * s + x.im * c } }) } } },
-    add: (n, i) => { const fs = assertSameRate(i.a, i.b, 'Somador'), a = arr(i.a).map(complex), b = arr(i.b).map(complex), N = Math.min(a.length, b.length); return { sum: { ...i.a, kind: 'waveform', fs, sampleRate: fs, duration: N / fs, data: Array.from({ length: N }, (_, k) => ({ re: a[k].re + b[k].re, im: a[k].im + b[k].im })) } } },
-    delay: (n, i) => { const sig = i.signal, D = Math.max(0, Math.round(n.config.samples)), zero = Array.from({ length: D }, () => ({ re: 0, im: 0 })); return { delayed: { ...sig, data: zero.concat(arr(sig).map(complex)), delaySamples: (sig.delaySamples || 0) + D, duration: (arr(sig).length + D) / sampleRateOf(sig) } } },
-    fir: (n, i) => ({ filtered: convolveSignal(i.signal, parseTaps(n.config.taps)) }),
-    upsample: (n, i) => { const sig = i.signal, L = Math.max(1, Math.round(n.config.factor)), data = []; for (const x of arr(sig).map(complex)) { data.push(x); for (let k = 1; k < L; k++)data.push({ re: 0, im: 0 }) } return { resampled: { ...sig, fs: sig.fs ? sig.fs * L : undefined, sampleRate: sig.sampleRate ? sig.sampleRate * L : undefined, sps: sig.sps ? sig.sps * L : undefined, samplingNote: 'Interpolação por zeros requer filtro para remover imagens espectrais.', data } } },
-    decimate: (n, i) => { const sig = i.signal, M = Math.max(1, Math.round(n.config.factor)), p = Math.max(0, Math.round(n.config.phase)) % M; return { resampled: { ...sig, fs: sig.fs ? sig.fs / M : undefined, sampleRate: sig.sampleRate ? sig.sampleRate / M : undefined, sps: sig.sps ? sig.sps / M : undefined, samplingNote: 'Decimação requer filtro anti-alias antes da redução de taxa.', data: arr(sig).filter((_, k) => k % M === p) } } },
-    rrc_tx: (n, i) => { const sig = i.symbols, sps = Math.max(2, Math.round(n.config.sps)), alpha = Math.max(0, Math.min(1, +n.config.alpha)), span = Math.max(2, Math.round(n.config.span)), taps = rrcTaps(sps, alpha, span), symbols = arr(sig).map(complex), up = []; for (const x of symbols) { up.push(x); for (let k = 1; k < sps; k++)up.push({ re: 0, im: 0 }) } const data = convolveFull(up, taps), fs = workflowSampleRate, symbolRate = fs / sps; return { waveform: { ...sig, kind: 'waveform', data, sps, fs, sampleRate: fs, symbolRate, duration: data.length / fs, highestFrequency: (1 + alpha) * symbolRate / 2, rrcAlpha: alpha, rrcSpan: span, txGroupDelay: (taps.length - 1) / 2, symbolCount: symbols.length } } },
-    rrc_rx: (n, i) => { const sig = i.waveform, sps = Math.max(2, Math.round(n.config.sps)); if (sig.sps && sig.sps !== sps) throw Error(`RRC RX configurado com ${sps} amostras/símbolo, mas o sinal usa ${sig.sps}.`); const alpha = Math.max(0, Math.min(1, +n.config.alpha)), span = Math.max(2, Math.round(n.config.span)), taps = rrcTaps(sps, alpha, span), filtered = convolveFull(sig, taps), delay = (sig.txGroupDelay || 0) + (taps.length - 1) / 2, count = sig.symbolCount || Math.max(0, Math.floor((filtered.length - 1 - delay) / sps) + 1), data = []; for (let k = 0; k < count; k++) { const index = Math.round(delay + k * sps); if (index < filtered.length) data.push(filtered[index]) } return { symbols: { kind: 'symbols', data, bitsPerSymbol: sig.bitsPerSymbol, codeRate: sig.codeRate || 1, M: sig.M, mapping: sig.mapping, symbolRate: sig.symbolRate || 1, matchedFilter: true, rrcAlpha: alpha } } },
-    fft: (n, i) => ({ fft: computeFFT(i.signal, +n.config.size, n.config.window, n.config.shift === 'sim') }),
-    hard_ask: (n, i) => { const sig = i.symbols, threshold = sig.levels ? (sig.levels[0] + sig.levels[1]) / 2 : n.config.threshold; return { bits: { kind: 'bits', data: arr(sig).map(complex).map(x => x.re > threshold ? 1 : 0) } } },
-    hard_bpsk: (n, i) => ({ bits: { kind: 'bits', data: arr(i.symbols).map(complex).map(x => x.re < 0 ? 1 : 0) } }),
-    hard_qpsk: (n, i) => ({ bits: { kind: 'bits', data: arr(i.symbols).flatMap(v => { const x = complex(v); return [x.re < 0 ? 1 : 0, x.im < 0 ? 1 : 0] }) } }),
-    hard_mpsk: (n, i) => { const M = +n.config.M, k = Math.log2(M), labels = arr(i.symbols).map(complex).map(x => binaryToGray(Math.round((Math.atan2(x.im, x.re) + 2 * Math.PI) * M / (2 * Math.PI)) % M)); return { bits: { kind: 'bits', data: intsToBits(labels, k) } } },
-    hard_qam: (n, i) => { const M = +n.config.M, k = Math.log2(M), axisBits = k / 2, L = Math.sqrt(M), scale = Math.sqrt(2 * (M - 1) / 3), bits = []; for (const x of arr(i.symbols).map(complex)) { const ii = Math.max(0, Math.min(L - 1, Math.round((x.re * scale + L - 1) / 2))), iq = Math.max(0, Math.min(L - 1, Math.round((x.im * scale + L - 1) / 2))); bits.push(...intsToBits([binaryToGray(ii)], axisBits), ...intsToBits([binaryToGray(iq)], axisBits)) } return { bits: { kind: 'bits', data: bits } } },
-    fsk_detector: (n, i) => { const sig = i.waveform, M = sig.M, sps = sig.sps, k = Math.log2(M), a = arr(sig), words = []; for (let p = 0; p + sps <= a.length; p += sps) { let best = 0, bestMag = -1; for (let m = 0; m < M; m++) { let re = 0, im = 0; for (let q = 0; q < sps; q++) { const x = complex(a[p + q]), ph = -2 * Math.PI * m * q / sps, c = Math.cos(ph), s = Math.sin(ph); re += x.re * c - x.im * s; im += x.re * s + x.im * c } const mag = re * re + im * im; if (mag > bestMag) { bestMag = mag; best = m } } words.push(best) } return { bits: { kind: 'bits', data: intsToBits(words, k) } } },
-    envelope: (n, i) => { const sig = i.signal, a = arr(sig).map(complex).map(x => Math.hypot(x.re, x.im)), mean = a.reduce((s, x) => s + x, 0) / Math.max(1, a.length), remove = n.config.removeDC === 'sim', scale = sig.mu || 1; return { message: { kind: 'samples', fs: sig.fs, data: a.map(x => ({ re: (remove ? x - mean : x) / scale, im: 0 })) } } },
-    phase_demod: (n, i) => { const sig = i.signal, fs = sig.fs || 10000, carrier = sig.carrier ?? n.config.carrier, phase = unwrap(arr(sig).map(complex).map(x => Math.atan2(x.im, x.re))).map((p, k) => p - 2 * Math.PI * carrier * k / fs); let data; if (n.config.mode === 'FM') { const deviation = sig.deviation || 1; data = phase.map((p, k) => ({ re: k ? (p - phase[k - 1]) * fs / (2 * Math.PI * deviation) : 0, im: 0 })) } else { const kp = sig.phaseSensitivity || 1; data = phase.map(p => ({ re: p / kp, im: 0 })) } return { message: { kind: 'samples', fs, data } } },
-    scope: (n, i) => { const sig = i.signal, a = arr(sig).map(complex), count = Math.max(1, Math.round(n.config.samples ?? 400)), trigger = n.config.trigger || 'livre'; let start = 0; if (trigger !== 'livre') { const rising = trigger === 'subida', level = +(n.config.level ?? 0); for (let k = 1; k < a.length; k++) { if (rising ? a[k - 1].re < level && a[k].re >= level : a[k - 1].re > level && a[k].re <= level) { start = k; break } } } results.push({ type: 'scope', title: `Osciloscópio · Fs=${sampleRateOf(sig)} Hz · ${(count / sampleRateOf(sig) * 1000).toPrecision(4)} ms`, data: a.slice(start, start + count), fs: sampleRateOf(sig), start, interpolation: n.config.interpolation || 'suave' }); return { signal: sig } },
-    probe: (n, i) => { const sig = i.signal, a = arr(sig).map(complex), powers = a.map(x => x.re * x.re + x.im * x.im), power = powers.reduce((s, x) => s + x, 0) / Math.max(1, a.length), peak = Math.sqrt(Math.max(...powers, 0)), fs = sampleRateOf(sig); results.push({ type: 'metric', title: n.config.label || 'Probe', value: Math.sqrt(power), detail: `RMS · ${a.length} amostras · Fs=${fs} Hz · duração=${(a.length / fs).toPrecision(5)} s · pico=${peak.toPrecision(4)}` }); return { signal: sig } },
-    spectrum: (n, i) => { const sig = i.signal, N = Math.max(1, Math.round(n.config.bins)), fft = computeFFT(sig, N, 'Hann', true); results.push({ type: 'spectrum', title: `Espectro · Hann · ${N} bins · Δf=${fft.binWidth.toPrecision(4)}`, data: fft.data.map(x => 20 * Math.log10(Math.hypot(x.re, x.im) + 1e-12)), fs: fft.fs, binWidth: fft.binWidth, frequencyStart: fft.frequencyStart, unit: 'dB' }); return {} },
-    fft_plot: (n, i) => { const fft = i.fft, linear = n.config.scale === 'linear', data = arr(fft).map(complex).map(x => linear ? Math.hypot(x.re, x.im) : 20 * Math.log10(Math.hypot(x.re, x.im) + 1e-12)); results.push({ type: 'spectrum', title: `FFT · ${fft.window} · N=${fft.fftSize} · ${linear ? 'linear' : 'dB'}`, data, fs: fft.fs, binWidth: fft.binWidth, frequencyStart: fft.frequencyStart, unit: linear ? 'amplitude' : 'dB' }); return {} },
-    constellation: (n, i) => { results.push({ type: 'constellation', title: 'Constelação I/Q', data: arr(i.symbols).slice(0, n.config.points).map(complex) }); return {} },
-    eye: (n, i) => { const a = arr(i.signal).map(complex), span = 2 * n.config.sps, segments = []; for (let k = 0; k + span <= a.length && segments.length < n.config.traces; k += n.config.sps)segments.push(a.slice(k, k + span).map(x => x.re)); results.push({ type: 'eye', title: 'Diagrama de olho', segments }); return {} },
-    evm: (n, i) => { const a = arr(i.ideal).map(complex), raw = arr(i.measured).map(complex), N = Math.min(a.length, raw.length); let b = raw; if (n.config.equalize === 'sim' && N) { let nr = 0, ni = 0, den = 0; for (let k = 0; k < N; k++) { nr += raw[k].re * a[k].re + raw[k].im * a[k].im; ni += raw[k].re * a[k].im - raw[k].im * a[k].re; den += raw[k].re ** 2 + raw[k].im ** 2 } const cr = nr / den, ci = ni / den; b = raw.map(x => ({ re: x.re * cr - x.im * ci, im: x.re * ci + x.im * cr })) } let error = 0, ref = 0; for (let k = 0; k < N; k++) { error += (b[k].re - a[k].re) ** 2 + (b[k].im - a[k].im) ** 2; ref += a[k].re ** 2 + a[k].im ** 2 } const value = ref ? Math.sqrt(error / ref) : NaN; results.push({ type: 'metric', title: 'EVM RMS', value, detail: `${(value * 100).toFixed(2)}% · ${N} símbolos · correção ${n.config.equalize}` }); return {} },
-    signal_stats: (n, i) => { const a = arr(i.signal).map(complex), powers = a.map(x => x.re * x.re + x.im * x.im), power = powers.reduce((s, x) => s + x, 0) / Math.max(1, powers.length), peak = Math.max(...powers, 0), papr = power ? peak / power : NaN; results.push({ type: 'metric', title: 'PAPR', value: papr, detail: `${(10 * Math.log10(papr)).toFixed(2)} dB · Pmédia=${power.toExponential(3)}` }); return {} },
-    sampling_audit: (n, i) => { const sig = i.signal, N = arr(sig).length, fs = sig.fs || sig.sampleRate, fmax = sig.highestFrequency, sps = sig.sps; let value = NaN, detail; if (fs && fmax) { value = fs / fmax; const margin = fs / (2 * fmax), resolution = fs / Math.max(1, N), quality = value >= n.config.recommended ? 'boa' : value > 2 ? 'válida, porém pouco resolvida' : 'inválida (aliasing)'; detail = `${value.toFixed(2)} amostras/ciclo · margem Nyquist ${margin.toFixed(2)}× · Δf=${resolution.toFixed(3)} Hz · ${quality}` } else if (sps) { value = sps; detail = `${sps} amostras/símbolo · modelo de waveform${sig.samplingNote ? ` · ${sig.samplingNote}` : ''}` } else { detail = 'Modelo em taxa de símbolo: cada item é um símbolo; não há discretização temporal de pulso, portadora ou largura de banda.' } results.push({ type: 'metric', title: 'Auditoria de amostragem', value, detail }); return {} },
-    ber: (n, i) => { const a = arr(i.reference), b = arr(i.received), N = Math.min(a.length, b.length); let errors = 0; for (let k = 0; k < N; k++)errors += a[k] !== b[k]; const p = N ? errors / N : NaN, z = 1.96, center = N ? (p + z * z / (2 * N)) / (1 + z * z / N) : NaN, half = N ? z * Math.sqrt((p * (1 - p) + z * z / (4 * N)) / N) / (1 + z * z / N) : NaN; results.push({ type: 'metric', title: 'Bit Error Rate', value: p, detail: `${errors} erros / ${N} bits · IC95% [${Math.max(0, center - half).toExponential(2)}, ${Math.min(1, center + half).toExponential(2)}]` }); return {} },
-    ber_curve_mpsk: n => { const requested = String(n.config.schemes || n.config.orders || '4PSK,8PSK,16PSK').split(',').map(s => s.trim().toUpperCase().replace(/[ _-]/g, '')).filter(Boolean), schemes = [...new Set(requested)]; if (!schemes.length) throw Error('Curvas BER: informe ao menos uma modulação.'); const start = +n.config.start, stop = +n.config.stop, step = +n.config.step, yMin = +(n.config.minBer ?? 1e-8), yMax = +(n.config.maxBer ?? 1); if (!(stop > start) || !(step > 0) || !(yMin > 0) || !(yMax > yMin)) throw Error('Curvas BER: faixa, passo ou limites de BER inválidos.'); const x = []; for (let db = start; db <= stop + step * 1e-9; db += step)x.push(db); const calculate = (scheme, gamma) => { if (scheme === 'BPSK' || scheme === '2PSK' || scheme === 'QPSK' || scheme === '4PSK') return qFunction(Math.sqrt(2 * gamma)); if (scheme === 'BFSK' || scheme === 'COHERENTBFSK') return qFunction(Math.sqrt(gamma)); if (scheme === 'NCBFSK' || scheme === 'NONCOHERENTBFSK') return .5 * Math.exp(-gamma / 2); const psk = scheme.match(/^(\d+)PSK$/); if (psk) { const M = +psk[1], k = Math.log2(M); if (!Number.isInteger(k)) throw Error(`${scheme}: M deve ser potência de dois.`); return Math.min(.5, 2 / k * qFunction(Math.sqrt(2 * k * gamma) * Math.sin(Math.PI / M))) } const qam = scheme.match(/^(\d+)QAM$/); if (qam) { const M = +qam[1], k = Math.log2(M), root = Math.sqrt(M); if (!Number.isInteger(k) || !Number.isInteger(root)) throw Error(`${scheme}: QAM deve ser quadrada.`); return Math.min(.5, 4 / k * (1 - 1 / root) * qFunction(Math.sqrt(3 * k * gamma / (M - 1)))) } throw Error(`Modulação desconhecida: ${scheme}. Use BPSK, QPSK, MPSK, MQAM, BFSK ou NCBFSK.`) }; const names = { '2PSK': 'BPSK', '4PSK': 'QPSK', COHERENTBFSK: 'BFSK coerente', NCBFSK: 'BFSK não coerente', NONCOHERENTBFSK: 'BFSK não coerente' }, series = schemes.map(scheme => ({ name: names[scheme] || scheme.replace(/(\d+)(PSK|QAM)/, '$1-$2'), values: x.map(db => calculate(scheme, 10 ** (db / 10))) })); results.push({ type: 'bercurve', title: 'Comparação BER teórica · Eb/N0', x, series, xUnit: 'dB', yUnit: 'BER', yMin, yMax }); return {} },
-    quantizer: (n, i) => { const sig = i.message, bits = Math.max(1, Math.round(n.config.bits)), levels = 2 ** bits, X = Math.abs(n.config.range) || 1, step = 2 * X / levels; const data = arr(sig).map(complex).map(x => { const q = (Math.floor(x.re / step) + .5) * step; return { re: Math.min(X - step / 2, Math.max(-X + step / 2, q)), im: 0 } }); return { samples: { ...sig, kind: 'samples', data, quantizerBits: bits, quantizerStep: step } } },
-    compander: (n, i) => { const sig = i.message, mu = Math.max(1, n.config.mu), clamp = x => Math.max(-1, Math.min(1, x)), compress = x => Math.sign(x) * Math.log(1 + mu * Math.abs(clamp(x))) / Math.log(1 + mu), expand = x => Math.sign(x) * (((1 + mu) ** Math.abs(clamp(x))) - 1) / mu, f = n.config.mode === 'compressor' ? compress : expand; return { samples: { ...sig, kind: 'samples', data: arr(sig).map(complex).map(x => ({ re: f(x.re), im: 0 })) } } },
-    line_code: (n, i) => { const bits = arr(i.bits), sps = Math.max(4, Math.round(n.config.sps)), code = n.config.code, half = Math.floor(sps / 2), data = []; let mark = -1; for (const b of bits) { if (code === 'NRZ polar') for (let k = 0; k < sps; k++) data.push({ re: b ? 1 : -1, im: 0 }); else if (code === 'NRZ unipolar') for (let k = 0; k < sps; k++) data.push({ re: b ? 1 : 0, im: 0 }); else if (code === 'RZ polar') for (let k = 0; k < sps; k++) data.push({ re: k < half ? (b ? 1 : -1) : 0, im: 0 }); else if (code === 'Manchester') for (let k = 0; k < sps; k++) data.push({ re: (k < half ? 1 : -1) * (b ? 1 : -1), im: 0 }); else { if (b) mark = -mark; for (let k = 0; k < sps; k++) data.push({ re: b ? mark : 0, im: 0 }) } } const fs = workflowSampleRate; return { waveform: { kind: 'waveform', data, fs, sampleRate: fs, sps, lineCode: code, bitsPerSymbol: 1, codeRate: i.bits.codeRate || 1, sourceBitCount: bits.length, symbolRate: fs / sps, duration: data.length / fs, highestFrequency: fs / 2 } } },
-    line_decoder: (n, i) => { const sig = i.waveform, sps = Math.round(sig.sps || 0), code = sig.lineCode; if (!sps || !code) throw Error('Decodificador de linha requer o sinal de um codificador de linha.'); const a = arr(sig).map(complex).map(x => x.re), half = Math.floor(sps / 2), bits = []; for (let p = 0; p + sps <= a.length; p += sps) { const block = a.slice(p, p + sps), mean = block.reduce((s, x) => s + x, 0) / sps; if (code === 'NRZ polar') bits.push(mean > 0 ? 1 : 0); else if (code === 'NRZ unipolar') bits.push(mean > .5 ? 1 : 0); else if (code === 'RZ polar') bits.push(block.slice(0, half).reduce((s, x) => s + x, 0) > 0 ? 1 : 0); else if (code === 'Manchester') { const e1 = block.slice(0, half).reduce((s, x) => s + x, 0), e2 = block.slice(half).reduce((s, x) => s + x, 0); bits.push(e1 - e2 > 0 ? 1 : 0) } else bits.push(block.reduce((s, x) => s + Math.abs(x), 0) / sps > .5 ? 1 : 0) } return { bits: { kind: 'bits', data: bits.slice(0, sig.sourceBitCount ?? bits.length) } } },
-    delta_mod: (n, i) => { const d = Math.abs(n.config.delta) || .1; let est = 0; const bits = arr(i.message).map(complex).map(x => { const b = x.re >= est ? 1 : 0; est += b ? d : -d; return b }); return { bits: { kind: 'bits', data: bits, deltaStep: d, fs: sampleRateOf(i.message), sampleRate: sampleRateOf(i.message) } } },
-    delta_demod: (n, i) => { const d = Math.abs(n.config.delta) || .1, w = Math.max(1, Math.round(n.config.smooth)); let est = 0, acc = 0; const stair = arr(i.bits).map(b => { est += b ? d : -d; return est }), data = []; for (let k = 0; k < stair.length; k++) { acc += stair[k]; if (k >= w) acc -= stair[k - w]; data.push({ re: acc / Math.min(w, k + 1), im: 0 }) } const fs = i.bits.fs || workflowSampleRate; return { message: { kind: 'samples', fs, sampleRate: fs, duration: data.length / fs, data } } },
-    lms_equalizer: (n, i) => { const x = arr(i.waveform).map(complex), d = arr(i.ideal).map(complex), Nt = Math.max(1, Math.round(n.config.taps)), mu = n.config.mu, center = Math.floor(Nt / 2), train = Math.min(Math.round(n.config.train), d.length, x.length); const w = Array.from({ length: Nt }, (_, t) => ({ re: t === center ? 1 : 0, im: 0 })); const yAt = k => { let yr = 0, yi = 0; for (let t = 0; t < Nt; t++) { const idx = k + t - center; if (idx < 0 || idx >= x.length) continue; const s = x[idx]; yr += w[t].re * s.re - w[t].im * s.im; yi += w[t].re * s.im + w[t].im * s.re } return { re: yr, im: yi } }; for (let k = 0; k < train; k++) { const y = yAt(k), e = { re: d[k].re - y.re, im: d[k].im - y.im }; for (let t = 0; t < Nt; t++) { const idx = k + t - center; if (idx < 0 || idx >= x.length) continue; const s = x[idx]; w[t].re += mu * (e.re * s.re + e.im * s.im); w[t].im += mu * (e.im * s.re - e.re * s.im) } } const out = x.map((_, k) => yAt(k)); return { filtered: { ...i.waveform, data: out, equalizerTaps: Nt, trainedSymbols: train } } },
-};
-function execute() { results = []; document.querySelectorAll('.node').forEach(x => x.classList.remove('success', 'error')); const outputs = {}, remaining = new Set(nodes.map(n => n.id)); let progress = true; try { while (remaining.size && progress) { progress = false; for (const id of [...remaining]) { const n = nodes.find(x => x.id === id), incoming = edges.filter(e => e.to === id); if (incoming.some(e => !outputs[e.from])) continue; const input = {}; incoming.forEach(e => input[e.toPort] = outputs[e.from][e.fromPort]); const required = defs[n.type].inputs || []; if (required.some(p => !input[p])) continue; outputs[id] = processors[n.type](n, input) || {}; remaining.delete(id); document.querySelector(`.node[data-id="${id}"]`)?.classList.add('success'); progress = true } } if (remaining.size) throw Error('Workflow incompleto, com entrada ausente ou ciclo.'); renderResults(); $('#run-status').textContent = 'CONCLUÍDO'; $('#run-status').style.color = 'var(--green)'; document.querySelectorAll('.connection').forEach(x => x.classList.add('active')); setTimeout(() => document.querySelectorAll('.connection').forEach(x => x.classList.remove('active')), 1000) } catch (e) { $('#run-status').textContent = 'ERRO'; $('#run-status').style.color = 'var(--red)'; $('#results').innerHTML = `<div class="result-placeholder" style="color:var(--red)">${escapeHtml(e.message)}</div>` } }
-function renderResults() { if (!results.length) { $('#results').innerHTML = '<div class="result-placeholder">Workflow executado sem blocos de análise.</div>'; return } $('#result-title').textContent = `${results.length} resultado(s)`; results.forEach(r => { if ((r.type === 'scope' || r.type === 'spectrum') && !r.view) r.view = { start: 0, end: r.data.length } }); $('#results').innerHTML = results.map((r, i) => r.type === 'metric' ? `<div class="metric-card"><span>${r.title}</span><strong>${Number.isFinite(r.value) ? r.value.toExponential(3) : '—'}</strong><small>${r.detail || `${r.errors} erros em ${r.total} bits`}</small></div>` : `<div class="result-card" data-result-card="${i}"><div class="plot-head"><h3>${r.title}</h3><div>${r.view ? '<button data-plot-action="out">−</button><button data-plot-action="in">+</button><button data-plot-action="reset">Reset</button>' : ''}<button data-plot-action="expand">⛶</button></div></div><canvas data-result="${i}" width="660" height="320"></canvas>${r.view ? '<small class="plot-help">roda: zoom · arraste: pan · duplo clique: reset</small>' : ''}</div>`).join(''); document.querySelectorAll('canvas[data-result]').forEach(bindInteractivePlot); document.querySelectorAll('[data-plot-action]').forEach(button => button.onclick = () => { const card = button.closest('[data-result-card]'), index = +card.dataset.resultCard, r = results[index], canvas = card.querySelector('canvas'); if (button.dataset.plotAction === 'expand') { openPlotModal(index); return } if (!r.view) return; if (button.dataset.plotAction === 'reset') r.view = { start: 0, end: r.data.length }; else { const span = r.view.end - r.view.start, factor = button.dataset.plotAction === 'in' ? .65 : 1.5, next = Math.max(8, Math.min(r.data.length, span * factor)), center = (r.view.start + r.view.end) / 2; r.view.start = Math.max(0, Math.min(r.data.length - next, center - next / 2)); r.view.end = r.view.start + next } drawResult(canvas, r) }) }
+
+function renderInspector() { 
+    const n = nodes.find(x => x.id === selected); 
+    $('#inspector-empty').hidden = !!n; 
+    $('#inspector-content').hidden = !n; 
+    if (!n) return; 
+    const d = defs[n.type]; 
+    $('#inspector-content').innerHTML = `<div class="inspector-title" style="--node-color:${COLORS[d.category]}"><i></i><div><strong>${d.name}</strong><small>${n.id}</small></div></div>${Object.entries(d.config).map(([k, c]) => `<div class="field"><label>${c.label}</label>${c.type === 'code' ? `<textarea data-key="${k}" rows="7">${escapeHtml(n.config[k])}</textarea>` : c.type === 'select' ? `<select data-key="${k}">${c.options.map(v => `<option value="${v}" ${String(v) === String(n.config[k]) ? 'selected' : ''}>${v}</option>`).join('')}</select>` : `<input data-key="${k}" type="${c.type === 'number' ? 'number' : 'text'}" value="${escapeHtml(n.config[k])}" ${c.min !== undefined ? `min="${c.min}"` : ''} ${c.max !== undefined ? `max="${c.max}"` : ''}/>`}</div>`).join('')}<div class="theory"><h4>Fundamentação</h4><p>${d.theory}</p><code>${d.equation}</code></div><button class="delete-node">Remover bloco</button>`; 
+    document.querySelectorAll('#inspector-content [data-key]').forEach(el => el.onchange = () => { 
+        const schema = d.config[el.dataset.key]; 
+        n.config[el.dataset.key] = schema.type === 'number' || (schema.type === 'select' && schema.options.every(v => typeof v === 'number')) ? +el.value : el.value; 
+        render(); 
+        save() 
+    }); 
+    $('.delete-node').onclick = () => removeNode(n.id) 
+}
+
+function escapeHtml(v) { 
+    return String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) 
+}
+
+function execute() { 
+    results.length = 0; 
+    document.querySelectorAll('.node').forEach(x => x.classList.remove('success', 'error')); 
+    const outputs = {}, remaining = new Set(nodes.map(n => n.id)); 
+    let progress = true; 
+    try { 
+        while (remaining.size && progress) { 
+            progress = false; 
+            for (const id of [...remaining]) { 
+                const n = nodes.find(x => x.id === id), incoming = edges.filter(e => e.to === id); 
+                if (incoming.some(e => !outputs[e.from])) continue; 
+                const input = {}; 
+                incoming.forEach(e => input[e.toPort] = outputs[e.from][e.fromPort]); 
+                const required = defs[n.type].inputs || []; 
+                if (required.some(p => !input[p])) continue; 
+                outputs[id] = processors[n.type](n, input) || {}; 
+                remaining.delete(id); 
+                document.querySelector(`.node[data-id="${id}"]`)?.classList.add('success'); 
+                progress = true 
+            } 
+        } 
+        if (remaining.size) throw Error('Workflow incompleto, com entrada ausente ou ciclo.'); 
+        renderResults(); 
+        $('#run-status').textContent = 'CONCLUÍDO'; 
+        $('#run-status').style.color = 'var(--green)'; 
+        document.querySelectorAll('.connection').forEach(x => x.classList.add('active')); 
+        setTimeout(() => document.querySelectorAll('.connection').forEach(x => x.classList.remove('active')), 1000) 
+    } catch (e) { 
+        $('#run-status').textContent = 'ERRO'; 
+        $('#run-status').style.color = 'var(--red)'; 
+        $('#results').innerHTML = `<div class="result-placeholder" style="color:var(--red)">${escapeHtml(e.message)}</div>` 
+    } 
+}
+
+function renderResults() { 
+    if (!results.length) { 
+        $('#results').innerHTML = '<div class="result-placeholder">Workflow executado sem blocos de análise.</div>'; 
+        return 
+    } 
+    $('#result-title').textContent = `${results.length} resultado(s)`; 
+    results.forEach(r => { 
+        if ((r.type === 'scope' || r.type === 'spectrum') && !r.view) r.view = { start: 0, end: r.data.length } 
+    }); 
+    $('#results').innerHTML = results.map((r, i) => r.type === 'metric' ? `<div class="metric-card"><span>${r.title}</span><strong>${Number.isFinite(r.value) ? r.value.toExponential(3) : '—'}</strong><small>${r.detail || `${r.errors} erros em ${r.total} bits`}</small></div>` : `<div class="result-card" data-result-card="${i}"><div class="plot-head"><h3>${r.title}</h3><div>${r.view ? '<button data-plot-action="out">−</button><button data-plot-action="in">+</button><button data-plot-action="reset">Reset</button>' : ''}<button data-plot-action="expand">⛶</button></div></div><canvas data-result="${i}" width="660" height="320"></canvas>${r.view ? '<small class="plot-help">roda: zoom · arraste: pan · duplo clique: reset</small>' : ''}</div>`).join(''); 
+    document.querySelectorAll('canvas[data-result]').forEach(bindInteractivePlot); 
+    document.querySelectorAll('[data-plot-action]').forEach(button => button.onclick = () => { 
+        const card = button.closest('[data-result-card]'), 
+              index = +card.dataset.resultCard, 
+              r = results[index], 
+              canvas = card.querySelector('canvas'); 
+        if (button.dataset.plotAction === 'expand') { openPlotModal(index); return } 
+        if (!r.view) return; 
+        if (button.dataset.plotAction === 'reset') r.view = { start: 0, end: r.data.length }; 
+        else { 
+            const span = r.view.end - r.view.start, 
+                  factor = button.dataset.plotAction === 'in' ? .65 : 1.5, 
+                  next = Math.max(8, Math.min(r.data.length, span * factor)), 
+                  center = (r.view.start + r.view.end) / 2; 
+            r.view.start = Math.max(0, Math.min(r.data.length - next, center - next / 2)); 
+            r.view.end = r.view.start + next 
+        } 
+        drawResult(canvas, r) 
+    }) 
+}
+
 const plotModal = $('#plot-modal'), plotModalCanvas = $('#plot-modal-canvas');
-function openPlotModal(index) { const r = results[index]; if (!r) return; plotModal.hidden = false; plotModalCanvas.dataset.result = `${index}`; $('#plot-modal-title').textContent = r.title; document.body.classList.add('modal-open'); requestAnimationFrame(() => bindInteractivePlot(plotModalCanvas)); $('#plot-modal-close').focus() }
-function closePlotModal() { if (plotModal.hidden) return; plotModal.hidden = true; document.body.classList.remove('modal-open'); plotModalCanvas.onwheel = plotModalCanvas.onpointerdown = plotModalCanvas.onpointermove = plotModalCanvas.onpointerup = plotModalCanvas.onpointercancel = plotModalCanvas.ondblclick = null; redrawResultPlots() }
-$('#plot-modal-close').onclick = closePlotModal; plotModal.onclick = e => { if (e.target === plotModal) closePlotModal() }; document.addEventListener('keydown', e => { if (e.key === 'Escape' && !plotModal.hidden) closePlotModal() });
-function bindInteractivePlot(c) { const r = results[+c.dataset.result]; drawResult(c, r); if (!r.view) return; let pan = null; c.onwheel = e => { e.preventDefault(); const rect = c.getBoundingClientRect(), ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)), span = r.view.end - r.view.start, factor = Math.exp(e.deltaY * .0015), next = Math.max(8, Math.min(r.data.length, span * factor)), anchor = r.view.start + span * ratio; r.view.start = Math.max(0, Math.min(r.data.length - next, anchor - next * ratio)); r.view.end = r.view.start + next; drawResult(c, r) }; c.onpointerdown = e => { if (e.button !== 0) return; pan = { x: e.clientX, start: r.view.start, end: r.view.end }; c.setPointerCapture(e.pointerId); c.classList.add('plot-panning') }; c.onpointermove = e => { if (!pan) return; const rect = c.getBoundingClientRect(), span = pan.end - pan.start, delta = -(e.clientX - pan.x) / rect.width * span, start = Math.max(0, Math.min(r.data.length - span, pan.start + delta)); r.view.start = start; r.view.end = start + span; drawResult(c, r) }; c.onpointerup = c.onpointercancel = e => { pan = null; c.classList.remove('plot-panning'); if (c.hasPointerCapture?.(e.pointerId)) c.releasePointerCapture(e.pointerId) }; c.ondblclick = () => { r.view = { start: 0, end: r.data.length }; drawResult(c, r) } }
+
+function openPlotModal(index) { 
+    const r = results[index]; 
+    if (!r) return; 
+    plotModal.hidden = false; 
+    plotModalCanvas.dataset.result = `${index}`; 
+    $('#plot-modal-title').textContent = r.title; 
+    document.body.classList.add('modal-open'); 
+    requestAnimationFrame(() => bindInteractivePlot(plotModalCanvas)); 
+    $('#plot-modal-close').focus() 
+}
+
+function closePlotModal() { 
+    if (plotModal.hidden) return; 
+    plotModal.hidden = true; 
+    document.body.classList.remove('modal-open'); 
+    plotModalCanvas.onwheel = plotModalCanvas.onpointerdown = plotModalCanvas.onpointermove = plotModalCanvas.onpointerup = plotModalCanvas.onpointercancel = plotModalCanvas.ondblclick = null; 
+    redrawResultPlots() 
+}
+
+$('#plot-modal-close').onclick = closePlotModal; 
+plotModal.onclick = e => { if (e.target === plotModal) closePlotModal() }; 
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !plotModal.hidden) closePlotModal() });
+
+function bindInteractivePlot(c) { 
+    const r = results[+c.dataset.result]; 
+    drawResult(c, r); 
+    if (!r.view) return; 
+    let pan = null; 
+    c.onwheel = e => { 
+        e.preventDefault(); 
+        const rect = c.getBoundingClientRect(), 
+              ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)), 
+              span = r.view.end - r.view.start, 
+              factor = Math.exp(e.deltaY * .0015), 
+              next = Math.max(8, Math.min(r.data.length, span * factor)), 
+              anchor = r.view.start + span * ratio; 
+        r.view.start = Math.max(0, Math.min(r.data.length - next, anchor - next * ratio)); 
+        r.view.end = r.view.start + next; 
+        drawResult(c, r) 
+    }; 
+    c.onpointerdown = e => { 
+        if (e.button !== 0) return; 
+        pan = { x: e.clientX, start: r.view.start, end: r.view.end }; 
+        c.setPointerCapture(e.pointerId); 
+        c.classList.add('plot-panning') 
+    }; 
+    c.onpointermove = e => { 
+        if (!pan) return; 
+        const rect = c.getBoundingClientRect(), 
+              span = pan.end - pan.start, 
+              delta = -(e.clientX - pan.x) / rect.width * span, 
+              start = Math.max(0, Math.min(r.data.length - span, pan.start + delta)); 
+        r.view.start = start; 
+        r.view.end = start + span; 
+        drawResult(c, r) 
+    }; 
+    c.onpointerup = c.onpointercancel = e => { 
+        pan = null; 
+        c.classList.remove('plot-panning'); 
+        if (c.hasPointerCapture?.(e.pointerId)) c.releasePointerCapture(e.pointerId) 
+    }; 
+    c.ondblclick = () => { 
+        r.view = { start: 0, end: r.data.length }; 
+        drawResult(c, r) 
+    } 
+}
+
 function drawTrace(ctx, values, W, H, lo, hi, color, mode = 'linear') {
     const point = (v, i) => ({ x: i / (values.length - 1 || 1) * W, y: H - 20 - (v - lo) / (hi - lo || 1) * (H - 40) });
     ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -352,10 +505,17 @@ function drawTrace(ctx, values, W, H, lo, hi, color, mode = 'linear') {
     else for (let i = 1; i < values.length; i++) { const p = point(values[i], i); ctx.lineTo(p.x, p.y) }
     ctx.stroke();
 }
+
 function axisNumber(v, unit = '') { const a = Math.abs(v); let value = v, suffix = unit; if (unit === 'Hz' && a >= 1e6) { value = v / 1e6; suffix = 'MHz' } else if (unit === 'Hz' && a >= 1e3) { value = v / 1e3; suffix = 'kHz' } else if (unit === 's' && a < 1e-3) { value = v * 1e6; suffix = 'µs' } else if (unit === 's' && a < 1) { value = v * 1e3; suffix = 'ms' } return `${Number(value.toPrecision(4))} ${suffix}`.trim() }
+
 function drawAxisLabels(ctx, W, H, x0, x1, xUnit, y0, y1, yUnit = '') {
     ctx.font = '18px JetBrains Mono, monospace'; ctx.fillStyle = '#91a0b5'; ctx.textBaseline = 'bottom'; ctx.fillText(axisNumber(x0, xUnit), 8, H - 5); const right = axisNumber(x1, xUnit); ctx.fillText(right, W - ctx.measureText(right).width - 8, H - 5); ctx.textBaseline = 'top'; ctx.fillText(`${Number(y1.toPrecision(4))}${yUnit ? ` ${yUnit}` : ''}`, 8, 6); ctx.textBaseline = 'bottom'; ctx.fillText(`${Number(y0.toPrecision(4))}${yUnit ? ` ${yUnit}` : ''}`, 8, H - 26)
 }
+
+function redrawResultPlots() {
+    document.querySelectorAll('canvas[data-result]').forEach(c => { const r = results[+c.dataset.result]; if (r) drawResult(c, r) });
+}
+
 function drawResult(c, r) {
     const rect = c.getBoundingClientRect(), density = Math.max(2, Math.min(3, window.devicePixelRatio || 1)); if (rect.width && (Math.abs(c.width - rect.width * density) > 2 || Math.abs(c.height - rect.height * density) > 2)) { c.width = Math.round(rect.width * density); c.height = Math.round(rect.height * density) } const x = c.getContext('2d'), W = c.width, H = c.height; x.fillStyle = '#0a101a'; x.fillRect(0, 0, W, H); x.strokeStyle = '#27344a'; x.lineWidth = 1;
     for (let i = 1; i < 5; i++) { x.beginPath(); x.moveTo(0, H * i / 5); x.lineTo(W, H * i / 5); x.stroke() } for (let i = 1; i < 10; i++) { x.beginPath(); x.moveTo(W * i / 10, 0); x.lineTo(W * i / 10, H); x.stroke() }
@@ -425,6 +585,7 @@ templates.pcm = { name: 'PCM: quantização uniforme', desc: 'Senoide, quantizad
 templates.companding = { name: 'Companding µ-law', desc: 'Compressor, quantizador de 4 bits e expansor sobre mensagem fraca', build() { const s = addNode('sine_source', 20, 110), c = addNode('compander', 240, 110), q = addNode('quantizer', 460, 110), e = addNode('compander', 680, 110), o = addNode('scope', 900, 60), o2 = addNode('scope', 460, 260); s.config.frequency = 200; s.config.amplitude = .15; c.config.mode = 'compressor'; e.config.mode = 'expansor'; connect(s.id, 'samples', c.id, 'message'); connect(c.id, 'samples', q.id, 'message'); connect(q.id, 'samples', e.id, 'message'); connect(e.id, 'samples', o.id, 'signal'); connect(s.id, 'samples', o2.id, 'signal') } };
 templates.delta = { name: 'Modulação delta', desc: 'Escada ±Δ, sobrecarga de inclinação e reconstrução suavizada', build() { const s = addNode('sine_source', 20, 110), m = addNode('delta_mod', 250, 110), d = addNode('delta_demod', 480, 110), o = addNode('scope', 710, 60), o2 = addNode('scope', 480, 260); s.config.frequency = 60; m.config.delta = .04; d.config.delta = .04; connect(s.id, 'samples', m.id, 'message'); connect(m.id, 'bits', d.id, 'bits'); connect(d.id, 'message', o.id, 'signal'); connect(s.id, 'samples', o2.id, 'signal') } };
 templates.lms = { name: 'Equalizador LMS em multipercurso', desc: 'Canal que fecha o olho, treino adaptativo, constelações antes/depois e BER', build() { const s = addNode('bit_source', 20, 110), m = addNode('qpsk', 230, 110), c = addNode('multipath', 450, 110), q1 = addNode('constellation', 450, 280), e = addNode('lms_equalizer', 690, 110), q2 = addNode('constellation', 690, 280), v = addNode('evm', 930, 260), d = addNode('hard_qpsk', 930, 110), b = addNode('ber', 1150, 110); s.config.count = 4096; c.config.taps = '0.4, 1, 0.4'; e.config.taps = 13; e.config.mu = .03; e.config.train = 2000; connect(s.id, 'bits', m.id, 'bits'); connect(m.id, 'symbols', c.id, 'signal'); connect(c.id, 'impaired', q1.id, 'symbols'); connect(c.id, 'impaired', e.id, 'waveform'); connect(m.id, 'symbols', e.id, 'ideal'); connect(e.id, 'filtered', q2.id, 'symbols'); connect(m.id, 'symbols', v.id, 'ideal'); connect(e.id, 'filtered', v.id, 'measured'); connect(e.id, 'filtered', d.id, 'symbols'); connect(s.id, 'bits', b.id, 'reference'); connect(d.id, 'bits', b.id, 'received') } };
+
 const templateCategories = [
     { name: 'Modulação digital', keys: ['bpsk','ook','dbpsk','pi4dqpsk','qpsk','oqpsk','qam','apsk32','fsk','gfsk','msk','gmsk','rrc','qam64rrc','psk8'] },
     { name: 'Multicarrier', keys: ['ofdm','dmt','scfdma'] },
@@ -437,74 +598,303 @@ const templateCategories = [
     { name: 'DSP e amostragem', keys: ['aliasing','fir_noise','frequency_translation'] },
     { name: 'Desempenho e curvas BER', keys: ['ber_mpsk','ber_mpsk_family','ber_qam','ber_fsk'] },
 ];
-function loadTemplate(k) { historyMuted = true; nodes = []; edges = []; selected = null; viewport = { x: 0, y: 0, zoom: 1 }; idCounter = 1; templates[k].build(); $('#workflow-name').value = templates[k].name; historyMuted = false; render(); fitToCanvas(); save() }
-function stateJSON() { return JSON.stringify({ nodes, edges, viewport, name: $('#workflow-name').value, idCounter, sampleRate: workflowSampleRate }) }
-function save() { const state = stateJSON(); localStorage.setItem('commslab_graph_v1', state); if (!historyMuted && history.at(-1) !== state) { history.push(state); if (history.length > 80) history.shift(); future = [] } updateHistoryButtons() }
-function applyState(state) { const d = JSON.parse(state); nodes = d.nodes || []; edges = d.edges || []; viewport = { x: 0, y: 0, zoom: 1, ...d.viewport }; idCounter = d.idCounter || nodes.length + 1; workflowSampleRate = d.sampleRate || 48000; selected = null; pending = null; $('#workflow-name').value = d.name || 'Workflow'; $('#sample-rate').value = workflowSampleRate; localStorage.setItem('commslab_graph_v1', state); render(); applyViewport(); updateHistoryButtons() }
-function undo() { if (history.length < 2) return; future.push(history.pop()); applyState(history.at(-1)) }
-function redo() { if (!future.length) return; const state = future.pop(); history.push(state); applyState(state) }
+
+function loadTemplate(key) {
+    const template = templates[key];
+    if (!template) return;
+    historyMuted = true;
+    nodes = [];
+    edges = [];
+    results.length = 0;
+    selected = null;
+    pending = null;
+    viewport = { x: 0, y: 0, zoom: 1 };
+    idCounter = 1;
+    template.build();
+    $('#workflow-name').value = template.name;
+    historyMuted = false;
+    render();
+    fitToCanvas();
+    save();
+    flashMessage(`Exemplo carregado: ${template.name}`);
+}
+
+function stateJSON() {
+    return JSON.stringify({ nodes, edges, viewport, name: $('#workflow-name').value, idCounter, sampleRate: workflowSampleRate });
+}
+
+function save() {
+    const state = stateJSON();
+    localStorage.setItem('commslab_graph_v1', state);
+    if (!historyMuted && history.at(-1) !== state) {
+        history.push(state);
+        if (history.length > 80) history.shift();
+        future = [];
+    }
+    updateHistoryButtons();
+}
+
+function applyState(state) {
+    const data = JSON.parse(state);
+    nodes = data.nodes || [];
+    edges = data.edges || [];
+    viewport = { x: 0, y: 0, zoom: 1, ...data.viewport };
+    idCounter = data.idCounter || nodes.length + 1;
+    workflowSampleRate = data.sampleRate || 48000;
+    selected = null;
+    pending = null;
+    $('#workflow-name').value = data.name || 'Workflow';
+    $('#sample-rate').value = workflowSampleRate;
+    setWorkflowSampleRate(workflowSampleRate);
+    localStorage.setItem('commslab_graph_v1', state);
+    render();
+    applyViewport();
+    updateHistoryButtons();
+}
+
+function undo() { if (history.length >= 2) { future.push(history.pop()); applyState(history.at(-1)) } }
+function redo() { if (future.length) { const state = future.pop(); history.push(state); applyState(state) } }
 function updateHistoryButtons() { $('#undo-btn').disabled = history.length < 2; $('#redo-btn').disabled = !future.length }
+
 function autoLayout() {
     if (!nodes.length) return;
-    const previous = new Map(nodes.map(n => [n.id, { x: n.x, y: n.y }]));
-    const incoming = new Map(nodes.map(n => [n.id, []])), outgoing = new Map(nodes.map(n => [n.id, []]));
+    const incoming = new Map(nodes.map(n => [n.id, []]));
+    const outgoing = new Map(nodes.map(n => [n.id, []]));
     edges.forEach(e => { if (incoming.has(e.to) && outgoing.has(e.from)) { incoming.get(e.to).push(e.from); outgoing.get(e.from).push(e.to) } });
-    const indegree = new Map([...incoming].map(([id, list]) => [id, list.length])), queue = nodes.filter(n => indegree.get(n.id) === 0).map(n => n.id), layer = new Map(queue.map(id => [id, 0])), visited = [];
-    while (queue.length) { const id = queue.shift(); visited.push(id); for (const next of outgoing.get(id)) { layer.set(next, Math.max(layer.get(next) || 0, (layer.get(id) || 0) + 1)); indegree.set(next, indegree.get(next) - 1); if (indegree.get(next) === 0) queue.push(next) } }
-    let fallback = Math.max(0, ...layer.values()) + 1; nodes.filter(n => !layer.has(n.id)).forEach(n => layer.set(n.id, fallback));
-    const groups = {}; nodes.forEach(n => (groups[layer.get(n.id)] ??= []).push(n));
-    for (const key of Object.keys(groups).map(Number).sort((a, b) => a - b)) {
-        const group = groups[key];
-        group.sort((a, b) => { const avg = n => { const parents = incoming.get(n.id); return parents.length ? parents.reduce((s, id) => s + (nodes.find(x => x.id === id)?.y || 0), 0) / parents.length : n.y }; return avg(a) - avg(b) });
-        group.forEach((n, row) => { n.x = 35 + key * 245; n.y = 35 + row * 145 });
+    const indegree = new Map([...incoming].map(([id, list]) => [id, list.length]));
+    const queue = nodes.filter(n => indegree.get(n.id) === 0).map(n => n.id);
+    const layer = new Map(queue.map(id => [id, 0]));
+    while (queue.length) {
+        const id = queue.shift();
+        for (const next of outgoing.get(id)) {
+            layer.set(next, Math.max(layer.get(next) || 0, (layer.get(id) || 0) + 1));
+            indegree.set(next, indegree.get(next) - 1);
+            if (indegree.get(next) === 0) queue.push(next);
+        }
     }
+    const fallback = Math.max(0, ...layer.values()) + 1;
+    nodes.filter(n => !layer.has(n.id)).forEach(n => layer.set(n.id, fallback));
+    const groups = {};
+    nodes.forEach(n => (groups[layer.get(n.id)] ??= []).push(n));
+    Object.keys(groups).map(Number).sort((a, b) => a - b).forEach(column => {
+        groups[column].sort((a, b) => a.y - b.y).forEach((n, row) => { n.x = 35 + column * 245; n.y = 35 + row * 145 });
+    });
     render();
-    document.querySelectorAll('.node').forEach(el => { const old = previous.get(el.dataset.id); el.style.left = old.x + 'px'; el.style.top = old.y + 'px'; el.classList.add('auto-layout') });
-    void nodesEl.offsetWidth;
-    requestAnimationFrame(() => { document.querySelectorAll('.node').forEach(el => { const n = nodes.find(x => x.id === el.dataset.id); el.style.left = n.x + 'px'; el.style.top = n.y + 'px' }); const started = performance.now(); const follow = now => { renderEdges(); if (now - started < 360) requestAnimationFrame(follow) }; requestAnimationFrame(follow) });
     fitToCanvas(false);
-    setTimeout(() => document.querySelectorAll('.node').forEach(el => el.classList.remove('auto-layout')), 390);
-    save(); flashMessage('Blocos organizados');
+    save();
+    flashMessage('Blocos organizados');
 }
-function load() { try { const raw = localStorage.getItem('commslab_graph_v1'), d = JSON.parse(raw); if (d?.nodes) { nodes = d.nodes; edges = d.edges || []; viewport = { x: 0, y: 0, zoom: 1, ...d.viewport }; idCounter = d.idCounter || nodes.length + 1; workflowSampleRate = d.sampleRate || 48000; $('#workflow-name').value = d.name || 'Workflow'; $('#sample-rate').value = workflowSampleRate; history = [stateJSON()] } } catch { } }
-function exportJSON() { const payload = { format: 'commslab-workflow', version: 2, name: $('#workflow-name').value, sampleRate: workflowSampleRate, createdAt: new Date().toISOString(), viewport, nodes, edges }; const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'workflow'}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000) }
-async function importJSON(file) { const payload = JSON.parse(await file.text()); if (payload.format !== 'commslab-workflow' || ![1, 2].includes(payload.version) || !Array.isArray(payload.nodes) || !Array.isArray(payload.edges)) throw Error('Arquivo não é um workflow CommsLab compatível.'); if (payload.nodes.some(n => !n.id || !defs[n.type] || !Number.isFinite(n.x) || !Number.isFinite(n.y))) throw Error('O workflow contém blocos inválidos.'); const ids = new Set(payload.nodes.map(n => n.id)); if (payload.edges.some(e => !ids.has(e.from) || !ids.has(e.to))) throw Error('O workflow contém conexões inválidas.'); nodes = payload.nodes; edges = payload.edges; viewport = { x: 0, y: 0, zoom: 1, ...payload.viewport }; workflowSampleRate = payload.sampleRate || 48000; selected = null; pending = null; idCounter = Math.max(1, ...nodes.map(n => +(String(n.id).match(/\d+$/)?.[0] || 0))) + 1; $('#workflow-name').value = payload.name || 'Workflow importado'; $('#sample-rate').value = workflowSampleRate; render(); applyViewport(); save() }
-workspace.ondragover = e => e.preventDefault(); workspace.ondrop = e => { e.preventDefault(); const t = e.dataTransfer.getData('block-type'), r = workspace.getBoundingClientRect(); if (t) addNode(t, (e.clientX - r.left - viewport.x) / viewport.zoom - 95, (e.clientY - r.top - viewport.y) / viewport.zoom - 25) }; workspace.onclick = e => { if ((e.target === workspace || e.target.id === 'nodes') && !canvasPan) { selected = null; pending = null; render() } }; $('#search').oninput = e => renderLibrary(e.target.value); $('#run-btn').onclick = execute; $('#clear-btn').onclick = () => { if (confirm('Limpar todo o workflow?')) { nodes = []; edges = []; selected = null; render(); save() } }; $('#workflow-name').onchange = save; $('#sample-rate').onchange = e => { const fs = +e.target.value; if (!Number.isFinite(fs) || fs <= 0) { e.target.value = workflowSampleRate; flashMessage('Fs deve ser positiva', 'error'); return } workflowSampleRate = fs; save(); flashMessage(`Fs = ${fs} Hz`) }; $('#template-btn').onclick = () => { const m = $('#template-menu'); m.hidden = !m.hidden; if(m.hidden)return; m.innerHTML = templateCategories.map(group => `<section class="template-category"><h3>${group.name}<span>${group.keys.length}</span></h3>${group.keys.map(k => { const t=templates[k]; return `<button data-template="${k}">${t.name}<small>${t.desc}</small></button>` }).join('')}</section>`).join(''); m.querySelectorAll('button').forEach(b => b.onclick = () => { loadTemplate(b.dataset.template); m.hidden = true }) }; document.addEventListener('keydown', e => { const editing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName), key = e.key.toLowerCase(); if ((e.ctrlKey || e.metaKey) && !editing && key === 'c' && selected) { e.preventDefault(); copySelectedNode(); return } if ((e.ctrlKey || e.metaKey) && !editing && key === 'v' && copiedNode) { e.preventDefault(); pasteCopiedNode(); return } if ((e.key === 'Delete' || e.key === 'Backspace') && selected && !editing) removeNode(selected); if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') execute(); if (e.key === '/' && !editing) { e.preventDefault(); $('#search').focus() } }); window.addEventListener('resize', () => { renderEdges() });
-const clampZoom = z => Math.max(.3, Math.min(2, Math.round(z * 1000) / 1000));
-function applyViewport() { viewport.zoom = clampZoom(viewport.zoom || 1); nodesEl.style.transform = `translate3d(${viewport.x}px,${viewport.y}px,0) scale(${viewport.zoom})`; $('#zoom-label').textContent = `${Math.round(viewport.zoom * 100)}%`; renderEdges() }
-function setZoom(zoom, screenX, screenY, commit = true) { const r = workspace.getBoundingClientRect(), px = (screenX ?? r.left + r.width / 2) - r.left, py = (screenY ?? r.top + r.height / 2) - r.top, old = viewport.zoom || 1, next = clampZoom(zoom); viewport.x = px - (px - viewport.x) * next / old; viewport.y = py - (py - viewport.y) * next / old; viewport.zoom = next; applyViewport(); if (commit) save() }
-function fitToCanvas(commit = true) { if (!nodes.length) return; const r = workspace.getBoundingClientRect(), padding = 50, minX = Math.min(...nodes.map(n => n.x)), minY = Math.min(...nodes.map(n => n.y)), maxX = Math.max(...nodes.map(n => n.x + (document.querySelector(`.node[data-id="${n.id}"]`)?.offsetWidth || 190))), maxY = Math.max(...nodes.map(n => n.y + (document.querySelector(`.node[data-id="${n.id}"]`)?.offsetHeight || 110))), width = Math.max(1, maxX - minX), height = Math.max(1, maxY - minY), zoom = clampZoom(Math.min(1.35, (r.width - 2 * padding) / width, (r.height - 2 * padding) / height)); viewport.zoom = zoom; viewport.x = (r.width - width * zoom) / 2 - minX * zoom; viewport.y = (r.height - height * zoom) / 2 - minY * zoom; applyViewport(); if (commit) save() }
-workspace.onpointerdown = e => { if (e.button !== 0 || e.target.closest('.node') || e.target.closest('.canvas-hud')) return; e.preventDefault(); canvasPan = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, originX: viewport.x, originY: viewport.y, moved: false }; workspace.setPointerCapture(e.pointerId); workspace.classList.add('panning') };
-workspace.onpointermove = e => { if (!canvasPan || canvasPan.pointerId !== e.pointerId) return; const dx = e.clientX - canvasPan.startX, dy = e.clientY - canvasPan.startY; if (Math.hypot(dx, dy) > 3) canvasPan.moved = true; viewport.x = canvasPan.originX + dx; viewport.y = canvasPan.originY + dy; applyViewport() };
-const finishCanvasPan = e => { if (!canvasPan || canvasPan.pointerId !== e.pointerId) return; const moved = canvasPan.moved; canvasPan = null; workspace.classList.remove('panning'); if (workspace.hasPointerCapture?.(e.pointerId)) workspace.releasePointerCapture(e.pointerId); if (moved) save() }; workspace.onpointerup = finishCanvasPan; workspace.onpointercancel = finishCanvasPan;
-workspace.addEventListener('wheel', e => { if (e.target.closest('.node') || e.target.closest('.canvas-hud')) return; e.preventDefault(); setZoom(viewport.zoom * Math.exp(-e.deltaY * .0015), e.clientX, e.clientY, false); clearTimeout(workspace.zoomSaveTimer); workspace.zoomSaveTimer = setTimeout(save, 180) }, { passive: false });
-$('#zoom-in-btn').onclick = () => setZoom(viewport.zoom * 1.2); $('#zoom-out-btn').onclick = () => setZoom(viewport.zoom / 1.2); $('#fit-btn').onclick = () => fitToCanvas();
-$('#undo-btn').onclick = undo; $('#redo-btn').onclick = redo; document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo() } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo() } });
-$('#auto-layout-btn').onclick = autoLayout;
-$('#save-json-btn').onclick = exportJSON; $('#load-json-btn').onclick = () => $('#json-file').click(); $('#json-file').onchange = async e => { const file = e.target.files?.[0]; if (!file) return; try { await importJSON(file) } catch (error) { alert(error.message) } finally { e.target.value = '' } };
-const RESULTS_HEIGHT_KEY = 'commslab_results_height_v1', RESULTS_COLLAPSED_KEY = 'commslab_results_collapsed_v1', resultsPanel = $('#results-panel'), resultsResizer = $('#results-resizer'), resultsToggle = $('#results-toggle');
-let resultsHeight = Math.max(120, +(localStorage.getItem(RESULTS_HEIGHT_KEY) || 260)), resultsResize = null, resultsRedrawFrame = 0;
-function redrawResultPlots() { if (resultsRedrawFrame) return; resultsRedrawFrame = requestAnimationFrame(() => { resultsRedrawFrame = 0; document.querySelectorAll('canvas[data-result]').forEach(c => drawResult(c, results[+c.dataset.result])) }) }
-function setResultsCollapsed(collapsed, persist = true) { resultsPanel.classList.toggle('collapsed', collapsed); document.documentElement.style.setProperty('--results-height', `${collapsed ? 45 : Math.min(resultsHeight, window.innerHeight - 100)}px`); resultsToggle.title = collapsed ? 'Mostrar resultados' : 'Ocultar resultados'; if (persist) localStorage.setItem(RESULTS_COLLAPSED_KEY, collapsed ? '1' : '0'); requestAnimationFrame(() => { renderEdges(); redrawResultPlots() }) }
-resultsToggle.onclick = () => setResultsCollapsed(!resultsPanel.classList.contains('collapsed'));
-resultsResizer.onpointerdown = e => { if (e.button !== 0) return; e.preventDefault(); if (resultsPanel.classList.contains('collapsed')) setResultsCollapsed(false); resultsResize = { pointerId: e.pointerId, startY: e.clientY, startHeight: resultsHeight }; resultsResizer.setPointerCapture(e.pointerId); resultsPanel.classList.add('resizing') };
-resultsResizer.onpointermove = e => { if (!resultsResize || resultsResize.pointerId !== e.pointerId) return; resultsHeight = Math.max(120, Math.min(window.innerHeight - 100, resultsResize.startHeight + resultsResize.startY - e.clientY)); document.documentElement.style.setProperty('--results-height', `${resultsHeight}px`); renderEdges(); redrawResultPlots() };
-const finishResultsResize = e => { if (!resultsResize || resultsResize.pointerId !== e.pointerId) return; resultsResize = null; resultsPanel.classList.remove('resizing'); if (resultsResizer.hasPointerCapture?.(e.pointerId)) resultsResizer.releasePointerCapture(e.pointerId); localStorage.setItem(RESULTS_HEIGHT_KEY, `${Math.round(resultsHeight)}`); redrawResultPlots() }; resultsResizer.onpointerup = finishResultsResize; resultsResizer.onpointercancel = finishResultsResize;
-setResultsCollapsed(localStorage.getItem(RESULTS_COLLAPSED_KEY) === '1', false);
-renderLibrary(); load(); if (!nodes.length) loadTemplate('bpsk'); else render(); applyViewport(); updateHistoryButtons();
 
-// ===== THEME TOGGLE =====
+function load() {
+    try {
+        const data = JSON.parse(localStorage.getItem('commslab_graph_v1'));
+        if (data?.nodes) {
+            nodes = data.nodes;
+            edges = data.edges || [];
+            viewport = { x: 0, y: 0, zoom: 1, ...data.viewport };
+            idCounter = data.idCounter || nodes.length + 1;
+            workflowSampleRate = data.sampleRate || 48000;
+            $('#workflow-name').value = data.name || 'Workflow';
+            $('#sample-rate').value = workflowSampleRate;
+            setWorkflowSampleRate(workflowSampleRate);
+            history = [stateJSON()];
+        }
+    } catch { }
+}
+
+function exportJSON() {
+    const payload = { format: 'commslab-workflow', version: 2, name: $('#workflow-name').value, sampleRate: workflowSampleRate, createdAt: new Date().toISOString(), viewport, nodes, edges };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'workflow'}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+async function importJSON(file) {
+    const payload = JSON.parse(await file.text());
+    if (payload.format !== 'commslab-workflow' || ![1, 2].includes(payload.version) || !Array.isArray(payload.nodes) || !Array.isArray(payload.edges)) throw Error('Arquivo não é um workflow CommsLab compatível.');
+    if (payload.nodes.some(n => !n.id || !defs[n.type] || !Number.isFinite(n.x) || !Number.isFinite(n.y))) throw Error('O workflow contém blocos inválidos.');
+    const ids = new Set(payload.nodes.map(n => n.id));
+    if (payload.edges.some(e => !ids.has(e.from) || !ids.has(e.to))) throw Error('O workflow contém conexões inválidas.');
+    nodes = payload.nodes;
+    edges = payload.edges;
+    viewport = { x: 0, y: 0, zoom: 1, ...payload.viewport };
+    workflowSampleRate = payload.sampleRate || 48000;
+    selected = null;
+    pending = null;
+    idCounter = Math.max(1, ...nodes.map(n => +(String(n.id).match(/\d+$/)?.[0] || 0))) + 1;
+    $('#workflow-name').value = payload.name || 'Workflow importado';
+    $('#sample-rate').value = workflowSampleRate;
+    setWorkflowSampleRate(workflowSampleRate);
+    render();
+    applyViewport();
+    save();
+}
+
+const clampZoom = zoom => Math.max(.3, Math.min(2, Math.round(zoom * 1000) / 1000));
+function applyViewport() {
+    viewport.zoom = clampZoom(viewport.zoom || 1);
+    nodesEl.style.transform = `translate3d(${viewport.x}px,${viewport.y}px,0) scale(${viewport.zoom})`;
+    $('#zoom-label').textContent = `${Math.round(viewport.zoom * 100)}%`;
+    renderEdges();
+}
+function setZoom(zoom, screenX, screenY, commit = true) {
+    const rect = workspace.getBoundingClientRect();
+    const px = (screenX ?? rect.left + rect.width / 2) - rect.left;
+    const py = (screenY ?? rect.top + rect.height / 2) - rect.top;
+    const old = viewport.zoom || 1;
+    const next = clampZoom(zoom);
+    viewport.x = px - (px - viewport.x) * next / old;
+    viewport.y = py - (py - viewport.y) * next / old;
+    viewport.zoom = next;
+    applyViewport();
+    if (commit) save();
+}
+function fitToCanvas(commit = true) {
+    if (!nodes.length) return;
+    const rect = workspace.getBoundingClientRect();
+    const padding = 50;
+    const minX = Math.min(...nodes.map(n => n.x));
+    const minY = Math.min(...nodes.map(n => n.y));
+    const maxX = Math.max(...nodes.map(n => n.x + (document.querySelector(`.node[data-id="${n.id}"]`)?.offsetWidth || 190)));
+    const maxY = Math.max(...nodes.map(n => n.y + (document.querySelector(`.node[data-id="${n.id}"]`)?.offsetHeight || 110)));
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
+    const zoom = clampZoom(Math.min(1.35, (rect.width - 2 * padding) / width, (rect.height - 2 * padding) / height));
+    viewport.zoom = zoom;
+    viewport.x = (rect.width - width * zoom) / 2 - minX * zoom;
+    viewport.y = (rect.height - height * zoom) / 2 - minY * zoom;
+    applyViewport();
+    if (commit) save();
+}
+
+workspace.ondragover = event => event.preventDefault();
+workspace.ondrop = event => {
+    event.preventDefault();
+    const type = event.dataTransfer.getData('block-type');
+    const rect = workspace.getBoundingClientRect();
+    if (type) addNode(type, (event.clientX - rect.left - viewport.x) / viewport.zoom - 95, (event.clientY - rect.top - viewport.y) / viewport.zoom - 25);
+};
+workspace.onclick = event => { if ((event.target === workspace || event.target.id === 'nodes') && !canvasPan) { selected = null; pending = null; render() } };
+workspace.onpointerdown = event => {
+    if (event.button !== 0 || event.target.closest('.node') || event.target.closest('.canvas-hud')) return;
+    canvasPan = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originX: viewport.x, originY: viewport.y, moved: false };
+    workspace.setPointerCapture(event.pointerId);
+};
+workspace.onpointermove = event => {
+    if (!canvasPan || canvasPan.pointerId !== event.pointerId) return;
+    const dx = event.clientX - canvasPan.startX, dy = event.clientY - canvasPan.startY;
+    if (Math.hypot(dx, dy) > 3) canvasPan.moved = true;
+    viewport.x = canvasPan.originX + dx;
+    viewport.y = canvasPan.originY + dy;
+    applyViewport();
+};
+const finishCanvasPan = event => {
+    if (!canvasPan || canvasPan.pointerId !== event.pointerId) return;
+    const moved = canvasPan.moved;
+    canvasPan = null;
+    if (workspace.hasPointerCapture?.(event.pointerId)) workspace.releasePointerCapture(event.pointerId);
+    if (moved) save();
+};
+workspace.onpointerup = workspace.onpointercancel = finishCanvasPan;
+workspace.addEventListener('wheel', event => {
+    if (event.target.closest('.node') || event.target.closest('.canvas-hud')) return;
+    event.preventDefault();
+    setZoom(viewport.zoom * Math.exp(-event.deltaY * .0015), event.clientX, event.clientY, false);
+    clearTimeout(workspace.zoomSaveTimer);
+    workspace.zoomSaveTimer = setTimeout(save, 180);
+}, { passive: false });
+
+$('#search').oninput = event => renderLibrary(event.target.value);
+$('#run-btn').onclick = execute;
+$('#clear-btn').onclick = () => { if (confirm('Limpar todo o workflow?')) { nodes = []; edges = []; results.length = 0; selected = null; render(); renderResults(); save() } };
+$('#workflow-name').onchange = save;
+$('#sample-rate').onchange = event => {
+    const sampleRate = +event.target.value;
+    if (!Number.isFinite(sampleRate) || sampleRate <= 0) { event.target.value = workflowSampleRate; flashMessage('Fs deve ser positiva', 'error'); return }
+    workflowSampleRate = sampleRate;
+    setWorkflowSampleRate(workflowSampleRate);
+    save();
+};
+$('#zoom-in-btn').onclick = () => setZoom(viewport.zoom * 1.2);
+$('#zoom-out-btn').onclick = () => setZoom(viewport.zoom / 1.2);
+$('#fit-btn').onclick = () => fitToCanvas();
+$('#undo-btn').onclick = undo;
+$('#redo-btn').onclick = redo;
+$('#auto-layout-btn').onclick = autoLayout;
+$('#save-json-btn').onclick = exportJSON;
+$('#load-json-btn').onclick = () => $('#json-file').click();
+$('#json-file').onchange = async event => { const file = event.target.files?.[0]; if (!file) return; try { await importJSON(file) } catch (error) { alert(error.message) } finally { event.target.value = '' } };
+
+const templateButton = $('#template-btn'), templateMenu = $('#template-menu');
+templateButton.onclick = event => {
+    event.stopPropagation();
+    templateMenu.hidden = !templateMenu.hidden;
+    if (templateMenu.hidden) return;
+    templateMenu.innerHTML = templateCategories.map(group => {
+        const keys = group.keys.filter(key => templates[key]);
+        return `<section class="template-category"><h3>${group.name}<span>${keys.length}</span></h3>${keys.map(key => `<button data-template="${key}"><strong>${templates[key].name}</strong><small>${templates[key].desc}</small></button>`).join('')}</section>`;
+    }).join('');
+    templateMenu.querySelectorAll('[data-template]').forEach(button => button.onclick = () => { loadTemplate(button.dataset.template); templateMenu.hidden = true });
+};
+templateMenu.onclick = event => event.stopPropagation();
+document.addEventListener('click', () => { templateMenu.hidden = true });
+document.addEventListener('keydown', event => {
+    const editing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+    const key = event.key.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && !editing && key === 'c' && selected) { event.preventDefault(); copySelectedNode(); return }
+    if ((event.ctrlKey || event.metaKey) && !editing && key === 'v' && copiedNode) { event.preventDefault(); pasteCopiedNode(); return }
+    if ((event.ctrlKey || event.metaKey) && key === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); return }
+    if ((event.ctrlKey || event.metaKey) && key === 'y') { event.preventDefault(); redo(); return }
+    if ((event.key === 'Delete' || event.key === 'Backspace') && selected && !editing) removeNode(selected);
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') execute();
+    if (event.key === '/' && !editing) { event.preventDefault(); $('#search').focus() }
+});
+window.addEventListener('resize', renderEdges);
+
+const resultsPanel = $('#results-panel'), resultsResizer = $('#results-resizer'), resultsToggle = $('#results-toggle');
+let resultsHeight = Math.max(120, +(localStorage.getItem('commslab_results_height_v1') || 260)), resultsResize = null;
+function setResultsCollapsed(collapsed, persist = true) {
+    resultsPanel.classList.toggle('collapsed', collapsed);
+    document.documentElement.style.setProperty('--results-height', `${collapsed ? 45 : Math.min(resultsHeight, window.innerHeight - 100)}px`);
+    resultsToggle.title = collapsed ? 'Mostrar resultados' : 'Ocultar resultados';
+    if (persist) localStorage.setItem('commslab_results_collapsed_v1', collapsed ? '1' : '0');
+    requestAnimationFrame(() => { renderEdges(); redrawResultPlots() });
+}
+resultsToggle.onclick = () => setResultsCollapsed(!resultsPanel.classList.contains('collapsed'));
+resultsResizer.onpointerdown = event => {
+    if (event.button !== 0) return;
+    if (resultsPanel.classList.contains('collapsed')) setResultsCollapsed(false);
+    resultsResize = { pointerId: event.pointerId, startY: event.clientY, startHeight: resultsHeight };
+    resultsResizer.setPointerCapture(event.pointerId);
+};
+resultsResizer.onpointermove = event => {
+    if (!resultsResize || resultsResize.pointerId !== event.pointerId) return;
+    resultsHeight = Math.max(120, Math.min(window.innerHeight - 100, resultsResize.startHeight + resultsResize.startY - event.clientY));
+    document.documentElement.style.setProperty('--results-height', `${resultsHeight}px`);
+    redrawResultPlots();
+};
+const finishResultsResize = event => {
+    if (!resultsResize || resultsResize.pointerId !== event.pointerId) return;
+    resultsResize = null;
+    if (resultsResizer.hasPointerCapture?.(event.pointerId)) resultsResizer.releasePointerCapture(event.pointerId);
+    localStorage.setItem('commslab_results_height_v1', `${Math.round(resultsHeight)}`);
+};
+resultsResizer.onpointerup = resultsResizer.onpointercancel = finishResultsResize;
+setResultsCollapsed(localStorage.getItem('commslab_results_collapsed_v1') === '1', false);
+
 const root = document.documentElement;
-function toggleTheme() {
-	const isDark = root.getAttribute('data-theme') === 'dark';
-	root.setAttribute('data-theme', isDark ? 'light' : 'dark');
-	localStorage.setItem('commslab-theme', isDark ? 'light' : 'dark');
-}
-function initTheme() {
-	const saved = localStorage.getItem('commslab-theme') ||
-		(window.matchMedia?.('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
-	root.setAttribute('data-theme', saved);
-	console.log('[CommsLab] theme:', saved, 'attr:', root.getAttribute('data-theme'));
-}
-initTheme();
-$('#theme-btn').onclick = toggleTheme;
+root.setAttribute('data-theme', localStorage.getItem('commslab-theme') || (window.matchMedia?.('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'));
+$('#theme-btn').onclick = () => {
+    const theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('commslab-theme', theme);
+};
+
+renderLibrary();
+load();
+if (!nodes.length) loadTemplate('bpsk'); else render();
+applyViewport();
+updateHistoryButtons();

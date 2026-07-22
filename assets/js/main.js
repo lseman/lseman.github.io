@@ -975,3 +975,293 @@ function buildAndRenderCloudFrom(items) {
 		});
 	});
 })();
+
+/* --------------------------------------------------------------------------
+   Partnerships globe
+   -------------------------------------------------------------------------- */
+(function initPartnershipsGlobe() {
+	const canvas = document.getElementById("globe-canvas");
+	const legend = document.getElementById("globe-legend");
+	if (!canvas || !canvas.getContext) return;
+
+	const ctx = canvas.getContext("2d");
+
+	const HUB_ID = "ufsc";
+	const institutions = [
+		{
+			id: "ufsc",
+			name: "UFSC",
+			place: "Florianópolis, Brasil",
+			lat: -27.6,
+			lon: -48.55,
+			color: "#fbbf24",
+			hub: true,
+		},
+		{
+			id: "utfpr",
+			name: "UTFPR",
+			place: "Curitiba, Brasil",
+			lat: -25.43,
+			lon: -49.27,
+			color: "#2dd4bf",
+		},
+		{
+			id: "ufscar",
+			name: "UFSCar",
+			place: "São Carlos, Brasil",
+			lat: -22.02,
+			lon: -47.89,
+			color: "#2dd4bf",
+		},
+		{
+			id: "udesc",
+			name: "UDESC",
+			place: "Joinville, Brasil",
+			lat: -26.3,
+			lon: -48.85,
+			color: "#2dd4bf",
+		},
+		{
+			id: "isel",
+			name: "ISEL",
+			place: "Lisboa, Portugal",
+			lat: 38.75,
+			lon: -9.15,
+			color: "#a78bfa",
+		},
+		{
+			id: "salamanca",
+			name: "U. Salamanca",
+			place: "Salamanca, Espanha",
+			lat: 40.96,
+			lon: -5.66,
+			color: "#a78bfa",
+		},
+		{
+			id: "regina",
+			name: "U. Regina",
+			place: "Regina, Canadá",
+			lat: 50.45,
+			lon: -104.62,
+			color: "#f472b6",
+		},
+	];
+
+	const hub = institutions.find((d) => d.id === HUB_ID);
+	const links = institutions.filter((d) => d.id !== HUB_ID);
+
+	/* Populate legend */
+	legend.innerHTML = institutions
+		.map(
+			(d) => `
+		<li class="globe-legend-item${d.hub ? " is-hub" : ""}">
+			<span class="globe-legend-dot" style="background:${d.color}"></span>
+			<span class="globe-legend-name">${d.name}</span>
+			<span class="globe-legend-place">${d.place}</span>
+		</li>`,
+		)
+		.join("");
+
+	let width = 0;
+	let height = 0;
+	let radius = 0;
+	let dpr = Math.min(window.devicePixelRatio || 1, 2);
+	const rotation = (50 * Math.PI) / 180;
+
+	const resize = () => {
+		const rect = canvas.parentElement.getBoundingClientRect();
+		width = rect.width;
+		height = Math.max(420, Math.min(width * 0.85, 640));
+		radius = Math.min(width, height) * 0.42;
+		canvas.style.height = `${height}px`;
+		canvas.width = width * dpr;
+		canvas.height = height * dpr;
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+	};
+
+	/* Project lat/lon (degrees) to 2D point on rotating sphere.
+	   Returns null when the point faces away from the viewer. */
+	const project = (lat, lon, rot) => {
+		const latR = (lat * Math.PI) / 180;
+		const lonR = (lon * Math.PI) / 180 + rot;
+		const x = Math.cos(latR) * Math.sin(lonR);
+		const y = Math.sin(latR);
+		const z = Math.cos(latR) * Math.cos(lonR);
+		if (z < -0.15) return null;
+		const cx = width / 2;
+		const cy = height / 2;
+		return {
+			x: cx + x * radius,
+			y: cy - y * radius,
+			z,
+			depth: (z + 1) / 2,
+		};
+	};
+
+	const landPolygons = window.WORLD_LAND || [];
+
+	const drawLand = (rot) => {
+		ctx.strokeStyle = "rgba(230,237,243,0.28)";
+		ctx.lineWidth = 0.75;
+
+		for (const poly of landPolygons) {
+			/* Split into contiguous visible segments so polygons that wrap
+			   behind the globe don't draw a straight line across the disc. */
+			let segment = [];
+			const segments = [];
+			for (let i = 0; i <= poly.length; i++) {
+				const [lon, lat] = poly[i % poly.length];
+				const p = project(lat, lon, rot);
+				if (p) {
+					segment.push(p);
+				} else if (segment.length) {
+					segments.push(segment);
+					segment = [];
+				}
+				if (i === poly.length && segment.length) segments.push(segment);
+			}
+			for (const seg of segments) {
+				if (seg.length < 2) continue;
+				ctx.beginPath();
+				ctx.moveTo(seg[0].x, seg[0].y);
+				for (let i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x, seg[i].y);
+				ctx.stroke();
+			}
+		}
+	};
+
+	const drawArc = (a, b, rot) => {
+		const steps = 64;
+		ctx.beginPath();
+		let started = false;
+		for (let i = 0; i <= steps; i++) {
+			const t = i / steps;
+			/* Great-circle-ish interpolation with a lifted midpoint for an arcing line */
+			const lat = a.lat + (b.lat - a.lat) * t;
+			const lon = a.lon + (b.lon - a.lon) * t;
+			const lift = Math.sin(Math.PI * t) * 8;
+			const p = project(lat + lift * 0.15, lon, rot);
+			if (!p) {
+				started = false;
+				continue;
+			}
+			if (!started) {
+				ctx.moveTo(p.x, p.y);
+				started = true;
+			} else {
+				ctx.lineTo(p.x, p.y);
+			}
+		}
+		ctx.stroke();
+	};
+
+	const drawPinDot = (d, p) => {
+		const scale = 0.55 + p.depth * 0.7;
+		ctx.beginPath();
+		ctx.arc(p.x, p.y, 3.2 * scale, 0, Math.PI * 2);
+		ctx.fillStyle = d.color;
+		ctx.globalAlpha = 0.35 + p.depth * 0.65;
+		ctx.fill();
+
+		ctx.beginPath();
+		ctx.arc(p.x, p.y, 1.4 * scale, 0, Math.PI * 2);
+		ctx.fillStyle = "#0a0d14";
+		ctx.fill();
+		ctx.globalAlpha = 1;
+	};
+
+	/* Stack labels vertically for pins that land close together on screen
+	   so clustered institutions (e.g. the Brazilian cities) stay legible. */
+	const drawLabels = (projected) => {
+		const CLUSTER_DIST = 26;
+		const placed = [];
+
+		const visible = projected.filter((entry) => entry.p.depth > 0.35);
+		visible.forEach((entry) => {
+			const near = placed.filter(
+				(other) => Math.hypot(other.p.x - entry.p.x, other.p.y - entry.p.y) < CLUSTER_DIST,
+			);
+			entry.stackIndex = near.length;
+			placed.push(entry);
+		});
+
+		ctx.font = "600 11px 'JetBrains Mono', monospace";
+		ctx.fillStyle = "rgba(230,237,243,0.85)";
+		ctx.textBaseline = "middle";
+
+		visible.forEach(({ d, p, stackIndex }) => {
+			const scale = 0.55 + p.depth * 0.7;
+			const align = p.x > width / 2 ? "left" : "right";
+			ctx.textAlign = align;
+			const dx = align === "left" ? 8 : -8;
+			const dy = -10 * scale - stackIndex * 12;
+			ctx.fillText(d.name, p.x + dx, p.y + dy);
+		});
+	};
+
+	const draw = () => {
+		ctx.clearRect(0, 0, width, height);
+
+		const cx = width / 2;
+		const cy = height / 2;
+
+		/* Globe disc background */
+		const grad = ctx.createRadialGradient(
+			cx - radius * 0.3,
+			cy - radius * 0.3,
+			radius * 0.1,
+			cx,
+			cy,
+			radius,
+		);
+		grad.addColorStop(0, "rgba(167,139,250,0.10)");
+		grad.addColorStop(1, "rgba(10,13,20,0.05)");
+		ctx.beginPath();
+		ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+		ctx.fillStyle = grad;
+		ctx.fill();
+
+		/* Pins, sorted so nearer points draw last (on top) */
+		const projected = institutions
+			.map((d) => ({ d, p: project(d.lat, d.lon, rotation) }))
+			.filter((entry) => entry.p)
+			.sort((a, b) => a.p.depth - b.p.depth);
+
+		/* Clip to globe disc to prevent border rendering outside the circle */
+		ctx.save();
+		ctx.clip();
+
+		drawLand(rotation);
+
+		/* Arcs from hub to each partner */
+		ctx.strokeStyle = "rgba(251,191,36,0.55)";
+		ctx.lineWidth = 1.4;
+		links.forEach((d) => drawArc(hub, d, rotation));
+
+		projected.forEach(({ d, p }) => drawPinDot(d, p));
+
+		ctx.restore();
+
+		/* Globe disc border */
+		ctx.strokeStyle = "rgba(255,255,255,0.14)";
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+		ctx.stroke();
+
+		/* Draw labels outside the clip region so they are always visible */
+		drawLabels(projected);
+	};
+
+	const start = () => {
+		resize();
+		draw();
+	};
+
+	window.addEventListener("resize", () => {
+		resize();
+		draw();
+	});
+
+	start();
+})();
