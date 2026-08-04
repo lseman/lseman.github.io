@@ -1,8 +1,8 @@
-import { twoline2satrec, propagate, gstime, eciToGeodetic, eciToEcf, ecfToLookAngles, degreesToRadians, radiansToDegrees } from './node_modules/satellite.js/dist/satellite.es.js';
-import { feature } from './node_modules/topojson-client/src/index.js';
+import { twoline2satrec, propagate, gstime, eciToGeodetic, eciToEcf, ecfToLookAngles, degreesToRadians, radiansToDegrees } from 'https://cdn.jsdelivr.net/npm/satellite.js@6.0.2/+esm';
+import { feature } from 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm';
 
 const $=s=>document.querySelector(s),modal=$('#satellite-modal'),canvas=$('#satellite-map'),ctx=canvas.getContext('2d');
-let naturalEarth=null,landPath=null,landPathSize='';fetch('./node_modules/world-atlas/land-110m.json').then(r=>r.json()).then(topology=>{naturalEarth=feature(topology,topology.objects.land).features[0];landPath=null;if(!modal.hidden)render()});
+let naturalEarth=null,landPath=null,landPathSize='';fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-110m.json').then(r=>r.json()).then(topology=>{naturalEarth=feature(topology,topology.objects.land).features[0];landPath=null;if(!modal.hidden)render()});
 const EARTH_RADIUS=6378.137,LIGHT_SPEED=299792.458,CACHE_AGE=2*60*60*1000;
 const FALLBACK={
   '44885':['FLORIPASAT-1','1 44885U 19093G   26194.50489978  .00003174  00000+0  23320-3 0  9990','2 44885  97.7934 288.9341 0010952 348.7309  11.3670 15.04136627356609'],
