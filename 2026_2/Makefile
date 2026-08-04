@@ -3,7 +3,7 @@
 #   make              — compile all apostilas
 #   make all          — same as above
 #   make com          — compile a single apostila
-#   make clean        — remove generated output/
+#   make clean        — remove generated apostila/
 #   make slides       — generate slides for all apostilas
 #   make slides com   — generate slides for one apostila
 #   make html-to-pdf  — convert HTML to PDF (all apostilas)
@@ -16,7 +16,7 @@ PYTHON := python3
 SCRIPTS := $(abspath scripts)
 
 # Apostilas known by directory name
-APOSTILAS := com concurso eletromag emc
+APOSTILAS := com eletromag emc
 
 # ── Default: compile everything ──────────────────────────────────────────────
 .PHONY: all
@@ -53,11 +53,11 @@ define PDF_APOSTILA
 .PHONY: pdf-$(1)
 pdf-$(1):
 	@echo "=== PDF $(1) ===" && \
-	if [ -f $(1)/output/index.html ]; then \
-		$(PYTHON) $(abspath shared/html-to-pdf.js) $(1)/output/index.html $(1)/output/$(1).pdf; \
-		echo "  ✓ $(1)/output/$(1).pdf"; \
+	if [ -f $(1)/apostila/index.html ]; then \
+		$(PYTHON) $(abspath shared/html-to-pdf.js) $(1)/apostila/index.html $(1)/apostila/$(1).pdf; \
+		echo "  ✓ $(1)/apostila/$(1).pdf"; \
 	else \
-		echo "  $(1)/output/index.html not found. Run 'make $(1)' first."; \
+		echo "  $(1)/apostila/index.html not found. Run 'make $(1)' first."; \
 		exit 1; \
 	fi
 endef
@@ -69,9 +69,9 @@ $(foreach apostila,$(APOSTILAS),$(eval $(call PDF_APOSTILA,$(apostila))))
 clean:
 	@echo "=== Cleaning ==="
 	@for dir in $(APOSTILAS); do \
-		if [ -d "$$dir/output" ]; then \
-			rm -rf "$$dir/output"; \
-			echo "  Removed $$dir/output/"; \
+		if [ -d "$$dir/apostila" ]; then \
+			rm -rf "$$dir/apostila"; \
+			echo "  Removed $$dir/apostila/"; \
 		fi; \
 		if [ -d "$$dir/slides" ]; then \
 			rm -rf "$$dir/slides"; \
