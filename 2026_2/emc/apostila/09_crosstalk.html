@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9. Crosstalk — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>9. Crosstalk</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>9. Crosstalk</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="08_antenas.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">8. Antenas</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="10_emissoes_conduzidas_suscetibilidade.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">10. Emissões conduzidas e suscetibilidade</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>9. Crosstalk</h1>
+<p><em>Crosstalk</em> é o acoplamento indesejado de um circuito agressor para um circuito vítima. Em interconexões, ele resulta principalmente de capacitância mútua, indutância mútua e impedância de retorno compartilhada. A análise correta inclui os condutores de retorno e, quando o atraso é relevante, trata o conjunto como uma linha de transmissão multcondutora.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#linha-de-tr%C3%AAs-condutores">Linha de três condutores</a></li>
+<li><a href="#acoplamento-capacitivo">Acoplamento capacitivo</a></li>
+<li><a href="#acoplamento-indutivo">Acoplamento indutivo</a></li>
+<li><a href="#next-e-fext">NEXT e FEXT</a></li>
+<li><a href="#modelo-concentrado">Modelo concentrado</a></li>
+<li><a href="#imped%C3%A2ncia-comum">Impedância comum</a></li>
+<li><a href="#fios-blindados">Fios blindados</a></li>
+<li><a href="#pares-tran%C3%A7ados-e-balanceamento">Pares trançados e balanceamento</a></li>
+<li><a href="#regras-de-layout">Regras de layout</a></li>
+<li><a href="#resultados-formais">Resultados formais</a></li>
+<li><a href="#exemplo-resolvido--acoplamento-capacitivo">Exemplo resolvido — Acoplamento capacitivo</a></li>
+<li><a href="#exemplo-resolvido--acoplamento-indutivo">Exemplo resolvido — Acoplamento indutivo</a></li>
+<li><a href="#exemplo-conceitual--dura%C3%A7%C3%A3o-de-next">Exemplo conceitual — Duração de NEXT</a></li>
+<li><a href="#insight-blindar-sem-controlar-o-retorno-pode-transferir-o-problema">Insight: blindar sem controlar o retorno pode transferir o problema</a></li>
+<li><a href="#exerc%C3%ADcios">Exercícios</a></li>
+<li><a href="#respostas-selecionadas">Respostas selecionadas</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--next-e-fext-vs-comprimento">Exemplo numérico adicional — NEXT e FEXT vs. comprimento</a></li>
+<li><a href="#c%C3%B3digo-python--next-e-fext-vs-frequ%C3%AAncia">Código Python — NEXT e FEXT vs. frequência</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--crosstalk-por-imped%C3%A2ncia-comum">Exemplo numérico adicional — Crosstalk por impedância comum</a></li>
+<li><a href="#modos-par-e-%C3%ADmpar-em-linhas-acopladas">Modos par e ímpar em linhas acopladas</a></li>
+<li><a href="#simula%C3%A7%C3%A3o-temporal-de-next-e-fext">Simulação temporal de NEXT e FEXT</a></li>
+<li><a href="#estudo-param%C3%A9trico-de-layout">Estudo paramétrico de layout</a></li>
+<li><a href="#laborat%C3%B3rio-spice--acoplamento-concentrado-entre-trilhas">Laboratório SPICE — acoplamento concentrado entre trilhas</a></li>
+<li><a href="#refer%C3%AAncia-principal">Referência principal</a></li>
+</ol></nav>
+<h2 id="linha-de-três-condutores"><span class="heading-number">9.1</span> Linha de três condutores</h2>
+<h3 id="por-que-precisamos-de-três-condutores-para-crosstalk"><span class="heading-number">9.1.1</span> Por que precisamos de três condutores para crosstalk?</h3>
+<p>O modelo mínimo possui agressor, vítima e referência. Tensões e correntes são relacionadas por matrizes de parâmetros por unidade de comprimento:</p>
+
+<div class="math-display">
+$$
+\frac{\partial\mathbf V}{\partial z}=-\mathbf L\frac{\partial\mathbf I}{\partial t},\qquad
+\frac{\partial\mathbf I}{\partial z}=-\mathbf C\frac{\partial\mathbf V}{\partial t}.
+$$
+</div>
+
+<p>Os termos diagonais representam parâmetros próprios; os termos fora da diagonal representam acoplamento. Em meio homogêneo ideal, as relações entre $\mathbf L$ e $\mathbf C$ favorecem cancelamentos específicos. Em microstrip, o meio é não homogêneo e as velocidades modais diferem, alterando o crosstalk de extremidade distante.</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: Com apenas dois condutores, não há &quot;vítima&quot; — todos os campos gerados pela corrente no condutor 1 retornam pelo condutor 2. É preciso um terceiro condutor (referência ou vítima) para que haja acoplamento indesejado entre circuitos diferentes.</p>
+</blockquote>
+<h2 id="acoplamento-capacitivo"><span class="heading-number">9.2</span> Acoplamento capacitivo</h2>
+<p>Uma tensão variável no agressor injeta corrente na vítima pela capacitância mútua:</p>
+
+<div class="math-display">
+$$
+i_C=C_m\frac{dv_A}{dt}.
+$$
+</div>
+
+<p>O efeito aumenta com $C_m$, taxa de variação e impedância da vítima. Aumentar espaçamento, aproximar o plano de referência e reduzir o comprimento paralelo diminuem a capacitância mútua relativa.</p>
+<h2 id="acoplamento-indutivo"><span class="heading-number">9.3</span> Acoplamento indutivo</h2>
+<p>A corrente variável no agressor produz fluxo que atravessa o laço da vítima:</p>
+
+<div class="math-display">
+$$
+v_M=M\frac{di_A}{dt}.
+$$
+</div>
+
+<p>O acoplamento diminui quando ida e retorno de cada circuito estão próximos e as áreas de laço são pequenas. Uma blindagem elétrica isolada não elimina necessariamente o acoplamento magnético de baixa frequência.</p>
+<h2 id="next-e-fext"><span class="heading-number">9.4</span> NEXT e FEXT</h2>
+<p>O ruído observado na extremidade próxima é chamado NEXT; na extremidade distante, FEXT. As contribuições capacitiva e indutiva viajam em direções específicas e podem somar ou cancelar. Em linhas homogêneas, o FEXT ideal pode cancelar; em estruturas não homogêneas, a diferença entre acoplamento capacitivo e indutivo e a diferença de velocidades produzem FEXT residual.</p>
+<p>A duração do pulso de NEXT está ligada a duas vezes o atraso da região acoplada. O FEXT tende a aparecer como pulsos associados às bordas e cresce com comprimento de acoplamento enquanto a aproximação linear for válida.</p>
+<h2 id="modelo-concentrado"><span class="heading-number">9.5</span> Modelo concentrado</h2>
+<p>Quando o comprimento acoplado é pequeno diante do comprimento elétrico da borda, o trecho pode ser aproximado por $C_m$ e $M$. Esse modelo mostra diretamente as dependências em $dv/dt$ e $di/dt$, mas não representa propagação, múltiplas reflexões nem diferenças de velocidade. Para linhas longas, use modelo MTL ou simulação apropriada.</p>
+<h2 id="impedância-comum"><span class="heading-number">9.6</span> Impedância comum</h2>
+<p>Se agressor e vítima compartilham retorno com impedância $Z_g$, a corrente do agressor produz</p>
+
+<div class="math-display">
+$$
+V_g=Z_g I_A,
+$$
+</div>
+
+<p>que aparece como ruído na vítima. Esse mecanismo pode dominar mesmo com pequena proximidade geométrica. Planos contínuos, vias de retorno, desacoplamento local e separação de correntes de potência e sinais sensíveis reduzem a impedância compartilhada.</p>
+<h2 id="fios-blindados"><span class="heading-number">9.7</span> Fios blindados</h2>
+<p>Uma blindagem intercepta corrente capacitiva e fornece caminho de retorno, mas seu desempenho depende da impedância de transferência e das terminações. Em RF, a conexão de 360° ao chassi costuma apresentar menor indutância que um pigtail. Ligar a blindagem em uma ou ambas as extremidades é uma decisão de banda e arquitetura; a frase &quot;aterrar de um lado&quot; não é regra universal.</p>
+<h2 id="pares-trançados-e-balanceamento"><span class="heading-number">9.8</span> Pares trançados e balanceamento</h2>
+<p>A torção alterna a geometria e reduz a área efetiva dos laços. Em um par balanceado, campos externos tendem a induzir modo comum, rejeitado pelo receptor conforme sua CMRR. O benefício depende de simetria de impedância para o ambiente, consistência da torção e qualidade da terminação. Desbalanceamento converte modo comum em diferencial.</p>
+<h2 id="regras-de-layout"><span class="heading-number">9.9</span> Regras de layout</h2>
+<ul>
+<li>Reduzir o paralelismo entre agressor e vítima.</li>
+<li>Aumentar espaçamento e manter cada sinal perto de seu plano de referência.</li>
+<li>Evitar cruzar fendas no plano.</li>
+<li>Alternar direções de roteamento em camadas adjacentes quando possível.</li>
+<li>Colocar via de retorno ao lado da via de sinal em mudanças de camada.</li>
+<li>Controlar bordas na fonte e terminar linhas para reduzir reflexões.</li>
+<li>Separar nós de alto $dv/dt$ e laços de alto $di/dt$ de entradas sensíveis.</li>
+<li>Verificar pinagem de conectores: intercalar retornos pode reduzir laços e acoplamento.</li>
+</ul>
+<h2 id="resultados-formais"><span class="heading-number">9.10</span> Resultados formais</h2>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong>: No modelo concentrado e linear, a tensão de crosstalk é a soma das contribuições capacitiva, indutiva e de impedância comum.</p></aside>
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: Pela superposição, anulam-se sucessivamente as fontes independentes mantendo os elementos de acoplamento. A capacitância mútua injeta $C_mdv_A/dt$; a indutância mútua produz $Mdi_A/dt$; a impedância comum produz $Z_gI_A$. Como o circuito é linear, a resposta total é a soma das três respostas. $\square$</p></aside>
+<aside class="callout callout-theorem" role="note"><p><strong>Proposição</strong>: Se o agressor é excitado por uma rampa com mesma amplitude, dobrar o tempo de subida reduz pela metade as fontes capacitivas e indutivas do modelo concentrado.</p></aside>
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: Para rampa linear, $dv/dt=\Delta V/t_r$ e $di/dt=\Delta I/t_r$. Ambas são inversamente proporcionais a $t_r$. $\square$</p></aside>
+<h2 id="exemplo-resolvido--acoplamento-capacitivo"><span class="heading-number">9.11</span> Exemplo resolvido — Acoplamento capacitivo</h2>
+<p>Uma capacitância mútua de 0,5 pF recebe uma borda de 3,3 V em 1 ns:</p>
+
+<div class="math-display">
+$$
+i_C=C_m\frac{\Delta V}{t_r}
+=0{,}5\times10^{-12}\frac{3{,}3}{10^{-9}}
+=1{,}65\ \text{mA}.
+$$
+</div>
+
+<p>Se a vítima parece resistiva com 100 Ω durante a borda, a primeira estimativa é</p>
+
+<div class="math-display">
+$$
+V_N\approx i_CR=165\ \text{mV}.
+$$
+</div>
+
+<p>O resultado ignora propagação, capacitância própria e terminação distribuída; serve como teste de ordem de grandeza.</p>
+<h2 id="exemplo-resolvido--acoplamento-indutivo"><span class="heading-number">9.12</span> Exemplo resolvido — Acoplamento indutivo</h2>
+<p>Com $M=4$ nH e corrente variando 0,6 A em 2 ns:</p>
+
+<div class="math-display">
+$$
+V_M=M\frac{\Delta I}{t_r}=4\times10^{-9}\frac{0{,}6}{2\times10^{-9}}=1{,}2\ \text{V}.
+$$
+</div>
+
+<p>Reduzir a área compartilhada ou aproximar o retorno do agressor reduz $M$.</p>
+<h2 id="exemplo-conceitual--duração-de-next"><span class="heading-number">9.13</span> Exemplo conceitual — Duração de NEXT</h2>
+<p>Se a região paralela tem atraso de 300 ps, contribuições geradas ao longo dela chegam à extremidade próxima durante aproximadamente $2t_d=600$ ps. A amplitude e a forma exatas dependem dos coeficientes de acoplamento e terminações.</p>
+<h2 id="insight-blindar-sem-controlar-o-retorno-pode-transferir-o-problema"><span class="heading-number">9.14</span> Insight: blindar sem controlar o retorno pode transferir o problema</h2>
+<p>Uma blindagem ligada por caminho indutivo pode diminuir acoplamento elétrico e simultaneamente criar impedância comum ou novo laço magnético. A pergunta correta não é &quot;há blindagem?&quot;, mas &quot;por onde flui cada corrente induzida e onde ela fecha?&quot;.</p>
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">9.15</span> Lista de Exercícios Propostos</h2>
+<p><strong>E.1</strong> Uma capacitância mútua de 0,5 pF recebe uma borda de 3,3 V em 1 ns. Estime a corrente de deslocamento média durante a borda.</p>
+<p><strong>E.2</strong> Diferencie NEXT, FEXT e acoplamento por impedância comum.</p>
+<p><strong>E.3</strong> Explique por que o FEXT pode cancelar numa linha homogênea ideal e persistir em microstrip.</p>
+<p><strong>E.4</strong> Por que reduzir o tempo de subida aumenta crosstalk mesmo sem alterar a taxa de dados?</p>
+<p><strong>E.5</strong> Compare os benefícios de espaçamento, plano de referência, blindagem e par trançado.</p>
+<p><strong>E.6</strong> Para $M=2$ nH e $\Delta I=0{,}4$ A em 500 ps, estime a tensão induzida.</p>
+<p><strong>E.7</strong> Uma região acoplada tem atraso de 0,8 ns. Estime a duração do NEXT.</p>
+<p><strong>E.8</strong> Mostre pela transformação inversa que $I_1=I_{CM}+I_{DM}$ e $I_2=I_{CM}-I_{DM}$.</p>
+<h2 id="gabarito"><span class="heading-number">9.16</span> Gabarito</h2>
+<p><strong>E.1</strong> Corrente de deslocamento média para capacitância mútua de 0,5 pF com borda de 3,3 V em 1 ns.</p>
+<p>Equação da corrente de deslocamento: $i_C=C_m\cdot dV/dt$.</p>
+<p>Para borda linear: $dV/dt=\Delta V/t_r=3{,}3\text{ V}/1\text{ ns}=3{,}3\times10^9$ V/s.</p>
+<p>$i_C=0{,}5\times10^{-12}\cdot3{,}3\times10^9=1{,}65\times10^{-3}$ A = $1{,}65$ mA.</p>
+<p>Resposta: $1{,}65$ mA.</p>
+<p><strong>E.6</strong> Tensão induzida para $M=2$ nH e $\Delta I=0{,}4$ A em 500 ps.</p>
+<p>Equação: $V_M=M\cdot di/dt$.</p>
+<p>$di/dt=\Delta I/t_r=0{,}4\text{ A}/500\text{ ps}=0{,}4/(5\times10^{-10})=0{,}8\times10^9$ A/s.</p>
+<p>$V_M=2\times10^{-9}\cdot0{,}8\times10^9=1{,}6$ V.</p>
+<p>Resposta: $1{,}6$ V.</p>
+<p><strong>E.7</strong> Duração do NEXT para região acoplada com atraso de 0,8 ns.</p>
+<p>O NEXT dura aproximadamente o tempo de ida e volta na região acoplada: $t_{NEXT}=2\cdot t_d$.</p>
+<p>Com $t_d=0{,}8$ ns: $t_{NEXT}=2\cdot0{,}8=1{,}6$ ns.</p>
+<p>Resposta: Aproximadamente $1{,}6$ ns no modelo ideal.</p>
+<p><strong>E.8</strong> Transformada inversa para $I_1=I_{CM}+I_{DM}$ e $I_2=I_{CM}-I_{DM}$.</p>
+<p>Dadas as definições: $I_{CM}=(I_1+I_2)/2$ e $I_{DM}=(I_1-I_2)/2$.</p>
+<p>Somando: $I_{CM}+I_{DM}=(I_1+I_2)/2+(I_1-I_2)/2=(2I_1)/2=I_1$.</p>
+<p>Subtraindo: $I_{CM}-I_{DM}=(I_1+I_2)/2-(I_1-I_2)/2=(2I_2)/2=I_2$.</p>
+<p>Portanto, $I_1=I_{CM}+I_{DM}$ e $I_2=I_{CM}-I_{DM}$. $\square$</p>
+<h2 id="exemplo-numérico-adicional--next-e-fext-vs-comprimento"><span class="heading-number">9.17</span> Exemplo numérico adicional — NEXT e FEXT vs. comprimento</h2>
+<p>Dados: $C_m=0.5$ pF/m, $M=4$ nH/m, $l=0.5$ m, $v_p=2\times10^8$ m/s, $t_r=1$ ns, $V_A=3.3$ V.</p>
+<p>Acoplamento capacitivo: $i_C=C_m\cdot l\cdot\Delta V/t_r=0.5\times10^{-12}\cdot0.5\cdot3.3/10^{-9}=0.825$ mA.<br />
+Com $R_V=100\ \Omega$: $V_{CAP}=82.5$ mV.</p>
+<p>Acoplamento indutivo: $v_M=M\cdot l\cdot\Delta I/t_r$. Se $\Delta I=0.1$ A:<br />
+$v_M=4\times10^{-9}\cdot0.5\cdot0.1/10^{-9}=0.2$ V.</p>
+<p>NEXT total depende da soma vetorial dos termos.</p>
+<h2 id="código-python--next-e-fext-vs-frequência"><span class="heading-number">9.18</span> Código Python — NEXT e FEXT vs. frequência</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 100 kHz a 100 MHz</span>
+
+<span style="color: #959077"># Parâmetros</span>
+<span style="color: #F8F8F2">Lm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">400e-9</span>       <span style="color: #959077"># 400 nH/m (mutual inductance total para 1m)</span>
+<span style="color: #F8F8F2">Cm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50e-12</span>       <span style="color: #959077"># 50 pF/m (mutual capacitance total para 1m)</span>
+<span style="color: #F8F8F2">Z0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50.0</span>         <span style="color: #959077"># Impedância característica</span>
+<span style="color: #F8F8F2">v_p</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2e8</span>         <span style="color: #959077"># Velocidade de propagação</span>
+
+<span style="color: #959077"># Coeficientes de acoplamento indutivo e capacitivo</span>
+<span style="color: #F8F8F2">k_L</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Lm</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(Z0</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">v_p)</span>  <span style="color: #959077"># Acoplamento indutivo</span>
+<span style="color: #F8F8F2">k_C</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Cm</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">Z0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">v_p</span>    <span style="color: #959077"># Acoplamento capacitivo</span>
+
+<span style="color: #959077"># NEXT e FEXT aproximados</span>
+<span style="color: #959077"># NEXT ~ (k_L + k_C)/2 * (f * t_r) para baixas frequências</span>
+<span style="color: #959077"># FEXT ~ (k_L - k_C)/2 * (f * L / v_p)</span>
+
+<span style="color: #959077"># Simulação simplificada</span>
+<span style="color: #F8F8F2">NEXT_prop</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(k_L</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">k_C)</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e-9</span>  <span style="color: #959077"># t_r = 1 ns</span>
+<span style="color: #F8F8F2">FEXT_prop</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(k_L</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">k_C)</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1.0</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">v_p)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">NEXT_prop,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;NEXT proporcional&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">FEXT_prop,</span> <span style="color: #E6DB74">&#39;r-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;FEXT proporcional&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Crosstalk Proporcional&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;NEXT vs FEXT vs Frequência&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m f = np.logspace([32m5[39m, [32m8[39m, [32m100[39m)  [38;5;66;03m# 100 kHz a 100 MHz[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="exemplo-numérico-adicional--crosstalk-por-impedância-comum"><span class="heading-number">9.19</span> Exemplo numérico adicional — Crosstalk por impedância comum</h2>
+<p><strong>Problema</strong>: Dois circuitos compartilham um retorno com impedância $Z_g=0.1+j0.2\ \Omega$ a 10 MHz. Se o agressor tem corrente $I_A=100$ mA RMS, qual é a tensão de ruído induzida na vítima?</p>
+<p><strong>Solução</strong>:</p>
+<p>$|Z_g|=\sqrt{0.1^2+0.2^2}=\sqrt{0.05}=0.224\ \Omega$.</p>
+<p>$V_g=|Z_g|\cdot|I_A|=0.224\cdot0.1=0.0224$ V = $22.4$ mV.</p>
+<p>Fase de $Z_g$: $\phi=\arctan(0.2/0.1)=63.4°$.</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: A impedância comum é frequentemente subestimada em projetos de PCB. Um plano de retorno contínuo e de baixa indutância é essencial para minimizar esse acoplamento. Vias de retorno próximas a vias de sinal ajudam a manter a impedância de retorno baixa.</p>
+</blockquote>
+<h2 id="modos-par-e-ímpar-em-linhas-acopladas"><span class="heading-number">9.20</span> Modos par e ímpar em linhas acopladas</h2>
+<p>Para duas linhas simétricas, as matrizes por unidade de comprimento podem ser escritas como</p>
+
+<div class="math-display">
+$$
+
+\mathbf L=\begin{bmatrix}L&amp;L_m\\L_m&amp;L\end{bmatrix},\qquad
+\mathbf C=\begin{bmatrix}C+C_m&amp;-C_m\\-C_m&amp;C+C_m\end{bmatrix}.
+
+$$
+</div>
+
+<p>Os autovetores $[1\;1]^T$ e $[1\;-1]^T$ representam, respectivamente, os modos par e ímpar. Substituí-los nas equações multcondutoras desacopla o problema e produz</p>
+
+<div class="math-display">
+$$
+
+L_e=L+L_m,\quad C_e=C,
+\qquad
+L_o=L-L_m,\quad C_o=C+2C_m,
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+Z_e=\sqrt{\frac{L_e}{C_e}},\quad
+Z_o=\sqrt{\frac{L_o}{C_o}},\quad
+v_e=\frac1{\sqrt{L_eC_e}},\quad
+v_o=\frac1{\sqrt{L_oC_o}}.
+
+$$
+</div>
+
+<aside class="callout callout-theorem" role="note"><p><strong>Corolário — origem do FEXT.</strong> Se $v_e=v_o$, as contribuições capacitiva e indutiva chegam sincronizadas e o FEXT ideal se cancela. Em microstrip, os campos veem misturas diferentes de ar e dielétrico, em geral $v_e\ne v_o$; em stripline homogênea, o cancelamento tende a ser melhor.</p></aside>
+<h3 id="exemplo-numérico--impedâncias-modais"><span class="heading-number">9.20.1</span> Exemplo numérico — impedâncias modais</h3>
+<p>Considere $L=400\,\text{nH/m}$, $L_m=40\,\text{nH/m}$, $C=160\,\text{pF/m}$ e $C_m=16\,\text{pF/m}$. Então</p>
+
+<div class="math-display">
+$$
+
+Z_e=\sqrt{440\,\text{nH/m}/160\,\text{pF/m}}=52{,}4\,\Omega,
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+Z_o=\sqrt{360\,\text{nH/m}/192\,\text{pF/m}}=43{,}3\,\Omega.
+
+$$
+</div>
+
+<p>A impedância diferencial aproximada é $Z_{diff}=2Z_o=86{,}6\,\Omega$. O exemplo mostra por que usar duas linhas isoladas de 50 Ω não determina, por si só, um par diferencial de 100 Ω.</p>
+<h2 id="simulação-temporal-de-next-e-fext"><span class="heading-number">9.21</span> Simulação temporal de NEXT e FEXT</h2>
+<p>O modelo abaixo separa dois efeitos didáticos: NEXT com duração próxima de $2t_d$ e FEXT proporcional à diferença de atrasos modais. Não substitui um solucionador multcondutor, mas verifica sinais, escalas e tendências.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">length</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.30</span>       <span style="color: #959077"># m</span>
+<span style="color: #F8F8F2">ve,</span> <span style="color: #F8F8F2">vo</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.85e8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.75e8</span>
+<span style="color: #F8F8F2">ke,</span> <span style="color: #F8F8F2">ko</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.08</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.10</span> <span style="color: #959077"># coeficientes didáticos</span>
+<span style="color: #F8F8F2">tr</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5e-9</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4000</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">edge</span><span style="color: #F8F8F2">(t,</span> <span style="color: #F8F8F2">t0,</span> <span style="color: #F8F8F2">tr):</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">clip((t</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">t0)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">tr,</span> <span style="color: #AE81FF">0.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">te,</span> <span style="color: #F8F8F2">to</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">length</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">ve,</span> <span style="color: #F8F8F2">length</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">vo</span>
+<span style="color: #F8F8F2">aggressor</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">edge(t,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">tr)</span>
+<span style="color: #F8F8F2">next_v</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(ke</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">ko)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(edge(t,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">tr)</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">edge(t,</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">min(te,</span> <span style="color: #F8F8F2">to),</span> <span style="color: #F8F8F2">tr))</span>
+<span style="color: #F8F8F2">fext_v</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(edge(t,</span> <span style="color: #F8F8F2">te,</span> <span style="color: #F8F8F2">tr)</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">edge(t,</span> <span style="color: #F8F8F2">to,</span> <span style="color: #F8F8F2">tr))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4.5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">aggressor,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;agressor&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">next_v,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;NEXT&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">fext_v,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;FEXT modal&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(xlabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Tempo (ns)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ylabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Amplitude normalizada&#39;</span><span style="color: #F8F8F2">,</span>
+       <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Crosstalk no tempo: duração e separação modal&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m length = [32m0.30[39m       [38;5;66;03m# m[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p><strong>Validação:</strong> faça $v_e=v_o$ e confirme $FEXT=0$; faça $k_e=k_o=0$ e confirme $NEXT=0$. Varra comprimento e $t_r$: o pico de FEXT cresce enquanto a diferença de atraso é resolvida pela borda.</p>
+<h2 id="estudo-paramétrico-de-layout"><span class="heading-number">9.22</span> Estudo paramétrico de layout</h2>
+<p>Para uma primeira comparação, admita que os coeficientes de acoplamento decaiam aproximadamente com $e^{-s/h}$, onde $s$ é o espaçamento e $h$ a altura ao plano. Essa lei é apenas uma parametrização didática; valores de projeto devem vir de um solucionador 2D ou de geometria validada.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">s_over_h</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">200</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">k0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.25</span>
+<span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k0</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">s_over_h)</span>
+<span style="color: #F8F8F2">next_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">maximum(k</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(s_over_h,</span> <span style="color: #F8F8F2">next_db,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;s/h = 3&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Espaçamento normalizado s/h&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;NEXT aproximado (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Tendência de crosstalk com espaçamento e altura ao plano&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m s_over_h = np.linspace([32m0.5[39m, [32m6[39m, [32m200[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="laboratório-spice--acoplamento-concentrado-entre-trilhas"><span class="heading-number">9.23</span> Laboratório SPICE — acoplamento concentrado entre trilhas</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">Vagg</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">PULSE</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3.3</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">500</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">500</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2">)</span>
+<span style="color: #A6E22E">Rsrc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">agg</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">33</span>
+<span style="color: #A6E22E">Cagg</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">agg</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Lvictim</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vic</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Rvictim</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vic</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">k</span>
+<span style="color: #A6E22E">Cc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">agg</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vic</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #66D9EF">f</span>
+<span style="color: #A6E22E">Lagg</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">agg</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Kcouple</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Lagg</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Lvictim</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0.08</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">25</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">agg</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">vic</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Execute primeiro com <code>Kcouple=0</code>, depois com <code>Cc=0</code>, separando contribuições elétrica e magnética. Inverta os pontos de um indutor para verificar o sinal. Este é modelo concentrado; para linhas longas use elementos multcondutores ou parâmetros modais.</p>
+<h2 id="referência-principal"><span class="heading-number">9.24</span> Referência principal</h2>
+<p>Síntese do Capítulo 9, &quot;Crosstalk&quot;, de C. R. Paul, <em>Introduction to Electromagnetic Compatibility</em>, 2ª ed., Wiley, 2006, pp. 559–710.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="08_antenas.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">8. Antenas</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="10_emissoes_conduzidas_suscetibilidade.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">10. Emissões conduzidas e suscetibilidade</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

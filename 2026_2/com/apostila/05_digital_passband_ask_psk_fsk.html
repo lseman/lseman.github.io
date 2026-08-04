@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5. Transmissão Digital em Banda Passante: ASK, PSK e FSK — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>5. Transmissão Digital em Banda Passante: ASK, PSK e FSK</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>5. Transmissão Digital em Banda Passante: ASK, PSK e FSK</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="04_banda_base_nyquist.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">4. Transmissão em Banda Base e Critério de Nyquist</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="06_digital_passband_qam.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">6. Modulação QAM — Transmissão Digital em Banda Base</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>5. Transmissão Digital em Banda Passante: ASK, PSK e FSK</h1>
+<blockquote>
+<p>Apostila de Comunicações — Transmissão Digital em Banda Passante: ASK, PSK e FSK<br />
+Tópicos: espaço de sinais · decisão máxima-verossimilhança · M-ASK · BPSK · QPSK · M-PSK · M-FSK · BER · constelações · eficiência espectral</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">5.1</span> Antes de começar</h2>
+<p>Ao final, você deve representar modulações em espaço de sinais, construir regiões ML e comparar ASK, PSK e FSK por distância, BER, banda e complexidade. <strong>Diagnóstico:</strong> dois esquemas com a mesma energia média necessariamente têm a mesma BER? <strong>Evidência mínima:</strong> obter ao menos uma curva simulada com barras ou intervalos de incerteza e confrontá-la com a teoria.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#espa%C3%A7o-de-sinais-e-decis%C3%A3o-m%C3%A1xima-verossimilhan%C3%A7a">Espaço de Sinais e Decisão Máxima-Verossimilhança</a></li>
+<li><a href="#mask--teoria-completa">M-ASK — Teoria Completa</a></li>
+<li><a href="#dedu%C3%A7%C3%A3o-da-probabilidade-de-erro-mask">Dedução da Probabilidade de Erro M-ASK</a></li>
+<li><a href="#bpsk--teoria-e-optimalidade">BPSK — Teoria e Optimalidade</a></li>
+<li><a href="#qpsk--teoria-efici%C3%AAncia-e-varia%C3%A7%C3%A3o-%CF%804">QPSK — Teoria, Eficiência e Variação π/4</a></li>
+<li><a href="#m-psk-geral-e-dpsk">M-PSK Geral e DPSK</a></li>
+<li><a href="#m-fsk--teoria">M-FSK — Teoria</a></li>
+<li><a href="#dedu%C3%A7%C3%A3o-da-probabilidade-de-erro-m-fsk">Dedução da Probabilidade de Erro M-FSK</a></li>
+<li><a href="#compara%C3%A7%C3%A3o-rigorosa-de-modula%C3%A7%C3%B5es-digitais">Comparação Rigorosa de Modulações Digitais</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="espaço-de-sinais-e-decisão-máxima-verossimilhança"><span class="heading-number">5.2</span> Espaço de Sinais e Decisão Máxima-Verossimilhança</h2>
+<h3 id="representação-de-karhunen-loève"><span class="heading-number">5.2.1</span> Representação de Karhunen-Loève</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema 1.1 (Representação de sinais em espaço de dimensão finita).</strong> Dado um conjunto de $M$ sinais $\{s_i(t)\}_{i=0}^{M-1}$ de duração $T_s$ e energia finita, existe uma base ortonormal $\{\phi_k(t)\}_{k=1}^{N}$ com $N \le M$ tal que:</p></aside>
+
+<div class="math-display">
+$$
+s_i(t) = \sum_{k=1}^{N} s_{ik}\, \phi_k(t), \quad 0 \le t \le T_s. \tag{1.1}
+$$
+</div>
+
+<p>Os coeficientes $s_{ik} = \int_0^{T_s} s_i(t)\phi_k(t)\,dt$ formam o vetor de sinal $\mathbf{s}_i = (s_{i1}, \dots, s_{iN}) \in \mathbb{R}^N$.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> O espaço de sinais é o espaço euclidiano $\mathbb{R}^N$ cujos pontos são as constelações (vetores de símbolos). A distância euclidiana entre dois pontos $\mathbf{s}_i$ e $\mathbf{s}_j$ é:</p></aside>
+
+<div class="math-display">
+$$
+\|\mathbf{s}_i - \mathbf{s}_j\|^2 = \int_0^{T_s} |s_i(t) - s_j(t)|^2 dt. \tag{1.2}
+$$
+</div>
+
+<h3 id="receptor-ótimo-em-awgn"><span class="heading-number">5.2.2</span> Receptor Ótimo em AWGN</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema 1.2 (Decisão máxima-verossimilhança em AWGN).</strong> Seja o sinal recebido $r(t) = s_i(t) + n(t)$, onde $n(t)$ é AWGN com PSD bilateral $N_0/2$. O receptor que minimiza a probabilidade de erro (para símbolos equiprováveis) é:</p></aside>
+
+<div class="math-display">
+$$
+\hat{i} = \arg\min_i \|\mathbf{r} - \mathbf{s}_i\|^2 = \arg\max_i \left(\mathbf{r} \cdot \mathbf{s}_i - \frac{1}{2}\|\mathbf{s}_i\|^2\right). \tag{1.3}
+$$
+</div>
+
+<aside class="callout callout-proof" role="note"><p><strong>Prova:</strong></p></aside>
+<p>A densidade de probabilidade condicional do vetor recebido $\mathbf{r}$ dado que $\mathbf{s}_i$ foi transmitido é Gaussiana multivariada:</p>
+
+<div class="math-display">
+$$
+p(\mathbf{r}|\mathbf{s}_i) = \left(\frac{1}{\pi N_0}\right)^{N/2} \exp\left(-\frac{\|\mathbf{r} - \mathbf{s}_i\|^2}{N_0}\right).
+$$
+</div>
+
+<p>Para símbolos equiprováveis $P(i) = 1/M$, a regra de máxima-verossimilhança é $\arg\max_i p(\mathbf{r}|\mathbf{s}_i)$, equivalente a $\arg\min_i \|\mathbf{r} - \mathbf{s}_i\|^2$. Expandindo:</p>
+
+<div class="math-display">
+$$
+\|\mathbf{r} - \mathbf{s}_i\|^2 = \|\mathbf{r}\|^2 - 2\mathbf{r} \cdot \mathbf{s}_i + \|\mathbf{s}_i\|^2.
+$$
+</div>
+
+<p>O termo $\|\mathbf{r}\|^2$ é comum a todos os $i$, então a decisão é $\arg\max_i (\mathbf{r} \cdot \mathbf{s}_i - \frac{1}{2}\|\mathbf{s}_i\|^2)$. $\blacksquare$</p>
+<h3 id="implementação-correlator-ou-filtro-casado"><span class="heading-number">5.2.3</span> Implementação: Correlator ou Filtro Casado</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> O receptor correlaciona $r(t)$ com cada forma de onda candidata:</p></aside>
+
+<div class="math-display">
+$$
+r_k = \int_0^{T_s} r(t)\phi_k(t)\,dt = s_{ik} + n_k, \quad n_k \sim \mathcal{N}(0, N_0/2).
+$$
+</div>
+
+<p>Equivalente: filtro casado $h_k(t) = \phi_k(T_s - t)$ para cada $\phi_k$, amostra em $t = T_s$.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> A distância mínima da constelação $d_{\min} = \min_{i \ne j}\|\mathbf{s}_i - \mathbf{s}_j\|$ governa a probabilidade de erro. Quanto maior $d_{\min}$ para uma dada energia média, menor a BER.</p></aside>
+<h3 id="probabilidade-de-erro-em-função-da-distância"><span class="heading-number">5.2.4</span> Probabilidade de Erro em Função da Distância</h3>
+<p>Para dois sinais antipodais $\pm\mathbf{s}$ ($\|\mathbf{s}\|^2 = E$), em AWGN:</p>
+
+<div class="math-display">
+$$
+P_e = Q\left(\frac{\|\mathbf{s} - (-\mathbf{s})\|}{2\sqrt{N_0/2}}\right)
+=Q\left(\frac{2\sqrt E}{\sqrt{2N_0}}\right)
+= Q\left(\sqrt{\frac{2E}{N_0}}\right).
+$$
+</div>
+
+<p>O denominador contém metade da distância entre os sinais e o desvio padrão $\sqrt{N_0/2}$ do ruído projetado. Para BPSK, $E=E_b$, recuperando $P_b=Q(\sqrt{2E_b/N_0})$.</p>
+<p>Para $M$ sinais hipercúbicos (M-PAM):</p>
+
+<div class="math-display">
+$$
+P_e \approx \frac{2(M-1)}{M} Q\left(\sqrt{\frac{6E_b\log_2 M}{(M^2-1)N_0}}\right). \tag{1.4}
+$$
+</div>
+
+<h2 id="m-ask--teoria-completa"><span class="heading-number">5.3</span> M-ASK — Teoria Completa</h2>
+<h3 id="definição-do-sinal-m-ask"><span class="heading-number">5.3.1</span> Definição do Sinal M-ASK</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> M-ASK (<em>M-Amplitude Shift Keying</em>) transmite $M$ símbolos por meio de $M$ amplitudes distintas da portadora:</p></aside>
+
+<div class="math-display">
+$$
+\boxed{s_m(t) = A_m\cos(2\pi f_c t), \quad m \in \{0, 1, \dots, M-1\}, \quad 0 \le t \le T_s.} \tag{2.1}
+$$
+</div>
+
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> A base ortonormal para M-ASK é $\phi(t) = \sqrt{2/T_s}\cos(2\pi f_c t)$, de modo que:</p></aside>
+
+<div class="math-display">
+$$
+s_m(t) = s_m\,\phi(t), \quad \text{onde } s_m = A_m\sqrt{T_s/2}. \tag{2.2}
+$$
+</div>
+
+<p>Os pontos da constelação estão em uma linha (dimensão $N = 1$).</p>
+<h3 id="mapeamento-de-amplitudes"><span class="heading-number">5.3.2</span> Mapeamento de Amplitudes</h3>
+<p>Para energia normalizada (energia média por símbolo unitária), as amplitudes são igualmente espaçadas e simétricas em torno de zero:</p>
+
+<div class="math-display">
+$$
+A_m = (2m - M + 1)d, \quad m = 0, 1, \dots, M-1. \tag{2.3}
+$$
+</div>
+
+<p>O espaçamento é $2d$. A energia média do símbolo é:</p>
+
+<div class="math-display">
+$$
+E_s = \frac{1}{M}\sum_{m=0}^{M-1} s_m^2 = \frac{T_s}{2}\cdot\frac{1}{M}\sum_{m=0}^{M-1} A_m^2. \tag{2.4}
+$$
+</div>
+
+<p>Com $A_m = (2m - M + 1)d$:</p>
+
+<div class="math-display">
+$$
+\sum_{m=0}^{M-1} A_m^2 = d^2\sum_{m=0}^{M-1} (2m - M + 1)^2 = d^2 \cdot \frac{M(M^2-1)}{3}. \tag{2.5}
+$$
+</div>
+
+<p>Logo:</p>
+
+<div class="math-display">
+$$
+E_s = \frac{T_s}{2M} \cdot d^2 \cdot \frac{M(M^2-1)}{3} = \frac{T_s d^2(M^2-1)}{6}. \tag{2.6}
+$$
+</div>
+
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema 2.1 (Espaçamento normalizado M-ASK).</strong> Para energia média por símbolo $E_s$:</p></aside>
+
+<div class="math-display">
+$$
+\boxed{d = \sqrt{\frac{6E_s}{T_s(M^2-1)}} = \sqrt{\frac{6E_b\log_2 M}{T_s(M^2-1)}}.} \tag{2.7}
+$$
+</div>
+
+<h3 id="potência-e-eficiência"><span class="heading-number">5.3.3</span> Potência e Eficiência</h3>
+<p>A potência média transmitida é $P = E_s/T_s$. A eficiência espectral é:</p>
+
+<div class="math-display">
+$$
+\boxed{\eta=\frac{R_b}{B}=\frac{\log_2M}{BT_s}.} \tag{2.8}
+$$
+</div>
+
+<p>onde $B$ é a largura de banda do sinal modulado. Para ASK com pulso de Nyquist RC, $B = (1+\alpha)/(2T_s)$ em banda base, ou $B = (1+\alpha)/T_s$ em banda passante (duplicada).</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> no espaço de sinais, a distância entre vizinhos é $D_{\min}=2d\sqrt{T_s/2}$; portanto, $D_{\min}^2=12E_s/(M^2-1)$. É essa distância — não o espaçamento de amplitude isolado — que entra na probabilidade de erro.</p></aside>
+<h3 id="casos-particulares"><span class="heading-number">5.3.4</span> Casos Particulares</h3>
+<p><strong>OOK:</strong> é assimétrica, $\{0,s_1\}$, e não coincide com a M-ASK simétrica da Seção “Mapeamento de Amplitudes”. Se $E_1$ é a energia do símbolo ligado, $P_b=Q(\sqrt{E_1/(2N_0)})$. Para bits equiprováveis, a energia média é $\bar E_b=E_1/2$, logo:</p>
+
+<div class="math-display">
+$$
+P_b^{\text{OOK}}=Q\left(\sqrt{\frac{\bar E_b}{N_0}}\right). \tag{2.9}
+$$
+</div>
+
+<p><strong>4-ASK:</strong> Constelação $\{-3d, -d, d, 3d}$ normalizada. Transporta 2 bits/símbolo. BER aproximada:</p>
+
+<div class="math-display">
+$$
+P_b \approx \frac{3}{4}Q\left(\sqrt{\frac{4E_b}{5N_0}}\right).
+$$
+</div>
+
+<p><strong>16-ASK:</strong> 4 bits/símbolo. BER aproximada:</p>
+
+<div class="math-display">
+$$
+P_b \approx \frac{15}{32}Q\left(\sqrt{\frac{8E_b}{85N_0}}\right).
+$$
+</div>
+
+<h3 id="desvantagem-do-m-ask"><span class="heading-number">5.3.5</span> Desvantagem do M-ASK</h3>
+<aside class="callout callout-result" role="status"><p><strong>Resultado 2.1 (Desvantagem energética do M-ASK).</strong> A distância mínima normalizada é $d_{\min}^2 = \frac{12E_b\log_2 M}{(M^2-1)}$, que para $M$ grande se comporta como $\frac{12E_b\log_2 M}{M^2}$. Para cada dobro da ordem, a distância cai quadráticamente, exigindo $4\times$ mais energia por bit para manter a mesma BER.</p></aside>
+<p><strong>Comparação:</strong> BPSK ($M=2$ PSK) tem $d_{\min}^2 = 4E_b$. 16-ASK tem $d_{\min}^2 \approx \frac{12E_b\cdot 4}{255} \approx 0{,}188E_b$. BPSK é ~21× melhor em distância mínima.</p>
+<h2 id="dedução-da-probabilidade-de-erro-m-ask"><span class="heading-number">5.4</span> Dedução da Probabilidade de Erro M-ASK</h2>
+<h3 id="densidade-de-probabilidade-condicionada"><span class="heading-number">5.4.1</span> Densidade de Probabilidade Condicionada</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova da BER M-ASK:</strong></p></aside>
+<p>Considere a M-ASK simétrica e denote por $D=2d\sqrt{T_s/2}$ a distância entre pontos adjacentes <strong>no espaço de sinais</strong>. A fronteira fica no ponto médio, a $D/2$ de cada vizinho. Como a projeção do ruído tem desvio $\sigma=\sqrt{N_0/2}$, um ponto interno possui duas caudas de erro:</p>
+
+<div class="math-display">
+$$
+P(e|m)=2Q\left(\frac{D}{2\sigma}\right)
+=2Q\left(\frac{D}{\sqrt{2N_0}}\right),\quad1\le m\le M-2. \tag{3.1}
+$$
+</div>
+
+<p>Cada ponto de borda possui apenas uma cauda. Fazendo a média dos dois pontos de borda e dos $M-2$ internos:</p>
+
+<div class="math-display">
+$$
+P_s=\frac{2(M-1)}{M}Q\left(\frac{D}{\sqrt{2N_0}}\right). \tag{3.2}
+$$
+</div>
+
+<h3 id="conversão-para-ber"><span class="heading-number">5.4.2</span> Conversão para BER</h3>
+<p>Usando Gray coding (aproximação boa para M grande), cada erro de símbolo troca tipicamente 1 bit:</p>
+
+<div class="math-display">
+$$
+P_b\approx\frac{P_s}{\log_2M}
+=\frac{2(M-1)}{M\log_2M}Q\left(\frac{D}{\sqrt{2N_0}}\right). \tag{3.3}
+$$
+</div>
+
+<p>Como $D^2=12E_s/(M^2-1)=12E_b\log_2M/(M^2-1)$:</p>
+
+<div class="math-display">
+$$
+\boxed{P_b^{\text{M-ASK}}\approx\frac{2(M-1)}{M\log_2M}
+Q\left(\sqrt{\frac{6E_b\log_2M}{(M^2-1)N_0}}\right).} \tag{3.4}
+$$
+</div>
+
+<p><strong>Verificação para M = 2:</strong></p>
+
+<div class="math-display">
+$$
+P_b=Q\left(\sqrt{\frac{6E_b}{3N_0}}\right)
+=Q\left(\sqrt{\frac{2E_b}{N_0}}\right).
+$$
+</div>
+
+<p>Isso é BPSK, pois a M-ASK simétrica com $M=2$ tem pontos antipodais. OOK é tratado separadamente na Seção “Casos Particulares”.</p>
+<p>Se a energia do símbolo ligado for denotada por $E_1$, OOK possui $P_b=Q(\sqrt{E_1/(2N_0)})$; com bits equiprováveis, $E_1=2\bar E_b$ e resulta $Q(\sqrt{\bar E_b/N_0})$.</p>
+<h3 id="interpretação"><span class="heading-number">5.4.3</span> Interpretação</h3>
+<aside class="callout callout-result" role="status"><p><strong>Resultado 3.1.</strong> Para M-ASK, o argumento da Q-função contém o fator $\sqrt{6\log_2M/(M^2-1)}$. Para $M=2^k$ grande, ele decai aproximadamente como $\sqrt{6k}/2^k$, explicando a baixa eficiência energética de ASK de alta ordem.</p></aside>
+<h2 id="bpsk--teoria-e-optimalidade"><span class="heading-number">5.5</span> BPSK — Teoria e Optimalidade</h2>
+<h3 id="definição-bpsk"><span class="heading-number">5.5.1</span> Definição BPSK</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> BPSK (<em>Binary Phase Shift Keying</em>) usa duas fases opostas (antipodais) para representar bits:</p></aside>
+
+<div class="math-display">
+$$
+\boxed{s_0(t) = \sqrt{\frac{2E_b}{T_b}}\cos(2\pi f_c t), \quad s_1(t) = -\sqrt{\frac{2E_b}{T_b}}\cos(2\pi f_c t).} \tag{4.1}
+$$
+</div>
+
+<p>No espaço de sinais, os dois pontos são $\pm\sqrt{E_b}$ em $\mathbb{R}^1$. A distância entre eles é $2\sqrt{E_b}$.</p>
+<h3 id="dedução-da-ber-bpsk"><span class="heading-number">5.5.2</span> DEDUÇÃO da BER BPSK</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova:</strong></p></aside>
+<p>O receptor correlaciona $r(t)$ com $\phi(t) = \sqrt{2/T_b}\cos(2\pi f_c t)$:</p>
+
+<div class="math-display">
+$$
+r = \int_0^{T_b} r(t)\phi(t)\,dt = \pm\sqrt{E_b} + n,
+$$
+</div>
+
+<p>onde $n \sim \mathcal{N}(0, N_0/2)$. O limiar ótimo (equiprovável) é $0$.</p>
+<p>Erro ocorre se $n &gt; 0$ quando $-\sqrt{E_b}$ foi transmitido, ou se $n &lt; 0$ quando $+\sqrt{E_b}$ foi transmitido. Por simetria:</p>
+
+<div class="math-display">
+$$
+P_b = P(n &gt; 0 | -\sqrt{E_b}) = P(n &gt; \sqrt{E_b}) = Q\left(\frac{\sqrt{E_b}}{\sqrt{N_0/2}}\right) = Q\left(\sqrt{\frac{2E_b}{N_0}}\right). \quad \blacksquare
+$$
+</div>
+
+<!-- slides: columns -->
+<h3 id="teorema-da-optimalidade-bpsk"><span class="heading-number">5.5.3</span> Teorema da Optimalidade BPSK</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema 4.1 (BPSK é ótima em AWGN).</strong> Entre todas as modulações com 2 símbolos de energia $E_b$, BPSK (sinais antipodais) minimiza a probabilidade de erro em AWGN.</p></aside>
+<aside class="callout callout-proof" role="note"><p><strong>Prova:</strong> A probabilidade de erro para 2 símbolos é $P_e = Q(d_{\min}/(2\sqrt{N_0/2}))$. Para energia fixa $E$, o máximo de $d_{\min}$ é $2\sqrt{E}$ (antipodal), dado por $d_{\min}^2 = \|\mathbf{s}_1 - \mathbf{s}_0\|^2 = 4E$ quando $\mathbf{s}_1 = -\mathbf{s}_0$. $\blacksquare$</p></aside>
+<!-- slides: column -->
+<h3 id="detecção-coerente"><span class="heading-number">5.5.4</span> Detecção Coerente</h3>
+<p>O detector coerente BPSK usa:</p>
+<ol>
+<li><strong>Recuperação de portadora:</strong> PLL ou Costas loop para estimar a fase da portadora.</li>
+<li><strong>Correlador:</strong> $r = \int r(t)\sqrt{2/T_b}\cos(2\pi f_c t + \hat{\phi}) dt$.</li>
+<li><strong>Decisão:</strong> $\hat{b} = 1$ se $r &gt; 0$, $\hat{b} = 0$ se $r &lt; 0$.</li>
+</ol>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> A ambiguidade de fase de $\pi$ (flip) é resolvida com codificação diferencial (DBPSK) ou preâmbulo de sincronismo.</p></aside>
+<!-- slides: end-columns -->
+<h3 id="ber-bpsk-em-tabela"><span class="heading-number">5.5.5</span> BER BPSK em Tabela</h3>
+<table>
+<thead>
+<tr>
+<th>$E_b/N_0$ (dB)</th>
+<th>$E_b/N_0$ (linear)</th>
+<th>BER</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>$Q(\sqrt{2}) \approx 0{,}0787$</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>$Q(2) \approx 0{,}0228$</td>
+</tr>
+<tr>
+<td>6</td>
+<td>4</td>
+<td>$Q(\sqrt{8}) \approx 0{,}000317$</td>
+</tr>
+<tr>
+<td>9,6</td>
+<td>9</td>
+<td>$Q(3) \approx 0{,}00135$</td>
+</tr>
+<tr>
+<td>10</td>
+<td>$\sim$10</td>
+<td>$Q(\sqrt{20}) \approx 2{,}87\times 10^{-5}$</td>
+</tr>
+</tbody>
+</table>
+<h2 id="qpsk--teoria-eficiência-e-variação-π4"><span class="heading-number">5.6</span> QPSK — Teoria, Eficiência e Variação π/4</h2>
+<h3 id="definição-qpsk"><span class="heading-number">5.6.1</span> Definição QPSK</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> QPSK (<em>Quadrature Phase Shift Keying</em>) transporta 2 bits por símbolo usando 4 fases:</p></aside>
+
+<div class="math-display">
+$$
+\boxed{\phi_k \in \left\{\frac{\pi}{4}, \frac{3\pi}{4}, \frac{5\pi}{4}, \frac{7\pi}{4}\right\}.} \tag{5.1}
+$$
+</div>
+
+<p>Os sinais são:</p>
+
+<div class="math-display">
+$$
+s_k(t) = \sqrt{\frac{2E_s}{T_s}}\cos(2\pi f_c t + \phi_k), \quad k = 0, 1, 2, 3. \tag{5.2}
+$$
+</div>
+
+<h3 id="representação-iq"><span class="heading-number">5.6.2</span> Representação I/Q</h3>
+<p>QPSK é equivalente a dois BPSK ortogonais:</p>
+
+<div class="math-display">
+$$
+I(t) = \sqrt{\frac{2E_s}{T_s}}\cos\phi_k, \quad Q(t) = -\sqrt{\frac{2E_s}{T_s}}\sin\phi_k. \tag{5.3}
+$$
+</div>
+
+<p>Para $\{\pi/4, 3\pi/4, 5\pi/4, 7\pi/4\}$: $I, Q \in \{\pm\sqrt{E_s/T_s}\} = \{\pm\sqrt{E_b/T_b}\}$.</p>
+<p>Cada eixo é independente BPSK com energia $E_b$. Portanto:</p>
+
+<div class="math-display">
+$$
+\boxed{P_b^{\text{QPSK}} \approx P_b^{\text{BPSK}} = Q\left(\sqrt{\frac{2E_b}{N_0}}\right).} \tag{5.4}
+$$
+</div>
+
+<h3 id="dedução-da-ber-qpsk"><span class="heading-number">5.6.3</span> DEDUÇÃO da BER QPSK</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova:</strong></p></aside>
+<p>O receptor QPSK decompõe $r(t)$ em componentes I e Q ortogonais. Cada componente sofre decisão BPSK independente com energia $E_b$ e ruído $n_I, n_Q \sim \mathcal{N}(0, N_0/2)$:</p>
+
+<div class="math-display">
+$$
+P_b = P(\text{erro em um eixo}) = Q\left(\frac{\sqrt{E_b}}{\sqrt{N_0/2}}\right) = Q\left(\sqrt{\frac{2E_b}{N_0}}\right). \quad \blacksquare
+$$
+</div>
+
+<p>A probabilidade de erro de símbolo é:</p>
+
+<div class="math-display">
+$$
+P_s = 1 - (1 - P_b)^2 = 2P_b - P_b^2. \tag{5.5}
+$$
+</div>
+
+<p>Para $P_b \ll 1$: $P_s \approx 2P_b$.</p>
+<h3 id="eficiência-espectral-qpsk"><span class="heading-number">5.6.4</span> Eficiência Espectral QPSK</h3>
+<p>QPSK transmite dois bits por símbolo. Com pulsos de Nyquist de roll-off $\alpha$, a largura de banda passante é aproximadamente $B=(1+\alpha)R_s$; portanto:</p>
+
+<div class="math-display">
+$$
+\boxed{\eta_{\text{QPSK}}=\frac{R_b}{B}=\frac{2R_s}{(1+\alpha)R_s}=\frac{2}{1+\alpha}\ \text{bit/s/Hz}.} \tag{5.6}
+$$
+</div>
+
+<p>Para $\alpha=0$, o limite ideal é $2$ bit/s/Hz; roll-off positivo reduz esse valor.</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> A eficiência de 2 bit/s/Hz é o dobro do BPSK. QPSK é amplamente usado em GPS, DVB-S, Wi-Fi (módulos iniciais), e satélites.</p></aside>
+<h3 id="gray-coding"><span class="heading-number">5.6.5</span> Gray Coding</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> Gray coding mapeia símbolos adjacentes na constelação para códigos binários com distância de Hamming 1.</p></aside>
+<p>Para QPSK com fases $\{\pi/4, 3\pi/4, 5\pi/4, 7\pi/4\}$, o mapeamento Gray é:</p>
+<table>
+<thead>
+<tr>
+<th>Fase</th>
+<th>Bits (Gray)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\pi/4$</td>
+<td>00</td>
+</tr>
+<tr>
+<td>$3\pi/4$</td>
+<td>01</td>
+</tr>
+<tr>
+<td>$5\pi/4$</td>
+<td>11</td>
+</tr>
+<tr>
+<td>$7\pi/4$</td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> Gray coding garante que, na BER baixa, o erro de símbolo cause em média ~1 erro de bit. Sem Gray, erros adjacentes podem causar 2 erros de bit.</p></aside>
+<h3 id="qpsk-π4"><span class="heading-number">5.6.6</span> QPSK π/4</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> QPSK π/4 é uma variação onde os constel points alternam entre dois conjuntos rotacionados de $\pi/4$:</p></aside>
+
+<div class="math-display">
+$$
+\mathcal{C}_0 = \{\pm\sqrt{E_b} \pm j\sqrt{E_b}\}, \quad \mathcal{C}_1 = \{\pm\sqrt{E_b}(1+j) \cdot e^{j\pi/4}\} = \{\pm\sqrt{2E_b}, \pm j\sqrt{2E_b}\}.
+$$
+</div>
+
+<p><strong>Motivação:</strong> Evita que a trajetória de fase cruze a origem (onde o envelope tende a zero), importante para amplificadores de potência não-lineares (eficiência energética).</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado:</strong> BER de $\pi/4$-QPSK é idêntica à do QPSK convencional. A diferença é na representação em fase relativa (diferencial) ou absoluta.</p></aside>
+<h3 id="dqpsk"><span class="heading-number">5.6.7</span> DQPSK</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> DQPSK (<em>Differential QPSK</em>) codifica informação na mudança de fase relativa entre símbolos consecutivos, eliminando a necessidade de recuperação de portadora coerente.</p></aside>
+
+<div class="math-display">
+$$
+\Delta\phi_k = \phi_k - \phi_{k-1} \in \{\pm\pi/4, \pm 3\pi/4\}.
+$$
+</div>
+
+<p>BER DQPSK (não-coerente): aproximadamente 2–3 dB pior que QPSK coerente na BER baixa.</p>
+<h2 id="m-psk-geral-e-dpsk"><span class="heading-number">5.7</span> M-PSK Geral e DPSK</h2>
+<h3 id="sinais-m-psk"><span class="heading-number">5.7.1</span> Sinais M-PSK</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> M-PSK para $M = 2^k$ usa $M$ fases igualmente espaçadas:</p></aside>
+
+<div class="math-display">
+$$
+\boxed{s_m(t) = \sqrt{\frac{2E_s}{T_s}}\cos\left(2\pi f_c t + \frac{2\pi m}{M}\right), \quad m = 0, 1, \dots, M-1.} \tag{6.1}
+$$
+</div>
+
+<p>A constelação é um polígono regular inscrito em círculo de raio $\sqrt{E_s}$.</p>
+<h3 id="dedução-da-ber-m-psk"><span class="heading-number">5.7.2</span> DEDUÇÃO da BER M-PSK</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova:</strong></p></aside>
+<p>A probabilidade de erro de símbolo M-PSK é a probabilidade de sair do setor angular de meia-largura $\pi/M$. Para $M\ge4$ e SNR moderada/alta, os dois vizinhos dominam:</p>
+
+<div class="math-display">
+$$
+P_s \approx 2Q\left(\sqrt{2\frac{E_s}{N_0}}\sin\frac{\pi}{M}\right). \tag{6.2}
+$$
+</div>
+
+<p>Convertendo para BER com Gray coding ($P_b \approx P_s/\log_2 M$):</p>
+
+<div class="math-display">
+$$
+\boxed{P_b^{\text{M-PSK}} \approx \frac{2}{\log_2 M}Q\left(\sqrt{2\frac{E_b}{N_0}\log_2 M}\sin\frac{\pi}{M}\right).} \tag{6.3}
+$$
+</div>
+
+<p>Para $M=4$, a expressão recupera exatamente $Q(\sqrt{2E_b/N_0})$. Para $M=2$, há apenas um vizinho, não dois, e deve-se usar diretamente a fórmula BPSK $Q(\sqrt{2E_b/N_0})$; portanto, (6.2)–(6.3) não devem ser extrapoladas para $M=2$.</p>
+<h3 id="dedução-do-limite-assintótico"><span class="heading-number">5.7.3</span> DEDUÇÃO do Limite Assintótico</h3>
+<aside class="callout callout-result" role="status"><p><strong>Resultado 6.1 (Limite assintótico M-PSK).</strong> Para $M$ grande, $\sin(\pi/M) \approx \pi/M$:</p></aside>
+
+<div class="math-display">
+$$
+P_b \approx \frac{2}{\log_2 M}Q\left(\sqrt{2\frac{E_b}{N_0}\log_2 M}\cdot\frac{\pi}{M}\right).
+$$
+</div>
+
+<p>Para $M = 2^k$, $\log_2 M = k$, $\pi/M = \pi/2^k$:</p>
+
+<div class="math-display">
+$$
+\sqrt{2\frac{E_b}{N_0}\cdot k}\cdot\frac{\pi}{2^k} = \frac{\pi\sqrt{2k E_b/N_0}}{2^k}.
+$$
+</div>
+
+<p>Para $k$ grande, o argumento decai exponencialmente:</p>
+
+<div class="math-display">
+$$
+\boxed{P_b \approx \frac{2}{\log_2 M}Q\left(\frac{\pi}{M}\sqrt{2\log_2M\frac{E_b}{N_0}}\right),\qquad M\gg1.} \tag{6.4}
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> M-PSK cresce em eficiência espectral ($\log_2 M$ bits/s/Hz), mas exige energia exponencialmente maior para manter BER fixa.</p></aside>
+<h3 id="dpsk-differential-psk"><span class="heading-number">5.7.4</span> DPSK (Differential PSK)</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> DPSK codifica informação na mudança de fase entre símbolos consecutivos.</p></aside>
+<p><strong>BDPSK (<em>Binary DPSK</em>):</strong> $\Delta\phi \in \{0, \pi\}$. Decodificação: $\hat{b}_k = 1$ se $\cos(\phi_k - \phi_{k-1}) &gt; 0$.</p>
+<p><strong>BER BDPSK:</strong></p>
+
+<div class="math-display">
+$$
+\boxed{P_b^{\text{BDPSK}} = \frac{1}{2}e^{-E_b/N_0}.} \tag{6.5}
+$$
+</div>
+
+<p><strong>Comparação BDPSK vs BPSK:</strong> para $P_b=10^{-3}$, BPSK coerente requer aproximadamente $6{,}79$ dB e BDPSK aproximadamente $7{,}93$ dB: penalidade de $1{,}14$ dB nesse ponto. A penalidade tende a cerca de 3 dB apenas no limite de BER muito baixa.</p>
+<p><strong>DQPSK:</strong> usa quatro mudanças de fase, normalmente com mapeamento Gray. Sua BER depende do detector diferencial e não é obtida dividindo diretamente a expressão de BDPSK por dois; deve ser calculada a partir das regiões de decisão diferenciais ou avaliada numericamente.</p>
+<h2 id="m-fsk--teoria"><span class="heading-number">5.8</span> M-FSK — Teoria</h2>
+<h3 id="definição-m-fsk-ortogonal"><span class="heading-number">5.8.1</span> Definição M-FSK Ortogonal</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> M-FSK (<em>M-Frequency Shift Keying</em>) transmite $M$ símbolos por meio de $M$ frequências distintas:</p></aside>
+
+<div class="math-display">
+$$
+\boxed{s_m(t) = \sqrt{\frac{2E_s}{T_s}}\cos(2\pi f_m t), \quad f_m = f_c + m\Delta f, \quad m = 0, \dots, M-1.} \tag{7.1}
+$$
+</div>
+
+<h3 id="ortogonalidade"><span class="heading-number">5.8.2</span> Ortogonalidade</h3>
+<p>Os sinais são ortogonais se:</p>
+
+<div class="math-display">
+$$
+\int_0^{T_s} s_i(t)s_j(t)\,dt = 0, \quad i \ne j. \tag{7.2}
+$$
+</div>
+
+<p>Para portadoras coerentes cujas fases são conhecidas e escolhidas de modo compatível com a janela, a separação mínima usual é:</p>
+
+<div class="math-display">
+$$
+\Delta f = f_j - f_i = \frac{k}{2T_s}, \quad k \in \mathbb{Z}^+.
+$$
+</div>
+
+<p>A menor separação é:</p>
+
+<div class="math-display">
+$$
+\boxed{\Delta f = \frac{1}{2T_s}.} \tag{7.3}
+$$
+</div>
+
+<aside class="callout callout-important" role="alert"><p><strong>Cuidado:</strong> anular apenas o termo de diferença não basta para provar ortogonalidade exata; o termo de soma também deve integrar a zero. Isso ocorre quando as frequências estão na grade apropriada. Em detecção não coerente, a separação mínima usual é $1/T_s$, pois seno e cosseno de fase desconhecida precisam ser ortogonais. Pulsos suavizados alteram a banda ocupada e a interferência entre tons.</p></aside>
+<h3 id="recepção-m-fsk"><span class="heading-number">5.8.3</span> Recepção M-FSK</h3>
+<p>O receptor possui $M$ correlatores (ou filtros casados), cada um sintonizado em uma frequência. A decisão é $\hat{m} = \arg\max_k r_k$, onde $r_k$ é a saída do correlator $k$.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> FSK coerente: o receptor usa fase conhecida. FSK não-coerente: o receptor usa envelope (detector de energia).</p></aside>
+<h3 id="largura-de-banda"><span class="heading-number">5.8.4</span> Largura de Banda</h3>
+<p>A banda total ocupada é:</p>
+
+<div class="math-display">
+$$
+B_{\text{FSK}}\approx(M-1)\Delta f+B_p, \tag{7.4}
+$$
+</div>
+
+<p>onde $B_p$ é a largura efetiva de um único tom após a conformação de pulso. Usar $M\Delta f$ é apenas uma estimativa de ordem de grandeza quando $B_p\approx\Delta f$.</p>
+<p>Ou, pela regra de Carson (modulação de frequência contínua):</p>
+
+<div class="math-display">
+$$
+B \approx 2(\Delta f + f_m) \quad \text{para FSK analógica.}
+$$
+</div>
+
+<p>Para FSK digital: $B \approx M/(2T_s)$ com separação mínima.</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado:</strong> FSK é menos eficiente espectralmente que PSK/ASK. Cada bit extra exige duplicação de frequência (ou mais), mas é mais robusto energeticamente.</p></aside>
+<h3 id="eficiência-energética-do-fsk"><span class="heading-number">5.8.5</span> Eficiência Energética do FSK</h3>
+<aside class="callout callout-result" role="status"><p><strong>Resultado 7.1.</strong> M-FSK é energeticamente eficiente (baixa BER para mesma $E_b/N_0$), mas espectralmente ineficiente. BFSK coerente ortogonal tem BER $Q(\sqrt{E_b/N_0})$, que é 3 dB pior que BPSK, mas BFSK não-coerente tem $P_b = \frac{1}{2}e^{-E_b/(2N_0)}$, com vantagem de simplicidade (sem carrier recovery).</p></aside>
+<h2 id="dedução-da-probabilidade-de-erro-m-fsk"><span class="heading-number">5.9</span> Dedução da Probabilidade de Erro M-FSK</h2>
+<h3 id="m-fsk-coerente"><span class="heading-number">5.9.1</span> M-FSK Coerente</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova:</strong></p></aside>
+<p>Para M-FSK coerente ortogonal, cada correlator real produz uma variável Gaussiana. Se $m$ foi transmitido, $r_m$ tem média $\sqrt{E_s}$; os demais têm média zero; todos têm variância $N_0/2$.</p>
+<p>A probabilidade de erro de símbolo é a probabilidade de algum correlator errado exceder o correto:</p>
+
+<div class="math-display">
+$$
+P_s = P\left(\bigcup_{j \ne m}\{r_j &gt; r_m\}\right). \tag{8.1}
+$$
+</div>
+
+<p>Para M grande e BER baixa, a união é dominada pelos eventos individuais:</p>
+
+<div class="math-display">
+$$
+P_s \approx (M-1)P(r_j &gt; r_m) = (M-1)Q\left(\frac{\sqrt{E_s}}{\sqrt{N_0}}\right). \tag{8.2}
+$$
+</div>
+
+<p>Convertendo para BER:</p>
+<p>Todos os tons errados estão à mesma distância do tom correto. Logo, não existe rotulagem Gray que torne todos os erros vizinhos erros de um bit. Por simetria, condicionado a um erro, o tom decidido é uniforme entre os $M-1$ incorretos; a distância de Hamming média é $kM/[2(M-1)]$, com $k=\log_2M$. Assim,</p>
+
+<div class="math-display">
+$$
+P_b=\frac{M}{2(M-1)}P_s
+\ \lesssim\ \frac{M}{2}Q\left(\sqrt{\frac{E_s}{N_0}}\right), \tag{8.3}
+$$
+</div>
+
+<p>onde a última expressão é a aproximação/limitante de união em alta SNR. Para $M=2$, ela fornece exatamente $Q(\sqrt{E_b/N_0})$.</p>
+<h3 id="m-fsk-não-coerente"><span class="heading-number">5.9.2</span> M-FSK Não-Coerente</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova:</strong></p></aside>
+<p>No detector não-coerente, cada correlator é substituído por um detector de envelope (retificador + filtro). A saída é uma variável de Rician (símbolo correto) ou Rayleigh (símbolos errados).</p>
+<p>Para M-FSK não-coerente:</p>
+<p>Uma expressão exata útil é</p>
+
+<div class="math-display">
+$$
+\boxed{P_s=\sum_{n=1}^{M-1}(-1)^{n+1}\binom{M-1}{n}
+\frac{1}{n+1}\exp\left[-\frac{n}{n+1}\frac{E_s}{N_0}\right].} \tag{8.4}
+$$
+</div>
+
+<p>Em alta SNR, o primeiro termo domina: $P_s\approx(M-1)e^{-E_s/(2N_0)}/2$. A BER volta a ser $M P_s/[2(M-1)]$ para qualquer rotulagem binária balanceada.</p>
+<p>Para BFSK não-coerente ($M=2$):</p>
+
+<div class="math-display">
+$$
+\boxed{P_b^{\text{BFSK, não-coer}} = \frac{1}{2}e^{-E_b/(2N_0)}.} \tag{8.5}
+$$
+</div>
+
+<p><strong>Comparação BFSK:</strong></p>
+<ul>
+<li>Coerente ortogonal: $P_b = Q(\sqrt{E_b/N_0})$.</li>
+<li>Não-coerente: $P_b = \frac{1}{2}e^{-E_b/(2N_0)}$.</li>
+<li>BPSK: $P_b = Q(\sqrt{2E_b/N_0})$.</li>
+</ul>
+<p>Para BER $= 10^{-5}$: BPSK ~9,6 dB, BFSK coerente ~12,6 dB (3 dB penalidade), BFSK não-coerente ~13,8 dB (4,2 dB penalidade).</p>
+<h2 id="comparação-rigorosa-de-modulações-digitais"><span class="heading-number">5.10</span> Comparação Rigorosa de Modulações Digitais</h2>
+<h3 id="tabela-comparativa"><span class="heading-number">5.10.1</span> Tabela Comparativa</h3>
+<table>
+<thead>
+<tr>
+<th>Modulação</th>
+<th>BER (aprox.)</th>
+<th>Eficiência (bit/s/Hz)</th>
+<th>Complexidade</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BPSK</td>
+<td>$Q(\sqrt{2\gamma})$</td>
+<td>1</td>
+<td>Baixa</td>
+<td>Ótimo BER, simples</td>
+</tr>
+<tr>
+<td>QPSK</td>
+<td>$Q(\sqrt{2\gamma})$</td>
+<td>2</td>
+<td>Média</td>
+<td>Mesmo BER; 2× mais bits por símbolo</td>
+</tr>
+<tr>
+<td>8-PSK</td>
+<td>$\frac{2}{3}Q(\sqrt{6\gamma}\sin\frac{\pi}{8})$</td>
+<td>3</td>
+<td>Média-Alta</td>
+<td>$\sin(\pi/8) \approx 0{,}383$</td>
+</tr>
+<tr>
+<td>16-PSK</td>
+<td>$\frac{1}{2}Q(\sqrt{8\gamma}\sin\frac{\pi}{16})$</td>
+<td>4</td>
+<td>Alta</td>
+<td>$\sin(\pi/16) \approx 0{,}195$</td>
+</tr>
+<tr>
+<td>BFSK coer.</td>
+<td>$Q(\sqrt{\gamma})$</td>
+<td>0,5</td>
+<td>Baixa</td>
+<td>3 dB pior que BPSK</td>
+</tr>
+<tr>
+<td>BFSK não-coer.</td>
+<td>$\frac{1}{2}e^{-\gamma/2}$</td>
+<td>0,5</td>
+<td>Muito baixa</td>
+<td>4,2 dB pior que BPSK</td>
+</tr>
+<tr>
+<td>4-ASK</td>
+<td>$\frac{3}{4}Q(\sqrt{\frac{4\gamma}{5}})$</td>
+<td>2</td>
+<td>Baixa</td>
+<td>Sensível a ruído</td>
+</tr>
+<tr>
+<td>16-QAM</td>
+<td>$\frac{3}{4}Q(\sqrt{\frac{4\gamma}{5}})$</td>
+<td>4</td>
+<td>Alta</td>
+<td>Eficiente, sensível a fase</td>
+</tr>
+</tbody>
+</table>
+<h3 id="curvas-de-ber"><span class="heading-number">5.10.2</span> Curvas de BER</h3>
+<aside class="callout callout-result" role="status"><p><strong>Resultado 9.1 (fronteira de compromisso).</strong> Dentro de famílias de constelações limitadas em banda, elevar a ordem geralmente aumenta a eficiência espectral e reduz a distância normalizada, exigindo mais $E_b/N_0$:</p></aside>
+
+<div class="math-display">
+$$
+\boxed{\text{Eficiência espectral ↑} \implies \text{Eficiência energética ↓}} \tag{9.1}
+$$
+</div>
+
+<p>Isso não é uma implicação válida para “qualquer modulação” isoladamente: M-FSK, por exemplo, pode melhorar a eficiência energética ao gastar muito mais banda. O limite de Shannon descreve a fronteira global entre potência e banda; FEC aproxima o sistema dessa fronteira.</p>
+<h3 id="observação-sobre-m-qam"><span class="heading-number">5.10.3</span> Observação sobre M-QAM</h3>
+<aside class="callout callout-note" role="note"><p><strong>Observação 9.1:</strong> M-QAM (<em>M-Quadrature Amplitude Modulation</em>) combina amplitude e fase, formando uma constelação 2D. 16-QAM, 64-QAM e 256-QAM são padrão em Wi-Fi, LTE e 5G. QAM é mais eficiente que PSK para mesma ordem (maior $d_{\min}$ para mesma energia), mas mais sensível a ruído de fase e não-linearidades.</p></aside>
+<p>A BER 16-QAM é aproximada por:</p>
+
+<div class="math-display">
+$$
+P_b\approx\frac34Q\left(\sqrt{\frac{4E_b}{5N_0}}\right).
+$$
+</div>
+
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">5.11</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">5.11.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> comparar constelações, distância mínima, eficiência e BER de ASK, PSK e FSK. <strong>Normalização:</strong> fixe $E_b$ ou $E_s$ explicitamente e converta $E_s/N_0=\log_2(M)E_b/N_0$. <strong>Monte Carlo:</strong> use semente fixa e ao menos 100 erros por ponto, ou reporte intervalo de confiança/limite superior.</p>
+<h3 id="exercício-1-ber-de-bpsk-vs-qpsk-vs-8-psk--plot-comparativo"><span class="heading-number">5.11.2</span> Exercício 1: BER de BPSK vs QPSK vs 8-PSK — Plot Comparativo</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #F8F8F2">Q</span> <span style="color: #FF4689">=</span> <span style="color: #66D9EF">lambda</span> <span style="color: #F8F8F2">x:</span> <span style="color: #AE81FF">0.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">erfc(x</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">ebn0_db</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">200</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">gamma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(ebn0_db</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># BER teórica</span>
+<span style="color: #F8F8F2">ber_bpsk</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Q(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">gamma))</span>
+<span style="color: #F8F8F2">ber_qpsk</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Q(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">gamma))</span>  <span style="color: #959077"># mesmo BER que BPSK</span>
+<span style="color: #F8F8F2">ber_8psk</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">Q(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">gamma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sin(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(ebn0_db,</span> <span style="color: #F8F8F2">ber_bpsk,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BPSK teoria&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(ebn0_db,</span> <span style="color: #F8F8F2">ber_qpsk,</span> <span style="color: #E6DB74">&#39;r--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;QPSK teoria (mesmo BPSK)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(ebn0_db,</span> <span style="color: #F8F8F2">ber_8psk,</span> <span style="color: #E6DB74">&#39;g-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;8-PSK teoria&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(xlabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ylabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">,</span>
+       <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BER Teórica: BPSK vs QPSK vs 8-PSK&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend(fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">11</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #AE81FF">1e-7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-2-constelações-m-psk-para-m--4-8-16"><span class="heading-number">5.11.3</span> Exercício 2: Constelações M-PSK para M = 4, 8, 16</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">plot_constellation</span><span style="color: #F8F8F2">(M,</span> <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;&quot;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">marker</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;o&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">angles</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(M)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">M</span>
+    <span style="color: #959077"># normalizar a energia média a 1</span>
+    <span style="color: #F8F8F2">points</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">angles)</span>
+    <span style="color: #F8F8F2">points</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">points</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(points)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #F8F8F2">marker,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span>
+             <span style="color: #F8F8F2">markerfacecolor</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;none&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markeredgecolor</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">color,</span> <span style="color: #F8F8F2">markeredgewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i,</span> <span style="color: #F8F8F2">angle</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">enumerate(angles):</span>
+        <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">annotate(</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">i</span><span style="color: #E6DB74">:0{</span><span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ceil(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M)))</span><span style="color: #E6DB74">}b}&#39;</span><span style="color: #F8F8F2">,</span>
+                     <span style="color: #F8F8F2">(points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real[i]</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1.15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag[i]</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1.15</span><span style="color: #F8F8F2">),</span>
+                     <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ha</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;center&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">va</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;center&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;k.&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;I (in-phase)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Q (quadrature)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(title)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axis(</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">ax,</span> <span style="color: #F8F8F2">M</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(axes,</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">16</span><span style="color: #F8F8F2">]):</span>
+    <span style="color: #F8F8F2">angles</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(M)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">M</span>
+    <span style="color: #F8F8F2">points</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">angles)</span>
+    <span style="color: #F8F8F2">points</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">points</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(points)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #E6DB74">&#39;o&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span>
+            <span style="color: #F8F8F2">markerfacecolor</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;none&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markeredgecolor</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markeredgewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i,</span> <span style="color: #F8F8F2">angle</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">enumerate(angles):</span>
+        <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">annotate(</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">i</span><span style="color: #E6DB74">:0{</span><span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ceil(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M)))</span><span style="color: #E6DB74">}b}&#39;</span><span style="color: #F8F8F2">,</span>
+                     <span style="color: #F8F8F2">(points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real[i]</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1.15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">points</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag[i]</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1.15</span><span style="color: #F8F8F2">),</span>
+                     <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ha</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;center&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">va</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;center&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;k.&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(xlabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;I&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ylabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Q&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">M</span><span style="color: #E6DB74">}-PSK (M={</span><span style="color: #F8F8F2">M</span><span style="color: #E6DB74">})&#39;</span><span style="color: #F8F8F2">,</span>
+           <span style="color: #F8F8F2">xlim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">ylim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">aspect</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mplot_constellation[39m(M, title=[33m"[39m[33m"[39m, marker=[33m'[39m[33mo[39m[33m'[39m, color=[33m'[39m[33mb[39m[33m'[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-3-ber-de-bfsk-vs-bpsk"><span class="heading-number">5.11.4</span> Exercício 3: BER de BFSK vs BPSK</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #F8F8F2">Q</span> <span style="color: #FF4689">=</span> <span style="color: #66D9EF">lambda</span> <span style="color: #F8F8F2">x:</span> <span style="color: #AE81FF">0.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">erfc(x</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">ebn0_db</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">300</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">gamma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(ebn0_db</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">ber_bpsk</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Q(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">gamma))</span>
+<span style="color: #F8F8F2">ber_bfsk_coh</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Q(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(gamma))</span>
+<span style="color: #F8F8F2">ber_bfsk_ncoh</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">gamma</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(ebn0_db,</span> <span style="color: #F8F8F2">ber_bpsk,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BPSK&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(ebn0_db,</span> <span style="color: #F8F8F2">ber_bfsk_coh,</span> <span style="color: #E6DB74">&#39;r--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BFSK coerente&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(ebn0_db,</span> <span style="color: #F8F8F2">ber_bfsk_ncoh,</span> <span style="color: #E6DB74">&#39;g-.&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BFSK não-coerente&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(xlabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ylabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">,</span>
+       <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BFSK vs BPSK: Coerente e Não-Coerente&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend(fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">11</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #AE81FF">1e-7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-4-eficiência-espectral-vs-ordem-de-modulação"><span class="heading-number">5.11.5</span> Exercício 4: Eficiência Espectral vs Ordem de Modulação</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Eficiência espectral e BER necessária para 1e-5</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #F8F8F2">Qinv</span> <span style="color: #FF4689">=</span> <span style="color: #66D9EF">lambda</span> <span style="color: #F8F8F2">p:</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">erfc(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">p)</span>
+
+<span style="color: #F8F8F2">modulations</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{</span>
+    <span style="color: #E6DB74">&#39;BPSK&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #E6DB74">&#39;psk&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">},</span>
+    <span style="color: #E6DB74">&#39;QPSK&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #E6DB74">&#39;psk&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">2.0</span><span style="color: #F8F8F2">},</span>
+    <span style="color: #E6DB74">&#39;8-PSK&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #E6DB74">&#39;psk&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">3.0</span><span style="color: #F8F8F2">},</span>
+    <span style="color: #E6DB74">&#39;16-PSK&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">16</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #E6DB74">&#39;psk&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">4.0</span><span style="color: #F8F8F2">},</span>
+    <span style="color: #E6DB74">&#39;BFSK&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #E6DB74">&#39;fsk_coh&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">},</span>
+    <span style="color: #E6DB74">&#39;4-FSK&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #E6DB74">&#39;fsk_coh&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">},</span>
+    <span style="color: #E6DB74">&#39;4-ASK&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #E6DB74">&#39;ask&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">2.0</span><span style="color: #F8F8F2">},</span>
+<span style="color: #F8F8F2">}</span>
+
+<span style="color: #F8F8F2">target_ber</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-5</span>
+<span style="color: #F8F8F2">results</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">name,</span> <span style="color: #F8F8F2">info</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">modulations</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">items():</span>
+    <span style="color: #F8F8F2">M</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">info[</span><span style="color: #E6DB74">&#39;M&#39;</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">eta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">info[</span><span style="color: #E6DB74">&#39;eta&#39;</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">info[</span><span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">==</span> <span style="color: #E6DB74">&#39;psk&#39;</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #959077"># Inverter BER para encontrar Eb/N0</span>
+        <span style="color: #959077"># P_b = (2/log2(M)) * Q(sqrt(2*Eb/N0 * log2(M)) * sin(pi/M))</span>
+        <span style="color: #F8F8F2">sin_pi_M</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sin(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">M)</span>
+        <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">M</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">:</span>
+            <span style="color: #F8F8F2">arg</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Qinv(target_ber)</span>
+            <span style="color: #F8F8F2">ebn0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">arg</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span>
+        <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+            <span style="color: #959077"># resolver numericamente</span>
+            <span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.optimize </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">brentq</span>
+            <span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">eq</span><span style="color: #F8F8F2">(g):</span>
+                <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M))</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">g</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M))</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">sin_pi_M</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">target_ber</span>
+            <span style="color: #66D9EF">try</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #F8F8F2">ebn0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">brentq(eq,</span> <span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #F8F8F2">)</span>
+            <span style="color: #66D9EF">except</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #F8F8F2">ebn0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">nan</span>
+    <span style="color: #66D9EF">elif</span> <span style="color: #F8F8F2">info[</span><span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">==</span> <span style="color: #E6DB74">&#39;fsk_coh&#39;</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #959077"># P_b ≈ (M-1)/(M*log2(M)) * Q(sqrt(Eb*log2(M)/N0))</span>
+        <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">M</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">:</span>
+            <span style="color: #F8F8F2">arg</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Qinv(target_ber</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># (M-1)/M = 0.5 for M=2</span>
+            <span style="color: #F8F8F2">ebn0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">arg</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span>
+        <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+            <span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.optimize </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">brentq</span>
+            <span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">eq</span><span style="color: #F8F8F2">(g):</span>
+                <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M))</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(g</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">target_ber</span>
+            <span style="color: #66D9EF">try</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #F8F8F2">ebn0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">brentq(eq,</span> <span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #F8F8F2">)</span>
+            <span style="color: #66D9EF">except</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #F8F8F2">ebn0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">nan</span>
+    <span style="color: #66D9EF">elif</span> <span style="color: #F8F8F2">info[</span><span style="color: #E6DB74">&#39;type&#39;</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">==</span> <span style="color: #E6DB74">&#39;ask&#39;</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #959077"># P_b ≈ 2(M-1)/(M*k) * Q(sqrt(6*k*Eb/((M^2-1)N0)))</span>
+        <span style="color: #F8F8F2">coeff</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M))</span>
+        <span style="color: #F8F8F2">inner</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">6</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">arg</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Qinv(target_ber</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">coeff)</span>
+        <span style="color: #F8F8F2">ebn0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">arg</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">inner</span>
+
+    <span style="color: #F8F8F2">results</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append((name,</span> <span style="color: #F8F8F2">eta,</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(ebn0)</span> <span style="color: #66D9EF">if</span> <span style="color: #FF4689">not</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">isinf(ebn0)</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">999</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">results</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sort(key</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">lambda</span> <span style="color: #F8F8F2">x:</span> <span style="color: #F8F8F2">x[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span>
+
+<span style="color: #F8F8F2">names</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[r[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">r</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">results]</span>
+<span style="color: #F8F8F2">etas</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[r[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">r</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">results]</span>
+<span style="color: #F8F8F2">db_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[r[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">r</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">results]</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">bars</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">barh(names,</span> <span style="color: #F8F8F2">etas,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;blue&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;teal&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;green&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;orange&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;purple&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;brown&#39;</span><span style="color: #F8F8F2">])</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i,</span> <span style="color: #F8F8F2">(bar,</span> <span style="color: #F8F8F2">db)</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">enumerate(zip(bars,</span> <span style="color: #F8F8F2">db_vals)):</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">text(bar</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">get_width()</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">0.05</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bar</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">get_y()</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">bar</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">get_height()</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span>
+            <span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">db</span><span style="color: #E6DB74">:.1f} dB&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">va</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;center&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(xlabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Eficiência Espectral (bit/s/Hz)&#39;</span><span style="color: #F8F8F2">,</span>
+       <span style="color: #F8F8F2">ylabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Modulação&#39;</span><span style="color: #F8F8F2">,</span>
+       <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Eficiência Espectral vs Eb/N0 para BER=1e-5&#39;</span><span style="color: #F8F8F2">,</span>
+       <span style="color: #F8F8F2">xlim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">max(etas)</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(axis</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;x&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Eficiência espectral e BER necessária para 1e-5[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">5.12</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Para M-ASK, distinga o espaçamento entre amplitudes físicas, $2d$, da distância $D_{\min}$ após projeção na base ortonormal. Derive ambos em função de $E_b$, $M$ e $T_s$.</p>
+<p><strong>E2.</strong> Calcule a BER aproximada de 16-ASK a $E_b/N_0 = 12$ dB.</p>
+<p><strong>E3.</strong> Prove que a BER do BPSK é $Q(\sqrt{2E_b/N_0})$ a partir da densidade Gaussiana.</p>
+<p><strong>E4.</strong> Mostre que QPSK com Gray coding tem o mesmo BER de BPSK para o mesmo $E_b/N_0$.</p>
+<p><strong>E5.</strong> Para QPSK, calcule a probabilidade de erro de símbolo $P_s$ e demonstre que $P_s \approx 2P_b$ para $P_b \ll 1$.</p>
+<p><strong>E6.</strong> Derive a BER de M-PSK para $M = 8$ e compare numericamente com $M = 4$ (QPSK) a $E_b/N_0 = 8$ dB.</p>
+<p><strong>E7.</strong> Mostre que para M-FSK coerente, a probabilidade de erro de símbolo é $P_s \approx (M-1)Q(\sqrt{E_s/N_0})$.</p>
+<p><strong>E8.</strong> Para BDPSK, calcule o $E_b/N_0$ necessário para BER $= 10^{-3}$ e compare com BPSK.</p>
+<p><strong>E9.</strong> Para BFSK e 4-FSK coerentes com $T_s=1\,\mu$s, calcule a separação mínima entre tons. Depois estime a extensão entre o primeiro e o último tom e explique por que a banda ocupada total ainda depende da conformação de pulso.</p>
+<p><strong>E10.</strong> Trace o espaço de sinais para 8-PSK e identifique a distância mínima entre pontos adjacentes.</p>
+<p><strong>E11.</strong> Demonstre que a eficiência espectral do 16-QAM é 4 bit/s/Hz e calcule sua BER aproximada a $E_b/N_0 = 14$ dB.</p>
+<p><strong>E12.</strong> Explique por que o FSK é preferível em canais com amplificadores de potência não-lineais (efeito <em>amplitude-to-phase</em>).</p>
+<h2 id="gabarito"><span class="heading-number">5.13</span> Gabarito</h2>
+<p><strong>E1.</strong> Da Seção “M-ASK — Teoria Completa”, $d=\sqrt{6E_b\log_2M/[T_s(M^2-1)]}$; portanto, o espaçamento de amplitude é $2d$. Após projeção, cada amplitude é multiplicada por $\sqrt{T_s/2}$, logo $D_{\min}=2d\sqrt{T_s/2}=\sqrt{12E_b\log_2M/(M^2-1)}$. A dependência em $T_s$ desaparece da distância energética.</p>
+<p><strong>E2.</strong> Para $M=16$ e $\gamma_b=10^{1{,}2}\approx15{,}85$, $x=\sqrt{6(4)\gamma_b/255}\approx1{,}221$. Assim, $P_b\approx(15/32)Q(x)\approx(0{,}46875)(0{,}111)\approx\boxed{5{,}2\times10^{-2}}$. A aproximação de vizinho mais próximo já é menos precisa nessa BER alta, mas evidencia a fragilidade da 16-ASK.</p>
+<p><strong>E3.</strong> $P_b = \int_{\sqrt{E_b}}^{\infty} \frac{1}{\sqrt{\pi N_0}}e^{-x^2/N_0}dx = Q(\sqrt{E_b/(N_0/2)}) = Q(\sqrt{2E_b/N_0})$. ✓</p>
+<p><strong>E4.</strong> QPSK: dois eixos ortogonais, cada um BPSK com energia $E_b$. $P_b = Q(\sqrt{2E_b/N_0})$. ✓</p>
+<p><strong>E5.</strong> $P_s = 1-(1-P_b)^2 = 2P_b-P_b^2 \approx 2P_b$ para $P_b \ll 1$. ✓</p>
+<p><strong>E6.</strong> Para 8-PSK, $k=3$, $\gamma_b=6{,}31$ e $x=\sqrt{2k\gamma_b}\sin(\pi/8)\approx2{,}355$. Logo, $P_b\approx(2/3)Q(x)\approx(2/3)(0{,}0093)\approx6{,}2\times10^{-3}$. Para QPSK, $Q(\sqrt{2\gamma_b})\approx1{,}9\times10^{-4}$. A 8-PSK é cerca de 32 vezes pior nesse ponto.</p>
+<p><strong>E7.</strong> $P_s = P(\exists j \ne m: r_j &gt; r_m) \approx (M-1)P(r_j &gt; r_m) = (M-1)Q(\sqrt{E_s/N_0})$. ✓</p>
+<p><strong>E8.</strong> DBPSK: $10^{-3} = \frac{1}{2}e^{-\gamma} \Rightarrow \gamma = -\ln(2\times 10^{-3}) \approx 6{,}215$, ou $7{,}93$ dB. BPSK coerente: $Q(\sqrt{2\gamma}) = 10^{-3} \Rightarrow \gamma \approx 4{,}775$, ou $6{,}79$ dB. Portanto, nesse ponto, a penalidade da detecção diferencial é $\boxed{1{,}14\text{ dB}}$.</p>
+<p><strong>E9.</strong> A separação coerente mínima é $\Delta f=1/(2T_s)=500$ kHz. A extensão entre tons extremos é $(M-1)\Delta f$: 500 kHz para BFSK e 1,5 MHz para 4-FSK. A banda total é essa extensão mais a largura $B_p$ de um tom conformado; sem especificar o pulso e o critério de ocupação, não há um único valor de banda.</p>
+<p><strong>E10.</strong> 8-PSK: constelação em círculo raio $\sqrt{E_s}$. $d_{\min} = 2\sqrt{E_s}\sin(\pi/8) \approx 0{,}765\sqrt{E_s}$.</p>
+<p><strong>E11.</strong> 16-QAM transporta 4 bits/símbolo. Com pulso Nyquist ideal e a convenção de banda passante nula-a-nula, $B\approx R_s$, logo $\eta\approx4$ bit/s/Hz. Para mapeamento Gray em AWGN,<br />
+$P_b\approx\frac{4}{\log_2M}(1-1/\sqrt M)Q\!\left(\sqrt{\frac{3\log_2M}{M-1}\gamma_b}\right)$. Para $M=16$ e $\gamma_b=10^{14/10}=25{,}12$: $P_b\approx0{,}75Q(\sqrt{0{,}8\gamma_b})=0{,}75Q(4{,}48)\approx\boxed{2{,}8\times10^{-6}}$.</p>
+<p><strong>E12.</strong> Amplificadores não-lineares (classe C) convertem variações de amplitude em variações de fase (AM-PM). FSK tem envelope constante, evitando este efeito.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="04_banda_base_nyquist.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">4. Transmissão em Banda Base e Critério de Nyquist</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="06_digital_passband_qam.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">6. Modulação QAM — Transmissão Digital em Banda Base</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

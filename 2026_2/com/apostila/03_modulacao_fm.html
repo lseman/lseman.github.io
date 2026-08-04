@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3. Modulação em Frequência (FM) — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>3. Modulação em Frequência (FM)</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>3. Modulação em Frequência (FM)</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="02_modulacao_am.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">2. Modulação em Amplitude — Teoria Completa</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="04_banda_base_nyquist.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">4. Transmissão em Banda Base e Critério de Nyquist</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>3. Modulação em Frequência (FM)</h1>
+<blockquote>
+<p>Comunicações Eletrônicas — Apostila de Curso<br />
+Tópicos: Fase e frequência instantâneas · Espectro de FM e funções de Bessel · NBFM/WBFM · Regra de Carson · Discriminador FM · PLL demodulador · Análise de ruído · Limiar FM · Pré-ênfase · FM Stereo e RDS · Comparação FM/AM/DSB-SC</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">3.1</span> Antes de começar</h2>
+<p>Ao final, você deve relacionar fase e frequência instantâneas, interpretar o espectro de Bessel, aplicar Carson e explicar limiar, captura e pré/de-ênfase. <strong>Diagnóstico:</strong> a amplitude constante da FM implica largura de banda constante? <strong>Evidência mínima:</strong> variar $\beta$, conferir conservação de potência e comparar a banda medida com a regra de Carson.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#modula%C3%A7%C3%A3o-angular-fm-vs-pm">Modulação Angular: FM vs PM</a></li>
+<li><a href="#fm-tonal-%C3%ADndice-e-deflex%C3%A3o-de-frequ%C3%AAncia">FM Tonal: Índice e Deflexão de Frequência</a></li>
+<li><a href="#espectro-da-fm--dedu%C3%A7%C3%A3o-completa-com-s%C3%A9ries-de-bessel">Espectro da FM — Dedução Completa com Séries de Bessel</a></li>
+<li><a href="#banda-de-carson--nbfm-e-wbfm">Banda de Carson — NBFM e WBFM</a></li>
+<li><a href="#gera%C3%A7%C3%A3o-de-sinais-fm">Geração de Sinais FM</a></li>
+<li><a href="#demodula%C3%A7%C3%A3o-fm-discriminador-e-pll">Demodulação FM: Discriminador e PLL</a></li>
+<li><a href="#demodula%C3%A7%C3%A3o-fm-por-detec%C3%A7%C3%A3o-de-cruzamento-por-zero">Demodulação FM por Detecção de Cruzamento por Zero</a></li>
+<li><a href="#an%C3%A1lise-de-ru%C3%ADdo-em-fm">Análise de Ruído em FM</a></li>
+<li><a href="#pr%C3%A9-%C3%AAnfase-e-de-%C3%AAnfase">Pré-ênfase e De-ênfase</a></li>
+<li><a href="#fm-stereo-e-aplica%C3%A7%C3%B5es">FM Stereo e Aplicações</a></li>
+<li><a href="#compara%C3%A7%C3%A3o-fm-vs-am-vs-dsb-sc">Comparação FM vs AM vs DSB-SC</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="modulação-angular-fm-vs-pm"><span class="heading-number">3.2</span> Modulação Angular: FM vs PM</h2>
+<p>Um sinal senoidal de frequência $f_c$ é expresso como</p>
+
+<div class="math-display">
+$$
+
+s(t) = A_c\cos\theta_i(t),
+
+$$
+</div>
+
+<p>onde $\theta_i(t)$ é a <strong>fase instantânea total</strong>. A <strong>frequência instantânea</strong> (em Hz) é definida como</p>
+
+<div class="math-display">
+$$
+
+\boxed{f_i(t) = \frac{1}{2\pi}\frac{d\theta_i(t)}{dt}}
+
+$$
+</div>
+
+<p>e a frequência instantânea angular é $\omega_i(t) = d\theta_i(t)/dt$.</p>
+<p>Se $f_c$ é a frequência da portadora não modulada, escrevemos a fase como uma soma:</p>
+
+<div class="math-display">
+$$
+
+\theta_i(t) = 2\pi f_c t + \phi(t),
+
+$$
+</div>
+
+<p>onde $\phi(t)$ é o <strong>termo de fase adicional</strong> que carrega a informação. A frequência instantânea torna-se</p>
+
+<div class="math-display">
+$$
+
+f_i(t) = f_c + \frac{1}{2\pi}\frac{d\phi(t)}{dt}.
+
+$$
+</div>
+
+<p>A modulação angular consiste em fazer $\phi(t)$ variar de acordo com o sinal mensagem $m(t)$. Existem duas convenções:</p>
+<h3 id="modulação-de-fase-pm"><span class="heading-number">3.2.1</span> Modulação de Fase (PM)</h3>
+<p>Na PM, o deslocamento de fase é diretamente proporcional a $m(t)$:</p>
+
+<div class="math-display">
+$$
+
+\phi_{\text{PM}}(t) = k_p\,m(t),
+
+$$
+</div>
+
+<p>onde $k_p$ é a <strong>sensibilidade de fase</strong> (rad/V). O sinal PM é</p>
+
+<div class="math-display">
+$$
+
+s_{\text{PM}}(t) = A_c\cos\left(2\pi f_c t + k_p\,m(t)\right).
+
+$$
+</div>
+
+<p>A frequência instantânea é</p>
+
+<div class="math-display">
+$$
+
+f_{i,\text{PM}}(t) = f_c + \frac{k_p}{2\pi}\frac{dm(t)}{dt}.
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: na PM, a deflexão de frequência é proporcional à <em>derivada</em> de $m(t)$. Para um tom $m(t) = A_m\cos(2\pi f_m t)$, a deflexão cresce com $f_m$.</p></aside>
+<h3 id="modulação-de-frequência-fm"><span class="heading-number">3.2.2</span> Modulação de Frequência (FM)</h3>
+<p>Na FM, o desvio de frequência instantânea é proporcional a $m(t)$:</p>
+
+<div class="math-display">
+$$
+
+f_i(t) - f_c = k_f\,m(t),
+
+$$
+</div>
+
+<p>onde $k_f$ é a <strong>sensibilidade de frequência</strong> (Hz/V). Como $f_i(t) - f_c = \frac{1}{2\pi}\frac{d\phi(t)}{dt}$, temos</p>
+
+<div class="math-display">
+$$
+
+\frac{d\phi(t)}{dt} = 2\pi k_f\,m(t) \quad\Rightarrow\quad \phi(t) = 2\pi k_f\int_{-\infty}^{t} m(\tau)\,d\tau.
+
+$$
+</div>
+
+<p>Assumindo o sistema em repouso antes de $t=0$ (integral de $-\infty$), o sinal FM é</p>
+
+<div class="math-display">
+$$
+
+\boxed{s_{\text{FM}}(t) = A_c\cos\left(2\pi f_c t + 2\pi k_f\int_{0}^{t} m(\tau)\,d\tau\right)}
+
+$$
+</div>
+
+<h3 id="relação-entre-fm-e-pm"><span class="heading-number">3.2.3</span> Relação entre FM e PM</h3>
+<p>Como o termo de fase na FM é a integral da mensagem, e a derivada da mensagem gera deflexão de frequência na PM, existe equivalência formal:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{PM}}(t) = A_c\cos(2\pi f_c t + k_p\,m(t)) \equiv \text{FM de } m'(t) \text{ com } k_f = k_p/(2\pi).
+
+$$
+</div>
+
+<p>Reciprocamente, o FM pode ser obtido integrando $m(t)$ e aplicando modulação de fase:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{FM}}(t) = \text{PM}\bigl[\int m(\tau)d\tau\bigr] \quad\text{com } k_p = 2\pi k_f.
+
+$$
+</div>
+
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: a integração (no caso FM) atua como filtro passa-baixas ($1/f$) sobre o conteúdo espectral da mensagem, enquanto a diferenciação (no caso PM) atua como filtro passa-altas ($f$). Isso tem implicações profundas na largura de banda e na relação sinal-ruído.</p></aside>
+<h3 id="amplitude-constante-e-suas-consequências"><span class="heading-number">3.2.4</span> Amplitude constante e suas consequências</h3>
+<p>Um atributo fundamental de qualquer modulação angular é que o envelope de $s_{\text{FM}}(t)$ e $s_{\text{PM}}(t)$ é <strong>constantemente</strong> $A_c$, independentemente de $m(t)$. Isso significa:</p>
+<ol>
+<li><strong>Toda a potência está na portadora e bandas laterais</strong>: $P_{\text{total}} = A_c^2/2$ (carga resistiva unitária), <strong>independente</strong> do sinal modulante.</li>
+<li><strong>Amplificadores classe C são permitidos</strong>: o amplificador final de potência pode operar em saturação (não linear) sem distorcer a informação, pois ela está contida apenas na fase/frequência.</li>
+<li><strong>Imunidade a ruído de amplitude</strong>: interferências que alteram o envelope (fading, ruído térmico de amplitude) não carregam informação e podem ser removidas por um <strong>limitador</strong>.</li>
+</ol>
+<h2 id="fm-tonal-índice-e-deflexão-de-frequência"><span class="heading-number">3.3</span> FM Tonal: Índice e Deflexão de Frequência</h2>
+<p>Considere o caso mais simples: um tom unitário como sinal mensagem.</p>
+<h3 id="deflexão-de-frequência"><span class="heading-number">3.3.1</span> Deflexão de frequência</h3>
+<p>Para $m(t) = A_m\cos(2\pi f_m t)$, o desvio de fase é</p>
+
+<div class="math-display">
+$$
+
+\phi(t) = 2\pi k_f\int_{0}^{t} A_m\cos(2\pi f_m \tau)\,d\tau = \frac{k_f A_m}{f_m}\sin(2\pi f_m t).
+
+$$
+</div>
+
+<p>Definimos a <strong>deflexão (desvio) de frequência de pico</strong> como</p>
+
+<div class="math-display">
+$$
+
+\boxed{\Delta f = k_f\cdot\max|m(t)| = k_f A_m}
+
+$$
+</div>
+
+<p>e o sinal FM torna-se</p>
+
+<div class="math-display">
+$$
+
+s_{\text{FM}}(t) = A_c\cos\left(2\pi f_c t + \frac{\Delta f}{f_m}\sin(2\pi f_m t)\right).
+
+$$
+</div>
+
+<h3 id="índice-de-modulação-fm"><span class="heading-number">3.3.2</span> Índice de modulação FM</h3>
+<p>Definimos o <strong>índice de modulação</strong> $\beta$ como</p>
+
+<div class="math-display">
+$$
+
+\boxed{\beta = \frac{\Delta f}{f_m} = \frac{k_f A_m}{f_m}}
+
+$$
+</div>
+
+<p>$\beta$ é <strong>adimensional</strong> e mede quantas vezes o desvio de frequência excede a frequência do tom modulante. O sinal FM completo é</p>
+
+<div class="math-display">
+$$
+
+\boxed{s_{\text{FM}}(t) = A_c\cos\Bigl(2\pi f_c t + \beta\sin(2\pi f_m t)\Bigr)}
+
+$$
+</div>
+
+<h3 id="frequência-instantânea--verificação"><span class="heading-number">3.3.3</span> Frequência instantânea — verificação</h3>
+<p>Derivando a fase total $\theta_i(t) = 2\pi f_c t + \beta\sin(2\pi f_m t)$:</p>
+
+<div class="math-display">
+$$
+
+\frac{d\theta_i(t)}{dt} = 2\pi f_c + 2\pi f_m\beta\cos(2\pi f_m t) = 2\pi\bigl(f_c + \Delta f\cos(2\pi f_m t)\bigr),
+
+$$
+</div>
+
+<p>logo</p>
+
+<div class="math-display">
+$$
+
+f_i(t) = f_c + \Delta f\cos(2\pi f_m t).
+
+$$
+</div>
+
+<p>Isso confirma que a frequência oscila entre $f_c - \Delta f$ e $f_c + \Delta f$, com deslocamento máximo $\Delta f$ em relação à portadora.</p>
+<h3 id="casos-extremos-de-beta"><span class="heading-number">3.3.4</span> Casos extremos de $\beta$</h3>
+<ul>
+<li><strong>$\beta \ll 1$ (FM de banda estreita — NBFM)</strong>: o argumento do seno é pequeno, $\beta\sin(2\pi f_m t) \approx \beta\sin(2\pi f_m t)$ pequeno. A banda é aproximadamente $2f_m$, similar a DSB.</li>
+<li><strong>$\beta \gg 1$ (FM de banda larga — WBFM)</strong>: muitas bandas laterais significativas, banda muito maior que $2f_m$.</li>
+<li><strong>$\beta = 1$</strong>: fronteira aproximada entre NBFM e WBFM.</li>
+</ul>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: FM de banda estreita (NBFM) é o regime $\beta &lt; 0{,}2$ onde apenas as bandas laterais de primeira ordem ($n=\pm1$) são relevantes. FM de banda larga (WBFM) é o regime $\beta &gt; 1$ onde múltiplas bandas laterais contribuem significativamente.</p></aside>
+<h2 id="espectro-da-fm--dedução-completa-com-séries-de-bessel"><span class="heading-number">3.4</span> Espectro da FM — Dedução Completa com Séries de Bessel</h2>
+<p>Este é o coração matemático da teoria FM. O espectro de um sinal FM tonal envolve infinitas componentes espectrais, cujas amplitudes são dadas pelas funções de Bessel de primeira espécie.</p>
+<h3 id="expansão-em-séries-de-bessel--dedução"><span class="heading-number">3.4.1</span> Expansão em séries de Bessel — dedução</h3>
+<p>Começamos com o sinal FM tonal:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{FM}}(t) = A_c\cos\Bigl(2\pi f_c t + \beta\sin(2\pi f_m t)\Bigr).
+
+$$
+</div>
+
+<p>Usando a identidade trigonométrica $\cos(\alpha + \gamma) = \cos\alpha\cos\gamma - \sin\alpha\sin\gamma$:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{FM}}(t) = A_c\cos(2\pi f_c t)\cos\bigl(\beta\sin(2\pi f_m t)\bigr) - A_c\sin(2\pi f_c t)\sin\bigl(\beta\sin(2\pi f_m t)\bigr).
+
+$$
+</div>
+
+<p>Os termos $\cos(\beta\sin\theta)$ e $\sin(\beta\sin\theta)$ são funções periódicas em $\theta = 2\pi f_m t$, portanto podem ser expandidas em série de Fourier. As <strong>identidades de Jacobi–Anger</strong> fornecem essas expansões:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\cos(\beta\sin\theta) = J_0(\beta) + 2\sum_{n=1}^{\infty}J_{2n}(\beta)\cos(2n\theta)}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{\sin(\beta\sin\theta) = 2\sum_{n=0}^{\infty}J_{2n+1}(\beta)\sin\bigl((2n+1)\theta\bigr)}
+
+$$
+</div>
+
+<p>Substituindo $\theta = 2\pi f_m t$ e inserindo nas duas equações acima:</p>
+
+<div class="math-display">
+$$
+
+\begin{aligned}
+s_{\text{FM}}(t) = A_c\cos(2\pi f_c t)\Bigl[J_0(\beta) &amp;+ 2J_2(\beta)\cos(4\pi f_m t) + 2J_4(\beta)\cos(8\pi f_m t) + \cdots\Bigr] \\
+- A_c\sin(2\pi f_c t)\Bigl[&amp;2J_1(\beta)\sin(2\pi f_m t) + 2J_3(\beta)\sin(6\pi f_m t) + \cdots\Bigr]
+\end{aligned}
+
+$$
+</div>
+
+<p>Agora, usamos os produtos notáveis:</p>
+
+<div class="math-display">
+$$
+
+\cos(A)\cos(B) = \tfrac{1}{2}[\cos(A-B) + \cos(A+B)]
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\sin(A)\sin(B) = \tfrac{1}{2}[\cos(A-B) - \cos(A+B)]
+
+$$
+</div>
+
+<p>Aplicando:</p>
+
+<div class="math-display">
+$$
+
+\begin{aligned}
+A_c J_0(\beta)\cos(2\pi f_c t) &amp;\quad\text{(componente em }f_c\text{)} \\
+A_c J_1(\beta)\cos[2\pi(f_c - f_m)t] &amp;\quad\text{(lateral inferior }n=-1\text{)} \\
+A_c J_1(\beta)\cos[2\pi(f_c + f_m)t] &amp;\quad\text{(lateral superior }n=+1\text{)} \\
+-A_c J_2(\beta)\cos[2\pi(f_c - 2f_m)t] &amp;\quad\text{(lateral inferior }n=-2\text{)} \\
++A_c J_2(\beta)\cos[2\pi(f_c + 2f_m)t] &amp;\quad\text{(lateral superior }n=+2\text{)} \\
+-A_c J_3(\beta)\cos[2\pi(f_c - 3f_m)t] &amp;\quad\text{(lateral inferior }n=-3\text{)} \\
++A_c J_3(\beta)\cos[2\pi(f_c + 3f_m)t] &amp;\quad\text{(lateral superior }n=+3\text{)} \\
+&amp;\vdots
+\end{aligned}
+
+$$
+</div>
+
+<p>O padrão é claro: cada $J_n(\beta)$ gera um par de bandas laterais em $f_c \pm nf_m$. Para $n=0$, há apenas uma componente (a portadora). Para $n&gt;0$, cada $J_n$ gera duas componentes com mesma amplitude $A_c|J_n(\beta)|$.</p>
+<p>Podemos escrever o resultado de forma compacta usando a propriedade $J_{-n}(\beta) = (-1)^n J_n(\beta)$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s_{\text{FM}}(t) = A_c\sum_{n=-\infty}^{\infty} J_n(\beta)\cos\Bigl(2\pi(f_c + nf_m)t\Bigr)}
+
+$$
+</div>
+
+<p>Esta é a <strong>expansão de Jacobi–Anger</strong> para o sinal FM tonal.</p>
+<h3 id="funções-de-bessel-de-primeira-espécie--definição-e-propriedades"><span class="heading-number">3.4.2</span> Funções de Bessel de primeira espécie — definição e propriedades</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição integral</strong> (representação de Schläfli):</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{J_n(\beta) = \frac{1}{2\pi}\int_{-\pi}^{\pi} \cos(n\tau - \beta\sin\tau)\,d\tau}
+
+$$
+</div>
+
+<p>Esta integral existe para todo $n\in\mathbb{Z}$ e $\beta\in\mathbb{R}$. Para $n$ inteiro, $J_n$ é real.</p>
+<p><strong>Série de potências</strong> (para $n \ge 0$):</p>
+
+<div class="math-display">
+$$
+
+J_n(\beta) = \sum_{k=0}^{\infty} \frac{(-1)^k}{k!\,(n+k)!}\left(\frac{\beta}{2}\right)^{2k+n}
+
+$$
+</div>
+
+<p><strong>Relações de recorrência</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{J_{n-1}(\beta) + J_{n+1}(\beta) = \frac{2n}{\beta}\,J_n(\beta)}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{J_{n-1}(\beta) - J_{n+1}(\beta) = 2\,J_n'(\beta)}
+
+$$
+</div>
+
+<p><strong>Propriedades de simetria</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{J_{-n}(\beta) = (-1)^n\,J_n(\beta) \quad\text{(para $n$ inteiro)}}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+J_n(-\beta) = (-1)^n\,J_n(\beta)
+
+$$
+</div>
+
+<p>Para $n$ par: $J_{-n} = J_n$ (par em $n$). Para $n$ ímpar: $J_{-n} = -J_n$ (ímpar em $n$).</p>
+<p><strong>Identidade de ortogonalidade (completação da base)</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\sum_{n=-\infty}^{\infty} J_n^2(\beta) = 1}
+
+$$
+</div>
+
+<p>Esta identidade é fundamental: ela garante que a potência total do sinal FM é conservada.</p>
+<h3 id="comportamento-assintótico-de-j_nbeta"><span class="heading-number">3.4.3</span> Comportamento assintótico de $J_n(\beta)$</h3>
+<p>Para $\beta \ll 1$ (argumento pequeno), os primeiros termos da série dão:</p>
+
+<div class="math-display">
+$$
+
+J_0(\beta) \approx 1 - \frac{\beta^2}{4}, \quad J_1(\beta) \approx \frac{\beta}{2}, \quad J_2(\beta) \approx \frac{\beta^2}{8}, \quad J_n(\beta) \approx \frac{\beta^n}{2^n n!} \text{ para } n \ge 1.
+
+$$
+</div>
+
+<p>Isso confirma que para $\beta \to 0$, apenas $J_0 \approx 1$ é significativo — o espectro se reduz à portadora pura.</p>
+<p>Para $\beta \gg 1$ (argumento grande), o comportamento assintótico é oscilatório:</p>
+
+<div class="math-display">
+$$
+
+J_n(\beta) \approx \sqrt{\frac{2}{\pi\beta}}\cos\left(\beta - \frac{n\pi}{2} - \frac{\pi}{4}\right) \quad\text{para } \beta \gg n.
+
+$$
+</div>
+
+<p>As amplitudes decrescem lentamente (como $1/\sqrt{\beta}$) até $n \approx \beta$, onde há um pico, e decaem rapidamente para $n \gg \beta$.</p>
+<h3 id="zeros-das-funções-de-bessel-e-anulação-da-portadora"><span class="heading-number">3.4.4</span> Zeros das funções de Bessel e anulação da portadora</h3>
+<p>Os zeros de $J_0(\beta)$ ocorrem quando a componente da portadora se anula. Os primeiros zeros de $J_0$ são:</p>
+
+<div class="math-display">
+$$
+
+\beta_0 \approx 2{,}4048, \quad \beta_1 \approx 5{,}5201, \quad \beta_2 \approx 8{,}6537, \quad \beta_3 \approx 11{,}7915, \quad \ldots
+
+$$
+</div>
+
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: quando $\beta$ coincide com um zero de $J_0$, a portadora desaparece completamente do espectro. Toda a potência é redistribuída nas bandas laterais.</p></aside>
+<p>Da mesma forma, $J_1(\beta)$ tem zeros em $\beta \approx 3{,}8317$, $7{,}0156$, $10{,}1735$, $\ldots$, o que significa que as bandas laterais de primeira ordem desaparecem para esses valores.</p>
+<p><strong>Tabela de zeros notáveis</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Função</th>
+<th>1º zero</th>
+<th>2º zero</th>
+<th>3º zero</th>
+<th>4º zero</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$J_0(\beta)$</td>
+<td>2,405</td>
+<td>5,520</td>
+<td>8,654</td>
+<td>11,792</td>
+</tr>
+<tr>
+<td>$J_1(\beta)$</td>
+<td>3,832</td>
+<td>7,016</td>
+<td>10,174</td>
+<td>13,324</td>
+</tr>
+<tr>
+<td>$J_2(\beta)$</td>
+<td>5,136</td>
+<td>8,417</td>
+<td>11,620</td>
+<td>14,796</td>
+</tr>
+</tbody>
+</table>
+<h3 id="conservação-de-potência"><span class="heading-number">3.4.5</span> Conservação de potência</h3>
+<p>A potência média de $s_{\text{FM}}(t)$ em uma carga unitária é:</p>
+
+<div class="math-display">
+$$
+
+P = \frac{A_c^2}{2}\sum_{n=-\infty}^{\infty} J_n^2(\beta) = \frac{A_c^2}{2}\cdot 1 = \frac{A_c^2}{2}.
+
+$$
+</div>
+
+<p>O último passo usa a identidade $\sum_{n=-\infty}^{\infty} J_n^2(\beta) = 1$. A potência é <strong>invariante</strong> em relação a $\beta$, $f_c$ e $f_m$ — confirma o que já sabíamos pela amplitude constante do envelope.</p>
+<p>A potência em cada componente espectral é $P_n = \frac{A_c^2}{2}J_n^2(\beta)$ para $n \ne 0$. Para $n = 0$, $P_0 = \frac{A_c^2}{2}J_0^2(\beta)$.</p>
+<h3 id="visualização-do-espectro-fm"><span class="heading-number">3.4.6</span> Visualização do espectro FM</h3>
+<p>O espectro de um sinal FM tonal é discreto (linha espectral), com componentes em:</p>
+
+<div class="math-display">
+$$
+
+f = f_c + nf_m, \quad n = 0, \pm 1, \pm 2, \ldots
+
+$$
+</div>
+
+<p>A amplitude de cada componente é $A_c|J_n(\beta)|$. A potência é $\frac{A_c^2}{2}J_n^2(\beta)$.</p>
+<p>Para $\beta = 0$: espectro é uma linha única em $f_c$ (portadora pura).</p>
+<p>Para $\beta = 0{,}5$: portadora forte, primeira lateral visível, demais desprezíveis.</p>
+<p>Para $\beta = 2{,}405$: portadora nula ($J_0 = 0$), primeira lateral dominante.</p>
+<p>Para $\beta = 5$: múltiplas laterais de amplitude significativa (~11 bandas laterais de cada lado com amplitude &gt; 5% da portadora não modulada).</p>
+<h2 id="banda-de-carson--nbfm-e-wbfm"><span class="heading-number">3.5</span> Banda de Carson — NBFM e WBFM</h2>
+<h3 id="fm-de-banda-estreita-nbfm"><span class="heading-number">3.5.1</span> FM de Banda Estreita (NBFM)</h3>
+<p>Para $\beta \ll 1$ (tipicamente $\beta &lt; 0{,}2$), usamos as aproximações:</p>
+
+<div class="math-display">
+$$
+
+J_0(\beta) \approx 1, \quad J_{\pm 1}(\beta) \approx \pm\frac{\beta}{2}, \quad J_n(\beta) \approx 0 \text{ para } |n| \ge 2.
+
+$$
+</div>
+
+<p>O sinal FM fica:</p>
+
+<div class="math-display">
+$$
+
+\begin{aligned}
+s_{\text{FM}}(t) &amp;\approx A_c\Bigl[J_0(\beta)\cos(2\pi f_c t) + J_1(\beta)\cos(2\pi(f_c - f_m)t) + J_{-1}(\beta)\cos(2\pi(f_c + f_m)t)\Bigr] \\
+&amp;\approx A_c\cos(2\pi f_c t) + \frac{A_c\beta}{2}\cos(2\pi(f_c - f_m)t) - \frac{A_c\beta}{2}\cos(2\pi(f_c + f_m)t)
+\end{aligned}
+
+$$
+</div>
+
+<p>(usando $J_1 = \beta/2$ e $J_{-1} = -J_1 = -\beta/2$).</p>
+<p>Usando $\cos(A-B) - \cos(A+B) = 2\sin A\sin B$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s_{\text{NBFM}}(t) \approx A_c\cos(2\pi f_c t) - A_c\beta\sin(2\pi f_c t)\sin(2\pi f_m t)}
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: esta expressão tem a forma de DSB-SC ($A_c\beta\sin(2\pi f_c t)\sin(2\pi f_m t)$) com uma portadora adicional ($A_c\cos(2\pi f_c t)$). O NBFM <strong>não é</strong> DSB-SC, mas se assemelha a AM com portadora forte e fase deslocada de 90° nas laterais.</p></aside>
+<p>A largura de banda do NBFM é aproximadamente $2f_m$, igual à AM convencional e DSB-SC.</p>
+<h3 id="fm-de-banda-larga-wbfm"><span class="heading-number">3.5.2</span> FM de Banda Larga (WBFM)</h3>
+<p>Para $\beta &gt; 1$, muitas componentes espectrais têm amplitude significativa. Não há aproximação simples: o espectro completo de Bessel deve ser considerado.</p>
+<p>A banda efetiva do WBFM é determinada pelo número de bandas laterais com amplitude não desprezível. A regra prática é:</p>
+<p><strong>Regra de Carson</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{B_C = 2(\Delta f + f_m) = 2f_m(\beta + 1)}
+
+$$
+</div>
+
+<p>Esta regra estima a banda que contém aproximadamente <strong>98% da potência total</strong> do sinal FM.</p>
+<h3 id="justificativa-da-regra-de-carson"><span class="heading-number">3.5.3</span> Justificativa da Regra de Carson</h3>
+<p>Das propriedades das funções de Bessel, para $\beta$ fixo, $J_n(\beta)$ torna-se desprezível quando $|n| &gt; \beta + 1$. Portanto, as componentes com $|n| \leq \beta + 1$ são significativas, e as frequências extremas são:</p>
+
+<div class="math-display">
+$$
+
+f_{\max} = f_c + (\beta + 1)f_m = f_c + \Delta f + f_m
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+f_{\min} = f_c - (\beta + 1)f_m = f_c - \Delta f - f_m
+
+$$
+</div>
+
+<p>A largura de banda é:</p>
+
+<div class="math-display">
+$$
+
+B_C = f_{\max} - f_{\min} = 2(\Delta f + f_m) = 2f_m(\beta + 1) \quad\blacksquare
+
+$$
+</div>
+
+<h3 id="comparação-nbfm-vs-wbfm"><span class="heading-number">3.5.4</span> Comparação NBFM vs WBFM</h3>
+<table>
+<thead>
+<tr>
+<th>Propriedade</th>
+<th>NBFM ($\beta &lt; 0{,}2$)</th>
+<th>WBFM ($\beta &gt; 1$)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Largura de banda</td>
+<td>$\approx 2f_m$</td>
+<td>$\approx 2(\Delta f + f_m)$</td>
+</tr>
+<tr>
+<td>Número de bandas laterais</td>
+<td>1 par (≈ 3 componentes)</td>
+<td>Múltiplos pares</td>
+</tr>
+<tr>
+<td>SNR de saída</td>
+<td>Similar a AM</td>
+<td>Ganho referido a $(C/N)_W$: $\tfrac32\beta^2$</td>
+</tr>
+<tr>
+<td>Complexidade de demodulação</td>
+<td>Simples</td>
+<td>Discriminador ou PLL</td>
+</tr>
+<tr>
+<td>Imunidade a ruído</td>
+<td>Limitada</td>
+<td>Alta (troca banda por SNR)</td>
+</tr>
+<tr>
+<td>Potência</td>
+<td>$A_c^2/2$, independente de $m(t)$</td>
+<td>$A_c^2/2$, independente de $m(t)$</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fm-broadcast--exemplo-prático"><span class="heading-number">3.5.5</span> FM Broadcast — exemplo prático</h3>
+<p>No padrão de radiodifusão FM (FCC/Europeu):</p>
+<ul>
+<li>Desvio máximo de frequência: $\Delta f = 75\text{ kHz}$</li>
+<li>Banda de áudio máxima: $f_m = 15\text{ kHz}$</li>
+<li>Índice de modulação: $\beta = 75/15 = 5$</li>
+<li>Banda de Carson: $B_C = 2(75 + 15) = 200\text{ kHz}$ (na prática, canal de 200 kHz)</li>
+</ul>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: para $\beta = 5$, as funções de Bessel $J_n(5)$ são significativas até aproximadamente $n \approx \beta + 1 = 6$. Isso significa bandas laterais de $f_c - 6f_m$ até $f_c + 6f_m$, totalizando $13$ componentes. A regra de Carson (200 kHz) é conservadora e segura.</p></aside>
+<h2 id="geração-de-sinais-fm"><span class="heading-number">3.6</span> Geração de Sinais FM</h2>
+<h3 id="modulação-fm-direta-vco"><span class="heading-number">3.6.1</span> Modulação FM direta (VCO)</h3>
+<p>O método mais direto: um <strong>oscilador controlado por voltagem (VCO)</strong> cuja frequência natural varia linearmente com a tensão de entrada.</p>
+<p>Um VCO com constante $k_{\text{VCO}}$ (Hz/V) produz:</p>
+
+<div class="math-display">
+$$
+
+f_i(t) = f_0 + k_{\text{VCO}}\,m(t)
+
+$$
+</div>
+
+<p>onde $f_0$ é a frequência livre (sem entrada). Integrando, a fase é</p>
+
+<div class="math-display">
+$$
+
+\phi(t) = 2\pi k_{\text{VCO}}\int_0^t m(\tau)\,d\tau.
+
+$$
+</div>
+
+<p><strong>Vantagem</strong>: simples, direto. <strong>Desvantagem</strong>: a frequência central $f_0$ varia com temperatura, envelhecimento, e tensão de alimentação — <strong>instabilidade de frequência</strong>.</p>
+<h3 id="modulação-fm-indireta-método-armstrong"><span class="heading-number">3.6.2</span> Modulação FM indireta (método Armstrong)</h3>
+<p>O método Armstrong gera FM com alta estabilidade de frequência:</p>
+<ol>
+<li>Gera-se <strong>NBFM</strong> com baixa deflexão (usando um modulador de fase com alta $k_p$ e sinal $m(t)$ atenuado).</li>
+<li>O sinal NBFM é passado por <strong>multiplicadores de frequência</strong> (não-lineares + filtros sintonizados) que multiplicam tanto $f_c$ quanto $\beta$.</li>
+</ol>
+<p>Se um multiplicador tem fator $N$:</p>
+
+<div class="math-display">
+$$
+
+f_c' = N f_c, \quad \beta' = N\beta.
+
+$$
+</div>
+
+<p>Com $N$ grande, obtém-se WBFM com $f_c'$ estável (herdada do oscilador cristalino usado na etapa 1).</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: o multiplicador de frequência <strong>também multiplica o desvio de frequência</strong>: $\Delta f' = N\Delta f$. Portanto, ao aumentar $\beta$, o $\Delta f$ cresce proporcionalmente.</p></aside>
+<h3 id="modulação-fm-por-loop-pll"><span class="heading-number">3.6.3</span> Modulação FM por loop PLL</h3>
+<p>Um PLL (Phase-Locked Loop) pode gerar FM quando o sinal mensagem é injetado no <strong>VCO interno do loop</strong>:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{FM}}(t) = A_c\cos\Bigl(2\pi f_c t + 2\pi k_f\int m(\tau)d\tau\Bigr)
+
+$$
+</div>
+
+<p>O loop mantém $f_c$ estável (travado em um cristal), enquanto o desvio é controlado por $m(t)$ no VCO. Esta é a técnica mais usada em transmissores modernos.</p>
+<h2 id="demodulação-fm-discriminador-e-pll"><span class="heading-number">3.7</span> Demodulação FM: Discriminador e PLL</h2>
+<h3 id="princípio-do-discriminador-fm"><span class="heading-number">3.7.1</span> Princípio do discriminador FM</h3>
+<p>O <strong>discriminador FM</strong> é o circuito demodulador clássico. Seu princípio é simples:</p>
+<ol>
+<li>Converter variações de frequência do sinal FM em variações de amplitude.</li>
+<li>Detectar o envelope da amplitude modulada resultante.</li>
+</ol>
+<p>O discriminador é essencialmente um <strong>filtro de frequência</strong> com resposta de amplitude <strong>linear em frequência</strong> na vizinhança de $f_c$, seguido por um detector de envelope.</p>
+<h3 id="curva-s-do-discriminador"><span class="heading-number">3.7.2</span> Curva S do discriminador</h3>
+<p>A característica do discriminador é uma curva em <strong>S</strong> (curva S):</p>
+
+<div class="math-display">
+$$
+
+V_{\text{out}}(f) = K_d\cdot(f - f_c), \quad |f - f_c| \leq \Delta f_{\text{linear}}
+
+$$
+</div>
+
+<p>onde $K_d$ é o <strong>ganho do discriminador</strong> (V/Hz).</p>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: o ganho do discriminador é</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{K_d = \frac{dV_{\text{out}}}{df}\Big|_{f=f_c} \quad \text{(V/Hz)}}
+
+$$
+</div>
+
+<p>A curva S é linear apenas numa faixa limitada centrada em $f_c$. Fora desta faixa, a resposta satura.</p>
+<!-- slides: columns -->
+<h3 id="discriminador-de-fosterseeley"><span class="heading-number">3.7.3</span> Discriminador de Foster–Seeley</h3>
+<p>O discriminador de Foster–Seeley consiste em dois circuitos ressonantes acoplados:</p>
+<ul>
+<li>Um circuito ressonante sintonizado ligeiramente <strong>acima</strong> de $f_c$ (frequência $f_1 &gt; f_c$).</li>
+<li>Outro circuito ressonante sintonizado ligeiramente <strong>abaixo</strong> de $f_c$ (frequência $f_2 &lt; f_c$).</li>
+<li>Dois detectores de envelope, cujas saídas são subtraídas.</li>
+</ul>
+<p>A resposta de diferença é linear em torno de $f_c$ e se anula exatamente em $f_c$.</p>
+<!-- slides: column -->
+<h3 id="detector-de-razão"><span class="heading-number">3.7.4</span> Detector de razão</h3>
+<p>O discriminador de ratio (ratio detector) é uma variação mais robusta, que também rejeita variações de amplitude. Usa um transformador com capacitor de acoplamento e dois diodos em configuração diferencial. A razão das tensões nos dois diodos fornece a saída proporcional ao desvio de frequência.</p>
+<!-- slides: end-columns -->
+<h3 id="pll-como-demodulador-fm"><span class="heading-number">3.7.5</span> PLL como demodulador FM</h3>
+<p>Um Phase-Locked Loop pode atuar como demodulador FM natural. No PLL, o <strong>sinal de controle do VCO</strong> ($v_d(t)$) é exatamente o sinal que, aplicado ao VCO, produziria a mesma variação de frequência do sinal de entrada.</p>
+<p>Esquema:</p>
+<ol>
+<li>Sinal FM entra no comparador de fase.</li>
+<li>O PLL se trava (lock) e segue as variações de frequência do sinal.</li>
+<li>O sinal de controle $v_d(t)$ do VCO interno é a saída demodulada.</li>
+</ol>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: a frequência de detecção (detect frequency) do PLL é a largura de faixa dentro da qual o loop mantém o travamento. Para demodulação FM, a largura de banda do loop deve ser maior que $\Delta f + f_m$.</p></aside>
+<h3 id="demodulação-iq-digital"><span class="heading-number">3.7.6</span> Demodulação I/Q (digital)</h3>
+<p>Em receptores digitais (SDR), a demodulação FM é feita computacionalmente:</p>
+<ol>
+<li>Misturar o sinal RF para baseband (I/Q demodulation): obter $z(t) = I(t) + jQ(t)$.</li>
+<li>Calcular a fase instantânea: $\phi(t) = \arg\bigl(z(t)\bigr) = \operatorname{atan2}\bigl(Q(t), I(t)\bigr)$.</li>
+<li>Desfazer o unwrap da fase: $\phi_{\text{unwrap}}(t) = \operatorname{unwrap}\bigl(\phi(t)\bigr)$.</li>
+<li>Diferenciar: $m(t) \propto \frac{d\phi_{\text{unwrap}}(t)}{dt}$.</li>
+</ol>
+<p>Em discreto:</p>
+
+<div class="math-display">
+$$
+
+m[n] = \frac{1}{2\pi K_d}\bigl(\phi_{\text{unwrap}}[n] - \phi_{\text{unwrap}}[n-1]\bigr)\cdot f_s
+
+$$
+</div>
+
+<h2 id="demodulação-fm-por-detecção-de-cruzamento-por-zero"><span class="heading-number">3.8</span> Demodulação FM por Detecção de Cruzamento por Zero</h2>
+<h3 id="princípio-do-detector-de-cruzamento-por-zero"><span class="heading-number">3.8.1</span> Princípio do detector de cruzamento por zero</h3>
+<p>Um método alternativo de demodulação FM baseia-se na contagem de cruzamentos por zero do sinal. Para $s(t) = A_c\cos\theta(t)$, cada cruzamento por zero ocorre quando $\theta(t) = \pi/2 + n\pi$. O intervalo entre cruzamentos consecutivos é</p>
+
+<div class="math-display">
+$$
+
+T_n = \frac{\pi}{\omega_i(t)} = \frac{1}{2f_i(t)}.
+
+$$
+</div>
+
+<p>Logo, a frequência instantânea pode ser estimada pelo inverso do período entre cruzamentos.</p>
+<h3 id="limitador--diferenciador--detector-de-envelope"><span class="heading-number">3.8.2</span> Limitador + diferenciador + detector de envelope</h3>
+<p>Uma implementação clássica:</p>
+<ol>
+<li><strong>Limitador</strong>: remove variações de amplitude, produzindo um quadrado (ou pulso) de amplitude constante.</li>
+<li><strong>Diferenciador</strong>: o circuito diferenciador tem resposta $H(f) \propto j\omega$. Aplicado a $s(t)$:</li>
+</ol>
+
+<div class="math-display">
+$$
+
+\frac{d}{dt}\Bigl[A_c\cos\theta(t)\Bigr] = -A_c\dot{\theta}(t)\sin\theta(t)
+
+$$
+</div>
+
+<p>onde $\dot{\theta}(t) = 2\pi f_i(t) = 2\pi(f_c + k_f m(t))$.</p>
+<ol>
+<li><strong>Detector de envelope</strong>: extrai $|A_c\dot{\theta}(t)| = A_c\cdot 2\pi(f_c + k_f m(t))$.</li>
+<li><strong>Bloqueio DC</strong>: remove a componente $2\pi f_c$, restando $2\pi k_f m(t)$.</li>
+</ol>
+<p><strong>DEDUÇÃO detalhada</strong>:</p>
+<p>Seja $s(t) = A_c\cos\theta(t)$. Derivando:</p>
+
+<div class="math-display">
+$$
+
+\frac{ds(t)}{dt} = -A_c\frac{d\theta(t)}{dt}\sin\theta(t) = -A_c\omega_i(t)\sin\theta(t)
+
+$$
+</div>
+
+<p>O envelope absoluto deste sinal é:</p>
+
+<div class="math-display">
+$$
+
+\left|\frac{ds(t)}{dt}\right| = A_c\omega_i(t) = A_c\cdot 2\pi\bigl(f_c + k_f m(t)\bigr)
+
+$$
+</div>
+
+<p>Passando por detector de envelope (retificador + filtro passa-baixas) e removendo a DC ($2\pi f_c A_c$):</p>
+
+<div class="math-display">
+$$
+
+y(t) = 2\pi k_f A_c\, m(t)
+
+$$
+</div>
+
+<p>logo $m(t)$ é recuperada proporcionalmente. $\blacksquare$</p>
+<h3 id="supressão-de-ruído-de-amplitude-pelo-limitador"><span class="heading-number">3.8.3</span> Supressão de ruído de amplitude pelo limitador</h3>
+<p>O limitador é um circuito não-linear (comparador, diodo em série) que converte qualquer entrada de amplitude não nula em um sinal de amplitude constante (quadrado, ou pulsos de largura fixa).</p>
+<p>Se o sinal recebido é:</p>
+
+<div class="math-display">
+$$
+
+r(t) = s(t) + n(t) = A_c\cos\theta(t) + n_c(t)\cos(2\pi f_c t) - n_s(t)\sin(2\pi f_c t)
+
+$$
+</div>
+
+<p>com $n(t)$ sendo ruído aditivo de banda estreita, o envelope de $r(t)$ é:</p>
+
+<div class="math-display">
+$$
+
+R(t) = \sqrt{\bigl(A_c\cos\phi(t) + n_c(t)\bigr)^2 + \bigl(A_c\sin\phi(t) + n_s(t)\bigr)^2}
+
+$$
+</div>
+
+<p>para $\text{SNR}_{\text{in}} \gg 1$ (alta relação sinal-ruído), $R(t) \approx A_c + n_c(t)$, onde $n_c(t)$ é a componente em fase do ruído. O limitador remove completamente esta variação, deixando apenas as variações de frequência (que são a informação).</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: o limitador suprime ruído de amplitude, tornando a demodulação FM robusta a fading e ruído térmico.</p></aside>
+<h2 id="análise-de-ruído-em-fm"><span class="heading-number">3.9</span> Análise de Ruído em FM</h2>
+<p>Esta seção apresenta a análise completa da relação sinal-ruído em sistemas FM, incluindo o ganho de processamento e o limiar de detecção.</p>
+<h3 id="ruído-aditivo-no-receptor-fm"><span class="heading-number">3.9.1</span> Ruído aditivo no receptor FM</h3>
+<p>No receptor, o sinal recebido é:</p>
+
+<div class="math-display">
+$$
+
+r(t) = s_{\text{FM}}(t) + n(t) = A_c\cos\theta_i(t) + n(t)
+
+$$
+</div>
+
+<p>onde $n(t)$ é ruído branco gaussiano com densidade espectral $N_0/2$ (W/Hz).</p>
+<p>Representamos $n(t)$ em componentes em fase e quadratura em torno de $f_c$:</p>
+
+<div class="math-display">
+$$
+
+n(t) = n_c(t)\cos(2\pi f_c t) - n_s(t)\sin(2\pi f_c t)
+
+$$
+</div>
+
+<p>onde $n_c(t)$ e $n_s(t)$ são processos de baixa passagem, independentes, com mesma densidade espectral:</p>
+
+<div class="math-display">
+$$
+
+S_{n_c}(f) = S_{n_s}(f) = \begin{cases} N_0, &amp; |f| \leq B \\ 0, &amp; |f| &gt; B \end{cases}
+
+$$
+</div>
+
+<p>e potência $\sigma_n^2 = \int_{-B}^{B} N_0\,df = 2N_0 B$.</p>
+<h3 id="decomposição-do-sinal-mais-ruído-em-polar"><span class="heading-number">3.9.2</span> Decomposição do sinal mais ruído em polar</h3>
+<p>Escrevendo $r(t)$ em forma polar:</p>
+
+<div class="math-display">
+$$
+
+r(t) = R(t)\cos\bigl(\theta_i(t) + \phi(t)\bigr)
+
+$$
+</div>
+
+<p>onde</p>
+
+<div class="math-display">
+$$
+
+R(t) = \sqrt{\bigl(A_c\cos\theta_i(t) + n_c(t)\bigr)^2 + \bigl(A_c\sin\theta_i(t) + n_s(t)\bigr)^2}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\theta_i(t) + \phi(t) = \operatorname{atan2}\Bigl(A_c\sin\theta_i(t) + n_s(t),\, A_c\cos\theta_i(t) + n_c(t)\Bigr)
+
+$$
+</div>
+
+<p>$\phi(t)$ é o <strong>ruído de fase</strong> induzido pelo ruído aditivo.</p>
+<h3 id="aproximação-para-snr-alto"><span class="heading-number">3.9.3</span> Aproximação para SNR alto</h3>
+<p>Para $\text{SNR}_{\text{in}} = A_c^2/(2\sigma_n^2) \gg 1$ (grande sinal, pouco ruído):</p>
+
+<div class="math-display">
+$$
+
+\phi(t) \approx \frac{n_s(t)}{A_c}
+
+$$
+</div>
+
+<p>A aproximação vem da expansão em série de Taylor do $\operatorname{atan2}$ para $n_c, n_s \ll A_c$.</p>
+<p>O ruído de frequência (deslocamento instantâneo por ruído) é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\Delta f_n(t) = \frac{1}{2\pi}\frac{d\phi(t)}{dt} = \frac{1}{2\pi A_c}\frac{dn_s(t)}{dt}}
+
+$$
+</div>
+
+<h3 id="densidade-espectral-do-ruído-de-saída"><span class="heading-number">3.9.4</span> Densidade espectral do ruído de saída</h3>
+<p>O discriminador FM produz uma saída proporcional a $\frac{d\phi(t)}{dt}$. O ruído de saída após o discriminador tem densidade espectral:</p>
+
+<div class="math-display">
+$$
+
+S_{n_{\text{out}}}(f) = K_d^2\cdot (2\pi f)^2\cdot S_{\phi}(f) = K_d^2\cdot (2\pi f)^2\cdot \frac{N_0}{A_c^2}
+
+$$
+</div>
+
+<p>para $|f| \leq W$ (onde $W$ é a banda da mensagem).</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: o ruído de saída do discriminador FM cresce <strong>parabolicamente com a frequência</strong> ($f^2$). Ruído de alta frequência é amplificado. Isso explica por que o áudio FM precisa de pré-ênfase/de-ênfase.</p></aside>
+<h3 id="potência-de-ruído-de-saída"><span class="heading-number">3.9.5</span> Potência de ruído de saída</h3>
+<p>A potência de ruído na saída do discriminador é:</p>
+
+<div class="math-display">
+$$
+
+P_{n_{\text{out}}} = \int_{-W}^{W} K_d^2(2\pi f)^2\frac{N_0}{A_c^2}\,df = \frac{K_d^2 4\pi^2 N_0}{A_c^2}\int_{-W}^{W} f^2\,df = \frac{K_d^2 4\pi^2 N_0}{A_c^2}\cdot\frac{2W^3}{3}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{P_{n_{\text{out}}} = \frac{8\pi^2 K_d^2 N_0 W^3}{3A_c^2}}
+
+$$
+</div>
+
+<h3 id="potência-do-sinal-de-saída"><span class="heading-number">3.9.6</span> Potência do sinal de saída</h3>
+<p>Para $m(t) = A_m\cos(2\pi f_m t)$ com $f_m \leq W$, a saída do discriminador é:</p>
+
+<div class="math-display">
+$$
+
+y(t) = K_d\cdot 2\pi k_f m(t) = 2\pi K_d k_f A_m\cos(2\pi f_m t)
+
+$$
+</div>
+
+<p>A potência média é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{sinal, out}} = \frac{1}{2}(2\pi K_d k_f A_m)^2 = 2\pi^2 K_d^2 k_f^2 A_m^2}
+
+$$
+</div>
+
+<h3 id="snr-de-saída-fm"><span class="heading-number">3.9.7</span> SNR de saída FM</h3>
+
+<div class="math-display">
+$$
+
+\text{SNR}_{\text{out}} = \frac{P_{\text{sinal, out}}}{P_{n_{\text{out}}}} = \frac{2\pi^2 K_d^2 k_f^2 A_m^2}{\dfrac{8\pi^2 K_d^2 N_0 W^3}{3A_c^2}} = \frac{3 k_f^2 A_m^2 A_c^2}{4 N_0 W^3}
+
+$$
+</div>
+
+<p>Para comparar a saída com uma referência sem ambiguidade, definimos primeiro a razão portadora-ruído referida à <strong>largura da mensagem</strong> $W$:</p>
+
+<div class="math-display">
+$$
+
+\left(\frac CN\right)_W=\frac{A_c^2/2}{N_0W}.
+
+$$
+</div>
+
+<p>Para a senoide de maior frequência $f_m=W$, $\beta=k_fA_m/W$. Dividindo a SNR de saída por essa referência:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{out}}=\frac32\beta^2\left(\frac CN\right)_W.}
+
+$$
+</div>
+
+<p>Se, em vez disso, a “SNR de entrada” for medida na largura RF real do receptor $B_r$, então</p>
+
+<div class="math-display">
+$$
+
+\text{SNR}_{\text{in},B_r}=\frac{A_c^2/2}{N_0B_r},
+
+$$
+</div>
+
+<p>e a conversão correta é</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{out}}=\frac32\beta^2\frac{B_r}{W}\,\text{SNR}_{\text{in},B_r}.}
+
+$$
+</div>
+
+<p>Com a regra de Carson, $B_r\approx2(\beta+1)W$. Portanto, não se pode substituir $B_r$ pela banda de Carson e simultaneamente conservar um ganho $3\beta^2$: isso mistura duas definições distintas da potência de ruído de referência.</p>
+<h3 id="ganho-de-processamento-fm"><span class="heading-number">3.9.8</span> Ganho de processamento FM</h3>
+<p>O <strong>ganho de processamento FM</strong> é definido como:</p>
+
+<div class="math-display">
+$$
+
+\boxed{G_{\text{FM},W}=\frac{\text{SNR}_{\text{out}}}{(C/N)_W}=\frac32\beta^2}
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: $G_{\text{FM}} \propto \beta^2$. Para $\beta = 5$ (FM broadcast), $G_{\text{FM}} = 75$. Em dB: $10\log_{10}(75) \approx 18{,}8\text{ dB}$.</p></aside>
+<p>Este é o &quot;pagamento&quot;: FM troca <strong>banda</strong> por <strong>SNR</strong>. Quanto maior $\beta$, melhor o SNR, mas maior a banda.</p>
+<h3 id="teorema-do-limiar-fm"><span class="heading-number">3.9.9</span> Teorema do limiar FM</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong> (limiar de detecção FM): quando a potência do sinal recebido cai abaixo de aproximadamente 10 dB de SNR no receptor, a relação sinal-ruído na saída degrada-se <strong>abruptamente</strong>. Este ponto é chamado de <strong>limiar FM</strong> (FM threshold).</p></aside>
+<p>O limiar ocorre porque, para baixo SNR, o ruído de fase $\phi(t)$ deixa de ser pequeno e o aproximador $\phi \approx n_s/A_c$ falha. Os <strong>saltos de fase</strong> (phase slips) tornam-se frequentes — o ciclo do PLL &quot;perde&quot; voltas (cycle slipping), gerando cliques audíveis.</p>
+
+<div class="math-display">
+$$
+
+P_{\text{limiar}} \approx P_{\text{ruído}} \times 10 \quad\text{(SNR}_{\text{in}} \approx 10\text{ dB)}
+
+$$
+</div>
+
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: acima do limiar, a SNR de saída segue a lei quadrática $\tfrac32\beta^2(C/N)_W$. Abaixo do limiar, ela cai abruptamente e essa aproximação de alta SNR deixa de valer.</p></aside>
+<h3 id="snr-com-pré-ênfase-seção-pré-ênfase-e-de-ênfase"><span class="heading-number">3.9.10</span> SNR com pré-ênfase (Seção “Pré-ênfase e De-ênfase”)</h3>
+<p>Com pré-ênfase e de-ênfase (Seção “Pré-ênfase e De-ênfase”), o SNR de saída é melhorado em aproximadamente <strong>13 dB</strong> para o padrão de FM broadcast ($\tau = 75\,\mu\text{s}$).</p>
+<h2 id="pré-ênfase-e-de-ênfase"><span class="heading-number">3.10</span> Pré-ênfase e De-ênfase</h2>
+<h3 id="o-problema-do-ruído-f2"><span class="heading-number">3.10.1</span> O problema do ruído $f^2$</h3>
+<p>Do resultado da Seção “Densidade espectral do ruído de saída”, a densidade espectral do ruído na saída do discriminador é proporcional a $f^2$:</p>
+
+<div class="math-display">
+$$
+
+S_{n_{\text{out}}}(f) \propto f^2
+
+$$
+</div>
+
+<p>Isso significa que o ruído de alta frequência é <strong>sempre maior</strong> que o de baixa frequência no áudio demodulado. Sem correção, o som seria &quot;chiado&quot; nas altas frequências.</p>
+<h3 id="princípio-da-pré-ênfase-e-de-ênfase"><span class="heading-number">3.10.2</span> Princípio da pré-ênfase e de-ênfase</h3>
+<p>A técnica é simples e elegante:</p>
+<ol>
+<li><strong>No transmissor (pré-ênfase)</strong>: realçar as altas frequências do sinal $m(t)$ antes da modulação FM. A função de transferência é:</li>
+</ol>
+
+<div class="math-display">
+$$
+
+\boxed{H_{\text{pre}}(f) = 1 + j\frac{f}{f_0}}
+
+$$
+</div>
+
+<p>Esta é um filtro passa-altas de primeira ordem que <strong>aumenta</strong> a amplitude proporcionalmente a $f$ para $f \gg f_0$.</p>
+<ol>
+<li><strong>No receptor (de-ênfase)</strong>: após a demodulação FM, aplicar um filtro que é a <strong>inversa</strong> da pré-ênfase:</li>
+</ol>
+
+<div class="math-display">
+$$
+
+\boxed{H_{\text{de}}(f) = \frac{1}{H_{\text{pre}}(f)} = \frac{1}{1 + j\frac{f}{f_0}}}
+
+$$
+</div>
+
+<p>Este é um filtro passa-baixas de primeira ordem.</p>
+<ol>
+<li><strong>Sinal de mensagem original</strong>: o sinal após de-ênfase tem a amplitude restaurada (a pré-ênfase é &quot;cancelada&quot;), mas o ruído de alta frequência foi atenuado pelo passa-baixas de de-ênfase.</li>
+</ol>
+<h3 id="análise-de-melhoria-de-snr"><span class="heading-number">3.10.3</span> Análise de melhoria de SNR</h3>
+<p>Com pré-ênfase e de-ênfase:</p>
+<ul>
+<li>A potência do sinal na saída é: $\int_{-W}^{W}|H_{\text{de}}(f)|^2\cdot|H_{\text{pre}}(f)|^2 S_m(f)\,df = \int_{-W}^{W}S_m(f)\,df$ (sinal restaurado).</li>
+<li>A potência de ruído na saída é: $\int_{-W}^{W}|H_{\text{de}}(f)|^2\cdot f^2\,df$ (ruído atenuado nas altas frequências).</li>
+</ul>
+<p>O ganho adicional de SNR é:</p>
+
+<div class="math-display">
+$$
+
+\text{Melhoria}_{\text{de-ênfase}} \approx 13\text{ dB} \quad\text{para o padrão de 75 µs (broadcast FM)}
+
+$$
+</div>
+
+<h3 id="constante-de-tempo-e-padrões"><span class="heading-number">3.10.4</span> Constante de tempo e padrões</h3>
+<p>A constante de tempo do filtro RC de de-ênfase é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\tau = RC = \frac{1}{2\pi f_0}}
+
+$$
+</div>
+
+<p><strong>Padrões</strong>:</p>
+<ul>
+<li>FM broadcast (EUA/Europa): $\tau = 75\,\mu\text{s}$, $f_0 = \dfrac{1}{2\pi\cdot 75\times 10^{-6}} \approx 2{,}12\text{ kHz}$.</li>
+<li>FM broadcast (Japão/antigo): $\tau = 50\,\mu\text{s}$, $f_0 \approx 3{,}18\text{ kHz}$.</li>
+<li>Áudio profissional: $\tau = 25\,\mu\text{s}$ (alguns sistemas).</li>
+</ul>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: tanto o transmissor quanto o receptor devem usar o <strong>mesmo</strong> $\tau$, caso contrário a de-ênfase não cancela a pré-ênfase corretamente e a resposta em frequência fica distorcida.</p></aside>
+<h2 id="fm-stereo-e-aplicações"><span class="heading-number">3.11</span> FM Stereo e Aplicações</h2>
+<h3 id="sistema-fm-stereo--multiplexação"><span class="heading-number">3.11.1</span> Sistema FM Stereo — multiplexação</h3>
+<p>O sistema FM stereo (descrito pelo SMPTE, adotado mundialmente) multiplexa dois canais (L e R) em uma única portadora FM, mantendo compatibilidade com receptores mono.</p>
+<p>O sinal de modulação stereo $M(t)$ é composto por:</p>
+<ol>
+<li><strong>Canal principal (L + R)</strong>: soma dos canais esquerdo e direito. Ocupa 0–15 kHz. Receptores mono reproduzem apenas este canal.</li>
+<li><strong>Pilot tone (sincronização)</strong>: tom puro a 19 kHz, amplitude 10–15% do desvio total. Usado pelo receptor para reconstruir a subportadora de 38 kHz.</li>
+<li><strong>Canal L − R</strong>: diferença dos canais, modulado em DSB-SC na subportadora de 38 kHz. Ocupa 23–53 kHz.</li>
+<li><strong>RDS (Radio Data System)</strong>: subportadora adicional a 57 kHz para dados (nome da estação, hora, etc.). Ocupa ~57 ± 1{,}5 kHz.</li>
+</ol>
+<p>O sinal completo de modulação é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{M(t) = (L(t)+R(t)) + (L(t)-R(t))\cos(2\pi\cdot 38\text{ kHz}\cdot t) + P_{\text{pilot}}\cos(2\pi\cdot 19\text{ kHz}\cdot t) + \text{RDS}(t)}
+
+$$
+</div>
+
+<p>com limitação de frequência máxima a 53 kHz para respeitar o desvio máximo de 75 kHz.</p>
+<h3 id="compatibilidade-mono"><span class="heading-number">3.11.2</span> Compatibilidade mono</h3>
+<p>Para receptor mono:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{mono}}(t) \propto L(t) + R(t)
+
+$$
+</div>
+
+<p>o canal (L + R) é diretamente acessível. Os componentes stereo (L − R, pilot, RDS) são rejeitados por filtro passa-baixas simples.</p>
+<p>Para receptor stereo:</p>
+
+<div class="math-display">
+$$
+
+L(t) = \frac{(L+R) + (L-R)}{2}, \quad R(t) = \frac{(L+R) - (L-R)}{2}
+
+$$
+</div>
+
+<p>O receptor reconstrói $L-R$ demodulando o DSB-SC em 38 kHz (usando o pilot de 19 kHz dobrado para gerar 38 kHz local).</p>
+<h3 id="espectro-do-fm-stereo"><span class="heading-number">3.11.3</span> Espectro do FM Stereo</h3>
+<p>O espectro de frequências do sinal de modulação FM stereo (0–75 kHz):</p>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>  0 Hz       |--- 15 kHz ---|   19 kHz   |--- 23 kHz ---|--- 53 kHz ---| 57 kHz
+  L+R       |    Áudio L+R   | Pilot 19kHz | DSB-SC L-R  |  Banda L-R   | RDS (57 kHz)</code></pre></div>
+
+<h3 id="fm-rds-radio-data-system"><span class="heading-number">3.11.4</span> FM RDS (Radio Data System)</h3>
+<p>O RDS transmite dados digitais na subportadora de 57 kHz:</p>
+<ul>
+<li>Taxa de bits: 1{,}1875 kbps (codificação Manchester).</li>
+<li>Conteúdo: nome da estação (PS), programa tipo (PTY), hora (RT), tráfego (TA), endereço de estação (PI).</li>
+<li>Compatível com todos os receptores FM (dados são ignorados pelos receptores de áudio).</li>
+</ul>
+<h3 id="aplicações-da-fm"><span class="heading-number">3.11.5</span> Aplicações da FM</h3>
+<ul>
+<li><strong>Radiodifusão FM</strong> (88–108 MHz): áudio de alta qualidade, stereo, RDS.</li>
+<li><strong>Rádio amador</strong> (VHF/UHF): comunicações voz e dados.</li>
+<li><strong>Comunicação móvel</strong> (análogo): sistemas de rádio táxi, emergência (ex.: Motorola Move).</li>
+<li><strong>Televisão</strong>: o áudio da TV analógica era modulada em FM.</li>
+<li><strong>Telemetria</strong>: sensores sem fio com FM (robusto a interferência).</li>
+<li><strong>Síntese de som (FM Synthesis)</strong>: modulação de frequência para geração de timbres (Yamaha DX7).</li>
+</ul>
+<h2 id="comparação-fm-vs-am-vs-dsb-sc"><span class="heading-number">3.12</span> Comparação FM vs AM vs DSB-SC</h2>
+<h3 id="tabela-comparativa-completa"><span class="heading-number">3.12.1</span> Tabela comparativa completa</h3>
+<table>
+<thead>
+<tr>
+<th>Propriedade</th>
+<th>AM (DSB com portadora)</th>
+<th>DSB-SC</th>
+<th>FM ($\beta \gg 1$)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Largura de banda</strong></td>
+<td>$2W$</td>
+<td>$2W$</td>
+<td>$2(\Delta f + W) = 2W(\beta+1)$</td>
+</tr>
+<tr>
+<td><strong>Potência total</strong></td>
+<td>$\dfrac{A_c^2}{2}\!\left(1+\dfrac{\mu^2}{2}\right)$</td>
+<td>$\dfrac{A_c^2}{2}$</td>
+<td>$\dfrac{A_c^2}{2}$ (constante)</td>
+</tr>
+<tr>
+<td><strong>Eficiência de potência</strong></td>
+<td>$\mu^2/(2+\mu^2) \leq 33\%$</td>
+<td>100% (na mensagem)</td>
+<td>100% (independente de $m(t)$)</td>
+</tr>
+<tr>
+<td><strong>SNR de saída</strong></td>
+<td>$\text{SNR}_{\text{out}} = \dfrac{\mu^2}{2+\mu^2}\text{SNR}_{\text{in}}$</td>
+<td>$\text{SNR}_{\text{out}} = \text{SNR}_{\text{in}}$</td>
+<td>$\text{SNR}_{\text{out}} = \tfrac32\beta^2(C/N)_W$</td>
+</tr>
+<tr>
+<td><strong>Complexidade do TX</strong></td>
+<td>Simples</td>
+<td>Moderada</td>
+<td>Moderada (VCO ou Armstrong)</td>
+</tr>
+<tr>
+<td><strong>Complexidade do RX</strong></td>
+<td>Detector de envelope</td>
+<td>Coerente (carrier recovery)</td>
+<td>Discriminador ou PLL</td>
+</tr>
+<tr>
+<td><strong>Imunidade a ruído de amplitude</strong></td>
+<td>Nenhuma</td>
+<td>Nenhuma</td>
+<td>Alta (limitador)</td>
+</tr>
+<tr>
+<td><strong>Imunidade a fading</strong></td>
+<td>Baixa</td>
+<td>Baixa</td>
+<td>Boa (se SNR &gt; limiar)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="quando-escolher-cada-modulação"><span class="heading-number">3.12.2</span> Quando escolher cada modulação</h3>
+<p><strong>AM (DSB com portadora)</strong>:</p>
+<ul>
+<li>Rádio AM broadcast (530–1700 kHz): recepção simples, alcance longo (onda de superfície).</li>
+<li>Aplicações onde a complexidade do receptor deve ser mínima.</li>
+<li>Desvantagem: baixa eficiência, ruído sensível.</li>
+</ul>
+<p><strong>DSB-SC</strong>:</p>
+<ul>
+<li>Quando a potência é limitada e a portadora não precisa ser reconstruída no receptor.</li>
+<li>Usado como etapa intermediária em moduladores quadratura (QAM).</li>
+<li>Desvantagem: requer carrier recovery coerente no receptor.</li>
+</ul>
+<p><strong>FM (WBFM)</strong>:</p>
+<ul>
+<li>Radiodifusão FM (88–108 MHz): alta fidelidade, imunidade a ruído.</li>
+<li>Rádio amador VHF/UHF: comunicação móvel robusta.</li>
+<li>Áudio de TV analógica (NTSC/PAL): áudio mais limpo que o vídeo.</li>
+<li>Sistemas onde banda é abundante mas qualidade é crítica.</li>
+<li>Desvantagem: maior banda; limiar de SNR abaixo do qual degrada abruptamente.</li>
+</ul>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">3.13</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">3.13.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> verificar coeficientes de Bessel, conservação de potência, regra de Carson e demodulação. <strong>Amostragem:</strong> declare $f_s$, duração e resolução espectral. <strong>Validação:</strong> confirme $\sum_nJ_n^2(\beta)=1$, compare banda ocupada com Carson e reporte SNR antes/depois da demodulação.</p>
+<h3 id="exercício-1-espectro-fm--cálculo-de-j_nbeta-e-plot"><span class="heading-number">3.13.2</span> Exercício 1: Espectro FM — cálculo de $J_n(\beta)$ e plot</h3>
+<p><strong>Problema</strong>: Para um sinal FM com $f_c = 100\text{ MHz}$, $f_m = 5\text{ kHz}$, $\Delta f = 25\text{ kHz}$, calcule os coeficientes de Bessel $J_n(\beta)$ para $n = 0,\ldots,10$ e plote o espectro de amplitudes. Determine a banda de Carson e compare com o número real de componentes com amplitude $&gt; 5\%$ da portadora não modulada.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">jv</span>
+
+<span style="color: #959077"># Parâmetros</span>
+<span style="color: #F8F8F2">fc,</span> <span style="color: #F8F8F2">fm,</span> <span style="color: #F8F8F2">df</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100e6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5e3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">25e3</span>
+<span style="color: #F8F8F2">beta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">df</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">fm</span>  <span style="color: #959077"># índice de modulação</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Índice de modulação: β = {</span><span style="color: #F8F8F2">beta</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Calcular coeficientes de Bessel</span>
+<span style="color: #F8F8F2">n_max</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span>
+<span style="color: #F8F8F2">n</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">n_max,</span> <span style="color: #F8F8F2">n_max</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">Jn</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">jv(n,</span> <span style="color: #F8F8F2">beta)</span>
+
+<span style="color: #959077"># Amplitudes relativas (normalizadas pela portadora não modulada Ac)</span>
+<span style="color: #F8F8F2">amplitudes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(Jn)</span>
+
+<span style="color: #959077"># Identificar componentes com amplitude &gt; 5% da portadora não modulada</span>
+<span style="color: #F8F8F2">threshold</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.05</span>
+<span style="color: #F8F8F2">significant</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum(amplitudes</span> <span style="color: #FF4689">&gt;</span> <span style="color: #F8F8F2">threshold)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Componentes com amplitude &gt; {</span><span style="color: #F8F8F2">threshold</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">100</span><span style="color: #E6DB74">:.0f}% da portadora não modulada: {</span><span style="color: #F8F8F2">significant</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Regra de Carson</span>
+<span style="color: #F8F8F2">B_carson</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(df</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">fm)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Banda de Carson: B_C = {</span><span style="color: #F8F8F2">B_carson</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e3</span><span style="color: #E6DB74">:.1f} kHz&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Número estimado de bandas laterais por lado pela regra de Carson</span>
+<span style="color: #F8F8F2">n_carson</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ceil(B_carson</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fm)))</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Bandas laterais por lado (Carson): n_max ≈ {</span><span style="color: #F8F8F2">n_carson</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Plot do espectro de amplitudes</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">frequencies</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fm</span>  <span style="color: #959077"># posições em Hz</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">stem(frequencies</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">amplitudes,</span> <span style="color: #F8F8F2">basefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot; &quot;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;C0-&quot;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markerfmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;C0o&quot;</span><span style="color: #F8F8F2">,</span>
+        <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&quot;|J_n(β={</span><span style="color: #F8F8F2">beta</span><span style="color: #E6DB74">})|&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(fc</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Portadora ({</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e6</span><span style="color: #E6DB74">:.0f} MHz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvspan((fc</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">B_carson</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(fc</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">B_carson</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span>
+           <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Banda de Carson ({</span><span style="color: #F8F8F2">B_carson</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e3</span><span style="color: #E6DB74">:.0f} kHz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Frequência (MHz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Amplitude relativa&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Espectro FM — β = {</span><span style="color: #F8F8F2">beta</span><span style="color: #E6DB74">}, fm = {</span><span style="color: #F8F8F2">fm</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e3</span><span style="color: #E6DB74">:.0f} kHz&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #959077"># Tabela de valores</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Tabela de coeficientes de Bessel J_n(β):&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;{&#39;n&#39;:&gt;3}  {&#39;J_n(β)&#39;:&gt;10}  {&#39;Amplitude %&#39;:&gt;12}  {&#39;Potência %&#39;:&gt;12}&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(len(n)):</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;{</span><span style="color: #F8F8F2">n[i]</span><span style="color: #E6DB74">:&gt;3}  {</span><span style="color: #F8F8F2">Jn[i]</span><span style="color: #E6DB74">:&gt;10.6f}  {</span><span style="color: #F8F8F2">amplitudes[i]</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">100</span><span style="color: #E6DB74">:&gt;11.2f}%  {</span><span style="color: #F8F8F2">Jn[i]</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">100</span><span style="color: #E6DB74">:&gt;11.2f}%&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Verificação da conservação de potência</span>
+<span style="color: #F8F8F2">P_total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum(Jn</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Conservação de potência: Σ J_n²(β) = {</span><span style="color: #F8F8F2">P_total</span><span style="color: #E6DB74">:.10f} (deve ser 1.0)&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m jv
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<aside class="callout callout-result" role="status"><p><strong>Saída esperada</strong>:</p></aside>
+<ul>
+<li>$\beta = 5$.</li>
+<li>Componentes significativas: ~13 (até $n \approx 6$ de cada lado).</li>
+<li>Banda de Carson: $B_C = 60\text{ kHz}$.</li>
+<li>$\sum J_n^2(5) \approx 1{,}0000$.</li>
+</ul>
+<h3 id="exercício-2-banda-de-carson-vs-número-de-bandas-significativas"><span class="heading-number">3.13.3</span> Exercício 2: Banda de Carson vs número de bandas significativas</h3>
+<p><strong>Problema</strong>: Para diferentes valores de $\beta \in \{0{,}1, 0{,}5, 1, 2, 5, 10\}$, comparar a banda de Carson com o número real de bandas laterais necessárias para capturar 99% da potência total.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">jv</span>
+
+<span style="color: #F8F8F2">betas</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10.0</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">n_max_search</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">results</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">beta</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">betas:</span>
+    <span style="color: #F8F8F2">n_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">n_max_search,</span> <span style="color: #F8F8F2">n_max_search</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">Jn_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">jv(n_vals,</span> <span style="color: #F8F8F2">beta)</span>
+    <span style="color: #F8F8F2">Jn_sq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Jn_vals</span> <span style="color: #FF4689">**</span> <span style="color: #AE81FF">2</span>
+    <span style="color: #F8F8F2">total_power</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum(Jn_sq)</span>
+
+    <span style="color: #959077"># Somar do centro para as laterais até 99%</span>
+    <span style="color: #F8F8F2">cumulative</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Jn_sq[n_max_search]</span>  <span style="color: #959077"># portadora n=0</span>
+    <span style="color: #F8F8F2">k_found</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n_max_search</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">):</span>
+        <span style="color: #F8F8F2">cumulative</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">Jn_sq[n_max_search</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">k]</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Jn_sq[n_max_search</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">k]</span>
+        <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">cumulative</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">total_power</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0.99</span><span style="color: #F8F8F2">:</span>
+            <span style="color: #F8F8F2">k_found</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span>
+            <span style="color: #66D9EF">break</span>
+
+    <span style="color: #F8F8F2">n_components</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">k_found</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span>  <span style="color: #959077"># portadora + k pares</span>
+    <span style="color: #F8F8F2">B_carson_kHz</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(beta</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">B_99_kHz</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">k_found</span>
+
+    <span style="color: #F8F8F2">results</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append((beta,</span> <span style="color: #F8F8F2">n_components,</span> <span style="color: #F8F8F2">B_carson_kHz,</span> <span style="color: #F8F8F2">B_99_kHz))</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(beta,</span> <span style="color: #F8F8F2">B_carson_kHz,</span> <span style="color: #E6DB74">&#39;o&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;β={</span><span style="color: #F8F8F2">beta</span><span style="color: #E6DB74">}, Carson={</span><span style="color: #F8F8F2">B_carson_kHz</span><span style="color: #E6DB74">:.1f}&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(beta,</span> <span style="color: #F8F8F2">B_99_kHz,</span> <span style="color: #E6DB74">&#39;s&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">fillstyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;none&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Índice de modulação β&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Largura de banda (× fm)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Banda de Carson vs banda para 99% da potência&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">beta,</span> <span style="color: #F8F8F2">nc,</span> <span style="color: #F8F8F2">bc,</span> <span style="color: #F8F8F2">b99</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">results:</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;β = {</span><span style="color: #F8F8F2">beta</span><span style="color: #E6DB74">:.1f}: {</span><span style="color: #F8F8F2">nc</span><span style="color: #E6DB74">} componentes para 99%, Carson ≈ {</span><span style="color: #F8F8F2">bc</span><span style="color: #E6DB74">:.1f} (99% ≈ {</span><span style="color: #F8F8F2">b99</span><span style="color: #E6DB74">:.1f})&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m jv
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p><strong>Insight</strong>: a regra de Carson é conservadora para $\beta &lt; 3$ e mais precisa para $\beta &gt; 5$. Para $\beta = 5$, Carson dá $12\times f_m$ e 99% da potência requerem ~12–13 $\times f_m$.</p>
+<h3 id="exercício-3-simulação-fm-com-pré-ênfase-e-de-ênfase"><span class="heading-number">3.13.4</span> Exercício 3: Simulação FM com pré-ênfase e de-ênfase</h3>
+<p><strong>Problema</strong>: Simular a demodulação FM de um sinal com pré-ênphasis/de-ênphasis ($\tau = 75\,\mu\text{s}$) e quantificar a melhoria de SNR. Comparar com o caso sem pré/de-ênfase.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.signal </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">hilbert</span>
+
+<span style="color: #959077"># Parâmetros</span>
+<span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">500e3</span>        <span style="color: #959077"># taxa de amostragem</span>
+<span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10e3</span>         <span style="color: #959077"># frequência portadora (simulação em baseband)</span>
+<span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e3</span>          <span style="color: #959077"># frequência da mensagem</span>
+<span style="color: #F8F8F2">df</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5e3</span>          <span style="color: #959077"># desvio de frequência</span>
+<span style="color: #F8F8F2">beta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">df</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">fm</span>
+<span style="color: #F8F8F2">tau</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">75e-6</span>       <span style="color: #959077"># constante de tempo de de-ênfase</span>
+<span style="color: #F8F8F2">f0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">tau)</span>  <span style="color: #959077"># frequência de corte de pré-ênfase</span>
+
+<span style="color: #959077"># Tempo</span>
+<span style="color: #F8F8F2">T</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.02</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span>
+
+<span style="color: #959077"># Sinal mensagem (tom + ruído)</span>
+<span style="color: #F8F8F2">m_tone</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">t)</span>
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(t))</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">0.3</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m_tone</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+
+<span style="color: #959077"># Pré-ênfase: filtro passa-altas de 1ª ordem</span>
+<span style="color: #F8F8F2">alpha</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.0</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(fs</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">tau))</span>
+<span style="color: #F8F8F2">m_pre</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(m)</span>
+<span style="color: #F8F8F2">m_pre[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">len(m)):</span>
+    <span style="color: #F8F8F2">m_pre[i]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(m[i]</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">m[i</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">alpha</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">m_pre[i</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+
+<span style="color: #959077"># Gerar sinal FM</span>
+<span style="color: #F8F8F2">phase</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">t</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">df</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cumsum(m_pre)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">fs</span>
+<span style="color: #F8F8F2">s_fm</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phase)</span>
+
+<span style="color: #959077"># Adicionar ruído ao canal</span>
+<span style="color: #F8F8F2">snr_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span>
+<span style="color: #F8F8F2">snr_linear</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">**</span> <span style="color: #F8F8F2">(snr_db</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">signal_power</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(s_fm</span> <span style="color: #FF4689">**</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">noise_power</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">signal_power</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">snr_linear</span>
+<span style="color: #F8F8F2">n_awgn</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(t))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(noise_power)</span>
+<span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">s_fm</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">n_awgn</span>
+
+<span style="color: #959077"># Demodulação FM por Hilbert (detecção não-coerente)</span>
+<span style="color: #F8F8F2">z</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hilbert(r)</span>
+<span style="color: #F8F8F2">phase_inst</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">unwrap(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">angle(z))</span>
+<span style="color: #F8F8F2">f_inst</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">diff(phase_inst)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi)</span>
+<span style="color: #F8F8F2">f_inst_dc</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">f_inst</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(f_inst)</span>
+<span style="color: #F8F8F2">m_demod</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">f_inst_dc</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">df</span>
+
+<span style="color: #959077"># De-ênfase: filtro passa-baixas de 1ª ordem</span>
+<span style="color: #F8F8F2">m_de</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(m_demod)</span>
+<span style="color: #F8F8F2">m_de[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m_demod[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">alpha)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">len(m_demod)):</span>
+    <span style="color: #F8F8F2">m_de[i]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(m_demod[i]</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">m_demod[i</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">alpha)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">alpha</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">m_de[i</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+
+<span style="color: #959077"># Calcular SNR de saída. A diferenciação reduz o vetor em uma amostra;</span>
+<span style="color: #959077"># portanto, a referência correspondente começa em t[1].</span>
+<span style="color: #F8F8F2">m_clean</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m_tone[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">len(m_de)]</span>
+<span style="color: #F8F8F2">noise_est</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m_de</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">m_clean</span>
+<span style="color: #F8F8F2">snr_out</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">var(m_clean)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">var(noise_est))</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;SNR de entrada: {</span><span style="color: #F8F8F2">snr_db</span><span style="color: #E6DB74">} dB&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;SNR de saída (com pré/de-ênfase): {</span><span style="color: #F8F8F2">snr_out</span><span style="color: #E6DB74">:.1f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Melhoria de SNR: {</span><span style="color: #F8F8F2">snr_out </span><span style="color: #FF4689">-</span><span style="color: #F8F8F2"> snr_db</span><span style="color: #E6DB74">:.1f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Plot comparativo</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">m,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;m(t) com ruído&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Sinal mensagem com ruído&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">m_demod[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Demodulado (sem de-ênfase)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Sinal demodulado (pré-de-ênfase)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">m_de[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Demodulado (com de-ênfase)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Tempo (ms)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Sinal após de-ênfase&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01msignal[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m hilbert
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-4-curva-de-limiar-fm--snr-vs-beta"><span class="heading-number">3.13.5</span> Exercício 4: Curva de limiar FM — SNR vs $\beta$</h3>
+<p><strong>Problema</strong>: Simular a relação SNR de saída vs SNR de entrada para diferentes valores de $\beta$, mostrando o limiar FM.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.signal </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">hilbert</span>
+
+<span style="color: #959077"># Parâmetros</span>
+<span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">200e3</span>
+<span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e3</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span>
+
+<span style="color: #F8F8F2">betas_plot</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5.0</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">snr_range_db</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">beta</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">betas_plot:</span>
+    <span style="color: #F8F8F2">df</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">beta</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fm</span>
+    <span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fm</span>  <span style="color: #959077"># fc &gt;&gt; fm para evitar aliasing</span>
+
+    <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">t)</span>
+    <span style="color: #F8F8F2">phase</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">t</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">df</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cumsum(m)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">fs</span>
+    <span style="color: #F8F8F2">s_fm</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phase)</span>
+
+    <span style="color: #F8F8F2">snr_out_list</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">snr_db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">snr_range_db:</span>
+        <span style="color: #F8F8F2">snr_lin</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">**</span> <span style="color: #F8F8F2">(snr_db</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">sig_power</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(s_fm</span> <span style="color: #FF4689">**</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">noise_power</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sig_power</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">snr_lin</span>
+        <span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">s_fm</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(t))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(noise_power)</span>
+
+        <span style="color: #959077"># Demodulação I/Q</span>
+        <span style="color: #F8F8F2">z</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hilbert(r)</span>
+        <span style="color: #F8F8F2">phi</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">unwrap(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">angle(z))</span>
+        <span style="color: #F8F8F2">fi</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">diff(phi)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi)</span>
+        <span style="color: #F8F8F2">fi_dc</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">fi</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(fi)</span>
+        <span style="color: #F8F8F2">m_hat</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">fi_dc</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">df</span>
+
+        <span style="color: #959077"># SNR de saída (desprezar bordas)</span>
+        <span style="color: #F8F8F2">edge</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">min(</span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">len(m_hat)</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">m_clean</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">len(m_hat)]</span>
+        <span style="color: #F8F8F2">error</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m_hat[edge:</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">edge]</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">m_clean[edge:</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">edge]</span>
+        <span style="color: #F8F8F2">snr_out</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(</span>
+            <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">var(m_clean[edge:</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">edge])</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">max(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">var(error),</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">finfo(float)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tiny)</span>
+        <span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">snr_out_list</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(snr_out)</span>
+
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(snr_range_db,</span> <span style="color: #F8F8F2">snr_out_list,</span> <span style="color: #E6DB74">&#39;o-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;β = {</span><span style="color: #F8F8F2">beta</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+    <span style="color: #959077"># O SNR imposto mede ruído em toda a banda discreta fs/2.</span>
+    <span style="color: #959077"># Converta-o para C/N na largura da mensagem W=fm.</span>
+    <span style="color: #F8F8F2">cn_w_db</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">snr_range_db</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(fs</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">fm))</span>
+    <span style="color: #F8F8F2">theoretical</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(</span><span style="color: #AE81FF">1.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">beta</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">cn_w_db</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(snr_range_db,</span> <span style="color: #F8F8F2">theoretical,</span> <span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;SNR de entrada (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;SNR de saída (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Curva de limiar FM: SNR de saída vs SNR de entrada&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">25</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Nota: o limiar FM aparece como desvio da linha teórica &quot;</span>
+      <span style="color: #E6DB74">&quot;quando SNR_in &lt; ~10 dB (depende de β).&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01msignal[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m hilbert
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<aside class="callout callout-result" role="status"><p><strong>Resultado esperado</strong>:</p></aside>
+<ul>
+<li>Para cada $\beta$, a curva se aproxima de $\text{SNR}_{\text{out,dB}}=(C/N)_{W,\text{dB}}+10\log_{10}(3\beta^2/2)$ acima do limiar. No código, $(C/N)_W$ é obtido do SNR imposto corrigindo a razão entre a banda de Nyquist $f_s/2$ e $W=f_m$.</li>
+<li>Abaixo de $\approx 10\text{ dB}$ de SNR de entrada, as curvas &quot;caem&quot; abruptamente.</li>
+<li>Quanto maior $\beta$, mais o limiar se desloca para SNR de entrada menores (maior margem de SNR).</li>
+</ul>
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">3.14</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Para $f_m = 2\text{ kHz}$ e $\Delta f = 10\text{ kHz}$, determine $\beta$ e a banda de Carson. Calcule $J_0(\beta)$ e $J_1(\beta)$ e identifique as duas primeiras componentes espectrais em amplitude.</p>
+<p><strong>E2.</strong> Um sinal FM com $\beta = 3$ tem portadora em $100\text{ MHz}$. Qual a frequência da 5ª banda lateral superior? Qual a amplitude relativa desta componente? E da 5ª inferior?</p>
+<p><strong>E3.</strong> Mostre que para $\beta \to 0$, o espectro FM converge para $A_c\cos(2\pi f_c t) + \dfrac{A_c\beta}{2}\cos[2\pi(f_c-f_m)t] - \dfrac{A_c\beta}{2}\cos[2\pi(f_c+f_m)t]$, e interprete este resultado como NBFM.</p>
+<p><strong>E4.</strong> Prove, usando a identidade de recorrência $J_{n-1}(\beta) + J_{n+1}(\beta) = \dfrac{2n}{\beta}J_n(\beta)$, que $J_2(\beta) = \dfrac{2}{\beta}J_1(\beta) - J_0(\beta)$ (para $n=1$).</p>
+<p><strong>E5.</strong> Para $\beta = 2{,}4048$ (primeiro zero de $J_0$), qual é a fração de potência na portadora? E nas primeiras bandas laterais ($n=\pm1$)? Calcule numericamente.</p>
+<p><strong>E6.</strong> Em um sistema FM broadcast com $\Delta f = 75\text{ kHz}$, $f_m = 15\text{ kHz}$: (a) qual o $\beta$? (b) quantas bandas laterais têm amplitude $\geq 5\%$ de $A_c$? (c) qual a potência total em dBm numa carga de 50 Ω com $A_c = 10\text{ V}$?</p>
+<p><strong>E7.</strong> Um sistema FM usa $f_c = 450\text{ MHz}$, $\Delta f = 5\text{ kHz}$, $f_m = 3\text{ kHz}$. Classifique como NBFM ou WBFM. Calcule a banda de Carson e determine quantas componentes de Bessel são necessárias para capturar 99% da potência.</p>
+<p><strong>E8.</strong> Um multiplicador de frequência com fator $N = 64$ é aplicado a um sinal NBFM com $\beta_0 = 0{,}2$ e $f_{c0} = 200\text{ kHz}$. Quais são os novos $\beta'$ e $f_c'$? Qual a nova banda de Carson (para $f_m = 3\text{ kHz}$)?</p>
+<p><strong>E9.</strong> Explique, usando a relação $\phi \approx n_s/A_c$, por que o ruído de saída do discriminador FM cresce como $f^2$. Deduza $S_{n_{\text{out}}}(f) = K_d^2(2\pi f)^2 N_0/A_c^2$ a partir de $S_{n_s}(f) = N_0$.</p>
+<p><strong>E10.</strong> Demonstre que $\displaystyle\int_{-W}^{W} f^2\,df = \dfrac{2W^3}{3}$ e use este resultado para obter a potência de ruído de saída $P_{n_{\text{out}}} = \dfrac{8\pi^2 K_d^2 N_0 W^3}{3A_c^2}$.</p>
+<p><strong>E11.</strong> Para $\tau = 75\,\mu\text{s}$, calcule $f_0$. Qual a atenuação (em dB) do filtro de de-ênfase a 10 kHz? E a 15 kHz? Compare o ruído de saída nestas duas frequências.</p>
+<p><strong>E12.</strong> No sistema FM stereo, explique por que o pilot tone deve estar exatamente em 19 kHz (múltiplo inteiro de $f_m$). O que aconteceria se o pilot estivesse em 19{,}1 kHz? Qual a função do filtro de 53 kHz?</p>
+<p><strong>E13.</strong> (Desafio) Mostre que $\displaystyle\sum_{n=-\infty}^{\infty} J_n^2(\beta) = 1$ usando a identidade de Jacobi–Anger: $e^{j\beta\sin\theta} = \sum_{n=-\infty}^{\infty} J_n(\beta)e^{jn\theta}$. (Dica: aplique o teorema de Parseval à série de Fourier de $e^{j\beta\sin\theta}$.)</p>
+<p><strong>E14.</strong> (Desafio) Derive a expressão da SNR de saída FM para uma mensagem de banda limitada genérica $m(t)$ com potência $P_m = \langle m^2(t)\rangle$ e largura de banda $W$. Mostre que $\text{SNR}_{\text{out}} = \dfrac{3k_f^2P_mA_c^2}{2N_0W^3}$.</p>
+<p><strong>E15.</strong> Um receptor FM opera com $A_c = 1\text{ V}$, $N_0 = 10^{-9}\text{ W/Hz}$, $W = 15\text{ kHz}$, $\beta = 5$. Calcule: (a) $\text{SNR}_{\text{in}}$ com $B_r = 200\text{ kHz}$. (b) $\text{SNR}_{\text{out}}$ teórico. (c) SNR de saída em dB.</p>
+<h2 id="gabarito"><span class="heading-number">3.15</span> Gabarito</h2>
+<p><strong>E1.</strong> $\beta = \Delta f/f_m = 10/2 = 5$. $B_C = 2(10+2) = 24\text{ kHz}$. $J_0(5) \approx -0{,}1776$, $J_1(5) \approx -0{,}3276$. Amplitude da portadora: $A_c|J_0| \approx 0{,}178 A_c$. Amplitude da 1ª lateral: $A_c|J_1| \approx 0{,}328 A_c$. A 1ª lateral é mais forte que a portadora!</p>
+<p><strong>E2.</strong> 5ª lateral superior: $f_c + 5f_m = 100\text{ MHz} + 5f_m$. 5ª lateral inferior: $f_c - 5f_m = 100\text{ MHz} - 5f_m$. Amplitude relativa: $A_c|J_5(3)|$. Numericamente, $J_5(3) \approx 0{,}0862$ e $J_{-5}(3) = (-1)^5 J_5(3) = -0{,}0862$. Ambas têm amplitude $0{,}0862\,A_c$ (8{,}62% da portadora não modulada).</p>
+<p><strong>E3.</strong> Para $\beta \to 0$: $J_0(\beta) \to 1$, $J_{\pm 1}(\beta) \to \pm\beta/2$, $J_n(\beta) \to 0$ para $|n|\geq 2$. Substituindo na expansão $s_{\text{FM}}(t) = A_c\sum J_n(\beta)\cos[2\pi(f_c+nf_m)t]$:</p>
+
+<div class="math-display">
+$$
+s_{\text{FM}}(t) \to A_c\cos(2\pi f_c t) + \frac{A_c\beta}{2}\cos[2\pi(f_c-f_m)t] - \frac{A_c\beta}{2}\cos[2\pi(f_c+f_m)t].
+$$
+</div>
+
+<p>Usando $\cos(A-B)-\cos(A+B) = 2\sin A\sin B$, obtemos $A_c\cos(2\pi f_c t) - A_c\beta\sin(2\pi f_c t)\sin(2\pi f_m t)$, que é a forma padrão de NBFM. Interpretação: como AM com portadora forte e fase de 90° nas laterais.</p>
+<p><strong>E4.</strong> Para $n=1$: $J_0(\beta) + J_2(\beta) = \dfrac{2}{\beta}J_1(\beta)$. Rearranjando: $\boxed{J_2(\beta) = \dfrac{2}{\beta}J_1(\beta) - J_0(\beta)}$.</p>
+<p><strong>E5.</strong> Para $\beta = 2{,}4048$ (zero de $J_0$): $J_0(\beta) = 0$, portanto potência na portadora $P_0 = \dfrac{A_c^2}{2}\cdot 0 = 0$ — <strong>100% da potência da portadora é transferida para as laterais</strong>. $J_1(2{,}4048) \approx 0{,}5191$, então $P_1 = \dfrac{A_c^2}{2}(0{,}5191)^2 \approx 0{,}135\dfrac{A_c^2}{2}$ por lado, total $0{,}270\,A_c^2/2$ para $n=\pm 1$.</p>
+<p><strong>E6.</strong> (a) $\beta = 75/15 = 5$. (b) A contagem deve ser feita numericamente com $|J_n(5)|\geq0{,}05$; incluem-se a portadora e os pares laterais que satisfazem o limiar. (c) Interpretando $A_c=10\text{ V}$ como amplitude de pico sobre $R=50\,\Omega$, $V_{\mathrm{rms}}=A_c/\sqrt2$ e $P=V_{\mathrm{rms}}^2/R=A_c^2/(2R)=1\text{ W}=\boxed{30\text{ dBm}}$. A potência total de FM é constante e independe de $\beta$.</p>
+<p><strong>E7.</strong> $\beta = \Delta f/f_m = 5/3 \approx 1{,}67 &gt; 1$, logo WBFM. $B_C = 2(5+3) = 16\text{ kHz}$. Para $\beta = 1{,}67$, $J_n$ é significativo até $n \approx 3$–4. Necessário ~9–11 componentes para 99% da potência.</p>
+<p><strong>E8.</strong> $\beta' = 64 \times 0{,}2 = 12{,}8$. $f_c' = 64 \times 200\text{ kHz} = 12{,}8\text{ MHz}$. $B_C' = 2(\beta'+1)f_m = 2(13{,}8)(3) = 82{,}8\text{ kHz}$.</p>
+<p><strong>E9.</strong> $\phi \approx n_s/A_c$. O discriminador diferencia: $d\phi/dt = \dfrac{1}{A_c} \dfrac{dn_s}{dt}$. No domínio da frequência: $\mathcal{F}\{d\phi/dt\} = j2\pi f\,\Phi(f) = j2\pi f\,\dfrac{N_s(f)}{A_c}$. $S_{n_{\text{out}}}(f) = |K_d|^2\cdot (2\pi f)^2 \cdot \dfrac{N_0}{A_c^2}$. $\blacksquare$</p>
+<p><strong>E10.</strong> $\displaystyle\int_{-W}^{W} f^2\,df = \left[\dfrac{f^3}{3}\right]_{-W}^{W} = \dfrac{W^3 - (-W^3)}{3} = \dfrac{2W^3}{3}$. $P_{n_{\text{out}}} = \displaystyle\int_{-W}^{W} K_d^2(2\pi f)^2\dfrac{N_0}{A_c^2}\,df = \dfrac{K_d^2 4\pi^2 N_0}{A_c^2}\cdot \dfrac{2W^3}{3} = \dfrac{8\pi^2 K_d^2 N_0 W^3}{3A_c^2}$. $\blacksquare$</p>
+<p><strong>E11.</strong> $f_0 = \dfrac{1}{2\pi\cdot 75\times 10^{-6}} \approx 2122\text{ Hz}$. Atenuação: $|H_{\text{de}}(f)| = \dfrac{1}{\sqrt{1+(f/f_0)^2}}$. Para $f = 10\text{ kHz}$: $|H| = \dfrac{1}{\sqrt{1+(10000/2122)^2}} = \dfrac{1}{\sqrt{23{,}22}} \approx 0{,}2075 = -13{,}7\text{ dB}$. Para $f = 15\text{ kHz}$: $|H| = \dfrac{1}{\sqrt{1+(15000/2122)^2}} = \dfrac{1}{\sqrt{50{,}13}} \approx 0{,}1413 = -17{,}0\text{ dB}$. Razão de atenuação entre 15 kHz e 10 kHz: $3{,}3\text{ dB}$ adicional.</p>
+<p><strong>E12.</strong> O pilot em 19 kHz é um submúltiplo exato da subportadora de 38 kHz ($2\times 19 = 38$). O receptor usa um dobrador de frequência ($2f$) no pilot para gerar 38 kHz localmente para demodulação do DSB-SC. Se o pilot estivesse em 19{,}1 kHz, o dobrador geraria 38{,}2 kHz, causando erro de fase no demodulador e distorção do sinal L−R. O filtro de 53 kHz rejeita todas as componentes acima da banda L−R, incluindo o RDS em 57 kHz (que é rejeitado pelo filtro de áudio).</p>
+<p><strong>E13.</strong> Pela identidade de Jacobi–Anger: $e^{j\beta\sin\theta} = \sum_{n=-\infty}^{\infty} J_n(\beta)e^{jn\theta}$. Esta é a série de Fourier de $e^{j\beta\sin\theta}$ com coeficientes $c_n = J_n(\beta)$. Pelo teorema de Parseval:</p>
+
+<div class="math-display">
+$$
+\frac{1}{2\pi}\int_{-\pi}^{\pi} |e^{j\beta\sin\theta}|^2\,d\theta = \sum_{n=-\infty}^{\infty} |J_n(\beta)|^2.
+$$
+</div>
+
+<p>Como $|e^{j\beta\sin\theta}| = 1$, o lado esquerdo é 1. Logo $\sum_{n=-\infty}^{\infty} J_n^2(\beta) = 1$. $\blacksquare$</p>
+<p><strong>E14.</strong> A saída de sinal é $y(t)=2\pi K_dk_fm(t)$. Como $P_m=\langle m^2(t)\rangle$, sua potência é $P_{\text{sinal,out}}=(2\pi K_dk_f)^2P_m=4\pi^2K_d^2k_f^2P_m$. Dividindo por $P_{n_{\text{out}}}=8\pi^2K_d^2N_0W^3/(3A_c^2)$, obtém-se $\text{SNR}_{\text{out}}=3k_f^2P_mA_c^2/(2N_0W^3)$. Para uma senoide, $P_m=A_m^2/2$, recuperando a Seção “SNR de saída FM”. $\blacksquare$</p>
+<p><strong>E15.</strong> (a) $P_{\text{sin,in}}=A_c^2/2=0{,}5\text{ W}$ e $P_{n,\text{in}}=N_0B_r=10^{-9}(200\times10^3)=2\times10^{-4}\text{ W}$. Logo, $\text{SNR}_{\text{in},B_r}=2500\approx33{,}98\text{ dB}$. (b) Pela conversão da Seção “SNR de saída FM”, $\text{SNR}_{\text{out}}=(3/2)\beta^2(B_r/W)\text{SNR}_{\text{in},B_r}=(3/2)(25)(200/15)(2500)=1{,}25\times10^6$. (c) $\text{SNR}_{\text{out}}\approx60{,}97\text{ dB}$. Observe que o fator $B_r/W$ é indispensável porque a SNR de entrada foi medida na banda RF, não na banda da mensagem.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="02_modulacao_am.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">2. Modulação em Amplitude — Teoria Completa</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="04_banda_base_nyquist.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">4. Transmissão em Banda Base e Critério de Nyquist</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

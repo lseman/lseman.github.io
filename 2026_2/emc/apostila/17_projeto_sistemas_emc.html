@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17. Projeto de sistemas para EMC — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>17. Projeto de sistemas para EMC</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>17. Projeto de sistemas para EMC</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="16_projeto_pcbs_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">16. Projeto de PCBs Considerando Técnicas EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="18_efeitos_radiacoes_ser_humano.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">18. Efeitos das Radiações Eletromagnéticas no Ser Humano</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>17. Projeto de sistemas para EMC</h1>
+<p>EMC deve ser projetada desde a arquitetura. Corrigir um protótipo no fim do ciclo tende a exigir ferrites, blindagens e retrabalho caros, enquanto decisões precoces sobre retorno, interfaces, placement e banda de sinais frequentemente evitam o problema sem custo adicional. O princípio central é sempre identificar <strong>fonte, caminho e vítima</strong>.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#o-esquema-oculto">O esquema oculto</a></li>
+<li><a href="#seguran%C3%A7a-sinal-e-chassi">Segurança, sinal e chassi</a></li>
+<li><a href="#correntes-retornam-%C3%A0-fonte">Correntes retornam à fonte</a></li>
+<li><a href="#indut%C3%A2ncia-parcial-e-ground-bounce">Indutância parcial e ground bounce</a></li>
+<li><a href="#aterramento-em-ponto-%C3%BAnico-multiponto-e-h%C3%ADbrido">Aterramento em ponto único, multiponto e híbrido</a></li>
+<li><a href="#projeto-de-pcb">Projeto de PCB</a></li>
+<li><a href="#configura%C3%A7%C3%A3o-do-sistema">Configuração do sistema</a></li>
+<li><a href="#esd">ESD</a></li>
+<li><a href="#diagn%C3%B3stico-e-efeito-dominante">Diagnóstico e efeito dominante</a></li>
+<li><a href="#revis%C3%A3o-por-fases">Revisão por fases</a></li>
+<li><a href="#princ%C3%ADpios-demonstrados">Princípios demonstrados</a></li>
+<li><a href="#exemplo-resolvido--imped%C3%A2ncia-alvo-da-pdn">Exemplo resolvido — Impedância-alvo da PDN</a></li>
+<li><a href="#exemplo-resolvido--divis%C3%A3o-de-corrente-de-retorno">Exemplo resolvido — Divisão de corrente de retorno</a></li>
+<li><a href="#estudo-de-caso-integrado">Estudo de caso integrado</a></li>
+<li><a href="#insight-margem-%C3%A9-uma-propriedade-do-conjunto">Insight: margem é uma propriedade do conjunto</a></li>
+<li><a href="#exerc%C3%ADcios">Exercícios</a></li>
+<li><a href="#respostas-selecionadas">Respostas selecionadas</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--imped%C3%A2ncia-alvo-da-pdn-com-m%C3%BAltiplos-capacitores">Exemplo numérico adicional — Impedância-alvo da PDN com múltiplos capacitores</a></li>
+<li><a href="#c%C3%B3digo-python--imped%C3%A2ncia-da-pdn-com-m%C3%BAltiplos-capacitores">Código Python — Impedância da PDN com múltiplos capacitores</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--ground-bounce-e-redu%C3%A7%C3%A3o">Exemplo numérico adicional — Ground bounce e redução</a></li>
+<li><a href="#modelo-integrado-de-porta-cabo-e-chassi">Modelo integrado de porta, cabo e chassi</a></li>
+<li><a href="#estudo-de-caso--revis%C3%A3o-em-quatro-fronteiras">Estudo de caso — revisão em quatro fronteiras</a></li>
+<li><a href="#laborat%C3%B3rio-spice--retorno-por-chassi-e-cabo">Laboratório SPICE — retorno por chassi e cabo</a></li>
+<li><a href="#refer%C3%AAncia-principal">Referência principal</a></li>
+</ol></nav>
+<h2 id="o-esquema-oculto"><span class="heading-number">17.1</span> O esquema oculto</h2>
+<h3 id="por-que-terra-não-é-equipotencial"><span class="heading-number">17.1.1</span> Por que &quot;terra&quot; não é equipotencial?</h3>
+<p>O esquema lógico omite indutâncias de fios e vias, capacitâncias para chassi, impedâncias de planos, acoplamentos e antenas formadas por cabos. &quot;Terra&quot; não é um nó equipotencial em toda frequência. A tensão entre dois pontos de um retorno é</p>
+
+<div class="math-display">
+$$
+V=ZI,
+$$
+</div>
+
+<p>e, durante transientes rápidos, a parcela indutiva $L\,di/dt$ pode dominar. O projeto precisa desenhar os caminhos reais de corrente.</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: Em DC, um fio é apenas um condutor com resistência baixa. Em RF, o mesmo fio é um indutor com reatância $X_L=\omega L$. Para $L=10$ nH e $f=100$ MHz, $X_L=2\pi\cdot10^8\cdot10\times10^{-9}=6.28\ \Omega$. Se $1$ A flui, há $6.28$ V de queda de tensão apenas na indutância do fio! Isso explica por que &quot;terra&quot; tem potenciais diferentes em pontos distintos da placa.</p>
+</blockquote>
+<h2 id="segurança-sinal-e-chassi"><span class="heading-number">17.2</span> Segurança, sinal e chassi</h2>
+<p>Terra de proteção tem função de segurança; retorno de sinal fecha correntes funcionais; chassi controla correntes e campos na fronteira. Eles podem se conectar, mas os pontos e impedâncias devem ser escolhidos deliberadamente. Requisitos de segurança prevalecem sobre recomendações genéricas de EMC.</p>
+<h2 id="correntes-retornam-à-fonte"><span class="heading-number">17.3</span> Correntes retornam à fonte</h2>
+<p>Em baixa frequência, o retorno favorece baixa resistência. Em alta frequência, favorece baixa impedância e, portanto, baixa indutância: tende a fluir no plano imediatamente sob a trilha. Uma fenda força desvio, aumenta área de laço e eleva emissão e suscetibilidade.</p>
+<p>Planos próximos exploram indutância mútua para manter o retorno junto ao sinal. Em mudanças de camada, uma via de retorno ou capacitor de costura apropriado deve permitir a transição entre referências.</p>
+<h2 id="indutância-parcial-e-ground-bounce"><span class="heading-number">17.4</span> Indutância parcial e ground bounce</h2>
+<p>Indutância parcial permite modelar segmentos antes de fechar explicitamente o laço; termos próprios e mútuos combinam-se no circuito completo. Muitas saídas comutando simultaneamente produzem ground bounce por indutância comum de encapsulamento, vias e retorno:</p>
+
+<div class="math-display">
+$$
+V_{bounce}\approx L_{comum}\frac{dI_{total}}{dt}.
+$$
+</div>
+
+<p>Reduz-se o efeito com encapsulamentos de baixa indutância, múltiplos pinos/vias de retorno, planos, desacoplamento local e controle de slew rate.</p>
+<h2 id="aterramento-em-ponto-único-multiponto-e-híbrido"><span class="heading-number">17.5</span> Aterramento em ponto único, multiponto e híbrido</h2>
+<p>Ponto único pode ser apropriado quando as dimensões são eletricamente pequenas e impedância comum é controlável. Multiponto oferece conexões curtas em alta frequência. Sistemas híbridos usam componentes dependentes de frequência. Nenhuma topologia é universal: deve-se verificar a banda, os caminhos de corrente e a possibilidade de laços ou conversão de modo.</p>
+<h2 id="projeto-de-pcb"><span class="heading-number">17.6</span> Projeto de PCB</h2>
+<h3 id="seleção-velocidade-e-placement"><span class="heading-number">17.6.1</span> Seleção, velocidade e placement</h3>
+<p>Use componentes com bordas apenas tão rápidas quanto necessário. Agrupe funções pelo fluxo de sinal e posicione conectores, filtros e proteção na borda. Mantenha nós de alto $dv/dt$, laços de alto $di/dt$, clocks e conversores longe de entradas sensíveis e cabos.</p>
+<h3 id="planos-e-retorno"><span class="heading-number">17.6.2</span> Planos e retorno</h3>
+<p>Prefira plano de referência contínuo. Reduza área de laço e evite sinais rápidos sobre splits. Quando não houver plano interno, uma malha de retorno densa pode reduzir a indutância, mas seu desempenho é inferior e mais dependente da geometria.</p>
+<h3 id="distribuição-de-energia-e-desacoplamento"><span class="heading-number">17.6.3</span> Distribuição de energia e desacoplamento</h3>
+<p>O desacoplamento fornece corrente local durante a borda. O laço pino de alimentação–capacitor–retorno deve ser mínimo. A rede de distribuição de potência deve manter impedância abaixo do alvo:</p>
+
+<div class="math-display">
+$$
+Z_{target}=\frac{\Delta V_{permitida}}{\Delta I}.
+$$
+</div>
+
+<p>Capacitores reais, planos, vias e regulador formam ressonâncias; valores e placement devem ser avaliados como rede, não isoladamente.</p>
+<h3 id="sinais-mistos"><span class="heading-number">17.6.4</span> Sinais mistos</h3>
+<p>Particionar é controlar correntes, não apenas desenhar regiões no layout. Um plano sólido frequentemente produz retorno mais previsível que planos divididos. Conversores devem ficar na fronteira entre funções, com sinais analógicos e digitais roteados de forma que seus retornos não atravessem áreas sensíveis.</p>
+<h2 id="configuração-do-sistema"><span class="heading-number">17.7</span> Configuração do sistema</h2>
+<ul>
+<li>Definir a fronteira do chassi e terminar blindagens de cabo nela.</li>
+<li>Colocar filtro de alimentação na entrada, separando fisicamente lados sujo e limpo.</li>
+<li>Minimizar número e comprimento de cabos internos.</li>
+<li>Posicionar conectores para impedir que correntes de interface atravessem a PCB.</li>
+<li>Evitar acoplamento entre filtro e fonte ruidosa.</li>
+<li>Suprimir motores e cargas indutivas junto à fonte.</li>
+<li>Planejar correntes de ESD para o chassi sem atravessar eletrônica sensível.</li>
+</ul>
+<h2 id="esd"><span class="heading-number">17.8</span> ESD</h2>
+<p>ESD pode acoplar por descarga direta, campo e corrente sobre cabos ou chassi. O projeto combina isolamento, desvio e robustez:</p>
+<ol>
+<li>impedir acesso a nós vulneráveis;</li>
+<li>fornecer caminho curto e de baixa indutância ao chassi;</li>
+<li>limitar o resíduo com TVS e elementos série;</li>
+<li>filtrar antes do circuito;</li>
+<li>garantir recuperação de firmware e ausência de estado perigoso.</li>
+</ol>
+<h2 id="diagnóstico-e-efeito-dominante"><span class="heading-number">17.9</span> Diagnóstico e efeito dominante</h2>
+<p>Problemas EMC contêm muitos acoplamentos, mas geralmente um domina em uma banda. O diagnóstico deve buscar a intervenção que produz maior mudança mensurável:</p>
+<ol>
+<li>definir sintoma e critério de falha;</li>
+<li>medir referência repetível;</li>
+<li>relacionar frequências a fontes internas;</li>
+<li>medir correntes em cabos e campos próximos;</li>
+<li>testar uma hipótese por vez;</li>
+<li>corrigir na fonte ou no caminho dominante;</li>
+<li>revalidar todas as configurações e margens.</li>
+</ol>
+<p>Ferrites móveis, folha condutora, absorvedor, ponte temporária de retorno e capacitores de teste são úteis para diagnóstico, mas a solução final precisa ser reproduzível, segura e qualificada.</p>
+<h2 id="revisão-por-fases"><span class="heading-number">17.10</span> Revisão por fases</h2>
+<h3 id="arquitetura"><span class="heading-number">17.10.1</span> Arquitetura</h3>
+<ul>
+<li>requisitos e normas aplicáveis;</li>
+<li>interfaces e fronteiras EMC;</li>
+<li>orçamento de ruído e margem;</li>
+<li>estratégia de chassi, alimentação e cabos.</li>
+</ul>
+<h3 id="esquemático-e-layout"><span class="heading-number">17.10.2</span> Esquemático e layout</h3>
+<ul>
+<li>fontes de $dv/dt$ e $di/dt$;</li>
+<li>filtros, proteção e retornos;</li>
+<li>stack-up, impedâncias e mudanças de referência;</li>
+<li>placement, desacoplamento e particionamento por correntes.</li>
+</ul>
+<h3 id="protótipo-e-validação"><span class="heading-number">17.10.3</span> Protótipo e validação</h3>
+<ul>
+<li>pré-conformidade desde a primeira placa;</li>
+<li>varredura de campo próximo e corrente de modo comum;</li>
+<li>testes de imunidade com monitoração funcional;</li>
+<li>registro de configuração, incerteza, margem e correções.</li>
+</ul>
+<h2 id="princípios-demonstrados"><span class="heading-number">17.11</span> Princípios demonstrados</h2>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong>: Entre caminhos de retorno paralelos, a corrente senoidal se divide segundo as admitâncias, e não apenas segundo as resistências.</p></aside>
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: Se os caminhos compartilham a mesma tensão $V$, então $I_k=V/Z_k=VY_k$. A corrente total é $I=V\sum_kY_k$, de modo que</p></aside>
+
+<div class="math-display">
+$$
+\frac{I_k}{I}=\frac{Y_k}{\sum_nY_n}.
+$$
+</div>
+
+<p>Assim, um caminho de baixa resistência pode transportar pouca corrente em alta frequência se sua indutância o tornar alta impedância. $\square$</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Proposição</strong>: Reduzir simultaneamente a indutância comum e a taxa de variação da corrente reduz ground bounce multiplicativamente.</p></aside>
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: De $V_{bounce}=L_{comum}\,dI/dt$, se $L$ é reduzida por $a$ e $dI/dt$ por $b$, a tensão é reduzida por $ab$. $\square$</p></aside>
+<h2 id="exemplo-resolvido--impedância-alvo-da-pdn"><span class="heading-number">17.12</span> Exemplo resolvido — Impedância-alvo da PDN</h2>
+<p>Uma carga varia 0,8 A e admite desvio de 40 mV:</p>
+
+<div class="math-display">
+$$
+Z_{target}=\frac{0{,}04}{0{,}8}=0{,}05\ \Omega=50\ \text{m}\Omega.
+$$
+</div>
+
+<p>A PDN deve permanecer abaixo dessa ordem de impedância na banda em que o regulador e os capacitores precisam fornecer a corrente. O cálculo não escolhe sozinho os capacitores; ele define uma meta verificável.</p>
+<h2 id="exemplo-resolvido--divisão-de-corrente-de-retorno"><span class="heading-number">17.13</span> Exemplo resolvido — Divisão de corrente de retorno</h2>
+<p>Dois caminhos paralelos têm $Z_1=0{,}1+j0{,}2\ \Omega$ e $Z_2=0{,}5+j0\ \Omega$. Calculando as admitâncias:</p>
+
+<div class="math-display">
+$$
+Y_1=\frac{1}{0{,}1+j0{,}2}=2-j4\ \text{S},\qquad Y_2=2\ \text{S}.
+$$
+</div>
+
+<p>Logo,</p>
+
+<div class="math-display">
+$$
+\frac{I_1}{I}=\frac{2-j4}{4-j4}=0{,}75-j0{,}25.
+$$
+</div>
+
+<p>A divisão possui amplitude e fase; falar apenas em &quot;caminho de menor resistência&quot; seria insuficiente.</p>
+<h2 id="estudo-de-caso-integrado"><span class="heading-number">17.14</span> Estudo de caso integrado</h2>
+<p>Um produto falha em emissão radiada a 180 MHz e reinicia sob ESD no conector. A sonda de corrente mostra modo comum no cabo; a inspeção revela blindagem terminada por pigtail, filtro 8 cm para dentro da placa e trilha rápida cruzando uma fenda.</p>
+<p>Hipótese fonte–caminho–vítima:</p>
+<ul>
+<li>fonte: harmônicos do clock e corrente de ESD;</li>
+<li>caminho: conversão de modo na fenda, cabo e pigtail indutivo;</li>
+<li>vítima: entrada de reset e referência local.</li>
+</ul>
+<p>Correções coerentes são terminar a blindagem em 360° no chassi, mover filtro/proteção à entrada, restaurar o retorno da trilha e afastar/proteger reset. Cada correção deve ser medida isoladamente e depois em conjunto para evitar atribuição indevida.</p>
+<h2 id="insight-margem-é-uma-propriedade-do-conjunto"><span class="heading-number">17.15</span> Insight: margem é uma propriedade do conjunto</h2>
+<p>Uma placa pode passar isolada e falhar no gabinete por causa de cabo, fonte, montagem e firmware. A revisão EMC deve controlar variantes, estados operacionais, orientação de cabos e tolerâncias. &quot;Passou uma vez&quot; é evidência de uma configuração, não prova universal de robustez.</p>
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">17.16</span> Lista de Exercícios Propostos</h2>
+<p><strong>E.1</strong> Explique por que &quot;terra&quot; não é necessariamente equipotencial em alta frequência.</p>
+<p><strong>E.2</strong> Desenhe o retorno de uma trilha que cruza uma fenda e proponha correção.</p>
+<p><strong>E.3</strong> Calcule $Z_{target}$ para variação de corrente de 0,8 A e ripple permitido de 40 mV.</p>
+<p><strong>E.4</strong> Compare aterramento em ponto único e multiponto para um sistema de áudio com processador digital.</p>
+<p><strong>E.5</strong> Elabore uma checklist de revisão EMC para uma PCB com fonte chaveada, MCU, ADC e dois cabos externos.</p>
+<p><strong>E.6</strong> Uma conexão de retorno tem 12 nH e conduz 0,5 A em 1 ns. Estime ground bounce.</p>
+<p><strong>E.7</strong> A indutância é reduzida pela metade e o tempo de subida é dobrado. Qual é a redução ideal de $V_{bounce}$?</p>
+<p><strong>E.8</strong> Monte uma árvore fonte–caminho–vítima para falha de ADC quando um motor é acionado.</p>
+<h2 id="gabarito"><span class="heading-number">17.17</span> Gabarito</h2>
+<p><strong>E.3</strong> Cálculo de $Z_{target}$ para variação de corrente de 0,8 A e ripple permitido de 40 mV.</p>
+<p>Equação: $Z_{target}=\Delta V/\Delta I$.</p>
+<p>Com $\Delta V=40$ mV=0,04 V e $\Delta I=0{,}8$ A: $Z_{target}=0{,}04/0{,}8=0{,}05\ \Omega=50$ mΩ.</p>
+<p>Resposta: $Z_{target}=50$ mΩ.</p>
+<p><strong>E.6</strong> Ground bounce para conexão de retorno com 12 nH e corrente de 0,5 A em 1 ns.</p>
+<p>Equação: $V_{bounce}=L\cdot di/dt$.</p>
+<p>$di/dt=0{,}5\text{ A}/1\text{ ns}=0{,}5\times10^9$ A/s.</p>
+<p>$V_{bounce}=12\times10^{-9}\cdot0{,}5\times10^9=6$ V.</p>
+<p>Resposta: $V_{bounce}=6$ V.</p>
+<p><strong>E.7</strong> Redução ideal de $V_{bounce}$ quando indutância é reduzida pela metade e tempo de subida é dobrado.</p>
+<p>Equação: $V_{bounce}=L\cdot \Delta I/t_r$.</p>
+<p>Se $L$ é reduzida pela metade: $L_{new}=L/2$.</p>
+<p>Se $t_r$ é dobrado: $t_{r,new}=2t_r$.</p>
+<p>$V_{bounce,new}=(L/2)\cdot \Delta I/(2t_r)=L\cdot \Delta I/(4t_r)=V_{bounce}/4$.</p>
+<p>Redução por fator 4, isto é, aproximadamente 12 dB em amplitude ($20\log_{10}(4)\approx12$ dB).</p>
+<p>Resposta: Fator 4, isto é, aproximadamente 12 dB em amplitude.</p>
+<p><strong>E.8</strong> Árvore fonte–caminho–vítima para falha de ADC quando motor é acionado.</p>
+<p>Fonte: arco/PWM do motor gera transientes de corrente e tensão.</p>
+<p>Caminhos possíveis:</p>
+<ol>
+<li>Alimentação comum: transientes de corrente na alimentação afetam a referência de tensão do ADC.</li>
+<li>Campo magnético: campo gerado pelo motor induz tensão em trilhas de referência ou entrada do ADC.</li>
+<li>Cabo: cabo do motor acopla ruído de modo comum ao cabo de referência/entrada do ADC.</li>
+</ol>
+<p>Cada ramo pede medição específica: medição de ruído na alimentação, medição de campo próximo, medição de corrente de modo comum no cabo.</p>
+<p>Resposta: Possibilidades: arco/PWM do motor → alimentação comum, campo magnético ou cabo → referência/entrada do ADC; cada ramo pede medição específica.</p>
+<h2 id="exemplo-numérico-adicional--impedância-alvo-da-pdn-com-múltiplos-capacitores"><span class="heading-number">17.18</span> Exemplo numérico adicional — Impedância-alvo da PDN com múltiplos capacitores</h2>
+<p>$Z_{target}=0.04/0.8=0.05\ \Omega=50$ mΩ.</p>
+<p>Se temos capacitores de 10 µF, 100 nF, 10 nF com ESLs de 5 nH, 1 nH, 0.5 nH:</p>
+<p>Para 10 µF: $f_{SR}=1/(2\pi\sqrt{5\times10^{-9}\cdot10\times10^{-6}})=71.2$ kHz.<br />
+Para 100 nF: $f_{SR}=1/(2\pi\sqrt{1\times10^{-9}\cdot100\times10^{-9}})=15.9$ MHz.<br />
+Para 10 nF: $f_{SR}=1/(2\pi\sqrt{0.5\times10^{-9}\cdot10\times10^{-9}})=22.5$ MHz.</p>
+<p>A PDN deve manter $Z&lt;50$ mΩ na banda de 100 kHz a 100 MHz.</p>
+<h2 id="código-python--impedância-da-pdn-com-múltiplos-capacitores"><span class="heading-number">17.19</span> Código Python — Impedância da PDN com múltiplos capacitores</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Parâmetros da PDN</span>
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 10 kHz a 100 MHz</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span>
+
+<span style="color: #959077"># Capacitores com ESL e ESR</span>
+<span style="color: #F8F8F2">caps</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span>
+    <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;C&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">10e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;ESL&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">5e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;ESR&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0.05</span><span style="color: #F8F8F2">},</span>   <span style="color: #959077"># 10 µF</span>
+    <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;C&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">100e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;ESL&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">1e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;ESR&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0.03</span><span style="color: #F8F8F2">},</span>  <span style="color: #959077"># 100 nF</span>
+    <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;C&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">10e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;ESL&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0.5e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;ESR&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0.02</span><span style="color: #F8F8F2">}</span>  <span style="color: #959077"># 10 nF</span>
+<span style="color: #F8F8F2">]</span>
+
+<span style="color: #959077"># Impedância total da PDN</span>
+<span style="color: #F8F8F2">Z_total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(f,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">cap</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">caps:</span>
+    <span style="color: #F8F8F2">C</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cap[</span><span style="color: #E6DB74">&#39;C&#39;</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">ESL</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cap[</span><span style="color: #E6DB74">&#39;ESL&#39;</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">ESR</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cap[</span><span style="color: #E6DB74">&#39;ESR&#39;</span><span style="color: #F8F8F2">]</span>
+    
+    <span style="color: #F8F8F2">Z_cap</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">ESR</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">ESL</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">C)</span>
+    <span style="color: #F8F8F2">Z_total</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">Z_cap</span>
+
+<span style="color: #959077"># Impedância equivalente: soma explícita das admitâncias</span>
+<span style="color: #F8F8F2">Y_total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(f,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">cap</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">caps:</span>
+    <span style="color: #F8F8F2">C</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cap[</span><span style="color: #E6DB74">&#39;C&#39;</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">ESL</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cap[</span><span style="color: #E6DB74">&#39;ESL&#39;</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">ESR</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cap[</span><span style="color: #E6DB74">&#39;ESR&#39;</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">Y_total</span> <span style="color: #FF4689">+=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(ESR</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">ESL</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">C))</span>
+
+<span style="color: #F8F8F2">Z_eq</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">Y_total</span>
+
+<span style="color: #F8F8F2">Z_eq_total</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(Y_total)</span>
+
+<span style="color: #959077"># Target impedance</span>
+<span style="color: #F8F8F2">Z_target</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.05</span>  <span style="color: #959077"># 50 mΩ</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">Z_eq_total,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Impedância PDN&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(Z_target,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Z_target = {</span><span style="color: #F8F8F2">Z_target</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1000</span><span style="color: #E6DB74">:.0f} mΩ&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Impedância (Ω)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Impedância da PDN vs Frequência&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Parâmetros da PDN[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="exemplo-numérico-adicional--ground-bounce-e-redução"><span class="heading-number">17.20</span> Exemplo numérico adicional — Ground bounce e redução</h2>
+<p><strong>Problema</strong>: Um circuito tem $L_{comum}=10$ nH e $dI/dt=1$ A/ns. Qual é o ground bounce? Se reduzirmos $L$ pela metade e $dI/dt$ pela metade, qual é a nova tensão?</p>
+<p><strong>Solução</strong>:</p>
+<p>Tensão original: $V_{bounce}=L\cdot dI/dt=10\times10^{-9}\cdot10^9=10$ V.</p>
+<p>Nova indutância: $L'=5$ nH.<br />
+Nova taxa: $dI/dt'=0.5$ A/ns.</p>
+<p>Nova tensão: $V'_{bounce}=5\times10^{-9}\cdot0.5\times10^9=2.5$ V.</p>
+<p>Redução: fator de 4 (ou 6 dB em amplitude).</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: Ground bounce é proporcional ao produto $L\cdot dI/dt$. Reduzir apenas um dos fatores pela metade reduz a tensão pela metade. Reduzir ambos pela metade reduz a tensão por um fator de 4. Por isso, múltiplas vias de retorno (reduzindo $L$) e controle de slew rate (reduzindo $dI/dt$) são estratégias complementares eficazes.</p>
+</blockquote>
+<h2 id="modelo-integrado-de-porta-cabo-e-chassi"><span class="heading-number">17.21</span> Modelo integrado de porta, cabo e chassi</h2>
+<p>Considere uma corrente CM gerada por capacitância parasita $C_p$ a partir de um nó rápido. Ela se divide entre retorno de chassi $Z_{ch}$ e cabo $Z_{cab}$:</p>
+
+<div class="math-display">
+$$
+
+I_{CM}=j\omega C_pV_n,qquad
+I_{cab}=I_{CM}\frac{Z_{ch}}{Z_{ch}+Z_{cab}}.
+
+$$
+</div>
+
+<aside class="callout callout-theorem" role="note"><p><strong>Corolário.</strong> Reduzir $Z_{ch}$ próximo ao conector desvia corrente do cabo e pode reduzir emissão, desde que o novo caminho não atravesse circuitos sensíveis.</p></aside>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">800</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">f</span>
+<span style="color: #F8F8F2">Cp,</span> <span style="color: #F8F8F2">Vn</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20e-12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10.0</span>
+<span style="color: #F8F8F2">Zcab</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">150</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.2e-6</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">Lch</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">20e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1e-9</span><span style="color: #F8F8F2">]:</span>
+    <span style="color: #F8F8F2">Zch</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20e-3</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Lch</span>
+    <span style="color: #F8F8F2">Icm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Cp</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Vn</span>
+    <span style="color: #F8F8F2">Icab</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Icm</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Zch</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(Zch</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">Zcab)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(f,</span> <span style="color: #F8F8F2">abs(Icab),</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Lch={</span><span style="color: #F8F8F2">Lch</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #E6DB74">:g} nH&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;|I no cabo| (A)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m f = np.logspace([32m5[39m, [32m9[39m, [32m800[39m); w = [32m2[39m*np.pi*f
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="estudo-de-caso--revisão-em-quatro-fronteiras"><span class="heading-number">17.22</span> Estudo de caso — revisão em quatro fronteiras</h2>
+<p>Para um controlador com SMPS, Ethernet, caixa metálica e sensor externo, revise:</p>
+<ol>
+<li><strong>fonte:</strong> loop quente, capacitância ao dissipador e bordas;</li>
+<li><strong>placa:</strong> planos, PDN, retorno sob sinais e posição de proteção;</li>
+<li><strong>fronteira:</strong> conectores, terminação de blindagem e filtros;</li>
+<li><strong>sistema:</strong> cabos, chassi, alimentação, montagem e estados operacionais.</li>
+</ol>
+<p>Produza um diagrama de correntes para baixa frequência, harmônicos de chaveamento e ESD. Um único desenho de “terra” não descreve as três faixas.</p>
+<h2 id="laboratório-spice--retorno-por-chassi-e-cabo"><span class="heading-number">17.23</span> Laboratório SPICE — retorno por chassi e cabo</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">Vnode</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">fast</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">VsenseCp</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">fast</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cpnode</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span>
+<span style="color: #A6E22E">Cp</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cpnode</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">chassis</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">RleakCp</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cpnode</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #A6E22E">Rch</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">chassis</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">chret</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Lch</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">chret</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">VsenseCable</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">chassis</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cablein</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span>
+<span style="color: #A6E22E">Rcable</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cablein</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cable</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">150</span>
+<span style="color: #A6E22E">Lcable</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cable</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #A6E22E">n</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">mag</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">vsensecp</span><span style="color: #FF4689">#</span><span style="color: #A6E22E">branch</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">mag</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">vsensecable</span><span style="color: #FF4689">#</span><span style="color: #A6E22E">branch</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">chassis</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p><code>Rch</code> e <code>Lch</code> formam uma conexão série $R+j\omega L$. Varra <code>Lch</code> e observe quanto da corrente injetada por <code>Cp</code> é desviada para o cabo.</p>
+<h2 id="referência-principal"><span class="heading-number">17.24</span> Referência principal</h2>
+<p>Síntese do Capítulo 11, &quot;System Design for EMC&quot;, de C. R. Paul, <em>Introduction to Electromagnetic Compatibility</em>, 2ª ed., Wiley, 2006, pp. 753–857.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="16_projeto_pcbs_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">16. Projeto de PCBs Considerando Técnicas EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="18_efeitos_radiacoes_ser_humano.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">18. Efeitos das Radiações Eletromagnéticas no Ser Humano</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

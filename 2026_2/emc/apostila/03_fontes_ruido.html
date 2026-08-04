@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="02_caracterizacao_casos_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">2. Caracterização e diagnóstico de casos EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="04_normas_padronizacoes_ensaios.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">4. Normas, Padronizações e Ensaios de EMC</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial</h1>
+<blockquote>
+<p>Compatibilidade Eletromagnética — Apostila de Curso<br />
+Tópicos: Classificação de fontes · Ruído natural (atmosférico, cósmico, térmico) · Ruído industrial (chaveamento, arcos) · Telecomunicações · Dispositivos domésticos · CISPR e limites · Análises em Python</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">3.1</span> Antes de começar</h2>
+<p>Ao final, você deve classificar fontes por origem, espectro, repetitividade, modo e impedância, relacionando $dV/dt$ e $dI/dt$ aos caminhos de acoplamento. <strong>Diagnóstico:</strong> a frequência de chaveamento é necessariamente a maior frequência relevante para EMC? <strong>Evidência mínima:</strong> prever harmônicos a partir do tempo de subida e confrontar a previsão com uma FFT corretamente escalada.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#classifica%C3%A7%C3%A3o-das-fontes-de-ru%C3%ADdo-eletromagn%C3%A9tico">Classificação das Fontes de Ruído Eletromagnético</a></li>
+<li><a href="#fontes-naturais-de-ru%C3%ADdo">Fontes Naturais de Ruído</a></li>
+<li><a href="#fontes-industriais-de-ru%C3%ADdo--chaveamento">Fontes Industriais de Ruído — Chaveamento</a></li>
+<li><a href="#fontes-industriais--arcos-el%C3%A9tricos-e-solda">Fontes Industriais — Arcos Elétricos e Solda</a></li>
+<li><a href="#telecomunica%C3%A7%C3%B5es-e-transmissores">Telecomunicações e Transmissores</a></li>
+<li><a href="#dispositivos-dom%C3%A9sticos-e-pessoais">Dispositivos Domésticos e Pessoais</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="classificação-das-fontes-de-ruído-eletromagnético"><span class="heading-number">3.2</span> Classificação das Fontes de Ruído Eletromagnético</h2>
+<p>A <strong>compatibilidade eletromagnética</strong> (EMC) exige que todo equipamento eletrônico opere em um ambiente eletromagnético sem sofrer degradação e sem emitir interferências além dos limites estabelecidos por normas. O primeiro passo para qualquer análise de EMC é identificar e classificar as <strong>fontes de ruído</strong> presentes no ambiente.</p>
+<!-- slides: break -->
+<h3 id="fontes-naturais-vs-artificiais"><span class="heading-number">3.2.1</span> Fontes Naturais vs. Artificiais</h3>
+<p>Toda fonte de interferência eletromagnética (EMI) pertence a uma das duas categorias fundamentais:</p>
+<table>
+<thead>
+<tr>
+<th>Categoria</th>
+<th>Origem</th>
+<th>Exemplos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Natural</strong></td>
+<td>Fenômenos da natureza</td>
+<td>Relâmpagos, radiação cósmica, ruído térmico, auroras</td>
+</tr>
+<tr>
+<td><strong>Artificial</strong></td>
+<td>Equipamentos e sistemas fabricados</td>
+<td>Conversores DC-DC, transmissores, motores, computadores</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> A distinção é importante porque as estratégias de mitigação são radicalmente diferentes. Fontes naturais são incontroláveis — a mitigação é feita por projeto do receptor (blindagem, filtragem, redução de ganho). Fontes artificiais podem ser controladas na origem (projeto do emissor, blindagem da fonte, filtragem de emissão).</p></aside>
+<h3 id="espectro-de-interferências-no-ambiente-rf"><span class="heading-number">3.2.2</span> Espectro de Interferências no Ambiente RF</h3>
+<p>O espectro eletromagnético de interferências varia enormemente em frequência, potência e temporalidade. A figura conceitual a seguir esquematiza as principais regiões:</p>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>Frequência (Hz)    Fonte Dominante
+──────────────────────────────────────────────────────
+   0 – 10 kHz      Ruído galáctico + descargas atmosféricas
+  10 kHz – 1 MHz   Ruído atmosférico intenso + ruído industrial
+   1 – 30 MHz      Transmissores AM + ruído industrial + atmosférico residual
+  30 – 300 MHz      Transmissores FM/TV + ruído térmico dominante
+ 300 MHz – 3 GHz    Telecomunicações (celular, Wi-Fi) + chaveamento digital
+   3 – 30 GHz       Enlaces de micro-ondas + radar + ruído atmosférico
+  30 GHz – 300 GHz   Absorção atmosférica (H₂O, O₂) + ruído térmico</code></pre></div>
+
+<h3 id="classificação-por-natureza-temporal"><span class="heading-number">3.2.3</span> Classificação por Natureza Temporal</h3>
+<p>Além da origem, as fontes são classificadas pela <strong>natureza do sinal</strong> que geram.</p>
+<p><strong>Contínua vs. Impulsiva:</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{
+\begin{array}{ll}
+\text{Contínua (CW):} &amp; s(t) = A\cos(2\pi f_0 t + \phi) \\
+\text{Impulsiva:} &amp; s(t) = \sum_{k} A_k \cdot p(t - t_k)
+\end{array}
+}
+
+$$
+</div>
+
+<p>onde $p(t)$ é um pulso com duração finita e $t_k$ são instantes de ocorrência estocásticos.</p>
+<p><strong>Narrowband vs. Broadband:</strong></p>
+<p>Uma fonte é <strong>narrowband</strong> quando sua energia está concentrada em uma banda estreita $\Delta f \ll f_c$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{S_{\text{narrow}}(f) \approx P_0 \cdot \delta(f - f_c) * W(f)}
+
+$$
+</div>
+
+<p>com $W(f)$ uma janela de largura $\Delta f$ centrada em $f_c$. Fontes narrowband típicas: transmissores de rádio, osciladores.</p>
+<p>Uma fonte é <strong>broadband</strong> quando sua densidade espectral de potência (PSD) se estende sobre uma faixa ampla:</p>
+
+<div class="math-display">
+$$
+
+\boxed{S_{\text{broad}}(f) \propto f^{-\alpha}, \quad \alpha &gt; 0}
+
+$$
+</div>
+
+<p>Fontes broadband típicas: descargas elétricas, chaveamento de cargas indutivas, ruído térmico.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> Uma fonte de ruído é caracterizada por quatro parâmetros fundamentais: (i) faixa de frequência de emissão, (ii) potência/espectro, (iii) natureza temporal (contínua/impulsiva), e (iv) mecanismo de acoplamento (conduzido ou irradiado).</p></aside>
+<h2 id="fontes-naturais-de-ruído"><span class="heading-number">3.3</span> Fontes Naturais de Ruído</h2>
+<h3 id="ruído-atmosférico-descargas-elétricas"><span class="heading-number">3.3.1</span> Ruído Atmosférico (Descargas Elétricas)</h3>
+<p>O ruído atmosférico é gerado por <strong>relâmpagos</strong> — descargas eletrostáticas entre nuvens e entre nuvens e o solo. Cada relâmpago gera um pulso de corrente com duração de alguns microssegundos e amplitude de dezenas a centenas de quilamperes.</p>
+<p>O espectro médio do ruído atmosférico é modelado pela <strong>fórmula de Robinson</strong> (ITU-R P.372):</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{atmos}}(f) \propto \frac{1}{1 + \left(\dfrac{f}{f_c}\right)^2}}
+
+$$
+</div>
+
+<p>com $f_c \approx 10\,\text{kHz}$. Acima desta frequência de corte, o ruído atmosférico decai com $6\,\text{dB}/\text{octave}$ (ou $20\,\text{dB}/\text{decada}$).</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> A intensidade do ruído atmosférico depende de:</p></aside>
+<ul>
+<li><strong>Distância do equador</strong> — máximo em regiões tropicais (maior atividade convectiva)</li>
+<li><strong>Hora do dia</strong> — máximo durante a tarde (pico de atividade de tempestades)</li>
+<li><strong>Estação do ano</strong> — máximo no verão</li>
+<li><strong>Topografia</strong> — áreas montanhosas podem ter maior densidade de raios</li>
+</ul>
+<p>O <strong>índice de ruído atmosférico</strong> $N$ em decibéis acima de $kTB$ (onde $k$ é a constante de Boltzmann, $T = 290\,\text{K}$, e $B$ é a largura de banda) é dado pela ITU-R P.372:</p>
+
+<div class="math-display">
+$$
+
+N(f, \lambda) = A + B \cdot e^{-C(f-1)} + D(\lambda) \cdot e^{-E(f-1)}
+
+$$
+</div>
+
+<p>onde $f$ está em GHz, $\lambda$ é a latitude geográfica, e $A$–$E$ são parâmetros empíricos tabelados.</p>
+<h3 id="ruído-cósmico"><span class="heading-number">3.3.2</span> Ruído Cósmico</h3>
+<p>A radiação cósmica de fundo e a radiação sincrotrão do Sol e de fontes extragalácticas contribuem para o ruído recebido por antenas orientadas para o céu. Para frequências abaixo de $\approx 1\,\text{GHz}$, a <strong>temperatura de ruído do céu</strong> é bem aproximada por:</p>
+
+<div class="math-display">
+$$
+
+\boxed{T_{\text{sky}}(f) \approx 25\,000 \left(\frac{f}{1\,\text{MHz}}\right)^{-2.55}\,\text{K}}
+
+$$
+</div>
+
+<p>Esta lei de potência descreve a emissão sincrotrão de elétrons relativísticos nos campos magnéticos galácticos. A dependência $f^{-2.55}$ é característica de espectros sincrotrón com distribuição de energia de elétrons $N(E) \propto E^{-p}$, onde $p \approx 2.7$.</p>
+<p>Para $f = 100\,\text{MHz}$:</p>
+
+<div class="math-display">
+$$
+
+T_{\text{sky}}(100\,\text{MHz}) \approx 25\,000 \cdot (10^8)^{-2.55} = 25\,000 \cdot 10^{-20.4} \approx 0{,}063\,\text{K}
+
+$$
+</div>
+
+<p>Para $f = 10\,\text{MHz}$:</p>
+
+<div class="math-display">
+$$
+
+T_{\text{sky}}(10\,\text{MHz}) \approx 25\,000 \cdot (10^7)^{-2.55} \approx 25\,000 \cdot 10^{-17.85} \approx 1\,330\,\text{K}
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> A temperatura de ruído efetiva vista por uma antena é:</p></aside>
+
+<div class="math-display">
+$$
+
+T_{\text{ant}} = \eta_{\text{ant}} T_{\text{sky}} + (1 - \eta_{\text{ant}}) T_{\text{ground}}
+
+$$
+</div>
+
+<p>onde $\eta_{\text{ant}}$ é a eficiência de radiação e $T_{\text{ground}} \approx 290\,\text{K}$ é a temperatura física do solo. Para antenas com lóbulo principal baixo no horizonte, $T_{\text{ground}}$ domina.</p>
+<h3 id="ruído-térmico-de-johnson-nyquist"><span class="heading-number">3.3.3</span> Ruído Térmico de Johnson-Nyquist</h3>
+<p>Todo condutor em equilíbrio térmico gera uma <strong>tensão de ruído</strong> devido ao movimento térmico aleatório dos portadores de carga. Este é o <strong>ruído de Johnson-Nyquist</strong>, fundamental em toda análise de sensibilidade de receptores.</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema de Johnson-Nyquist (regime clássico):</strong> um resistor $R$ à temperatura absoluta $T$ apresenta, em circuito aberto, PSD unilateral de tensão aproximadamente constante:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{S_{V}(f) = 4\,k_B\,T\,R \quad [\text{V}^2/\text{Hz}]}
+
+$$
+</div>
+
+<p>onde $k_B = 1{,}381 \times 10^{-23}\,\text{J/K}$ é a constante de Boltzmann.</p>
+<p><strong>Convenção:</strong> aqui $S_V(f)$ é unilateral ($f\ge0$) e $B$ é a largura de banda equivalente de ruído. Na convenção bilateral, cada lado possui $2k_BTR$. A aproximação branca clássica requer $hf\ll k_BT$; não se integra $4k_BTR$ até frequência infinita.</p>
+<p>A tensão RMS medida em uma banda $B$ é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{V_n = \sqrt{4\,k_B\,T\,R\,B}}
+
+$$
+</div>
+
+<p>Da mesma forma, a potência de ruído disponível (potência máxima transferível para uma carga casada) é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_n = k_B\,T\,B}
+
+$$
+</div>
+
+<p>Em decibéis em relação a 1 watt ($\text{dBW}$):</p>
+
+<div class="math-display">
+$$
+
+P_n\,[\text{dBW}] = 10\log_{10}(k_B T B)
+
+$$
+</div>
+
+<p>Para $T = 290\,\text{K}$ e $B = 1\,\text{Hz}$:</p>
+
+<div class="math-display">
+$$
+
+k_B T = (1{,}381 \times 10^{-23})(290) \approx 4{,}005 \times 10^{-21}\,\text{W}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+k_B T\,[\text{dBW/Hz}] = 10\log_{10}(4{,}005 \times 10^{-21}) \approx -204\,\text{dBW/Hz}
+
+$$
+</div>
+
+<p>Em unidades de $\text{dBm/Hz}$ ($1\,\text{mW} = 10^{-3}\,\text{W}$):</p>
+
+<div class="math-display">
+$$
+
+k_B T\,[\text{dBm/Hz}] = -204 + 30 = \boxed{-174\,\text{dBm/Hz}}
+
+$$
+</div>
+
+<p><strong>Este número — $-174\,\text{dBm/Hz}$ a $290\,\text{K}$ — é um dos mais importantes em telecomunicações.</strong></p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo:</strong> Calcule a tensão de ruído RMS de um resistor de $50\,\Omega$ a $T = 300\,\text{K}$ em uma banda de $B = 10\,\text{MHz}$:</p></aside>
+
+<div class="math-display">
+$$
+
+V_n = \sqrt{4 \cdot (1{,}381\times 10^{-23}) \cdot 300 \cdot 50 \cdot (10\times 10^6)}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+V_n = \sqrt{4 \cdot 1{,}381 \cdot 300 \cdot 50 \cdot 10^{-17}} = \sqrt{8{,}286 \times 10^{-13}} \approx 9{,}10 \times 10^{-7}\,\text{V} = 910\,\text{nV RMS}
+
+$$
+</div>
+
+<h3 id="ruído-de-fundo-cósmico-cmb"><span class="heading-number">3.3.4</span> Ruído de Fundo Cósmico (CMB)</h3>
+<p>O <strong>Fundo Cósmico de Micro-ondas</strong> (CMB — Cosmic Microwave Background) é a radiação eletromagnética remanescente do Big Bang, com espectro de corpo negro a $T_{\text{CMB}} \approx 2{,}725\,\text{K}$. Sua contribuição para o ruído de antena é significativa apenas em frequências acima de $\approx 5\,\text{GHz}$, onde o ruído cósmico sincrotrón já decaiu enormemente.</p>
+<p>A densidade espectral de potência do CMB é dada pela <strong>lei de Planck</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{B_{\nu}(T) = \frac{2h\nu^3}{c^2} \cdot \frac{1}{e^{h\nu/(k_B T)} - 1}}
+
+$$
+</div>
+
+<p>No limite de baixas frequências ($h\nu \ll k_B T$), recupera-se a <strong>lei de Rayleigh-Jeans</strong>:</p>
+
+<div class="math-display">
+$$
+
+B_{\nu}(T) \approx \frac{2\nu^2}{c^2} k_B T
+
+$$
+</div>
+
+<h3 id="limite-de-friis-para-sensibilidade-do-receptor"><span class="heading-number">3.3.5</span> Limite de Friis para Sensibilidade do Receptor</h3>
+<p>O piso de sensibilidade de um receptor é determinado pelo ruído referido à entrada e pelo critério de detecção. Não confunda a <strong>equação de transmissão de Friis</strong> (potência recebida em um enlace) com a <strong>fórmula de Friis para ruído</strong> (cascata de fatores de ruído); são resultados diferentes associados ao mesmo autor.</p>
+<p><strong>Equação de sensibilidade:</strong> a potência mínima detectável depende do ruído total referido à entrada e da SNR mínima exigida. Há duas formas equivalentes, desde que não sejam misturadas.</p>
+<p>Se a fonte está na temperatura padrão $T_0=290\,\text{K}$ e o receptor tem fator de ruído $F$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{min}}=k_BT_0BF\,(SNR)_{\text{min}}}
+
+$$
+</div>
+
+<p>Se a antena tem temperatura $T_{\text{ant}}$ e o receptor adiciona temperatura equivalente $T_e=(F-1)T_0$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{min}}=k_B(T_{\text{ant}}+T_e)B\,(SNR)_{\text{min}}}
+
+$$
+</div>
+
+<p>onde $T_{\text{sys}}=T_{\text{ant}}+T_e$ (mais outras contribuições referidas ao mesmo plano). Portanto,</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{min}}=k_BT_{\text{sys}}B\,(SNR)_{\text{min}}}.
+
+$$
+</div>
+
+<aside class="callout callout-important" role="alert"><p><strong>Erro comum:</strong> não multiplique $k_BT_{\text{sys}}B$ por $F$ se $T_{\text{sys}}$ já inclui $T_e$; isso contaria o ruído do receptor duas vezes.</p></aside>
+<p>Nas expressões:</p>
+<ul>
+<li>$T_{\text{sys}}$ é a temperatura de ruído total referida à entrada,</li>
+<li>$B$ é a largura de banda,</li>
+<li>$(SNR)_{\text{min}}$ é a relação sinal-ruído mínima necessária para detecção,</li>
+<li>$F$ é o <strong>fator de ruído</strong> do receptor (em linear).</li>
+</ul>
+<p>O <strong>fator de ruído</strong> é definido como:</p>
+
+<div class="math-display">
+$$
+
+\boxed{F \equiv \frac{(SNR)_{\text{in}}}{(SNR)_{\text{out}}} \geq 1}
+
+$$
+</div>
+
+<p>Em decibéis:</p>
+
+<div class="math-display">
+$$
+
+F_{\text{dB}} = 10\log_{10} F
+
+$$
+</div>
+
+<p>Para um amplificador com ganho $G$ e fator de ruído $F$, a temperatura de ruído equivalente é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{T_e = (F - 1) T_0}
+
+$$
+</div>
+
+<p>onde $T_0 = 290\,\text{K}$ é a temperatura de referência.</p>
+<p>Para estágios em cascata, a <strong>fórmula de Friis para fator de ruído</strong> é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{F_{\text{total}} = F_1 + \frac{F_2 - 1}{G_1} + \frac{F_3 - 1}{G_1 G_2} + \cdots}
+
+$$
+</div>
+
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> O primeiro estágio é dominante. Por isso, LNA (Low-Noise Amplifier) com baixo $F$ e alto $G$ é sempre o primeiro componente na cadeia de recepção.</p></aside>
+<p>Mais precisamente, o LNA deve aparecer cedo, depois das perdas passivas inevitáveis e da proteção necessária. Um filtro ou cabo antes dele adiciona sua perda ao orçamento e degrada a figura de ruído; “sempre o primeiro componente” não é uma regra física absoluta.</p>
+<h2 id="fontes-industriais-de-ruído--chaveamento"><span class="heading-number">3.4</span> Fontes Industriais de Ruído — Chaveamento</h2>
+<h3 id="conversores-dc-dc-inversores-e-drives-de-motor"><span class="heading-number">3.4.1</span> Conversores DC-DC, Inversores e Drives de Motor</h3>
+<p>Fontes chaveadas são a <strong>fonte de ruído industrial mais ubíqua</strong>. Inversores, drives de motor, fontes chaveadas de alimentação e conversores DC-DC operam abrindo e fechando chaves eletrônicas (MOSFETs, IGBTs) a frequências de dezenas de kHz a dezenas de MHz.</p>
+<p>O mecanismo fundamental de geração de ruído é o <strong>chaveamento</strong>: uma transição rápida entre dois estados gera harmônicos em larga faixa de frequência e correntes/transições de tensão elevadas.</p>
+<h3 id="forma-de-onda-de-chaveamento-e-harmônicos"><span class="heading-number">3.4.2</span> Forma de Onda de Chaveamento e Harmônicos</h3>
+<p>Considere um conversor buck básico com onda quadrada de tensão. A tensão de saída é uma onda quadrada de amplitude $V_{dc}$ e período $T = 1/f_s$, com ciclo de serviço $D$:</p>
+
+<div class="math-display">
+$$
+
+v(t) = \begin{cases}
+V_{dc}, &amp; 0 \leq t &lt; DT \\
+0, &amp; DT \leq t &lt; T
+\end{cases}
+
+$$
+</div>
+
+<p>expandindo em série de Fourier:</p>
+
+<div class="math-display">
+$$
+
+\boxed{v(t) = D V_{dc} + \sum_{n=1}^{\infty} \frac{2V_{dc}}{n\pi} \sin(n\pi D) \cos(n\omega_0 t)}
+
+$$
+</div>
+
+<p>com $\omega_0 = 2\pi f_s$. Os harmônicos têm amplitudes:</p>
+
+<div class="math-display">
+$$
+
+V_n = \frac{2V_{dc}}{n\pi} |\sin(n\pi D)|
+
+$$
+</div>
+
+<p>Para onda quadrada simétrica ($D = 0{,}5$):</p>
+
+<div class="math-display">
+$$
+
+\boxed{v(t) = \frac{V_{dc}}{2} + \sum_{k=0}^{\infty} \frac{4V_{dc}}{(2k+1)\pi} \sin((2k+1)\omega_0 t)}
+
+$$
+</div>
+
+<p>Somente harmônicos ímpares. O $n$-ésimo harmônico decai com $1/n$ (ou $-20\,\text{dB}/\text{decada}$).</p>
+<h3 id="dvdt-e-didt-como-mecanismos-de-acoplamento"><span class="heading-number">3.4.3</span> dV/dt e dI/dt como Mecanismos de Acoplamento</h3>
+<p>As transições rápidas de chaveamento geram altos valores de dV/dt e dI/dt, que são os <strong>mecanismos primários de acoplamento de EMI</strong>:</p>
+<p><strong>Acoplamento capacitivo (via dV/dt):</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{i_{\text{coupled}} = C_{\text{parasita}} \frac{dV}{dt}}
+
+$$
+</div>
+
+<p>onde $C_{\text{parasita}}$ é a capacitância parasita entre a chave e o circuito sensível.</p>
+<p><strong>Acoplamento indutivo (via dI/dt):</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{v_{\text{coupled}} = M \frac{dI}{dt}}
+
+$$
+</div>
+
+<p>onde $M$ é a indutância mútua parasita entre o laço de comutação e o circuito afetado.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo:</strong> Um MOSFET chaveando $400\,\text{V}$ em $t_r = 10\,\text{ns}$ com $C_p = 1\,\text{pF}$ gera:</p></aside>
+
+<div class="math-display">
+$$
+
+i_{\text{coupled}} = 10^{-12} \cdot \frac{400}{10 \times 10^{-9}} = 40\,\text{mA}
+
+$$
+</div>
+
+<p>Esta corrente injetada em um circuito de medição de $1\,\text{k}\Omega$ gera $40\,\text{V}$ de interferência.</p>
+<h3 id="frequência-de-chaveamento-e-espectro-de-emi"><span class="heading-number">3.4.4</span> Frequência de Chaveamento e Espectro de EMI</h3>
+<p>O espectro de emissão de uma fonte chaveada possui três regiões distintas (modelagem de McCroskey):</p>
+<ol>
+<li><strong>Região de harmônicos discretos</strong> ($f &lt; 1/(2\pi\tau_r)$): harmônicos da frequência de chaveamento com decaimento $-20\,\text{dB}/\text{decada}$</li>
+<li><strong>Região de transição</strong> ($f \approx 1/(2\pi\tau_r)$): pico de máxima emissão</li>
+<li><strong>Região de decaimento rápido</strong> ($f &gt; 1/(2\pi\tau_r)$): decaimento $-40\,\text{dB}/\text{decada}$</li>
+</ol>
+<p>onde $\tau_r$ é o tempo de subida da chave.</p>
+<p>A <strong>frequência de corte do espectro</strong> é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{f_{\text{max}} \approx \frac{0{,}35}{\tau_r}}
+
+$$
+</div>
+
+<p>Reduzir $\tau_r$ aumenta a largura de banda das emissões (piora EMI), mas aumentar $\tau_r$ aumenta as perdas de chaveamento ($P_{\text{sw}} \propto \tau_r$). Este é um <strong>trade-off fundamental</strong> do projeto EMC.</p>
+<h3 id="mitigação-de-ruído-de-chaveamento"><span class="heading-number">3.4.5</span> Mitigação de Ruído de Chaveamento</h3>
+<p>As técnicas principais são:</p>
+<ol>
+<li><strong>Snubbers</strong> (RC ou RCD) — reduzem dV/dt e dI/dt</li>
+<li><strong>Filtros EMI</strong> (LC, π, T) — atenuam emissões conduzidas</li>
+<li><strong>Blindagem</strong> — contêm emissões irradiadas</li>
+<li><strong>Spread Spectrum Clocking</strong> — espalham energia harmônica</li>
+<li><strong>Layout otimizado</strong> — minimizar laços de comutação e acoplamentos parasitas</li>
+</ol>
+<h2 id="fontes-industriais--arcos-elétricos-e-solda"><span class="heading-number">3.5</span> Fontes Industriais — Arcos Elétricos e Solda</h2>
+<h3 id="ruído-de-solda"><span class="heading-number">3.5.1</span> Ruído de Solda</h3>
+<p>Processos de solda (MIG, TIG, eletrodo revestido) geram ruído de banda larga através do <strong>arco elétrico</strong> — um plasma condutor com temperatura de $5\,000$ a $20\,000\,\text{K}$. O espectro do ruído de solda segue uma lei de potência:</p>
+
+<div class="math-display">
+$$
+
+\boxed{S_{\text{weld}}(f) \propto f^{-\alpha}}
+
+$$
+</div>
+
+<p>com $\alpha$ tipicamente entre $0{,}5$ e $2{,}0$, dependendo do tipo de solda e dos parâmetros de processo.</p>
+<p>O arco de solda se comporta como um <strong>gerador de corrente aleatória</strong> com componentes em toda a faixa de RF. As emissões podem ser particularmente intensas entre $10\,\text{kHz}$ e $100\,\text{MHz}$.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> Uma fonte de arco elétrico é modelada como um resistor não-linear variável no tempo:</p></aside>
+
+<div class="math-display">
+$$
+
+R_{\text{arc}}(t) = \frac{V_{\text{arc}}}{I_{\text{arc}}(t)}
+
+$$
+</div>
+
+<p>com $V_{\text{arc}} \approx 20\text{--}50\,\text{V}$ e $I_{\text{arc}}$ com flutuações aleatórias de alta frequência.</p>
+<h3 id="motores-com-escovas"><span class="heading-number">3.5.2</span> Motores com Escovas</h3>
+<p>Motores DC com escovas de carbono geram EMI por <strong>faiscamento</strong> entre as escovas e o comutador. A cada comutação, há uma faísca transiente com espectro de banda larga:</p>
+
+<div class="math-display">
+$$
+
+S_{\text{brush}}(f) \propto \frac{1}{f} \quad \text{(ruído tipo } 1/f \text{ adicional ao térmico)}
+
+$$
+</div>
+
+<p>As faíscas são pulsos de duração $\tau \approx 1\text{--}10\,\text{ns}$, o que implica componentes espectrais até $f_{\text{max}} \approx 35\text{--}350\,\text{MHz}$.</p>
+<h3 id="fornos-a-arco"><span class="heading-number">3.5.3</span> Fornos a Arco</h3>
+<p>Fornos a arco (usados na siderurgia) são fontes de interferência de <strong>altíssima potência</strong>. Modelados como fontes de corrente impulsivas:</p>
+
+<div class="math-display">
+$$
+
+\boxed{I_{\text{arc}}(t) = \sum_{k} I_k \cdot \exp\left(-\frac{(t - t_k)^2}{2\sigma^2}\right) \cos(2\pi f_c (t - t_k))}
+
+$$
+</div>
+
+<p>onde $I_k$ é a amplitude do $k$-ésimo pulso, $\sigma$ controla a largura temporal e $f_c \approx 50\text{--}60\,\text{Hz}$ é a frequência da rede.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> Fornecedores a arco podem injetar <strong>correntes de sequência negativa</strong> e harmônicas na rede elétrica, afetando todo o sistema de distribuição.</p></aside>
+<h2 id="telecomunicações-e-transmissores"><span class="heading-number">3.6</span> Telecomunicações e Transmissores</h2>
+<h3 id="transmissores-de-rádio-tv-e-celular"><span class="heading-number">3.6.1</span> Transmissores de Rádio, TV e Celular</h3>
+<p>Transmissores de comunicação são fontes <strong>intencionais</strong> de ruído — eles emitem sinais, mas podem causar interferência não-intencional quando seus harmônicos, intermodulações ou emissões espúrias atingem frequências não autorizadas.</p>
+<h3 id="potência-irradiada-efetiva-eirp"><span class="heading-number">3.6.2</span> Potência Irradiada Efetiva (EIRP)</h3>
+<p>A <strong>potência irradiada efetiva</strong> é a potência aparente irradiada por um transmissor, incluindo o ganho da antena e as perdas do cabo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{EIRP = P_{\text{trans}} + G_{\text{ant}} - L_{\text{cable}}}
+
+$$
+</div>
+
+<p>Todas as grandezas em $\text{dBW}$ (ou $\text{dBm}$). Em linear:</p>
+
+<div class="math-display">
+$$
+
+EIRP_{\text{linear}} = P_{\text{trans}} \cdot G_{\text{ant}} \cdot L_{\text{cable}}
+
+$$
+</div>
+
+<p>onde $P_{\text{trans}}$ é a potência do transmissor, $G_{\text{ant}}$ é o ganho da antena (linear, $&gt;1$), e $L_{\text{cable}}$ é a perda do cabo (linear, $&lt;1$).</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo:</strong> Transmissor de $10\,\text{W}$ ($40\,\text{dBm}$), antena com ganho de $15\,\text{dBi}$, cabo com perda de $2\,\text{dB}$:</p></aside>
+
+<div class="math-display">
+$$
+
+EIRP = 40 + 15 - 2 = 53\,\text{dBm} = 200\,\text{W}
+
+$$
+</div>
+
+<h3 id="interferência-co-canal-adjacente-e-intermodulação"><span class="heading-number">3.6.3</span> Interferência Co-Canal, Adjacente e Intermodulação</h3>
+<p><strong>Interferência co-canál:</strong> Dois transmissores na mesma frequência ocupando a mesma área de cobertura. Causa colisão direta.</p>
+<p><strong>Interferência adjacente:</strong> Transmissor em frequência vizinha invade o canal do receptor devido à seletividade finita do filtro do receptor.</p>
+<p><strong>Intermodulação:</strong> Quando dois ou mais sinais de frequências $f_1$ e $f_2$ passam por um componente não-linear (amplificador, conector oxidado, etc.), são geradas frequências de intermodulação:</p>
+
+<div class="math-display">
+$$
+
+\boxed{f_{IM3} = 2f_1 - f_2 \quad \text{e} \quad f_{IM3}' = 2f_2 - f_1}
+
+$$
+</div>
+
+<p>Estas são as <strong>intermodulações de terceira ordem</strong>, as mais problemáticas pois caem próximas aos sinais originais e são difíceis de filtrar.</p>
+<p>O <strong>ponto de intercepção de terceira ordem</strong> (IP3) é um parâmetro de especificação:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{IM3} = 3P_{\text{in}} - 2IP3}
+
+$$
+</div>
+
+<p>onde $P_{IM3}$ e $P_{\text{in}}$ estão em dBm e IP3 é em dBm. A <strong>interceptação</strong> ocorre quando $P_{IM3} = P_{\text{in}}$, logo:</p>
+
+<div class="math-display">
+$$
+
+IP3 = \frac{3P_{\text{in}} - P_{IM3}}{2}
+
+$$
+</div>
+
+<h3 id="interferência-co-canal-em-sistemas-celulares"><span class="heading-number">3.6.4</span> Interferência Co-Canal em Sistemas Celulares</h3>
+<p>A relação sinal-interferência (SIR) em uma célula com reutilização de frequência é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{SIR = \frac{P_r(d_0)}{P_r(d_i)} = \left(\frac{d_i}{d_0}\right)^{\gamma}}
+
+$$
+</div>
+
+<p>onde $d_0$ é a distância do transmissor desejado, $d_i$ é a distância dos transmissores co-canais interferentes, e $\gamma$ é o expoente de propagação ($2\text{--}4$ típicos).</p>
+<h2 id="dispositivos-domésticos-e-pessoais"><span class="heading-number">3.7</span> Dispositivos Domésticos e Pessoais</h2>
+<h3 id="wi-fi-bluetooth-e-micro-ondas"><span class="heading-number">3.7.1</span> Wi-Fi, Bluetooth e Micro-ondas</h3>
+<p>Dispositivos domésticos modernos são fontes significativas de EMI:</p>
+<table>
+<thead>
+<tr>
+<th>Dispositivo</th>
+<th>Frequência</th>
+<th>Potência Típica</th>
+<th>Tipo de EMI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wi-Fi (802.11ac/ax)</td>
+<td>2,4 GHz / 5 GHz / 6 GHz</td>
+<td>100 mW</td>
+<td>Narrowband (portadora)</td>
+</tr>
+<tr>
+<td>Bluetooth</td>
+<td>2,4 GHz</td>
+<td>10 mW</td>
+<td>Narrowband (FHSS)</td>
+</tr>
+<tr>
+<td>Forno micro-ondas</td>
+<td>2,45 GHz</td>
+<td>700–1200 W</td>
+<td>Broadband (faiscamento)</td>
+</tr>
+<tr>
+<td>LED driver</td>
+<td>50 Hz – MHz</td>
+<td>Varies</td>
+<td>Broadband (chaveamento)</td>
+</tr>
+<tr>
+<td>Carro elétrico (carregador)</td>
+<td>3–22 kW</td>
+<td>3–22 kW</td>
+<td>Broadband (chaveamento)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ruído-conduzido-pela-rede-elétrica"><span class="heading-number">3.7.2</span> Ruído Conduzido pela Rede Elétrica</h3>
+<p>Dispositivos com fontes chaveadas injetam ruído na rede elétrica, que se propaga para outros equipamentos conectados à mesma rede. O <strong>ruído conduzido de banda larga</strong> é particularmente problemático em instalações industriais com muitos drives de motor.</p>
+<p>A densidade espectral de ruído conduzido de uma fonte chaveada é aproximadamente:</p>
+
+<div class="math-display">
+$$
+
+\boxed{V_{\text{noise}}(f) \approx \frac{V_{\text{sw}}}{\pi f L_{\text{line}}} \quad \text{para } f \gg f_s}
+
+$$
+</div>
+
+<p>onde $V_{\text{sw}}$ é a tensão de chaveamento, $f_s$ é a frequência de chaveamento e $L_{\text{line}}$ é a indutância do cabo de alimentação.</p>
+<h3 id="cispr-32--en-55032--norma-de-emissão"><span class="heading-number">3.7.3</span> CISPR 32 / EN 55032 — Norma de Emissão</h3>
+<p>A norma <strong>CISPR 32</strong> (substituindo CISPR 22 e CISPR 13) estabelece os limites de emissão para equipamentos de multimídia. Aborda:</p>
+<ul>
+<li><strong>Emissões conduzidas</strong> (150 kHz – 30 MHz)</li>
+<li><strong>Emissões irradiadas</strong> (30 MHz – 6 GHz)</li>
+</ul>
+<p>Os limites são especificados em dBµV para emissões conduzidas e dBµV/m para irradiadas, com duas bandas de medida:</p>
+<ul>
+<li><strong>Quasi-peak (QP)</strong> — para sinais repetitivos e impulsivos</li>
+<li><strong>Média (Average)</strong> — para sinais contínuos</li>
+</ul>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">3.8</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">3.8.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> caracterizar ruído térmico, espectro de chaveamento, EIRP e intermodulação. <strong>Reprodutibilidade:</strong> declare RBW, janela, amostragem e convenção de PSD. <strong>Validação:</strong> confira $kTB$, Friis em unidades lineares, Parseval e inclinações harmônicas esperadas.</p>
+<h3 id="cálculo-de-ruído-térmico-e-snr"><span class="heading-number">3.8.2</span> Cálculo de Ruído Térmico e SNR</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+
+<span style="color: #959077"># Constantes fundamentais</span>
+<span style="color: #F8F8F2">k_B</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.381e-23</span>        <span style="color: #959077"># J/K - constante de Boltzmann</span>
+<span style="color: #F8F8F2">T0</span>  <span style="color: #FF4689">=</span> <span style="color: #AE81FF">290</span>              <span style="color: #959077"># K - temperatura de referencia</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">noise_power_bw</span><span style="color: #F8F8F2">(T,</span> <span style="color: #F8F8F2">B):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Potencia de ruido termico em uma banda B (Hz).&quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">k_B</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">T</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">B</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">noise_power_dBm</span><span style="color: #F8F8F2">(T,</span> <span style="color: #F8F8F2">B):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Potencia de ruido em dBm.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">P_w</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">noise_power_bw(T,</span> <span style="color: #F8F8F2">B)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(P_w</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e-3</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">noise_voltage</span><span style="color: #F8F8F2">(R,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #F8F8F2">B):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Tensao de ruido RMS de Johnson-Nyquist.&quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">4</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">k_B</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">T</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">R</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">B)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">snr_linear_from_Tsys</span><span style="color: #F8F8F2">(P_signal,</span> <span style="color: #F8F8F2">T_sys,</span> <span style="color: #F8F8F2">B):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;SNR com temperatura total de sistema referida a entrada.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">P_noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k_B</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">T_sys</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">B</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">P_signal</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">P_noise</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">snr_dB_from_Tsys</span><span style="color: #F8F8F2">(P_signal_dBm,</span> <span style="color: #F8F8F2">T_sys,</span> <span style="color: #F8F8F2">B):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;SNR em dB; T_sys ja inclui o ruido adicionado pelo receptor.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">P_signal_w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-3</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(P_signal_dBm</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(snr_linear_from_Tsys(P_signal_w,</span> <span style="color: #F8F8F2">T_sys,</span> <span style="color: #F8F8F2">B))</span>
+
+<span style="color: #959077"># --- Exemplo 1: Ruído termico ---</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;EXEMPLO 1: Potencia de ruído termico&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">Bands</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10e3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100e3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10e6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100e6</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">B</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">Bands:</span>
+    <span style="color: #F8F8F2">P_dBm</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">noise_power_dBm(T0,</span> <span style="color: #F8F8F2">B)</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;B = {</span><span style="color: #F8F8F2">B</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e6</span><span style="color: #E6DB74">:&gt;8.2f} MHz  -&gt;  P_n = {</span><span style="color: #F8F8F2">P_dBm</span><span style="color: #E6DB74">:10.2f} dBm&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># --- Exemplo 2: SNR em um receptor ---</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span> <span style="color: #FF4689">+</span> <span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;EXEMPLO 2: SNR de um receptor de radio&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">P_sig_dBm</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">100</span>          <span style="color: #959077"># sinal de -100 dBm</span>
+<span style="color: #F8F8F2">T_sys</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">500</span>               <span style="color: #959077"># K (sistema com LNA)</span>
+<span style="color: #F8F8F2">B</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">200e3</span>                 <span style="color: #959077"># 200 kHz (FM)</span>
+
+<span style="color: #F8F8F2">SNR</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">snr_dB_from_Tsys(P_sig_dBm,</span> <span style="color: #F8F8F2">T_sys,</span> <span style="color: #F8F8F2">B)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Sinal: {</span><span style="color: #F8F8F2">P_sig_dBm</span><span style="color: #E6DB74">} dBm&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Banda: {</span><span style="color: #F8F8F2">B</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e3</span><span style="color: #E6DB74">:.0f} kHz&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Temperatura total de sistema: {</span><span style="color: #F8F8F2">T_sys</span><span style="color: #E6DB74">} K&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;SNR de saida: {</span><span style="color: #F8F8F2">SNR</span><span style="color: #E6DB74">:.1f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># --- Exemplo 3: Fator de ruido em cascata ---</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span> <span style="color: #FF4689">+</span> <span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;EXEMPLO 3: Fator de ruido em cascata (Friis)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Estagio 1: LNA, G1 = 20 dB, F1 = 2 dB</span>
+<span style="color: #959077"># Estagio 2: Filtro, G2 = -3 dB, F2 = 5 dB</span>
+<span style="color: #959077"># Estagio 3: Amplificador, G3 = 15 dB, F3 = 8 dB</span>
+<span style="color: #F8F8F2">G1_dB,</span> <span style="color: #F8F8F2">F1_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span>
+<span style="color: #F8F8F2">G2_dB,</span> <span style="color: #F8F8F2">F2_dB</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span>
+<span style="color: #F8F8F2">G3_dB,</span> <span style="color: #F8F8F2">F3_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span>
+
+<span style="color: #F8F8F2">G1</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(G1_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">F1</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(F1_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">F2</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(F2_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">F3</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(F3_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">F_total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">F1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(F2</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">G1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(F3</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(G1</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(G2_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">F_total_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(F_total)</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;F_total = {</span><span style="color: #F8F8F2">F_total_dB</span><span style="color: #E6DB74">:.2f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Contribuicoes: F1={</span><span style="color: #F8F8F2">F1</span><span style="color: #E6DB74">:.2f} + (F2-1)/G1={</span><span style="color: #F8F8F2">(F2</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">G1</span><span style="color: #E6DB74">:.4f} + (F3-1)/(G1*G2)={</span><span style="color: #F8F8F2">(F3</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(G1</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(G2_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">))</span><span style="color: #E6DB74">:.4f}&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      3[39m [38;5;66;03m# Constantes fundamentais[39;00m
+[32m      4[39m k_B = [32m1.381e-23[39m        [38;5;66;03m# J/K - constante de Boltzmann[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="simulação-de-espectro-de-fonte-chaveada-fft"><span class="heading-number">3.8.3</span> Simulação de Espectro de Fonte Chaveada (FFT)</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">switching_wave</span><span style="color: #F8F8F2">(D,</span> <span style="color: #F8F8F2">Vdc,</span> <span style="color: #F8F8F2">num_harm</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">50</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;</span>
+<span style="color: #E6DB74">    Gera uma onda quadrada de chaveamento e seus coeficientes de Fourier.</span>
+<span style="color: #E6DB74">    D = duty cycle, Vdc = amplitude DC.</span>
+<span style="color: #E6DB74">    Retorna coeficientes harmonicos até num_harm.</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">a0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">D</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">Vdc</span>
+    <span style="color: #F8F8F2">harmonics</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">num_harm</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">):</span>
+        <span style="color: #F8F8F2">an</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">Vdc</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(n</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sin(n</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">D)</span>
+        <span style="color: #F8F8F2">harmonics</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(an)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">a0,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(harmonics)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">plot_switching_spectrum</span><span style="color: #F8F8F2">(D</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">Vdc</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">12.0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">max_harm</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Plota o espectro de uma onda quadrada de chaveamento.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">a0,</span> <span style="color: #F8F8F2">harmonics</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">switching_wave(D,</span> <span style="color: #F8F8F2">Vdc,</span> <span style="color: #F8F8F2">max_harm)</span>
+    <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">max_harm</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">amp_linear</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(harmonics)</span>
+
+    <span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">(ax1,</span> <span style="color: #F8F8F2">ax2)</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+
+    <span style="color: #959077"># Grafico linear</span>
+    <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">stem(f,</span> <span style="color: #F8F8F2">amp_linear,</span> <span style="color: #F8F8F2">linefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markerfmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;bo&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">basefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k-&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Numero do Harmônico (n)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Amplitude (V)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Espectro de Onda Quadrada (D={</span><span style="color: #F8F8F2">D</span><span style="color: #E6DB74">}, Vdc={</span><span style="color: #F8F8F2">Vdc</span><span style="color: #E6DB74">}V)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">max_harm)</span>
+
+    <span style="color: #959077"># Grafico em dB</span>
+    <span style="color: #F8F8F2">amp_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(amp_linear</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(f,</span> <span style="color: #F8F8F2">amp_linear,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Espectro real&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ref</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">amp_linear[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(f</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">f[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">])</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(f,</span> <span style="color: #F8F8F2">ref,</span> <span style="color: #E6DB74">&#39;r--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;-20 dB/dec&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Numero do Harmônico (n)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Amplitude (V) log&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Espectro em Escala Log&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">max_harm)</span>
+
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/spectrum.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+    <span style="color: #959077"># Decaimento dos harmonicos</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">D</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">odd_h</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">harmonics[::</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>  <span style="color: #959077"># impares</span>
+        <span style="color: #F8F8F2">ratios</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(odd_h[:</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">odd_h[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:])</span>
+        <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Relacoes de decaimento (impares): {</span><span style="color: #F8F8F2">ratios[:</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">]</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Esperado: cada par diminui por fator ~{</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">odd_h[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">odd_h[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #E6DB74">:.1f}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plot_switching_spectrum()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mswitching_wave[39m(D, Vdc, num_harm=[32m50[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="plot-de-curva-de-ruído-atmosférico-vs-frequência"><span class="heading-number">3.8.4</span> Plot de Curva de Ruído Atmosférico vs. Frequência</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">atmos_noise_index</span><span style="color: #F8F8F2">(f_MHz,</span> <span style="color: #F8F8F2">latitude</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">time</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;</span>
+<span style="color: #E6DB74">    Modelo simplificado de ruido atmosferico (ITU-R P.372).</span>
+<span style="color: #E6DB74">    f_MHz: frequencia em MHz, latitude: latitude geografica.</span>
+<span style="color: #E6DB74">    Retorna N em dB acima de kTB.</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">f_MHz</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e3</span>  <span style="color: #959077"># converter para GHz</span>
+    <span style="color: #F8F8F2">A</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">118.0</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">30</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(f</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">B</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20.0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">f</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">C</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5.0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">0.1</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">abs(latitude))</span>
+    <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">A</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">B</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">C</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">10</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(f</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">maximum(N,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Gerar grafico</span>
+<span style="color: #F8F8F2">f_kHz</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 1 kHz a 100 MHz</span>
+<span style="color: #F8F8F2">f_MHz</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">f_kHz</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e3</span>
+<span style="color: #F8F8F2">N_trop</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">atmos_noise_index(f_MHz,</span> <span style="color: #F8F8F2">latitude</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>    <span style="color: #959077"># equador</span>
+<span style="color: #F8F8F2">N_mid</span>  <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">atmos_noise_index(f_MHz,</span> <span style="color: #F8F8F2">latitude</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">40</span><span style="color: #F8F8F2">)</span>   <span style="color: #959077"># temperada</span>
+<span style="color: #F8F8F2">N_pol</span>  <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">atmos_noise_index(f_MHz,</span> <span style="color: #F8F8F2">latitude</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">70</span><span style="color: #F8F8F2">)</span>   <span style="color: #959077"># polar</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f_MHz,</span> <span style="color: #F8F8F2">N_trop,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Equador (0 deg)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f_MHz,</span> <span style="color: #F8F8F2">N_mid,</span>  <span style="color: #E6DB74">&#39;r-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Temperada (40 deg)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f_MHz,</span> <span style="color: #F8F8F2">N_pol,</span>  <span style="color: #E6DB74">&#39;g-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Polar (70 deg)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Frequencia (MHz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Indice de Ruido (dB acima de kTB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Ruido Atmosferico vs. Frequencia (ITU-R P.372)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Marcar fc = 10 kHz</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">text(</span><span style="color: #AE81FF">0.015</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">get_ylim()[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.9</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;fc ~ 10 kHz&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/atmos_noise.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #959077"># Valores numericos</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Valores de indice de ruido atmosferico:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10000</span><span style="color: #F8F8F2">]:</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  f = {</span><span style="color: #F8F8F2">f</span><span style="color: #E6DB74">:&gt;8.2f} MHz: N = {</span><span style="color: #F8F8F2">atmos_noise_index(f, </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">:6.1f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34matmos_noise_index[39m(f_MHz, latitude=[32m0[39m, time=[32m6[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="cálculo-de-eirp-e-intermodulação-de-terceira-ordem"><span class="heading-number">3.8.5</span> Cálculo de EIRP e Intermodulação de Terceira Ordem</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">eirp_db</span><span style="color: #F8F8F2">(P_trans_dBm,</span> <span style="color: #F8F8F2">G_ant_dBi,</span> <span style="color: #F8F8F2">L_cable_dB):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Calcula EIRP em dBm.&quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">P_trans_dBm</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">G_ant_dBi</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">L_cable_dB</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">im3_power</span><span style="color: #F8F8F2">(P_in_dBm,</span> <span style="color: #F8F8F2">IP3_dBm):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Potencia do sinal de intermodulacao de terceira ordem.&quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">3</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_in_dBm</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">IP3_dBm</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ip3_from_measurements</span><span style="color: #F8F8F2">(P_in_dBm,</span> <span style="color: #F8F8F2">P_im3_dBm):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Determina IP3 a partir de medidas.&quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">3</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_in_dBm</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">P_im3_dBm)</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span>
+
+<span style="color: #959077"># --- Exemplo: EIRP ---</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;EXEMPLO: Calculo de EIRP&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">P_tx</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">40</span>        <span style="color: #959077"># dBm (10 W)</span>
+<span style="color: #F8F8F2">G_ant</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span>       <span style="color: #959077"># dBi</span>
+<span style="color: #F8F8F2">L_cable</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span>      <span style="color: #959077"># dB</span>
+<span style="color: #F8F8F2">EIRP</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">eirp_db(P_tx,</span> <span style="color: #F8F8F2">G_ant,</span> <span style="color: #F8F8F2">L_cable)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Transmissor: {</span><span style="color: #F8F8F2">P_tx</span><span style="color: #E6DB74">} dBm ({</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(P_tx</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-3</span><span style="color: #E6DB74">:.1f} W)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Ganho da antena: {</span><span style="color: #F8F8F2">G_ant</span><span style="color: #E6DB74">} dBi&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Perda do cabo: {</span><span style="color: #F8F8F2">L_cable</span><span style="color: #E6DB74">} dB&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;EIRP = {</span><span style="color: #F8F8F2">EIRP</span><span style="color: #E6DB74">} dBm ({</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(EIRP</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-3</span><span style="color: #E6DB74">:.1f} W)&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># --- Exemplo: Intermodulacao ---</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span> <span style="color: #FF4689">+</span> <span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;EXEMPLO: Intermodulacao de Terceira Ordem&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;=&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">IP3</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">30</span>  <span style="color: #959077"># dBm</span>
+<span style="color: #F8F8F2">P_in_range</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">30</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">P_fund</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">P_in_range</span>
+<span style="color: #F8F8F2">P_IM3</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">3</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_in_range</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">IP3</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(P_in_range,</span> <span style="color: #F8F8F2">P_fund,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Sinal fundamental&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(P_in_range,</span> <span style="color: #F8F8F2">P_IM3,</span> <span style="color: #E6DB74">&#39;r--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;IM3 (2f1 - f2)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(IP3,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(IP3,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">text(IP3</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">IP3</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">f&#39;IP3 = {</span><span style="color: #F8F8F2">IP3</span><span style="color: #E6DB74">} dBm&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Poder de Entrada (dBm)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Poder de Saida (dBm)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Intermodulacao de Terceira Ordem&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">30</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">80</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">35</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/im3.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #959077"># Determinar IP3 a partir de medidas</span>
+<span style="color: #F8F8F2">P_in_meas</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">10</span>
+<span style="color: #F8F8F2">P_im3_meas</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">50</span>
+<span style="color: #F8F8F2">IP3_calc</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">ip3_from_measurements(P_in_meas,</span> <span style="color: #F8F8F2">P_im3_meas)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;P_in = {</span><span style="color: #F8F8F2">P_in_meas</span><span style="color: #E6DB74">} dBm, P_IM3 = {</span><span style="color: #F8F8F2">P_im3_meas</span><span style="color: #E6DB74">} dBm&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;IP3 calculado = {</span><span style="color: #F8F8F2">IP3_calc</span><span style="color: #E6DB74">} dBm&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34meirp_db[39m(P_trans_dBm, G_ant_dBi, L_cable_dB):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">3.9</span> Lista de Exercícios Propostos</h2>
+<p>Use, quando necessário, $k_B = 1{,}381 \times 10^{-23}\,\text{J/K}$, $T_0 = 290\,\text{K}$, $c = 2{,}998 \times 10^8\,\text{m/s}$, $\eta_0 = 376{,}7\,\Omega$.</p>
+<p><strong>E.1</strong> — Calcule a potência de ruído térmico disponível de um resistor a $T = 300\,\text{K}$ em uma banda de $B = 1\,\text{MHz}$. Expresse o resultado em (a) watts, (b) dBm, (c) dBµW.</p>
+<p><strong>E.2</strong> — Uma antena recebe ruído atmosférico com $T_{\text{sky}} = 15\,000\,\text{K}$ a $f = 5\,\text{MHz}$. O receptor tem fator de ruído $F = 4\,\text{dB}$ e banda $B = 10\,\text{kHz}$. Calcule (a) a temperatura de ruído equivalente $T_e$, (b) a temperatura total do sistema, (c) a potência de ruído na entrada do receptor.</p>
+<p><strong>E.3</strong> — Mostre que para uma onda quadrada simétrica ($D = 0{,}5$), os harmônicos pares são nulos. Deduza a amplitude do 1º, 3º e 5º harmônico.</p>
+<p><strong>E.4</strong> — Um conversor buck opera com $V_{dc} = 48\,\text{V}$, $f_s = 100\,\text{kHz}$ e $D = 0{,}35$. Calcule (a) a componente DC da tensão, (b) a amplitude do 1º harmônico, (c) a amplitude do 5º harmônico, (d) a razão entre o 1º harmônico e a componente DC em dB.</p>
+<p><strong>E.5</strong> — Um MOSFET apresenta uma rampa aproximadamente linear de $0$ a $600\,\text{V}$ em $20\,\text{ns}$. Uma capacitância parasita $C_p=2\,\text{pF}$ acopla o nó a uma entrada. Calcule (a) $dV/dt$ e (b) a corrente durante a rampa. (c) A aproximação $v=iZ$ com $Z=10\,\text{k}\Omega$ produz qual valor? Explique por que ele é apenas uma estimativa local em frequência/tempo e quais elementos faltam para prever a forma e o pico reais.</p>
+<p><strong>E.6</strong> — Um transmissor de $50\,\text{W}$ alimenta uma antena com ganho $G = 12\,\text{dBi}$ através de um cabo com perda de $1{,}5\,\text{dB}$. Calcule (a) o EIRP em dBW, (b) o EIRP em watts, (c) a densidade de potência a $1\,\text{km}$ (assumindo irradiação isotrópica).</p>
+<p><strong>E.7</strong> — Dois transmissores operam em $f_1 = 900\,\text{MHz}$ e $f_2 = 901\,\text{MHz}$ através de um amplificador não-linear com $IP3 = 25\,\text{dBm}$. Calcule (a) as frequências de intermodulação de terceira ordem $f_{IM3}$ e $f_{IM3}'$, (b) se alguma cai dentro da banda $899\text{--}902\,\text{MHz}$.</p>
+<p><strong>E.8</strong> — Um sistema de recepção tem três estágios: LNA ($G_1 = 25\,\text{dB}$, $F_1 = 1{,}5\,\text{dB}$), filtro ($G_2 = -1{,}5\,\text{dB}$, $F_2 = 3\,\text{dB}$), receptor ($G_3 = 30\,\text{dB}$, $F_3 = 6\,\text{dB}$). Calcule o fator de ruído total usando a fórmula de Friis.</p>
+<p><strong>E.9</strong> — Mostre que o ruído térmico de Johnson-Nyquist tem densidade espectral plana (white noise). Considere um resistor $R$ conectado a um amperímetro ideal de banda infinita. Explique por que a potência total de ruído diverge e como isso se resolve fisicamente.</p>
+<p><strong>E.10</strong> — Um forno de micro-ondas opera em $2{,}45\,\text{GHz}$ com potência de $1000\,\text{W}$. Calcule (a) o comprimento de onda, (b) a energia de um fóton em eV, (c) a densidade de potência a $0{,}5\,\text{m}$ (assumindo $G = 0\,\text{dBi}$ isotrópico).</p>
+<p><strong>E.11 (desafio)</strong> — Deduza que, para uma transição de chaveamento com tempo de subida $\tau_r$, a frequência de corte do espectro de emissão é $f_{\text{max}} \approx 0{,}35/\tau_r$. Dica: considere o espectro de um pulso gaussiano de largura $\tau_r$.</p>
+<p><strong>E.12 (desafio)</strong> — Um enunciado afirma: “um receptor com $B=1\,\text{MHz}$, $P_{\min}=-120\,\text{dBm}$ e $T_{\text{sys}}=500\,\text{K}$ permite calcular $F$, SNR de saída e $T_e$”. (a) Mostre por que os dados são insuficientes e parcialmente redundantes; (b) calcule $k_BT_{\text{sys}}B$; (c) determine a SNR mínima implícita; (d) explique quais dados adicionais permitiriam obter $F$ e $T_e$ sem dupla contagem.</p>
+<h2 id="gabarito"><span class="heading-number">3.10</span> Gabarito</h2>
+<h3 id="e1"><span class="heading-number">3.10.1</span> E1</h3>
+<p>Dados: $T = 300\,\text{K}$, $B = 1\,\text{MHz} = 10^6\,\text{Hz}$.</p>
+<p>(a) Potência em watts:</p>
+
+<div class="math-display">
+$$
+
+P_n = k_B T B = (1{,}381 \times 10^{-23}) \cdot 300 \cdot 10^6 = 4{,}143 \times 10^{-15}\,\text{W}
+
+$$
+</div>
+
+<p>(b) Potência em dBm:</p>
+
+<div class="math-display">
+$$
+
+P_n\,[\text{dBm}] = 10\log_{10}\left(\frac{4{,}143 \times 10^{-15}}{10^{-3}}\right) = 10\log_{10}(4{,}143 \times 10^{-12}) = \boxed{-113{,}8\,\text{dBm}}
+
+$$
+</div>
+
+<p>(c) Potência em dBµW:</p>
+
+<div class="math-display">
+$$
+
+P_n\,[\text{dB\mu W}] = 10\log_{10}(4{,}143 \times 10^{-9}) = \boxed{-83{,}8\,\text{dB\mu W}}
+
+$$
+</div>
+
+<h3 id="e2"><span class="heading-number">3.10.2</span> E2</h3>
+<p>Dados: $T_{\text{sky}} = 15\,000\,\text{K}$, $F = 4\,\text{dB}$, $B = 10^4\,\text{Hz}$.</p>
+<p>(a) $F_{\text{lin}} = 10^{4/10} = 2{,}512$. $T_e = (2{,}512 - 1) \cdot 290 = \boxed{438\,\text{K}}$.</p>
+<p>(b) $T_{\text{sys}} = 15\,000 + 438 = \boxed{15\,438\,\text{K}}$.</p>
+<p>(c) $P_n = k_B T_{\text{sys}} B = 2{,}132 \times 10^{-15}\,\text{W} = \boxed{-116{,}7\,\text{dBm}}$.</p>
+<h3 id="e3"><span class="heading-number">3.10.3</span> E3</h3>
+<p>Para $D = 0{,}5$:</p>
+
+<div class="math-display">
+$$
+
+V_n = \frac{2V_{dc}}{n\pi} |\sin(n\pi/2)|
+
+$$
+</div>
+
+<p>Para $n$ par, $n=2m$: $\sin(m\pi) = 0$, logo $V_{2m} = 0$. <strong>Harmônicos pares são nulos.</strong></p>
+<p>Para $n$ ímpar: $|\sin| = 1$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{V_1 = \frac{2V_{dc}}{\pi},\; V_3 = \frac{2V_{dc}}{3\pi},\; V_5 = \frac{2V_{dc}}{5\pi}}
+
+$$
+</div>
+
+<h3 id="e4"><span class="heading-number">3.10.4</span> E4</h3>
+<p>Dados: $V_{dc} = 48\,\text{V}$, $D = 0{,}35$.</p>
+<p>(a) $V_{\text{DC}} = 0{,}35 \cdot 48 = \boxed{16{,}8\,\text{V}}$.</p>
+<p>(b) $V_1 = \frac{96}{\pi} |\sin(0{,}35\pi)| = 30{,}56 \cdot 0{,}891 = \boxed{27{,}2\,\text{V}}$.</p>
+<p>(c) $V_5 = \frac{96}{5\pi} |\sin(1{,}75\pi)| = 6{,}11 \cdot 0{,}707 = \boxed{4{,}32\,\text{V}}$.</p>
+<p>(d) $20\log_{10}(27{,}2/16{,}8) = \boxed{4{,}19\,\text{dB}}$.</p>
+<h3 id="e5"><span class="heading-number">3.10.5</span> E5</h3>
+<p>Dados: $V = 600\,\text{V}$, $t_r = 20\,\text{ns}$, $C_p = 2\,\text{pF}$, $Z = 10\,\text{k}\Omega$.</p>
+<p>(a) $\frac{dV}{dt} = \frac{600}{20 \times 10^{-9}} = \boxed{30\,\text{V/ns}}$.</p>
+<p>(b) $i_{\text{coupled}} = 2 \times 10^{-12} \cdot 3 \times 10^{10} = \boxed{60\,\text{mA}}$.</p>
+<p>(c) A substituição direta dá $v=iZ=(60\,\text{mA})(10\,\text{k}\Omega)=\boxed{600\,\text{V}}$. Esse resultado extremo é um alerta sobre o modelo, não uma previsão completa: $Z$ deve ser a impedância complexa na faixa espectral da borda, e faltam capacitância da vítima, impedância da fonte, diodos de proteção, indutâncias, forma real da borda e retorno. A tensão não permanece em 600 V; é preciso resolver o circuito transitório (ou medir) para obter pico e duração.</p>
+<h3 id="e6"><span class="heading-number">3.10.6</span> E6</h3>
+<p>Dados: $P = 50\,\text{W} = 16{,}99\,\text{dBW}$, $G = 12\,\text{dBi}$, $L = 1{,}5\,\text{dB}$.</p>
+<p>(a) $EIRP = 16{,}99 + 12 - 1{,}5 = \boxed{27{,}5\,\text{dBW}}$.</p>
+<p>(b) $EIRP = 10^{2{,}75} = \boxed{562\,\text{W}}$.</p>
+<p>(c) $S = \frac{562}{4\pi \cdot 10^6} = 4{,}47 \times 10^{-5}\,\text{W/m}^2 = \boxed{44{,}7\,\mu\text{W/m}^2}$.</p>
+<h3 id="e7"><span class="heading-number">3.10.7</span> E7</h3>
+<p>(a) $f_{IM3} = 2 \cdot 900 - 901 = \boxed{899\,\text{MHz}}$. $f_{IM3}' = 2 \cdot 901 - 900 = \boxed{902\,\text{MHz}}$.</p>
+<p>(b) Ambas caem <strong>nos limites</strong> da banda $899\text{--}902\,\text{MHz}$. <strong>Caso crítico</strong>: adjacentes ao canal útil.</p>
+<h3 id="e8"><span class="heading-number">3.10.8</span> E8</h3>
+
+<div class="math-display">
+$$
+
+F_1 = 1{,}413,\; G_1 = 316{,}2,\; F_2 = 1{,}995,\; G_2 = 0{,}708,\; F_3 = 3{,}981
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+F_{\text{total}} = 1{,}413 + \frac{0{,}995}{316{,}2} + \frac{2{,}981}{316{,}2 \cdot 0{,}708} = 1{,}413 + 0{,}0031 + 0{,}0133 = \boxed{1{,}430}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+F_{\text{total,dB}} = \boxed{1{,}55\,\text{dB}}
+
+$$
+</div>
+
+<h3 id="e9"><span class="heading-number">3.10.9</span> E9</h3>
+<p>$S_V(f) = 4k_BTR$ é <strong>constante</strong> (independente de $f$), logo é <strong>ruído branco</strong>. A potência total $P = \int_0^{\infty} S_V(f)\,\frac{1}{4R}\,df$ diverge. <strong>Resolução física</strong>: para $f \gtrsim k_B T/h \approx 6\,\text{THz}$, a quantização exige a fórmula de Planck:</p>
+
+<div class="math-display">
+$$
+
+S_V(f) = 4R \cdot \frac{hf}{e^{hf/(k_B T)} - 1}
+
+$$
+</div>
+
+<p>que decai exponencialmente, tornando a integral convergente. A fórmula clássica é válida para $hf \ll k_B T$.</p>
+<h3 id="e10"><span class="heading-number">3.10.10</span> E10</h3>
+<p>Dados: $f = 2{,}45\,\text{GHz}$, $P = 1000\,\text{W}$.</p>
+<p>(a) $\lambda = \frac{c}{f} = \frac{2{,}998 \times 10^8}{2{,}45 \times 10^9} = \boxed{12{,}2\,\text{cm}}$.</p>
+<p>(b) $E = hf = (6{,}626 \times 10^{-34})(2{,}45 \times 10^9) / (1{,}602 \times 10^{-19}) = \boxed{10{,}1\,\mu\text{eV}}$.</p>
+<p>(c) $S = \frac{1000}{4\pi \cdot 0{,}25} = \frac{1000}{\pi} = \boxed{318\,\text{W/m}^2}$.</p>
+<h3 id="e11"><span class="heading-number">3.10.11</span> E11</h3>
+<p>Pulso gaussiano: $p(t) = \exp(-t^2/(2\tau_r^2))$. Sua transformada:</p>
+
+<div class="math-display">
+$$
+
+P(f) = \tau_r\sqrt{2\pi}\,\exp(-2\pi^2 f^2 \tau_r^2)
+
+$$
+</div>
+
+<p>Espectro decai exponencialmente. Definindo $f_{\text{max}}$ quando o espectro cai a $1/e$ do valor em DC:</p>
+
+<div class="math-display">
+$$
+
+\exp(-2\pi^2 f_{\text{max}}^2 \tau_r^2) = e^{-1} \Rightarrow 2\pi^2 f_{\text{max}}^2 \tau_r^2 = 1
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+f_{\text{max}} = \frac{1}{\pi\sqrt{2}\,\tau_r} \approx \frac{0{,}225}{\tau_r}
+
+$$
+</div>
+
+<p>Usando o critério mais conservador $f_{\text{max}} \approx \frac{0{,}35}{\tau_r}$ (baseado em pulso gaussiano de largura FWHM), obtém-se o resultado padrão da literatura EMC. $\blacksquare$</p>
+<h3 id="e12"><span class="heading-number">3.10.12</span> E12</h3>
+<p>(a) $T_{\text{sys}}$ já representa o ruído total referido à entrada; multiplicá-lo novamente por $F$ seria dupla contagem. Além disso, sensibilidade só tem significado para uma SNR/BER/critério de detecção especificado. Sem separar $T_{\text{ant}}$ e $T_e$, não é possível inferir $F$.</p>
+<p>(b) $k_BT_{\text{sys}}B=(1{,}381\times10^{-23})(500)(10^6)=6{,}905\times10^{-15}\,\text{W}=\boxed{-111{,}6\,\text{dBm}}$.</p>
+<p>(c) $P_{\min}=-120\,\text{dBm}=10^{-15}\,\text{W}$ implicaria</p>
+
+<div class="math-display">
+$$
+
+(SNR)_{\min}=\frac{P_{\min}}{k_BT_{\text{sys}}B}=0{,}145=\boxed{-8{,}39\,\text{dB}}.
+
+$$
+</div>
+
+<p>Isso não é automaticamente impossível: sistemas codificados ou detectores integradores podem operar com SNR numérica negativa, dependendo da definição de banda, taxa e critério. O resultado exige que esses elementos sejam declarados.</p>
+<p>(d) Para obter $F$ e $T_e$, forneça $T_{\text{ant}}$ e deixe claro que $T_{\text{sys}}=T_{\text{ant}}+T_e$ no mesmo plano de referência. Então $T_e=T_{\text{sys}}-T_{\text{ant}}$ e $F=1+T_e/T_0$. Alternativamente, forneça diretamente $F$ e use a forma baseada em $T_0$.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="02_caracterizacao_casos_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">2. Caracterização e diagnóstico de casos EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="04_normas_padronizacoes_ensaios.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">4. Normas, Padronizações e Ensaios de EMC</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6. Modulação QAM — Transmissão Digital em Banda Base — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>6. Modulação QAM — Transmissão Digital em Banda Base</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>6. Modulação QAM — Transmissão Digital em Banda Base</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="05_digital_passband_ask_psk_fsk.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">5. Transmissão Digital em Banda Passante: ASK, PSK e FSK</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="07_equalizacao.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">7. Equalização — Compensação da Dispersão do Canal</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>6. Modulação QAM — Transmissão Digital em Banda Base</h1>
+<blockquote>
+<p>Comunicações Digitais — Apostila de Curso<br />
+Tópicos: Representação I/Q · Constelações QAM · Distância mínima · Energia normalizada · Probabilidade de erro · Detecção coerente · Erro de fase · Aplicações práticas</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">6.1</span> Antes de começar</h2>
+<p>Ao final, você deve normalizar constelações QAM, relacionar $d_{\min}$ a BER e ordem de modulação, implementar decisão I/Q e quantificar erro de fase. <strong>Diagnóstico:</strong> aumentar $M$ eleva a eficiência espectral, mas o que acontece com $d_{\min}$ quando $E_s$ é fixo? <strong>Evidência mínima:</strong> validar numericamente a energia média e a BER de 16-, 64- e 256-QAM.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#representa%C3%A7%C3%A3o-iq-e-a-estrutura-do-sinal-qam">Representação I/Q e a estrutura do sinal QAM</a></li>
+<li><a href="#constela%C3%A7%C3%B5es-qam--geometria-completa">Constelações QAM — Geometria Completa</a></li>
+<li><a href="#probabilidade-de-erro--dedu%C3%A7%C3%A3o-completa">Probabilidade de Erro — Dedução Completa</a></li>
+<li><a href="#detec%C3%A7%C3%A3o-coerente-de-qam">Detecção Coerente de QAM</a></li>
+<li><a href="#estima%C3%A7%C3%A3o-de-canal-e-sincronismo">Estimação de Canal e Sincronismo</a></li>
+<li><a href="#qam-em-pr%C3%A1tica--aplica%C3%A7%C3%B5es-e-trade-offs">QAM em Prática — Aplicações e Trade-offs</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="representação-iq-e-a-estrutura-do-sinal-qam"><span class="heading-number">6.2</span> Representação I/Q e a estrutura do sinal QAM</h2>
+<h3 id="modulação-em-quadratura-a-ideia-central"><span class="heading-number">6.2.1</span> Modulação em quadratura: a ideia central</h3>
+<p>Em modulações como BPSK e QPSK, apenas a <strong>fase</strong> da portadora é modulada. A Modulação por Codificação de Amplitude Quadrática (QAM) vai além: modula <strong>simultaneamente</strong> a amplitude e a fase. O insight fundamental é que duas portadoras ortogonais (seno e cosseno) podem transportar informações independentes.</p>
+<p>Considere uma portadora de frequência $f_c$. Construimos duas portadoras ortogonais:</p>
+
+<div class="math-display">
+$$
+
+c_I(t) = \cos(2\pi f_c t), \qquad c_Q(t) = -\sin(2\pi f_c t),
+
+$$
+</div>
+
+<p>que satisfazem $\displaystyle\int_0^{T_s} c_I(t)c_Q(t)\,dt = 0$ para qualquer intervalo inteiro de período $T_s$ da portadora. A ortogonalidade garante que as duas componentes são <strong>independentes</strong> no receptor — podemos transmitir dados separados em cada uma sem interferência mútua (desde que o receptor mantenha sincronismo de fase perfeito).</p>
+<h3 id="dedução-da-representação-iq"><span class="heading-number">6.2.2</span> Dedução da representação I/Q</h3>
+<p>Sejam $I_k$ e $Q_k$ os símbolos nas componentes em fase e em quadratura, respectivamente, no $k$-ésimo intervalo de símbolo de duração $T_s$. O sinal QAM transmitido é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s(t) = I_k\cos(2\pi f_c t) - Q_k\sin(2\pi f_c t)},\qquad kT_s \leq t &lt; (k+1)T_s.
+
+$$
+</div>
+
+<p>A convenção de sinal negativo no termo Q é padrão em comunicações: garante que a fase positiva corresponde à rotação anti-horária no plano complexo.</p>
+<aside class="callout callout-note" role="note"><p><strong>Interpretação geométrica</strong>: Defina o símbolo complexo como $x_k = I_k + jQ_k$. Então o sinal transmitido pode ser reescrito como:</p></aside>
+
+<div class="math-display">
+$$
+
+s(t) = \Re\left\{x_k\,e^{j2\pi f_c t}\right\}.
+
+$$
+</div>
+
+<p>Esta é a <strong>forma analítica</strong> (ou envelope complexo) do sinal: $x_k$ é a representacao no plano complexo (constelação), e $e^{j2\pi f_c t}$ é a portadora rotativa.</p>
+<h3 id="energia-do-símbolo"><span class="heading-number">6.2.3</span> Energia do símbolo</h3>
+<p>A energia do símbolo $s_k(t)$ no intervalo $[kT_s, (k+1)T_s]$ é:</p>
+
+<div class="math-display">
+$$
+
+E_s = \int_{kT_s}^{(k+1)T_s} s_k^2(t)\,dt = \int_{kT_s}^{(k+1)T_s} \bigl[I_k\cos(2\pi f_c t) - Q_k\sin(2\pi f_c t)\bigr]^2 dt.
+
+$$
+</div>
+
+<p>Expandindo o quadrado:</p>
+
+<div class="math-display">
+$$
+
+s_k^2(t) = I_k^2\cos^2(2\pi f_c t) + Q_k^2\sin^2(2\pi f_c t) - 2I_kQ_k\cos(2\pi f_c t)\sin(2\pi f_c t).
+
+$$
+</div>
+
+<p>O termo cruzado se anula por ortogonalidade: $\displaystyle\int_0^{T_s} 2\cos(2\pi f_c t)\sin(2\pi f_c t)\,dt = \int_0^{T_s}\sin(4\pi f_c t)\,dt = 0$ (para $f_c \gg 1/T_s$).</p>
+<p>Os termos quadráticos: para $f_c$ suficientemente alta, $\cos^2(2\pi f_c t)$ e $\sin^2(2\pi f_c t)$ têm valor médio $1/2$ sobre cada período. Assim:</p>
+
+<div class="math-display">
+$$
+
+\boxed{E_s = \frac{T_s}{2}(I_k^2 + Q_k^2) = \frac{T_s}{2}|x_k|^2}.
+
+$$
+</div>
+
+<p>Para normalização, convém adotar portadoras com energia unitária por símbolo: definamos $g_I(t) = \sqrt{\frac{2}{T_s}}\cos(2\pi f_c t)$ e $g_Q(t) = -\sqrt{\frac{2}{T_s}}\sin(2\pi f_c t)$, então:</p>
+
+<div class="math-display">
+$$
+
+s(t) = a_I\,g_I(t) + a_Q\,g_Q(t),\qquad E_s = a_I^2 + a_Q^2 = |x|^2.
+
+$$
+</div>
+
+<p>A partir deste ponto, assumiremos essa normalização: $E_s = |x_k|^2$.</p>
+<!-- slides: columns -->
+<h3 id="eficiência-espectral"><span class="heading-number">6.2.4</span> Eficiência espectral</h3>
+<p>Cada símbolo QAM carrega $\log_2 M$ bits, onde $M$ é o tamanho da constelação. A taxa de símbolos é $R_s = 1/T_s$. A eficiência espectral (bit/s/Hz) é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\eta = \frac{R_b}{B} = \log_2 M\;\text{bit/s/Hz}},
+
+$$
+</div>
+
+<p>onde $B \approx R_s = 1/T_s$ é a largura de banda ocupada na aproximação de pulsos Nyquist com excesso de banda nulo. Com filtro cosseno levantado, a convenção usual fornece $B=(1+\alpha)R_s$ e, portanto, $\eta=\log_2M/(1+\alpha)$. <strong>Comparação</strong>: para a mesma taxa de símbolos e o mesmo excesso de banda, QPSK transporta 2 bit/símbolo, enquanto 16-QAM transporta 4 bit/símbolo e dobra a eficiência espectral; essa vantagem custa menor distância entre pontos para a mesma energia média e, assim, maior $E_b/N_0$ para uma BER fixada.</p>
+<!-- slides: column -->
+<h3 id="mapeamento-gray"><span class="heading-number">6.2.5</span> Mapeamento Gray</h3>
+<p>Em alta SNR, erros quase sempre cruzam a fronteira mais próxima no plano complexo. Para minimizar o número de bits errados por erro de símbolo, usa-se <strong>mapeamento Gray</strong>: pontos vizinhos diferem em exatamente um bit. Em QAM retangular com $L$ níveis por eixo, cada eixo usa mapeamento Gray independente: os $m = \log_2 L$ bits mais significativos determinam a região (metade superior/inferior, esquerda/direita), e os menos significativos refinam.</p>
+<!-- slides: end-columns -->
+<h2 id="constelações-qam--geometria-completa"><span class="heading-number">6.3</span> Constelações QAM — Geometria Completa</h2>
+<h3 id="qam-quadrada-estrutura-geral"><span class="heading-number">6.3.1</span> QAM quadrada: estrutura geral</h3>
+<p>A maioria das aplicações práticas usa QAM <strong>quadrada</strong>, onde $M = L^2$ e ambos os eixos I e Q usam o mesmo conjunto de níveis. O conjunto de níveis é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathcal{A} = \{\pm d, \pm 3d, \pm 5d, \ldots, \pm(L-1)d\}},
+
+$$
+</div>
+
+<p>com $L = \sqrt{M}$ níveis ímpares equidistantes, separados por $2d$. A distância mínima entre pontos adjacentes no mesmo eixo é $2d$.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo 4-QAM (QPSK)</strong>: $L=2$, níveis $\{\pm d\}$. Pontos: $(\pm d, \pm d)$. Energia média $E_s = \frac{1}{4}\sum_{k=1}^4 (d^2 + d^2) = d^2$.</p></aside>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo 16-QAM</strong>: $L=4$, níveis $\{\pm d, \pm 3d\}$. Pontos: $(\pm d \pm jd), (\pm 3d \pm jd), (\pm d \pm j3d), (\pm 3d \pm j3d)$.</p></aside>
+<h3 id="distância-mínima-entre-pontos"><span class="heading-number">6.3.2</span> Distância mínima entre pontos</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema da distância mínima</strong>: Para QAM retangular com $L_I$ níveis no eixo I e $L_Q$ níveis no eixo Q, a distância mínima entre quaisquer dois pontos da constelação é:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{d_{\min} = 2d},
+
+$$
+</div>
+
+<p>onde $d$ é a meia-distância entre níveis adjacentes no mesmo eixo. A distância é constante porque os pontos formam uma grade retangular ortogonal.</p>
+<p><strong>Dedução</strong>: Sejam dois pontos arbitrários $x_a = I_a + jQ_a$ e $x_b = I_b + jQ_b$, com $I_a, I_b \in \mathcal{A}_I$ e $Q_a, Q_b \in \mathcal{A}_Q$. A distância é $|x_a - x_b| = \sqrt{(I_a-I_b)^2 + (Q_a-Q_b)^2}$. Os valores possíveis de $|I_a-I_b|$ são $0, 2d, 4d, \ldots$ e idem para Q. O mínimo não-nulo ocorre quando um componente é $2d$ e o outro é $0$: $d_{\min} = \sqrt{(2d)^2 + 0} = 2d$.</p>
+<p>Para QAM quadrada $M=L^2$ com $L$ ímpar:</p>
+
+<div class="math-display">
+$$
+
+\boxed{d_{\min} = \frac{2d_{\max}}{L-1}},
+
+$$
+</div>
+
+<p>onde $d_{\max} = (L-1)d$ é a coordenada máxima. Se normalizarmos $E_s = 1$ (energia média por símbolo unitária), veremos na próxima subseção como isso determina $d_{\min}$.</p>
+<h3 id="energia-média-e-normalização"><span class="heading-number">6.3.3</span> Energia média e normalização</h3>
+<p><strong>Dedução da energia média</strong>: Para a QAM quadrada usual, $M=L^2$, $L$ é par e os níveis de cada eixo são</p>
+
+<div class="math-display">
+$$
+a_i=(2i-L+1)d,\qquad i=0,\ldots,L-1.
+$$
+</div>
+
+<p>Por exemplo, $L=4$ fornece $\{-3d,-d,d,3d\}$. Como os níveis são equiprováveis e $\sum_{i=0}^{L-1}(2i-L+1)^2=L(L^2-1)/3$,</p>
+
+<div class="math-display">
+$$
+
+E[I^2]=\frac{d^2}{L}\sum_{i=0}^{L-1}(2i-L+1)^2
+=\frac{L^2-1}{3}d^2=\frac{M-1}{3}d^2.
+
+$$
+</div>
+
+<p>Os eixos I e Q têm a mesma energia. Portanto, o resultado <strong>exato</strong> é</p>
+
+<div class="math-display">
+$$
+
+\boxed{E_s = \frac{2}{3}(M-1)d^2}.
+
+$$
+</div>
+
+<p><strong>Normalização a $E_s = 1$</strong>: Para normalizar a constelação de modo que a energia média seja unitária:</p>
+
+<div class="math-display">
+$$
+
+d = \sqrt{\frac{3}{2(M-1)}}.
+
+$$
+</div>
+
+<p>E a distância mínima é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{d_{\min} = 2\sqrt{\frac{3}{2(M-1)}} = \sqrt{\frac{6}{M-1}}}.
+
+$$
+</div>
+
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema (penalidade de ordem)</strong>: Para $E_s$ fixo, $d_{\min}$ <strong>diminui</strong> como $1/\sqrt{M-1}$. Ao comparar ordens em termos de $E_b/N_0$, deve-se também usar $E_s=E_b\log_2M$; a penalidade é obtida da expressão de BER da Seção “DEDUÇÃO da BER para QAM retangular”, e não de $10\log_{10}M$ isoladamente.</p></aside>
+<h3 id="constelações-não-retangulares"><span class="heading-number">6.3.4</span> Constelações não-retangulares</h3>
+<p><strong>8-QAM</strong>: Não existe uma configuração retangular $M_I \times M_Q$ que produza $M=8$ (pois 8 não é produto de dois inteiros ímpares). As constelações 8-QAM não-retangulares têm pontos dispostos em círculos ou padrões hexagonais, mas são menos eficientes que 16-QAM em termos de $d_{\min}/\sqrt{E_s}$. Por isso, a indústria pula de 4 para 16-QAM.</p>
+<p><strong>32-QAM</strong>: $M = 4 \times 8$ (retangular não-quadrada), ou $32$-APSK (4 círculos). Menos comum que 16 e 64.</p>
+<p><strong>64-QAM</strong>: $L=8$, níveis $\{\pm d, \pm 3d, \pm 5d, \pm 7d\}$. $E_s = \frac{2}{3}(63)d^2 = 42d^2$. Normalizado: $d = \sqrt{\frac{3}{126}} = \sqrt{\frac{1}{42}}$.</p>
+<p><strong>128-QAM</strong>: $L \approx 11{,}3$ (não-quadrada), geralmente implementada como 128-APSK em satélites.</p>
+<p><strong>256-QAM</strong>: $L=16$, níveis $\{\pm d, \pm 3d, \ldots, \pm 15d\}$. $E_s = \frac{2}{3}(255)d^2$. Usada em 5G e Wi-Fi 6.</p>
+<h3 id="exercício-em-python-visualização-de-constelações"><span class="heading-number">6.3.5</span> Exercício em Python: visualização de constelações</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">make_qam_levels</span><span style="color: #F8F8F2">(L):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Retorna os L níveis para QAM retangular (L ímpar ou par).&quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">L</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">i</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(L)])</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3.8</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">M,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[(</span><span style="color: #AE81FF">16</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">64</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">256</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">])]:</span>
+    <span style="color: #F8F8F2">L</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M))</span>
+    <span style="color: #F8F8F2">levels</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">make_qam_levels(L)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># normaliza Es=1</span>
+    <span style="color: #F8F8F2">I,</span> <span style="color: #F8F8F2">Q</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">meshgrid(levels,</span> <span style="color: #F8F8F2">levels)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(I,</span> <span style="color: #F8F8F2">Q,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">30</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#1e3a5f&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">edgecolors</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#fff&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidths</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(aspect</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">xlim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.1</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">ylim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.1</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">M</span><span style="color: #E6DB74">}-QAM: {</span><span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M))</span><span style="color: #E6DB74">} bits/simbolo&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mmake_qam_levels[39m(L):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="probabilidade-de-erro--dedução-completa"><span class="heading-number">6.4</span> Probabilidade de Erro — Dedução Completa</h2>
+<h3 id="a-função-q-e-a-probabilidade-de-erro-pam"><span class="heading-number">6.4.1</span> A função Q e a probabilidade de erro PAM</h3>
+<p>A <strong>função Q</strong> é definida como a cauda direita da distribuição normal padrão:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Q(x) = \frac{1}{\sqrt{2\pi}}\int_x^{\infty} e^{-t^2/2}\,dt = \frac{1}{2}\operatorname{erfc}\!\left(\frac{x}{\sqrt{2}}\right)}.
+
+$$
+</div>
+
+<p><strong>Relação com erfc</strong>: A função erro complementar é $\operatorname{erfc}(x) = \frac{2}{\sqrt{\pi}}\int_x^{\infty}e^{-t^2}dt$. Fazendo $t = u/\sqrt{2}$, obtém-se $\operatorname{erfc}(x) = 2Q(x\sqrt{2})$.</p>
+<p>Para um canal AWGN com ruído $n\sim\mathcal N(0,\sigma^2)$, a probabilidade de cruzar a fronteira situada no ponto médio de dois vizinhos separados por distância $D$ é $Q(D/(2\sigma))$. Como aqui $D=2d$ e $\sigma^2=N_0/2$ por dimensão, o argumento é $d/\sigma$.</p>
+<h3 id="ber-do-pam-m-ary-resultados-conhecidos"><span class="heading-number">6.4.2</span> BER do PAM M-ary (resultados conhecidos)</h3>
+<p>Considere PAM com $M$ níveis equidistantes separados por $2d$. A probabilidade de erro de símbolo é:</p>
+
+<div class="math-display">
+$$
+
+P_s^{\text{PAM}} = 2\frac{M-1}{M}Q\!\left(\frac{d}{\sigma}\right) = 2\frac{M-1}{M}Q\!\left(\sqrt{\frac{6\log_2M}{M^2-1}\frac{E_b}{N_0}}\right).
+
+$$
+</div>
+
+<p>O fator $\frac{M-1}{M}$ surge porque pontos internos têm dois vizinhos, mas são $\frac{M-2}{M}$ dos pontos; pontos de borda têm um vizinho e são $\frac{2}{M}$. O BER (bits errados) é aproximado por:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_b^{\text{PAM}} \approx \frac{2(M-1)}{M\log_2 M}\,Q\!\left(\sqrt{\frac{6\log_2 M}{M^2-1}\frac{E_b}{N_0}}\right)}.
+
+$$
+</div>
+
+<h3 id="dedução-da-ber-para-qam-retangular"><span class="heading-number">6.4.3</span> DEDUÇÃO da BER para QAM retangular</h3>
+<p><strong>Passo 1: Separação I/Q</strong>. QAM retangular pode ser vista como <strong>duas PAM ortogonais independentes</strong>. A decisão no eixo I não depende da decisão no eixo Q, e vice-versa. Cada eixo usa $L = \sqrt{M}$ níveis (para QAM quadrada).</p>
+<p><strong>Passo 2: probabilidade de cruzar uma fronteira por eixo</strong>. Há $L-1$ fronteiras e $L$ níveis equiprováveis. Como a meia-distância é $d$ e $\sigma^2=N_0/2$,</p>
+
+<div class="math-display">
+$$
+
+p_{\rm eixo}=2\left(1-\frac1L\right)Q\!\left(\frac d\sigma\right).
+
+$$
+</div>
+
+<p>Da Seção “Energia média e normalização”, $d^2=3E_s/[2(M-1)]$. Com $E_s=(\log_2M)E_b$,</p>
+
+<div class="math-display">
+$$
+
+\frac d\sigma=\sqrt{\frac{3\log_2M}{M-1}\frac{E_b}{N_0}}.
+
+$$
+</div>
+
+<p><strong>Passo 3: converter erros de símbolo em erros de bit</strong>. Com Gray e SNR suficientemente alta, uma travessia para o vizinho mais próximo altera um único bit. Como cada símbolo leva $k=\log_2M$ bits, $P_b\approx 2p_{\rm eixo}/k$: o fator 2 conta os dois eixos. Essa é uma aproximação de vizinho mais próximo, não uma igualdade para toda SNR.</p>
+<p><strong>Passo 4: Expressão final em erfc</strong>. Substituindo $E_s = E_b\log_2 M$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_b^{\text{QAM}} \approx \frac{2}{\log_2 M}\!\left(1-\frac{1}{\sqrt M}\right)\operatorname{erfc}\!\left(\sqrt{\frac{3\log_2 M}{2(M-1)}\frac{E_b}{N_0}}\right)}.
+
+$$
+</div>
+
+<p><strong>Forma alternativa com função Q</strong> (mais comum):</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_b^{\text{QAM}} \approx \frac{4}{\log_2 M}\!\left(1-\frac{1}{\sqrt{M}}\right)Q\!\left(\sqrt{\frac{3\log_2 M}{M-1}\frac{E_b}{N_0}}\right)}.
+
+$$
+</div>
+
+<p>Esta é a expressão padrão para BER de QAM retangular em AWGN com mapeamento Gray.</p>
+<p><strong>Verificação para 4-QAM (QPSK)</strong>: $M=4$, $\log_2 M=2$, $\sqrt{M}=2$:</p>
+
+<div class="math-display">
+$$
+
+P_b = \frac{4}{2}\!\left(1-\frac{1}{2}\right)Q\!\left(\sqrt{\frac{3\cdot 2}{3}\frac{E_b}{N_0}}\right) = Q\!\left(\sqrt{2\frac{E_b}{N_0}}\right).
+
+$$
+</div>
+
+<p>Resultado idêntico ao BPSK/QPSK — consistente, pois 4-QAM é geometricamente equivalente a QPSK.</p>
+<h3 id="aproximação-para-m-grande"><span class="heading-number">6.4.4</span> Aproximação para M grande</h3>
+<p>Para $M$ grande, $1-1/\sqrt M\approx1$. A aproximação mais usada é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_b \approx \frac{4}{\log_2 M}\,Q\!\left(\sqrt{\frac{3\log_2 M}{M-1}\frac{E_b}{N_0}}\right)}.
+
+$$
+</div>
+
+<p>Essa aproximação preserva a dependência essencial: aumentar $M$ reduz a distância normalizada entre vizinhos e exige maior $E_b/N_0$ para a mesma BER.</p>
+<h3 id="comparativo-qam-vs-psk"><span class="heading-number">6.4.5</span> Comparativo QAM vs PSK</h3>
+<aside class="callout callout-result" role="status"><p><strong>Resultado comparativo</strong>: Para mesma eficiência espectral $\eta = \log_2 M$ bit/s/Hz:</p></aside>
+<ul>
+<li>16-QAM vs 16-PSK: 16-QAM é superior por ~3–4 dB em BER a $10^{-6}$. A razão é que 16-QAM tem pontos com distâncias variadas (cantos mais distantes do centro) e melhor aproveitamento da energia para alta ordem.</li>
+<li>64-QAM vs 64-PSK: vantagem ~5 dB a favor de QAM.</li>
+<li>256-QAM vs 256-PSK: vantagem ~6–7 dB.</li>
+</ul>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: A vantagem de QAM sobre PSK cresce com $M$, mas QAM exige amplificadores mais lineares (PAPR maior) e é mais sensível a imperfeições de fase e amplitude.</p></aside>
+<h3 id="ser-probabilidade-de-erro-de-símbolo"><span class="heading-number">6.4.6</span> SER (Probabilidade de Erro de Símbolo)</h3>
+<p>A probabilidade de erro de símbolo (não de bit) é:</p>
+
+<div class="math-display">
+$$
+
+P_s = 1 - (1-p_{\text{eixo}})^2,
+\qquad
+p_{\text{eixo}}=2\!\left(1-\frac1{\sqrt M}\right)Q\!\left(\sqrt{\frac{3\log_2 M}{M-1}\frac{E_b}{N_0}}\right).
+
+$$
+</div>
+
+<p>A aproximação usa $1-(1-p)^2 \approx 2p$ para $p$ pequeno (alta SNR). Note que $P_s \approx \log_2 M \cdot P_b$ por mapeamento Gray.</p>
+<h3 id="exercício-em-python-ber-monte-carlo-de-qam"><span class="heading-number">6.4.7</span> Exercício em Python: BER Monte Carlo de QAM</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_qam_theory</span><span style="color: #F8F8F2">(M,</span> <span style="color: #F8F8F2">eb_n0_linear):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;BER analítica aproximada para QAM retangular.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M)</span>
+    <span style="color: #F8F8F2">sqrt_M</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M)</span>
+    <span style="color: #F8F8F2">arg</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">3</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">eb_n0_linear</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">prefactor</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">sqrt_M)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">prefactor</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(arg</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_qam_mc</span><span style="color: #F8F8F2">(M,</span> <span style="color: #F8F8F2">eb_n0_dbs,</span> <span style="color: #F8F8F2">n_sym</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">200_000</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Monte Carlo para BER de QAM com Gray.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">L</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M))</span>
+    <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M))</span>
+    <span style="color: #F8F8F2">scale</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># Es = 1</span>
+    <span style="color: #F8F8F2">levels</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">L</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">i</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(L)])</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">scale</span>
+    
+    <span style="color: #F8F8F2">eb_n0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(eb_n0_dbs)</span>
+    <span style="color: #F8F8F2">berrs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">eb_n0:</span>
+        <span style="color: #959077"># Sorteie índices de amplitude e rotule cada eixo em Gray.</span>
+        <span style="color: #959077"># Índices adjacentes i e i+1 têm rótulos i^(i&gt;&gt;1) que diferem em 1 bit.</span>
+        <span style="color: #F8F8F2">m_axis</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span>
+        <span style="color: #F8F8F2">idxI</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">L,</span> <span style="color: #F8F8F2">n_sym)</span>
+        <span style="color: #F8F8F2">idxQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">L,</span> <span style="color: #F8F8F2">n_sym)</span>
+        <span style="color: #F8F8F2">labelI</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">idxI</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">(idxI</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">labelQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">idxQ</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">(idxQ</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">bitsI</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack([(labelI</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #F8F8F2">b)</span> <span style="color: #FF4689">&amp;</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(m_axis)])</span>
+        <span style="color: #F8F8F2">bitsQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack([(labelQ</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #F8F8F2">b)</span> <span style="color: #FF4689">&amp;</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(m_axis)])</span>
+        <span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack((bitsI,</span> <span style="color: #F8F8F2">bitsQ))</span>
+        <span style="color: #F8F8F2">xi,</span> <span style="color: #F8F8F2">xq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">levels[idxI],</span> <span style="color: #F8F8F2">levels[idxQ]</span>
+        <span style="color: #F8F8F2">x</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">xi</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xq</span>
+        <span style="color: #959077"># Adicionar ruido AWGN</span>
+        <span style="color: #959077"># Use base de ponto flutuante. Com ``db`` do NumPy, ``10**db`` pode</span>
+        <span style="color: #959077"># sofrer overflow inteiro a partir de valores altos de Eb/N0.</span>
+        <span style="color: #F8F8F2">gamma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10.0</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10.0</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">gamma))</span>
+        <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">x</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(n_sym)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(n_sym))</span>
+        <span style="color: #959077"># Decisao: projetar nos niveis mais proximos</span>
+        <span style="color: #F8F8F2">yI</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">clip(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rint((y</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">scale</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">L</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int),</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">L</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">yQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">clip(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rint((y</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">scale</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">L</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int),</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">L</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #959077"># Rotule os índices decididos com o mesmo Gray de cada eixo.</span>
+        <span style="color: #F8F8F2">yLabelI</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">yI</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">(yI</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">yLabelQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">yQ</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">(yQ</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">ybitsI</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack([(yLabelI</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #F8F8F2">b)</span> <span style="color: #FF4689">&amp;</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(m_axis)])</span>
+        <span style="color: #F8F8F2">ybitsQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack([(yLabelQ</span> <span style="color: #FF4689">&gt;&gt;</span> <span style="color: #F8F8F2">b)</span> <span style="color: #FF4689">&amp;</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(m_axis)])</span>
+        <span style="color: #F8F8F2">ybits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack((ybitsI,</span> <span style="color: #F8F8F2">ybitsQ))</span>
+        <span style="color: #F8F8F2">ber</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(ybits</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">bits)</span>
+        <span style="color: #F8F8F2">berrs</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(ber)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(berrs)</span>
+
+<span style="color: #F8F8F2">eb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">22</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">M,</span> <span style="color: #F8F8F2">lbl,</span> <span style="color: #F8F8F2">mk</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[(</span><span style="color: #AE81FF">16</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;16-QAM&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;o&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">64</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;64-QAM&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;s&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">256</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;256-QAM&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;^&#39;</span><span style="color: #F8F8F2">)]:</span>
+    <span style="color: #F8F8F2">mc</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">ber_qam_mc(M,</span> <span style="color: #F8F8F2">eb)</span>
+    <span style="color: #F8F8F2">th</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[ber_qam_theory(M,</span> <span style="color: #AE81FF">10.0</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10.0</span><span style="color: #F8F8F2">))</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">eb]</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">mc,</span> <span style="color: #F8F8F2">mk,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">M</span><span style="color: #E6DB74">}-QAM MC&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">th,</span> <span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">M</span><span style="color: #E6DB74">}-QAM teoria&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #AE81FF">1e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1e-1</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;BER de QAM retangular em AWGN&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="detecção-coerente-de-qam"><span class="heading-number">6.5</span> Detecção Coerente de QAM</h2>
+<h3 id="estrutura-do-receptor-coerente"><span class="heading-number">6.5.1</span> Estrutura do receptor coerente</h3>
+<p>O receptor coerente de QAM recupera os símbolos I e Q usando correladores ortogonais. Após o canal AWGN, o sinal recebido é:</p>
+
+<div class="math-display">
+$$
+
+r(t) = s(t) + n(t),
+
+$$
+</div>
+
+<p>onde $n(t)$ é ruído branco gaussiano com densidade espectral $N_0/2$.</p>
+<h3 id="dedução-do-correlador-iq"><span class="heading-number">6.5.2</span> Dedução do correlador I/Q</h3>
+<p>Para recuperar $I_k$ e $Q_k$, projetamos $r(t)$ nas bases ortogonais $g_I(t)$ e $g_Q(t)$:</p>
+
+<div class="math-display">
+$$
+
+r_I = \int_{kT_s}^{(k+1)T_s} r(t)\,g_I(t)\,dt = I_k + n_I,
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+r_Q = \int_{kT_s}^{(k+1)T_s} r(t)\,g_Q(t)\,dt = Q_k + n_Q.
+
+$$
+</div>
+
+<p><strong>Dedução dos ruídos projetados</strong>: $n_I = \int n(t)g_I(t)dt$ e $n_Q = \int n(t)g_Q(t)dt$ são variáveis gaussianas independentes $\mathcal{N}(0, N_0/2)$ por ortogonalidade e linearidade.</p>
+<p><strong>Recebemos</strong>: $\mathbf{r} = \mathbf{x}_k + \mathbf{n}$, onde $\mathbf{r} = (r_I, r_Q)$, $\mathbf{x}_k = (I_k, Q_k)$, e $\mathbf{n} \sim \mathcal{N}(0, \frac{N_0}{2}\mathbf{I}_2)$.</p>
+<h3 id="decisão-ml--regra-de-decisão-de-máxima-verossimilhança"><span class="heading-number">6.5.3</span> Decisão ML — regra de decisão de máxima verossimilhança</h3>
+<p>O detector de máxima verossimilhança escolhe o símbolo $\hat{x}_k$ que maximiza a densidade de probabilidade condicional $p(\mathbf{r}|\mathbf{x}_k)$. Como o ruído é gaussiano:</p>
+
+<div class="math-display">
+$$
+
+p(\mathbf{r}|\mathbf{x}_k) = \frac{1}{\pi N_0}\exp\!\left(-\frac{|\mathbf{r} - \mathbf{x}_k|^2}{N_0}\right).
+
+$$
+</div>
+
+<p>Maximizar esta probabilidade é equivalente a minimizar a distância euclidiana:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\hat{\mathbf{x}}_k = \arg\min_{m} \|\mathbf{r} - \mathbf{x}_m\|^2}.
+
+$$
+</div>
+
+<p><strong>Decisão separada por eixo</strong>: Para QAM retangular, a minimização se separa:</p>
+
+<div class="math-display">
+$$
+
+\hat{I}_k = \arg\min_{I \in \mathcal{A}} (r_I - I)^2, \qquad \hat{Q}_k = \arg\min_{Q \in \mathcal{A}} (r_Q - Q)^2.
+
+$$
+</div>
+
+<p>Ou seja: projetamos cada componente no conjunto de níveis e escolhemos o mais próximo. Isso é <strong>ótimo</strong> para QAM retangular, pois as regiões de Voronoi são retângulos alinhados com os eixos.</p>
+<h3 id="regiões-de-decisão-de-voronoi"><span class="heading-number">6.5.4</span> Regiões de decisão de Voronoi</h3>
+<p>Para cada ponto da constelação $\mathbf{x}_m$, a <strong>região de decisão de Voronoi</strong> $\mathcal{V}_m$ é o conjunto de pontos no plano $\mathbb{R}^2$ mais próximos de $\mathbf{x}_m$ do que de qualquer outro ponto da constelação:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathcal{V}_m = \{\mathbf{r} \in \mathbb{R}^2 : \|\mathbf{r} - \mathbf{x}_m\| \leq \|\mathbf{r} - \mathbf{x}_n\|,\ \forall n \neq m\}}.
+
+$$
+</div>
+
+<p>Para QAM retangular:</p>
+<ul>
+<li>Pontos internos: região retangular $2d \times 2d$.</li>
+<li>Pontos de borda: região semi-aberta (metade da largura em uma direção).</li>
+<li>Pontos de canto: região quadrante (um quarto do retângulo).</li>
+</ul>
+<p>A probabilidade de erro de símbolo é:</p>
+
+<div class="math-display">
+$$
+
+P_s = \sum_{m}\frac{1}{M}\Pr(\mathbf{r} \notin \mathcal{V}_m|\mathbf{x}_m) = 1 - \frac{1}{M}\sum_{m}\Pr(\mathbf{r} \in \mathcal{V}_m|\mathbf{x}_m).
+
+$$
+</div>
+
+<p>Para alta SNR, apenas vizinhos mais próximos contam, e recuperamos a expressão de BER da Seção “Probabilidade de Erro — Dedução Completa”.</p>
+<h3 id="efeito-de-erro-de-fase"><span class="heading-number">6.5.5</span> Efeito de erro de fase</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova da perda de SNR por erro de fase $\phi$</strong>:</p></aside>
+<p>Considere erro de estimação de fase: o receptor usa $\cos(2\pi f_c t + \phi)$ e $-\sin(2\pi f_c t + \phi)$ em vez das bases corretas. A projeção do símbolo $x_k = I_k + jQ_k$ nas bases erradas produz:</p>
+
+<div class="math-display">
+$$
+
+r_I' = I_k\cos\phi + Q_k\sin\phi + n_I',
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+r_Q' = -I_k\sin\phi + Q_k\cos\phi + n_Q'.
+
+$$
+</div>
+
+<p>Em forma matricial: $\begin{pmatrix} r_I' \\ r_Q' \end{pmatrix} = \begin{pmatrix} \cos\phi &amp; \sin\phi \\ -\sin\phi &amp; \cos\phi \end{pmatrix}\begin{pmatrix} I_k \\ Q_k \end{pmatrix} + \mathbf{n}'$.</p>
+<p>A matriz de rotação $R(\phi)$ é ortogonal (preserva normas), então <strong>a distância entre pontos não muda</strong>. Porém, a grade retangular é rotacionada em relação aos eixos de decisão do receptor.</p>
+<p>Para um símbolo no eixo I puro ($I_k=d$, $Q_k=0$), a projeção no eixo I do receptor é $r_I' = d\cos\phi$. A componente &quot;vazada&quot; para Q é $r_Q' = -d\sin\phi$.</p>
+<p>A SNR efetiva no eixo de decisão é reduzida por:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{eff}} = \text{SNR} \cdot \cos^2\phi}.
+
+$$
+</div>
+
+<p>Em dB: perda de $-10\log_{10}(\cos^2\phi) \approx 4{,}34\phi^2$ dB para $\phi$ pequeno (em radianos).</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo</strong>: $\phi = 5^\circ \approx 0{,}087$ rad $\Rightarrow \cos^2\phi \approx 0{,}9924 \Rightarrow$ perda de ~0,034 dB (negligível). $\phi = 15^\circ \Rightarrow$ perda de ~0,35 dB. $\phi = 30^\circ \Rightarrow$ perda de 1,76 dB.</p></aside>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: O erro de frequência (diferença $\Delta f$ entre o oscilador do receptor e do transmissor) causa uma rotação <strong>contínua</strong> da constelação: $\phi(t) = 2\pi\Delta f\, t$. Isso é inaceitável em QAM de ordem alta, pois a constelação gira continuamente, cruzando fronteiras de decisão.</p></aside>
+<h3 id="exercício-em-python-erro-de-fase-na-constelação"><span class="heading-number">6.5.6</span> Exercício em Python: erro de fase na constelação</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">M</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">16</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">L</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M))</span>
+<span style="color: #F8F8F2">levels</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">L</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">i</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(L)])</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">I,</span> <span style="color: #F8F8F2">Q</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">meshgrid(levels,</span> <span style="color: #F8F8F2">levels)</span>
+<span style="color: #F8F8F2">x_clean</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">I</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Q</span>
+
+<span style="color: #F8F8F2">angles</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3.5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">ax,</span> <span style="color: #F8F8F2">phi</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(axes,</span> <span style="color: #F8F8F2">angles):</span>
+    <span style="color: #F8F8F2">phi_rad</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">deg2rad(phi)</span>
+    <span style="color: #959077"># Rotação da constelacao + ruido</span>
+    <span style="color: #F8F8F2">x_rot</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">x_clean</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">phi_rad)</span>
+    <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">4</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)))</span>  <span style="color: #959077"># Es/N0 = 12 dB</span>
+    <span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(x_clean))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(x_clean)))</span>
+    <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">x_rot</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(y</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">y</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#1e3a5f&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(x_clean</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">x_clean</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">marker</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;x&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(aspect</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">xlim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">ylim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Erro de fase: {</span><span style="color: #F8F8F2">phi</span><span style="color: #E6DB74">} deg</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">(perda ~{</span><span style="color: #AE81FF">4.34</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">phi</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #E6DB74">:.2f} dB)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m rng = np.random.default_rng([32m7[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="estimação-de-canal-e-sincronismo"><span class="heading-number">6.6</span> Estimação de Canal e Sincronismo</h2>
+<h3 id="pilotos-e-estimação-de-canal"><span class="heading-number">6.6.1</span> Pilotos e estimação de canal</h3>
+<p>Em sistemas práticos, o canal introduce ganho complexo $H = |H|e^{j\phi}$ e possivelmente dispersão. Para QAM de banda estreita (canal plano), o receptor estima $H$ a partir de símbolos piloto conhecidos:</p>
+
+<div class="math-display">
+$$
+
+\hat{H} = \frac{r_p}{x_p},
+
+$$
+</div>
+
+<p>onde $x_p$ é o símbolo piloto transmitido e $r_p$ é a recepção correspondente. O canal estimado é então usado para compensação: $\hat{x}_k = r_k / \hat{H}$.</p>
+<p><strong>Pilotos inseridos</strong>: símbolos conhecidos são intercalados com dados na constelação. Em OFDM (Seção “Lista de Exercícios Propostos”), pilotos são colocados em subportadoras específicas.</p>
+<h3 id="algoritmo-cma-constant-modulus-algorithm"><span class="heading-number">6.6.2</span> Algoritmo CMA (Constant Modulus Algorithm)</h3>
+<p>O CMA é um equalizador adaptativo sem necessidade de sequência de treinamento. <strong>Definição</strong>: minimiza o custo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{J(\mathbf{w}) = \mathbb{E}\bigl[|y_n|^2 - R\bigr]^2},
+
+$$
+</div>
+
+<p>onde $y_n = \mathbf{w}^H\mathbf{x}_n$ é a saída do equalizador e $R = \mathbb{E}[|x_k|^4]/\mathbb{E}[|x_k|^2]$ é a constante de módulo.</p>
+<p><strong>Atualização por gradiente estocástico</strong>:</p>
+
+<div class="math-display">
+$$
+
+\mathbf{w}_{n+1} = \mathbf{w}_n - \mu\nabla_{\mathbf{w}}J|_{\mathbf{w}_n} = \mathbf{w}_n + 2\mu\bigl(R - |y_n|^2\bigr)y_n^*\mathbf{x}_n.
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: O CMA converge para uma solução que preserva a constelação (amplitude constante) mas <strong>não</strong> corrige rotação de fase. Para QAM (amplitudes variadas), o CMA puro não é ideal — variações como CMA-modificado ou algoritmos baseados em decisão são preferidos.</p></aside>
+<h3 id="estimativa-de-fase"><span class="heading-number">6.6.3</span> Estimativa de fase</h3>
+<p>Para QPSK, o algoritmo de <strong>Viterbi-Viterbi</strong> estima e remove a fase: eleva o sinal à potência $M$ (remove a modulação), média, recupera a fase e divide por $M$. Para QAM, adaptações são necessárias pois a constelação não tem amplitude constante.</p>
+<h3 id="pll-costas-modificado-para-qam"><span class="heading-number">6.6.4</span> PLL Costas modificado para QAM</h3>
+<p>O <em>Costas loop</em> original é para PSK. Para QAM, usa-se uma versão modificada que explora a simetria da constelação: o sinal de erro de fase é gerado a partir dos resíduos após decisão, com ganho adaptativo.</p>
+<h3 id="equalização-adaptativa-lms-e-rls"><span class="heading-number">6.6.5</span> Equalização adaptativa: LMS e RLS</h3>
+<p><strong>Algoritmo LMS</strong> (Least Mean Squares):</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf{w}_{n+1} = \mathbf{w}_n + 2\mu\,e_n\,\mathbf{x}_n},
+
+$$
+</div>
+
+<p>onde $e_n = d_n - \mathbf{w}_n^H\mathbf{x}_n$ é o erro de estimação e $\mu$ é o passo de adaptação. Convergência se $0 &lt; \mu &lt; \frac{2}{\lambda_{\max}}$, onde $\lambda_{\max}$ é o maior autovalor da matriz de autocorrelação da entrada.</p>
+<p><strong>Algoritmo RLS</strong> (Recursive Least Squares): minimiza a soma ponderada dos erros quadráticos com fator de esquecimento $\lambda \in (0,1]$. Complexidade $O(N^2)$ vs LMS $O(N)$, mas converge muito mais rápido.</p>
+<h2 id="qam-em-prática--aplicações-e-trade-offs"><span class="heading-number">6.7</span> QAM em Prática — Aplicações e Trade-offs</h2>
+<h3 id="adslvdsl"><span class="heading-number">6.7.1</span> ADSL/VDSL</h3>
+<p>ADSL2+ usa QAM até 15-QAM (na prática 16-QAM) nos subcanais de banda. VDSL2 usa até 34-QAM (32-QAM) com taxa de até 100 Mb/s. A escolha da ordem QAM por subportadora depende do SNR medido em cada banda.</p>
+<h3 id="wi-fi-80211acax"><span class="heading-number">6.7.2</span> Wi-Fi (802.11ac/ax)</h3>
+<p>802.11ac (Wi-Fi 5) suporta até <strong>256-QAM</strong> (8 bits/símbolo), proporcionando 10,7 bit/s/Hz por stream. 802.11ax (Wi-Fi 6) mantém 256-QAM mas melhora eficiência com OFDMA e MU-MIMO. A seleção de MCS (Modulation and Coding Scheme) é adaptativa: o AP mede SNR e seleciona a ordem QAM mais alta que mantém BER &lt; $10^{-6}$.</p>
+<h3 id="5g-nr"><span class="heading-number">6.7.3</span> 5G NR</h3>
+<p>5G NR suporta até <strong>256-QAM</strong> (downlink) e até 64-QAM (uplink), com até 6 camadas MIMO. Com 100 MHz de banda e 256-QAM, taxas de pico excedem 3 Gb/s.</p>
+<h3 id="cable-modems-docsis-3140"><span class="heading-number">6.7.4</span> Cable Modems (DOCSIS 3.1/4.0)</h3>
+<p>DOCSIS 3.1 suporta até <strong>4096-QAM</strong> (12 bits/simbolo) em banda larga, com taxa de ~1 Gb/s. DOCSIS 4.0 estende até ~2 GHz, permitindo mais canais.</p>
+<h3 id="satélites"><span class="heading-number">6.7.5</span> Satélites</h3>
+<p>Satélites preferem <strong>APSK</strong> (Amplitude Phase Shift Keying) sobre QAM retangular: 8-APSK, 16-APSK, 32-APSK (DVB-S2X). APSK tem PAPR menor que QAM retangular da mesma ordem, o que é crucial para amplificadores de potência de satélite (que operam próximos da saturação para eficiência máxima).</p>
+<h3 id="trade-offs-práticos"><span class="heading-number">6.7.6</span> Trade-offs práticos</h3>
+<table>
+<thead>
+<tr>
+<th>Fator</th>
+<th>Efeito</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PAPR</strong></td>
+<td>QAM retangular tem PAPR alto $\sim 10\log_{10}(\sqrt{M})$ dB. Exige back-off do PA.</td>
+</tr>
+<tr>
+<td><strong>Linearidade do PA</strong></td>
+<td>Maior ordem QAM exige PA mais linear → menor eficiência.</td>
+</tr>
+<tr>
+<td><strong>EVM</strong></td>
+<td>EVM de receptor deve ser $&lt; \frac{d_{\min}}{2}$ para BER aceitável.</td>
+</tr>
+<tr>
+<td><strong>Erro de fase</strong></td>
+<td>QAM de ordem alta é mais sensível; exige PLL de baixa fase.</td>
+</tr>
+<tr>
+<td><strong>Canal freq-seletivo</strong></td>
+<td>Requer equalização ou OFDM.</td>
+</tr>
+<tr>
+<td><strong>Overhead de pilots</strong></td>
+<td>Mais pilotos → menor eficiência espectral efetiva.</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: Em sistemas reais, a ordem QAM é <strong>adaptativa</strong> (AMC — Adaptive Modulation and Coding). O transmissor ajusta M baseado na estimativa de canal, maximizando a taxa de dados mantendo BER dentro da tolerância.</p></aside>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">6.8</span> Exercícios resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">6.8.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> validar normalização, regiões ML, mapeamento Gray e BER de QAM. <strong>Normalização:</strong> imponha $\mathbb E[|s|^2]=1$ antes de adicionar ruído e documente a variância complexa. <strong>Validação:</strong> compare SER/BER simuladas com teoria e reporte número de bits, erros e incerteza.</p>
+<h3 id="exercício-1-constelações-qam-1664256-com-decisão-voronoi"><span class="heading-number">6.8.2</span> Exercício 1: Constelações QAM 16/64/256 com decisão Voronoi</h3>
+<p>Simule a transmissão de símbolos QAM através de AWGN, visualize as constelações recebidas para diferentes SNRs e verifique as regiões de decisão Voronoi.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">2026</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">constell_qam</span><span style="color: #F8F8F2">(M,</span> <span style="color: #F8F8F2">n_sym</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">5000</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">L</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M))</span>
+    <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M))</span>
+    <span style="color: #F8F8F2">levels</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">L</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">i</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(L)])</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(n_sym,</span> <span style="color: #F8F8F2">k))</span>
+    <span style="color: #F8F8F2">gray</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">bits</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">k):</span>
+        <span style="color: #F8F8F2">gray[:,</span> <span style="color: #F8F8F2">b]</span> <span style="color: #FF4689">^=</span> <span style="color: #F8F8F2">gray[:,</span> <span style="color: #F8F8F2">b</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span>
+    <span style="color: #F8F8F2">gI,</span> <span style="color: #F8F8F2">gQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">gray[:,</span> <span style="color: #F8F8F2">:m],</span> <span style="color: #F8F8F2">gray[:,</span> <span style="color: #F8F8F2">m:]</span>
+    <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">idxI,</span> <span style="color: #F8F8F2">idxQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(gI</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">w)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int),</span> <span style="color: #F8F8F2">(gQ</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">w)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+    <span style="color: #F8F8F2">xi,</span> <span style="color: #F8F8F2">xq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">levels[idxI],</span> <span style="color: #F8F8F2">levels[idxQ]</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">xi,</span> <span style="color: #F8F8F2">xq,</span> <span style="color: #F8F8F2">levels</span>
+
+<span style="color: #F8F8F2">snrs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">18</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">ax,</span> <span style="color: #F8F8F2">snr</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(axes,</span> <span style="color: #F8F8F2">snrs):</span>
+    <span style="color: #F8F8F2">xi,</span> <span style="color: #F8F8F2">xq,</span> <span style="color: #F8F8F2">levels</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">constell_qam(</span><span style="color: #AE81FF">64</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">x</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">xi</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xq</span>
+    <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">6</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(snr</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)))</span>
+    <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">x</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(x))</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(x)))</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(y</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">y</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#0f4c75&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(x</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">x</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">marker</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;x&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.4</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">lv</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">levels:</span>
+        <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(lv,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;blue&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(lv,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;blue&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(aspect</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">xlim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">ylim</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;64-QAM, Eb/N0 = {</span><span style="color: #F8F8F2">snr</span><span style="color: #E6DB74">} dB&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m rng = np.random.default_rng([32m2026[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-2-ber-de-16-qam-vs-16-psk-vs-bpsk"><span class="heading-number">6.8.3</span> Exercício 2: BER de 16-QAM vs 16-PSK vs BPSK</h3>
+<p>Compare o BER de 16-QAM, 16-PSK e BPSK em função de $E_b/N_0$. Note que 16-QAM tem 4 bits/símbolo e 16-PSK também, enquanto BPSK tem 1 bit/símbolo.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_16qam</span><span style="color: #F8F8F2">(ebn0_db):</span>
+    <span style="color: #F8F8F2">M</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">16</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">k</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">g</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(ebn0_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">4</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M))</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">6</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">g</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_16psk</span><span style="color: #F8F8F2">(ebn0_db):</span>
+    <span style="color: #F8F8F2">M</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">16</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">g</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(ebn0_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #959077"># Aproximacao: P_s ~ 2Q(sqrt(2*Es/N0*sin^2(pi/M)))</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">g</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sin(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">M)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_bpsk</span><span style="color: #F8F8F2">(ebn0_db):</span>
+    <span style="color: #F8F8F2">g</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(ebn0_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(g))</span>
+
+<span style="color: #F8F8F2">eb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">ber_16qam(eb),</span> <span style="color: #E6DB74">&#39;o-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;16-QAM (4 bit/simb)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">ber_16psk(eb),</span> <span style="color: #E6DB74">&#39;s--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;16-PSK (4 bit/simb)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">ber_bpsk(eb),</span> <span style="color: #E6DB74">&#39;^:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BPSK (1 bit/simb)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #AE81FF">1e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Comparativo BER: 16-QAM vs 16-PSK vs BPSK&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-3-efeito-de-erro-de-fase-no-ber-de-qam"><span class="heading-number">6.8.4</span> Exercício 3: Efeito de erro de fase no BER de QAM</h3>
+<p>Quantifique a perda de BER causada por erro de fase fixo em 16-QAM.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #F8F8F2">M</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">16</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span>
+<span style="color: #F8F8F2">eb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">phases</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">20</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">phi</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">phases:</span>
+    <span style="color: #F8F8F2">phi_rad</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">deg2rad(phi)</span>
+    <span style="color: #F8F8F2">g</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(eb</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">arg</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">6</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">g</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phi_rad)</span>
+    <span style="color: #F8F8F2">ber</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M))</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(arg</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">loss_db</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phi_rad)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">ber,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">fr&#39;$\phi$={</span><span style="color: #F8F8F2">phi</span><span style="color: #E6DB74">}$^\circ$ (perda {</span><span style="color: #F8F8F2">loss_db</span><span style="color: #E6DB74">:.2f} dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #AE81FF">1e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1e-1</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;BER de 16-QAM com erro de fase fixo&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-4-eficiência-espectral-vs-ber-para-m-qam"><span class="heading-number">6.8.5</span> Exercício 4: Eficiência espectral vs BER para M-QAM</h3>
+<p>Visualize a relação entre ordem QAM, eficiência espectral e BER.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #F8F8F2">M_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">16</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">64</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">256</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1024</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">target_ber</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-3</span>
+<span style="color: #F8F8F2">eb_dbs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">M</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">M_vals:</span>
+    <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log2(M)</span>
+    <span style="color: #F8F8F2">g</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(eb_dbs</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">arg</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">6</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">g</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(M</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">ber</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(M))</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(arg</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb_dbs,</span> <span style="color: #F8F8F2">ber,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">M</span><span style="color: #E6DB74">}-QAM ({</span><span style="color: #F8F8F2">k</span><span style="color: #E6DB74">} bit/s/Hz)&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(target_ber,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;BER alvo = {</span><span style="color: #F8F8F2">target_ber</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #AE81FF">1e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;BER de QAM retangular: eficiencia espectral vs SNR&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">6.9</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1</strong> (Geometria de constelação). Para 16-QAM com $d=1$, calcule a energia média $E_s$, a distância mínima $d_{\min}$ e o fator de normalização para $E_s=1$. Repita para 64-QAM e 256-QAM.</p>
+<p><strong>E2</strong> (Dedução da distância mínima). Prove que para QAM retangular com $L_I \neq L_Q$, a distância mínima é $d_{\min} = \min(2d_I, 2d_Q)$, onde $d_I$ e $d_Q$ são as meias-distâncias nos eixos I e Q, respectivamente.</p>
+<p><strong>E3</strong> (Energia normalizada). Mostre que para $E_s$ fixo, a relação entre $d_{\min}$ e $M$ em QAM quadrada é $d_{\min} = \sqrt{6/(M-1)}$. Use isso para calcular a perda em dB de $d_{\min}$ ao passar de QPSK ($M=4$) para 16-QAM ($M=16$) mantendo $E_s$ constante.</p>
+<p><strong>E4</strong> (BER de 64-QAM). Use a expressão aproximada de BER para 64-QAM e calcule o BER para $E_b/N_0 = 15$ dB. Compare com o valor para 16-QAM ao mesmo $E_b/N_0$.</p>
+<p><strong>E5</strong> (Comparativo QAM vs PSK). Para $M=16$, $32$, $64$, calcule numericamente a diferença de $E_b/N_0$ necessária para atingir BER $=10^{-6}$. Use a expressão QAM da Seção “DEDUÇÃO da BER para QAM retangular” e $P_s^{\text{PSK}}\approx2Q\left(\sqrt{2E_s/N_0}\sin(\pi/M)\right)$, declarando a aproximação usada para converter SER em BER.</p>
+<p><strong>E6</strong> (Decisão Voronoi). Dada uma constelação 16-QAM normalizada, escreva as regiões de Voronoi para: (a) um ponto de canto, (b) um ponto de borda, (c) um ponto interno. Esboce graficamente.</p>
+<p><strong>E7</strong> (Perda por erro de fase). Prove que para erro de fase pequeno $\phi$, a perda de SNR em dB é $10\log_{10}(\cos^2\phi) \approx -4{,}34\phi^2$. Calcule a perda para $\phi = 2^\circ$, $5^\circ$, $10^\circ$.</p>
+<p><strong>E8</strong> (CMA). Derive a atualização do algoritmo CMA a partir da minimização de $J(\mathbf{w}) = \mathbb{E}[|y_n|^2-R]^2$ usando gradiente estocástico. Explique o papel da constante de módulo $R$ e por que ela depende da constelação.</p>
+<p><strong>E9</strong> (Trade-off prático). Em um sistema Wi-Fi 802.11ac com 80 MHz de banda, 4 streams MIMO, e 256-QAM, calcule a taxa máxima teórica (ignorando overhead). Se o SNR cai a ponto de exigir 64-QAM, qual é a nova taxa? E com 16-QAM?</p>
+<p><strong>E10</strong> (SER vs BER). Mostre que para QAM quadrada com Gray, $P_s = 1 - (1-P_b^{\text{eixo}})^2$. Para alta SNR, aproxime $P_s \approx 2P_b^{\text{eixo}}$ e use isso para recuperar a expressão de BER.</p>
+<p><strong>E11</strong> (QAM retangular não-quadrada). Considere 32-QAM retangular como $4 \times 8$. Calcule $d_{\min}$, $E_s$ e BER aproximada. Compare com 32-PSK.</p>
+<p><strong>E12</strong> (Constante de módulo CMA). Para QPSK, verifique que $R = \mathbb{E}[|x_k|^4]/\mathbb{E}[|x_k|^2] = 1$ (com $E_s=1$). Para 16-QAM, calcule $R$ numericamente e explique por que o CMA puro é menos adequado para QAM que para PSK.</p>
+<h2 id="gabarito"><span class="heading-number">6.10</span> Gabarito</h2>
+<p><strong>E1.</strong> 16-QAM: $d=1 \Rightarrow E_s = \frac{2}{3}(15)\cdot 1 = 10$. $d_{\min} = 2$. Normalizado: $d_{\text{norm}} = 1/\sqrt{10}$, $d_{\min,\text{norm}} = 2/\sqrt{10} = \sqrt{2/5}$. 64-QAM: $E_s = \frac{2}{3}(63) = 42$. 256-QAM: $E_s = \frac{2}{3}(255) = 170$.</p>
+<p><strong>E2.</strong> Em QAM retangular, pontos diferem por múltiplos inteiros de $2d_I$ no eixo I e $2d_Q$ no eixo Q. A distância mínima é o menor deslocamento entre pontos vizinhos, que é $\min(2d_I, 2d_Q)$ quando um eixo não se move e o outro move uma única vez.</p>
+<p><strong>E3.</strong> $d_{\min} = \sqrt{6/(M-1)}$. Para QPSK: $d_{\min} = \sqrt{2}$. Para 16-QAM: $d_{\min} = \sqrt{6/15} = \sqrt{0{,}4}$. Logo, à mesma $E_s$, a razão entre os quadrados das distâncias é $2/0{,}4=5$, ou $10\log_{10}(5)\approx7{,}0$ dB. Isso não é diretamente uma perda em $E_b/N_0$, pois $E_s=E_b\log_2M$ muda com $M$.</p>
+<p><strong>E4.</strong> Para 64-QAM a 15 dB, $k=6$ e $\gamma_b=31{,}62$: $x=\sqrt{3k\gamma_b/(M-1)}=\sqrt{18\cdot31{,}62/63}\approx3{,}01$. Assim, $P_b\approx(4/6)(1-1/8)Q(x)\approx\boxed{7{,}6\times10^{-4}}$. Para 16-QAM, $x=\sqrt{12\cdot31{,}62/15}\approx5{,}03$ e $P_b\approx\boxed{1{,}8\times10^{-7}}$. A ordem maior oferece mais bits por símbolo, mas exige mais $E_b/N_0$ para a mesma BER.</p>
+<p><strong>E5.</strong> Aproximações numéricas: $M=16$: QAM $\sim$13,5 dB, PSK $\sim$17 dB (diff ~3,5 dB). $M=32$: QAM $\sim$15,5 dB, PSK $\sim$19,5 dB (diff ~4 dB). $M=64$: QAM $\sim$17 dB, PSK $\sim$22 dB (diff ~5 dB).</p>
+<p><strong>E6.</strong> (a) Canto: região quadrante, delimitada por retas perpendiculares bissetrizes dos lados adjacentes. (b) Bordas: região semi-aberta. (c) Interno: retângulo $2d\times2d$.</p>
+<p><strong>E7.</strong> $\cos^2\phi \approx 1-\phi^2 \Rightarrow 10\log_{10}(1-\phi^2) \approx -4{,}34\phi^2$. $\phi=2^\circ=0{,}0349$ rad: perda $\approx 0{,}0053$ dB. $\phi=5^\circ=0{,}0873$: perda $\approx 0{,}033$ dB. $\phi=10^\circ=0{,}1745$: perda $\approx 0{,}132$ dB.</p>
+<p><strong>E8.</strong> $\nabla_{\mathbf{w}}J = \nabla_{\mathbf{w}}\mathbb{E}[(|y_n|^2-R)^2] = 2\mathbb{E}[(|y_n|^2-R)y_n^*\mathbf{x}_n]$. Estima por amostra: $\mathbf{w}_{n+1} = \mathbf{w}_n + 2\mu(R-|y_n|^2)y_n^*\mathbf{x}_n$. A constante $R = \mathbb{E}[|x|^4]/\mathbb{E}[|x|^2]$ depende da constelação: para QPSK $R=1$ (amplitude constante), para 16-QAM $R \approx 1{,}9$ (amplitudes variadas).</p>
+<p><strong>E9.</strong> 256-QAM: $8$ bit/símbolo × $80\times10^6/2$ símbolos/s (Nyquist) × $4$ streams ≈ $1{,}28$ Gb/s (ideal, sem coding). 64-QAM: $6\times$ taxa $= 0{,}96$ Gb/s. 16-QAM: $4\times = 0{,}64$ Gb/s. Com FEC (rate 3/4) e overhead (~25%), taxas efetivas: ~0,72, ~0,54, ~0,36 Gb/s.</p>
+<p><strong>E10.</strong> $P_s = 1-(1-p)^2 = 2p-p^2 \approx 2p$ para $p \ll 1$. Com Gray, $P_b \approx P_s/\log_2 M$, logo $P_b \approx 2p/\log_2 M = 2P_b^{\text{eixo}}/\log_2 M$.</p>
+<p><strong>E11.</strong> 4×8: eixo I com 4 níveis ($d_I$), eixo Q com 8 níveis ($d_Q$). $d_{\min} = \min(2d_I, 2d_Q)$. $E_s = \frac{d_I^2(4^2-1)}{3} + \frac{d_Q^2(8^2-1)}{3}$. A BER total é a média ponderada pelos números de bits atribuídos a cada eixo.</p>
+<p><strong>E12.</strong> QPSK: $|x_k|=1$ sempre, $\mathbb{E}[|x|^4]=1$, $\mathbb{E}[|x|^2]=1$, $R=1$. 16-QAM: níveis normalizados, $\mathbb{E}[|x|^2]=1$, $\mathbb{E}[|x|^4] = \frac{1}{16}\sum_{m=1}^{16}|x_m|^4 \approx 1{,}9$. CMA busca amplitude constante, então para QAM (amplitudes variadas) o erro residual é maior — por isso CMA é mais adequado para PSK.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="05_digital_passband_ask_psk_fsk.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">5. Transmissão Digital em Banda Passante: ASK, PSK e FSK</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="07_equalizacao.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">7. Equalização — Compensação da Dispersão do Canal</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

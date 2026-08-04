@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12. Blindagem — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>12. Blindagem</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>12. Blindagem</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="11_emissoes_radiadas_suscetibilidade.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">11. Emissões radiadas e suscetibilidade</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="13_simulacao_numerica_emc_fdtl_tlm.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">13. Simulação numérica de EMC: FDTD e TLM</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>12. Blindagem</h1>
+<p>Blindagem é a redução do acoplamento eletromagnético por uma barreira. Seu desempenho depende do campo incidente, material, espessura, frequência, geometria e, sobretudo, de aberturas e junções. Uma caixa metálica não corrige automaticamente uma fonte ou caminho de retorno mal projetado.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#efic%C3%A1cia-de-blindagem">Eficácia de blindagem</a></li>
+<li><a href="#fontes-de-campo-distante">Fontes de campo distante</a></li>
+<li><a href="#campo-pr%C3%B3ximo-el%C3%A9trico-e-magn%C3%A9tico">Campo próximo elétrico e magnético</a></li>
+<li><a href="#aberturas-e-descontinuidades">Aberturas e descontinuidades</a></li>
+<li><a href="#cabos-e-conectores">Cabos e conectores</a></li>
+<li><a href="#resson%C3%A2ncias-de-cavidade">Ressonâncias de cavidade</a></li>
+<li><a href="#blindagem-como-problema-de-sistema">Blindagem como problema de sistema</a></li>
+<li><a href="#exemplo-resolvido--absor%C3%A7%C3%A3o">Exemplo resolvido — Absorção</a></li>
+<li><a href="#exemplo-resolvido--indut%C3%A2ncia-de-pigtail">Exemplo resolvido — Indutância de pigtail</a></li>
+<li><a href="#insight-o-ponto-fraco-domina">Insight: o ponto fraco domina</a></li>
+<li><a href="#baixa-frequ%C3%AAncia-magn%C3%A9tica">Baixa frequência magnética</a></li>
+<li><a href="#exerc%C3%ADcios">Exercícios</a></li>
+<li><a href="#respostas-selecionadas">Respostas selecionadas</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--efic%C3%A1cia-de-blindagem-vs-espessura">Exemplo numérico adicional — Eficácia de blindagem vs. espessura</a></li>
+<li><a href="#c%C3%B3digo-python--efic%C3%A1cia-de-blindagem-por-absor%C3%A7%C3%A3o-vs-frequ%C3%AAncia">Código Python — Eficácia de blindagem por absorção vs. frequência</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--efic%C3%A1cia-total-de-blindagem-com-aberturas">Exemplo numérico adicional — Eficácia total de blindagem com aberturas</a></li>
+<li><a href="#resson%C3%A2ncias-de-cavidade-retangular">Ressonâncias de cavidade retangular</a></li>
+<li><a href="#aberturas-limite-dominante">Aberturas: limite dominante</a></li>
+<li><a href="#c%C3%B3digo-python--absor%C3%A7%C3%A3o-abertura-e-limite-do-conjunto">Código Python — absorção, abertura e limite do conjunto</a></li>
+<li><a href="#campo-magn%C3%A9tico-de-baixa-frequ%C3%AAncia">Campo magnético de baixa frequência</a></li>
+<li><a href="#refer%C3%AAncia-principal">Referência principal</a></li>
+</ol></nav>
+<h2 id="eficácia-de-blindagem"><span class="heading-number">12.1</span> Eficácia de blindagem</h2>
+<h3 id="os-três-mecanismos-de-blindagem"><span class="heading-number">12.1.1</span> Os três mecanismos de blindagem</h3>
+<p>A eficácia pode ser expressa por campo elétrico, magnético ou potência:</p>
+
+<div class="math-display">
+$$
+SE_E=20\log_{10}\frac{|E_i|}{|E_t|},\qquad
+SE_H=20\log_{10}\frac{|H_i|}{|H_t|},
+$$
+</div>
+
+
+<div class="math-display">
+$$
+SE_P=10\log_{10}\frac{P_i}{P_t}.
+$$
+</div>
+
+<p>É essencial declarar a grandeza, posição e configuração. Em uma parede plana ideal, costuma-se decompor</p>
+
+<div class="math-display">
+$$
+SE\approx R+A+B,
+$$
+</div>
+
+<p>onde $R$ é perda por reflexão, $A$ por absorção e $B$ corrige múltiplas reflexões internas.</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: A reflexão ($R$) domina para campos elétricos e ondas de campo distante porque há grande descasamento de impedância entre o ar ($377\ \Omega$) e o metal ($\approx0\ \Omega$). A absorção ($A$) domina para campos magnéticos de baixa frequência e materiais de alta permeabilidade. As aberturas e fendas frequentemente tornam $SE$ muito menor que $R+A+B$.</p>
+</blockquote>
+<h2 id="fontes-de-campo-distante"><span class="heading-number">12.2</span> Fontes de campo distante</h2>
+<p>No campo distante, a onda apresenta impedância aproximadamente igual à do meio. A reflexão resulta do grande descasamento entre ar e material condutor. A absorção cresce com a espessura $t$ em relação à profundidade pelicular:</p>
+
+<div class="math-display">
+$$
+\delta=\sqrt{\frac{2}{\omega\mu\sigma}},\qquad
+A_{dB}=8{,}686\frac{t}{\delta}.
+$$
+</div>
+
+<p>Boa condutividade favorece reflexão; alta permeabilidade e espessura favorecem absorção magnética. Quando $A$ é grande, múltiplas reflexões internas tornam-se desprezíveis.</p>
+<h3 id="prova-da-perda-por-absorção"><span class="heading-number">12.2.1</span> Prova da perda por absorção</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong>: Em material bom condutor e onda plana, a amplitude do campo decai exponencialmente com a profundidade:</p></aside>
+
+<div class="math-display">
+$$
+|E(z)|=|E(0)|e^{-z/\delta}.
+$$
+</div>
+
+<p>Portanto, a perda por absorção de uma espessura $t$ é</p>
+
+<div class="math-display">
+$$
+A_{dB}=20\log_{10}(e^{t/\delta})=8{,}686\frac{t}{\delta}.
+$$
+</div>
+
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: Em bom condutor, a constante de propagação é aproximadamente $\gamma=(1+j)/\delta$. O fator espacial é $e^{-\gamma z}$; seu módulo é $e^{-z/\delta}$. A conversão para decibéis fornece $20(t/\delta)\log_{10}e$. $\square$</p></aside>
+<aside class="callout callout-theorem" role="note"><p><strong>Corolário</strong>: Cada profundidade pelicular acrescenta aproximadamente 8,686 dB de absorção de amplitude, sem incluir reflexão, aberturas ou juntas.</p></aside>
+<h2 id="campo-próximo-elétrico-e-magnético"><span class="heading-number">12.3</span> Campo próximo elétrico e magnético</h2>
+<p>No campo próximo, a impedância da onda depende da fonte. Uma fonte predominantemente elétrica tem alta $|E/H|$ e costuma ser bem atenuada por materiais condutores finos. Uma fonte magnética de baixa frequência tem baixa $|E/H|$; reflexão é menor e a profundidade pelicular é grande, tornando a blindagem mais difícil.</p>
+<p>A primeira mitigação para campo magnético próximo é reduzir área de laço, aproximar ida e retorno e aumentar distância. Se uma blindagem for necessária, materiais de alta permeabilidade desviam fluxo em baixa frequência; materiais condutores espessos produzem correntes opostas quando a frequência permite.</p>
+<h2 id="aberturas-e-descontinuidades"><span class="heading-number">12.4</span> Aberturas e descontinuidades</h2>
+<p>O desempenho real geralmente é limitado por fendas, ventilação, displays, portas, parafusos e penetrações de cabos. A maior dimensão da abertura importa mais que sua área total. Uma fenda longa pode irradiar como antena mesmo sendo estreita.</p>
+<p>Medidas práticas:</p>
+<ul>
+<li>usar muitas aberturas pequenas em vez de uma longa;</li>
+<li>reduzir espaçamento entre pontos de contato;</li>
+<li>manter continuidade elétrica em juntas, removendo tinta isolante onde apropriado;</li>
+<li>usar gaxetas compatíveis com material, ambiente e corrosão;</li>
+<li>empregar estruturas abaixo do corte, como colmeias ou guias, quando necessário;</li>
+<li>filtrar condutores ao atravessar a fronteira da blindagem.</li>
+</ul>
+<h2 id="cabos-e-conectores"><span class="heading-number">12.5</span> Cabos e conectores</h2>
+<p>A blindagem do cabo deve ser tratada como continuação da envolvente. Uma terminação circunferencial de 360° apresenta baixa indutância. Pigtails acrescentam aproximadamente $j\omega L$ e podem anular o benefício em alta frequência. Filtros e protetores devem ficar na penetração, evitando que corrente externa circule no interior antes de ser desviada.</p>
+<h2 id="ressonâncias-de-cavidade"><span class="heading-number">12.6</span> Ressonâncias de cavidade</h2>
+<p>Uma envolvente condutora pode sustentar modos ressonantes. Fontes internas e aberturas posicionadas em máximos de campo podem produzir acoplamento intenso. Absorvedores, mudanças geométricas, amortecimento, reposicionamento da fonte e redução da energia excitada podem ser mais eficazes que simplesmente aumentar a espessura da parede.</p>
+<h2 id="blindagem-como-problema-de-sistema"><span class="heading-number">12.7</span> Blindagem como problema de sistema</h2>
+<p>Uma estratégia consistente define uma fronteira EMC:</p>
+<ol>
+<li>onde correntes externas devem circular;</li>
+<li>onde cabos cruzam a fronteira;</li>
+<li>como suas blindagens são terminadas;</li>
+<li>onde filtros e supressores desviam corrente;</li>
+<li>como portas, juntas e ventilação mantêm continuidade;</li>
+<li>quais fontes internas ainda precisam ser reduzidas.</li>
+</ol>
+<h2 id="exemplo-resolvido--absorção"><span class="heading-number">12.8</span> Exemplo resolvido — Absorção</h2>
+<p>Para $t=100$ µm e $\delta=20$ µm:</p>
+
+<div class="math-display">
+$$
+A=8{,}686\frac{100}{20}=43{,}43\ \text{dB}.
+$$
+</div>
+
+<p>Esse resultado é da parede contínua ideal. Uma fenda pode limitar o gabinete a valor muito inferior.</p>
+<h2 id="exemplo-resolvido--indutância-de-pigtail"><span class="heading-number">12.9</span> Exemplo resolvido — Indutância de pigtail</h2>
+<p>Um pigtail apresenta 30 nH. A 100 MHz,</p>
+
+<div class="math-display">
+$$
+|Z|=2\pi fL=2\pi(10^8)(30\times10^{-9})=18{,}85\ \Omega.
+$$
+</div>
+
+<p>Uma conexão circunferencial curta pode reduzir essa impedância em ordens de grandeza, evitando que tensão de modo comum se desenvolva entre blindagem e chassi.</p>
+<h2 id="insight-o-ponto-fraco-domina"><span class="heading-number">12.10</span> Insight: o ponto fraco domina</h2>
+<p>Se a parede oferece 80 dB, mas a penetração de cabo oferece 25 dB, o sistema não oferece 105 dB nem uma média próxima de 52 dB. O caminho de menor atenuação tende a dominar. A eficácia total deve ser avaliada como rede de caminhos paralelos de acoplamento.</p>
+<h2 id="baixa-frequência-magnética"><span class="heading-number">12.11</span> Baixa frequência magnética</h2>
+<p>Para campos quase estáticos, reflexão em metal comum pode ser pequena. Há três estratégias distintas:</p>
+<ol>
+<li>reduzir o campo na fonte diminuindo área de laço e $di/dt$;</li>
+<li>aumentar distância;</li>
+<li>desviar fluxo com material de alta permeabilidade sem saturá-lo.</li>
+</ol>
+<p>Dobras, folgas e saturação local degradam materiais de alta permeabilidade. Propriedades após conformação podem diferir das propriedades de catálogo.</p>
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">12.12</span> Lista de Exercícios Propostos</h2>
+<p><strong>E.1</strong> Um material tem profundidade pelicular de 20 µm na frequência de interesse e espessura de 100 µm. Estime a perda por absorção.</p>
+<p><strong>E.2</strong> Explique por que uma fenda longa é problemática mesmo com pequena área.</p>
+<p><strong>E.3</strong> Compare blindagem de campo elétrico próximo e campo magnético próximo em baixa frequência.</p>
+<p><strong>E.4</strong> Por que um pigtail degrada a terminação de um cabo em RF?</p>
+<p><strong>E.5</strong> Defina uma fronteira EMC para um equipamento com alimentação, Ethernet e ventilação.</p>
+<p><strong>E.6</strong> Calcule a reatância de uma conexão de 10 nH a 30 MHz e 300 MHz.</p>
+<p><strong>E.7</strong> Uma parede ideal oferece 60 dB. Uma alteração dobra sua espessura em unidades de $\delta$. Quantos dB de absorção são acrescentados?</p>
+<p><strong>E.8</strong> Explique por que tinta, oxidação e poucos parafusos podem transformar uma junta curta em fenda eletricamente longa.</p>
+<h2 id="gabarito"><span class="heading-number">12.13</span> Gabarito</h2>
+<p><strong>E.1</strong> Perda por absorção para material com profundidade pelicular de 20 µm e espessura de 100 µm.</p>
+<p>Equação: $A=8{,}686\times(t/\delta)$.</p>
+<p>Com $t=100$ µm e $\delta=20$ µm: $t/\delta=100/20=5$.</p>
+<p>$A=8{,}686\times5=43{,}43$ dB.</p>
+<p>Resposta: $A=43{,}43$ dB.</p>
+<p><strong>E.6</strong> Reatância de conexão de 10 nH a 30 MHz e 300 MHz.</p>
+<p>Equação: $X_L=2\pi f L$.</p>
+<p>Para $f=30$ MHz: $X_{30\text{MHz}}=2\pi(3\times10^7)(10\times10^{-9})=2\pi\times0{,}3=1{,}88\ \Omega$.</p>
+<p>Para $f=300$ MHz: $X_{300\text{MHz}}=2\pi(3\times10^8)(10\times10^{-9})=2\pi\times3=18{,}85\ \Omega$.</p>
+<p>Resposta: $X_{30\text{MHz}}=1{,}88\ \Omega$; $X_{300\text{MHz}}=18{,}85\ \Omega$.</p>
+<p><strong>E.7</strong> Acréscimo de absorção quando espessura dobra em unidades de $\delta$.</p>
+<p>Cada profundidade pelicular adicional acrescenta 8,686 dB de absorção.</p>
+<p>Se a espessura dobra em unidades de $\delta$ (ou seja, aumenta de $n\delta$ para $(n+1)\delta$), o acréscimo é 8,686 dB.</p>
+<p>Resposta: O acréscimo de uma profundidade pelicular adicional acrescenta 8,686 dB de absorção.</p>
+<h2 id="exemplo-numérico-adicional--eficácia-de-blindagem-vs-espessura"><span class="heading-number">12.14</span> Exemplo numérico adicional — Eficácia de blindagem vs. espessura</h2>
+<p>Material: cobre, $\sigma=5.8\times10^7$ S/m, $\mu_r=1$.<br />
+Frequência: $f=100$ MHz.</p>
+<p>Profundidade pelicular: $\delta=\sqrt{2/(\omega\mu\sigma)}$<br />
+$\omega=2\pi\cdot10^8$, $\mu=4\pi\times10^{-7}$.<br />
+$\delta=\sqrt{2/(2\pi\cdot10^8\cdot4\pi\times10^{-7}\cdot5.8\times10^7)}$<br />
+$=\sqrt{2/(4.58\times10^9)}=\sqrt{4.37\times10^{-10}}=2.09\times10^{-5}$ m $=20.9$ µm.</p>
+<p>Para $t=100$ µm: $t/\delta=4.78$.<br />
+$A_{dB}=8.686\cdot4.78=41.5$ dB.</p>
+<h2 id="código-python--eficácia-de-blindagem-por-absorção-vs-frequência"><span class="heading-number">12.15</span> Código Python — Eficácia de blindagem por absorção vs. frequência</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Parâmetros do material (cobre)</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5.8e7</span>      <span style="color: #959077"># Condutividade (S/m)</span>
+<span style="color: #F8F8F2">mu_r</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+<span style="color: #F8F8F2">mu_0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e-7</span>
+
+<span style="color: #959077"># Faixa de frequência</span>
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 1 MHz a 1 GHz</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span>
+
+<span style="color: #959077"># Profundidade pelicular</span>
+<span style="color: #F8F8F2">delta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">mu_0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">mu_r</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">sigma))</span>
+
+<span style="color: #959077"># Espessura da blindagem</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100e-6</span>  <span style="color: #959077"># 100 µm</span>
+
+<span style="color: #959077"># Eficácia de absorção (dB)</span>
+<span style="color: #959077"># A_dB = 8.686 * t / delta</span>
+<span style="color: #F8F8F2">A_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">8.686</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">t</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">delta</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">A_dB,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Eficácia de Absorção (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Eficácia de Blindagem por Absorção vs Frequência (Cobre, t=100µm)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Parâmetros do material (cobre)[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="exemplo-numérico-adicional--eficácia-total-de-blindagem-com-aberturas"><span class="heading-number">12.16</span> Exemplo numérico adicional — Eficácia total de blindagem com aberturas</h2>
+<p><strong>Problema</strong>: Uma parede oferece $SE=80$ dB, mas uma penetração de cabo oferece $SE=25$ dB. Qual é a eficácia total aproximada do sistema?</p>
+<p><strong>Solução</strong>:</p>
+<p>A eficácia total não é a média nem a soma. O caminho de menor atenuação domina. Neste caso, a penetração de cabo com $SE=25$ dB torna-se o ponto fraco.</p>
+<p>Eficácia total aproximada: $SE_{total}\approx25$ dB (do caminho mais fraco).</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: Em blindagem, o sistema é tão forte quanto seu ponto mais fraco. Uma fenda de 1 cm pode reduzir uma blindagem de 80 dB para 20 dB. Sempre identifique e trate aberturas, penetrções de cabos, e juntas antes de otimizar a espessura da parede.</p>
+</blockquote>
+<h2 id="ressonâncias-de-cavidade-retangular"><span class="heading-number">12.17</span> Ressonâncias de cavidade retangular</h2>
+<p>Para uma cavidade ideal de dimensões $a$, $b$ e $d$, as frequências modais são</p>
+
+<div class="math-display">
+$$
+
+f_{mnp}=\frac{c}{2}\sqrt{\left(\frac ma\right)^2+
+\left(\frac nb\right)^2+\left(\frac pd\right)^2},
+
+$$
+</div>
+
+<p>com combinações permitidas conforme o modo TE ou TM. Uma caixa de $30\times20\times10$ cm possui escala modal mais baixa próxima de $c/(2a)\approx500$ MHz. Perdas, conteúdo interno e aberturas deslocam e amortecem os picos.</p>
+<h3 id="código-python--mapa-dos-modos-inferiores"><span class="heading-number">12.17.1</span> Código Python — mapa dos modos inferiores</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> itertools</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+
+<span style="color: #F8F8F2">c</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">299_792_458.0</span>
+<span style="color: #F8F8F2">a,</span> <span style="color: #F8F8F2">b,</span> <span style="color: #F8F8F2">d</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.30</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.10</span>
+<span style="color: #F8F8F2">modes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">m,</span> <span style="color: #F8F8F2">n,</span> <span style="color: #F8F8F2">p</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">itertools</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">product(range(</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">repeat</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">(m,</span> <span style="color: #F8F8F2">n,</span> <span style="color: #F8F8F2">p)</span> <span style="color: #FF4689">==</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">):</span>
+        <span style="color: #66D9EF">continue</span>
+    <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt((m</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">a)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(n</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">b)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(p</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">d)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">modes</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append((f,</span> <span style="color: #F8F8F2">m,</span> <span style="color: #F8F8F2">n,</span> <span style="color: #F8F8F2">p))</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">f,</span> <span style="color: #F8F8F2">m,</span> <span style="color: #F8F8F2">n,</span> <span style="color: #F8F8F2">p</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">sorted(modes)[:</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">]:</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;({</span><span style="color: #F8F8F2">m</span><span style="color: #E6DB74">}{</span><span style="color: #F8F8F2">n</span><span style="color: #E6DB74">}{</span><span style="color: #F8F8F2">p</span><span style="color: #E6DB74">}): {</span><span style="color: #F8F8F2">f</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e6</span><span style="color: #E6DB74">:7.1f} MHz&#39;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 2[39m
+[32m      1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mitertools[39;00m
+[32m----&gt; [39m[32m2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      4[39m c = [32m299_792_458.0[39m
+[32m      5[39m a, b, d = [32m0.30[39m, [32m0.20[39m, [32m0.10[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="aberturas-limite-dominante"><span class="heading-number">12.18</span> Aberturas: limite dominante</h2>
+<p>Uma abertura estreita de maior dimensão $l\ll\lambda$ pode ser triada por uma atenuação que cresce quando $\lambda/l$ cresce. Equações empíricas como $SE\approx20\log_{10}(\lambda/2l)$ dependem de geometria, incidência e regime; não devem ser usadas como prova de conformidade.</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Corolário — subdivisão de abertura.</strong> Mantida a área total de ventilação, muitas células pequenas normalmente apresentam frequência de corte maior que uma abertura única longa. O resultado real ainda depende de profundidade, contato elétrico e acoplamento entre células.</p></aside>
+<h3 id="exemplo-numérico--material-excelente-abertura-dominante"><span class="heading-number">12.18.1</span> Exemplo numérico — material excelente, abertura dominante</h3>
+<p>Uma folha de cobre pode oferecer absorção ideal superior a 100 dB em alta frequência, enquanto uma fenda de 10 cm em 1 GHz tem $l/\lambda\approx0{,}33$ e já não é eletricamente pequena. Somar “100 dB do material” a uma expressão de abertura é incorreto: os caminhos estão em paralelo e o vazamento dominante limita o conjunto.</p>
+<h2 id="código-python--absorção-abertura-e-limite-do-conjunto"><span class="heading-number">12.19</span> Código Python — absorção, abertura e limite do conjunto</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">mu0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-7</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5.8e7</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5e-3</span>
+<span style="color: #F8F8F2">l</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20e-3</span>
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">800</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">delta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">f</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">mu0</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">sigma))</span>
+<span style="color: #F8F8F2">A</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">8.686</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">delta</span>
+<span style="color: #F8F8F2">lam</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">299_792_458</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">f</span>
+<span style="color: #F8F8F2">SE_ap</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">maximum(lam</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">l),</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #959077"># Caminhos de vazamento em paralelo: somar transmissões de potência</span>
+<span style="color: #F8F8F2">T_material</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">A</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">T_aperture</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">SE_ap</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">SE_total</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(T_material</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">T_aperture)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">A,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;absorção da folha&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">SE_ap,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;triagem da abertura&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">SE_total,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;limite combinado&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">180</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;SE (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m mu0 = [32m4[39m*np.pi*[32m1e-7[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="campo-magnético-de-baixa-frequência"><span class="heading-number">12.20</span> Campo magnético de baixa frequência</h2>
+<p>Para campos magnéticos próximos, alta condutividade e pequena espessura podem ser insuficientes porque a absorção é pequena e a impedância da onda é baixa. Materiais de alta permeabilidade desviam fluxo, mas saturação, juntas e degradação por conformação devem entrar no modelo. Compare sempre densidade de fluxo máxima com a curva $B$–$H$ do material.</p>
+<h2 id="laboratório-spice--ressonâncias-de-cavidade"><span class="heading-number">12.21</span> Laboratório SPICE — ressonâncias de cavidade</h2>
+<p>Uma cavidade retangular pode ser modelada como um circuito RLC ressonante para cada modo. Para o modo fundamental, a impedância de entrada perto da ressonância é</p>
+
+<div class="math-display">
+$$
+Z_{in}=R+ j\omega L + \frac{1}{j\omega C},
+$$
+</div>
+
+<p>onde $R$ modela as perdas por condução nas paredes e por cargas internas.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">*</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Modelagem</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">de</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cavidade</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ressonante</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">como</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">circuito</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">RLC</span>
+<span style="color: #A6E22E">Lcav</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Ccav</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Rloss</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span>
+<span style="color: #A6E22E">Vin</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">meas</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">f_res</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">MAX</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">vp</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Neste modelo, $L_cav$ e $C_{cav}$ representam os parâmetros equivalentes do modo ressonante da cavidade, e $R_{loss}$ modela as perdas. A análise AC identifica a frequência de ressonância $f_{res}$ e a largura de banda, permitindo avaliar o Q-factor da cavidade:</p>
+
+<div class="math-display">
+$$
+Q=\frac{f_{res}}{\Delta f}=\frac{1}{R}\sqrt{\frac{L}{C}}.
+$$
+</div>
+
+<p>Para cavidades reais, as perdas incluem:</p>
+<ul>
+<li>perdas por condução nas paredes (profundidade pelicular);</li>
+<li>perdas por aberturas e penetrções;</li>
+<li>perdas por conteúdo interno (placas, componentes);</li>
+<li>perdas por absorvedores dielétricos ou magnéticos.</li>
+</ul>
+<p>O Q-factor elevado indica ressonâncias agudas que podem causar acoplamento intenso entre fontes internas e aberturas. Amortecimento com materiais absorvedores ou mudança geométrica reduz o Q e espalha as ressonâncias.</p>
+<h2 id="referência-principal"><span class="heading-number">12.22</span> Referência principal</h2>
+<p>Síntese do Capítulo 10, &quot;Shielding&quot;, de C. R. Paul, <em>Introduction to Electromagnetic Compatibility</em>, 2ª ed., Wiley, 2006, pp. 713–751.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="11_emissoes_radiadas_suscetibilidade.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">11. Emissões radiadas e suscetibilidade</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="13_simulacao_numerica_emc_fdtl_tlm.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">13. Simulação numérica de EMC: FDTD e TLM</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

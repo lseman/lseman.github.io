@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9. Códigos Corretores de Erros — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>9. Códigos Corretores de Erros</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>9. Códigos Corretores de Erros</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="08_sincronismo.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">8. Sincronismo</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><span class="disabled page-nav-next"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">Fim da obra</span></span><span class="page-nav-arrow">→</span></span></nav><div class="chapter"><h1>9. Códigos Corretores de Erros</h1>
+<blockquote>
+<p>Sistemas de Comunicações — Apostila de Curso<br />
+Tópicos: Codificação de Canal · Distância de Hamming · Códigos Lineares · Hamming · CRC · Códigos Convolucionais · Decodificação de Viterbi · Capacidade de Canal</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">9.1</span> Antes de começar</h2>
+<p>Ao final, você deve quantificar redundância, detectar e corrigir erros com distância de Hamming, construir códigos lineares simples e relacionar codificação, BER e capacidade de Shannon. <strong>Diagnóstico:</strong> acrescentar redundância sempre reduz a taxa útil do enlace? <strong>Evidência mínima:</strong> codificar e decodificar um bloco Hamming, injetar erros e comparar BER antes e depois da codificação.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#por-que-codificar">Por que codificar?</a></li>
+<li><a href="#dist%C3%A2ncia-de-hamming-e-capacidade-de-corre%C3%A7%C3%A3o">Distância de Hamming e capacidade de correção</a></li>
+<li><a href="#c%C3%B3digos-lineares-de-bloco">Códigos lineares de bloco</a></li>
+<li><a href="#c%C3%B3digo-de-hamming">Código de Hamming</a></li>
+<li><a href="#crc-detec%C3%A7%C3%A3o-de-erros">CRC: detecção de erros</a></li>
+<li><a href="#c%C3%B3digos-convolucionais-e-viterbi">Códigos convolucionais e Viterbi</a></li>
+<li><a href="#limite-de-shannon">Limite de Shannon</a></li>
+<li><a href="#experimentos-resolvidos-em-python">Experimentos Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+<li><a href="#s%C3%ADntese-e-roteiro-de-decis%C3%A3o">Síntese e roteiro de decisão</a></li>
+</ol></nav>
+<h2 id="por-que-codificar"><span class="heading-number">9.2</span> Por que codificar?</h2>
+<p>Um código corretor de erros adiciona redundância controlada à mensagem para que o receptor detecte ou corrija erros introduzidos pelo canal. Para $k$ bits de informação transformados em uma palavra de código de $n$ bits,</p>
+
+<div class="math-display">
+$$
+
+\boxed{R_c=\frac{k}{n}}
+
+$$
+</div>
+
+<p>é a taxa de código. A taxa útil do enlace diminui por um fator $R_c$, mas a confiabilidade pode melhorar tanto que a taxa líquida alcançável aumenta em canais ruidosos.</p>
+<!-- slides: break -->
+<h3 id="o-lugar-da-codificação-na-cadeia"><span class="heading-number">9.2.1</span> O lugar da codificação na cadeia</h3>
+<p>Não confunda três operações. A <strong>codificação de fonte</strong> remove redundância (compressão); a <strong>codificação de canal</strong> acrescenta redundância estruturada para combater erros; a <strong>modulação</strong> converte bits em formas de onda. Um arquivo pode ser comprimido, protegido e só então mapeado em QPSK.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo:</strong> Hamming $(7,4)$ produz 7 bits para cada 4 bits úteis. Se a saída do codificador opera a $7\,\mathrm{Mbit/s}$, a taxa de informação é</p></aside>
+
+<div class="math-display">
+$$
+R_{\mathrm{info}}=R_cR_b=\frac47\,7=4\,\mathrm{Mbit/s}.
+$$
+</div>
+
+<p>O custo imediato são 3 bits de redundância por bloco. O benefício possível é menor BER ou menor potência necessária. Comparações justas mantêm iguais a taxa útil, a largura de banda e a BER-alvo.</p>
+<h2 id="distância-de-hamming-e-capacidade-de-correção"><span class="heading-number">9.3</span> Distância de Hamming e capacidade de correção</h2>
+<p>A distância de Hamming $d_H(\mathbf c_1,\mathbf c_2)$ é o número de posições diferentes entre duas palavras binárias:</p>
+
+<div class="math-display">
+$$
+
+\boxed{d_H(\mathbf c_1,\mathbf c_2) = w_H(\mathbf c_1 \oplus \mathbf c_2)}
+
+$$
+</div>
+
+<p>onde $w_H(\mathbf x)$ é o peso de Hamming (número de 1s em $\mathbf x$). A distância mínima do código, $d_{min}$, determina sua capacidade:</p>
+
+<div class="math-display">
+$$
+
+\boxed{t=\left\lfloor\frac{d_{min}-1}{2}\right\rfloor}\quad\text{erros corrigíveis},
+\qquad
+\boxed{d_{min}-1}\quad\text{erros detectáveis}.
+
+$$
+</div>
+
+<p>Por exemplo, $d_{min}=3$ permite corrigir um erro ou detectar até dois erros, mas não garante ambas as operações simultaneamente para dois erros.</p>
+<h3 id="por-que-dividir-a-distância-por-dois"><span class="heading-number">9.3.1</span> Por que dividir a distância por dois?</h3>
+<p>Imagine cada palavra válida no centro de uma esfera com todos os vetores a até $t$ erros. Para a decisão pelo vizinho mais próximo ser inequívoca, duas esferas não podem se sobrepor. Como seus centros distam pelo menos $d_{min}$, precisamos de $2t &lt; d_{min}$.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo passo a passo:</strong> em $C=\{000,111\}$, $d_{min}=3$. Se $000$ chega como $010$, então</p></aside>
+
+<div class="math-display">
+$$
+d_H(010,000)=1,\qquad d_H(010,111)=2,
+$$
+</div>
+
+<p>e o receptor recupera $000$. Se dois bits mudarem e chegar $110$, o vizinho mais próximo será $111$: detectar dois erros não significa corrigi-los.</p>
+<p>Para um código linear, a diferença módulo 2 de duas palavras também é uma palavra. Logo,</p>
+
+<div class="math-display">
+$$
+\boxed{d_{min}=\min_{\mathbf c\ne\mathbf0}w_H(\mathbf c)},
+$$
+</div>
+
+<p>isto é, basta procurar o menor peso entre as palavras não nulas.</p>
+<h2 id="códigos-lineares-de-bloco"><span class="heading-number">9.4</span> Códigos lineares de bloco</h2>
+<p>Em um código linear binário $(n,k)$, as palavras de código formam um subespaço de dimensão $k$. A codificação pode ser escrita como</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf c=\mathbf uG\pmod 2},
+
+$$
+</div>
+
+<p>onde $\mathbf u$ é a palavra de informação (vetor-linha de dimensão $k$) e $G$ é a matriz geradora de dimensão $k\times n$. A matriz de paridade $H$ satisfaz</p>
+
+<div class="math-display">
+$$
+
+\boxed{H\mathbf c^T=\mathbf0\pmod2}.
+
+$$
+</div>
+
+<p>No receptor, a síndrome $\mathbf s=H\mathbf r^T$ vale zero para uma palavra válida. Em códigos de Hamming, cada síndrome não nula aponta diretamente a posição de um único erro.</p>
+<h3 id="dedução-por-que-a-síndrome-localiza-o-erro"><span class="heading-number">9.4.1</span> DEDUÇÃO: Por que a síndrome localiza o erro?</h3>
+<p>Aqui $\mathbf u$ e $\mathbf c$ são vetores-linha; $G$ mede $k\times n$, $H$ mede $(n-k)\times n$ e $GH^T=0$ em $GF(2)$. Nesse corpo, somar é fazer XOR.</p>
+<p>Se $\mathbf r=\mathbf c+\mathbf e$, então</p>
+
+<div class="math-display">
+$$
+\mathbf s=H\mathbf r^T=H\mathbf c^T+H\mathbf e^T=H\mathbf e^T.
+$$
+</div>
+
+<p>A síndrome depende do padrão de erro, não da mensagem. Para um erro único na posição $i$, $\mathbf e$ contém um único 1 e a síndrome é a coluna $i$ de $H$. Projetar $H$ com colunas binárias distintas permite identificar todas as posições.</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema da síndrome única:</strong> para um código de Hamming $(n,k)$ com $n=2^r-1$, $k=2^r-1-r$, a matriz $H$ tem todas as colunas não nulas de comprimento $r$ distintas. A síndrome $\mathbf s$ (vetor de $r$ bits) é exatamente o índice binário da posição do erro.</p></aside>
+<h2 id="código-de-hamming"><span class="heading-number">9.5</span> Código de Hamming</h2>
+<p>O código Hamming $(7,4)$ transforma quatro bits em sete e possui $d_{min}=3$, logo corrige um erro por palavra. As posições $1$, $2$ e $4$ são bits de paridade; as posições $3$, $5$, $6$ e $7$ transportam dados. Uma escolha de paridades pares é:</p>
+
+<div class="math-display">
+$$
+
+p_1=d_1\oplus d_2\oplus d_4,\quad
+p_2=d_1\oplus d_3\oplus d_4,\quad
+p_4=d_2\oplus d_3\oplus d_4.
+
+$$
+</div>
+
+<p>Se a síndrome em binário é $s_4s_2s_1$, ela fornece o índice do bit errado.</p>
+<h3 id="codificação-e-correção-passo-a-passo"><span class="heading-number">9.5.1</span> Codificação e correção passo a passo</h3>
+<p>Para $\mathbf d=(1,0,1,1)$, reserve as potências de dois para paridade:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Posição</th>
+<th style="text-align:right">1</th>
+<th style="text-align:right">2</th>
+<th style="text-align:right">3</th>
+<th style="text-align:right">4</th>
+<th style="text-align:right">5</th>
+<th style="text-align:right">6</th>
+<th style="text-align:right">7</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">Função</td>
+<td style="text-align:right">$p_1$</td>
+<td style="text-align:right">$p_2$</td>
+<td style="text-align:right">$d_1$</td>
+<td style="text-align:right">$p_4$</td>
+<td style="text-align:right">$d_2$</td>
+<td style="text-align:right">$d_3$</td>
+<td style="text-align:right">$d_4$</td>
+</tr>
+<tr>
+<td style="text-align:right">Valor</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>Por exemplo, $p_1=1\oplus0\oplus1=0$; calculando as demais paridades, obtemos $\mathbf c=(0,1,1,0,0,1,1)$.</p>
+<p>Se o quinto bit for invertido, chega $\mathbf r=(0,1,1,0,1,1,1)$. Recalculando:</p>
+
+<div class="math-display">
+$$
+s_1=r_1\oplus r_3\oplus r_5\oplus r_7=1,
+$$
+</div>
+
+
+<div class="math-display">
+$$
+s_2=r_2\oplus r_3\oplus r_6\oplus r_7=0,
+$$
+</div>
+
+
+<div class="math-display">
+$$
+s_4=r_4\oplus r_5\oplus r_6\oplus r_7=1.
+$$
+</div>
+
+<p>Assim, $s_4s_2s_1=101_2=5$: inverta a posição 5 e extraia os dados das posições 3, 5, 6 e 7.</p>
+<p><strong>Limitação:</strong> dois erros podem produzir uma síndrome que aponta uma terceira posição e causar correção indevida. Uma paridade global adicional forma um código SECDED, capaz de corrigir um erro e detectar dois.</p>
+<h3 id="códigos-secded-single-error-correction-double-error-detection"><span class="heading-number">9.5.2</span> Códigos SECDED (Single Error Correction, Double Error Detection)</h3>
+<p>Um código SECDED adiciona um bit de paridade global ao Hamming $(7,4)$, produzindo um código $(8,4)$ com $d_{min}=4$. A paridade global verifica se o número total de 1s é par.</p>
+<p>Com $d_{min}=4$:</p>
+<ul>
+<li>Corrige 1 erro ($t=\lfloor(4-1)/2\rfloor=1$)</li>
+<li>Detecta 2 erros (mas não corrige)</li>
+</ul>
+<p>O receptor calcula a síndrome local $s_4s_2s_1$ e a paridade global $p_g$. Se $p_g$ falha mas a síndrome é zero, há 2 erros. Se $p_g$ falha e a síndrome é não nula, há 1 erro na posição indicada pela síndrome.</p>
+<h2 id="crc-detecção-de-erros"><span class="heading-number">9.6</span> CRC: detecção de erros</h2>
+<p>O CRC representa uma sequência de bits como polinômio sobre $GF(2)$. O transmissor divide $x^rM(x)$ pelo polinômio gerador $g(x)$ e transmite a mensagem acrescida do resto. O receptor divide a palavra recebida por $g(x)$; resto não nulo indica erro.</p>
+<p>CRC é excelente para <strong>detecção</strong>, especialmente de rajadas, mas normalmente não corrige o bit errado. Em sistemas práticos, CRC é frequentemente combinado com ARQ ou com FEC.</p>
+<h3 id="dedução-divisão-polinomial-sem-mistério"><span class="heading-number">9.6.1</span> DEDUÇÃO: Divisão polinomial sem mistério</h3>
+<p>Considere $M=1101$ e $g=1011$, de grau 3. Acrescente três zeros a $M$ e divida $1101000$ por $1011$, usando XOR no lugar da subtração:</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">1101000</span></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>⊕ 1011    (g × x^3)
+-------
+  110000
+⊕ 1011    (g × x^2)
+-------
+  11100
+⊕ 1011    (g × x^1)
+-------
+  1010
+⊕ 1011    (g × x^0)
+-------
+   001</code></pre></div>
+
+<p>O resto é $001$, portanto transmite-se $1101001$. Ao dividir essa palavra por $1011$, o receptor obtém resto zero.</p>
+<h3 id="garantias-de-detecção-do-crc"><span class="heading-number">9.6.2</span> Garantias de detecção do CRC</h3>
+<p>Um resto não nulo revela erro, mas resto zero não é garantia absoluta: padrões que são múltiplos de $g(x)$ passam despercebidos. Todo CRC de grau $r$ detecta:</p>
+<ul>
+<li><strong>Todas as rajadas de comprimento $\leq r$</strong></li>
+<li><strong>Todas as rajadas de comprimento $r+1$ com probabilidade $1-2^{-(r-1)}$</strong></li>
+<li><strong>Todas as rajadas de comprimento $&gt; r+1$ com probabilidade $1-2^{-r}$</strong></li>
+</ul>
+<p>Isso ocorre porque uma rajada de comprimento $L$ corresponde a um polinômio da forma $x^i(x^{L-1}+x^{L-2}+\dots+1)$. Se $L \leq r$, este polinômio não pode ser múltiplo de $g(x)$ (grau $r$).</p>
+<h2 id="códigos-convolucionais-e-viterbi"><span class="heading-number">9.7</span> Códigos convolucionais e Viterbi</h2>
+<p>Um codificador convolucional possui memória: cada saída depende do bit atual e de bits anteriores. Sua taxa é dada por $R_c=k/n$; por exemplo, um codificador de taxa $1/2$ gera dois bits para cada bit de entrada.</p>
+<p>O algoritmo de Viterbi busca a sequência mais provável no trellis. Para canal AWGN, a versão <em>soft decision</em> usa distâncias euclidianas e normalmente obtém ganho maior que a decisão dura.</p>
+<h3 id="registrador-trellis-e-sobreviventes"><span class="heading-number">9.7.1</span> Registrador, trellis e sobreviventes</h3>
+<p>Para um codificador de taxa $1/2$, memória 2 e geradores $(7,5)_8$,</p>
+
+<div class="math-display">
+$$
+v_1[k]=u[k]\oplus u[k-1]\oplus u[k-2],\qquad v_2[k]=u[k]\oplus u[k-2].
+$$
+</div>
+
+<p>O estado é $(u[k-1],u[k-2])$; existem quatro estados e duas transições saindo de cada um. O <strong>trellis</strong> apenas desenha essas transições ao longo do tempo.</p>
+<p>Em cada instante, Viterbi (1) calcula a métrica de cada ramo, (2) soma-a ao custo acumulado, (3) mantém, para cada estado, somente o caminho de menor custo e (4) após uma profundidade de decisão, percorre os sobreviventes para trás. Decisão dura usa distância de Hamming; decisão suave usa amostras e distância euclidiana, preservando quão confiável era cada observação.</p>
+<p>Mensagens finitas costumam receber bits de cauda para terminar no estado zero. Sem um estado final conhecido, os últimos bits têm decisão menos confiável.</p>
+<h3 id="dedução-métrica-de-decisão-suave-vs-dura"><span class="heading-number">9.7.2</span> DEDUÇÃO: Métrica de decisão suave vs. dura</h3>
+<p>Para canal AWGN com amostras $y_k$, a versão <em>soft decision</em> calcula a distância euclidiana:</p>
+
+<div class="math-display">
+$$
+d_E^2 = \sum_k (y_k - \hat{y}_k)^2
+$$
+</div>
+
+<p>onde $\hat{y}_k \in \{-1,+1\}$ é o símbolo esperado mapeado de $\{0,1\}$. Para decisão dura, cada $y_k$ é primeiro convertido para $\hat{y}_k \in \{0,1\}$ por limiar em 0, e a métrica é a distância de Hamming:</p>
+
+<div class="math-display">
+$$
+d_H = \sum_k \mathbb{I}(y_k^{\text{dura}} \neq \hat{y}_k^{\text{esperado}})
+$$
+</div>
+
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema do ganho suave:</strong> para AWGN, a decisão suave de Viterbi oferece ganho de $\approx 2$ dB em relação à decisão dura em BER $10^{-5}$.</p></aside>
+<h2 id="limite-de-shannon"><span class="heading-number">9.8</span> Limite de Shannon</h2>
+<p>Para canal AWGN com largura de banda $B$, a capacidade é</p>
+
+<div class="math-display">
+$$
+
+\boxed{C=B\log_2(1+S/N)}.
+
+$$
+</div>
+
+<p>Shannon afirma que existem códigos com probabilidade de erro arbitrariamente pequena para taxas $R&lt;C$, usando blocos suficientemente longos; para $R&gt;C$, comunicação confiável é impossível. O teorema não fornece um código específico nem torna a complexidade de decodificação gratuita.</p>
+<p>Compare com $C$ a <strong>taxa de informação</strong>, e use a SNR referente à mesma largura de banda $B$. Se $R_{\mathrm{info}}&gt;C$, trocar Hamming por um código moderno não basta: é necessário aumentar potência ou banda, ou reduzir a taxa útil. LDPC, turbo e códigos polares podem operar perto do limite em diferentes cenários, com custos finitos de bloco, latência e processamento.</p>
+<h3 id="dedução-relação-entre-taxa-snr-e-ber"><span class="heading-number">9.8.1</span> DEDUÇÃO: Relação entre taxa, SNR e BER</h3>
+<p>Para codificação com taxa $R_c$, a energia por bit de informação é $E_b = E_s/R_c$, onde $E_s$ é a energia por símbolo transmitido. A capacidade em termos de $E_b/N_0$ é:</p>
+
+<div class="math-display">
+$$
+\frac{C}{R_b} = \log_2(1 + \frac{E_b}{N_0}R_c)
+$$
+</div>
+
+<p>O <strong>limite de Shannon</strong> para $E_b/N_0$ mínimo (com $C/R_b \to 0$) é:</p>
+
+<div class="math-display">
+$$
+\boxed{\left(\frac{E_b}{N_0}\right)_{\min} = \ln 2 \approx -1{,}59\,\mathrm{dB}}
+$$
+</div>
+
+<p>Para BER alvo $10^{-5}$ em BPSK sem codificação, $E_b/N_0 \approx 9{,}6$ dB. Com codificação próxima de Shannon, esse valor pode ser reduzido para $\approx 4$ dB — um <strong>ganho de codificação</strong> de $\approx 5{,}6$ dB.</p>
+<h2 id="experimentos-resolvidos-em-python"><span class="heading-number">9.9</span> Experimentos Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">9.9.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> medir ganho de codificação, taxas de erro e capacidade de correção. <strong>Controle experimental:</strong> declare SNR, padrões de erro, polinômios CRC e parâmetros Viterbi. <strong>Validação:</strong> reporte BER antes/depois da codificação, posição de erro corrigida, resto CRC e métricas Viterbi.</p>
+<h3 id="exercício-1-codificação-e-decodificação-hamming-74"><span class="heading-number">9.9.2</span> Exercício 1: Codificação e Decodificação Hamming (7,4)</h3>
+<p>Implementar codificação, injeção de erro, decodificação com correção e verificação.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">hamming74_encode</span><span style="color: #F8F8F2">(d):</span>
+    <span style="color: #F8F8F2">d1,</span> <span style="color: #F8F8F2">d2,</span> <span style="color: #F8F8F2">d3,</span> <span style="color: #F8F8F2">d4</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">map(int,</span> <span style="color: #F8F8F2">d)</span>
+    <span style="color: #F8F8F2">p1</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">d1</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">d2</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">d4</span>
+    <span style="color: #F8F8F2">p2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">d1</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">d3</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">d4</span>
+    <span style="color: #F8F8F2">p4</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">d2</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">d3</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">d4</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([p1,</span> <span style="color: #F8F8F2">p2,</span> <span style="color: #F8F8F2">d1,</span> <span style="color: #F8F8F2">p4,</span> <span style="color: #F8F8F2">d2,</span> <span style="color: #F8F8F2">d3,</span> <span style="color: #F8F8F2">d4],</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">int)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">hamming74_decode</span><span style="color: #F8F8F2">(r):</span>
+    <span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+    <span style="color: #F8F8F2">s1</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">s2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">s4</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">r[</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">pos</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">s1</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">s2</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">4</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">s4</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">pos:</span>
+        <span style="color: #F8F8F2">r[pos</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^=</span> <span style="color: #AE81FF">1</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">r[[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">]],</span> <span style="color: #F8F8F2">pos</span>
+
+<span style="color: #959077"># Teste 1: sem erro</span>
+<span style="color: #F8F8F2">data</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">codeword</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hamming74_encode(data)</span>
+<span style="color: #F8F8F2">decoded,</span> <span style="color: #F8F8F2">position</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hamming74_decode(codeword)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Dados originais: {</span><span style="color: #F8F8F2">data</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Código Hamming: {</span><span style="color: #F8F8F2">codeword</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Decodificado (sem erro): {</span><span style="color: #F8F8F2">decoded</span><span style="color: #E6DB74">}, posição corrigida: {</span><span style="color: #F8F8F2">position</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">assert</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array_equal(data,</span> <span style="color: #F8F8F2">decoded)</span> <span style="color: #FF4689">and</span> <span style="color: #F8F8F2">position</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">0</span>
+
+<span style="color: #959077"># Teste 2: erro no 5º bit</span>
+<span style="color: #F8F8F2">received</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">codeword</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy();</span> <span style="color: #F8F8F2">received[</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^=</span> <span style="color: #AE81FF">1</span>
+<span style="color: #F8F8F2">decoded,</span> <span style="color: #F8F8F2">position</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hamming74_decode(received)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Recebido com erro: {</span><span style="color: #F8F8F2">received</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Decodificado (com erro): {</span><span style="color: #F8F8F2">decoded</span><span style="color: #E6DB74">}, posição corrigida: {</span><span style="color: #F8F8F2">position</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">assert</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array_equal(data,</span> <span style="color: #F8F8F2">decoded)</span> <span style="color: #FF4689">and</span> <span style="color: #F8F8F2">position</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">5</span>
+
+<span style="color: #959077"># Teste 3: dois erros (correção indevida possível)</span>
+<span style="color: #F8F8F2">received2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">codeword</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+<span style="color: #F8F8F2">received2[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^=</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">received2[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^=</span> <span style="color: #AE81FF">1</span>
+<span style="color: #F8F8F2">decoded2,</span> <span style="color: #F8F8F2">position2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hamming74_decode(received2)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Recebido com 2 erros: {</span><span style="color: #F8F8F2">received2</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Decodificado: {</span><span style="color: #F8F8F2">decoded2</span><span style="color: #E6DB74">}, posição corrigida: {</span><span style="color: #F8F8F2">position2</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #959077"># Nota: dois erros podem causar correção indevida</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ Hamming (7,4) simulation complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      3[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mhamming74_encode[39m(d):
+[32m      4[39m     d1, d2, d3, d4 = [38;5;28mmap[39m([38;5;28mint[39m, d)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-2-cálculo-crc"><span class="heading-number">9.9.3</span> Exercício 2: Cálculo CRC</h3>
+<p>Implementar divisão polinomial CRC e verificar detecção de rajadas de erro.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">crc_compute</span><span style="color: #F8F8F2">(message_bits,</span> <span style="color: #F8F8F2">poly_bits):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Compute CRC remainder for message and generator polynomial.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">msg</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">list(message_bits)</span>
+    <span style="color: #F8F8F2">poly</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">list(poly_bits)</span>
+    <span style="color: #F8F8F2">poly_len</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">len(poly)</span>
+    
+    <span style="color: #959077"># Pad message with zeros</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">_</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(poly_len</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">):</span>
+        <span style="color: #F8F8F2">msg</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+        
+    <span style="color: #959077"># Polynomial division</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(len(message_bits)):</span>
+        <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">msg[i]</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:</span>
+            <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">j</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(poly_len):</span>
+                <span style="color: #F8F8F2">msg[i</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">j]</span> <span style="color: #FF4689">^=</span> <span style="color: #F8F8F2">poly[j]</span>
+                
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">msg[</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(poly_len</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">):]</span>
+
+<span style="color: #959077"># Teste CRC</span>
+<span style="color: #F8F8F2">message</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">poly</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>  <span style="color: #959077"># x^3 + x + 1</span>
+<span style="color: #F8F8F2">remainder</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">crc_compute(message,</span> <span style="color: #F8F8F2">poly)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Mensagem: {</span><span style="color: #F8F8F2">message</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Polinômio: {</span><span style="color: #F8F8F2">poly</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Resto CRC: {</span><span style="color: #F8F8F2">remainder</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Transmitted codeword</span>
+<span style="color: #F8F8F2">codeword_crc</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">message</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">remainder</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Codeword transmitido: {</span><span style="color: #F8F8F2">codeword_crc</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Verify with no error</span>
+<span style="color: #F8F8F2">verify_remainder</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">crc_compute(codeword_crc,</span> <span style="color: #F8F8F2">poly)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Resto na verificação (sem erro): {</span><span style="color: #F8F8F2">verify_remainder</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">assert</span> <span style="color: #F8F8F2">verify_remainder</span> <span style="color: #FF4689">==</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span>
+
+<span style="color: #959077"># Verify with error</span>
+<span style="color: #F8F8F2">codeword_error</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">codeword_crc</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+<span style="color: #F8F8F2">codeword_error[</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^=</span> <span style="color: #AE81FF">1</span>
+<span style="color: #F8F8F2">error_remainder</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">crc_compute(codeword_error,</span> <span style="color: #F8F8F2">poly)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Resto na verificação (com erro): {</span><span style="color: #F8F8F2">error_remainder</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">assert</span> <span style="color: #F8F8F2">error_remainder</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ CRC simulation complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">Mensagem: [1, 1, 0, 1]
+Polinômio: [1, 0, 1, 1]
+Resto CRC: [0, 0, 1]
+Codeword transmitido: [1, 1, 0, 1, 0, 0, 1]
+Resto na verificação (sem erro): [0, 0, 0]
+Resto na verificação (com erro): [1, 0, 1]
+✓ CRC simulation complete.</pre></div></div>
+
+<h3 id="exercício-3-simulação-de-decodificação-viterbi-decisão-dura"><span class="heading-number">9.9.4</span> Exercício 3: Simulação de Decodificação Viterbi (Decisão Dura)</h3>
+<p>Implementar Viterbi simplificado para codificador convolucional taxa 1/2, memória 2.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+
+<span style="color: #66D9EF">class</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ViterbiDecoder</span><span style="color: #F8F8F2">:</span>
+    <span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">__init__</span><span style="color: #F8F8F2">(self,</span> <span style="color: #F8F8F2">k</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">memory</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">generators</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">[</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">]):</span>
+        <span style="color: #F8F8F2">self</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span>
+        <span style="color: #F8F8F2">self</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">n</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">n</span>
+        <span style="color: #F8F8F2">self</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">memory</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">memory</span>
+        <span style="color: #F8F8F2">self</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">generators</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">generators</span>
+        <span style="color: #F8F8F2">self</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">num_states</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">memory</span>
+        
+    <span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">encode_state</span><span style="color: #F8F8F2">(self,</span> <span style="color: #F8F8F2">state,</span> <span style="color: #F8F8F2">input_bit):</span>
+<span style="color: #F8F8F2">        </span><span style="color: #E6DB74">&quot;&quot;&quot;Encode a state and input bit to output bits.&quot;&quot;&quot;</span>
+        <span style="color: #959077"># State is (u[k-1], u[k-2])</span>
+        <span style="color: #F8F8F2">u_k2,</span> <span style="color: #F8F8F2">u_k1</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">state</span>
+        <span style="color: #F8F8F2">u_k</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">input_bit</span>
+        
+        <span style="color: #959077"># Generator 7 (111): v1 = u[k] ^ u[k-1] ^ u[k-2]</span>
+        <span style="color: #F8F8F2">v1</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">u_k</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">u_k1</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">u_k2</span>
+        
+        <span style="color: #959077"># Generator 5 (101): v2 = u[k] ^ u[k-2]</span>
+        <span style="color: #F8F8F2">v2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">u_k</span> <span style="color: #FF4689">^</span> <span style="color: #F8F8F2">u_k2</span>
+        
+        <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">(v1,</span> <span style="color: #F8F8F2">v2),</span> <span style="color: #F8F8F2">(u_k1,</span> <span style="color: #F8F8F2">u_k)</span>
+    
+    <span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">decode</span><span style="color: #F8F8F2">(self,</span> <span style="color: #F8F8F2">received_bits):</span>
+<span style="color: #F8F8F2">        </span><span style="color: #E6DB74">&quot;&quot;&quot;Viterbi decoding with hard decision.&quot;&quot;&quot;</span>
+        <span style="color: #F8F8F2">num_states</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">self</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">num_states</span>
+        <span style="color: #959077"># Trellis: metrics[step][state] = accumulated metric</span>
+        <span style="color: #F8F8F2">metrics</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{state:</span> <span style="color: #AE81FF">0</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">state</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(num_states)}</span>
+        <span style="color: #F8F8F2">path_history</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[{state:</span> <span style="color: #F8F8F2">[]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">state</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(num_states)}]</span>
+        
+        <span style="color: #959077"># Process each received pair</span>
+        <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">step</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(len(received_bits)</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">):</span>
+            <span style="color: #F8F8F2">r_pair</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">received_bits[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">step:</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">step</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+            <span style="color: #F8F8F2">new_metrics</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{state:</span> <span style="color: #F8F8F2">float(</span><span style="color: #E6DB74">&#39;inf&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">state</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(num_states)}</span>
+            <span style="color: #F8F8F2">new_path_history</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{state:</span> <span style="color: #F8F8F2">[]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">state</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(num_states)}</span>
+            
+            <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">state</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(num_states):</span>
+                <span style="color: #959077"># Two possible transitions: input 0 or 1</span>
+                <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">input_bit</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]:</span>
+                    <span style="color: #F8F8F2">(v1,</span> <span style="color: #F8F8F2">v2),</span> <span style="color: #F8F8F2">next_state</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">self</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">encode_state(state,</span> <span style="color: #F8F8F2">input_bit)</span>
+                    
+                    <span style="color: #959077"># Calculate branch metric (Hamming distance)</span>
+                    <span style="color: #F8F8F2">expected_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[v1,</span> <span style="color: #F8F8F2">v2]</span>
+                    <span style="color: #F8F8F2">branch_metric</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sum(</span><span style="color: #AE81FF">1</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">e,</span> <span style="color: #F8F8F2">r</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(expected_bits,</span> <span style="color: #F8F8F2">r_pair)</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">e</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">r)</span>
+                    
+                    <span style="color: #F8F8F2">new_metric</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">metrics[state]</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">branch_metric</span>
+                    
+                    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">new_metric</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">new_metrics[next_state]:</span>
+                        <span style="color: #F8F8F2">new_metrics[next_state]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">new_metric</span>
+                        <span style="color: #F8F8F2">new_path_history[next_state]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">path_history[</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">][state]</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">[input_bit]</span>
+            
+            <span style="color: #F8F8F2">metrics</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">new_metrics</span>
+            <span style="color: #F8F8F2">path_history</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(new_path_history)</span>
+            
+        <span style="color: #959077"># Traceback</span>
+        <span style="color: #F8F8F2">final_state</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">min(metrics</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">keys(),</span> <span style="color: #F8F8F2">key</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">lambda</span> <span style="color: #F8F8F2">s:</span> <span style="color: #F8F8F2">metrics[s])</span>
+        <span style="color: #F8F8F2">decoded_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">path_history[</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">][final_state]</span>
+        
+        <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">decoded_bits</span>
+
+<span style="color: #959077"># Test Viterbi</span>
+<span style="color: #F8F8F2">decoder</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">ViterbiDecoder(k</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">memory</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">generators</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">[</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">original_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span>
+
+<span style="color: #959077"># Encode</span>
+<span style="color: #F8F8F2">encoded_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #F8F8F2">state</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">bit</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">original_bits:</span>
+    <span style="color: #F8F8F2">(v1,</span> <span style="color: #F8F8F2">v2),</span> <span style="color: #F8F8F2">state</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">decoder</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">encode_state(state,</span> <span style="color: #F8F8F2">bit)</span>
+    <span style="color: #F8F8F2">encoded_bits</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">extend([v1,</span> <span style="color: #F8F8F2">v2])</span>
+
+<span style="color: #959077"># Simulate channel with 1 error</span>
+<span style="color: #F8F8F2">received_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">encoded_bits</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+<span style="color: #F8F8F2">received_bits[</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">^=</span> <span style="color: #AE81FF">1</span>  <span style="color: #959077"># Flip one bit</span>
+
+<span style="color: #F8F8F2">decoded_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">decoder</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">decode(received_bits)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Bits originais: {</span><span style="color: #F8F8F2">original_bits</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Bits codificados: {</span><span style="color: #F8F8F2">encoded_bits</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Bits recebidos (com erro): {</span><span style="color: #F8F8F2">received_bits</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Bits decodificados: {</span><span style="color: #F8F8F2">decoded_bits</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ Viterbi simulation complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      3[39m [38;5;28;01mclass[39;00m[38;5;250m [39m[34;01mViterbiDecoder[39;00m:
+[32m      4[39m     [38;5;28;01mdef[39;00m[38;5;250m [39m[34m__init__[39m([38;5;28mself[39m, k=[32m1[39m, n=[32m2[39m, memory=[32m2[39m, generators=[[32m7[39m, [32m5[39m]):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-4-comparação-ber-com-e-sem-fec"><span class="heading-number">9.9.5</span> Exercício 4: Comparação BER com e sem FEC</h3>
+<p>Simular BER para BPSK em AWGN com e sem codificação Hamming (7,4).</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_without_fec</span><span style="color: #F8F8F2">(EbN0_db,</span> <span style="color: #F8F8F2">N_bits</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">100000</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;BER for BPSK without FEC.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">EbN0_lin</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(EbN0_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">EbN0_lin)</span>
+    
+    <span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N_bits)</span>
+    <span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span>
+    <span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(N_bits)</span>
+    <span style="color: #F8F8F2">received</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+    
+    <span style="color: #F8F8F2">decisions</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(received</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+    <span style="color: #F8F8F2">errors</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum(bits</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">decisions)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">errors</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">N_bits</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_with_hamming74</span><span style="color: #F8F8F2">(EbN0_db,</span> <span style="color: #F8F8F2">N_blocks</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">10000</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;BER for BPSK with Hamming (7,4) FEC.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">EbN0_lin</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(EbN0_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #959077"># Energy per coded bit</span>
+    <span style="color: #F8F8F2">EbN0_coded</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">EbN0_lin</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">4</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># Rate 4/7</span>
+    <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">EbN0_coded)</span>
+    
+    <span style="color: #F8F8F2">blocks_errors</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">_</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_blocks):</span>
+        <span style="color: #959077"># Generate 4 data bits</span>
+        <span style="color: #F8F8F2">data</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">codeword</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hamming74_encode(data)</span>
+        
+        <span style="color: #959077"># BPSK modulation</span>
+        <span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">codeword</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span>
+        <span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">received_analog</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+        
+        <span style="color: #959077"># Hard decision</span>
+        <span style="color: #F8F8F2">received_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(received_analog</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+        
+        <span style="color: #959077"># Decode</span>
+        <span style="color: #F8F8F2">decoded_data,</span> <span style="color: #F8F8F2">pos</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">hamming74_decode(received_bits)</span>
+        
+        <span style="color: #959077"># Check for block error</span>
+        <span style="color: #66D9EF">if</span> <span style="color: #FF4689">not</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array_equal(data,</span> <span style="color: #F8F8F2">decoded_data):</span>
+            <span style="color: #F8F8F2">blocks_errors</span> <span style="color: #FF4689">+=</span> <span style="color: #AE81FF">1</span>
+            
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">blocks_errors</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">N_blocks</span>
+
+<span style="color: #959077"># Simulate BER curves</span>
+<span style="color: #F8F8F2">EbN0_dbs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">11</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ber_no_fec</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[ber_without_fec(db,</span> <span style="color: #F8F8F2">N_bits</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">50000</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">EbN0_dbs]</span>
+<span style="color: #F8F8F2">ber_with_fec</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[ber_with_hamming74(db,</span> <span style="color: #F8F8F2">N_blocks</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">5000</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">EbN0_dbs]</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;BER Comparison (BPSK vs BPSK+Hamming(7,4)):&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db,</span> <span style="color: #F8F8F2">b_no,</span> <span style="color: #F8F8F2">b_fec</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(EbN0_dbs,</span> <span style="color: #F8F8F2">ber_no_fec,</span> <span style="color: #F8F8F2">ber_with_fec):</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;EbN0={</span><span style="color: #F8F8F2">db</span><span style="color: #E6DB74">:2.0f} dB: BER sem FEC={</span><span style="color: #F8F8F2">b_no</span><span style="color: #E6DB74">:.2e}, BER com FEC={</span><span style="color: #F8F8F2">b_fec</span><span style="color: #E6DB74">:.2e}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ BER comparison simulation complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mber_without_fec[39m(EbN0_db, N_bits=[32m100000[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">9.10</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Um código $(15,11)$ possui qual taxa $R_c$? Qual a redundância em porcentagem?</p>
+<p><strong>E2.</strong> Um código tem $d_{min}=5$. Quantos erros ele corrige e quantos detecta? E se $d_{min}=6$?</p>
+<p><strong>E3.</strong> Codifique a palavra $\mathbf u=(1,0,1,1)$ pelo Hamming $(7,4)$ usado neste capítulo. Verifique que a palavra codificada satisfaz $H\mathbf c^T=\mathbf0$.</p>
+<p><strong>E4.</strong> A palavra Hamming recebida é $(0,1,1,0,0,1,1)$. Calcule a síndrome e corrija, se necessário. E se a palavra for $(0,0,1,0,0,1,1)$?</p>
+<p><strong>E5.</strong> Explique por que CRC e Hamming têm finalidades diferentes em uma cadeia de comunicação. Dê um exemplo de sistema que usa ambos.</p>
+<p><strong>E6.</strong> Para $B=200\,\mathrm{kHz}$ e $S/N=15\,\mathrm{dB}$, calcule a capacidade de Shannon aproximada. Se a taxa de informação é $1\,\mathrm{Mbit/s}$, é possível comunicação confiável?</p>
+<p><strong>E7.</strong> Um enlace transmite bits codificados a $12\,\mathrm{Mbit/s}$ com um código de taxa $2/3$. Qual é a taxa de informação? Se a capacidade do canal é $9\,\mathrm{Mbit/s}$, o teorema de Shannon impede comunicação confiável nessa taxa? Justifique.</p>
+<p><strong>E8.</strong> Para o código $C=\{00000,11100,00111,11011\}$, verifique que ele é linear, encontre $d_{min}$ e determine quantos erros podem ser corrigidos.</p>
+<p><strong>E9.</strong> No Hamming $(7,4)$ deste capítulo, receba $\mathbf r=(0,0,1,0,0,1,1)$. Calcule $s_1$, $s_2$ e $s_4$, corrija a palavra e recupere os quatro dados.</p>
+<p><strong>E10.</strong> Explique por que um decodificador Viterbi de decisão suave não deve primeiro transformar cada amostra em 0 ou 1. Qual o ganho típico em dB sobre decisão dura para AWGN?</p>
+<p><strong>E11.</strong> Implemente um codificador CRC com polinômio $g(x)=x^4+x+1$ e verifique a detecção de uma rajada de 4 bits de erro.</p>
+<p><strong>E12.</strong> Para um código SECDED $(8,4)$, receba $\mathbf r=(1,1,0,1,0,1,1,0)$ (último bit é paridade global). Calcule a síndrome local e a paridade global, e determine se há 0, 1 ou 2 erros.</p>
+<h2 id="gabarito"><span class="heading-number">9.11</span> Gabarito</h2>
+<p><strong>E1.</strong> $R_c=11/15\approx\boxed{0{,}733}$. Redundância: $\boxed{26{,}7\%}$.</p>
+<p><strong>E2.</strong> Para $d_{min}=5$: $t=\lfloor(5-1)/2\rfloor=\boxed{2}$ erros corrigíveis; detecta até $\boxed{4}$ erros. Para $d_{min}=6$: $t=\lfloor(6-1)/2\rfloor=\boxed{2}$ erros corrigíveis; detecta até $\boxed{5}$ erros.</p>
+<p><strong>E3.</strong> $p_1=0$, $p_2=1$ e $p_4=0$, portanto $\boxed{(0,1,1,0,0,1,1)}$. A síndrome $H\mathbf c^T=\mathbf0$ é verificada calculando $s_1=0$, $s_2=0$, $s_4=0$.</p>
+<p><strong>E4.</strong> Para $(0,1,1,0,0,1,1)$: $s_1=0$, $s_2=0$, $s_4=0$. Síndrome zero: palavra válida, não requer correção. Para $(0,0,1,0,0,1,1)$: $s_1=1$, $s_2=0$, $s_4=0$, síndrome $001_2=1$. Corrigindo posição 1: $(1,0,1,0,0,1,1)$, dados: $\boxed{(1,0,1,1)}$.</p>
+<p><strong>E5.</strong> Hamming é FEC e corrige um erro por palavra; CRC detecta erros, sobretudo rajadas, e costuma acionar retransmissão ou complementar outro código. Exemplo: Ethernet usa CRC-32 para detecção; Wi-Fi usa CRC-32 + codificação convolucional/Turbo.</p>
+<p><strong>E6.</strong> $S/N=10^{1{,}5}\approx31{,}62$; $C=200\times10^3\log_2(32{,}62)\approx\boxed{1{,}01\,\mathrm{Mbit/s}}$. Sim, $1\,\mathrm{Mbit/s} &lt; 1{,}01\,\mathrm{Mbit/s}$, portanto comunicação confiável é teoricamente possível com código adequado.</p>
+<p><strong>E7.</strong> $R_{\mathrm{info}}=(2/3)12=\boxed{8\,\mathrm{Mbit/s}}$. Como $8&lt;9\,\mathrm{Mbit/s}$, Shannon não impede comunicação confiável; afirma apenas que códigos adequados podem existir. Não garante que o código escolhido atinja a BER desejada.</p>
+<p><strong>E8.</strong> O XOR de quaisquer duas palavras listadas também pertence a $C$, e $00000$ está no conjunto; portanto, o código é linear. Os pesos não nulos são 3, 3 e 4, logo $d_{min}=3$ e $t=\lfloor(3-1)/2\rfloor=\boxed{1}$.</p>
+<p><strong>E9.</strong> $s_1=0$, $s_2=1$ e $s_4=0$, portanto $s_4s_2s_1=010_2=2$. Corrigindo a posição 2, obtém-se $(0,1,1,0,0,1,1)$ e os dados das posições 3, 5, 6 e 7 são $\boxed{(1,0,1,1)}$.</p>
+<p><strong>E10.</strong> A decisão binária antecipada descarta a magnitude da amostra, isto é, a confiança da observação. O Viterbi suave compara diretamente as distâncias entre amostras e níveis esperados e pode distinguir evidência fraca de evidência forte. Ganho típico: $\boxed{\approx 2\,\mathrm{dB}}$.</p>
+<p><strong>E11.</strong> Polinômio $g(x)=x^4+x+1$ (binário $10011$). Rajada de 4 bits $1111$ na posição correta não é múltipla de $g(x)$, portanto detectada. CRC de grau 4 detecta todas as rajadas de comprimento $\leq 4$.</p>
+<p><strong>E12.</strong> Dados: posições 3,5,6,7 são $0,1,1,0$. Paridades locais: $p_1=0\oplus1\oplus0=1$, $p_2=0\oplus1\oplus0=1$, $p_4=1\oplus1\oplus0=0$. Síndrome local: $s_4s_2s_1=011_2=3$. Paridade global: soma de todos os bits = $1+1+0+1+0+1+1+0=4$ (par). Paridade global OK, mas síndrome não zero → erro único na posição 3. Correção: inverter posição 3.</p>
+<h2 id="síntese-e-roteiro-de-decisão"><span class="heading-number">9.12</span> Síntese e roteiro de decisão</h2>
+<p>Ao analisar um esquema de proteção de canal, siga esta ordem:</p>
+<ol>
+<li><strong>Identifique a finalidade:</strong> detectar, corrigir sem retransmissão, ou solicitar retransmissão?</li>
+<li><strong>Calcule o custo:</strong> determine $n$, $k$, $R_c=k/n$ e a taxa útil.</li>
+<li><strong>Modele o erro:</strong> erros independentes, rajadas, apagamentos ou amostras suaves?</li>
+<li><strong>Associe a ferramenta:</strong> distância e síndrome para códigos de bloco; divisão polinomial para CRC; trellis e métricas para códigos convolucionais.</li>
+<li><strong>Cheque o limite físico:</strong> compare a taxa de informação com a capacidade usando unidades e largura de banda consistentes.</li>
+<li><strong>Valide:</strong> injete padrões de erro controlados antes de medir BER em um canal aleatório.</li>
+</ol>
+<p><strong>Erros comuns a evitar:</strong></p>
+<ul>
+<li>interpretar $R_c$ como taxa em bit/s, embora seja uma razão adimensional;</li>
+<li>afirmar que $d_{min}=3$ corrige três erros;</li>
+<li>somar matrizes binárias sem reduzir módulo 2;</li>
+<li>tratar síndrome zero como prova de ausência de qualquer erro;</li>
+<li>dizer que CRC corrige automaticamente o pacote;</li>
+<li>comparar taxa codificada, em vez de taxa de informação, com a capacidade;</li>
+<li>comparar BER codificada e não codificada em condições diferentes de energia por bit útil.</li>
+</ul>
+<p><strong>Teste de domínio:</strong> sem consultar o texto, explique por que uma síndrome não nula localiza um erro único no Hamming $(7,4)$ e por que a mesma regra pode falhar diante de dois erros. Se a explicação não mencionar as colunas de $H$ e $d_{min}$, revise as Seções 2–4.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="08_sincronismo.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">8. Sincronismo</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><span class="disabled page-nav-next"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">Fim da obra</span></span><span class="page-nav-arrow">→</span></span></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

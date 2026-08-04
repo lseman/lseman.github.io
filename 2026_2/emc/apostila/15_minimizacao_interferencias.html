@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15. Minimização de interferências EMC — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>15. Minimização de interferências EMC</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>15. Minimização de interferências EMC</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="14_modelagem_problemas_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">14. Modelagem de problemas EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="16_projeto_pcbs_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">16. Projeto de PCBs Considerando Técnicas EMC</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>15. Minimização de interferências EMC</h1>
+<blockquote>
+<p>Os mecanismos físicos já foram desenvolvidos nos capítulos 6–12. Este capítulo ensina a escolher, combinar e verificar mitigações sem depender de regras isoladas.</p>
+</blockquote>
+<h2 id="objetivos-de-aprendizagem"><span class="heading-number">15.1</span> Objetivos de aprendizagem</h2>
+<p>Ao final, você deve ser capaz de:</p>
+<ol>
+<li>converter um diagnóstico confirmado em requisito de atenuação;</li>
+<li>comparar intervenções na fonte, no caminho e na vítima;</li>
+<li>selecionar mitigação compatível com modo, frequência e impedâncias;</li>
+<li>antecipar ressonâncias, conversão de modo e efeitos colaterais;</li>
+<li>demonstrar melhoria com medição antes/depois e margem.</li>
+</ol>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#da-causa-%C3%A0-meta-de-mitiga%C3%A7%C3%A3o">Da causa à meta de mitigação</a></li>
+<li><a href="#tr%C3%AAs-pontos-de-interven%C3%A7%C3%A3o">Três pontos de intervenção</a></li>
+<li><a href="#%C3%A1rvore-de-sele%C3%A7%C3%A3o-por-mecanismo">Árvore de seleção por mecanismo</a></li>
+<li><a href="#filtros-escolha-pelo-modo-e-pelas-imped%C3%A2ncias">Filtros: escolha pelo modo e pelas impedâncias</a></li>
+<li><a href="#blindagem-cabos-e-interfaces">Blindagem, cabos e interfaces</a></li>
+<li><a href="#pcb-e-pdn">PCB e PDN</a></li>
+<li><a href="#robustez-a-esd-eft-e-surge">Robustez a ESD, EFT e surge</a></li>
+<li><a href="#matriz-de-decis%C3%A3o">Matriz de decisão</a></li>
+<li><a href="#protocolo-de-verifica%C3%A7%C3%A3o">Protocolo de verificação</a></li>
+<li><a href="#casos-de-decis%C3%A3o">Casos de decisão</a></li>
+<li><a href="#exerc%C3%ADcios">Exercícios</a></li>
+<li><a href="#or%C3%A7amento-probabil%C3%ADstico-de-margem">Orçamento probabilístico de margem</a></li>
+<li><a href="#exemplo-multicrit%C3%A9rio">Exemplo multicritério</a></li>
+<li><a href="#laborat%C3%B3rio-spice--escolha-de-snubber">Laboratório SPICE — escolha de snubber</a></li>
+<li><a href="#checklist-de-sa%C3%ADda">Checklist de saída</a></li>
+</ol></nav>
+<h2 id="da-causa-à-meta-de-mitigação"><span class="heading-number">15.2</span> Da causa à meta de mitigação</h2>
+<p>Mitigação começa depois de uma hipótese razoavelmente confirmada. Defina:</p>
+<ul>
+<li>grandeza a reduzir: corrente CM/DM, tensão, campo, acoplamento ou resposta da vítima;</li>
+<li>banda e condição operacional;</li>
+<li>valor inicial e limite;</li>
+<li>margem adicional para incerteza, unidade, temperatura e envelhecimento;</li>
+<li>restrições de segurança, sinal, potência, custo, peso e prazo.</li>
+</ul>
+<p>Se uma emissão medida é $E_m$ e a meta é $E_t$, a redução nominal requerida é</p>
+
+<div class="math-display">
+$$
+
+A_{req}=20\log_{10}\left(\frac{E_m}{E_t}\right).
+
+$$
+</div>
+
+<p>Grandezas e detectores precisam ser comparáveis. Acrescente a margem de projeto explicitamente; não a esconda no arredondamento.</p>
+<h2 id="três-pontos-de-intervenção"><span class="heading-number">15.3</span> Três pontos de intervenção</h2>
+<table>
+<thead>
+<tr>
+<th>Local</th>
+<th>Estratégia</th>
+<th>Exemplos</th>
+<th>Risco típico</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fonte</td>
+<td>reduzir energia ou conteúdo espectral</td>
+<td>diminuir loop quente, $dv/dt$, $di/dt$, usar <em>snubber</em></td>
+<td>eficiência, dissipação, temporização</td>
+</tr>
+<tr>
+<td>caminho</td>
+<td>reduzir transferência ou conversão</td>
+<td>controlar retorno, separar, terminar, filtrar, blindar</td>
+<td>ressonância, corrente de fuga, peso</td>
+</tr>
+<tr>
+<td>vítima</td>
+<td>aumentar imunidade</td>
+<td>filtrar porta, histerese, proteção, isolamento</td>
+<td>banda, latência, capacitância, custo</td>
+</tr>
+</tbody>
+</table>
+<p>Atuar na fonte costuma beneficiar vários caminhos, mas não é universalmente possível ou ótimo. A melhor opção é aquela que atinge a meta com margem e efeitos colaterais aceitáveis.</p>
+<h2 id="árvore-de-seleção-por-mecanismo"><span class="heading-number">15.4</span> Árvore de seleção por mecanismo</h2>
+<h3 id="impedância-comum"><span class="heading-number">15.4.1</span> Impedância comum</h3>
+<p>Se $V_n=I_sZ_{comum}$ domina, reduza a corrente, a impedância compartilhada ou separe os retornos funcionais. Em alta frequência, conexão curta e larga pode importar mais que baixa resistência DC. Consulte componentes/condutores no <a href="06_componentes_nao_ideais.html">capítulo Comportamento não ideal de componentes</a> e integração no <a href="17_projeto_sistemas_emc.html">capítulo Projeto de sistemas para EMC</a>.</p>
+<h3 id="acoplamento-capacitivo"><span class="heading-number">15.4.2</span> Acoplamento capacitivo</h3>
+<p>Se $I_c=C_m\,dv/dt$ domina, reduza $dv/dt$, área paralela, capacitância mútua ou impedância da vítima; interponha uma tela ligada a uma referência apropriada quando necessário. Verifique se a tela não cria um novo retorno CM.</p>
+<h3 id="acoplamento-indutivo"><span class="heading-number">15.4.3</span> Acoplamento indutivo</h3>
+<p>Se $V_m=M\,di/dt$ domina, reduza área dos loops, indutância mútua ou $di/dt$; aproxime ida e retorno, mude orientação ou use par trançado. O modelo detalhado de acoplamento está no <a href="09_crosstalk.html">capítulo Crosstalk</a>.</p>
+<h3 id="reflexão-e-descontinuidade"><span class="heading-number">15.4.4</span> Reflexão e descontinuidade</h3>
+<p>Se overshoot ou ringing depende de comprimento e carga, controle $Z_0$, terminação e caminho de retorno. Não trate reflexão como “ruído” a ser filtrado antes de verificar o <a href="07_linhas_transmissao_integridade_sinal.html">capítulo Linhas de transmissão e integridade de sinal</a>.</p>
+<h3 id="corrente-de-modo-comum-e-radiação"><span class="heading-number">15.4.5</span> Corrente de modo comum e radiação</h3>
+<p>Se cabo ou estrutura irradia em CM, reduza conversão DM→CM, ofereça retorno de baixa impedância no conector, filtre o modo correto e controle a terminação da blindagem. A física de antenas está no <a href="08_antenas.html">capítulo Antenas</a>, a medição radiada no <a href="11_emissoes_radiadas_suscetibilidade.html">capítulo Emissões radiadas e suscetibilidade</a> e blindagem no <a href="12_blindagem.html">capítulo Blindagem</a>.</p>
+<h2 id="filtros-escolha-pelo-modo-e-pelas-impedâncias"><span class="heading-number">15.5</span> Filtros: escolha pelo modo e pelas impedâncias</h2>
+<p>Um filtro deve ser definido por porta, modo, banda, corrente/tensão, $Z_S(f)$ e $Z_L(f)$. A perda de inserção em 50 Ω não garante o resultado no produto.</p>
+<h3 id="modo-diferencial"><span class="heading-number">15.5.1</span> Modo diferencial</h3>
+<p>Capacitores entre linhas e elementos série atuam principalmente em DM. Verifique corrente de ripple, estabilidade da fonte, queda de tensão e ressonância com a impedância da rede.</p>
+<h3 id="modo-comum"><span class="heading-number">15.5.2</span> Modo comum</h3>
+<p>Choques de modo comum e capacitores para chassi podem reduzir CM. Verifique indutância de fuga, saturação, capacitância entre enrolamentos, corrente de fuga e requisitos de segurança. O caminho físico até o chassi deve ser curto na banda de interesse.</p>
+<h3 id="componentes-reais-e-layout"><span class="heading-number">15.5.3</span> Componentes reais e layout</h3>
+<p>Acima da autorressonância, aumentar capacitância nominal pode não melhorar o filtro. Inclua ESR, ESL e montagem conforme o <a href="06_componentes_nao_ideais.html">capítulo Comportamento não ideal de componentes</a>. Para cálculo e validação como rede, use o <a href="14_modelagem_problemas_emc.html">capítulo Modelagem de problemas EMC</a>; para LISN e modos, use o <a href="10_emissoes_conduzidas_suscetibilidade.html">capítulo Emissões conduzidas e suscetibilidade</a>.</p>
+<h2 id="blindagem-cabos-e-interfaces"><span class="heading-number">15.6</span> Blindagem, cabos e interfaces</h2>
+<p>Blindagem é uma fronteira completa, não apenas uma chapa.</p>
+<ol>
+<li>identifique campo próximo elétrico/magnético ou onda distante;</li>
+<li>escolha material e espessura pela banda e mecanismo;</li>
+<li>trate juntas, aberturas, ventilação e penetrações;</li>
+<li>termine blindagens de cabo com baixa impedância na circunferência quando apropriado;</li>
+<li>posicione filtros/proteções na entrada da fronteira;</li>
+<li>verifique ressonâncias e corrente transferida para o chassi.</li>
+</ol>
+<p>Um <em>pigtail</em> pode anular em alta frequência a vantagem de uma boa malha. Uma abertura ou cabo não tratado pode dominar toda a eficácia. Cálculos de reflexão, absorção e aberturas estão somente no <a href="12_blindagem.html">capítulo Blindagem</a>.</p>
+<h2 id="pcb-e-pdn"><span class="heading-number">15.7</span> PCB e PDN</h2>
+<p>No nível de placa, priorize continuidade de retorno, área de loop, posição de conectores, <em>stack-up</em>, localização de desacoplamento e separação orientada por correntes. “Separar analógico e digital” sem desenhar os retornos pode piorar a conversão de modo.</p>
+<p>Para PDN, defina impedância-alvo,</p>
+
+<div class="math-display">
+$$
+
+Z_{target}=\frac{\Delta V_{permitida}}{\Delta I},
+
+$$
+</div>
+
+<p>e verifique ressonâncias com componentes e montagem reais. As regras e o processo de revisão pertencem a <strong>Projeto de PCBs considerando técnicas EMC</strong>; a integração com chassi e cabos pertence a <strong>Projeto de sistemas para EMC</strong>.</p>
+<h2 id="robustez-a-esd-eft-e-surge"><span class="heading-number">15.8</span> Robustez a ESD, EFT e surge</h2>
+<p>Crie um caminho deliberado para a corrente transitória antes que ela alcance circuitos sensíveis. Proteção eficaz combina:</p>
+<ul>
+<li>fronteira e ponto de entrada bem definidos;</li>
+<li>conexão de baixa indutância ao chassi/retorno apropriado;</li>
+<li>limitação de corrente/tensão coordenada em estágios;</li>
+<li>distância e isolamento compatíveis com segurança;</li>
+<li>proteção próxima da porta, sem trilha desprotegida longa;</li>
+<li>recuperação funcional e firmware robusto quando aplicável.</li>
+</ul>
+<p>O arranjo de ensaio está em <a href="04_normas_padronizacoes_ensaios.html">Normas, Padronizações e Ensaios de EMC</a> e a modelagem transitória em <a href="14_modelagem_problemas_emc.html">Modelagem de problemas EMC</a>.</p>
+<h2 id="matriz-de-decisão"><span class="heading-number">15.9</span> Matriz de decisão</h2>
+<p>Avalie cada alternativa em escala consistente, documentando evidência e premissas.</p>
+<table>
+<thead>
+<tr>
+<th>Critério</th>
+<th>Pergunta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>eficácia</td>
+<td>atinge a redução em toda a banda e estados?</td>
+</tr>
+<tr>
+<td>robustez</td>
+<td>tolera variação, montagem, cabo e envelhecimento?</td>
+</tr>
+<tr>
+<td>efeito funcional</td>
+<td>afeta potência, SI, banda, latência ou controle?</td>
+</tr>
+<tr>
+<td>segurança</td>
+<td>altera fuga, isolação, temperatura ou energia?</td>
+</tr>
+<tr>
+<td>integração</td>
+<td>cabe na PCB, conector, chassi e processo?</td>
+</tr>
+<tr>
+<td>verificabilidade</td>
+<td>é possível medir o mecanismo antes/depois?</td>
+</tr>
+<tr>
+<td>custo total</td>
+<td>inclui componente, montagem, teste e retrabalho?</td>
+</tr>
+</tbody>
+</table>
+<p>Combinações independentes podem fornecer margem, mas somar dB de mitigações sem considerar interação e impedâncias é incorreto.</p>
+<h2 id="protocolo-de-verificação"><span class="heading-number">15.10</span> Protocolo de verificação</h2>
+<ol>
+<li>congele configuração e registre a linha de base;</li>
+<li>meça a grandeza ligada ao mecanismo, não só o sintoma final;</li>
+<li>aplique uma alteração reversível;</li>
+<li>repita com a mesma banda, detector, posição e estado;</li>
+<li>restaure o original para confirmar causalidade;</li>
+<li>implemente a solução representativa de produção;</li>
+<li>repita em unidades, cabos e estados críticos;</li>
+<li>calcule margem incluindo incerteza;</li>
+<li>realize pré-conformidade e, depois, ensaio formal aplicável.</li>
+</ol>
+<h3 id="registro-antesdepois"><span class="heading-number">15.10.1</span> Registro antes/depois</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th style="text-align:right">Antes</th>
+<th style="text-align:right">Depois</th>
+<th style="text-align:right">Meta</th>
+<th style="text-align:right">Incerteza</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>grandeza do mecanismo</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td>sintoma/critério funcional</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td>efeito colateral</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="casos-de-decisão"><span class="heading-number">15.11</span> Casos de decisão</h2>
+<h3 id="harmônico-de-clock-irradiado-pelo-cabo"><span class="heading-number">15.11.1</span> Harmônico de clock irradiado pelo cabo</h3>
+<p>Meça corrente CM. Compare: redução de <em>slew rate</em>; restauração do retorno no conector; choque CM; terminação de blindagem. A solução preferida reduz $I_{CM}$ com menor impacto funcional, não necessariamente a que mais reduz campo em um único arranjo.</p>
+<h3 id="buck-falha-em-emissão-conduzida"><span class="heading-number">15.11.2</span> Buck falha em emissão conduzida</h3>
+<p>Separe DM e CM antes de escolher componentes. Para DM, avalie loop de comutação e filtro com impedâncias reais. Para CM, avalie capacitância do nó rápido ao chassi/dissipador e retorno. Um filtro único pode deslocar a energia para outro modo.</p>
+<h3 id="entrada-reinicia-durante-esd"><span class="heading-number">15.11.3</span> Entrada reinicia durante ESD</h3>
+<p>Mapeie o caminho de corrente na fronteira, observe reset/PDN e compare proteção na porta, conexão ao chassi e filtragem. A melhora precisa sobreviver ao layout de produção; um fio de bancada curto pode não representar a solução final.</p>
+<h2 id="exercícios"><span class="heading-number">15.12</span> Exercícios</h2>
+<p><strong>E.1</strong> Uma emissão está 8 dB acima do limite e a incerteza expandida é 3 dB. Proponha uma meta de redução e justifique a margem adicional.</p>
+<p><strong>E.2</strong> Para cada mecanismo da seção “Árvore de seleção por mecanismo”, proponha uma intervenção discriminante e uma solução de produção.</p>
+<p><strong>E.3</strong> Um filtro reduz DM em 20 dB, mas aumenta CM em 6 dB. Explique duas causas físicas e o próximo teste.</p>
+<p><strong>E.4</strong> Compare conexão de blindagem por <em>pigtail</em> e terminação circunferencial na faixa de 100 MHz, considerando indutância.</p>
+<p><strong>E.5</strong> Construa matriz de decisão para: reduzir <em>slew rate</em>, acrescentar blindagem ou filtrar a porta de uma vítima.</p>
+<p><strong>E.6</strong> Elabore protocolo antes/depois para uma correção de ESD incluindo critério funcional e restauração do original.</p>
+<h3 id="respostas-orientativas"><span class="heading-number">15.12.1</span> Respostas orientativas</h3>
+<p><strong>E.1</strong> A correção deve cobrir os 8 dB de excesso, os 3 dB de incerteza e uma margem de engenharia justificada por variabilidade. Uma meta como 14–17 dB pode ser razoável, mas deve derivar do risco, das unidades e do ciclo de vida, não de um número universal.</p>
+<p><strong>E.3</strong> O filtro pode estar convertendo DM em CM por assimetria ou criando novo retorno capacitivo ao chassi. Meça correntes modais nas duas portas e varie simetria/retorno mantendo o restante fixo.</p>
+<h2 id="orçamento-probabilístico-de-margem"><span class="heading-number">15.13</span> Orçamento probabilístico de margem</h2>
+<p>Se emissão, correção e erro de medição variam, a margem também é uma variável aleatória:</p>
+
+<div class="math-display">
+$$
+
+M=L_{limite}-(L_{base}-A_{mit})-U.
+
+$$
+</div>
+
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">n</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">200_000</span>
+<span style="color: #F8F8F2">base</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">52</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n)</span>       <span style="color: #959077"># dBµV/m</span>
+<span style="color: #F8F8F2">atten</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n)</span>     <span style="color: #959077"># dB</span>
+<span style="color: #F8F8F2">measurement</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n)</span>
+<span style="color: #F8F8F2">limit</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">40</span>
+<span style="color: #F8F8F2">margin</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">limit</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">(base</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">atten</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">measurement)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&#39;P(passar)=&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(margin</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&#39;percentis da margem:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">percentile(margin,</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">95</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">99</span><span style="color: #F8F8F2">]))</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m rng = np.random.default_rng([32m7[39m)
+[32m      3[39m n = [32m200_000[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p>Não some desvios-padrão como se fossem margens determinísticas. Declare distribuições, correlações e se a incerteza é padrão ou expandida.</p>
+<h2 id="exemplo-multicritério"><span class="heading-number">15.14</span> Exemplo multicritério</h2>
+<p>Uma decisão pode usar pontuação ponderada, mas os pesos não substituem requisitos obrigatórios.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #F8F8F2">names</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;reduzir slew&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;choque CM&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;blindagem&#39;</span><span style="color: #F8F8F2">]</span>
+<span style="color: #959077"># colunas: eficácia, robustez, custo, impacto funcional; 0 ruim, 10 bom</span>
+<span style="color: #F8F8F2">scores</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([[</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">]],</span> <span style="color: #F8F8F2">float)</span>
+<span style="color: #F8F8F2">weights</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">0.40</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.25</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">scores</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">weights</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">name,</span> <span style="color: #F8F8F2">value</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">sorted(zip(names,</span> <span style="color: #F8F8F2">total),</span> <span style="color: #F8F8F2">key</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">lambda</span> <span style="color: #F8F8F2">x:</span> <span style="color: #FF4689">-</span><span style="color: #F8F8F2">x[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]):</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">name</span><span style="color: #E6DB74">:15s}: {</span><span style="color: #F8F8F2">value</span><span style="color: #E6DB74">:.2f}&#39;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m names = [[33m'[39m[33mreduzir slew[39m[33m'[39m, [33m'[39m[33mchoque CM[39m[33m'[39m, [33m'[39m[33mblindagem[39m[33m'[39m]
+[32m      3[39m [38;5;66;03m# colunas: eficácia, robustez, custo, impacto funcional; 0 ruim, 10 bom[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p>Faça análise de sensibilidade dos pesos. Se a alternativa vencedora muda com pequenas variações, a decisão exige mais evidência.</p>
+<h2 id="laboratório-spice--escolha-de-snubber"><span class="heading-number">15.15</span> Laboratório SPICE — escolha de snubber</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">Vstep</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">PULSE</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">24</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">250</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2">)</span>
+<span style="color: #A6E22E">Lpar</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">sw</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Cpar</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">sw</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Rload</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">sw</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span>
+<span style="color: #A6E22E">Rsnub</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">sw</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">sn</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">22</span>
+<span style="color: #A6E22E">Csnub</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">sn</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">220</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1u</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">sw</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">sn</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Simule sem o ramo RC, depois varra $R$ e $C$. Registre pico de tensão, tempo de acomodação e energia dissipada; minimizar apenas overshoot pode criar perda inaceitável. Parasitas e forma de excitação devem representar o circuito real.</p>
+<h2 id="checklist-de-saída"><span class="heading-number">15.16</span> Checklist de saída</h2>
+<ul>
+<li>mecanismo confirmado e capítulo físico consultado;</li>
+<li>redução requerida e margem definidas;</li>
+<li>modo, banda e impedâncias declarados;</li>
+<li>componentes e montagem não ideais incluídos;</li>
+<li>segurança e função verificadas;</li>
+<li>medição antes/depois repetível;</li>
+<li>solução de produção testada em condições críticas;</li>
+<li>resultado ligado ao plano de conformidade.</li>
+</ul>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="14_modelagem_problemas_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">14. Modelagem de problemas EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="16_projeto_pcbs_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">16. Projeto de PCBs Considerando Técnicas EMC</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

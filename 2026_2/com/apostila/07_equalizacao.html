@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7. Equalização — Compensação da Dispersão do Canal — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>7. Equalização — Compensação da Dispersão do Canal</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>7. Equalização — Compensação da Dispersão do Canal</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="06_digital_passband_qam.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">6. Modulação QAM — Transmissão Digital em Banda Base</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="08_sincronismo.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">8. Sincronismo</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>7. Equalização — Compensação da Dispersão do Canal</h1>
+<blockquote>
+<p>Comunicações Digitais — Apostila de Curso<br />
+Tópicos: ISI · Equalizadores lineares ZF/MMSE · Equalização adaptativa LMS/RLS · DFE · MLSE · Equalização OFDM</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">7.1</span> Antes de começar</h2>
+<p>Ao final, você deve diagnosticar ISI, derivar ZF e MMSE, explicar convergência adaptativa e escolher entre equalização linear, DFE, MLSE e OFDM. <strong>Diagnóstico:</strong> por que inverter exatamente o canal pode piorar o receptor? <strong>Evidência mínima:</strong> comparar resposta conjunta, MSE e BER de ZF e MMSE no mesmo canal e SNR.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#origem-da-isi-e-o-problema-da-equaliza%C3%A7%C3%A3o">Origem da ISI e o problema da equalização</a></li>
+<li><a href="#equalizadores-lineares-zero-forcing">Equalizadores Lineares: Zero-Forcing</a></li>
+<li><a href="#limita%C3%A7%C3%B5es-do-zero-forcing-amplifica%C3%A7%C3%A3o-de-ru%C3%ADdo">Limitações do Zero-Forcing: Amplificação de Ruído</a></li>
+<li><a href="#equalizadores-mmse--dedu%C3%A7%C3%A3o-completa">Equalizadores MMSE — Dedução Completa</a></li>
+<li><a href="#equaliza%C3%A7%C3%A3o-por-detec%C3%A7%C3%A3o-de-sequ%C3%AAncia">Equalização por Detecção de Sequência</a></li>
+<li><a href="#equaliza%C3%A7%C3%A3o-adaptativa-lms-rls-e-cma">Equalização Adaptativa: LMS, RLS e CMA</a></li>
+<li><a href="#equaliza%C3%A7%C3%A3o-em-sistemas-pr%C3%A1ticos">Equalização em Sistemas Práticos</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="origem-da-isi-e-o-problema-da-equalização"><span class="heading-number">7.2</span> Origem da ISI e o problema da equalização</h2>
+<h3 id="dispersão-do-canal-o-fenômeno-físico"><span class="heading-number">7.2.1</span> Dispersão do canal: o fenômeno físico</h3>
+<p>Em qualquer canal de comunicação real, o sinal se propaga por <strong>múltiplos percursos</strong> (multipath): reflexões, refrações e difrações fazem com que o receptor capte várias cópias atrasadas do mesmo símbolo. Alternativamente, um canal pode ser <strong>banda limitada</strong>, filtrando os componentes de alta frequência do sinal. Em ambos os casos, a resposta ao impulso do canal não é um impulso único $\delta(t)$, mas sim uma função decaimento $h(t)$ com duração finita ou efetiva.</p>
+<p>Considere um canal modelado como um filtro linear com resposta ao impulso $h_c(t)$. O sinal recebido (após o filtro de recepção) é:</p>
+
+<div class="math-display">
+$$
+
+r(t) = \sum_{\ell=0}^{L-1} h[\ell]\,x[n-\ell] + w[n],
+
+$$
+</div>
+
+<p>onde $x[n]$ são os símbolos transmitidos, $h[\ell]$ é a resposta ao impulso discreta do canal (com $L$ taps), e $w[n]$ é o ruído AWGN amostrado.</p>
+<h3 id="isi--interferência-intersimbólica"><span class="heading-number">7.2.2</span> ISI — Interferência Intersimbólica</h3>
+<p>Quando $h[\ell] \neq 0$ para $\ell \neq 0$, um símbolo $x[n]$ &quot;vaza&quot; para instantes de amostragem vizinhos, interferindo com símbolos subsequentes e anteriores. Este fenômeno é chamado de <strong>ISI</strong> (Interferência Intersimbólica).</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo concreto</strong>: se $h = [0{,}3,\; 1{,}0,\; 0{,}3]$, o símbolo no instante $n$ contribui com 0,3 da amplitude nos instantes $n-1$ e $n+1$. Ao amostrar em $n+1$, recebemos não apenas $x[n+1]$, mas também $0{,}3\cdot x[n]$, que é interferência do símbolo anterior.</p></aside>
+<h3 id="formulação-do-problema-de-equalização"><span class="heading-number">7.2.3</span> Formulação do problema de equalização</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: Equalização é o processo de compensar a distorção introduzida pelo canal, de modo que a resposta conjunta do canal + equalizador seja próxima de um impulso atrasado:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{H_{\text{eq}}(z)\,H_c(z)\,H_{\text{rx}}(z) \approx z^{-d}},
+
+$$
+</div>
+
+<p>onde $H_c(z)$ é a resposta do canal, $H_{\text{rx}}(z)$ é o filtro de recepção (tipicamente um filtro casado), $H_{\text{eq}}(z)$ é o equalizador, e $d$ é o atraso de decisão (permitindo que o equalizador seja causal).</p>
+<p><strong>Dedução</strong>: O sinal recebido no domínio Z é $R(z) = X(z)H_c(z)H_{\text{rx}}(z) + W(z)$. Após o equalizador:</p>
+
+<div class="math-display">
+$$
+
+Y(z) = R(z)H_{\text{eq}}(z) = X(z)\underbrace{H_c(z)H_{\text{rx}}(z)H_{\text{eq}}(z)}_{C(z)} + W(z)H_{\text{eq}}(z).
+
+$$
+</div>
+
+<p>O objetivo é que $C(z) \approx z^{-d}$, de modo que $y[n] \approx x[n-d] + \text{ruído amplificado}$.</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: o filtro casado à forma de onda recebida maximiza a SNR no instante escolhido, mas não cancela necessariamente a ISI. Um canal causal de fase mínima tem zeros dentro do círculo unitário e admite inversa causal estável; zeros fora caracterizam fase não mínima e tornam a inversa causal instável. Nulos sobre o círculo unitário impedem inversão perfeita estável. Equalizadores FIR aproximam essa inversão com atraso e erro residual.</p></aside>
+<h3 id="diagrama-de-olho"><span class="heading-number">7.2.4</span> Diagrama de olho</h3>
+<p>O <strong>diagrama de olho</strong> é uma ferramenta visual poderosa para avaliar a presença de ISI. Ele superpõe segmentos do sinal recebido, cada um de duração $T_s$, centralizados em múltiplos de $T_s$.</p>
+<aside class="callout callout-note" role="note"><p><strong>Interpretação</strong>:</p></aside>
+<ul>
+<li><strong>Olho aberto</strong> (abertura vertical grande) = pouco ISI, fácil decisão.</li>
+<li><strong>Olho fechado</strong> (abertura vertical pequena) = ISI severo, alta probabilidade de erro.</li>
+<li>A <strong>largura horizontal</strong> do olho aberto indica a margem de timing.</li>
+<li>A <strong>altura vertical</strong> no ponto de amostragem é proporcional à margem de ruído.</li>
+</ul>
+<p>Uma medida determinística simples para BPSK é comparar o cursor principal com a soma absoluta dos demais cursores:</p>
+
+<div class="math-display">
+$$
+\boxed{A_{\rm eye}\ge2\sqrt{E_s}\left(|c[d]|-\sum_{k\ne d}|c[k]|\right).}
+$$
+</div>
+
+<p>Se o termo entre parênteses for positivo, ele é uma cota inferior da abertura vertical sem ruído; o ruído torna as trajetórias espessas e deve ser descrito separadamente, por exemplo com intervalos $\pm q\sigma_n$. Não se mede abertura usando o menor pós-cursor isolado.</p>
+<h2 id="equalizadores-lineares-zero-forcing"><span class="heading-number">7.3</span> Equalizadores Lineares: Zero-Forcing</h2>
+<h3 id="estrutura-do-equalizador-transversal-fir"><span class="heading-number">7.3.1</span> Estrutura do equalizador transversal (FIR)</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: Um equalizador transversal (ou FIR) é um filtro digital com resposta ao impulso finita:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{y[n] = \sum_{k=0}^{N-1} w_k\,x[n-k]},
+
+$$
+</div>
+
+<p>onde $x[n]$ é a entrada (sinal recebido), $w_k$ são os coeficientes do equalizador, e $N$ é o número de taps (estágios de atraso).</p>
+<p><strong>Estrutura</strong>: O sinal de entrada passa por uma série de $N-1$ estágios de atraso ($z^{-1}$). Cada amostra atrasada é multiplicada por um coeficiente $w_k$ e a soma produz a saída.</p>
+<p><strong>Representação matricial</strong>: Para $M$ amostras consecutivas:</p>
+
+<div class="math-display">
+$$
+
+\begin{pmatrix} y[n] \\ y[n+1] \\ \vdots \\ y[n+M-1] \end{pmatrix}
+= \underbrace{\begin{pmatrix}
+x[n] &amp; x[n-1] &amp; \cdots &amp; x[n-N+1] \\
+x[n+1] &amp; x[n] &amp; \cdots &amp; x[n-N+2] \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+x[n+M-1] &amp; x[n+M-2] &amp; \cdots &amp; x[n+M-N]
+\end{pmatrix}}_{\mathbf{X}}
+\begin{pmatrix} w_0 \\ w_1 \\ \vdots \\ w_{N-1} \end{pmatrix}.
+
+$$
+</div>
+
+<h3 id="equalizador-zero-forcing-conceito"><span class="heading-number">7.3.2</span> Equalizador Zero-Forcing: conceito</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: O equalizador Zero-Forcing (ZF) é projetado para <strong>cancelar completamente o ISI</strong> (em teoria), impondo que a resposta ao impulso conjunta seja exatamente um impulso atrasado:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{c[k] = \begin{cases} 1, &amp; k = d \\ 0, &amp; k \neq d \end{cases}}
+
+$$
+</div>
+
+<p>onde $c = h * w$ é a convolução da resposta do canal com a resposta do equalizador.</p>
+<h3 id="dedução-dos-coeficientes-zf-no-domínio-do-tempo"><span class="heading-number">7.3.3</span> DEDUÇÃO dos coeficientes ZF no domínio do tempo</h3>
+<p>Seja $h = [h_0, h_1, \ldots, h_{L-1}]$ a resposta do canal e $w = [w_0, w_1, \ldots, w_{N-1}]$ a resposta do equalizador. A convolução $c = h * w$ tem $L+N-1$ amostras. Impomos $c[d] = 1$ e $c[k] = 0$ para $k \neq d$.</p>
+<p>Construa a matriz de convolução $\mathbf H\in\mathbb C^{(L+N-1)\times N}$:</p>
+
+<div class="math-display">
+$$
+
+\mathbf H=\begin{pmatrix}
+h_0 &amp; 0 &amp; \cdots &amp; 0 \\
+h_1 &amp; h_0 &amp; \cdots &amp; 0 \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+h_{L-1}&amp;h_{L-2}&amp;\cdots&amp;0\\
+0&amp;h_{L-1}&amp;\cdots&amp;0\\
+\vdots&amp;\vdots&amp;\ddots&amp;h_0\\
+0&amp;0&amp;\cdots&amp;h_{L-1}
+\end{pmatrix}.
+
+$$
+</div>
+
+<p>Então $\mathbf c=\mathbf H\mathbf w$ e o alvo é o vetor $\mathbf e_d$ com 1 na posição $d$. Como há $L+N-1$ restrições e apenas $N$ coeficientes, um FIR finito normalmente <strong>não consegue</strong> zerar todos os cursores. Há três casos:</p>
+<ol>
+<li>Se $\mathbf H\mathbf w=\mathbf e_d$ for consistente, qualquer solução exata é ZF.</li>
+<li>Se for sobredefinido, usa-se o ZF de mínimos quadrados</li>
+</ol>
+
+<div class="math-display">
+$$
+\boxed{\mathbf w_{\rm ZF}=\mathbf H^\dagger\mathbf e_d
+   =(\mathbf H^H\mathbf H)^{-1}\mathbf H^H\mathbf e_d}
+$$
+</div>
+
+<p>quando $\mathbf H$ tem posto completo.<br />
+3. Se a matriz for mal condicionada ou singular, usa-se a pseudoinversa SVD e aceita-se ISI residual; regularização conduz ao MMSE.</p>
+<p>O atraso $d$ deve ser testado: ele altera quais pré- e pós-cursores um FIR causal consegue aproximar.</p>
+<h3 id="solução-numérica"><span class="heading-number">7.3.4</span> Solução numérica</h3>
+<p>Resolver as equações normais custa $O(N^3)$ e pode piorar o condicionamento. Decomposição QR ou SVD é numericamente preferível. Levinson–Durbin só se aplica quando o sistema resultante é Hermitiano Toeplitz positivo definido; não se deve aplicá-lo automaticamente à matriz retangular de convolução.</p>
+<h3 id="exercício-em-python-equalizador-zf-para-canal-de-3-taps"><span class="heading-number">7.3.5</span> Exercício em Python: equalizador ZF para canal de 3 taps</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Canal de 3 taps</span>
+<span style="color: #F8F8F2">h</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.45</span><span style="color: #F8F8F2">])</span>
+
+<span style="color: #959077"># Numero de taps do equalizador</span>
+<span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5</span>
+<span style="color: #F8F8F2">d</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span>  <span style="color: #959077"># atraso de decision</span>
+
+<span style="color: #959077"># Construir matriz Toeplitz do canal</span>
+<span style="color: #F8F8F2">H</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros((N,</span> <span style="color: #F8F8F2">N))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">j</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+        <span style="color: #F8F8F2">lag</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">j</span>
+        <span style="color: #66D9EF">if</span> <span style="color: #AE81FF">0</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #F8F8F2">lag</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">len(h):</span>
+            <span style="color: #F8F8F2">H[i,</span> <span style="color: #F8F8F2">j]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">h[lag]</span>
+
+<span style="color: #959077"># Vetor desejado: impulso atrasado em d</span>
+<span style="color: #F8F8F2">desired</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(N)</span>
+<span style="color: #F8F8F2">desired[d]</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+
+<span style="color: #959077"># Resolver w = H^{-1} * desired</span>
+<span style="color: #F8F8F2">w_zf</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linalg</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">solve(H,</span> <span style="color: #F8F8F2">desired)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Coeficientes ZF: {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">round(w_zf, </span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Verificar resposta conjunta</span>
+<span style="color: #F8F8F2">c</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(h,</span> <span style="color: #F8F8F2">w_zf)[:N</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Resposta conjunta: {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">round(c, </span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Plotar resposta do canal e equalizador</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">stem(range(len(h)),</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(h),</span> <span style="color: #F8F8F2">linefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markerfmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;bo&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Resposta ao impulso do canal&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;amostra&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;|h|&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">stem(range(len(w_zf)),</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(w_zf),</span> <span style="color: #F8F8F2">linefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markerfmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;ro&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Coeficientes do equalizador ZF&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;amostra&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;|w|&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Canal de 3 taps[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="limitações-do-zero-forcing-amplificação-de-ruído"><span class="heading-number">7.4</span> Limitações do Zero-Forcing: Amplificação de Ruído</h2>
+<h3 id="dedução-do-snr-de-saída-no-zf"><span class="heading-number">7.4.1</span> DEDUÇÃO do SNR de saída no ZF</h3>
+<p>Considere o equalizador ZF $\mathbf{w}_{\text{ZF}} = \mathbf{H}^{-1}\mathbf{e}_d$. O sinal de saída é:</p>
+
+<div class="math-display">
+$$
+
+y[n] = x[n-d] + \underbrace{\sum_{k \neq d} c[k]\,x[n-k]}_{\text{ISI residual (zero em ZF)}} + \underbrace{\sum_{k=0}^{N-1} w_k\,w[n-k]}_{\text{ruído amplificado}}.
+
+$$
+</div>
+
+<p>Em ZF, o ISI é zero por projeto. O problema é o <strong>ruído amplificado</strong>.</p>
+<h3 id="potência-do-ruído-na-saída"><span class="heading-number">7.4.2</span> Potência do ruído na saída</h3>
+<p>A potência do ruído na saída do equalizador é:</p>
+
+<div class="math-display">
+$$
+
+\sigma_{n,\text{out}}^2 = \mathbb{E}\left[\left|\sum_{k=0}^{N-1} w_k\,w[n-k]\right|^2\right].
+
+$$
+</div>
+
+<p>Para ruído branco $\mathbb{E}[w[n]w^*[m]] = \sigma_w^2\delta[n-m]$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\sigma_{n,\text{out}}^2 = \sigma_w^2\sum_{k=0}^{N-1}|w_k|^2 = \sigma_w^2\|\mathbf{w}\|^2}.
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Interpretação</strong>: O equalizador ZF amplifica o ruído proporcional à norma dos seus coeficientes. Se o canal tem zeros ou atenuação forte em certas frequências, os coeficientes do ZF devem ser <strong>grandes</strong> nessas bandas para &quot;ganhar&quot; a atenuação, e isso amplifica muito o ruído.</p></aside>
+<h3 id="dedução-no-domínio-da-frequência"><span class="heading-number">7.4.3</span> DEDUÇÃO no domínio da frequência</h3>
+<p>Para não misturar o filtro casado com a coloração do ruído, considere diretamente $R(\omega)=H(\omega)X(\omega)+N(\omega)$. O ZF ideal é:</p>
+
+<div class="math-display">
+$$
+
+W_{\text{ZF}}(e^{j\omega})=\frac{e^{-j\omega d}}{H(e^{j\omega})}.
+
+$$
+</div>
+
+<p>Depois da inversão, a componente de sinal tem PSD $S_X$, enquanto o ruído tem PSD $S_N/|H|^2$. Logo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathrm{SNR}_{out}(\omega)=\frac{S_X(\omega)|H(\omega)|^2}{S_N(\omega)}.}
+
+$$
+</div>
+
+<p>O ZF não melhora a SNR de cada frequência: a inversão escala sinal e ruído igualmente. O problema aparece ao restaurar uma resposta plana, pois as frequências muito atenuadas recebem enorme potência de ruído e dominam a variância total.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo extremo</strong>: Se o canal tem um <strong>nulo espectral</strong> em $\omega_0$, i.e., $H_c(e^{j\omega_0}) = 0$, o ZF tem ganho infinito nessa frequência. Teoricamente, a equalização completa é impossível — não há informação naquela frequência para recuperar.</p></aside>
+<h3 id="trade-off-fundamental"><span class="heading-number">7.4.4</span> Trade-off fundamental</h3>
+<aside class="callout callout-result" role="status"><p><strong>Resultado do trade-off</strong>: o ZF força ou aproxima a condição de ISI nula sem penalizar a norma dos coeficientes; por isso <strong>pode produzir grande amplificação de ruído</strong> nas bandas atenuadas. O MMSE encontra um compromisso entre ISI e ruído.</p></aside>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: A escolha entre ZF e MMSE não é apenas teórica — em sistemas reais com canal mal condicionado (múltiplos percursos com cancelamento construtivo/destrutivo), o ZF pode ser <strong>pior</strong> que nenhuma equalização.</p></aside>
+<h2 id="equalizadores-mmse--dedução-completa"><span class="heading-number">7.5</span> Equalizadores MMSE — Dedução Completa</h2>
+<h3 id="critério-mmse-minimização-do-erro-quadrático"><span class="heading-number">7.5.1</span> Critério MMSE: minimização do erro quadrático</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: O equalizador MMSE (Minimum Mean Square Error) é aquele que minimiza o erro quadrático médio entre a saída do equalizador e o símbolo desejado:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf{w}_{\text{MMSE}} = \arg\min_{\mathbf{w}}\,\mathbb{E}\bigl[|d[n] - \mathbf{w}^H\mathbf{x}_n|^2\bigr]},
+
+$$
+</div>
+
+<p>onde $d[n]$ é o símbolo desejado (pode ser $x[n-d]$ durante treinamento) e $\mathbf{x}_n = [x[n], x[n-1], \ldots, x[n-N+1]]^T$ é o vetor de entrada.</p>
+<h3 id="equações-de-wiener--dedução-completa"><span class="heading-number">7.5.2</span> Equações de Wiener — dedução completa</h3>
+<p>Expandindo o erro quadrático:</p>
+
+<div class="math-display">
+$$
+
+J(\mathbf{w}) = \mathbb{E}\bigl[|d[n] - \mathbf{w}^H\mathbf{x}_n|^2\bigr] = \mathbb{E}\bigl[(d[n] - \mathbf{w}^H\mathbf{x}_n)(d^*[n] - \mathbf{x}_n^H\mathbf{w})\bigr].
+
+$$
+</div>
+
+<p>Expandindo o produto:</p>
+
+<div class="math-display">
+$$
+
+J(\mathbf{w}) = \mathbb{E}[|d[n]|^2] - \mathbb{E}[d[n]\mathbf{x}_n^H\mathbf{w}] - \mathbb{E}[\mathbf{w}^H\mathbf{x}_n d^*[n]] + \mathbb{E}[\mathbf{w}^H\mathbf{x}_n\mathbf{x}_n^H\mathbf{w}].
+
+$$
+</div>
+
+<p>Simplificando (usando $\mathbb{E}[\mathbf{w}^H\mathbf{x}_n d^*[n]] = \mathbf{w}^H\mathbb{E}[\mathbf{x}_n d^*[n]] = \mathbf{w}^H\mathbf{p}$):</p>
+
+<div class="math-display">
+$$
+
+J(\mathbf{w}) = \sigma_d^2 - \mathbf{p}^H\mathbf{w} - \mathbf{w}^H\mathbf{p} + \mathbf{w}^H\mathbf{R}_x\mathbf{w},
+
+$$
+</div>
+
+<p>onde $\mathbf{R}_x = \mathbb{E}[\mathbf{x}_n\mathbf{x}_n^H]$ e $\mathbf{p} = \mathbb{E}[\mathbf{x}_n d^*[n]]$.</p>
+<p>Para minimizar, derivamos em relação a $\mathbf{w}^*$ (derivada complexa de Wirtinger):</p>
+
+<div class="math-display">
+$$
+
+\frac{\partial J}{\partial \mathbf{w}^*} = -\mathbf{p} + \mathbf{R}_x\mathbf{w} = \mathbf{0}.
+
+$$
+</div>
+
+<p><strong>Equações de Wiener</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf{R}_x\,\mathbf{w}_{\text{opt}} = \mathbf{p}}.
+
+$$
+</div>
+
+<h3 id="solução-de-wiener"><span class="heading-number">7.5.3</span> Solução de Wiener</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema da solução de Wiener</strong>: O vetor de coeficientes ótimos é:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf{w}_{\text{MMSE}} = \mathbf{R}_x^{-1}\mathbf{p}}.
+
+$$
+</div>
+
+<p><strong>Erro mínimo</strong>: Substituindo $\mathbf{w}_{\text{MMSE}}$ de volta em $J(\mathbf{w})$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{e_{\min} = \sigma_d^2 - \mathbf{p}^H\mathbf{R}_x^{-1}\mathbf{p}}.
+
+$$
+</div>
+
+<p>Esta é a menor potência de erro quadrático médio alcançável. Note que $e_{\min} \geq 0$ (por definição de erro quadrático).</p>
+<h3 id="forma-alternativa-e-relação-com-zf"><span class="heading-number">7.5.4</span> Forma alternativa e relação com ZF</h3>
+<p>Para um canal conhecido, símbolos brancos de variância $\sigma_s^2$, matriz de convolução $\mathbf H$ e ruído branco de variância $\sigma_n^2$,</p>
+
+<div class="math-display">
+$$
+\mathbf R_r=\sigma_s^2\mathbf H^H\mathbf H+\sigma_n^2\mathbf I,\qquad
+\mathbf p=\sigma_s^2\mathbf H^H\mathbf e_d.
+$$
+</div>
+
+<p>Substituindo esses termos na solução de Wiener:</p>
+
+<div class="math-display">
+$$
+\boxed{\mathbf w_{\rm MMSE}=
+\left(\mathbf H^H\mathbf H+\frac{\sigma_n^2}{\sigma_s^2}\mathbf I\right)^{-1}
+\mathbf H^H\mathbf e_d.}
+$$
+</div>
+
+<p>Esta é a forma Tikhonov. Na expressão geral $\mathbf w=\mathbf R_r^{-1}\mathbf p$, o ruído <strong>já está incluído</strong> em $\mathbf R_r$; adicionar outro $\alpha\mathbf I$ contaria a regularização duas vezes.</p>
+<h3 id="comparação-zf-vs-mmse"><span class="heading-number">7.5.5</span> Comparação ZF vs MMSE</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema de separação</strong>: O equalizador MMSE pode ser visto como o equalizador ZF com regularização por ruído:</p></aside>
+
+<div class="math-display">
+$$
+
+\mathbf w_{\rm MMSE}=
+\left(\mathbf H^H\mathbf H+\frac{\sigma_n^2}{\sigma_s^2}\mathbf I\right)^{-1}
+\mathbf H^H\mathbf e_d.
+
+$$
+</div>
+
+<p>Quando $\sigma_w^2 \to 0$ (SNR $\to \infty$): $\mathbf{w}_{\text{MMSE}} \to \mathbf{w}_{\text{ZF}}$.<br />
+Quando $\sigma_w^2 \to \infty$ (SNR $\to 0$): $\mathbf{w}_{\text{MMSE}} \to \mathbf{0}$ (melhor não equalizar do que amplificar ruído).</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado comparativo</strong>:</p></aside>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>ZF</th>
+<th>MMSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ISI</td>
+<td>0</td>
+<td>Residual (controlado)</td>
+</tr>
+<tr>
+<td>Ruído amplificado</td>
+<td>Máximo</td>
+<td>Minimizado</td>
+</tr>
+<tr>
+<td>Critério otimizado</td>
+<td>Não otimiza MSE/SNR; força zero de ISI no modelo</td>
+<td>Minimiza MSE entre saída e símbolo desejado no modelo adotado</td>
+</tr>
+<tr>
+<td>Complexidade</td>
+<td>$O(N^3)$</td>
+<td>$O(N^3)$</td>
+</tr>
+<tr>
+<td>Conhecimento do canal</td>
+<td>Necessário</td>
+<td>Necessário</td>
+</tr>
+</tbody>
+</table>
+<h3 id="exercício-em-python-zf-vs-mmse--ber-vs-snr"><span class="heading-number">7.5.6</span> Exercício em Python: ZF vs MMSE — BER vs SNR</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">13</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">simulate_zf_mmse</span><span style="color: #F8F8F2">(eb_n0_dbs,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">N_eq,</span> <span style="color: #F8F8F2">n_sym</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">50000</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Simula equalizadores ZF e MMSE e retorna BER.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span>  <span style="color: #959077"># QPSK: dois bits por símbolo</span>
+    <span style="color: #F8F8F2">EbN0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(eb_n0_dbs)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">results</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{}</span>
+
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">lbl,</span> <span style="color: #F8F8F2">gamma_factor</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[(</span><span style="color: #E6DB74">&#39;ZF&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">(</span><span style="color: #E6DB74">&#39;MMSE&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">)]:</span>
+        <span style="color: #F8F8F2">berrs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+        <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db,</span> <span style="color: #F8F8F2">eb_n0</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(eb_n0_dbs,</span> <span style="color: #F8F8F2">EbN0):</span>
+            <span style="color: #959077"># Simbolos QPSK</span>
+            <span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(n_sym,</span> <span style="color: #F8F8F2">k))</span>
+            <span style="color: #F8F8F2">x</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">bits[:,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">bits[:,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+
+            <span style="color: #959077"># Canal + ruido</span>
+            <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(x,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">mode</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;full&#39;</span><span style="color: #F8F8F2">)</span>
+            <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">eb_n0))</span>
+            <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(y))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(y)))</span>
+
+            <span style="color: #959077"># Equalizacao</span>
+            <span style="color: #F8F8F2">y_eq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(y,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ones(N_eq),</span> <span style="color: #F8F8F2">mode</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;valid&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">N_eq</span>
+
+            <span style="color: #959077"># Decision QPSK</span>
+            <span style="color: #F8F8F2">ybits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack([(y_eq</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int),</span>
+                                     <span style="color: #F8F8F2">(y_eq</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)])</span>
+            <span style="color: #F8F8F2">delay</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">len(h)</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span>
+            <span style="color: #F8F8F2">reference</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">bits[delay:delay</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">len(ybits)]</span>
+            <span style="color: #F8F8F2">ber</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(ybits[:len(reference)]</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">reference)</span>
+            <span style="color: #F8F8F2">berrs</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(ber)</span>
+        <span style="color: #F8F8F2">results[lbl]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(berrs)</span>
+
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">results</span>
+
+<span style="color: #F8F8F2">h</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.45</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">eb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">18</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">res</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">simulate_zf_mmse(eb,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">N_eq</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n_sym</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">30000</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">lbl,</span> <span style="color: #F8F8F2">ber</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">res</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">items():</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">ber,</span> <span style="color: #E6DB74">&#39;-o&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">lbl</span><span style="color: #E6DB74">} (equalizador transversal)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">1e-4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BER = 1e-4&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #AE81FF">1e-5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;ZF vs MMSE: BER vs SNR para canal dispersivo&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m rng = np.random.default_rng([32m13[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="equalização-por-detecção-de-sequência"><span class="heading-number">7.6</span> Equalização por Detecção de Sequência</h2>
+<h3 id="detecção-ml-de-sequência"><span class="heading-number">7.6.1</span> Detecção ML de sequência</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: O detector de máxima verossimilhança de sequência (MLSE — Maximum Likelihood Sequence Estimator) não decide símbolo por símbolo, mas busca a <strong>sequência completa</strong> de símbolos que maximiza a probabilidade condicional $P(\mathbf{r}|\mathbf{a})$, onde $\mathbf{a} = [a_0, a_1, \ldots, a_{K-1}]$ é a sequência transmitida.</p></aside>
+<p><strong>Dedução do critério ML</strong>: O ruído é gaussiano, então:</p>
+
+<div class="math-display">
+$$
+
+p(\mathbf{r}|\mathbf{a}) \propto \exp\!\left(-\frac{1}{\sigma_n^2}\sum_{n}|r[n] - \sum_{\ell=0}^{L-1} a[n-\ell]h[\ell]|^2\right).
+
+$$
+</div>
+
+<p>Maximizar esta probabilidade equivale a minimizar:</p>
+
+<div class="math-display">
+$$
+
+\boxed{J(\mathbf{a}) = \sum_{n=0}^{K+L-2}\left|r[n] - \sum_{\ell=0}^{L-1} a[n-\ell]h[\ell]\right|^2}.
+
+$$
+</div>
+
+<h3 id="algoritmo-de-viterbi-para-equalização"><span class="heading-number">7.6.2</span> Algoritmo de Viterbi para equalização</h3>
+<p>O algoritmo de Viterbi resolve o problema de busca ML de forma eficiente, explorando a estrutura de trellis do canal.</p>
+<p><strong>Estados do trellis</strong>: Cada estado representa uma combinação dos últimos $L-1$ símbolos transmitidos. Para $M$-ary e memória $L-1$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{Número de estados} = M^{L-1}}.
+
+$$
+</div>
+
+<p><strong>Transições</strong>: De cada estado, há $M$ transições (uma para cada símbolo possível no instante atual).</p>
+<p><strong>Métrica de caminho</strong>: A métrica de Viterbi é a soma dos erros quadráticos acumulados:</p>
+
+<div class="math-display">
+$$
+
+\gamma_n(s_i, s_j) = \bigl|r[n] - \hat{r}_n(s_i, s_j)\bigr|^2,
+
+$$
+</div>
+
+<p>onde $\hat{r}_n(s_i, s_j)$ é o sinal recebido esperado na transição do estado $s_i$ para $s_j$.</p>
+<p><strong>Complexidade</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathcal{O}\bigl(M^{L-1} \cdot K \cdot M\bigr) = \mathcal{O}\bigl(M^L \cdot K\bigr)},
+
+$$
+</div>
+
+<p>onde $K$ é o número de símbolos e $M^L$ é o número de transições totais por etapa.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: Para canais longos ($L$ grande) ou constelações de alta ordem ($M$ grande), a complexidade é proibitiva. Por exemplo, $M=256$ e $L=8$ implicam $256^7 \approx 2\times10^{17}$ estados — impossível.</p></aside>
+<h3 id="trade-offs-da-detecção-de-sequência"><span class="heading-number">7.6.3</span> Trade-offs da detecção de sequência</h3>
+<table>
+<thead>
+<tr>
+<th>Fator</th>
+<th>Impacto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$L$ (memória do canal)</td>
+<td>Complexidade exponencial: $M^{L-1}$ estados</td>
+</tr>
+<tr>
+<td>$M$ (ordem da constelação)</td>
+<td>Complexidade exponencial: $M^{L-1}$ estados</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td>Próxima do limite teórico de ML</td>
+</tr>
+<tr>
+<td>Latência</td>
+<td>Atraso de decisão $\approx$ comprimento do trellis</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout-result" role="status"><p><strong>Conclusão prática</strong>: MLSE é viável apenas para canais curtos ($L \leq 5$) e constelações pequenas ($M \leq 4$). Para canais longos, usam-se equalizadores lineares (MMSE) ou DFE.</p></aside>
+<h2 id="equalização-adaptativa-lms-rls-e-cma"><span class="heading-number">7.7</span> Equalização Adaptativa: LMS, RLS e CMA</h2>
+<h3 id="por-que-equalização-adaptativa"><span class="heading-number">7.7.1</span> Por que equalização adaptativa?</h3>
+<p>Quando o canal é <strong>desconhecido</strong> ou <strong>variante no tempo</strong>, os coeficientes do equalizador não podem ser calculados offline. A equalização adaptativa atualiza os coeficientes em tempo real, usando dados recebidos.</p>
+<p><strong>Modos de operação</strong>:</p>
+<ol>
+<li><strong>Treinamento</strong>: Usa uma sequência conhecida de treinamento (pilot sequence). O símbolo desejado é o símbolo de treinamento.</li>
+<li><strong>Decision-directed</strong>: Após a convergência, o símbolo desejado é a <strong>decisão</strong> do equalizador. Mais eficiente em overhead, mas propenso a propagação de erros.</li>
+</ol>
+<h3 id="algoritmo-lms-least-mean-squares"><span class="heading-number">7.7.2</span> Algoritmo LMS (Least Mean Squares)</h3>
+<p><strong>Dedução do algoritmo LMS</strong>: A partir do critério MMSE, derivamos a atualização do gradiente estocástico. O erro instantâneo é $e[n] = d[n] - \mathbf{w}^H[n]\mathbf{x}_n$. A atualização:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf{w}[n+1] = \mathbf{w}[n] + \mu\,e^*[n]\,\mathbf{x}[n]},
+
+$$
+</div>
+
+<p>onde $\mu$ é o passo de adaptação (step-size).</p>
+<p><strong>Análise de convergência LMS</strong>: Tomando o valor esperado da atualização:</p>
+
+<div class="math-display">
+$$
+
+\mathbb{E}[\mathbf{w}[n+1]] = \mathbb{E}[\mathbf{w}[n]] + \mu\bigl(\mathbf{p} - \mathbf{R}_x\mathbb{E}[\mathbf{w}[n]]\bigr).
+
+$$
+</div>
+
+<p>Definindo o erro de peso $\tilde{\mathbf{w}}[n] = \mathbf{w}_{\text{opt}} - \mathbb{E}[\mathbf{w}[n]]$:</p>
+
+<div class="math-display">
+$$
+
+\tilde{\mathbf{w}}[n+1] = (\mathbf{I} - \mu\mathbf{R}_x)\tilde{\mathbf{w}}[n].
+
+$$
+</div>
+
+<p>Para convergência em média no modelo idealizado, todos os autovalores de $(\mathbf{I}-\mu\mathbf R_x)$ devem ter módulo menor que 1:</p>
+
+<div class="math-display">
+$$
+
+\boxed{0 &lt; \mu &lt; \frac{2}{\lambda_{\max}(\mathbf{R}_x)}},
+
+$$
+</div>
+
+<p>onde $\lambda_{\max}$ é o maior autovalor da matriz de autocorrelação.</p>
+<p><strong>Constante de tempo de convergência</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\tau_k \approx \frac{1}{\mu\lambda_k}},
+
+$$
+</div>
+
+<p>onde a aproximação vale para $\mu\lambda_k\ll1$. A razão $\kappa=\lambda_{\max}/\lambda_{\min}$ determina a dispersão das velocidades. Limites de convergência em média quadrática são mais restritivos e dependem das estatísticas de ordem superior; o limite acima não garante baixo <em>misadjustment</em>.</p>
+<h3 id="nlms-normalized-lms"><span class="heading-number">7.7.3</span> NLMS (Normalized LMS)</h3>
+<p>O NLMS normaliza o passo pelo poder de entrada:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf{w}[n+1] = \mathbf{w}[n] + \frac{\mu}{\epsilon + \|\mathbf{x}[n]\|^2}\,e^*[n]\,\mathbf{x}[n]},
+
+$$
+</div>
+
+<p>onde $\epsilon$ é uma constante pequena para evitar divisão por zero. O NLMS é mais robusto a variações de potência de entrada.</p>
+<h3 id="algoritmo-rls-recursive-least-squares"><span class="heading-number">7.7.4</span> Algoritmo RLS (Recursive Least Squares)</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: O RLS minimiza a soma ponderada dos erros quadráticos com fator de esquecimento $\lambda \in (0, 1]$:</p></aside>
+
+<div class="math-display">
+$$
+
+J_{\text{RLS}}[n] = \sum_{k=0}^{n} \lambda^{n-k}\,|e[k]|^2.
+
+$$
+</div>
+
+<p><strong>Atualização recursiva</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{
+\begin{aligned}
+\mathbf{P}[n] &amp;= \frac{1}{\lambda}\Bigl(\mathbf{P}[n-1] - \frac{\mathbf{P}[n-1]\mathbf{x}[n]\mathbf{x}^H[n]\mathbf{P}[n-1]}{\lambda + \mathbf{x}^H[n]\mathbf{P}[n-1]\mathbf{x}[n]}\Bigr) \\
+\mathbf{w}[n] &amp;= \mathbf{w}[n-1] + \mathbf{P}[n]\mathbf{x}[n]e^*[n]
+\end{aligned}
+}
+
+$$
+</div>
+
+<p>onde $\mathbf{P}[n] = \bigl(\sum_{k=0}^n \lambda^{n-k}\mathbf{x}[k]\mathbf{x}^H[k]\bigr)^{-1}$ é a matriz de inversa de autocorrelação.</p>
+<p><strong>Complexidade</strong>: $\mathcal{O}(N^2)$ por atualização vs. LMS $\mathcal{O}(N)$. Convergência muito mais rápida, especialmente para canais mal condicionados.</p>
+<h3 id="cma-constant-modulus-algorithm"><span class="heading-number">7.7.5</span> CMA (Constant Modulus Algorithm)</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: O CMA é um equalizador adaptativo sem sequência de treinamento, que explora a constância de módulo da constelação:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbf{w}[n+1] = \mathbf{w}[n] + \mu\bigl(R - |y[n]|^2\bigr)y^*[n]\,\mathbf{x}[n]},
+
+$$
+</div>
+
+<p>com $y[n] = \mathbf{w}^H[n]\mathbf{x}[n]$ e $R = \mathbb{E}[|x_k|^4]/\mathbb{E}[|x_k|^2]$.</p>
+<p><strong>Propriedades</strong>:</p>
+<ul>
+<li>Não requer sequência de treinamento.</li>
+<li>Convergência mais lenta que LMS.</li>
+<li>Não corrige rotação de fase (ambiguidade de fase).</li>
+<li>Adequado para PSK e QPSK (amplitude constante).</li>
+<li>Menos adequado para QAM de ordem alta (amplitudes variadas).</li>
+</ul>
+<h3 id="exercício-em-python-tracking-de-canal-com-lms"><span class="heading-number">7.7.6</span> Exercício em Python: tracking de canal com LMS</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">2026</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Canal variante no tempo (modelo Jakes simplificado)</span>
+<span style="color: #F8F8F2">L_chan</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">L_eq</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20000</span>
+<span style="color: #F8F8F2">d</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">L_eq</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span>
+
+<span style="color: #F8F8F2">h_true</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">h_eq_est</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(L_eq)</span>
+<span style="color: #F8F8F2">w_lms</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(L_eq,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+<span style="color: #F8F8F2">mse_hist</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #F8F8F2">ber_hist</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+
+<span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span>  <span style="color: #959077"># QPSK</span>
+<span style="color: #F8F8F2">n_sym</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">4</span>
+<span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(n_sym,</span> <span style="color: #F8F8F2">k))</span>
+<span style="color: #F8F8F2">gray</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">bits</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">k):</span> <span style="color: #F8F8F2">gray[:,</span> <span style="color: #F8F8F2">b]</span> <span style="color: #FF4689">^=</span> <span style="color: #F8F8F2">gray[:,</span> <span style="color: #F8F8F2">b</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">sI</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(gray[:,:m]</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">w)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+<span style="color: #F8F8F2">sQ</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(gray[:,m:]</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">w)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+<span style="color: #F8F8F2">xs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">sI</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(m)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">sQ</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(m)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">eb_n0_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">eb_n0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(eb_n0_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">eb_n0))</span>
+
+<span style="color: #F8F8F2">mse_arr</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(L_eq</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N):</span>
+    <span style="color: #959077"># Variacao lenta do canal</span>
+    <span style="color: #F8F8F2">phase</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.1</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn()</span>
+    <span style="color: #F8F8F2">h_var</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">h_true</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">phase)</span>
+    <span style="color: #959077"># Transmitir</span>
+    <span style="color: #F8F8F2">x_pad</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">concatenate([np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(L_chan</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">xs])</span>
+    <span style="color: #F8F8F2">clean_rx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(x_pad,</span> <span style="color: #F8F8F2">h_var)</span>
+    <span style="color: #F8F8F2">rx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">clean_rx</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(clean_rx))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(clean_rx)))</span>
+    <span style="color: #959077"># Extrair vetor de entrada</span>
+    <span style="color: #F8F8F2">u</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rx[n</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">L_eq</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:n</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">len(u)</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">L_eq:</span>
+        <span style="color: #66D9EF">continue</span>
+    <span style="color: #959077"># Filtrar</span>
+    <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">w_lms</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">u</span>
+    <span style="color: #959077"># Erro</span>
+    <span style="color: #F8F8F2">d_sym</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">xs[n</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">L_eq</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">d]</span>  <span style="color: #959077"># simbolo desejado (decision-directed)</span>
+    <span style="color: #F8F8F2">e</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">d_sym</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">y</span>
+    <span style="color: #959077"># Atualizar</span>
+    <span style="color: #F8F8F2">w_lms</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(u)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">e</span>
+    <span style="color: #F8F8F2">mse_arr</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(e</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(e)))</span>
+
+<span style="color: #959077"># Plotar MSE e convergencia</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">7</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(mse_arr,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ones(</span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">mode</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;valid&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #E6DB74">&#39;#1e3a5f&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Convergencia LMS: MSE medio movil (N={</span><span style="color: #F8F8F2">L_eq</span><span style="color: #E6DB74">}, mu={</span><span style="color: #F8F8F2">mu</span><span style="color: #E6DB74">})&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;amostra&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;MSE&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #959077"># Comparar equalizador estimado com canal inverso</span>
+<span style="color: #F8F8F2">w_final</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">w_lms</span>
+<span style="color: #F8F8F2">c_est</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(h_true,</span> <span style="color: #F8F8F2">w_final)[:L_chan</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">L_eq</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">stem(range(len(c_est)),</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(c_est),</span> <span style="color: #F8F8F2">linefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markerfmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;bo&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(d,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;d = {</span><span style="color: #F8F8F2">d</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Resposta conjunta canal x equalizador&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;amostra&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;|c[n]|&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m rng = np.random.default_rng([32m2026[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="equalização-em-sistemas-práticos"><span class="heading-number">7.8</span> Equalização em Sistemas Práticos</h2>
+<!-- slides: columns -->
+<h3 id="gsm"><span class="heading-number">7.8.1</span> GSM</h3>
+<p>Em GSM, a sequência de treinamento no meio do burst permite estimar o canal. Receptores clássicos usam detecção de sequência por Viterbi/MLSE ou variantes de complexidade reduzida; não existe uma regra geral de “equalizador MMSE de 15 taps”. O exemplo ilustra por que treinamento conhecido é necessário antes da detecção dos dados.</p>
+<!-- slides: column -->
+<h3 id="wi-fi-80211-agnacax"><span class="heading-number">7.8.2</span> Wi-Fi (802.11 a/g/n/ac/ax)</h3>
+<p>Em OFDM (802.11), cada subportadora experimenta canal plano. A equalização é por <strong>um tap</strong>:</p>
+
+<div class="math-display">
+$$
+
+W[k] = \frac{1}{H[k]} \quad \text{(ZF)} \qquad \text{ou} \qquad W[k] = \frac{H^*[k]}{|H[k]|^2 + N_0/E_s} \quad \text{(MMSE)}.
+
+$$
+</div>
+
+<p>Esta é a grande vantagem do OFDM: transforma equalização de $N$ taps em $N_{\text{sub}}$ equalizadores de 1 tap.</p>
+<!-- slides: end-columns -->
+<h3 id="4g-lte--5g-nr"><span class="heading-number">7.8.3</span> 4G LTE / 5G NR</h3>
+<p>LTE usa OFDM no downlink (DFT-s-OFDM no uplink). Equalização de 1 tap por subportadora no downlink. No uplink DFT-s-OFDM (SC-FDMA), usa-se equalizador ZF/MMSE de 1 tap por subportadora (menos PAPR que OFDM puro).</p>
+<p>5G NR estende para mais subportadoras (até 273 MHz de banda), mas o princípio é o mesmo: equalização no domínio da frequência.</p>
+<h3 id="dsl-digital-subscriber-line"><span class="heading-number">7.8.4</span> DSL (Digital Subscriber Line)</h3>
+<p>DSL usa DMT (Discrete Multitone): o espectro é dividido em ~256 bandas de 4,3125 kHz. Cada banda tem equalizador de 1 tap. A ordem QAM é adaptativa por banda: banda com bom SNR usa 256-QAM, banda com ruim SNR usa QPSK.</p>
+<h3 id="teorema-da-equalização-ofdm"><span class="heading-number">7.8.5</span> Teorema da equalização OFDM</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong>: Com prefixo cíclico de comprimento $L_{\text{CP}} \geq L_{\text{canal}} - 1$, a convolução linear do canal se transforma em convolução circular no bloco de DFT. A DFT diagonaliza a matriz de convolução circular:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{Y[k] = H[k]\,X[k] + V[k],\qquad k = 0, 1, \ldots, N_{\text{FFT}}-1},
+
+$$
+</div>
+
+<p>onde $H[k]$ é a resposta do canal na subportadora $k$. A equalização torna-se um ganho complexo escalar por subportadora — complexidade $O(1)$ por subportadora, em contraste com $O(N)$ do equalizador temporal.</p>
+<p><strong>Custo</strong>: Overhead do prefixo cíclico (tipicamente 1/4 do símbolo) e perda de eficiência espectral.</p>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">7.9</span> Exercícios resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">7.9.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> comparar ZF, MMSE e LMS sob o mesmo canal e ruído. <strong>Controle experimental:</strong> reutilize símbolos e realizações de canal ao comparar métodos. <strong>Validação:</strong> reporte resposta conjunta, MSE, ganho de ruído, abertura do olho e BER antes/depois; descarte o transiente adaptativo declarado.</p>
+<h3 id="exercício-1-equalizador-zf-para-canal-de-3-caminhos"><span class="heading-number">7.9.2</span> Exercício 1: Equalizador ZF para canal de 3 caminhos</h3>
+<p>Projete um equalizador ZF para o canal $h = [0{,}3,\; 1{,}0,\; 0{,}45]$ com 5 taps e verifique o ISI residual.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">h</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.45</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">d</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span>
+
+<span style="color: #959077"># Matriz Toeplitz do canal</span>
+<span style="color: #F8F8F2">H</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros((N,</span> <span style="color: #F8F8F2">N))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">j</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+        <span style="color: #F8F8F2">lag</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">j</span>
+        <span style="color: #66D9EF">if</span> <span style="color: #AE81FF">0</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #F8F8F2">lag</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">len(h):</span>
+            <span style="color: #F8F8F2">H[i,</span> <span style="color: #F8F8F2">j]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">h[lag]</span>
+
+<span style="color: #959077"># ZF: w tal que Hw = e_d</span>
+<span style="color: #F8F8F2">desired</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(N);</span> <span style="color: #F8F8F2">desired[d]</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+<span style="color: #F8F8F2">w_zf</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linalg</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">solve(H,</span> <span style="color: #F8F8F2">desired)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Coeficientes ZF: {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">round(w_zf, </span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Resposta conjunta</span>
+<span style="color: #F8F8F2">c</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(h,</span> <span style="color: #F8F8F2">w_zf)[:N</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;Resposta conjunta: {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">round(c, </span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;ISI residual (fora d): {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">round(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">delete(c, d))), </span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">stem(range(len(c)),</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(c),</span> <span style="color: #F8F8F2">linefmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markerfmt</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;bo&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(d,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;d={</span><span style="color: #F8F8F2">d</span><span style="color: #E6DB74">} (simbolo desejado)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Resposta conjunta canal + equalizador ZF&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;amostra&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;|c[n]|&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m h = np.array([[32m0.3[39m, [32m1.0[39m, [32m0.45[39m])
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-2-comparação-zf-vs-mmse--ber-vs-snr"><span class="heading-number">7.9.3</span> Exercício 2: Comparação ZF vs MMSE — BER vs SNR</h3>
+<p>Compare o BER de equalizadores ZF e MMSE em um canal com deep fading.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">run_equalization_compare</span><span style="color: #F8F8F2">(eb_n0_dbs,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">N_eq</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n_sym</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">20000</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">results</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;ZF&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">[],</span> <span style="color: #E6DB74">&#39;MMSE&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">[]}</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">eb_n0_dbs:</span>
+        <span style="color: #F8F8F2">EbN0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">EbN0))</span>
+        <span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(n_sym,</span> <span style="color: #F8F8F2">k))</span>
+        <span style="color: #F8F8F2">gray</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">bits</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+        <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">k):</span> <span style="color: #F8F8F2">gray[:,b]</span> <span style="color: #FF4689">^=</span> <span style="color: #F8F8F2">gray[:,b</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+        <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">weights</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">xi</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">gray[:,:m]</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">weights;</span> <span style="color: #F8F8F2">xq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">gray[:,m:]</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">weights</span>
+        <span style="color: #F8F8F2">xs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xi</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xq</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+        <span style="color: #F8F8F2">rx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(xs,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #E6DB74">&#39;full&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(xs)</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">len(h)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(xs)</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">len(h)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+
+        <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">eq_type</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;ZF&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;MMSE&#39;</span><span style="color: #F8F8F2">]:</span>
+            <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">eq_type</span> <span style="color: #FF4689">==</span> <span style="color: #E6DB74">&#39;ZF&#39;</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #959077"># ZF: matriz de autocorrelacao do canal</span>
+                <span style="color: #F8F8F2">R</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros((N_eq,</span> <span style="color: #F8F8F2">N_eq))</span>
+                <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq):</span>
+                    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">j</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq):</span>
+                        <span style="color: #F8F8F2">R[i,j]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sum(h[t]</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">h[t</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">abs(i</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">j)]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">t</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(abs(i</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">j),</span> <span style="color: #F8F8F2">len(h)))</span>
+                <span style="color: #F8F8F2">p</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([h[d</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">i]</span> <span style="color: #66D9EF">if</span> <span style="color: #AE81FF">0</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #F8F8F2">d</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">i</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">len(h)</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0.0</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq)])</span>
+                <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linalg</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">solve(R,</span> <span style="color: #F8F8F2">p)</span>
+            <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #959077"># MMSE: R + noise regularization</span>
+                <span style="color: #F8F8F2">sigma2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">2</span>  <span style="color: #959077"># ruido complexo</span>
+                <span style="color: #F8F8F2">R</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros((N_eq,</span> <span style="color: #F8F8F2">N_eq))</span>
+                <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq):</span>
+                    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">j</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq):</span>
+                        <span style="color: #F8F8F2">R[i,j]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sum(h[t]</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">h[t</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">abs(i</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">j)]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">t</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(abs(i</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">j),</span> <span style="color: #F8F8F2">len(h)))</span>
+                <span style="color: #F8F8F2">p</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([h[d</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">i]</span> <span style="color: #66D9EF">if</span> <span style="color: #AE81FF">0</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #F8F8F2">d</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">i</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">len(h)</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0.0</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq)])</span>
+                <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linalg</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">solve(R</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">eye(N_eq),</span> <span style="color: #F8F8F2">p)</span>
+
+            <span style="color: #F8F8F2">y_eq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(rx,</span> <span style="color: #F8F8F2">w,</span> <span style="color: #E6DB74">&#39;full&#39;</span><span style="color: #F8F8F2">)</span>
+            <span style="color: #F8F8F2">y_dec</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sign(y_eq</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sign(y_eq</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag)</span>
+            <span style="color: #F8F8F2">yh</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">column_stack([(y_dec</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int),</span>
+                                  <span style="color: #F8F8F2">(y_dec</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)])</span>
+            <span style="color: #F8F8F2">reference</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">bits[:len(yh),</span> <span style="color: #F8F8F2">:</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+            <span style="color: #F8F8F2">results[eq_type]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(yh[:len(reference)]</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">reference))</span>
+
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(results[</span><span style="color: #E6DB74">&#39;ZF&#39;</span><span style="color: #F8F8F2">]),</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(results[</span><span style="color: #E6DB74">&#39;MMSE&#39;</span><span style="color: #F8F8F2">])</span>
+
+<span style="color: #F8F8F2">h</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">0.95</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">])</span>  <span style="color: #959077"># canal com nulo espectral</span>
+<span style="color: #F8F8F2">eb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">22</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ber_zf,</span> <span style="color: #F8F8F2">ber_mmse</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">run_equalization_compare(eb,</span> <span style="color: #F8F8F2">h)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">ber_zf,</span> <span style="color: #E6DB74">&#39;o-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Zero-Forcing&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(eb,</span> <span style="color: #F8F8F2">ber_mmse,</span> <span style="color: #E6DB74">&#39;s-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;MMSE&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">1e-4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BER = 1e-4&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylim(</span><span style="color: #AE81FF">1e-5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;ZF vs MMSE: canal com nulo espectral (h=[1,-0.95,0.3])&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m rng = np.random.default_rng([32m42[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-3-algoritmo-lms-adaptativo--tracking-de-canal"><span class="heading-number">7.9.4</span> Exercício 3: Algoritmo LMS adaptativo — tracking de canal</h3>
+<p>Simule o tracking de canal variante no tempo usando LMS.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">L_chan,</span> <span style="color: #F8F8F2">L_eq,</span> <span style="color: #F8F8F2">mu,</span> <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">11</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.005</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15000</span>
+<span style="color: #F8F8F2">d</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">L_eq</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">EbN0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(EbN0</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)))</span>
+
+<span style="color: #F8F8F2">h_true</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">0.4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">w_lms</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(L_eq,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+<span style="color: #F8F8F2">mse_track</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #F8F8F2">err_angle</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+
+<span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(N</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">k))</span>
+<span style="color: #F8F8F2">gray</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">bits</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">k):</span> <span style="color: #F8F8F2">gray[:,b]</span> <span style="color: #FF4689">^=</span> <span style="color: #F8F8F2">gray[:,b</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">wts</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">xi</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(gray[:,:m]</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">wts)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int);</span> <span style="color: #F8F8F2">xq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(gray[:,m:]</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">wts)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+<span style="color: #F8F8F2">xs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xi</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xq</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">mse_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(L_eq</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N):</span>
+    <span style="color: #F8F8F2">phase</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.05</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn()</span>
+    <span style="color: #F8F8F2">h_v</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">h_true</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">phase)</span>
+    <span style="color: #F8F8F2">rx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">concatenate([np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(L_chan</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">xs]),</span> <span style="color: #F8F8F2">h_v,</span> <span style="color: #E6DB74">&#39;valid&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">rx</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(rx))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(rx)))</span>
+    <span style="color: #F8F8F2">u</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rx[n</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">L_eq</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:n</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">];</span> <span style="color: #F8F8F2">d_sym</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">xs[n</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">L_eq</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">d]</span>
+    <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">w_lms</span> <span style="color: #FF4689">@</span> <span style="color: #F8F8F2">u;</span> <span style="color: #F8F8F2">e</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">d_sym</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">y</span>
+    <span style="color: #F8F8F2">w_lms</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(u)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">e</span>
+    <span style="color: #F8F8F2">mse_vals</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(e</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(e)))</span>
+    <span style="color: #F8F8F2">err_angle</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">angle(w_lms[:len(h_v)])</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">angle(h_v)))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">7</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(mse_vals,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ones(</span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">mode</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;valid&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #E6DB74">&#39;#0f4c75&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Convergencia LMS: MSE em canal variante (mu=0.005)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;amostra&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;MSE&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(err_angle)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Fase do canal vs estimativa&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;amostra&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;fase (rad)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m rng = np.random.default_rng([32m7[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-4-diagrama-de-olho-antes-e-após-equalização"><span class="heading-number">7.9.5</span> Exercício 4: Diagrama de olho antes e após equalização</h3>
+<p>Visualize o diagrama de olho do sinal recebido sem equalização e com equalizador MMSE.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> matplotlib.colors </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">LogNorm</span>
+
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">13</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">h</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.45</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">N_eq</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">11</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">d</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N_eq</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50000</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">EbN0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">18</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(EbN0</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)))</span>
+
+<span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">integers(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(N</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">k))</span>
+<span style="color: #F8F8F2">gray</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">bits</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">copy()</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">b</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">k):</span> <span style="color: #F8F8F2">gray[:,b]</span> <span style="color: #FF4689">^=</span> <span style="color: #F8F8F2">gray[:,b</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">wts</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">xi</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(gray[:,:m]</span><span style="color: #A6E22E">@wts</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int);</span> <span style="color: #F8F8F2">xq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(gray[:,m:]</span><span style="color: #A6E22E">@wts</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+<span style="color: #F8F8F2">xs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xi</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">xq</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">m</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">rx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(xs,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #E6DB74">&#39;full&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(xs)</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">len(h)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">standard_normal(len(xs)</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">len(h)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #959077"># MMSE</span>
+<span style="color: #F8F8F2">R</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros((N_eq,</span> <span style="color: #F8F8F2">N_eq))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq):</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">j</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq):</span>
+        <span style="color: #F8F8F2">R[i,j]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sum(h[t]</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">h[t</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">abs(i</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">j)]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">t</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(abs(i</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">j),</span> <span style="color: #F8F8F2">len(h)))</span>
+<span style="color: #F8F8F2">p</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([h[d</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">i]</span> <span style="color: #66D9EF">if</span> <span style="color: #AE81FF">0</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #F8F8F2">d</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">i</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">len(h)</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0.0</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_eq)])</span>
+<span style="color: #F8F8F2">w_mmse</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linalg</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">solve(R</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">eye(N_eq),</span> <span style="color: #F8F8F2">p)</span>
+<span style="color: #F8F8F2">rx_eq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(rx,</span> <span style="color: #F8F8F2">w_mmse,</span> <span style="color: #E6DB74">&#39;full&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #959077"># Sem equalizacao</span>
+<span style="color: #F8F8F2">xs_slice</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rx[N_eq</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:N_eq</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">N</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">segment</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">xs_slice[n:n</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">N_eq]</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">len(segment)</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">N_eq:</span>
+        <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">len(segment)),</span> <span style="color: #F8F8F2">segment</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.03</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Diagrama de olho: SEM equalizacao&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;tempo (simbolos)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #959077"># Com equalizacao</span>
+<span style="color: #F8F8F2">xs_eq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rx_eq[N_eq</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:N_eq</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">N</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">segment</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">xs_eq[n:n</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">N_eq]</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">len(segment)</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">N_eq:</span>
+        <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">len(segment)),</span> <span style="color: #F8F8F2">segment</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #E6DB74">&#39;g&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.03</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;gray&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Diagrama de olho: com MMSE&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;tempo (simbolos)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mcolors[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m LogNorm
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">7.10</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1</strong> (Origem da ISI). Um canal tem resposta ao impulso $h = [0{,}2, 1{,}0, 0{,}3, 0{,}1]$. Qual é o comprimento da ISI em símbolos? Calcule a interferência que o símbolo $x[n]$ causa nos símbolos $x[n+1]$, $x[n+2]$ e $x[n+3]$ (em termos de amplitude relativa).</p>
+<p><strong>E2</strong> (Dedução ZF). Para o canal $h=[0{,}5,1{,}0,0{,}3]$, construa a matriz de convolução $\mathbf H$ para um equalizador FIR de $N=5$ taps. Para cada atraso admissível, resolva $\min_{\mathbf w}\|\mathbf H\mathbf w-\mathbf e_d\|^2$ e identifique o menor ISI residual. Explique por que um FIR finito não garante ISI exatamente nula.</p>
+<p><strong>E3</strong> (Limitações do ZF). Para o canal $H(e^{j\omega}) = 1 - 0{,}9e^{-j\omega}$, trace o magnitude no domínio da frequência e explique onde o ZF amplifica mais ruído. Calcule o ganho do ZF nas frequências $\omega = 0$ e $\omega = \pi$.</p>
+<p><strong>E4</strong> (MMSE vs ZF). Para o mesmo canal do E3, com $N_0/E_s = 0{,}1$ e $0{,}5$, calcule e compare os equalizadores MMSE e ZF de 3 taps. Qual produz menor erro quadrático médio?</p>
+<p><strong>E5</strong> (Convergência LMS). Derive a condição de convergência $0 &lt; \mu &lt; 2/\lambda_{\max}$ a partir da análise do erro de peso $\tilde{\mathbf{w}}[n]$. Explique por que a razão $\kappa = \lambda_{\max}/\lambda_{\min}$ afeta a velocidade de convergência.</p>
+<p><strong>E6</strong> (RLS vs LMS). Compare a complexidade computacional (operações por amostra) do LMS e RLS para equalizadores de $N=11$ taps. Quantas multiplicações cada um requer por atualização?</p>
+<p><strong>E7</strong> (MLSE — complexidade). Para um canal com memória $L=5$ e constelação 16-QAM, qual é o número de estados do trellis de Viterbi? Qual seria o número para BPSK ($M=2$)?</p>
+<p><strong>E8</strong> (Teorema OFDM). Prove que, com prefixo cíclico de comprimento $L_{\text{CP}} \geq L-1$, a matriz de convolução do canal é circular e diagonalizada pela DFT. Dê a demonstração passo a passo.</p>
+<p><strong>E9</strong> (DFE — decision feedback equalizer). Considere o DFE com filtros feedforward $\mathbf{f}$ e feedback $\mathbf{b}$. A saída é $z[n] = \mathbf{f}^H\mathbf{x}_n - \sum_{k=1}^{L_b} b_k\hat{x}[n-k]$. Explique por que o DFE evita o problema de amplificação de ruído do ZF.</p>
+<p><strong>E10</strong> (Equalização em DSL). Um sistema didático usa 256 bandas DMT espaçadas de aproximadamente 4,3 kHz e taxa de 4 ksymbols/s por banda. Suponha que 100 bandas usem 256-QAM, 80 usem 16-QAM e 76 usem QPSK. Calcule a taxa bruta ignorando overhead e tons de guarda.</p>
+<h2 id="gabarito"><span class="heading-number">7.11</span> Gabarito</h2>
+<p><strong>E1.</strong> ISI: $L=4$, então o símbolo $x[n]$ interfere em $n+1$ (0,2), $n+2$ (0,3) e $n+3$ (0,1). Além disso, $x[n]$ interfere em $n-1$ (0,5) se consideramos pré-cursores. O comprimento total da ISI é $L=4$ símbolos (do $-1$ ao $+3$ em relação ao instante de amostragem).</p>
+<p><strong>E2.</strong> $h = [0{,}5, 1{,}0, 0{,}3]$, $N=5$, $d=2$. Matriz Toeplitz:</p>
+
+<div class="math-display">
+$$
+
+\mathbf{H} = \begin{pmatrix}
+0{,}5 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+1{,}0 &amp; 0{,}5 &amp; 0 &amp; 0 &amp; 0 \\
+0{,}3 &amp; 1{,}0 &amp; 0{,}5 &amp; 0 &amp; 0 \\
+0 &amp; 0{,}3 &amp; 1{,}0 &amp; 0{,}5 &amp; 0 \\
+0 &amp; 0 &amp; 0{,}3 &amp; 1{,}0 &amp; 0{,}5
+\end{pmatrix}.
+
+$$
+</div>
+
+<p>Construa $\mathbf H$ com $L+N-1=7$ linhas e 5 colunas. Para cada $d$, calcule $\mathbf w_d=\mathbf H^\dagger\mathbf e_d$ e o resíduo $\rho_d=\|\mathbf H\mathbf w_d-\mathbf e_d\|^2$. Escolha o $d$ de menor $\rho_d$. Em geral $\rho_d&gt;0$, pois há sete condições e apenas cinco incógnitas; somente canais/casos especiais admitem solução exata.</p>
+<p><strong>E3.</strong> $H(\omega) = 1 - 0{,}9e^{-j\omega} = 1 - 0{,}9\cos\omega + j0{,}9\sin\omega$. $|H(\omega)|^2 = (1-0{,}9\cos\omega)^2 + (0{,}9\sin\omega)^2 = 1 - 1{,}8\cos\omega + 0{,}81$. Em $\omega = 0$: $|H| = |0{,}1| = 0{,}1$. Em $\omega = \pi$: $|H| = |1{,}9| = 1{,}9$. O ZF tem ganho $1/0{,}1 = 10$ em $\omega=0$ vs $1/1{,}9 \approx 0{,}53$ em $\omega=\pi$. Amplificação máxima no $\omega=0$ (fator 19x maior que em $\pi$).</p>
+<p><strong>E4.</strong> MMSE com $N_0/E_s = 0{,}1$: regularização fraca, aproxima-se do ZF. Com $N_0/E_s = 0{,}5$: regularização forte, coeficientes menores, mais ruído residual mas menos amplificação. O MMSE sempre produz menor MSE que ZF (por definição de otimização).</p>
+<p><strong>E5.</strong> Usando a convenção LMS $\mathbf w[n+1]=\mathbf w[n]+\mu\mathbf x[n]e^*[n]$, a dinâmica média é $\tilde{\mathbf w}[n+1]=(\mathbf I-\mu\mathbf R_x)\tilde{\mathbf w}[n]$. Cada modo converge se $|1-\mu\lambda_i|&lt;1$, portanto $\boxed{0&lt;\mu&lt;2/\lambda_{\max}}$. Se o gradiente for definido com o fator 2, esse fator é absorvido em $\mu$ e o limite muda coerentemente. Modos associados a autovalores pequenos convergem mais devagar; por isso uma grande dispersão $\kappa=\lambda_{\max}/\lambda_{\min}$ torna a convergência desigual e lenta.</p>
+<p><strong>E6.</strong> Contando operações complexas de ordem dominante, o LMS requer cerca de $2N$ multiplicações por atualização (produto interno e atualização), ou 22 para $N=11$. O RLS requer várias operações matriz-vetor e uma atualização de posto um, isto é, ordem de $cN^2$, não apenas $N^2+2N$ de forma universal; a constante $c$ depende da implementação. Para $N=11$, são algumas centenas de multiplicações complexas, contra poucas dezenas no LMS.</p>
+<p><strong>E7.</strong> MLSE com $M=16$, $L=5$: $16^{4} = 65\,536$ estados. Com $M=2$ (BPSK): $2^{4} = 16$ estados. A diferença é absurda — Viterbi para QAM de ordem alta é impraticável para canais longos.</p>
+<p><strong>E8.</strong> Prefixo cíclico: copiamos os últimos $L_{\text{CP}}$ amostras do bloco e as colocamos no início. A recepção remove o CP. A convolução linear com atrasos $\leq L_{\text{CP}}-1$ se torna circular. A DFT diagonaliza matrizes circulares (teorema espectral para matrizes circulantes).</p>
+<p><strong>E9.</strong> O feedback subtrai réplicas dos pós-cursores usando símbolos já decididos e, quando essas decisões estão corretas, não filtra nem amplifica o ruído atual como faria uma inversa linear. Contudo, decisões anteriores foram afetadas por ruído; se uma estiver errada, o feedback injeta cancelamento incorreto e pode causar propagação de erros. O feedforward ainda precisa controlar pré-cursores e ruído.</p>
+<p><strong>E10.</strong> Bits por símbolo DMT: $100(8)+80(4)+76(2)=1272$. Com 4 ksymbols/s, $R_b=1272(4000)=\boxed{5{,}088\ \text{Mbit/s}}$ bruto.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="06_digital_passband_qam.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">6. Modulação QAM — Transmissão Digital em Banda Base</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="08_sincronismo.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">8. Sincronismo</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

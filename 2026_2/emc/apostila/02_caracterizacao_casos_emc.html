@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2. Caracterização e diagnóstico de casos EMC — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>2. Caracterização e diagnóstico de casos EMC</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>2. Caracterização e diagnóstico de casos EMC</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="01_aspectos_economicos.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">1. Aspectos Econômicos da Compatibilidade Eletromagnética</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="03_fontes_ruido.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>2. Caracterização e diagnóstico de casos EMC</h1>
+<blockquote>
+<p>Este capítulo ensina a transformar um sintoma em um problema testável. Ele apresenta o modelo fonte–caminho–vítima e encaminha as derivações aos capítulos especializados, evitando repetir teoria de linhas, antenas, crosstalk, blindagem e projeto de sistemas.</p>
+</blockquote>
+<h2 id="objetivos-de-aprendizagem"><span class="heading-number">2.1</span> Objetivos de aprendizagem</h2>
+<p>Ao final, você deve ser capaz de:</p>
+<ol>
+<li>definir o sintoma e o critério de falha sem ambiguidade;</li>
+<li>descrever fonte, caminho e vítima por grandezas mensuráveis;</li>
+<li>distinguir acoplamento conduzido, capacitivo, indutivo e radiado;</li>
+<li>separar modo diferencial (DM), modo comum (CM) e conversão de modo;</li>
+<li>propor hipóteses concorrentes e uma medição que as discrimine;</li>
+<li>demonstrar causalidade por previsão, intervenção e repetição;</li>
+<li>registrar margem, incerteza e limites do diagnóstico.</li>
+</ol>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#o-problema-emc-como-sistema">O problema EMC como sistema</a></li>
+<li><a href="#ficha-m%C3%ADnima-de-caracteriza%C3%A7%C3%A3o">Ficha mínima de caracterização</a></li>
+<li><a href="#caracteriza%C3%A7%C3%A3o-da-fonte">Caracterização da fonte</a></li>
+<li><a href="#caracteriza%C3%A7%C3%A3o-do-caminho">Caracterização do caminho</a></li>
+<li><a href="#caracteriza%C3%A7%C3%A3o-da-v%C3%ADtima">Caracterização da vítima</a></li>
+<li><a href="#m%C3%A9todo-de-diagn%C3%B3stico-em-sete-passos">Método de diagnóstico em sete passos</a></li>
+<li><a href="#casos-integradores">Casos integradores</a></li>
+<li><a href="#escolha-da-mitiga%C3%A7%C3%A3o">Escolha da mitigação</a></li>
+<li><a href="#exerc%C3%ADcios-de-consolida%C3%A7%C3%A3o">Exercícios de consolidação</a></li>
+<li><a href="#laborat%C3%B3rio--pontua%C3%A7%C3%A3o-de-hip%C3%B3teses">Laboratório — pontuação de hipóteses</a></li>
+<li><a href="#entrega-recomendada-relat%C3%B3rio-de-diagn%C3%B3stico">Entrega recomendada: relatório de diagnóstico</a></li>
+</ol></nav>
+<h2 id="o-problema-emc-como-sistema"><span class="heading-number">2.2</span> O problema EMC como sistema</h2>
+<p>Uma interferência exige simultaneamente três elementos:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{fonte}\longrightarrow\text{caminho de acoplamento}\longrightarrow\text{vítima}}
+
+$$
+</div>
+
+<ul>
+<li><strong>Fonte:</strong> produz energia indesejada na banda relevante.</li>
+<li><strong>Caminho:</strong> transporta ou converte essa energia.</li>
+<li><strong>Vítima:</strong> responde à perturbação e apresenta degradação funcional.</li>
+</ul>
+<p>Mitigar qualquer elemento pode resolver o caso, mas isso não significa que interromper o caminho seja sempre a melhor solução. A decisão depende de eficácia, custo, segurança, robustez e possibilidade de alterar cada elemento.</p>
+<p>Para um sistema aproximadamente linear e invariante no tempo,</p>
+
+<div class="math-display">
+$$
+
+Y(f)=S(f)H_c(f)H_v(f),
+
+$$
+</div>
+
+<p>em que $S(f)$ descreve a fonte, $H_c(f)$ o caminho e $H_v(f)$ a resposta da vítima. Em transientes, não linearidades ou saturação, esse produto é apenas um modelo inicial: é preciso trabalhar no tempo e incluir os estados do equipamento.</p>
+<h3 id="correlação-não-é-causalidade"><span class="heading-number">2.2.1</span> Correlação não é causalidade</h3>
+<p>Um pico no espectro na frequência do clock é uma pista, não uma prova. Uma conclusão forte combina:</p>
+<ol>
+<li><strong>previsão:</strong> a hipótese antecipa frequência, polarização, dependência geométrica ou estado operacional;</li>
+<li><strong>intervenção:</strong> uma mudança seletiva no elemento previsto altera o sintoma;</li>
+<li><strong>repetição:</strong> o efeito reaparece ao restaurar a condição original;</li>
+<li><strong>controle:</strong> configuração, cabos, instrumentos e software permanecem comparáveis.</li>
+</ol>
+<h2 id="ficha-mínima-de-caracterização"><span class="heading-number">2.3</span> Ficha mínima de caracterização</h2>
+<p>Antes de escolher filtros ou blindagem, preencha a ficha. Campos desconhecidos tornam-se itens de medição, não palpites.</p>
+<table>
+<thead>
+<tr>
+<th>Elemento</th>
+<th>O que registrar</th>
+<th>Grandezas típicas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sintoma</td>
+<td>função afetada, severidade, duração, taxa de ocorrência</td>
+<td>erro, reset, BER, desvio, critério A/B/C</td>
+</tr>
+<tr>
+<td>Estado</td>
+<td>modos da fonte e da vítima, carga, firmware, cabos</td>
+<td>tensão, corrente, potência, tráfego, temperatura</td>
+</tr>
+<tr>
+<td>Fonte</td>
+<td>forma de onda, repetição, bordas, espectro, impedância</td>
+<td>$V$, $I$, $dv/dt$, $di/dt$, $f$, $t_r$, $Z_s(f)$</td>
+</tr>
+<tr>
+<td>Caminho</td>
+<td>condutores, retornos, parasitas, distância, orientação</td>
+<td>$Z(f)$, $C_m$, $M$, função de transferência</td>
+</tr>
+<tr>
+<td>Vítima</td>
+<td>porta de entrada, banda, limiar e modo de falha</td>
+<td>$Z_{in}(f)$, ganho, limiar, janela temporal</td>
+</tr>
+<tr>
+<td>Evidência</td>
+<td>instrumento, detector, banda e geometria</td>
+<td>RBW/VBW, tempo de aquisição, posição, incerteza</td>
+</tr>
+<tr>
+<td>Margem</td>
+<td>diferença entre perturbação e limite</td>
+<td>dB, V, A, V/m, A/m</td>
+</tr>
+</tbody>
+</table>
+<p>Uma boa descrição é operacional: “o ADC excede 5 LSB em 18% das conversões quando o buck entra em <em>burst mode</em>” é melhor que “o sensor fica ruidoso”.</p>
+<h2 id="caracterização-da-fonte"><span class="heading-number">2.4</span> Caracterização da fonte</h2>
+<h3 id="domínio-do-tempo"><span class="heading-number">2.4.1</span> Domínio do tempo</h3>
+<p>Registre amplitude, duração, repetição, <em>duty cycle</em>, tempo de subida e simultaneidade com o sintoma. Bordas rápidas, não apenas a frequência fundamental, definem a banda excitada. Como estimativa de ordem de grandeza,</p>
+
+<div class="math-display">
+$$
+
+f_{\text{knee}}\approx\frac{0{,}35}{t_r},
+
+$$
+</div>
+
+<p>desde que se declare a convenção usada para $t_r$ e para a largura de banda. O capítulo <a href="03_fontes_ruido.html">Fontes de ruído</a> desenvolve fontes naturais, chaveamento, arcos e transmissores; <a href="06_componentes_nao_ideais.html">Componentes não ideais</a> explica como parasitas modificam as bordas.</p>
+<h3 id="domínio-da-frequência"><span class="heading-number">2.4.2</span> Domínio da frequência</h3>
+<p>Em fontes periódicas, procure fundamental, harmônicos, bandas laterais e modulação pelo estado de carga. Em ruído aleatório ou transientes, registre densidade espectral, distribuição temporal e condições de disparo. Não compare diretamente pico temporal, valor RMS, espectro por bin e leitura de detector quase-pico: são grandezas diferentes.</p>
+<h3 id="impedância-e-modo"><span class="heading-number">2.4.3</span> Impedância e modo</h3>
+<p>A mesma tensão de circuito aberto pode injetar correntes muito diferentes. Caracterize $Z_s(f)$ e o retorno. Para dois condutores, adotando uma convenção simétrica,</p>
+
+<div class="math-display">
+$$
+
+I_{CM}=\frac{I_1+I_2}{2},\qquad
+I_{DM}=\frac{I_1-I_2}{2},
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+I_1=I_{CM}+I_{DM},\qquad I_2=I_{CM}-I_{DM}.
+
+$$
+</div>
+
+<p>O fator $1/2$ é uma convenção e deve ser mantido em todo o cálculo. Assimetrias convertem DM em CM; cabos podem então irradiar mesmo que o ruído tenha começado como diferencial. A decomposição e a medição são tratadas em <a href="10_emissoes_conduzidas_suscetibilidade.html">Emissões conduzidas</a> e <a href="11_emissoes_radiadas_suscetibilidade.html">Emissões radiadas</a>.</p>
+<h2 id="caracterização-do-caminho"><span class="heading-number">2.5</span> Caracterização do caminho</h2>
+<p>Mais de um caminho pode coexistir. A classificação indica qual variável alterar primeiro.</p>
+<table>
+<thead>
+<tr>
+<th>Mecanismo</th>
+<th>Modelo inicial</th>
+<th>Evidência que favorece a hipótese</th>
+<th>Intervenção discriminante</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>impedância comum</td>
+<td>$V_n=I_sZ_{comum}$</td>
+<td>sintoma acompanha corrente de carga</td>
+<td>separar ou reduzir o retorno comum</td>
+</tr>
+<tr>
+<td>capacitivo</td>
+<td>$I_c=C_m\,dv/dt$</td>
+<td>forte efeito de proximidade e impedância da vítima</td>
+<td>reduzir $dv/dt$, $C_m$ ou $Z_{in}$</td>
+</tr>
+<tr>
+<td>indutivo</td>
+<td>$V_m=M\,di/dt$</td>
+<td>efeito de área/orientação dos loops</td>
+<td>reduzir loop, $di/dt$ ou $M$</td>
+</tr>
+<tr>
+<td>linha de transmissão</td>
+<td>reflexões por descontinuidade de $Z_0$</td>
+<td>efeito de comprimento e terminação</td>
+<td>terminar ou alterar comprimento controladamente</td>
+</tr>
+<tr>
+<td>radiado</td>
+<td>antena emissora + propagação + antena receptora</td>
+<td>efeito de distância, polarização e cabo</td>
+<td>reduzir corrente CM ou eficiência da antena</td>
+</tr>
+<tr>
+<td>conversão de modo</td>
+<td>desbalanceamento DM $\leftrightarrow$ CM</td>
+<td>assimetria em filtro, conector ou retorno</td>
+<td>restaurar simetria e medir os dois modos</td>
+</tr>
+</tbody>
+</table>
+<p>Os modelos completos pertencem a:</p>
+<ul>
+<li><a href="07_linhas_transmissao_integridade_sinal.html">Linhas de transmissão</a>: propagação, reflexões e terminações;</li>
+<li><a href="08_antenas.html">Antenas</a>: campos, ganho, abertura e regiões de campo;</li>
+<li><a href="09_crosstalk.html">Crosstalk</a>: acoplamentos capacitivo e indutivo, NEXT e FEXT;</li>
+<li><a href="12_blindagem.html">Blindagem</a>: reflexão, absorção, aberturas, cabos e conectores.</li>
+</ul>
+<h3 id="campo-próximo-e-campo-distante"><span class="heading-number">2.5.1</span> Campo próximo e campo distante</h3>
+<p>$r\approx\lambda/(2\pi)$ é uma referência útil para a transição entre termos reativos e radiativos de uma fonte pequena, não uma fronteira universal. Para uma antena de maior dimensão $D$, a condição de campo distante também depende de $2D^2/\lambda$. Registre frequência, maior dimensão, distância e natureza da fonte antes de aplicar relações de onda plana.</p>
+<h2 id="caracterização-da-vítima"><span class="heading-number">2.6</span> Caracterização da vítima</h2>
+<p>A vítima não é apenas “o equipamento”. Localize a porta física e a etapa funcional em que a energia indesejada se torna erro.</p>
+<h3 id="curva-de-suscetibilidade"><span class="heading-number">2.6.1</span> Curva de suscetibilidade</h3>
+<p>Meça ou estime o limiar de falha em função de frequência, amplitude, modulação, polarização, porta e estado operacional. Uma única amplitude de ensaio não descreve a vítima inteira. Ressonâncias, proteção não linear, filtros e janelas de amostragem podem produzir regiões estreitas de alta suscetibilidade.</p>
+<p>Para uma exigência $A_{req}$ e um limiar de falha $A_{fail}$, ambos na mesma grandeza e condição,</p>
+
+<div class="math-display">
+$$
+
+M_{imunidade}=20\log_{10}\!\left(\frac{A_{fail}}{A_{req}}\right).
+
+$$
+</div>
+
+<p>Margem positiva indica que o limiar está acima do nível requerido. Inclua incerteza e variabilidade; uma margem nominal pequena não demonstra robustez.</p>
+<h3 id="critério-funcional"><span class="heading-number">2.6.2</span> Critério funcional</h3>
+<p>Defina antes do ensaio se são aceitáveis degradação temporária, autorrecuperação ou perda de dados. Os critérios e níveis vêm da norma de produto e do plano de ensaio aplicáveis; veja <a href="04_normas_padronizacoes_ensaios.html">Normas e ensaios</a>. Não transforme um exemplo didático em limite regulatório.</p>
+<h2 id="método-de-diagnóstico-em-sete-passos"><span class="heading-number">2.7</span> Método de diagnóstico em sete passos</h2>
+<h3 id="passo-1--tornar-o-sintoma-reproduzível"><span class="heading-number">2.7.1</span> Passo 1 — Tornar o sintoma reproduzível</h3>
+<p>Fixe configuração, cabos, carga, software, temperatura e sequência. Registre taxa-base e critério objetivo.</p>
+<h3 id="passo-2--construir-a-linha-do-tempo"><span class="heading-number">2.7.2</span> Passo 2 — Construir a linha do tempo</h3>
+<p>Correlacione evento da fonte, grandeza acoplada e falha. Use disparo comum quando possível. Cuidado com atrasos de firmware e mecanismos de proteção.</p>
+<h3 id="passo-3--formular-hipóteses-concorrentes"><span class="heading-number">2.7.3</span> Passo 3 — Formular hipóteses concorrentes</h3>
+<p>Cada hipótese deve nomear fonte, caminho, porta da vítima e uma previsão exclusiva. Exemplo: “corrente CM do buck retorna pela blindagem do cabo e entra no ADC pelo conector” é testável; “é EMI” não é.</p>
+<h3 id="passo-4--ordenar-por-evidência-e-custo"><span class="heading-number">2.7.4</span> Passo 4 — Ordenar por evidência e custo</h3>
+<p>Priorize hipóteses que explicam mais observações e que possam ser testadas com alteração reversível e segura.</p>
+<h3 id="passo-5--medir-sem-perturbar-excessivamente"><span class="heading-number">2.7.5</span> Passo 5 — Medir sem perturbar excessivamente</h3>
+<p>Declare largura de banda, carga da ponta, piso de ruído, detector e posição. Uma ponta longa de osciloscópio ou uma sonda de campo próxima demais pode criar o resultado que se pretendia observar.</p>
+<h3 id="passo-6--alterar-uma-variável-por-vez"><span class="heading-number">2.7.6</span> Passo 6 — Alterar uma variável por vez</h3>
+<p>Exemplos: ferrite temporário no cabo, terminação controlada, redução de <em>slew rate</em>, placa metálica provisória, rotação de loop ou alimentação isolada. A intervenção deve selecionar um mecanismo, não apenas “melhorar tudo”.</p>
+<h3 id="passo-7--confirmar-e-documentar-margem"><span class="heading-number">2.7.7</span> Passo 7 — Confirmar e documentar margem</h3>
+<p>Restaure a condição original, reproduza a falha, aplique novamente a correção e repita em unidades e estados representativos. Registre antes/depois, incerteza, efeitos colaterais e margem.</p>
+<h3 id="matriz-de-hipóteses"><span class="heading-number">2.7.8</span> Matriz de hipóteses</h3>
+<table>
+<thead>
+<tr>
+<th>Hipótese</th>
+<th>Predição</th>
+<th>Medição</th>
+<th>Confirma se</th>
+<th>Refuta se</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ripple DM na entrada</td>
+<td>pico acompanha $f_{sw}$ nas duas linhas em oposição</td>
+<td>LISN ou duas sondas de corrente</td>
+<td>componente DM acompanha o sintoma</td>
+<td>só CM muda</td>
+</tr>
+<tr>
+<td>cabo como antena CM</td>
+<td>emissão muda com posição/comprimento</td>
+<td>clamp de corrente + variação geométrica</td>
+<td>campo e $I_{CM}$ variam juntos</td>
+<td>$I_{CM}$ permanece no piso</td>
+</tr>
+<tr>
+<td>crosstalk local</td>
+<td>erro cresce com $dv/dt$, $di/dt$ e paralelismo</td>
+<td>sonda local + alteração de borda</td>
+<td>resposta segue geometria/borda</td>
+<td>alteração seletiva não tem efeito</td>
+</tr>
+<tr>
+<td>descontinuidade de retorno</td>
+<td>problema coincide com troca de plano/via</td>
+<td>TDR ou inspeção de retorno</td>
+<td>stitching próximo reduz conversão</td>
+<td>caminho de retorno já é contínuo</td>
+</tr>
+<tr>
+<td>ressonância da PDN</td>
+<td>erro coincide com pico de $|Z_{PDN}|$</td>
+<td>VNA/injeção de impedância</td>
+<td>amortecimento desloca/reduz ambos</td>
+<td>pico e falha não se correlacionam</td>
+</tr>
+</tbody>
+</table>
+<h2 id="casos-integradores"><span class="heading-number">2.8</span> Casos integradores</h2>
+<h3 id="buck-interfere-em-sensor-analógico"><span class="heading-number">2.8.1</span> Buck interfere em sensor analógico</h3>
+<p><strong>Sintoma:</strong> erro do ADC aparece apenas sob carga leve.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Hipóteses:</strong> ripple DM pela alimentação; corrente CM pelo acoplamento do nó de comutação; acoplamento local do loop quente ao sinal.</p></aside>
+<p><strong>Teste discriminante:</strong> medir simultaneamente o nó de comutação, a alimentação do sensor e o erro; decompor a corrente no cabo em CM/DM; variar <em>slew rate</em> sem mudar $f_{sw}$; aproximar uma sonda magnética do loop quente.</p>
+<p><strong>Encaminhamento:</strong> fonte no <a href="03_fontes_ruido.html">cap. 3</a>, componentes e parasitas no <a href="06_componentes_nao_ideais.html">cap. 6</a>, condução no <a href="10_emissoes_conduzidas_suscetibilidade.html">cap. 10</a> e projeto sistêmico no <a href="16_projeto_sistemas_emc.html">cap. 16</a>.</p>
+<h3 id="clock-digital-causa-emissão-em-cabo"><span class="heading-number">2.8.2</span> Clock digital causa emissão em cabo</h3>
+<p><strong>Sintoma:</strong> pico radiado em harmônico do clock muda quando o cabo é movido.</p>
+<p><strong>Hipótese principal:</strong> descontinuidade de retorno converte corrente DM em CM; o cabo é a antena eficiente.</p>
+<p><strong>Teste discriminante:</strong> medir corrente CM no cabo; reduzir temporariamente o <em>slew rate</em>; acrescentar conexão de chassi de baixa indutância no conector; comparar polarização e posição.</p>
+<p><strong>Armadilha:</strong> blindar apenas a trilha do clock pode não alterar a corrente de modo comum que efetivamente irradia.</p>
+<h3 id="esd-na-carcaça-reinicia-o-equipamento"><span class="heading-number">2.8.3</span> ESD na carcaça reinicia o equipamento</h3>
+<p><strong>Sintoma:</strong> reset durante descarga, sem dano permanente.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Hipóteses:</strong> corrente pela referência lógica; acoplamento por abertura; disparo de pino de reset; queda da PDN.</p></aside>
+<p><strong>Teste discriminante:</strong> monitorar pino de reset e alimentação com técnica apropriada; mapear corrente na carcaça; variar o ponto de descarga e o fechamento das juntas; injetar perturbação controlada nas portas suspeitas.</p>
+<p><strong>Segurança:</strong> ensaios de ESD exigem arranjo, gerador, calibração e proteção definidos. Consulte o <a href="04_normas_padronizacoes_ensaios.html">cap. 4</a> e modele transientes conforme o <a href="13_modelagem_problemas_emc.html">cap. 13</a>.</p>
+<h3 id="reflexão-confundida-com-crosstalk"><span class="heading-number">2.8.4</span> Reflexão confundida com crosstalk</h3>
+<p><strong>Sintoma:</strong> overshoot em uma entrada digital após mudança de comprimento da trilha.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Hipóteses:</strong> reflexão por desadaptação; crosstalk de uma linha vizinha; <em>ground bounce</em> no encapsulamento.</p></aside>
+<p><strong>Teste discriminante:</strong> observar dependência com comprimento e terminação; silenciar a linha agressora; medir referência local da vítima. Use o <a href="07_linhas_transmissao_integridade_sinal.html">cap. 7</a> para reflexões e o <a href="09_crosstalk.html">cap. 9</a> para acoplamento entre linhas.</p>
+<h2 id="escolha-da-mitigação"><span class="heading-number">2.9</span> Escolha da mitigação</h2>
+<p>Depois de identificar o mecanismo, escolha a intervenção mais próxima da causa e verifique efeitos colaterais.</p>
+<table>
+<thead>
+<tr>
+<th>Atuação</th>
+<th>Exemplos</th>
+<th>Possíveis custos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fonte</td>
+<td>reduzir borda, loop quente, amplitude ou corrente CM</td>
+<td>dissipação, temporização, eficiência</td>
+</tr>
+<tr>
+<td>caminho</td>
+<td>controlar retorno, separar, filtrar, terminar, blindar</td>
+<td>área, peso, ressonância, corrente de fuga</td>
+</tr>
+<tr>
+<td>vítima</td>
+<td>filtrar porta, aumentar histerese, proteger, corrigir software</td>
+<td>latência, banda, capacitância, mascaramento de falha</td>
+</tr>
+</tbody>
+</table>
+<p>As técnicas são reunidas em <a href="14_minimizacao_interferencias.html">Minimização de interferências</a>, detalhadas em <a href="15_projeto_pcbs_emc.html">Projeto de PCBs</a> e integradas em <a href="16_projeto_sistemas_emc.html">Projeto de sistemas</a>. A implementação e a simulação prática aparecem em <a href="18_projeto_e_simulacao_com_kicad.html">KiCad</a>.</p>
+<h2 id="exercícios-de-consolidação"><span class="heading-number">2.10</span> Exercícios de consolidação</h2>
+<p><strong>E.1</strong> Um conversor de 500 kHz causa erro em um termopar somente quando o cabo passa perto do indutor. Escreva três hipóteses completas e uma medição discriminante para cada uma.</p>
+<p><strong>E.2</strong> Duas correntes medidas são $I_1=32\,\text{mA}$ e $I_2=-28\,\text{mA}$. Calcule $I_{CM}$ e $I_{DM}$ pela convenção deste capítulo e reconstrua $I_1$ e $I_2$.</p>
+<p><strong>E.3</strong> Um equipamento falha a $3\,\text{V/m}$ e deve operar a $10\,\text{V/m}$. Calcule a margem nominal e explique por que o valor sozinho não encerra a avaliação.</p>
+<p><strong>E.4</strong> Liste as evidências que distinguem reflexão, crosstalk e <em>ground bounce</em> em um sinal digital com overshoot.</p>
+<p><strong>E.5</strong> Construa uma ficha de caracterização para um reset durante ESD, marcando como “desconhecido” tudo que exigiria medição.</p>
+<p><strong>E.6</strong> Explique por que multiplicar o pico temporal de corrente ESD por uma impedância conhecida apenas em 100 MHz não determina a tensão transitória na vítima.</p>
+<p><strong>E.7</strong> Um pico radiado diminui 12 dB com ferrite no cabo, mas a corrente DM não muda. Qual hipótese ganhou força? Que repetição ou controle ainda é necessário?</p>
+<h3 id="respostas-orientativas"><span class="heading-number">2.10.1</span> Respostas orientativas</h3>
+<p><strong>E.2</strong> $I_{CM}=2\,\text{mA}$ e $I_{DM}=30\,\text{mA}$; portanto $I_1=2+30=32\,\text{mA}$ e $I_2=2-30=-28\,\text{mA}$.</p>
+<p><strong>E.3</strong> $20\log_{10}(3/10)=-10{,}46\,\text{dB}$. A margem é negativa; ainda se devem declarar modulação, banda, polarização, critério funcional, incerteza e estado operacional.</p>
+<p><strong>E.6</strong> Pico temporal e impedância fasorial monofrequencial pertencem a descrições diferentes. É necessário obter $I(f)$ e $Z(f)$ na banda relevante e calcular $v(t)=\mathcal{F}^{-1}\{I(f)Z(f)\}$, incluindo não linearidades e a resposta da vítima.</p>
+<p><strong>E.7</strong> Ganha força a hipótese de emissão por corrente CM no cabo. É preciso medir $I_{CM}$ antes/depois, restaurar a condição original, repetir a intervenção e controlar posição do cabo, estado do equipamento e configuração de medição.</p>
+<h2 id="laboratório--pontuação-de-hipóteses"><span class="heading-number">2.11</span> Laboratório — pontuação de hipóteses</h2>
+<p>Pontuação não prova causalidade, mas torna explícita a atualização das hipóteses. Use pesos definidos antes do teste e preserve resultados que contradigam a hipótese favorita.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #F8F8F2">hypotheses</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;DM pela alimentação&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;CM pelo cabo&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;crosstalk local&#39;</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">tests</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;muda com LISN/filtro DM&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;muda com ferrite no cabo&#39;</span><span style="color: #F8F8F2">,</span>
+         <span style="color: #E6DB74">&#39;muda com orientação/sonda local&#39;</span><span style="color: #F8F8F2">]</span>
+<span style="color: #959077"># linhas: hipóteses; colunas: previsão de resposta (0 a 1)</span>
+<span style="color: #F8F8F2">prediction</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([[</span><span style="color: #AE81FF">.9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.5</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.9</span><span style="color: #F8F8F2">]])</span>
+<span style="color: #F8F8F2">observed</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">.7</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">error</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum((prediction</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">observed)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">axis</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">score</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">error)</span>
+<span style="color: #F8F8F2">score</span> <span style="color: #FF4689">/=</span> <span style="color: #F8F8F2">score</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum()</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">s</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">sorted(zip(hypotheses,</span> <span style="color: #F8F8F2">score),</span> <span style="color: #F8F8F2">key</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">lambda</span> <span style="color: #F8F8F2">x:</span> <span style="color: #FF4689">-</span><span style="color: #F8F8F2">x[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]):</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">h</span><span style="color: #E6DB74">:24s}: {</span><span style="color: #F8F8F2">s</span><span style="color: #E6DB74">:.3f}&#39;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m hypotheses = [[33m'[39m[33mDM pela alimentação[39m[33m'[39m, [33m'[39m[33mCM pelo cabo[39m[33m'[39m, [33m'[39m[33mcrosstalk local[39m[33m'[39m]
+[32m      3[39m tests = [[33m'[39m[33mmuda com LISN/filtro DM[39m[33m'[39m, [33m'[39m[33mmuda com ferrite no cabo[39m[33m'[39m,
+[32m      4[39m          [33m'[39m[33mmuda com orientação/sonda local[39m[33m'[39m]
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p>Repita com outros pesos e inclua uma hipótese “mecanismo não modelado”. A etapa decisiva continua sendo intervenção seletiva, restauração e repetição.</p>
+<h2 id="entrega-recomendada-relatório-de-diagnóstico"><span class="heading-number">2.12</span> Entrega recomendada: relatório de diagnóstico</h2>
+<p>Um relatório curto e auditável deve conter:</p>
+<ol>
+<li>sintoma, critério de falha e configuração;</li>
+<li>diagrama fonte–caminho–vítima;</li>
+<li>hipóteses e previsões;</li>
+<li>instrumentos, banda, detector, geometria e incerteza;</li>
+<li>resultados antes/depois;</li>
+<li>hipótese confirmada e alternativas ainda abertas;</li>
+<li>correção, efeitos colaterais e margem;</li>
+<li>condições para repetir o ensaio.</li>
+</ol>
+<p>Esse relatório é a ponte entre a caracterização introdutória, os mecanismos dos capítulos 6–12 e a síntese dos capítulos 13–16. Ele evita duas falhas comuns: aplicar uma solução por hábito e confundir melhora ocasional com compreensão do mecanismo.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="01_aspectos_economicos.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">1. Aspectos Econômicos da Compatibilidade Eletromagnética</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="03_fontes_ruido.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

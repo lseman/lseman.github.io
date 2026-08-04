@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4. Normas, Padronizações e Ensaios de EMC — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>4. Normas, Padronizações e Ensaios de EMC</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>4. Normas, Padronizações e Ensaios de EMC</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="03_fontes_ruido.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="05_introducao_spice_para_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">5. Introdução ao SPICE para problemas EMC</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>4. Normas, Padronizações e Ensaios de EMC</h1>
+<blockquote>
+<p>Compatibilidade Eletromagnética — Apostila de Curso<br />
+Tópicos: CISPR · IEC · IEEE · ANATEL · Classes de produtos · Ensaios de imunidade · Certificação CE/FCC · Python para limites CISPR</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">4.1</span> Antes de começar</h2>
+<p>Ao final, você deve localizar a família normativa aplicável, distinguir emissão de imunidade e interpretar detector, distância, arranjo, margem e incerteza. <strong>Diagnóstico:</strong> ficar abaixo de uma curva desenhada no gráfico basta para declarar conformidade? <strong>Evidência mínima:</strong> escrever um plano de ensaio que identifique edição normativa, porta, faixa, detector, configuração, critério de desempenho e decisão de conformidade.</p>
+<blockquote>
+<aside class="callout callout-important" role="alert"><p><strong>Atenção:</strong> tabelas e níveis neste capítulo são educacionais. Confirme sempre a edição vigente, <em>amendments</em>, classificação do produto, condições do ensaio e regras da jurisdição.</p></aside>
+</blockquote>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#arquitetura-da-padroniza%C3%A7%C3%A3o-emc">Arquitetura da Padronização EMC</a></li>
+<li><a href="#fam%C3%ADlia-cispr--estrutura-e-escopo">Família CISPR — Estrutura e Escopo</a></li>
+<li><a href="#fam%C3%ADlia-iec--ensaios-de-imunidade">Família IEC — Ensaios de Imunidade</a></li>
+<li><a href="#classes-de-produtos-e-requisitos-por-classe">Classes de Produtos e Requisitos por Classe</a></li>
+<li><a href="#ensaios-de-conformidade--metodologia">Ensaios de Conformidade — Metodologia</a></li>
+<li><a href="#certifica%C3%A7%C3%A3o-e-marca%C3%A7%C3%A3o-cefcc">Certificação e Marcação CE/FCC</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="arquitetura-da-padronização-emc"><span class="heading-number">4.2</span> Arquitetura da Padronização EMC</h2>
+<blockquote>
+<p><strong>Controle de edição:</strong> limites, níveis e procedimentos dependem da edição, emendas, produto e jurisdição. As tabelas deste capítulo são didáticas e não substituem o texto normativo adquirido nem a avaliação do laboratório acreditado. Confirme sempre o catálogo oficial antes de elaborar um plano de conformidade.</p>
+</blockquote>
+<p>A padronização em compatibilidade eletromagnética é uma estrutura internacional hierárquica, organizada para cobrir desde os equipamentos de medida até os limites de emissão e imunidade de produtos finais. As principais organizações são:</p>
+<h3 id="cispr--comissão-internacional-especial-de-ruído"><span class="heading-number">4.2.1</span> CISPR — Comissão Internacional Especial de Ruído</h3>
+<p>O <strong>CISPR</strong> (Comité International Spécial des Perturbations Radioélectriques) foi criado em 1934 sob a égide da <strong>IEC</strong>. É o organismo central de padronização de emissões eletromagnéticas.</p>
+<p><strong>Estrutura:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subcomitê</th>
+<th>Responsabilidade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CISPR/A</td>
+<td>Métodos de medição e instrumentação de perturbações radioelétricas</td>
+</tr>
+<tr>
+<td>CISPR/B</td>
+<td>Interferência relacionada a equipamentos ISM, equipamentos de potência e linhas de transmissão</td>
+</tr>
+<tr>
+<td>CISPR/D</td>
+<td>EMC de equipamentos elétricos/eletrônicos em veículos e motores de combustão</td>
+</tr>
+<tr>
+<td>CISPR/F</td>
+<td>EMC de eletrodomésticos, ferramentas, luminárias e equipamentos semelhantes</td>
+</tr>
+<tr>
+<td>CISPR/H</td>
+<td>Limites para proteção de serviços de rádio e aspectos genéricos de emissão</td>
+</tr>
+<tr>
+<td>CISPR/I</td>
+<td>EMC de equipamentos de tecnologia da informação, multimídia e receptores</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Como ler a tabela:</strong> as letras identificam <strong>subcomitês técnicos</strong>, não classes de produto nem partes de uma única norma. Os títulos e a estrutura podem ser reorganizados; para um projeto real, consulte a página oficial do CISPR e o catálogo IEC.</p>
+<p><strong>Atuação:</strong> Publica as normas fundamentais de emissão (família CISPR) e os equipamentos de medida (CISPR 16).</p>
+<h3 id="iec--comissão-eletrotécnica-internacional"><span class="heading-number">4.2.2</span> IEC — Comissão Eletrotécnica Internacional</h3>
+<p>A <strong>IEC</strong> (International Electrotechnical Commission) publica normas que abrangem toda a gama de EMC, incluindo imunidade. O <strong>TC 77</strong> coordena EMC, apoiado pelos subcomitês <strong>SC 77A</strong> (fenômenos de baixa frequência), <strong>SC 77B</strong> (fenômenos de alta frequência) e <strong>SC 77C</strong> (transientes de alta potência). O CISPR trata sobretudo de perturbações radioelétricas e proteção da recepção. A norma de produto aplicável pode ser elaborada por outro comitê, usando publicações básicas desses grupos.</p>
+<p>A família <strong>IEC 61000</strong> é a norma guarda-chuva de EMC, dividida em partes:</p>
+<ul>
+<li><strong>Parte 1:</strong> Generalidades (terminologia, níveis)</li>
+<li><strong>Parte 2:</strong> Compatibilidade ambiental</li>
+<li><strong>Parte 3:</strong> Limites de emissão</li>
+<li><strong>Parte 4:</strong> Ensaios de imunidade e proteção</li>
+<li><strong>Parte 5:</strong> Especificações de produto e norma de produto</li>
+<li><strong>Parte 6:</strong> Normas genéricas</li>
+</ul>
+<h3 id="ieee--normas-específicas"><span class="heading-number">4.2.3</span> IEEE — Normas Específicas</h3>
+<p>O <strong>IEEE</strong> (Institute of Electrical and Electronics Engineers) publica normas específicas para aplicações particulares:</p>
+<table>
+<thead>
+<tr>
+<th>Norma</th>
+<th>Escopo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IEEE P1100</td>
+<td>Práticas de proteção de equipamentos eletrônicos contra EMI</td>
+</tr>
+<tr>
+<td>IEEE P519</td>
+<td>Controle de harmônicos em sistemas de potência</td>
+</tr>
+<tr>
+<td>IEEE C62.41</td>
+<td>Surges em sistemas de baixa tensão</td>
+</tr>
+<tr>
+<td>IEEE 1180</td>
+<td>Guia para avaliação de desempenho de blindagem</td>
+</tr>
+</tbody>
+</table>
+<h3 id="anatel-no-brasil"><span class="heading-number">4.2.4</span> ANATEL no Brasil</h3>
+<p>A <strong>ANATEL</strong> (Agência Nacional de Telecomunicações) disciplina a avaliação da conformidade e a homologação de produtos para telecomunicações. O marco é o <strong>Regulamento de Avaliação da Conformidade e de Homologação de Produtos para Telecomunicações</strong>, aprovado pela <strong>Resolução nº 715, de 23 de outubro de 2019</strong>, com alterações posteriores e procedimentos/requisitos complementares publicados por Atos. Não existe, nesse contexto, uma “RDC 242/2019”. O processo contempla, conforme o produto:</p>
+<ul>
+<li>Limites de emissões conduzidas e irradiadas de equipamentos de telecomunicação</li>
+<li>Requisitos de imunidade para equipamentos de estação fixa e móvel</li>
+<li>requisitos técnicos e procedimentos operacionais aplicáveis à família do produto;</li>
+<li>ensaios em laboratórios reconhecidos quando exigidos;</li>
+<li>certificação ou declaração de conformidade, seguida de homologação.</li>
+</ul>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> não se deve concluir que todo equipamento eletroeletrônico geral é automaticamente regulado pelo Inmetro. A compulsoriedade depende do produto e do regulamento brasileiro específico. Primeiro classifique o produto e identifique as autoridades e programas aplicáveis; alguns produtos não têm certificação EMC compulsória genérica.</p></aside>
+<h2 id="família-cispr--estrutura-e-escopo"><span class="heading-number">4.3</span> Família CISPR — Estrutura e Escopo</h2>
+<h3 id="cispr-16--equipamentos-de-medida"><span class="heading-number">4.3.1</span> CISPR 16 — Equipamentos de Medida</h3>
+<p>A norma <strong>CISPR 16-1-1</strong> especifica aparelhos de medição de perturbação e imunidade, incluindo receptores de medição com detectores como pico, quasi-pico e média. “SESA” não é uma denominação normativa geral para receptor EMI.</p>
+<table>
+<thead>
+<tr>
+<th>Detector</th>
+<th>Aplicação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Peak (P)</strong></td>
+<td>Varredura rápida, máxima emissão</td>
+</tr>
+<tr>
+<td><strong>Quasi-Peak (QP)</strong></td>
+<td>Medida regulatória para EMI repetitiva</td>
+</tr>
+<tr>
+<td><strong>Average (AVG)</strong></td>
+<td>Medida para EMI contínua</td>
+</tr>
+</tbody>
+</table>
+<p>O detector <strong>quasi-peak</strong> é o mais importante para conformidade regulatória, pois pondera as emissões de acordo com sua frequência de repetição e amplitude — uma emissão rara terá leitura QP muito menor que a de pico, mesmo com a mesma amplitude.</p>
+<p><strong>CISPR 16-2-1</strong> especifica <strong>métodos de medição de perturbações conduzidas</strong>, especialmente de 9 kHz a 30 MHz. Ela não é uma especificação de analisadores de figura de ruído.</p>
+<p><strong>CISPR 16-1-2</strong> trata de <strong>dispositivos de acoplamento para medições de perturbações conduzidas</strong>, como redes artificiais. Requisitos de antenas e sítios para medição de perturbações radiadas aparecem em outras partes da série CISPR 16; por isso, o número completo da parte deve sempre acompanhar uma afirmação.</p>
+<h3 id="cispr-32--multimídia-equipment"><span class="heading-number">4.3.2</span> CISPR 32 — Multimídia Equipment</h3>
+<p>A <strong>CISPR 32</strong> (substituindo CISPR 22 e CISPR 13) aplica-se a equipamentos de multimídia (computadores, TVs, equipamentos de comunicação integrados):</p>
+<ul>
+<li><strong>Emissões conduzidas:</strong> 150 kHz – 30 MHz</li>
+<li><strong>Emissões irradiadas:</strong> 30 MHz – 6 GHz (até 18 GHz opcional)</li>
+<li><strong>Classes:</strong> A (industrial) e B (residencial)</li>
+</ul>
+<p>A norma define limites em dBµV (conduzido) e dBµV/m (irradiado) para ambos os detectores QP e AVG.</p>
+<h3 id="cispr-35--equipamentos-multimídia-imunidade"><span class="heading-number">4.3.3</span> CISPR 35 — Equipamentos multimídia: imunidade</h3>
+<p>A <strong>CISPR 35</strong> estabelece requisitos de <strong>imunidade para equipamentos multimídia</strong>. Seu escopo é mais amplo que equipamentos de telecomunicações e complementa a abordagem de emissão da CISPR 32:</p>
+<ul>
+<li>Suscetibilidade a campos RF irradiados</li>
+<li>Suscetibilidade a transientes conduzidos</li>
+<li>Efeitos de emissões de outros equipamentos na funcionalidade</li>
+</ul>
+<p>Em termos didáticos, CISPR 32 trata emissões e CISPR 35 trata imunidade do conjunto multimídia, mas a edição vigente e as exclusões de escopo precisam ser verificadas.</p>
+<!-- slides: columns -->
+<h3 id="cispr-12--veículos"><span class="heading-number">4.3.4</span> CISPR 12 — Veículos</h3>
+<p>A <strong>CISPR 12</strong> estabelece limites de emissões de RF de veículos, embarcações e equipamentos movidos a motor:</p>
+<ul>
+<li><strong>Emissões conduzidas</strong> nos terminais de bateria</li>
+<li><strong>Emissões irradiadas</strong> do veículo em movimento</li>
+</ul>
+<p>Esta norma é particularmente importante para veículos elétricos, cujos inversores geram emissões significativas.</p>
+<!-- slides: column -->
+<h3 id="cispr-14-1--eletrodomésticos"><span class="heading-number">4.3.5</span> CISPR 14-1 — Eletrodomésticos</h3>
+<p>A <strong>CISPR 14-1</strong> aplica-se a eletrodomésticos, ferramentas elétricas e aparelhos similares dentro de seu próprio escopo. Ela não foi incorporada genericamente à CISPR 32, que trata de equipamentos multimídia; a norma aplicável depende da função e classificação do produto.</p>
+<ul>
+<li>Eletrodomésticos domésticos</li>
+<li>Ferramentas elétricas portáteis</li>
+<li>Aparelhos de iluminação</li>
+</ul>
+<!-- slides: end-columns -->
+<h3 id="cispr-11--ism-equipment"><span class="heading-number">4.3.6</span> CISPR 11 — ISM Equipment</h3>
+<p>A <strong>CISPR 11</strong> cobre <strong>equipamentos ISM</strong> (Industrial, Scientific, Medical):</p>
+<ul>
+<li>Geradores de plasma</li>
+<li>Fornalhos a arco</li>
+<li>Equipamentos de diatermia</li>
+<li>Fornos de micro-ondas industriais</li>
+</ul>
+<p>Os limites são mais flexíveis que para produtos de consumo, reconhecendo que o ruído de tais equipamentos é inerente à sua função.</p>
+<h2 id="família-iec--ensaios-de-imunidade"><span class="heading-number">4.4</span> Família IEC — Ensaios de Imunidade</h2>
+<p>A família <strong>IEC 61000-4</strong> define os ensaios de imunidade eletromagnética. Cada parte aborda um tipo de distúrbio:</p>
+<h3 id="iec-61000-4-2--esd-electro-static-discharge"><span class="heading-number">4.4.1</span> IEC 61000-4-2 — ESD (Electro-Static Discharge)</h3>
+<p>O ensaio de descarga eletrostática simula a descarga de uma pessoa carregada contra o equipamento:</p>
+<ul>
+<li><strong>Nível de teste comum:</strong> 8 kV contato (contact discharge), 15 kV ar (air discharge)</li>
+<li><strong>Gerador:</strong> 150 pF, 330 Ω (modelo de descarga)</li>
+<li><strong>Polaridade:</strong> positiva e negativa</li>
+<li><strong>Taxa:</strong> 1 descarga/s (contato), 1 descarga/2s (ar)</li>
+</ul>
+<p><strong>Parâmetros de forma de onda:</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{
+\begin{array}{ll}
+\text{Tempo de subida:} &amp; \leq 1\,\text{ns} \\
+\text{Tempo de meia-pulso:} &amp; 30\,\text{ns} \pm 15\,\text{ns}
+\end{array}
+}
+
+$$
+</div>
+
+<p><strong>Método de ensaio:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Posição</th>
+<th>Nível Contato</th>
+<th>Nível Ar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Contato</td>
+<td>Superfície acessível</td>
+<td>±8 kV</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Ar</td>
+<td>Superfície acessível</td>
+<td>—</td>
+<td>±15 kV</td>
+</tr>
+<tr>
+<td>Contato</td>
+<td>Fendas e ranhuras</td>
+<td>±8 kV</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="iec-61000-4-3--radiated-rf-electromagnetic-field"><span class="heading-number">4.4.2</span> IEC 61000-4-3 — Radiated, RF Electromagnetic Field</h3>
+<p>Ensaio com campo RF irradiado em antena:</p>
+<ul>
+<li><strong>Faixa de frequência:</strong> 80 MHz – 6 GHz (ou até 8 GHz, 80 MHz – 1 GHz)</li>
+<li><strong>Modulação:</strong> AM 80% a 1 kHz, 50% para 1 GHz – 6 GHz</li>
+<li><strong>Nível de teste ambiente residencial/comercial:</strong> 3 V/m</li>
+<li><strong>Nível de teste ambiente industrial:</strong> 10 V/m</li>
+</ul>
+<p><strong>Mecanismo de acoplamento:</strong> O campo RF se acopla aos cabos e estruturas do equipamento, convertendo-se em tensões correntes conduzidas.</p>
+<h3 id="iec-61000-4-4--eftburst-electrical-fast-transient"><span class="heading-number">4.4.3</span> IEC 61000-4-4 — EFT/Burst (Electrical Fast Transient)</h3>
+<p>Ensaio de transientes rápidos (burst) injetados nos terminais de alimentação e sinal:</p>
+<ul>
+<li><strong>Nível de teste:</strong> 2 kV (alimentação), 1 kV (sinal/entrada)</li>
+<li><strong>Forma de onda:</strong> pulso de 5 ns de subida, 50 ns de largura (meia-altura)</li>
+<li><strong>Frequência de repetição do burst:</strong> 5 kHz (burst de 100 µs)</li>
+<li><strong>Duração do burst:</strong> 100 µs (500 pulsos)</li>
+</ul>
+<p><strong>Parâmetros do gerador (circuito equivalente):</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{
+\begin{array}{l}
+R_s = 50\,\Omega \\
+C_s = 50\,\text{pF} \\
+\text{Pulso: } 5\,\text{ns} \text{ (subida)},\; 50\,\text{ns} \text{ (meia-altura)} \\
+\text{Burst: } 300\,\text{ms} \text{ intervalo entre bursts}
+\end{array}
+}
+
+$$
+</div>
+
+<h3 id="iec-61000-4-5--surge"><span class="heading-number">4.4.4</span> IEC 61000-4-5 — Surge</h3>
+<p>Ensaio de surtos (sobretensões de alta energia):</p>
+<ul>
+<li><strong>Nível de teste:</strong> 1 kV diferencial (line-to-line), 2 kV common-mode (line-to-ground)</li>
+<li><strong>Forma de onda 1,2/50 µs:</strong> tensão (1,2 µs de subida, 50 µs de meia-altura)</li>
+<li><strong>Forma de onda 5/50 µs:</strong> corrente (5 µs de subida, 50 µs de meia-altura)</li>
+</ul>
+<p><strong>Circuitos de injeção:</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{
+\begin{array}{ll}
+\text{Diferencial:} &amp; 32\,\Omega,\; 500\,\mu\text{H} \\
+\text{Common-mode:} &amp; 32\,\Omega,\; 500\,\mu\text{H}
+\end{array}
+}
+
+$$
+</div>
+
+<h3 id="iec-61000-4-6--conducted-immunity"><span class="heading-number">4.4.5</span> IEC 61000-4-6 — Conducted Immunity</h3>
+<p>Ensaio de imunidade conduzida: injeta-se um sinal RF nos cabos de alimentação e sinal:</p>
+<ul>
+<li><strong>Frequência:</strong> 150 kHz – 80 MHz</li>
+<li><strong>Nível de teste:</strong> 10 V (alimentação), 3 V (sinal)</li>
+<li><strong>Modulação:</strong> AM 80% a 1 kHz</li>
+<li><strong>Acoplamento:</strong> via rede de acoplamento/desacoplamento (CDN) ou clamp indutivo</li>
+</ul>
+<h3 id="iec-61000-4-8--campo-magnético-de-frequência-da-rede"><span class="heading-number">4.4.6</span> IEC 61000-4-8 — Campo Magnético de Frequência da Rede</h3>
+<p>Ensaio para equipamentos próximos a linhas de transmissão:</p>
+<ul>
+<li><strong>Frequência:</strong> 50 Hz ou 60 Hz</li>
+<li><strong>Nível de teste:</strong> 1 A/m (ambiente residencial/comercial), 10 A/m (industrial)</li>
+<li><strong>Método:</strong> bobina de Helmholtz ou solenoide</li>
+</ul>
+<h3 id="iec-61000-4-11--voltage-dips-e-interruptions"><span class="heading-number">4.4.7</span> IEC 61000-4-11 — Voltage Dips e Interruptions</h3>
+<p>Ensaio de mergulhos e interrupções de tensão:</p>
+<table>
+<thead>
+<tr>
+<th>Teste</th>
+<th>Tipo</th>
+<th>Duração</th>
+<th>Redução de tensão</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Dip</td>
+<td>0,5 ciclo (10 ms @ 50 Hz)</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Dip</td>
+<td>1 ciclo</td>
+<td>70%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Dip</td>
+<td>5 ciclos</td>
+<td>70%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Dip</td>
+<td>25 ciclos</td>
+<td>70%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Dip</td>
+<td>1 segundo</td>
+<td>70%</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Interrupção</td>
+<td>1 segundo</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Variation</td>
+<td>1 minuto</td>
+<td>5%</td>
+</tr>
+</tbody>
+</table>
+<h2 id="classes-de-produtos-e-requisitos-por-classe"><span class="heading-number">4.5</span> Classes de Produtos e Requisitos por Classe</h2>
+<h3 id="classe-a-industrial-vs-classe-b-residencial"><span class="heading-number">4.5.1</span> Classe A (Industrial) vs. Classe B (Residencial)</h3>
+<p>A classificação em classes reflete o <strong>ambiente de uso</strong> do produto:</p>
+<p><strong>Classe A</strong> — Equipamentos para ambiente industrial:</p>
+<ul>
+<li>Limites de emissão <strong>mais permissivos</strong></li>
+<li>Considera que o ambiente industrial já possui interferências significativas</li>
+<li>Aplicável a máquinas industriais, equipamentos de telecomunicação de rede</li>
+</ul>
+<p><strong>Classe B</strong> — Equipamentos para ambiente residencial:</p>
+<ul>
+<li>Limites de emissão <strong>mais restritivos</strong></li>
+<li>Considera a proximidade com receptores sensíveis (rádio, TV, dispositivos médicos)</li>
+<li>Aplicável a computadores pessoais, eletrodomésticos, dispositivos de consumo</li>
+</ul>
+<h3 id="limites-de-emissão-conduzida--cispr-32"><span class="heading-number">4.5.2</span> Limites de Emissão Conduzida — CISPR 32</h3>
+<p>Os limites de emissão conduzida da CISPR 32 para a banda de 150 kHz – 30 MHz são:</p>
+<table>
+<thead>
+<tr>
+<th>Frequência (MHz)</th>
+<th>Classe A (dBµV)</th>
+<th>Classe B (dBµV)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0,15 – 0,5</td>
+<td>79 QP / 66 AVG</td>
+<td>79 QP / 66 AVG</td>
+</tr>
+<tr>
+<td>0,5 – 30</td>
+<td>73 QP / 60 AVG</td>
+<td>56 QP / 50 AVG</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> Os limites acima são para medida em linha (L) e neutro (N), com rede de impedância de linha (LISN) de 50 Ω / 50 µH.</p></aside>
+<h3 id="limites-de-emissão-radiada--cispr-32"><span class="heading-number">4.5.3</span> Limites de Emissão Radiada — CISPR 32</h3>
+<p>Os limites de emissão irradiada para 30 MHz – 1 GHz:</p>
+<table>
+<thead>
+<tr>
+<th>Frequência (MHz)</th>
+<th>Classe A (dBµV/m)</th>
+<th>Classe B (dBµV/m)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>30 – 230</td>
+<td>30 QP / 24 AVG</td>
+<td>30 QP / 24 AVG</td>
+</tr>
+<tr>
+<td>230 – 1000</td>
+<td>37 QP / 30 AVG</td>
+<td>37 QP / 30 AVG</td>
+</tr>
+</tbody>
+</table>
+<p>Acima de 1 GHz, <strong>não use uma fórmula logarítmica genérica</strong> como substituto da tabela normativa. Limites, detectores (pico/média), largura de banda, distância e frequência superior de ensaio dependem da edição e das características do equipamento. O procedimento correto é localizar a linha aplicável na edição vigente da CISPR 32 (ou na adoção regional correspondente) e registrar todos esses parâmetros.</p>
+<h3 id="gráficos-de-limites-vs-frequência"><span class="heading-number">4.5.4</span> Gráficos de Limites vs. Frequência</h3>
+<p>A figura abaixo ilustra a transição entre os diferentes regimes de limites:</p>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>Emissao Radiada (dBuV/m)
+    50 +  |                                    A (acima de 1 GHz)
+        45 +
+        40 +  B (acima de 1 GHz)
+        37 +----------------------------------- B (230-1000 MHz)
+        30 +-------------------------------+-- A (230-1000 MHz)
+        30 +-------------------------------+
+        24 +                               |
+         20 +                               |
+           +---+---+---+---+---+---+---+---+---+
+           0.1  0.5  1   10  30  100 1000 3000 (MHz)</code></pre></div>
+
+<h2 id="ensaios-de-conformidade--metodologia"><span class="heading-number">4.6</span> Ensaios de Conformidade — Metodologia</h2>
+<h3 id="câmara-semianecóica"><span class="heading-number">4.6.1</span> Câmara Semianecóica</h3>
+<p>A <strong>câmara semianecóica</strong> é o ambiente de medida para ensaios de emissão radiada e imunidade radiada:</p>
+<p><strong>Características:</strong></p>
+<ul>
+<li><strong>Paredes e teto:</strong> cobertos com materiais absorventes (espuma de ferrite + carbônio)</li>
+<li><strong>Piso:</strong> condutivo (grade metálica aterrada)</li>
+<li><strong>Dimensões mínimas:</strong> determinadas pela frequência máxima de ensaio</li>
+</ul>
+<p>O <strong>PSL (Pre-Site Verification — Verificação de Site)</strong> é realizado antes de cada campanha de medida para garantir a uniformidade do campo e a rejeição de reflexões:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{PSL} = \left| \frac{V_{\text{min}}}{V_{\text{max}}} \right|_{\text{site}} \leq 0{,}5 \quad \text{(ou } \leq -6\,\text{dB})}
+
+$$
+</div>
+
+<h3 id="setup-de-teste"><span class="heading-number">4.6.2</span> Setup de Teste</h3>
+<p>O <strong>equipamento de teste</strong> típico inclui:</p>
+<ol>
+<li><strong>Antena de medida</strong> (dipolo log-periódico, horn)</li>
+<li><strong>Receptor EMI</strong> ou analisador de espectro com detector QP</li>
+<li><strong>LISN</strong> (Line Impedance Stabilization Network) para medidas conduzidas</li>
+<li><strong>Mesa de teste</strong> não condutiva (Classe B) ou condutiva aterrada (Classe A)</li>
+<li><strong>DUT (Device Under Test)</strong> com cabos em configuração de referência</li>
+</ol>
+<h3 id="procedimento-de-medida"><span class="heading-number">4.6.3</span> Procedimento de Medida</h3>
+<p><strong>Scan de emissão:</strong></p>
+<ol>
+<li>Medir com detector <strong>Peak</strong> em todas as frequências (varredura rápida)</li>
+<li>Medir com detector <strong>QP</strong> nas frequências onde o Peak excedeu o limite (verificação regulatória)</li>
+<li>Medir com detector <strong>Average</strong> para caracterização adicional</li>
+</ol>
+<p><strong>Rotations e heights:</strong> A antena de medida é posicionada a 3 m, 5 m ou 10 m do DUT (dependendo do tamanho do DUT e da frequência). A altura da antena é varrida de 1 m a 4 m. O DUT é girado em 360°.</p>
+<h3 id="incerteza-de-medida"><span class="heading-number">4.6.4</span> Incerteza de Medida</h3>
+<p>A <strong>incerteza expandida</strong> de uma medida EMC é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{U = k \cdot u_c}
+
+$$
+</div>
+
+<p>onde:</p>
+<ul>
+<li>$u_c$ é a incerteza combinada (contribuições de antena, receptor, LISN, repetibilidade)</li>
+<li>$k = 2$ para nível de confiança de aproximadamente 95%</li>
+</ul>
+<p>A CISPR 16-4-3 especifica as incertezas típicas:</p>
+<table>
+<thead>
+<tr>
+<th>Tipo de medida</th>
+<th>Incerteza expandida (k=2)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Emissão conduzida (QP)</td>
+<td>3–4 dB</td>
+</tr>
+<tr>
+<td>Emissão radiada (QP)</td>
+<td>4–5 dB</td>
+</tr>
+<tr>
+<td>Emissão radiada (Peak)</td>
+<td>3–4 dB</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> Ao avaliar a conformidade, a margem de conformidade deve ser calculada como:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{M = E_{\text{medida}} - E_{\text{limite}}}
+
+$$
+</div>
+
+<p>Se $M &lt; -U$, o equipamento está <strong>fora de conformidade</strong>. Se $M &gt; 0$, está <strong>em conformidade</strong>. Se $-U \leq M \leq 0$, o resultado é <strong>inconclusivo</strong> (medida adicional recomendada).</p>
+<h2 id="certificação-e-marcação-cefcc"><span class="heading-number">4.7</span> Certificação e Marcação CE/FCC</h2>
+<h3 id="processo-de-certificação-passo-a-passo"><span class="heading-number">4.7.1</span> Processo de Certificação Passo-a-Passo</h3>
+<ol>
+<li><strong>Identificação das normas aplicáveis</strong> — CISPR, IEC 61000, FCC Part 15, etc.</li>
+<li><strong>Testes de pré-conformidade</strong> — em câmara semianecóica de laboratório</li>
+<li><strong>Correção de problemas</strong> — blindagem, filtragem, layout</li>
+<li><strong>Testes de conformidade</strong> — em laboratório acreditado (NABCEL no Brasil, TB notified body na Europa)</li>
+<li><strong>Montagem do dossier técnico</strong> — relatórios de teste, desenhos, esquemas</li>
+<li><strong>Declaração de Conformidade</strong> — documento assinado pelo fabricante</li>
+<li><strong>Afixação da marcação</strong> — CE, FCC, etc.</li>
+</ol>
+<h3 id="marcação-ce"><span class="heading-number">4.7.2</span> Marcação CE</h3>
+<p>A <strong>marcação CE</strong> indica conformidade com as diretivas europeias aplicáveis:</p>
+<ul>
+<li><strong>Diretiva EMC 2014/30/EU</strong> — Compatibilidade Eletromagnética</li>
+<li><strong>Diretiva RED 2014/53/EU</strong> — Equipamentos de Rádio</li>
+<li><strong>Diretiva LVD 2014/35/EU</strong> — Baixa Tensão (segurança)</li>
+</ul>
+<p><strong>Documentação obrigatória:</strong></p>
+<ul>
+<li>Declaração UE de Conformidade</li>
+<li>Dossier técnico (desenhos, esquemas, relatórios de teste)</li>
+<li>Manual de instalação e operação</li>
+<li>Marcação visível, legível e indelével no produto</li>
+</ul>
+<h3 id="fcc-part-15--subpartes"><span class="heading-number">4.7.3</span> FCC Part 15 — Subpartes</h3>
+<p>A <strong>Federal Communications Commission</strong> (EUA) regula emissões por meio do <strong>47 CFR Part 15</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Subparte</th>
+<th>Aplicação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>15.31</strong></td>
+<td>Procedimentos gerais de medição</td>
+</tr>
+<tr>
+<td><strong>15.33</strong></td>
+<td>Faixas de frequência de medição de emissões radiadas</td>
+</tr>
+<tr>
+<td><strong>15.107</strong></td>
+<td>Limites conduzidos para radiadores não intencionais</td>
+</tr>
+<tr>
+<td><strong>15.109</strong></td>
+<td>Limites radiados para radiadores não intencionais</td>
+</tr>
+<tr>
+<td><strong>15.207</strong></td>
+<td>Limites conduzidos gerais aplicáveis a muitos radiadores intencionais</td>
+</tr>
+<tr>
+<td><strong>15.247</strong></td>
+<td>Dispositivos de banda larga (ISM bands)</td>
+</tr>
+<tr>
+<td><strong>15.249</strong></td>
+<td>Transmissores de RF para dispositivos de baixa potência</td>
+</tr>
+</tbody>
+</table>
+<p>Os limites FCC são tabelas por faixa, classe, porta, detector e distância; não são um único valor constante para 30–1000 MHz e não distinguem linha e neutro por dois limites genéricos. Para um ensaio, consulte diretamente o parágrafo aplicável no <strong>47 CFR vigente</strong>. O raciocínio de conversão entre $\mu\text{V}$ e $\text{dB\mu V}$ continua válido, mas o valor de entrada deve vir da regra correta.</p>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">4.8</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">4.8.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> interpretar limites, detectores, margem e incerteza sem transformar exemplos em certificados. <strong>Rastreabilidade:</strong> registre edição normativa, distância, detector, RBW e classe. <strong>Validação:</strong> separe margem nominal, incerteza expandida e regra de decisão aplicada.</p>
+<h3 id="plot-de-limites-de-emissão-cispr-32-classe-a-vs-b"><span class="heading-number">4.8.2</span> Plot de Limites de Emissão CISPR 32 (Classe A vs. B)</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cispr32_conducted_limits</span><span style="color: #F8F8F2">(f_MHz):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;</span>
+<span style="color: #E6DB74">    Calcula limites de emissao conduzida CISPR 32.</span>
+<span style="color: #E6DB74">    f_MHz: frequencia em MHz.</span>
+<span style="color: #E6DB74">    Retorna limites QP e AVG para Classe A e B em dBuV.</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #959077"># Classe A</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">f_MHz</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">clsA_QP</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">79.0</span>
+        <span style="color: #F8F8F2">clsA_AVG</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">66.0</span>
+    <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">clsA_QP</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">73.0</span>
+        <span style="color: #F8F8F2">clsA_AVG</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">60.0</span>
+
+    <span style="color: #959077"># Classe B</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">f_MHz</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">clsB_QP</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">79.0</span>
+        <span style="color: #F8F8F2">clsB_AVG</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">66.0</span>
+    <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">clsB_QP</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">56.0</span>
+        <span style="color: #F8F8F2">clsB_AVG</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50.0</span>
+
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">clsA_QP,</span> <span style="color: #F8F8F2">clsA_AVG,</span> <span style="color: #F8F8F2">clsB_QP,</span> <span style="color: #F8F8F2">clsB_AVG</span>
+
+<span style="color: #959077"># Plot</span>
+<span style="color: #F8F8F2">f_MHz</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">0.8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 0.16 MHz a 31.6 MHz</span>
+<span style="color: #F8F8F2">clsA_QP,</span> <span style="color: #F8F8F2">clsA_AVG,</span> <span style="color: #F8F8F2">clsB_QP,</span> <span style="color: #F8F8F2">clsB_AVG</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[],</span> <span style="color: #F8F8F2">[],</span> <span style="color: #F8F8F2">[],</span> <span style="color: #F8F8F2">[]</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">f_MHz:</span>
+    <span style="color: #F8F8F2">qa,</span> <span style="color: #F8F8F2">aa,</span> <span style="color: #F8F8F2">qb,</span> <span style="color: #F8F8F2">ab</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cispr32_conducted_limits(f)</span>
+    <span style="color: #F8F8F2">clsA_QP</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(qa);</span> <span style="color: #F8F8F2">clsA_AVG</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(aa)</span>
+    <span style="color: #F8F8F2">clsB_QP</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(qb);</span> <span style="color: #F8F8F2">clsB_AVG</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(ab)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(f_MHz,</span> <span style="color: #F8F8F2">clsA_QP,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Classe A (QP)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(f_MHz,</span> <span style="color: #F8F8F2">clsA_AVG,</span> <span style="color: #E6DB74">&#39;b--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Classe A (AVG)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(f_MHz,</span> <span style="color: #F8F8F2">clsB_QP,</span> <span style="color: #E6DB74">&#39;r-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Classe B (QP)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(f_MHz,</span> <span style="color: #F8F8F2">clsB_AVG,</span> <span style="color: #E6DB74">&#39;r--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Classe B (AVG)&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xscale(</span><span style="color: #E6DB74">&#39;log&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Frequencia (MHz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Limite (dBuV)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Limites de Emissao Conduzida CISPR 32&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/cispr32_conducted.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Valores numericos:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #F8F8F2">]:</span>
+    <span style="color: #F8F8F2">qa,</span> <span style="color: #F8F8F2">aa,</span> <span style="color: #F8F8F2">qb,</span> <span style="color: #F8F8F2">ab</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">cispr32_conducted_limits(f)</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  f={</span><span style="color: #F8F8F2">f</span><span style="color: #E6DB74">:&gt;5.2f} MHz: A(QP)={</span><span style="color: #F8F8F2">qa</span><span style="color: #E6DB74">:.0f} A(AVG)={</span><span style="color: #F8F8F2">aa</span><span style="color: #E6DB74">:.0f} B(QP)={</span><span style="color: #F8F8F2">qb</span><span style="color: #E6DB74">:.0f} B(AVG)={</span><span style="color: #F8F8F2">ab</span><span style="color: #E6DB74">:.0f}&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mcispr32_conducted_limits[39m(f_MHz):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="cálculo-de-margem-de-conformidade"><span class="heading-number">4.8.3</span> Cálculo de Margem de Conformidade</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">compliance_margin</span><span style="color: #F8F8F2">(E_measure,</span> <span style="color: #F8F8F2">E_limit,</span> <span style="color: #F8F8F2">U_expanded</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">5.0</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;</span>
+<span style="color: #E6DB74">    Calcula margem de conformidade e status.</span>
+<span style="color: #E6DB74">    E_measure, E_limit: em dBuV/m.</span>
+<span style="color: #E6DB74">    U_expanded: incerteza expandida (k=2).</span>
+<span style="color: #E6DB74">    Retorna: margem, status (pass/fail/uncertain).</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">margin</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">E_measure</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">E_limit</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">margin</span> <span style="color: #FF4689">&lt;</span> <span style="color: #FF4689">-</span><span style="color: #F8F8F2">U_expanded:</span>
+        <span style="color: #F8F8F2">status</span> <span style="color: #FF4689">=</span> <span style="color: #E6DB74">&quot;FAIL&quot;</span>
+    <span style="color: #66D9EF">elif</span> <span style="color: #F8F8F2">margin</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">status</span> <span style="color: #FF4689">=</span> <span style="color: #E6DB74">&quot;PASS&quot;</span>
+    <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">status</span> <span style="color: #FF4689">=</span> <span style="color: #E6DB74">&quot;UNCERTAIN&quot;</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">margin,</span> <span style="color: #F8F8F2">status</span>
+
+<span style="color: #959077"># Simulacao: medidas de 20 produtos em 5 frequencias</span>
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">frequencies</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">30</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">200</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">])</span>  <span style="color: #959077"># MHz</span>
+<span style="color: #F8F8F2">n_products</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #959077"># Grafico 1: Medidas vs limites</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(n_products):</span>
+    <span style="color: #959077"># Simula medidas com algum ruido</span>
+    <span style="color: #F8F8F2">E_meas</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">37</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">_</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">frequencies])</span>
+    <span style="color: #F8F8F2">E_lim</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">full_like(frequencies,</span> <span style="color: #AE81FF">37.0</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(frequencies,</span> <span style="color: #F8F8F2">E_meas,</span> <span style="color: #E6DB74">&#39;b.&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">37</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Limite Classe B&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Frequencia (MHz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Emissao (dBuV/m)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Medidas de Emissao Radiada (20 produtos)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Grafico 2: Distribuicao de margens</span>
+<span style="color: #F8F8F2">margins</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #F8F8F2">statuses</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{</span><span style="color: #E6DB74">&#39;PASS&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;FAIL&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;UNCERTAIN&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">}</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(n_products</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">E_m</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">35</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">margin,</span> <span style="color: #F8F8F2">status</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">compliance_margin(E_m,</span> <span style="color: #AE81FF">37.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5.0</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">margins</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(margin)</span>
+    <span style="color: #F8F8F2">statuses[status]</span> <span style="color: #FF4689">+=</span> <span style="color: #AE81FF">1</span>
+
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">hist(margins,</span> <span style="color: #F8F8F2">bins</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;steelblue&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">edgecolor</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;black&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;green&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Margem = 0&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Margem = -U&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Margem de Conformidade (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Numero de Medidas&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Distribuicao de Margens&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Resumo</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Resumo de Conformidade:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">status,</span> <span style="color: #F8F8F2">count</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">statuses</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">items():</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  {</span><span style="color: #F8F8F2">status</span><span style="color: #E6DB74">}: {</span><span style="color: #F8F8F2">count</span><span style="color: #E6DB74">} medidas ({</span><span style="color: #F8F8F2">count</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(n_products</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">100</span><span style="color: #E6DB74">:.1f}%)&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/compliance_margin.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #959077"># Exemplo numerico</span>
+<span style="color: #F8F8F2">E_meas_example</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">33.0</span>
+<span style="color: #F8F8F2">E_lim_example</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">37.0</span>
+<span style="color: #F8F8F2">margin,</span> <span style="color: #F8F8F2">status</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">compliance_margin(E_meas_example,</span> <span style="color: #F8F8F2">E_lim_example,</span> <span style="color: #AE81FF">5.0</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Exemplo: Medida={</span><span style="color: #F8F8F2">E_meas_example</span><span style="color: #E6DB74">} dBuV/m, Limite={</span><span style="color: #F8F8F2">E_lim_example</span><span style="color: #E6DB74">} dBuV/m&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Margem = {</span><span style="color: #F8F8F2">margin</span><span style="color: #E6DB74">:.1f} dB, Status = {</span><span style="color: #F8F8F2">status</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mcompliance_margin[39m(E_measure, E_limit, U_expanded=[32m5.0[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="simulação-de-ensaio-esd--curva-de-tensão"><span class="heading-number">4.8.4</span> Simulação de Ensaio ESD — Curva de Tensão</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">esd_waveform</span><span style="color: #F8F8F2">(t,</span> <span style="color: #F8F8F2">C</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150e-12</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">R</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">330</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;</span>
+<span style="color: #E6DB74">    Simula a forma de onda de corrente de descarga ESD (modelo de 2 exponentes).</span>
+<span style="color: #E6DB74">    t: array de tempos.</span>
+<span style="color: #E6DB74">    C = 150 pF (capacitancia do modelo)</span>
+<span style="color: #E6DB74">    R = 330 ohms (resistencia do modelo)</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">tau1</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.6e-9</span>    <span style="color: #959077"># tempo de subida (600 ps)</span>
+    <span style="color: #F8F8F2">tau2</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">35e-9</span>     <span style="color: #959077"># tempo de caida (35 ns)</span>
+    <span style="color: #959077"># Forma de onda de corrente normalizada</span>
+    <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">t</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">tau2)</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">t</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">tau1)</span>
+    <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">maximum(i,</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #959077"># Normalizar para pico = 1</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max(i)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">esd_current</span><span style="color: #F8F8F2">(t,</span> <span style="color: #F8F8F2">voltage,</span> <span style="color: #F8F8F2">C</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150e-12</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">R</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">330</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Calcula corrente de descarga ESD para uma tensao de descarga.&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">normalized</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">esd_waveform(t,</span> <span style="color: #F8F8F2">C,</span> <span style="color: #F8F8F2">R)</span>
+    <span style="color: #F8F8F2">I_peak</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">voltage</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">R</span>  <span style="color: #959077"># corrente de pico aproximada</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">I_peak</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">normalized</span>
+
+<span style="color: #959077"># Simular diferentes niveis de tensao</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5000</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 0 a 100 ns</span>
+<span style="color: #F8F8F2">voltages</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">]</span>  <span style="color: #959077"># kV</span>
+<span style="color: #F8F8F2">colors</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;g&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">]</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">(ax1,</span> <span style="color: #F8F8F2">ax2)</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">V,</span> <span style="color: #F8F8F2">c</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(voltages,</span> <span style="color: #F8F8F2">colors):</span>
+    <span style="color: #F8F8F2">I</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">esd_current(t,</span> <span style="color: #F8F8F2">V</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">I,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">c,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">V</span><span style="color: #E6DB74">} kV&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Tempo (ns)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Corrente (A)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Forma de Onda de Corrente ESD (IEC 61000-4-2)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Tensao no DUT (simulacao simplificada)</span>
+<span style="color: #F8F8F2">R_dut</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50</span>  <span style="color: #959077"># impedancia do DUT (ohms)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">V,</span> <span style="color: #F8F8F2">c</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(voltages,</span> <span style="color: #F8F8F2">colors):</span>
+    <span style="color: #F8F8F2">V_dut</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">esd_current(t,</span> <span style="color: #F8F8F2">V</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">R_dut</span>
+    <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">V_dut,</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">c,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">V</span><span style="color: #E6DB74">} kV -&gt; DUT&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Tempo (ns)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Tensao no DUT (V)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Tensao Induzida no Equipamento (DUT)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/esd_waveform.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #959077"># Parametros de forma de onda</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Parametros IEC 61000-4-2 ESD:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Capacitancia do modelo: 150 pF&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Resistencia do modelo: 330 ohms&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Tempo de subida: &lt;= 1 ns&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Tempo de meia-pulso: 30 ns +/- 15 ns&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Correntes de pico aproximadas:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">V</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">voltages:</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  {</span><span style="color: #F8F8F2">V</span><span style="color: #E6DB74">} kV -&gt; I_peak ~ {</span><span style="color: #F8F8F2">V</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1000</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">330</span><span style="color: #E6DB74">:.0f} A&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mesd_waveform[39m(t, C=[32m150e-12[39m, R=[32m330[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">4.9</span> Lista de Exercícios Propostos</h2>
+<p>Use, quando necessário, $k_B = 1{,}381 \times 10^{-23}\,\text{J/K}$, $T_0 = 290\,\text{K}$.</p>
+<p><strong>E.1</strong> — Explique a diferença entre os detectores <strong>Peak</strong>, <strong>Quasi-Peak</strong> e <strong>Average</strong> de um receptor EMI. Por que a CISPR exige medida QP para conformidade regulatória e não apenas Peak?</p>
+<p><strong>E.2</strong> — Um produto deve ser certificado para a diretiva EMC europeia. Liste as etapas do processo de certificação CE e os documentos obrigatórios.</p>
+<p><strong>E.3</strong> — Explique por que não se pode calcular um limite CISPR 32 acima de $1\,\text{GHz}$ por uma fórmula universal dependente apenas da frequência. Liste os dados normativos que devem ser registrados ao extrair o limite aplicável.</p>
+<p><strong>E.4</strong> — Um ensaio de ESD é realizado a $8\,\text{kV}$ contato. Qual é a corrente de pico aproximada no modelo de descarga? Qual é a energia armazenada no capacitor de $150\,\text{pF}$ antes da descarga?</p>
+<p><strong>E.5</strong> — Um equipamento emite $42\,\text{dB\mu V/m}$ a $100\,\text{MHz}$ em um ensaio radiado. O limite CISPR 32 Classe B a $100\,\text{MHz}$ é $30\,\text{dB\mu V/m}$. Calcule (a) a margem de não conformidade, (b) se o resultado é conclusivo com incerteza expandida $U = 5\,\text{dB}$.</p>
+<p><strong>E.6</strong> — Um trem didático de EFT/Burst usa frequência de repetição de pulsos de $5\,\text{kHz}$ e duração ativa de $15\,\text{ms}$. Calcule (a) o número de pulsos em cada burst e (b) o tempo ativo acumulado em 3 bursts. Explique por que isso não determina sozinho a duração normativa total do ensaio.</p>
+<p><strong>E.7</strong> — Calcule os limites de emissão conduzida CISPR 32 Classe B em $\text{dB\mu V}$ e em $\mu\text{V}$ para $f = 1\,\text{MHz}$ (QP).</p>
+<p><strong>E.8</strong> — Um laboratório mede uma emissão radiada de $34\,\text{dB\mu V/m}$ a $300\,\text{MHz}$. O limite Classe B é $37\,\text{dB\mu V/m}$. A incerteza expandida é $4{,}5\,\text{dB}$. O produto é conforme? Justifique usando o conceito de margem de conformidade.</p>
+<p><strong>E.9</strong> — Compare os limites de emissão conduzida CISPR 32 Classe A e Classe B para $f = 10\,\text{MHz}$. Qual é a diferença em dB? O que essa diferença representa em termos de tensão no LISN?</p>
+<p><strong>E.10</strong> — Um receptor de banda $B = 1\,\text{kHz}$ opera com $T_{\text{sys}} = 290\,\text{K}$. Qual é a potência de ruído térmico disponível em dBm? Se o receptor precisa de $SNR = 10\,\text{dB}$ para operação, qual é a potência mínima do sinal?</p>
+<p><strong>E.11 (desafio)</strong> — A incerteza expandida $U = k \cdot u_c$ depende de múltiplas contribuições. Liste pelo menos 5 contribuições para a incerteza de uma medida de emissão radiada e indique quais tendem a dominar em cada faixa de frequência.</p>
+<p><strong>E.12 (desafio)</strong> — Explique por que não existe uma conversão universal entre leituras QP e AVG baseada apenas no <em>duty cycle</em>. Indique quais propriedades do pulso e do receptor precisariam ser conhecidas para prever as duas leituras.</p>
+<h2 id="gabarito"><span class="heading-number">4.10</span> Gabarito</h2>
+<h3 id="e1"><span class="heading-number">4.10.1</span> E1</h3>
+<p>Os três detectores funcionam diferentemente:</p>
+<ul>
+<li><strong>Peak (P):</strong> captura o valor máximo instantâneo do sinal. É o mais sensível e rápido, mas não reflete o impacto real da interferência no receptor.</li>
+<li><strong>Quasi-Peak (QP):</strong> pondera a amplitude pela frequência de repetição. Um pulso isolado tem leitura QP muito menor que a de pico. Um pulso repetitivo tem QP ≈ Peak. A ponderação é feita por uma rede RC com constante de carga $0{,}2\,\text{ms}$ e descarga $1\,\text{s}$.</li>
+<li><strong>Average (AVG):</strong> calcula a média do envelope ao longo do tempo de medição.</li>
+</ul>
+<p><strong>Por que QP é usado para conformidade:</strong> Porque QP reflete a <strong>importância subjetiva da interferência</strong>. Um sinal raro (baixa taxa de repetição) é menos perturbador que um contínuo, mesmo com a mesma amplitude de pico. A CISPR usa QP porque correlaciona melhor com a percepção humana de interferência em rádios AM.</p>
+<h3 id="e2"><span class="heading-number">4.10.2</span> E2</h3>
+<p><strong>Etapas do processo de certificação CE:</strong></p>
+<ol>
+<li>Identificar diretivas aplicáveis (EMC, RED, LVD)</li>
+<li>Identificar normas harmonizadas (CISPR, IEC 61000)</li>
+<li>Realizar testes de pré-conformidade em laboratório</li>
+<li>Corrigir problemas EMC encontrados</li>
+<li>Realizar a avaliação de conformidade e os ensaios pertinentes; laboratório acreditado e organismo notificado são usados quando exigidos ou escolhidos para sustentar a avaliação, mas não são sinônimos nem universalmente obrigatórios na Diretiva EMC</li>
+<li>Elaborar <strong>dossier técnico</strong> (desenhos, esquemas, relatórios)</li>
+<li>Redigir <strong>Declaração UE de Conformidade</strong></li>
+<li>Afixar marcação CE no produto</li>
+<li>Manter documentação por 10 anos após comercialização</li>
+</ol>
+<p><strong>Documentos obrigatórios:</strong> Declaração UE de Conformidade, dossier técnico (relatórios de teste, desenhos, esquemas, manual), marcação CE visível.</p>
+<h3 id="e3"><span class="heading-number">4.10.3</span> E3</h3>
+<p>O limite depende da edição/adopção normativa, classe do equipamento, faixa, distância de medição, detector, largura de banda e condições de configuração. Acima de $1\,\text{GHz}$ também se deve identificar a frequência máxima a ensaiar e os requisitos de pico e média. Portanto, frequência sozinha não determina o limite. Um registro rastreável inclui: documento e edição/emenda, cláusula/tabela, classe e porta, faixa, detector, RBW, distância/sítio, configuração do EUT e unidades.</p>
+<h3 id="e4"><span class="heading-number">4.10.4</span> E4</h3>
+<p>Corrente de pico: $I_{\text{peak}} \approx \frac{V}{R} = \frac{8000}{330} = \boxed{24{,}2\,\text{A}}$.</p>
+<p>Energia no capacitor: $E = \frac{1}{2} C V^2 = \frac{1}{2} \cdot 150 \times 10^{-12} \cdot 8000^2 = \boxed{4{,}8\,\text{mJ}}$.</p>
+<h3 id="e5"><span class="heading-number">4.10.5</span> E5</h3>
+<p>(a) Com os valores <strong>fornecidos no enunciado</strong>, a margem em relação ao limite é<br />
+$M=42-30=\boxed{+12\,\text{dB}}$: a emissão medida excede o limite em 12 dB.</p>
+<p>(b) Mesmo o extremo inferior do intervalo ilustrativo, $42-5=37\,\text{dB\mu V/m}$, permanece 7 dB acima do limite de 30 dBµV/m. Assim, sob uma regra que considera esse intervalo, a não conformidade é conclusiva. Em relatório real, a conclusão deve citar a regra de decisão prescrita/contratada; não basta inventar uma “zona cinza” genérica.</p>
+<h3 id="e6"><span class="heading-number">4.10.6</span> E6</h3>
+<p>(a) $n=f_pt_b=(5\,000)(15\times10^{-3})=\boxed{75\text{ pulsos por burst}}$.</p>
+<p>(b) O tempo <strong>ativo</strong> em três bursts é $3(15\,\text{ms})=\boxed{45\,\text{ms}}$. Esse não é o tempo total do ensaio: faltam o intervalo entre bursts, a duração de aplicação por polaridade/porta e demais condições definidas pelo plano e pela edição normativa.</p>
+<p>(b) Tempo total para 3 bursts: cada burst dura $100\,\mu\text{s}$, intervalo de $300\,\text{ms}$. Tempo total ≈ $3 \cdot (100\,\mu\text{s} + 300\,\text{ms}) \approx \boxed{0{,}9\,\text{s}}$.</p>
+<h3 id="e7"><span class="heading-number">4.10.7</span> E7</h3>
+<p>Para $f = 1\,\text{MHz}$, CISPR 32 Classe B: $56\,\text{dB\mu V}$ (QP).</p>
+<p>Em $\mu\text{V}$: $V = 10^{56/20}\,\mu\text{V} = \boxed{631\,\mu\text{V}}$.</p>
+<h3 id="e8"><span class="heading-number">4.10.8</span> E8</h3>
+<p>Margem: $M = 34 - 37 = -3\,\text{dB}$.</p>
+<p>Zona de incerteza: $-U \leq M \leq 0$, isto é, $-4{,}5 \leq M \leq 0$.</p>
+<p>Como $-4{,}5 \leq -3 \leq 0$, o resultado é $\boxed{\text{UNCERTAIN}}$. <strong>Medida adicional recomendada</strong> — o produto pode ser conforme ou não, dentro da incerteza da medida.</p>
+<h3 id="e9"><span class="heading-number">4.10.9</span> E9</h3>
+<p>Para $f = 10\,\text{MHz}$:</p>
+<ul>
+<li>Classe A: QP = $73\,\text{dB\mu V}$, AVG = $60\,\text{dB\mu V}$</li>
+<li>Classe B: QP = $56\,\text{dB\mu V}$, AVG = $50\,\text{dB\mu V}$</li>
+</ul>
+<p>Diferença QP: $73 - 56 = \boxed{17\,\text{dB}}$.</p>
+<p>Em tensão: $\Delta V_{\text{dB}} = 20\log_{10}(V_A/V_B) = 17\,\text{dB} \Rightarrow \frac{V_A}{V_B} = 10^{17/20} = \boxed{7{,}08}$.</p>
+<p>A Classe A permite aproximadamente <strong>7 vezes mais tensão</strong> conduzida que a Classe B.</p>
+<h3 id="e10"><span class="heading-number">4.10.10</span> E10</h3>
+<p>(a) $P_n = k_B T B = (1{,}381 \times 10^{-23})(290)(1000) = 4{,}005 \times 10^{-18}\,\text{W}$.</p>
+
+<div class="math-display">
+$$
+
+P_n\,[\text{dBm}] = 10\log_{10}(4{,}005 \times 10^{-15}) = \boxed{-144{,}0\,\text{dBm}}
+
+$$
+</div>
+
+<p>(b) $SNR = 10\,\text{dB} = 10\times$ linear. $P_{\text{sig}} = 10 \cdot P_n = 4{,}005 \times 10^{-17}\,\text{W} = \boxed{-134{,}0\,\text{dBm}}$.</p>
+<h3 id="e11"><span class="heading-number">4.10.11</span> E11</h3>
+<p>Contribuições possíveis para a incerteza de emissão radiada:</p>
+<ol>
+<li>calibração e interpolação do <strong>fator da antena</strong>;</li>
+<li>perda, estabilidade e desadaptação do <strong>cabo</strong>;</li>
+<li>leitura, linearidade, ruído e resposta do <strong>receptor EMI</strong>;</li>
+<li>posicionamento, distância e repetibilidade da altura/polarização da antena e do EUT;</li>
+<li>imperfeições do sítio, reflexões e validação do ambiente;</li>
+<li>variação do EUT, da rede de alimentação e da configuração de cabos.</li>
+</ol>
+<p>Não se pode declarar antecipadamente qual contribuição domina apenas pela frequência. Isso é determinado pelo orçamento de incerteza do sítio, método, instrumentação e configuração concretos; cada termo deve ter distribuição, divisor, coeficiente de sensibilidade e correlação documentados.</p>
+<h3 id="e12"><span class="heading-number">4.10.12</span> E12</h3>
+<p>Não há uma conversão universal. O detector quasi-pico não é um medidor RMS multiplicado por $\sqrt D$: sua indicação resulta da largura de banda, constantes de carga/descarga e dinâmica do detector. O detector médio também depende da definição e do método normativo aplicável.</p>
+<p>Dois trens de pulsos podem ter o mesmo <em>duty cycle</em> e amplitudes de pico iguais, mas taxas de repetição e larguras de pulso diferentes; o QP pode responder diferentemente porque há mais ou menos tempo para carregar e descarregar entre pulsos. Para prever leituras, seriam necessários pelo menos forma e amplitude dos pulsos, largura, taxa e regularidade de repetição, RBW, constantes do detector e tempo de observação. A resposta rigorosa é obtida pelo modelo especificado para o receptor ou por medição com detectores conformes.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="03_fontes_ruido.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">3. Fontes de Ruído Eletromagnético — Natural, Industrial e Artificial</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="05_introducao_spice_para_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">5. Introdução ao SPICE para problemas EMC</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

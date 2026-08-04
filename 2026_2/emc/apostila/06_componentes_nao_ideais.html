@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6. Comportamento não ideal de componentes — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>6. Comportamento não ideal de componentes</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>6. Comportamento não ideal de componentes</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="05_introducao_spice_para_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">5. Introdução ao SPICE para problemas EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="07_linhas_transmissao_integridade_sinal.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">7. Linhas de transmissão e integridade de sinal</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>6. Comportamento não ideal de componentes</h1>
+<p>Em EMC, o símbolo no esquema é apenas uma aproximação. Fios, trilhas, terminais e encapsulamentos acrescentam resistência, indutância e capacitância parasitas; esses elementos podem dominar o circuito quando a frequência aumenta ou quando a corrente varia rapidamente. O circuito que realmente determina emissões e imunidade é, portanto, o <strong>esquema oculto</strong> formado pelos componentes intencionais e seus parasitas.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#condutores-fios-e-trilhas-de-pcb">Condutores: fios e trilhas de PCB</a></li>
+<li><a href="#efeito-dos-terminais">Efeito dos terminais</a></li>
+<li><a href="#resistores-reais">Resistores reais</a></li>
+<li><a href="#capacitores-reais">Capacitores reais</a></li>
+<li><a href="#indutores-reais">Indutores reais</a></li>
+<li><a href="#materiais-ferromagn%C3%A9ticos-e-ferrites">Materiais ferromagnéticos e ferrites</a></li>
+<li><a href="#choques-de-modo-comum">Choques de modo comum</a></li>
+<li><a href="#dispositivos-eletromec%C3%A2nicos-e-contatos">Dispositivos eletromecânicos e contatos</a></li>
+<li><a href="#arco-em-contatos-mec%C3%A2nicos">Arco em contatos mecânicos</a></li>
+<li><a href="#dispositivos-digitais">Dispositivos digitais</a></li>
+<li><a href="#variabilidade-e-modelagem">Variabilidade e modelagem</a></li>
+<li><a href="#checklist-de-projeto">Checklist de projeto</a></li>
+<li><a href="#teoremas-e-deriva%C3%A7%C3%B5es-fundamentais">Teoremas e derivações fundamentais</a></li>
+<li><a href="#exemplos-resolvidos">Exemplos resolvidos</a></li>
+<li><a href="#insight-o-componente-e-sua-montagem-formam-um-%C3%BAnico-dispositivo">Insight: o componente e sua montagem formam um único dispositivo</a></li>
+<li><a href="#exerc%C3%ADcios">Exercícios</a></li>
+<li><a href="#respostas-selecionadas">Respostas selecionadas</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--imped%C3%A2ncia-de-capacitor-real-vs-frequ%C3%AAncia">Exemplo numérico adicional — Impedância de capacitor real vs. frequência</a></li>
+<li><a href="#c%C3%B3digo-python--imped%C3%A2ncia-de-capacitor-real-vs-frequ%C3%AAncia">Código Python — Impedância de capacitor real vs. frequência</a></li>
+<li><a href="#c%C3%B3digo-python--imped%C3%A2ncia-de-indutor-real-vs-frequ%C3%AAncia">Código Python — Impedância de indutor real vs. frequência</a></li>
+<li><a href="#exemplo-num%C3%A9rico-adicional--efeito-pelicular-em-fio-de-cobre">Exemplo numérico adicional — Efeito pelicular em fio de cobre</a></li>
+<li><a href="#c%C3%B3digo-python--resist%C3%AAncia-dc-e-ac-vs-frequ%C3%AAncia">Código Python — Resistência DC e AC vs. frequência</a></li>
+<li><a href="#antirresson%C3%A2ncia-de-bancos-de-capacitores">Antirressonância de bancos de capacitores</a></li>
+<li><a href="#monte-carlo-de-autorresson%C3%A2ncia">Monte Carlo de autorressonância</a></li>
+<li><a href="#laborat%C3%B3rio-spice--antirresson%C3%A2ncia-de-desacoplamento">Laboratório SPICE — antirressonância de desacoplamento</a></li>
+<li><a href="#refer%C3%AAncia-principal">Referência principal</a></li>
+</ol></nav>
+<h2 id="condutores-fios-e-trilhas-de-pcb"><span class="heading-number">6.1</span> Condutores: fios e trilhas de PCB</h2>
+<h3 id="resistência-dc-vs-ac"><span class="heading-number">6.1.1</span> Resistência DC vs. AC</h3>
+<p>Para um fio de comprimento $l$, raio $r$, condutividade $\sigma$ e área $A$, a resistência em corrente contínua é</p>
+
+<div class="math-display">
+$$
+R_{dc}=\frac{l}{\sigma A}.
+$$
+</div>
+
+<p>Em alta frequência, o efeito pelicular concentra a corrente em uma camada de profundidade</p>
+
+<div class="math-display">
+$$
+\delta=\sqrt{\frac{2}{\omega\mu\sigma}},
+$$
+</div>
+
+<p>e a resistência cresce aproximadamente com $\sqrt f$.</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: O efeito pelicular não é um</p>
+</blockquote>
+<h2 id="efeito-dos-terminais"><span class="heading-number">6.2</span> Efeito dos terminais</h2>
+<p>O terminal de um componente adiciona indutância série e capacitância para condutores próximos. Como regra de ordem de grandeza, um terminal ou fio reto possui cerca de alguns nH por centímetro, mas o valor exato depende do retorno. Consequências práticas:</p>
+<ul>
+<li>capacitores com terminais longos deixam de desviar ruído em alta frequência;</li>
+<li>resistores podem apresentar resposta indutiva ou capacitiva;</li>
+<li>a conexão de um filtro pode ser mais importante que o valor nominal do componente;</li>
+<li>dois componentes fisicamente próximos podem se acoplar por capacitância ou indutância mútua.</li>
+</ul>
+<h2 id="resistores-reais"><span class="heading-number">6.3</span> Resistores reais</h2>
+<p>Um resistor real pode ser representado por $R$ em paralelo com uma capacitância parasita $C_p$ e em série com uma indutância $L_s$. Sua impedância aproximada é</p>
+
+<div class="math-display">
+$$
+Z_R(\omega)=j\omega L_s+\left(\frac{1}{R}+j\omega C_p\right)^{-1}.
+$$
+</div>
+
+<p>Resistores de fio são particularmente indutivos; resistores de filme e SMD tendem a ter melhor desempenho em RF. Em valores altos, $C_p$ reduz a impedância em alta frequência. A potência e a tensão máximas também limitam sua utilização em absorção de transientes.</p>
+<h2 id="capacitores-reais"><span class="heading-number">6.4</span> Capacitores reais</h2>
+<p>O modelo mínimo de um capacitor contém capacitância $C$, resistência série equivalente (ESR), indutância série equivalente (ESL) e uma resistência de fuga:</p>
+
+<div class="math-display">
+$$
+Z_C(\omega)\approx ESR+j\omega ESL+\frac{1}{j\omega C}.
+$$
+</div>
+
+<p>A frequência de autorressonância é aproximadamente</p>
+
+<div class="math-display">
+$$
+f_{SR}=\frac{1}{2\pi\sqrt{ESL\,C}}.
+$$
+</div>
+
+<p>Abaixo de $f_{SR}$ o componente é predominantemente capacitivo; acima dela, indutivo. O módulo mínimo de impedância é limitado pela ESR. Para desacoplamento de alta frequência, importam encapsulamento pequeno, conexão curta, via próxima e pequena área do laço capacitor–carga–retorno. Colocar vários valores em paralelo não garante banda larga: as ESLs e capacitâncias podem formar antirressonâncias.</p>
+<h2 id="indutores-reais"><span class="heading-number">6.5</span> Indutores reais</h2>
+<p>Um indutor inclui resistência do enrolamento, capacitância entre espiras e perdas no núcleo. Um modelo simples é $L$ e resistência série em paralelo com $C_p$. Acima da autorressonância, o componente se torna capacitivo. Além disso:</p>
+<ul>
+<li>a corrente DC pode saturar o núcleo e reduzir $L$;</li>
+<li>perdas por histerese e correntes parasitas aumentam com a frequência;</li>
+<li>o campo de dispersão pode acoplar ruído a trilhas vizinhas;</li>
+<li>a orientação e a distância entre indutores alteram a indutância mútua.</li>
+</ul>
+<h2 id="materiais-ferromagnéticos-e-ferrites"><span class="heading-number">6.6</span> Materiais ferromagnéticos e ferrites</h2>
+<p>A permeabilidade é complexa e dependente de frequência:</p>
+
+<div class="math-display">
+$$
+\mu=\mu'-j\mu''.
+$$
+</div>
+
+<p>$\mu'$ representa armazenamento de energia; $\mu''$, perdas. Ferrites usadas para supressão são escolhidas para apresentar impedância elevada e frequentemente resistiva na banda do ruído. Uma ferrite bead não é um indutor ideal: sua impedância varia com frequência, corrente de polarização, temperatura e material.</p>
+<h2 id="choques-de-modo-comum"><span class="heading-number">6.7</span> Choques de modo comum</h2>
+<p>Um choque de modo comum enrola os condutores de ida e volta no mesmo núcleo. Para corrente diferencial, os fluxos tendem a se cancelar e a impedância é pequena. Para corrente de modo comum, os fluxos se somam e a impedância é grande. Imperfeições aparecem como indutância de fuga, capacitância entre enrolamentos e saturação. O componente deve ser dimensionado com curvas de impedância na banda de interesse e com a corrente diferencial máxima.</p>
+<h2 id="dispositivos-eletromecânicos-e-contatos"><span class="heading-number">6.8</span> Dispositivos eletromecânicos e contatos</h2>
+<p>Motores, solenoides e relés combinam indutância, comutação e, muitas vezes, escovas. A interrupção de corrente gera</p>
+
+<div class="math-display">
+$$
+v=L\frac{di}{dt},
+$$
+</div>
+
+<p>podendo causar arco, ringing e espectro largo. Diodo de roda livre, TVS, varistor e redes RC reduzem o transiente, mas alteram o tempo de desligamento. Contatos mecânicos também produzem bounce e arcos repetitivos; a supressão deve ser colocada próxima à fonte e dimensionada para a energia armazenada.</p>
+<h2 id="arco-em-contatos-mecânicos"><span class="heading-number">6.9</span> Arco em contatos mecânicos</h2>
+<p>Quando a tensão entre contatos excede o limite de ruptura do gás (ar), ocorre uma descarga. A curva tensão-corrente tem três regiões:</p>
+<ol>
+<li><strong>Região de Townsend</strong>: elétrons livres são acelerados pelo campo, colidem com moléculas de gás e criam pares elétron-íon.</li>
+<li><strong>Região de brilho (glow discharge)</strong>: a corrente é sustentada pelo processo de avalanche, com tensão de cerca de 280 V para ar.</li>
+<li><strong>Região de arco</strong>: o cátodo se vaporiza, a tensão cai para cerca de 12 V e a corrente pode ser de centenas de mA a vários amperes.</li>
+</ol>
+<p>Para cargas indutivas, ao abrir o contato, a corrente é desviada para a capacitância parasita, gerando uma sequência de tensões crescentes e quedas bruscas conhecida como <strong>arco de chuveiro</strong> (showering arc).</p>
+<h2 id="dispositivos-digitais"><span class="heading-number">6.10</span> Dispositivos digitais</h2>
+<p>A emissão de um circuito digital é determinada mais pelo tempo de subida e pela corrente comutada que pela frequência de clock. Corrente de crossover, carga e descarga de capacitâncias e simultaneidade de saídas provocam ruído na alimentação e ground bounce. Selecionar a família lógica mais lenta que cumpra o requisito funcional costuma reduzir a banda excitada.</p>
+<h2 id="variabilidade-e-modelagem"><span class="heading-number">6.11</span> Variabilidade e modelagem</h2>
+<p>Valores nominais não bastam. Tolerância, polarização, temperatura, envelhecimento e dispersão de montagem devem entrar na análise. Um modelo útil para EMC deve:</p>
+<ol>
+<li>cobrir a banda do fenômeno;</li>
+<li>incluir parasitas dominantes e conexões;</li>
+<li>usar dados medidos ou curvas do fabricante;</li>
+<li>ser confrontado com casos-limite e medição de impedância;</li>
+<li>representar tolerâncias por varredura ou Monte Carlo quando a margem for pequena.</li>
+</ol>
+<h2 id="checklist-de-projeto"><span class="heading-number">6.12</span> Checklist de projeto</h2>
+<ul>
+<li>Identificar $di/dt$ e $dv/dt$ elevados.</li>
+<li>Desenhar o caminho completo de ida e retorno.</li>
+<li>Incluir ESL, ESR, capacitâncias e indutâncias mútuas relevantes.</li>
+<li>Verificar autorressonância e saturação na banda e no ponto de operação.</li>
+<li>Colocar supressores e filtros junto à interface ou à fonte.</li>
+<li>Minimizar área de laço, comprimento de terminal e compartilhamento de impedância.</li>
+<li>Medir a impedância montada; o componente fora da placa pode se comportar de modo diferente.</li>
+</ul>
+<h2 id="teoremas-e-derivações-fundamentais"><span class="heading-number">6.13</span> Teoremas e derivações fundamentais</h2>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong>: No modelo série $R$–$L$–$C$, o módulo da impedância é mínimo na frequência de autorressonância $\omega_0=1/\sqrt{LC}$ e vale $R$.</p></aside>
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: A impedância é</p></aside>
+
+<div class="math-display">
+$$
+Z=R+j\left(\omega L-\frac{1}{\omega C}\right).
+$$
+</div>
+
+<p>Logo,</p>
+
+<div class="math-display">
+$$
+|Z|^2=R^2+\left(\omega L-\frac{1}{\omega C}\right)^2.
+$$
+</div>
+
+<p>O segundo termo é não negativo e se anula quando $\omega L=1/(\omega C)$, isto é, $\omega_0=1/\sqrt{LC}$. Nesse ponto, $|Z|=R$. $\square$</p>
+<p>Corolário: Um capacitor real é capacitivo abaixo da autorressonância e indutivo acima dela. Aumentar apenas $C$ pode reduzir $f_{SR}$ e piorar o desacoplamento na banda mais alta.</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema (Antirressonância de dois capacitores em paralelo)</strong>: Dois capacitores reais em paralelo, com capacitâncias $C_1$, $C_2$ e indutâncias série equivalentes $L_{e1}$, $L_{e2}$, apresentam um pico de impedância (antirressonância) na frequência</p></aside>
+
+<div class="math-display">
+$$
+f_{anti}=\frac{1}{2\pi}\sqrt{\frac{C_1+C_2}{C_1 C_2 (L_{e1}+L_{e2})}}.
+$$
+</div>
+
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: A impedância de cada capacitor real é $Z_1=L_{e1}s+ESR_1+1/(C_1 s)$ e $Z_2=L_{e2}s+ESR_2+1/(C_2 s)$. Na primeira aproximação, desconsiderando ESRs, a impedância equivalente é</p></aside>
+
+<div class="math-display">
+$$
+Z_{eq}=\frac{Z_1 Z_2}{Z_1+Z_2}=\frac{(L_{e1}s+1/(C_1 s))(L_{e2}s+1/(C_2 s))}{(L_{e1}+L_{e2})s+(1/C_1+1/C_2)s}.
+$$
+</div>
+
+<p>O denominador de $Z_{eq}$ se anula quando</p>
+
+<div class="math-display">
+$$
+(L_{e1}+L_{e2})s^2+\frac{C_1+C_2}{C_1 C_2}=0,
+$$
+</div>
+
+<p>ou seja, $s^2=-(C_1+C_2)/(C_1 C_2 (L_{e1}+L_{e2}))$. Substituindo $s=j\omega$, obtém-se</p>
+
+<div class="math-display">
+$$
+\omega_{anti}^2=\frac{C_1+C_2}{C_1 C_2 (L_{e1}+L_{e2})},
+$$
+</div>
+
+<p>e portanto $f_{anti}=\omega_{anti}/(2\pi)$. $\square$</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Proposição</strong>: Para uma borda de corrente aproximadamente linear, a tensão máxima numa indutância parasita é inversamente proporcional ao tempo de subida:</p></aside>
+
+<div class="math-display">
+$$
+V_L\approx L\frac{\Delta I}{t_r}.
+$$
+</div>
+
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: Durante uma rampa linear, $di/dt=\Delta I/t_r$. Substitua em $v=Ldi/dt$. $\square$</p></aside>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema (Energia armazenada em indutor)</strong>: A energia armazenada em um indutor de indutância $L$ com corrente $I$ é</p></aside>
+
+<div class="math-display">
+$$
+W=\frac{1}{2}LI^2.
+$$
+</div>
+
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: A potência instantânea fornecida ao indutor é $p(t)=v(t)i(t)=L\frac{di}{dt}i(t)$. A energia fornecida de $0$ a $t$ é</p></aside>
+
+<div class="math-display">
+$$
+W=\int_0^t L\frac{di}{dt}i(t)\,dt=L\int_0^{i(t)} i\,di=\frac{1}{2}L[i(t)]^2.
+$$
+</div>
+
+<p>Para $i(t)=I$, $W=\frac{1}{2}LI^2$. $\square$</p>
+<h2 id="exemplos-resolvidos"><span class="heading-number">6.14</span> Exemplos resolvidos</h2>
+<h3 id="exemplo-1--autorressonância-de-um-capacitor"><span class="heading-number">6.14.1</span> Exemplo 1 — Autorressonância de um capacitor</h3>
+<p>Um capacitor de 100 nF possui ESL de 1 nH e ESR de 30 mΩ:</p>
+
+<div class="math-display">
+$$
+f_{SR}=\frac{1}{2\pi\sqrt{10^{-9}\cdot100\times10^{-9}}}=15{,}9\ \text{MHz}.
+$$
+</div>
+
+<p>Em torno dessa frequência, a impedância mínima idealizada é 30 mΩ. A 100 MHz, a reatância da ESL é</p>
+
+<div class="math-display">
+$$
+X_L=2\pi(100\times10^6)(1\times10^{-9})=0{,}628\ \Omega,
+$$
+</div>
+
+<p>portanto o componente já se comporta principalmente como indutor.</p>
+<h3 id="exemplo-2--ground-bounce-por-conexão"><span class="heading-number">6.14.2</span> Exemplo 2 — Ground bounce por conexão</h3>
+<p>Uma conexão total de 6 nH conduz variação de 0,8 A em 1,5 ns:</p>
+
+<div class="math-display">
+$$
+V=6\times10^{-9}\frac{0{,}8}{1{,}5\times10^{-9}}=3{,}2\ \text{V}.
+$$
+</div>
+
+<p>O resultado mostra por que &quot;apenas alguns nanohenries&quot; não são desprezíveis. Na prática, a forma da corrente, o acoplamento mútuo e a distribuição do retorno refinam o valor.</p>
+<h3 id="exemplo-3--energia-de-uma-bobina-e-supressor"><span class="heading-number">6.14.3</span> Exemplo 3 — Energia de uma bobina e supressor</h3>
+<p>Uma bobina de 40 mH conduz 0,2 A. A energia antes do desligamento é</p>
+
+<div class="math-display">
+$$
+W=\frac{1}{2}LI^2=\frac{1}{2}(0{,}04)(0{,}2)^2=0{,}8\ \text{mJ}.
+$$
+</div>
+
+<p>O supressor deve absorver pelo menos essa ordem de energia por evento, com margem térmica para a taxa de repetição. Um diodo limita fortemente a tensão e prolonga o desligamento; uma TVS permite tensão maior e desmagnetização mais rápida.</p>
+<h2 id="insight-o-componente-e-sua-montagem-formam-um-único-dispositivo"><span class="heading-number">6.15</span> Insight: o componente e sua montagem formam um único dispositivo</h2>
+<p>Um capacitor SMD de baixa ESL ligado por trilha longa pode ter pior desempenho que um valor menor colocado diretamente entre os pinos. Da mesma forma, uma ferrite eficaz em fixture de 50 Ω pode ser pouco útil se a impedância real do caminho permitir acoplamento por outra rota. Sempre modele componente, pads, vias, planos, retorno e vizinhança.</p>
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">6.16</span> Lista de Exercícios Propostos</h2>
+<p><strong>E.1</strong> Um capacitor de 100 nF possui ESL de 1 nH. Estime sua frequência de autorressonância.</p>
+<p><strong>E.2</strong> Calcule a tensão em uma indutância parasita de 8 nH quando a corrente varia 1 A em 2 ns.</p>
+<p><strong>E.3</strong> Explique por que um capacitor de maior valor pode desacoplar pior em alta frequência.</p>
+<p><strong>E.4</strong> Proponha dois métodos de supressão para a bobina de um relé e compare o efeito no tempo de desligamento.</p>
+<p><strong>E.5</strong> Esboce o modelo não ideal de um resistor, um capacitor e um indutor e indique a região em que cada um deixa de cumprir sua função nominal.</p>
+<p><strong>E.6</strong> Um resistor de 10 kΩ possui capacitância paralela de 0,4 pF. Em que frequência $|X_C|=R$?</p>
+<p><strong>E.7</strong> Uma ferrite apresenta $Z=20+j80\ \Omega$ na frequência de interesse. Calcule $|Z|$ e explique se o comportamento é predominantemente dissipativo ou reativo.</p>
+<p><strong>E.8</strong> Dois capacitores reais em paralelo podem formar uma antirressonância. Explique o mecanismo usando a ESL do capacitor maior e a capacitância do menor.</p>
+<h2 id="gabarito"><span class="heading-number">6.17</span> Gabarito</h2>
+<p><strong>E.1</strong> Frequência de autorressonância de um capacitor de 100 nF com ESL de 1 nH.</p>
+<p>Equação: $f_{SR}=1/(2\pi\sqrt{ESL\cdot C})$.</p>
+<p>Substituindo: $f_{SR}=1/(2\pi\sqrt{10^{-9}\cdot100\times10^{-9}})=1/(2\pi\sqrt{10^{-16}})=1/(2\pi\cdot10^{-8})=15{,}9\times10^6$ Hz.</p>
+<p>Resposta: $15{,}9$ MHz.</p>
+<p><strong>E.2</strong> Tensão em indutância parasita de 8 nH quando a corrente varia 1 A em 2 ns.</p>
+<p>Equação: $V=L\cdot di/dt$.</p>
+<p>Para variação linear: $di/dt=\Delta I/t_r=1\text{ A}/2\text{ ns}=0{,}5\times10^9$ A/s.</p>
+<p>$V=8\times10^{-9}\cdot0{,}5\times10^9=4$ V.</p>
+<p>Resposta: $4$ V.</p>
+<p><strong>E.3</strong> Por que um capacitor de maior valor pode desacoplar pior em alta frequência.</p>
+<p>Um capacitor de maior valor $C$ tem frequência de autorressonância $f_{SR}=1/(2\pi\sqrt{ESL\cdot C})$ menor. Se $f_{SR}$ cair abaixo da frequência de ruído de interesse, o capacitor se comporta indutivamente e sua impedância aumenta com a frequência, tornando-o ineficaz para desacoplamento. Além disso, capacitores maiores geralmente possuem ESL maior devido ao encapsulamento, o que agrava o problema.</p>
+<p><strong>E.4</strong> Dois métodos de supressão para bobina de relé e comparação do efeito no tempo de desligamento.</p>
+<p>Método 1: Diodo de roda livre em paralelo com a bobina. O diodo limita a tensão de comutação a cerca de 0,7 V, mas a corrente decae lentamente com constante de tempo $L/R_{diodo}$, prolongando significativamente o tempo de desligamento.</p>
+<p>Método 2: TVS (Diodo Supressor de Transientes) ou rede RC snubber. A TVS permite tensão maior (ex: 12-24 V), o que acelera a desmagnetização da bobina e reduz o tempo de desligamento. A rede RC absorve energia sem prolongar excessivamente o tempo de corrente.</p>
+<p><strong>E.6</strong> Frequência onde $|X_C|=R$ para resistor de 10 kΩ com capacitância paralela de 0,4 pF.</p>
+<p>Condição: $|X_C|=1/(2\pi f C)=R$.</p>
+<p>Logo: $f=1/(2\pi R C)=1/(2\pi\cdot10^4\cdot0{,}4\times10^{-12})=1/(2\pi\cdot4\times10^{-9})=1/(2{,}513\times10^{-8})=39{,}8\times10^6$ Hz.</p>
+<p>Resposta: $39{,}8$ MHz.</p>
+<p><strong>E.7</strong> Cálculo de $|Z|$ para ferrite com $Z=20+j80\ \Omega$.</p>
+<p>$|Z|=\sqrt{R^2+X^2}=\sqrt{20^2+80^2}=\sqrt{400+6400}=\sqrt{6800}=82{,}46\ \Omega$.</p>
+<p>A parcela reativa ($X=80\ \Omega$) é 4 vezes maior que a resistiva ($R=20\ \Omega$), portanto o comportamento é predominantemente indutivo/reativo, não dissipativo.</p>
+<p><strong>E.8</strong> Mecanismo de antirressonância de dois capacitores reais em paralelo.</p>
+<p>Quando dois capacitores com valores diferentes são colocados em paralelo, cada um possui sua própria frequência de autorressonância determinada por $f_{SR}=1/(2\pi\sqrt{ESL\cdot C})$. O capacitor maior tem $f_{SR}$ mais baixa e comporta-se como indutor acima dessa frequência. O capacitor menor tem $f_{SR}$ mais alta e ainda é capacitivo na faixa entre as duas autorressonâncias. Nesse intervalo, a ESL do capacitor maior ressona com a capacitância do capacitor menor, criando um pico de impedância (antirressonância) que pode degradar o desempenho da PDN.</p>
+<h2 id="exemplo-numérico-adicional--impedância-de-capacitor-real-vs-frequência"><span class="heading-number">6.18</span> Exemplo numérico adicional — Impedância de capacitor real vs. frequência</h2>
+<p>Dados: $C=100$ nF, $ESL=1$ nH, $ESR=30$ mΩ.</p>
+<p>Frequência de ressonância: $f_{SR}=1/(2\pi\sqrt{ESL\cdot C})=15{,}9$ MHz.</p>
+<p>A 1 MHz: $X_C=-1/(2\pi\cdot10^6\cdot100\times10^{-9})=-1{,}59\ \Omega$,<br />
+$X_L=2\pi\cdot10^6\cdot10^{-9}=0{,}00628\ \Omega$.<br />
+Impedância dominante: capacitiva.</p>
+<p>A 100 MHz: $X_C=-0{,}159\ \Omega$, $X_L=0{,}628\ \Omega$.<br />
+Impedância dominante: indutiva.</p>
+<h2 id="código-python--impedância-de-capacitor-real-vs-frequência"><span class="heading-number">6.19</span> Código Python — Impedância de capacitor real vs. frequência</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Parâmetros do capacitor</span>
+<span style="color: #F8F8F2">C</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100e-9</span>      <span style="color: #959077"># 100 nF</span>
+<span style="color: #F8F8F2">ESL</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-9</span>      <span style="color: #959077"># 1 nH</span>
+<span style="color: #F8F8F2">ESR</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.03</span>      <span style="color: #959077"># 30 mΩ</span>
+
+<span style="color: #959077"># Faixa de frequência</span>
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 10 kHz a 1 GHz</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span>
+
+<span style="color: #959077"># Impedância</span>
+<span style="color: #F8F8F2">Z_C</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">ESR</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">ESL</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">C)</span>
+<span style="color: #F8F8F2">Z_mag</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(Z_C)</span>
+
+<span style="color: #959077"># Frequência de ressonância</span>
+<span style="color: #F8F8F2">f_SR</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(ESL</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">C))</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(f,</span> <span style="color: #F8F8F2">Z_mag,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;|Z_C|&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(f_SR,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;f_SR = {</span><span style="color: #F8F8F2">f_SR</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e6</span><span style="color: #E6DB74">:.2f} MHz&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Módulo da Impedância (Ω)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Impedância de Capacitor Real vs Frequência&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Parâmetros do capacitor[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="código-python--impedância-de-indutor-real-vs-frequência"><span class="heading-number">6.20</span> Código Python — Impedância de indutor real vs. frequência</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Parâmetros do indutor</span>
+<span style="color: #F8F8F2">L</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10e-6</span>       <span style="color: #959077"># 10 µH</span>
+<span style="color: #F8F8F2">ESR_ind</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5</span>   <span style="color: #959077"># 0.5 Ω</span>
+<span style="color: #F8F8F2">C_p</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-12</span>     <span style="color: #959077"># 1 pF</span>
+
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 100 kHz a 1 GHz</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span>
+
+<span style="color: #959077"># Impedância: L em série com ESR, em paralelo com C_p</span>
+<span style="color: #F8F8F2">Z_L_series</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">ESR_ind</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">L</span>
+<span style="color: #F8F8F2">Z_C_p</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">C_p)</span>
+<span style="color: #F8F8F2">Z_total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(Z_L_series</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">Z_C_p)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(Z_L_series</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Z_C_p)</span>
+<span style="color: #F8F8F2">Z_mag</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(Z_total)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(f,</span> <span style="color: #F8F8F2">Z_mag,</span> <span style="color: #E6DB74">&#39;g-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;|Z_L|&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Módulo da Impedância (Ω)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Impedância de Indutor Real vs Frequência&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Parâmetros do indutor[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="exemplo-numérico-adicional--efeito-pelicular-em-fio-de-cobre"><span class="heading-number">6.21</span> Exemplo numérico adicional — Efeito pelicular em fio de cobre</h2>
+<p><strong>Problema</strong>: Calcule a profundidade pelicular $\delta$ para cobre ($\sigma=5.8\times10^7$ S/m, $\mu_r=1$) em 1 MHz, 100 MHz, e 1 GHz.</p>
+<p><strong>Solução</strong>:</p>
+<p>Para $f=1$ MHz: $\omega=2\pi\times10^6$.<br />
+$\delta=\sqrt{2/(\omega\mu_0\sigma)}=\sqrt{2/(2\pi\times10^6\cdot4\pi\times10^{-7}\cdot5.8\times10^7)}$<br />
+$=\sqrt{2/(1.45\times10^8)}=\sqrt{1.38\times10^{-8}}=1.17\times10^{-4}$ m $=117$ µm.</p>
+<p>Para $f=100$ MHz: $\delta$ diminui por fator $\sqrt{100}=10$, logo $\delta=11.7$ µm.</p>
+<p>Para $f=1$ GHz: $\delta$ diminui por fator $\sqrt{1000}=31.6$, logo $\delta=3.7$ µm.</p>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: Note que a profundidade pelicular diminui com $1/\sqrt{f}$. Isso significa que em alta frequência, apenas a superfície do condutor é utilizada, aumentando a resistência efetiva.</p>
+</blockquote>
+<h2 id="código-python--resistência-dc-e-ac-vs-frequência"><span class="heading-number">6.22</span> Código Python — Resistência DC e AC vs. frequência</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Parâmetros do fio de cobre</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5.8e7</span>      <span style="color: #959077"># Condutividade (S/m)</span>
+<span style="color: #F8F8F2">mu_r</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+<span style="color: #F8F8F2">mu_0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e-7</span>
+<span style="color: #F8F8F2">l</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>            <span style="color: #959077"># Comprimento = 1 m</span>
+<span style="color: #F8F8F2">r_wire</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-3</span>      <span style="color: #959077"># Raio = 1 mm</span>
+<span style="color: #F8F8F2">A</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">r_wire</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span>
+
+<span style="color: #959077"># Faixa de frequência</span>
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 1 kHz a 1 GHz</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span>
+
+<span style="color: #959077"># Resistência DC</span>
+<span style="color: #F8F8F2">R_dc</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">l</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">A)</span>
+
+<span style="color: #959077"># Resistência AC (aproximação para fio cilíndrico)</span>
+<span style="color: #959077"># R_ac ≈ R_dc * (r_wire / (2*delta)) para delta &lt;&lt; r_wire</span>
+<span style="color: #F8F8F2">delta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">mu_0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">mu_r</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">sigma))</span>
+<span style="color: #F8F8F2">R_ac</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">R_dc</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(r_wire</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">delta</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1e-10</span><span style="color: #F8F8F2">))</span>  <span style="color: #959077"># Evitar divisão por zero</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">figure(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">R_dc</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ones_like(f),</span> <span style="color: #E6DB74">&#39;b--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;R_DC&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">R_ac,</span> <span style="color: #E6DB74">&#39;r-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;R_AC (aproximada)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Resistência (Ω)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Resistência DC vs AC vs Frequência (Fio de Cobre, r=1mm, l=1m)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Parâmetros do fio de cobre[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="antirressonância-de-bancos-de-capacitores"><span class="heading-number">6.23</span> Antirressonância de bancos de capacitores</h2>
+<p>Dois capacitores reais em paralelo não equivalem simplesmente a $C_1+C_2$. Entre suas autorressonâncias, a ESL de um ramo pode ressoar com a capacitância do outro e criar um pico de impedância.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2000</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">f</span>
+<span style="color: #F8F8F2">parts</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[(</span><span style="color: #AE81FF">10e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5e-9</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">100e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">25e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.6e-9</span><span style="color: #F8F8F2">)]</span>
+<span style="color: #F8F8F2">Z</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[esr</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">esl</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">c)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">c,</span> <span style="color: #F8F8F2">esr,</span> <span style="color: #F8F8F2">esl</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">parts]</span>
+<span style="color: #F8F8F2">Zeq</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">sum(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">z</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">z</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">Z)</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">z,</span> <span style="color: #F8F8F2">(c,</span> <span style="color: #F8F8F2">_,</span> <span style="color: #F8F8F2">_)</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(Z,</span> <span style="color: #F8F8F2">parts):</span>
+    <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(f,</span> <span style="color: #F8F8F2">abs(z),</span> <span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">c</span><span style="color: #E6DB74">:g} F&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(f,</span> <span style="color: #F8F8F2">abs(Zeq),</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;paralelo&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;|Z| (Ω)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m f = np.logspace([32m3[39m, [32m10[39m, [32m2000[39m); w = [32m2[39m*np.pi*f
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<aside class="callout callout-theorem" role="note"><p><strong>Corolário.</strong> Adicionar um capacitor pode elevar a impedância máxima da PDN. ESR controlada, valores intermediários, montagem e amortecimento precisam ser avaliados como rede.</p></aside>
+<h2 id="monte-carlo-de-autorressonância"><span class="heading-number">6.24</span> Monte Carlo de autorressonância</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">n</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100_000</span>
+<span style="color: #F8F8F2">C</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">100e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.10</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">100e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n)</span>
+<span style="color: #F8F8F2">ESL</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">0.8e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.15</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.8e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n)</span>
+<span style="color: #F8F8F2">valid</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(C</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">&amp;</span> <span style="color: #F8F8F2">(ESL</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">fsr</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(C[valid]</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">ESL[valid]))</span>
+<span style="color: #F8F8F2">print(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">percentile(fsr</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">95</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">99</span><span style="color: #F8F8F2">]),</span> <span style="color: #E6DB74">&#39;MHz&#39;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m rng = np.random.default_rng([32m42[39m)
+[32m      3[39m n = [32m100_000[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p>O resultado deve ser apresentado por percentis, pois tolerâncias de geometria e montagem não garantem distribuição perfeitamente normal.</p>
+<h2 id="laboratório-spice--antirressonância-de-desacoplamento"><span class="heading-number">6.25</span> Laboratório SPICE — antirressonância de desacoplamento</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">*</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Dois</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">capacitores</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">reais</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">em</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">paralelo</span><span style="color: #F8F8F2">; </span><span style="color: #A6E22E">injecao</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">de</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">A</span>
+<span style="color: #A6E22E">Itest</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">Rleak</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #A6E22E">Lmount</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">500</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Xc1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">10u</span><span style="color: #F8F8F2">  </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">8</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2">  </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">1.5</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Xc2</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">25</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">600</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">subckt</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">params</span><span style="color: #F8F8F2">: </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Lx</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">a</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">Rx</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">a</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">b</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">Cx</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">b</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">}</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ends</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Como a fonte injeta 1 A, <code>vm(vcc)</code> é numericamente $|Z|$. Remova um capacitor por vez, compare os mínimos e identifique eventual pico de antirressonância. Varra ESR antes de concluir que “menor ESR é sempre melhor”.</p>
+<h2 id="referência-principal"><span class="heading-number">6.26</span> Referência principal</h2>
+<p>Este capítulo sintetiza o Capítulo 5, &quot;Nonideal Behavior of Components&quot;, de C. R. Paul, <em>Introduction to Electromagnetic Compatibility</em>, 2ª ed., Wiley, 2006, pp. 299–375.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="05_introducao_spice_para_emc.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">5. Introdução ao SPICE para problemas EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="07_linhas_transmissao_integridade_sinal.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">7. Linhas de transmissão e integridade de sinal</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,1356 @@
+# Magnetostática: Fundamentos
+
+> Eletromagnetismo — Apostila de Curso
+> Tópicos: Força de Lorentz · Lei de Biot-Savart · Lei Circuital de Ampère (Integral e Pontual) · Teorema de Stokes · Potencial Vetorial Magnético
+
+---
+
+## Objetivos de Aprendizagem
+
+Ao final deste capítulo, você será capaz de:
+
+- [ ] Calcular a força de Lorentz sobre cargas em movimento em campos eletromagnéticos.
+- [ ] Aplicar a **Lei de Biot-Savart** para calcular campos magnéticos de distribuições de corrente.
+- [ ] Usar a **Lei de Ampère** em situações com simetria adequada.
+- [ ] Relacionar corrente e potencial vetor magnético.
+- [ ] Calcular a energia armazenada no campo magnético.
+
+---
+
+## Intuição Física: O que é Campo Magnético?
+
+Antes de definir matematicamente o campo magnético, pense em termos físicos:
+
+- **Campo magnético** $\vec B$ é criado por cargas em movimento (correntes elétricas).
+- A **força magnética** atua apenas sobre cargas em movimento e é sempre perpendicular à velocidade e ao campo.
+- Diferente do campo elétrico, o campo magnético **não realiza trabalho** sobre cargas — ele apenas muda a direção da velocidade, não a energia cinética.
+- Linhas de campo magnético formam **laços fechados** — não existem "cargas magnéticas" isoladas (monopolos magnéticos).
+
+## Aplicações no Mundo Real
+
+| Conceito | Aplicação Prática |
+|---|---|
+| Força de Lorentz | Aceleradores de partículas, tubos de raios catódicos, espectrômetros de massa |
+| Lei de Biot-Savart | Projeto de bobinas, solenoides e eletroímans |
+| Lei de Ampère | Cálculo de campos em transformadores e motores elétricos |
+| Potencial vetor magnético | Formulação avançada de eletrodinâmica e teoria quântica |
+| Energia do campo magnético | Indutores, transformadores e armazenamento de energia magnética |
+
+---
+
+## Antes de começar
+
+Ao final, você deve usar Lorentz, Biot–Savart e Ampère para obter campos e forças magnéticas, além de relacionar corrente, potencial vetor e energia magnética. **Diagnóstico:** rotacional nulo de $\vec B$ fora de um fio contradiz a Lei de Ampère? **Evidência mínima:** calcular campos de fio, espira e solenoide e verificar Stokes/Ampère em um caso simples.
+
+## Sumário
+
+1. [Força de Lorentz](#força-de-lorentz)
+2. [Lei de Biot-Savart](#lei-de-biot-savart)
+3. [Teorema de Stokes](#teorema-de-stokes)
+4. [Lei Circuital de Ampère — Forma Integral](#lei-circuital-de-ampère--forma-integral)
+5. [Lei de Ampère — Forma Pontual](#lei-de-ampère--forma-pontual)
+6. [Força entre Fios Paralelos](#força-entre-fios-paralelos)
+7. [Potencial Vetorial Magnético](#potencial-vetorial-magnético)
+8. [Energia do Campo Magnético](#energia-do-campo-magnético)
+9. [Exercícios resolvidos em Python](#exercícios-resolvidos-em-python)
+10. [Lista de Exercícios Propostos](#lista-de-exercícios-propostos)
+11. [Gabarito](#gabarito)
+
+## Força de Lorentz
+
+### Enunciado
+
+A força total exercida por campos elétrico e magnético sobre uma carga puntiforme $q$ movendo-se com velocidade $\vec{v}$ é:
+
+$$
+\boxed{\vec{F} = q\vec{E} + q\vec{v}\times\vec{B}}
+$$
+
+conhecida como **Força de Lorentz**. O primeiro termo é a força eletrostática já estudada; o segundo, a **força magnética**, depende da velocidade da carga e é perpendicular tanto a $\vec{v}$ quanto a $\vec{B}$.
+
+### Propriedades da força magnética
+
+1. **Não realiza trabalho**: como $\vec{F}_{mag}=q\vec{v}\times\vec{B}$ é sempre perpendicular a $\vec{v}$,
+
+$$
+dW = \vec{F}_{mag}\cdot\vec{v}\,dt = q(\vec{v}\times\vec{B})\cdot\vec{v}\,dt = 0
+$$
+(pois $(\vec{v}\times\vec{B})\cdot\vec{v}=0$ — o produto misto com dois vetores repetidos é sempre nulo). A força magnética altera apenas a **direção** de $\vec{v}$, nunca sua magnitude ou a energia cinética da partícula.
+
+1. **Movimento circular em campo uniforme**: para $\vec{B}$ uniforme e $\vec{v}\perp\vec{B}$, a força magnética atua como força centrípeta:
+
+$$
+qvB = \frac{mv^2}{r} \quad\Rightarrow\quad r = \frac{mv}{qB}
+$$
+com frequência angular (frequência de cíclotron) $\omega_c = qB/m$, independente de $v$ — princípio de operação de cíclotrons e espectrômetros de massa.
+
+1. Para uma **distribuição de corrente** (em vez de uma carga puntiforme), a força magnética por unidade de volume é $\vec{J}\times\vec{B}$, e a força total sobre um elemento de corrente $Id\vec{\ell}$ é $Id\vec{\ell}\times\vec{B}$.
+
+```python
+import numpy as np
+
+def forca_lorentz(q, E, v, B):
+    return q*(np.array(E) + np.cross(v, B))
+
+def raio_ciclotron(m, v, q, B):
+    return m*v/(q*B)
+
+# elétron em campo magnético de 0.5 T, movendo a 1e6 m/s perpendicular a B
+m_e, q_e = 9.109e-31, 1.602e-19
+r = raio_ciclotron(m_e, 1e6, q_e, 0.5)
+print(f"Raio da trajetória circular: {r*1e6:.3f} µm")
+
+F = forca_lorentz(q=q_e, E=[0,0,0], v=[1e6,0,0], B=[0,0,0.5])
+print(f"Força magnética: {F} N")
+```
+
+## Lei de Biot-Savart
+
+### Enunciado
+
+Análoga à Lei de Coulomb, mas para fontes de corrente, a **Lei de Biot-Savart** (obtida experimentalmente por Jean-Baptiste Biot e Félix Savart, 1820) descreve o campo magnético gerado por um elemento de corrente $I\,d\vec{\ell}'$:
+
+$$
+d\vec{B}(\vec{r}) = \frac{\mu_0}{4\pi}\,\frac{I\,d\vec{\ell}'\times(\vec{r}-\vec{r}')}{|\vec{r}-\vec{r}'|^3}
+$$
+
+Integrando ao longo de todo o circuito (Biot-Savart pressupõe correntes em circuitos fechados, ou distribuições volumétricas equivalentes):
+
+$$
+\boxed{\vec{B}(\vec{r}) = \frac{\mu_0}{4\pi}\oint \frac{I\,d\vec{\ell}'\times(\vec{r}-\vec{r}')}{|\vec{r}-\vec{r}'|^3}}
+$$
+
+onde $\mu_0=4\pi\times10^{-7}\,\text{T·m/A}$ é a **permeabilidade do vácuo**. Para uma densidade de corrente volumétrica $\vec{J}$:
+
+$$
+\vec{B}(\vec{r}) = \frac{\mu_0}{4\pi}\int_V \frac{\vec{J}(\vec{r}')\times(\vec{r}-\vec{r}')}{|\vec{r}-\vec{r}'|^3}\,dV'
+$$
+
+### Dedução: campo de um fio retilíneo infinito
+
+Fio ao longo do eixo $z$, corrente $I$ em $+\hat{z}$. Ponto de observação a distância perpendicular $s$ do fio. Um elemento $d\vec{\ell}'=dz'\,\hat{z}$ na posição $z'$ produz campo (usando $\vec{r}-\vec{r}'$ com componente perpendicular $s$ e componente ao longo do eixo $-z'$):
+
+$$
+|\vec{r}-\vec{r}'| = \sqrt{s^2+z'^2}, \qquad d\vec{\ell}'\times(\vec{r}-\vec{r}') = dz'\,\hat{z}\times(s\,\hat{s}-z'\hat{z}) = s\,dz'\,(\hat{z}\times\hat{s})
+$$
+
+Como $\hat{z}\times\hat{s}=\hat{\phi}$ (coordenadas cilíndricas), o campo tem apenas componente azimutal:
+
+$$
+dB_\phi = \frac{\mu_0 I}{4\pi}\frac{s\,dz'}{(s^2+z'^2)^{3/2}}
+$$
+
+Integrando de $z'=-\infty$ a $+\infty$ (usando a substituição $z'=s\tan\alpha$, $dz'=s\sec^2\alpha\,d\alpha$, $(s^2+z'^2)^{3/2}=s^3\sec^3\alpha$):
+
+$$
+B_\phi = \frac{\mu_0 I s}{4\pi}\int_{-\pi/2}^{\pi/2}\frac{s\sec^2\alpha\,d\alpha}{s^3\sec^3\alpha} = \frac{\mu_0 I}{4\pi s}\int_{-\pi/2}^{\pi/2}\cos\alpha\,d\alpha = \frac{\mu_0 I}{4\pi s}\left[\sin\alpha\right]_{-\pi/2}^{\pi/2}
+$$
+
+$$
+\boxed{B_\phi(s) = \frac{\mu_0 I}{2\pi s}}
+$$
+
+O campo circula ao redor do fio (regra da mão direita), com magnitude caindo como $1/s$ — resultado que será obtido de forma muito mais direta pela Lei de Ampère (Seção “Lei Circuital de Ampère — Forma Integral”), aproveitando a simetria cilíndrica do problema.
+
+### Campo no eixo de uma espira circular
+
+Espira de raio $a$ no plano $xy$, corrente $I$, ponto de observação no eixo $z$. Por simetria, apenas a componente $B_z$ sobrevive (as componentes radiais se cancelam entre elementos diametralmente opostos, como no cálculo do campo elétrico do anel, arquivo 2):
+
+$$
+dB_z = \frac{\mu_0 I}{4\pi}\frac{d\ell'\,a}{(a^2+z^2)^{3/2}}, \qquad \oint d\ell' = 2\pi a
+$$
+
+$$
+\boxed{B_z(z) = \frac{\mu_0 I a^2}{2(a^2+z^2)^{3/2}}}
+$$
+
+No centro da espira ($z=0$): $B_z = \mu_0 I/(2a)$.
+
+### Bobinas de Helmholtz — campo uniforme
+
+Duas espiras idênticas de raio $a$, separadas por distância $d=a$, percorridas pela **mesma** corrente $I$ no mesmo sentido, produzem um campo **quase uniforme** na região central. Este arranjo é chamado de **bobinas de Helmholtz**.
+
+No ponto médio entre as espiras ($z=0$): cada espira contribui com $\mu_0 I a^2/[2(a^2+(a/2)^2)^{3/2}] = \mu_0 I a^2/(2(5a^2/4)^{3/2})$. Duas espiras:
+
+$$
+B(0) = 2\cdot\frac{\mu_0 I a^2}{2}\,\frac{1}{(5a^2/4)^{3/2}} = \left(\frac{4}{5}\right)^{3/2}\!\frac{\mu_0 I}{a} \approx 0{,}716\,\frac{\mu_0 I}{a}
+$$
+
+**Por que $d=a$?**: O segundo derivado de $B_z$ em relação a $z$ se anula exatamente quando $d=a$, tornando o campo mais uniforme perto do centro do que em qualquer outra separação. O terceiro derivado é zero por simetria. O primeiro desvio quadrático é de apenas ~1% para $z\lesssim0{,}1a$.
+
+As bobinas de Helmholtz são amplamente usadas em laboratórios para gerar campos magnéticos conhecidos e uniformes (ex.: cancelamento do campo terrestre, experiências de ressonância magnética).
+
+### Experimentos Python: espira circular e verificação de Biot–Savart
+
+**Objetivo**: visualizar a geometria tridimensional do campo de uma espira e confrontar a integração direta de Biot–Savart com a fórmula fechada no eixo. A concordância numérica funciona como teste independente da dedução analítica.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig=plt.figure(figsize=(7,5)); ax=fig.add_subplot(projection="3d")
+t=np.linspace(0,2*np.pi,240); ax.plot(np.cos(t),np.sin(t),0,lw=4,color="#d97706")
+for z0 in np.linspace(-1.7,1.7,9):
+    radius=.18+0.62*(abs(z0)/1.7)**1.5
+    tt=np.linspace(0,2*np.pi,120)
+    ax.plot(radius*np.cos(tt),radius*np.sin(tt),np.full_like(tt,z0),color="#2563eb",alpha=.7)
+ax.quiver(0,0,-1.8,0,0,3.5,color="#dc2626",arrow_length_ratio=.08)
+ax.text(1.05,0,0,"$I$",color="#b45309"); ax.text(.08,.08,1.6,"$\\vec B$")
+ax.set_box_aspect((1,1,1.8)); ax.set_title("Campo magnético de uma espira circular"); ax.set_axis_off()
+plt.tight_layout()
+```
+
+```python
+import numpy as np
+
+mu0 = 4*np.pi*1e-7
+
+def B_fio_infinito(s, I):
+    return mu0*I/(2*np.pi*s)
+
+def B_espira_eixo(z, I, a):
+    return mu0*I*a**2/(2*(a**2+z**2)**1.5)
+
+def B_espira_biot_savart_numerico(X, Z, a=1.0, I=1.0, n=400):
+    """Integração numérica direta da Lei de Biot-Savart (verificação)."""
+    phi = np.linspace(0, 2*np.pi, n, endpoint=False)
+    dphi = phi[1]-phi[0]
+    Bx = np.zeros_like(X); Bz = np.zeros_like(X)
+    for p in phi:
+        xs, ys = a*np.cos(p), a*np.sin(p)
+        dlx, dly = -a*np.sin(p)*dphi, a*np.cos(p)*dphi
+        rx, ry, rz = X-xs, -ys, Z
+        r3 = np.maximum((rx**2+ry**2+rz**2)**1.5, 1e-9)
+        Bx += (dly*rz)/r3
+        Bz += (dlx*ry - dly*rx)/r3
+    return mu0*I/(4*np.pi)*Bx, mu0*I/(4*np.pi)*Bz
+
+# Verificação: campo numérico no eixo (X=0) vs fórmula fechada
+Z = np.linspace(-3, 3, 50)
+X = np.zeros_like(Z)
+_, Bz_num = B_espira_biot_savart_numerico(X, Z)
+Bz_formula = B_espira_eixo(Z, I=1.0, a=1.0)
+print("Erro máximo numérico vs. fórmula fechada:",
+      np.max(np.abs(Bz_num - Bz_formula)))
+```
+
+## Teorema de Stokes
+
+### Enunciado
+
+O **Teorema de Stokes** relaciona a circulação de um campo vetorial ao longo de um contorno fechado $C$ com o fluxo de seu rotacional através de **qualquer** superfície aberta $S$ delimitada por $C$:
+
+$$
+\oint_C \vec{F}\cdot d\vec{\ell} = \int_S (\nabla\times\vec{F})\cdot d\vec{A}
+$$
+
+com a orientação de $d\vec{A}$ dada pela regra da mão direita em relação ao sentido de percurso de $C$.
+
+### Ideia da demonstração (via malha de laços infinitesimais)
+
+Divida a superfície $S$ em uma malha de pequenos laços retangulares. Para um laço infinitesimal no plano $xy$, de lados $dx,dy$, a circulação de $\vec{F}$ em torno dele é:
+
+$$
+d\oint \vec{F}\cdot d\vec{\ell} = \left[F_x(x,y)-F_x(x,y+dy)\right]dx + \left[F_y(x+dx,y)-F_y(x,y)\right]dy
+$$
+
+$$
+\approx \left(\frac{\partial F_y}{\partial x}-\frac{\partial F_x}{\partial y}\right)dx\,dy = (\nabla\times\vec{F})_z\,dA
+$$
+
+Somando sobre todos os laços que compõem $S$: as arestas internas compartilhadas por laços vizinhos são percorridas em sentidos opostos e se cancelam, restando apenas a contribuição das arestas na fronteira externa — exatamente $\oint_C\vec{F}\cdot d\vec{\ell}$. Isso demonstra o teorema (generalização análoga vale para superfícies curvas, decompondo-as em elementos planos infinitesimais).
+
+### Interpretação física do rotacional
+
+$(\nabla\times\vec{F})\cdot\hat{n}$ mede a circulação de $\vec{F}$ por unidade de área ao redor de um ponto, no plano perpendicular a $\hat{n}$:
+
+$$
+(\nabla\times\vec{F})\cdot\hat{n} = \lim_{\Delta A\to 0}\frac{1}{\Delta A}\oint_{\partial(\Delta A)}\vec{F}\cdot d\vec{\ell}
+$$
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig=plt.figure(figsize=(7,5)); ax=fig.add_subplot(projection="3d")
+r=np.linspace(0,1,24); t=np.linspace(0,2*np.pi,90); R,T=np.meshgrid(r,t)
+X,Y=R*np.cos(T),R*np.sin(T); Z=.25*(1-R**2)*np.cos(2*T)
+ax.plot_surface(X,Y,Z,color="#60a5fa",alpha=.45,edgecolor="none")
+tb=np.linspace(0,2*np.pi,240); ax.plot(np.cos(tb),np.sin(tb),np.zeros_like(tb),color="#7c3aed",lw=4)
+ax.quiver(0,0,0,0,0,1,color="#dc2626",length=.9); ax.text(.06,.06,.85,"$\\hat n$")
+ax.text(.15,.15,.05,"$S$",fontsize=14); ax.text(1.03,0,0,"$C=\\partial S$",fontsize=12)
+ax.set_box_aspect((1,1,.65)); ax.set_title("Teorema de Stokes: superfície e contorno"); ax.set_axis_off()
+plt.tight_layout()
+```
+
+## Lei Circuital de Ampère — Forma Integral
+
+### Dedução a partir de Biot-Savart (fio infinito)
+
+Já obtivemos (Seção “Dedução: campo de um fio retilíneo infinito”) que o campo de um fio infinito é $B_\phi(s)=\mu_0 I/(2\pi s)$. Calcule a circulação de $\vec{B}$ ao longo de um caminho circular de raio $s$, centrado no fio, no plano perpendicular a ele:
+
+$$
+\oint_C \vec{B}\cdot d\vec{\ell} = B_\phi\cdot(2\pi s) = \frac{\mu_0 I}{2\pi s}(2\pi s) = \mu_0 I
+$$
+
+O resultado **não depende de $s$** — assim como no caso do fluxo elétrico da Lei de Gauss, isso sugere um resultado geral. De fato, para **qualquer** caminho fechado ao redor do fio (não apenas circular) e para qualquer distribuição de correntes, vale a **Lei Circuital de Ampère**:
+
+$$
+\boxed{\oint_C \vec{B}\cdot d\vec{\ell} = \mu_0 I_{env}}
+$$
+
+onde $I_{env}$ é a corrente total que atravessa **qualquer** superfície delimitada por $C$ (o resultado independe de qual superfície se escolhe, desde que compartilhe o contorno $C$ — consequência de $\nabla\cdot\vec{J}=0$ em regime estacionário, Seção “Ideia da demonstração (via malha de laços infinitesimais)”.2, que veremos formalmente ser condição para a consistência da própria Lei de Ampère).
+
+### Aplicações com simetria
+
+Assim como a Lei de Gauss, a Lei de Ampère só é diretamente útil para calcular $\vec{B}$ quando há simetria suficiente para tirar $B$ da integral (fio reto, solenoide, toroide).
+
+---
+
+### Exemplo Resolvido Passo a Passo: Campo de um Toroide
+
+**Problema**: Um toroide tem $N$ espiras, raio médio $R$, e é percorrido por corrente $I$. Determine o campo magnético $\vec{B}$ no interior e no exterior do toroide.
+
+**Passo 1: Identificar a simetria e escolher o caminho amperiano.**  
+O toroide possui simetria axial (em torno do eixo $z$). O campo magnético deve ser azimutal ($\vec{B} = B_\phi(r)\hat{\phi}$) e depender apenas da distância $r$ ao eixo $z$. Escolhemos como caminho amperiano $C$ um círculo de raio $r$, centrado na origem, no plano $xy$.
+
+**Passo 2: Calcular a circulação $\oint_C \vec{B}\cdot d\vec{\ell}$.**  
+Ao longo do círculo de raio $r$:
+$$
+\oint_C \vec{B}\cdot d\vec{\ell} = B_\phi(r)\cdot(2\pi r)
+$$
+
+**Passo 3: Calcular a corrente envolvida $I_{env}$.**  
+- Se o caminho está **dentro do buraco** do toroide ($r < R - a$, onde $a$ é o raio da seção transversal): nenhuma corrente atravessa a superfície delimitada por $C$, logo $I_{env} = 0$.
+- Se o caminho está **dentro do núcleo** do toroide ($R - a < r < R + a$): o caminho atravessa as $N$ espiras, cada uma com corrente $I$. O sentido da corrente é tal que todas as $N$ espiras contribuem com o mesmo sinal. Logo, $I_{env} = NI$.
+- Se o caminho está **fora do toroide** ($r > R + a$): o caminho atravessa as $N$ espiras no sentido positivo e as $N$ espiras de retorno no sentido negativo (ou, equivalentemente, a corrente líquida através da superfície é zero, pois cada fio que entra também sai). Logo, $I_{env} = 0$.
+
+**Passo 4: Aplicar a Lei de Ampère para cada região.**
+
+- **Interior do buraco ($r < R-a$)**:  
+$$
+B_\phi(r)\cdot(2\pi r) = \mu_0\cdot 0 \quad\Rightarrow\quad \boxed{B = 0}
+$$
+
+- **Dentro do núcleo ($R-a < r < R+a$)**:  
+$$
+B_\phi(r)\cdot(2\pi r) = \mu_0 N I \quad\Rightarrow\quad \boxed{B(r) = \dfrac{\mu_0 N I}{2\pi r}}
+$$
+
+- **Exterior do toroide ($r > R+a$)**:  
+$$
+B_\phi(r)\cdot(2\pi r) = \mu_0\cdot 0 \quad\Rightarrow\quad \boxed{B = 0}
+$$
+
+**Observação**: Para um toroide com raio médio $R$ muito maior que o raio da seção transversal ($R \gg a$), podemos aproximar $r \approx R$ dentro do núcleo, obtendo:
+$$
+B \approx \dfrac{\mu_0 N I}{2\pi R} = \mu_0 n I
+$$
+onde $n = N/(2\pi R)$ é o número de espiras por unidade de comprimento — análogo ao solenoide infinito.
+
+---
+
+**Solenoide ideal** (infinito, $n$ espiras por unidade de comprimento, corrente $I$): usando um caminho retangular amperiano com um lado dentro do solenoide (comprimento $L$) e o lado oposto fora (onde $B\approx0$):
+
+$$
+\oint_C\vec{B}\cdot d\vec{\ell} = B\cdot L = \mu_0(nL)I \quad\Rightarrow\quad \boxed{B = \mu_0 n I}
+$$
+
+(uniforme dentro, nulo fora — para um solenoide idealmente infinito).
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig,ax=plt.subplots(figsize=(8,4)); t=np.linspace(0,14*np.pi,900)
+x=np.linspace(-3,3,len(t)); y=.75*np.sin(t)
+ax.plot(x,y,color="#d97706",lw=2.5)
+for yy in np.linspace(-.52,.52,5):
+    ax.annotate("",(2.65,yy),(-2.65,yy),arrowprops=dict(arrowstyle="->",color="#2563eb",lw=1.7))
+ax.text(0,.05,"$\\vec B\\simeq\\mu_0nI$",ha="center",bbox=dict(fc="white",alpha=.85,ec="none"))
+ax.set(xlim=(-3.4,3.4),ylim=(-1.15,1.15),title="Campo aproximadamente uniforme no solenoide"); ax.axis("off")
+plt.tight_layout()
+```
+
+## Lei de Ampère — Forma Pontual
+
+### Dedução
+
+Partindo da forma integral e escrevendo $I_{env}=\int_S\vec{J}\cdot d\vec{A}$:
+
+$$
+\oint_C\vec{B}\cdot d\vec{\ell} = \mu_0\int_S\vec{J}\cdot d\vec{A}
+$$
+
+Aplicando o Teorema de Stokes ao lado esquerdo:
+
+$$
+\int_S(\nabla\times\vec{B})\cdot d\vec{A} = \mu_0\int_S\vec{J}\cdot d\vec{A}
+$$
+
+Como isso vale para qualquer superfície $S$ (arbitrária, desde que compartilhe o contorno $C$, e $C$ também é arbitrário):
+
+$$
+\boxed{\nabla\times\vec{B} = \mu_0\vec{J}}\qquad\text{(Lei de Ampère — forma pontual, válida em magnetostática)}
+$$
+
+### Consistência com a conservação da carga
+
+Tomando o divergente de ambos os lados (o divergente de um rotacional é sempre identicamente nulo, $\nabla\cdot(\nabla\times\vec{B})\equiv0$):
+
+$$
+0 = \mu_0\,\nabla\cdot\vec{J}
+$$
+
+Ou seja, a Lei de Ampère nesta forma **exige** $\nabla\cdot\vec{J}=0$ — válida apenas em regime estacionário (Seção “Ideia da demonstração (via malha de laços infinitesimais)”.2). Em situações não estacionárias (por exemplo, um capacitor sendo carregado, onde $\rho$ varia no tempo entre as placas), essa forma da Lei de Ampère é **inconsistente**, e precisará da correção de Maxwell (corrente de deslocamento), que será deduzida no arquivo sobre eletrodinâmica.
+
+## Força entre Fios Paralelos
+
+### Dedução
+
+Considere dois fios paralelos infinitos, separados por distância $d$, percorridos por correntes $I_1$ e $I_2$ no **mesmo sentido**.
+
+O fio 1 produz no local do fio 2 o campo $B_1 = \dfrac{\mu_0 I_1}{2\pi d}$ (perpendicular ao fio 2). A força por unidade de comprimento sobre o fio 2:
+
+$$
+\frac{F_{21}}{\ell} = I_2\,d\times B_1 = I_2 d\cdot\frac{\mu_0 I_1}{2\pi d} = \frac{\mu_0 I_1 I_2}{2\pi d}
+$$
+
+$$
+\boxed{\frac{F}{\ell} = \frac{\mu_0 I_1 I_2}{2\pi d}}
+$$
+
+**Mesmo sentido → atração**; **sentidos opostos → repulsão**. Este é o resultado histórico que levou à definição original do ampère (corrente que produz $2\times10^{-7}\,\text{N/m}$ de força entre fios separados por 1 m).
+
+**Importante**: esta força é a base da **definição moderna do ampère** (revisão do SI em 2019). O ampère é agora definido fixando-se o valor da carga elementar $e$, e a força entre fios mede indiretamente o valor de $\mu_0$ em relação ao vácuo.
+
+### Aplicação: busbar e forças eletrodinâmicas
+
+Em curto-circuito, correntes da ordem de 50 kA podem fluir entre barras condutoras (busbars). Para $I_1=I_2=50\,\text{kA}$ e $d=10\,\text{cm}$:
+
+$$
+\frac{F}{\ell} = \frac{4\pi\times10^{-7}\times(5\times10^4)^2}{2\pi\times0{,}1} = 5\times10^5\,\text{N/m} = 500\,\text{kN/m}
+$$
+
+Isso equivale a **50 toneladas por metro** de força mecânica — requer fixação robusta das barras condutoras. Em subestações, este é um dos critérios de projeto mecânico mais críticos.
+
+## Potencial Vetorial Magnético
+
+<!-- slides: columns -->
+
+### Existência garantida por $\nabla\cdot\vec{B}=0$
+
+Diferentemente do campo elétrico, o campo magnético **nunca** tem fontes puntiformes (não existem monopolos magnéticos observados): $\nabla\cdot\vec{B}=0$ sempre (Lei de Gauss magnética, que será formalizada como uma das equações de Maxwell). Como o divergente de um rotacional é sempre nulo, essa condição garante (por um teorema de cálculo vetorial, análogo ao teorema de Helmholtz) que $\vec{B}$ pode **sempre** ser escrito como o rotacional de outro campo vetorial, o **potencial vetor magnético** $\vec{A}$:
+
+$$
+\boxed{\vec{B} = \nabla\times\vec{A}}
+$$
+
+Isso satisfaz automaticamente $\nabla\cdot\vec{B}=\nabla\cdot(\nabla\times\vec{A})\equiv0$, assim como $\vec{E}=-\nabla V$ satisfaz automaticamente $\nabla\times\vec{E}=0$.
+
+<!-- slides: column -->
+
+### Liberdade de calibre (gauge) e escolha de Coulomb
+
+$\vec{A}$ não é único: qualquer $\vec{A}' = \vec{A}+\nabla\chi$ (para função escalar arbitrária $\chi$) produz o mesmo $\vec{B}$, pois $\nabla\times(\nabla\chi)\equiv0$. Essa liberdade é chamada **liberdade de calibre**. Uma escolha conveniente em magnetostática é o **calibre de Coulomb**:
+
+$$
+\nabla\cdot\vec{A} = 0
+$$
+
+
+
+<!-- slides: end-columns -->
+### Dedução da equação para $\vec{A}$
+
+Substituindo $\vec{B}=\nabla\times\vec{A}$ na Lei de Ampère pontual $\nabla\times\vec{B}=\mu_0\vec{J}$:
+
+$$
+\nabla\times(\nabla\times\vec{A}) = \mu_0\vec{J}
+$$
+
+Usando a identidade vetorial $\nabla\times(\nabla\times\vec{A}) = \nabla(\nabla\cdot\vec{A}) - \nabla^2\vec{A}$, e o calibre de Coulomb ($\nabla\cdot\vec{A}=0$):
+
+$$
+\boxed{\nabla^2\vec{A} = -\mu_0\vec{J}}
+$$
+
+Esta é uma **equação de Poisson vetorial** — cada componente cartesiana de $\vec{A}$ satisfaz uma equação de Poisson escalar independente, análoga à do potencial elétrico. Por analogia direta com a solução de Poisson eletrostática (arquivo 2), a solução é:
+
+$$
+\boxed{\vec{A}(\vec{r}) = \frac{\mu_0}{4\pi}\int_V\frac{\vec{J}(\vec{r}')}{|\vec{r}-\vec{r}'|}\,dV'}
+$$
+
+### Recuperando Biot-Savart a partir de $\vec{A}$
+
+Como verificação de consistência, aplicando $\vec{B}=\nabla\times\vec{A}$ à expressão acima (o operador $\nabla$ atua sobre $\vec{r}$, não sobre $\vec{r}'$):
+
+$$
+\vec{B}(\vec{r}) = \frac{\mu_0}{4\pi}\int_V \nabla\times\left(\frac{\vec{J}(\vec{r}')}{|\vec{r}-\vec{r}'|}\right)dV' = \frac{\mu_0}{4\pi}\int_V \vec{J}(\vec{r}')\times\frac{(\vec{r}-\vec{r}')}{|\vec{r}-\vec{r}'|^3}\,dV'
+$$
+
+(usando a identidade $\nabla\times(f\vec{c}) = \nabla f\times\vec{c}$ para $\vec{c}$ constante em relação a $\vec{r}$, com $f=1/|\vec{r}-\vec{r}'|$ e $\nabla f = -(\vec{r}-\vec{r}')/|\vec{r}-\vec{r}'|^3$) — recuperando exatamente a Lei de Biot-Savart da Seção “Enunciado”. Isso confirma que $\vec{A}$ e Biot-Savart carregam a mesma informação física, sendo $\vec{A}$ a formulação preferida para tratar radiação e ondas eletromagnéticas (Parte 2 da apostila), onde o cálculo direto de $\vec{B}$ via Biot-Savart se torna muito mais complexo.
+
+```python
+import numpy as np
+
+mu0 = 4*np.pi*1e-7
+
+def A_fio_finito(rho, z, L, I):
+    """Potencial vetor (componente z) de um segmento de fio finito ao longo de z,
+    de -L/2 a L/2, calculado no ponto (rho, z) em coordenadas cilíndricas."""
+    def integrand(zp):
+        return 1/np.sqrt(rho**2 + (z-zp)**2)
+    from scipy.integrate import quad
+    val, _ = quad(integrand, -L/2, L/2)
+    return mu0*I/(4*np.pi) * val
+
+# A_z decai lentamente perto do fio e mais rápido longe dele
+rho = 0.5
+for z in [0, 1, 5]:
+    Az = A_fio_finito(rho, z, L=10, I=1.0)
+    print(f"z={z}: A_z = {Az:.4e} T·m")
+```
+
+## Energia do Campo Magnético
+
+### Energia armazenada em um indutor
+
+Quando uma corrente cresce em um indutor $L$, a fem autoinduzida $\varepsilon = -L\,dI/dt$ se opõe ao aumento. A potência fornecida para vencer esta fem é $P = -\varepsilon I = LI\,(dI/dt)$. A energia total armazenada ao levar a corrente de $0$ a $I$:
+
+$$
+U = \int_0^I LI'\,dI' = \frac{1}{2}LI^2
+$$
+
+$$
+\boxed{U = \frac{1}{2}LI^2}
+$$
+
+### Densidade de energia magnética
+
+Reescrevendo em termos do campo: para um solenoide ($L = \mu_0 n^2 A \ell$, $B = \mu_0 n I$):
+
+$$
+U = \frac{1}{2}\left(\mu_0 n^2 A \ell\right)I^2 = \frac{1}{2}\cdot\frac{B^2}{\mu_0}\cdot(A\ell)
+$$
+
+Como o volume do solenoide é $V_{vol} = A\ell$, a **densidade de energia magnética** é:
+
+$$
+\boxed{u_B = \frac{B^2}{2\mu_0}}
+$$
+
+No vácuo, essa expressão é local e não depende de o campo ter sido produzido por um solenoide. Em meio material linear, não dispersivo e sem histerese:
+
+$$
+u_B=\frac12\vec B\cdot\vec H=\frac{B^2}{2\mu}=\frac12\mu H^2.
+$$
+
+Para relação constitutiva não linear e reversível, calcula-se a energia incremental por uma integral, por exemplo $u=\int_0^{\vec B}\vec H\cdot d\vec B'$. Com histerese, parte do trabalho é dissipada e uma função de estado simples pode não existir.
+
+### Energia total e comparação com o campo elétrico
+
+Somando as contribuições elétrica e magnética:
+
+$$
+u_{\text{total}} = \frac{1}{2}\varepsilon_0 E^2 + \frac{1}{2\mu_0}B^2
+$$
+
+Em uma **onda plana progressiva** no vácuo, as duas contribuições instantâneas são iguais ($u_E=u_B$), pois $E=cB$. Isso não vale ponto a ponto para uma onda estacionária ou para campos reativos próximos de fontes:
+
+$$
+u_E = \frac{1}{2}\varepsilon_0 E^2 = \frac{1}{2}\varepsilon_0\cdot\frac{B^2}{\mu_0\varepsilon_0} = \frac{B^2}{2\mu_0} = u_B
+$$
+
+Este equilíbrio entre energia elétrica e magnética é fundamental para a propagação de ondas — veremos na Parte 2.
+
+### Indutância mútua e energia de acoplamento
+
+Dois indutores acoplados com indutâncias $L_1$, $L_2$ e indutância mútua $M$ armazenam:
+
+$$
+U = \frac{1}{2}L_1 I_1^2 + \frac{1}{2}L_2 I_2^2 \pm M I_1 I_2
+$$
+
+(o sinal depende do sentido relativo das correntes — **acoplamento direto vs. oposto**).
+
+O coeficiente de acoplamento $k = M/\sqrt{L_1 L_2}$ satisfaz $0 \le k \le 1$. Para transformadores ideais, $k\to1$.
+
+## Exercícios Resolvidos em Python
+
+### Roteiro computacional
+
+**Objetivo.** Integrar Biot–Savart, comparar com soluções fechadas e verificar Ampère em geometrias simétricas.
+
+**Hipóteses.** Correntes estacionárias, condutores filamentares quando indicado e permeabilidade do vácuo salvo declaração contrária.
+
+**Como executar.** Requer `numpy`, `scipy` e `matplotlib`. Faça estudo de convergência no número de elementos de corrente e evite avaliar exatamente sobre o fio ideal.
+
+**Resultados esperados.** Recuperação de $B=\mu_0I/(2\pi r)$ para fio infinito e do campo axial conhecido para uma espira circular.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+mu0 = 4*np.pi*1e-7
+
+# === Lei de Ampère vs Biot-Savart ===
+def B_fio_finito_biot_savart(s, L, I, n=2000):
+    """Integra Biot-Savart para um fio de comprimento L centrado na origem."""
+    z = np.linspace(-L/2, L/2, n)
+    dz = z[1]-z[0]
+    r = np.sqrt(s**2 + z**2)
+    dB = mu0*I/(4*np.pi) * s*dz/r**3
+    return np.sum(dB)
+
+def B_fio_infinito(s, I):
+    return mu0*I/(2*np.pi*s)
+
+s = 0.1
+for L in [1, 10, 100, 1000]:
+    B_num = B_fio_finito_biot_savart(s, L, I=1.0)
+    B_inf = B_fio_infinito(s, I=1.0)
+    print(f"L={L:>5} m -> B_numérico={B_num:.6e} T, "
+          f"B_infinito={B_inf:.6e} T, razão={B_num/B_inf:.4f}")
+
+# === Bobinas de Helmholtz ===
+def B_helmholtz(z, I, a):
+    """Campo no eixo de duas espiras separadas por d=a (Helmholtz)."""
+    d = a  # separação = raio
+    B1 = mu0*I*a**2/(2*((a/2)**2 + (z+d/2)**2)**1.5)
+    B2 = mu0*I*a**2/(2*((a/2)**2 + (z-d/2)**2)**1.5)
+    return B1 + B2
+
+a = 0.1  # 10 cm
+z_vals = np.linspace(-0.05, 0.05, 100)
+B_helm = B_helmholtz(z_vals, I=1.0, a=a)
+B_centro = B_helmholtz(0, I=1.0, a=a)
+print(f"\nHelmholtz: B_centro = {B_centro:.6e} T")
+print(f"Variação máxima no centro: {np.max(B_helm)-B_centro:.6e} T (~{np.max(np.abs(B_helm-B_centro))/B_centro*100:.2f}%)")
+
+# === Força entre fios paralelos ===
+def força_por_comprimento(I1, I2, d):
+    return mu0*I1*I2/(2*np.pi*d)
+
+I1, I2, d = 100, 100, 0.1  # 100A, 10cm
+F_l = força_por_comprimento(I1, I2, d)
+print(f"Força entre fios (100A, 10cm): {F_l:.4f} N/m")
+
+# === Gerador de Faraday disk ===
+def fem_disk(omega, B, R):
+    return 0.5*omega*B*R**2
+
+omega, B, R = 360*2*np.pi/60, 0.5, 0.1  # 360 rpm
+eps = fem_disk(omega, B, R)
+print(f"FEM do disco de Faraday (360 rpm): {eps*1e3:.3f} mV")
+
+# === Potencial vetor de espira no eixo ===
+def A_espira_eixo(z, I, a, n=500):
+    """Calcula A_z no eixo de uma espira por integração numérica de Biot-Savart."""
+    phi = np.linspace(0, 2*np.pi, n, endpoint=False)
+    dphi = phi[1]-phi[0]
+    Az = 0.0
+    for p in phi:
+        xs, ys = a*np.cos(p), a*np.sin(p)
+        dlx, dly = -a*np.sin(p)*dphi, a*np.cos(p)*dphi
+        rx, ry, rz = -xs, -ys, z
+        r = np.sqrt(rx**2+ry**2+rz**2)
+        Az += (dlx*(-rx) + dly*(-ry))/r**3  # (dl × r)/r³ · z-hat
+    return mu0*I/(4*np.pi) * Az
+
+# A_z no centro da espira
+Az_center = A_espira_eixo(0, I=1.0, a=0.1)
+# A_z longe da espira (decai como dipolo: A ~ 1/r²)
+Az_far = A_espira_eixo(1.0, I=1.0, a=0.1)
+print(f"\nA_z no centro: {Az_center:.6e} T·m")
+print(f"A_z a z=1m: {Az_far:.6e} T·m (decai como 1/z²)")
+
+# === Visualização: campo da espira ===
+phi_vals = np.linspace(0, 2*np.pi, 100)
+B_axis = B_helmholtz(z_vals, I=1.0, a=0.1)
+
+fig, ax = plt.subplots(figsize=(8,5))
+ax.plot(z_vals*100, B_axis/B_centro, 'b', linewidth=2)
+ax.axhline(1, color='k', linestyle='--', alpha=0.5, label='B centro')
+ax.set_xlabel('z (cm)')
+ax.set_ylabel('B/B_centro')
+ax.set_title('Uniformidade do campo de Helmholtz')
+ax.legend()
+ax.grid(True, alpha=0.3)
+plt.tight_layout()
+```
+
+---
+
+## Resumo do Capítulo
+
+### Fórmulas-Chave
+
+| Conceito | Fórmula | Aplicações |
+|---|---|---|
+| Força de Lorentz | $\vec{F} = q\vec{E} + q\vec{v}\times\vec{B}$ | Movimento de cargas em campos |
+| Lei de Biot-Savart | $d\vec{B} = \dfrac{\mu_0 I}{4\pi}\dfrac{d\vec{\ell}\times\hat{r}}{r^2}$ | Campo de correntes |
+| Lei de Ampère (integral) | $\displaystyle\oint_C \vec{B}\cdot d\vec{\ell} = \mu_0 I_{env}$ | Campos com simetria |
+| Lei de Ampère (pontual) | $\nabla\times\vec{B} = \mu_0\vec{J}$ | Forma diferencial/local |
+| Potencial vetor magnético | $\vec{B} = \nabla\times\vec{A}$, $\vec{A}(\vec{r}) = \dfrac{\mu_0}{4\pi}\displaystyle\int\dfrac{\vec{J}(\vec{r}')}{|\vec{r}-\vec{r}'|}dV'$ | Formulação avançada |
+| Energia do campo magnético | $U = \dfrac{1}{2\mu_0}\int B^2\,dV$ | Densidade de energia $u_B = \dfrac{B^2}{2\mu_0}$ |
+| Raio de trajetória circular | $r = \dfrac{mv}{qB}$ | Cíclotrons, espectrômetros |
+| Frequência de cíclotron | $\omega_c = \dfrac{qB}{m}$ | Independente de $v$ |
+
+### Casos de Simetria Comuns
+
+| Configuração | Campo $B$ |
+|---|---|
+| Fio infinito | $B = \dfrac{\mu_0 I}{2\pi r}$ |
+| Eixo de espira circular | $B_z = \dfrac{\mu_0 I a^2}{2(a^2+z^2)^{3/2}}$ |
+| Centro de espira | $B = \dfrac{\mu_0 I}{2a}$ |
+| Solenoide longo | $B = \mu_0 n I$ (interno), $0$ (externo) |
+| Toroide | $B = \dfrac{\mu_0 N I}{2\pi r}$ (interno) |
+
+### Conceitos-Chave
+
+1. **Força de Lorentz**: A parte magnética $q\vec{v}\times\vec{B}$ não realiza trabalho.
+2. **Lei de Biot-Savart**: Campo de um elemento de corrente $I\,d\vec{\ell}$.
+3. **Lei de Ampère**: Só é útil para calcular $\vec B$ diretamente quando há simetria adequada.
+4. **Potencial vetor magnético**: $\vec B = \nabla\times\vec A$ — sempre existe porque $\nabla\cdot\vec B=0$.
+5. **Energia do campo magnético**: $u_B = B^2/(2\mu_0)$ — energia armazenada no espaço.
+
+::: verificacao
+**Verificação Rápida (Concept Check):**  
+1. A força magnética realiza trabalho sobre uma carga em movimento? **Não** — é sempre perpendicular à velocidade.  
+2. As linhas de campo magnético formam **laços fechados** ou **começam e terminam** em cargas? **Laços fechados** (não existem monopolos magnéticos).  
+3. O campo magnético no interior de um solenoide longo é **uniforme** ou **variável**? **Uniforme** ($B = \mu_0 n I$).
+:::
+
+## Lista de Exercícios Propostos
+
+### Força de Lorentz
+
+**E1** Um próton ($m_p=1{,}673\times10^{-27}\,\text{kg}$, $q=1{,}602\times10^{-19}\,\text{C}$) entra em uma região de campo magnético uniforme $B=0{,}8\,\text{T}$, perpendicular à sua velocidade $v=2\times10^6\,\text{m/s}$. Determine (a) o raio da trajetória circular; (b) a frequência de cíclotron (em Hz e em MHz). O resultado da frequência depende de $v$?
+
+**E2** Um seletor de velocidades utiliza campos cruzados $\vec{E}$ e $\vec{B}$ perpendiculares entre si e à velocidade da partícula. Se $E=5\times10^4\,\text{V/m}$ e $B=0{,}02\,\text{T}$, qual velocidade atravessa o seletor sem deflexão? Justifique a condição de equilíbrio a partir da força de Lorentz.
+
+**E3** Um elétron realiza um movimento circular de raio $r=1{,}5\,\text{cm}$ em um campo $B=4\times10^{-3}\,\text{T}$. Calcule sua velocidade e sua energia cinética (em elétron-volts), assumindo velocidade não relativística.
+
+### Lei de Biot-Savart
+
+**E4** Um fio retilíneo finito, de comprimento total $2L=0{,}6\,\text{m}$, conduz corrente $I=15\,\text{A}$. Calcule o campo magnético em um ponto sobre a mediatriz do fio (perpendicular ao seu ponto médio), a distância $s=0{,}15\,\text{m}$. Compare com o resultado do fio infinito ($s$ igual) e expresse a razão entre os dois valores.
+
+**E5** Uma espira circular de raio $a=5\,\text{cm}$ conduz corrente $I=8\,\text{A}$. Determine o campo magnético (a) no centro da espira; (b) em um ponto do eixo a $z=5\,\text{cm}$ do centro. Compare as duas magnitudes.
+
+**E6** Duas bobinas de Helmholtz de raio $a=20\,\text{cm}$, com $N=1$ espira cada, são percorridas pela mesma corrente $I=10\,\text{A}$ no mesmo sentido, separadas pela distância ótima $d=a$. Calcule o campo no ponto médio entre as bobinas.
+
+**E7** Uma espira quadrada de lado $a=10\,\text{cm}$ conduz corrente $I=5\,\text{A}$. Usando a Lei de Biot-Savart aplicada a cada um dos quatro lados (segmentos retos finitos), calcule o campo magnético no centro da espira. Expresse o resultado em função de $\mu_0$, $I$ e $a$.
+
+**E8** (Desafio) Um fio infinito retilíneo ao longo do eixo $z$ é dobrado formando um quarto de círculo de raio $R$ no plano $xy$ (centrado na origem), continuando depois como fio reto radial até o infinito, conforme a figura de um "gancho". Considerando apenas o arco de $90°$ percorrido por corrente $I$, mostre que sua contribuição para o campo no centro do arco é $B=\mu_0 I/(8R)$ (um quarto do valor de uma espira completa). Explique por que os trechos retos, se estiverem ao longo de uma linha que passa pelo centro, não contribuem para o campo nesse ponto.
+
+### Teorema de Stokes
+
+**E9** Dado o campo vetorial $\vec{F}=x^2\hat{y}$ (em unidades SI arbitrárias) e o contorno retangular $C$ no plano $xy$ com vértices $(0,0)$, $(2,0)$, $(2,3)$ e $(0,3)$, percorrido no sentido anti-horário: (a) calcule diretamente $\oint_C \vec{F}\cdot d\vec{\ell}$; (b) calcule $\int_S(\nabla\times\vec{F})\cdot d\vec{A}$ sobre a superfície plana delimitada por $C$; (c) verifique que os dois resultados coincidem, confirmando o Teorema de Stokes.
+
+**E10** (Desafio) Verifique, para o campo magnético de um fio infinito $\vec{B}=\dfrac{\mu_0 I}{2\pi s}\hat{\phi}$ (coordenadas cilíndricas, $s\neq0$), que $\nabla\times\vec{B}=\vec{0}$ em qualquer ponto fora do fio, usando a expressão do rotacional em coordenadas cilíndricas. Em seguida, reconcilie esse resultado com a Lei de Ampère pontual $\nabla\times\vec{B}=\mu_0\vec{J}$, sabendo que a corrente está concentrada em $s=0$ (dica: toda a "fonte" do rotacional está na singularidade do fio, análogo ao papel de $\delta(\vec{r})$ na eletrostática de uma carga puntiforme).
+
+### Lei Circuital de Ampère — Integral e Pontual
+
+**E11** Um solenoide ideal possui $n=2000$ espiras por metro e conduz corrente $I=3\,\text{A}$. Calcule o campo magnético no seu interior. Se o solenoide tem comprimento $\ell=0{,}5\,\text{m}$ e área de seção $A=4\,\text{cm}^2$, calcule também sua indutância $L$.
+
+**E12** (Desafio) Um toroide de seção reta circular tem raio médio $r=10\,\text{cm}$ e é enrolado com $N=500$ espiras, conduzindo corrente $I=2\,\text{A}$. Usando a Lei Circuital de Ampère com um caminho amperiano circular concêntrico ao toroide (de raio $r$, inteiramente dentro do núcleo), **deduza** a expressão para o campo magnético no interior do toroide (por analogia com a dedução do solenoide, Seção “Aplicações com simetria”) e calcule seu valor numérico. Mostre também que $B=0$ para um caminho amperiano fora do toroide (tanto para $s$ menor que o raio interno quanto maior que o raio externo do núcleo).
+
+**E13** Um cabo coaxial possui condutor interno maciço de raio $a=2\,\text{mm}$ conduzindo corrente $I=50\,\text{A}$ (densidade uniforme) e uma casca condutora externa entre $b=6\,\text{mm}$ e $c=8\,\text{mm}$, conduzindo a corrente de retorno $-I$ (densidade uniforme na casca). Usando a Lei de Ampère, determine $B(s)$ nas quatro regiões: $s<a$; $a<s<b$; $b<s<c$; $s>c$. Verifique a continuidade de $B(s)$ nas fronteiras $s=b$ e mostre que $B=0$ para $s>c$.
+
+**E14** Uma densidade de corrente $\vec{J}=J_0\hat{z}$ (uniforme) preenche um cilindro infinito de raio $R$. Usando a Lei de Ampère pontual (forma diferencial) em coordenadas cilíndricas, verifique que o campo $B_\phi(s)=\mu_0 J_0 s/2$ (para $s<R$) satisfaz $\nabla\times\vec{B}=\mu_0\vec{J}$, calculando explicitamente $(\nabla\times\vec{B})_z = \dfrac{1}{s}\dfrac{\partial(sB_\phi)}{\partial s}$.
+
+### Força entre Fios Paralelos
+
+**E15** Dois fios paralelos infinitos, separados por $d=5\,\text{cm}$, conduzem correntes $I_1=I_2=30\,\text{A}$ no mesmo sentido. Calcule a força por unidade de comprimento entre eles e indique se é atrativa ou repulsiva.
+
+**E16** Três fios paralelos infinitos, igualmente espaçados por $d=4\,\text{cm}$ (dispostos em linha reta: fio 1 — fio 2 — fio 3), conduzem a mesma corrente $I=20\,\text{A}$, todas no mesmo sentido. Calcule a força resultante por unidade de comprimento sobre o fio central (fio 2), devido aos outros dois.
+
+### Potencial Vetorial Magnético
+
+**E17** Um fio retilíneo finito de comprimento $L=0{,}4\,\text{m}$, centrado na origem e alinhado com o eixo $z$, conduz corrente $I=20\,\text{A}$. Usando $\vec{A}(\vec{r})=\dfrac{\mu_0}{4\pi}\displaystyle\int\dfrac{I\,d\vec{\ell}'}{|\vec{r}-\vec{r}'|}$, mostre que, em um ponto sobre a mediatriz do fio a distância $\rho=0{,}1\,\text{m}$, o potencial vetor tem apenas componente $A_z$ dada por
+
+$$
+A_z = \frac{\mu_0 I}{4\pi}\ln\!\left(\frac{L/2+\sqrt{(L/2)^2+\rho^2}}{-L/2+\sqrt{(L/2)^2+\rho^2}}\right)
+$$
+
+e calcule seu valor numérico.
+
+**E18** (Desafio) Verifique explicitamente a identidade vetorial usada na Seção “Dedução da equação para $\vec{A}$”, $\nabla\times(\nabla\times\vec{A})=\nabla(\nabla\cdot\vec{A})-\nabla^2\vec{A}$, para o campo particular $\vec{A}=x^2y\,\hat{z}$ (unidades arbitrárias): calcule ambos os lados separadamente (em coordenadas cartesianas) e mostre que coincidem.
+
+### Energia do Campo Magnético
+
+**E19** Um indutor de $L=0{,}2\,\text{H}$ conduz uma corrente $I=4\,\text{A}$. Calcule a energia armazenada. Em seguida, calcule a densidade de energia magnética em um ponto onde $B=1{,}2\,\text{T}$ (no vácuo).
+
+**E20** Dois indutores acoplados, com $L_1=0{,}5\,\text{H}$, $L_2=0{,}8\,\text{H}$ e coeficiente de acoplamento $k=0{,}6$ (acoplamento direto), conduzem correntes $I_1=2\,\text{A}$ e $I_2=3\,\text{A}$. Calcule a indutância mútua $M$ e a energia total armazenada no sistema.
+
+## Gabarito
+
+**E1** A força magnética fornece a força centrípeta: $qvB=mv^2/r\Rightarrow r=mv/(qB)$.
+
+$$
+r = \frac{(1{,}673\times10^{-27})(2\times10^6)}{(1{,}602\times10^{-19})(0{,}8)} = \frac{3{,}346\times10^{-21}}{1{,}2816\times10^{-19}} = 2{,}611\times10^{-2}\,\text{m} = 2{,}611\,\text{cm}
+$$
+
+A frequência de cíclotron $f=\omega_c/(2\pi)=qB/(2\pi m)$:
+
+$$
+f = \frac{(1{,}602\times10^{-19})(0{,}8)}{2\pi(1{,}673\times10^{-27})} = 1{,}2192\times10^{7}\,\text{Hz} = 12{,}19\,\text{MHz}
+$$
+
+$$
+\boxed{r\approx 2{,}61\,\text{cm}\,;\quad f\approx 12{,}19\,\text{MHz}}
+$$
+
+A frequência **não depende de $v$**: um aumento de $v$ aumenta proporcionalmente $r$ ($r=mv/qB$), de modo que o período $T=2\pi r/v = 2\pi m/(qB)$ permanece constante — é exatamente esse fato que torna o cíclotron funcional (a frequência do campo elétrico acelerador pode ser fixa).
+
+**E2** No seletor de velocidades, a força elétrica $qE$ e a força magnética $qvB$ atuam em sentidos opostos sobre a carga (por construção geométrica dos campos cruzados). O equilíbrio ocorre quando:
+
+$$
+qE = qvB \quad\Rightarrow\quad v = \frac{E}{B}
+$$
+
+$$
+v = \frac{5\times10^4}{0{,}02} = 2{,}5\times10^6\,\text{m/s}
+$$
+
+$$
+\boxed{v = 2{,}5\times10^{6}\,\text{m/s}}
+$$
+
+Apenas partículas com essa velocidade exata atravessam em linha reta; as demais são defletidas, pois a razão entre as duas forças ($qE$ fixo, $qvB$ dependente de $v$) só se cancela para esse valor específico — independente de $q$ ou $m$.
+
+**E3** Da relação do raio de cíclotron, $r=mv/(qB)\Rightarrow v = qBr/m$. Para o elétron, $m_e=9{,}109\times10^{-31}\,\text{kg}$, $q_e=1{,}602\times10^{-19}\,\text{C}$:
+
+$$
+v = \frac{(1{,}602\times10^{-19})(4\times10^{-3})(1{,}5\times10^{-2})}{9{,}109\times10^{-31}} = \frac{9{,}612\times10^{-24}}{9{,}109\times10^{-31}} = 1{,}0552\times10^{7}\,\text{m/s}
+$$
+
+A energia cinética (não relativística, pois $v/c\approx 0{,}035\ll1$, válido):
+
+$$
+K = \frac{1}{2}m_ev^2 = \frac{1}{2}(9{,}109\times10^{-31})(1{,}0552\times10^{7})^2 = 5{,}072\times10^{-17}\,\text{J}
+$$
+
+Convertendo para elétron-volts ($1\,\text{eV}=1{,}602\times10^{-19}\,\text{J}$):
+
+$$
+K = \frac{5{,}072\times10^{-17}}{1{,}602\times10^{-19}} \approx 316{,}6\,\text{eV}
+$$
+
+$$
+\boxed{v\approx 1{,}055\times10^{7}\,\text{m/s}\,;\quad K\approx 317\,\text{eV}}
+$$
+
+**E4** Para um segmento reto finito de comprimento $2L_h$ (aqui $L_h=0{,}3\,\text{m}$, metade do comprimento total), o campo em um ponto à distância perpendicular $s$ sobre a mediatriz é obtido integrando Biot-Savart (mesma dedução da Seção “Dedução: campo de um fio retilíneo infinito”, mas com limites finitos $z'=-L_h$ a $+L_h$):
+
+$$
+B = \frac{\mu_0 I}{4\pi s}\cdot\frac{2L_h}{\sqrt{s^2+L_h^2}}
+$$
+
+Com $I=15\,\text{A}$, $s=0{,}15\,\text{m}$, $L_h=0{,}3\,\text{m}$:
+
+$$
+\sqrt{s^2+L_h^2} = \sqrt{0{,}15^2+0{,}3^2} = \sqrt{0{,}1125} = 0{,}3354\,\text{m}
+$$
+
+$$
+B_{\text{fin}} = \frac{(4\pi\times10^{-7})(15)}{4\pi(0{,}15)}\cdot\frac{2(0{,}3)}{0{,}3354} = \frac{10^{-7}\times15}{0{,}15}\times1{,}7889 = 1{,}0\times10^{-5}\times1{,}7889
+$$
+
+$$
+B_{\text{fin}} \approx 1{,}789\times10^{-5}\,\text{T}
+$$
+
+O campo do fio infinito equivalente: $B_{\text{inf}}=\mu_0 I/(2\pi s) = (4\pi\times10^{-7})(15)/(2\pi\times0{,}15) = 2{,}0\times10^{-5}\,\text{T}$.
+
+A razão:
+
+$$
+\frac{B_{\text{fin}}}{B_{\text{inf}}} = \frac{L_h}{\sqrt{s^2+L_h^2}} = \frac{0{,}3}{0{,}3354} = \frac{2}{\sqrt{5}} \approx 0{,}8944
+$$
+
+$$
+\boxed{B_{\text{fin}}\approx1{,}789\times10^{-5}\,\text{T}\,;\quad B_{\text{fin}}/B_{\text{inf}} = 2/\sqrt{5}\approx0{,}894}
+$$
+
+O fio finito produz cerca de 89% do campo do fio infinito nesse ponto — a diferença viria dos "trechos faltantes" além de $\pm L_h$, que no caso infinito continuariam contribuindo.
+
+**E5** (a) No centro ($z=0$), usando $B_z=\mu_0Ia^2/[2(a^2+z^2)^{3/2}]$ com $z=0$:
+
+$$
+B(0) = \frac{\mu_0 I}{2a}
+$$
+
+Com $\mu_0 I = 4\pi\times10^{-7}\times8 = 1{,}00531\times10^{-5}\,\text{T·m}$ e $2a=0{,}1\,\text{m}$:
+
+$$
+B(0) = \frac{1{,}00531\times10^{-5}}{0{,}1} = 1{,}0053\times10^{-4}\,\text{T}
+$$
+
+(b) Em $z=0{,}05\,\text{m}$ (note que $z=a$ neste caso):
+
+$$
+B(z) = \frac{\mu_0 I a^2}{2(a^2+z^2)^{3/2}} = \frac{(4\pi\times10^{-7})(8)(0{,}05)^2}{2(0{,}05^2+0{,}05^2)^{3/2}}
+$$
+
+$$
+(0{,}05^2+0{,}05^2)^{3/2} = (0{,}005)^{3/2} = 3{,}5355\times10^{-4}
+$$
+
+$$
+B(z) = \frac{(1{,}00531\times10^{-5})(2{,}5\times10^{-3})}{2(3{,}5355\times10^{-4})} = \frac{2{,}5133\times10^{-8}}{7{,}0711\times10^{-4}} = 3{,}5535\times10^{-5}\,\text{T}
+$$
+
+$$
+\boxed{B(0)\approx1{,}005\times10^{-4}\,\text{T}\,;\quad B(z=a)\approx3{,}554\times10^{-5}\,\text{T}}
+$$
+
+O campo cai para cerca de 35% do valor central quando nos afastamos uma distância igual ao raio — consistente com o fator $(1+z^2/a^2)^{-3/2}=(2)^{-3/2}\approx0{,}3536$.
+
+**E6** Usando o resultado da Seção “Bobinas de Helmholtz — campo uniforme”, $B(0)=(4/5)^{3/2}\mu_0I/a$, com $I=10\,\text{A}$ e $a=0{,}2\,\text{m}$:
+
+$$
+B(0) = \left(\frac{4}{5}\right)^{3/2}\frac{(4\pi\times10^{-7})(10)}{0{,}2} = 0{,}7155\times\frac{1{,}2566\times10^{-5}}{0{,}2}
+$$
+
+$$
+B(0) = 0{,}7155\times6{,}2832\times10^{-5} = 4{,}496\times10^{-5}\,\text{T}
+$$
+
+$$
+\boxed{B(0)\approx 4{,}50\times10^{-5}\,\text{T} = 44{,}96\,\mu\text{T}}
+$$
+
+**E7** Cada lado do quadrado é um segmento reto de comprimento $a=0{,}1\,\text{m}$; o ponto central está sobre a mediatriz de cada lado, a distância perpendicular $s=a/2=0{,}05\,\text{m}$, e o "meio-comprimento" do segmento visto a partir dessa mediatriz é também $L_h=a/2=0{,}05\,\text{m}$ (pois o centro do quadrado está alinhado com o ponto médio de cada lado). Usando a fórmula do fio finito (E4):
+
+$$
+B_{\text{lado}} = \frac{\mu_0 I}{4\pi s}\cdot\frac{2L_h}{\sqrt{s^2+L_h^2}} = \frac{\mu_0 I}{4\pi(a/2)}\cdot\frac{2(a/2)}{\sqrt{(a/2)^2+(a/2)^2}}
+$$
+
+Como $\sqrt{(a/2)^2+(a/2)^2}=(a/2)\sqrt{2}$:
+
+$$
+B_{\text{lado}} = \frac{\mu_0 I}{4\pi(a/2)}\cdot\frac{2(a/2)}{(a/2)\sqrt{2}} = \frac{\mu_0 I}{2\pi a}\cdot\frac{2}{\sqrt2} = \frac{\sqrt2\,\mu_0 I}{2\pi a}
+$$
+
+Numericamente, com $I=5\,\text{A}$, $a=0{,}1\,\text{m}$:
+
+$$
+B_{\text{lado}} = \frac{\sqrt2\,(4\pi\times10^{-7})(5)}{2\pi(0{,}1)} = \frac{\sqrt2\times2\times10^{-6}}{0{,}1} = \sqrt2\times2\times10^{-5} \approx 1{,}4142\times10^{-5}\,\text{T}
+$$
+
+Os quatro lados contribuem igualmente (por simetria, todas as componentes apontam na mesma direção perpendicular ao plano da espira no centro):
+
+$$
+B_{\text{total}} = 4B_{\text{lado}} = \frac{4\sqrt2\,\mu_0 I}{2\pi a} = \frac{2\sqrt2\,\mu_0 I}{\pi a}
+$$
+
+$$
+B_{\text{total}} = 4\times1{,}4142\times10^{-5} \approx 5{,}657\times10^{-5}\,\text{T}
+$$
+
+$$
+\boxed{B_{\text{total}} = \frac{2\sqrt2\,\mu_0 I}{\pi a} \approx 5{,}657\times10^{-5}\,\text{T}}
+$$
+
+**E8** (Desafio) Para o arco de $90°$ (quarto de círculo) de raio $R$, cada elemento $d\vec{\ell}'=R\,d\theta\,\hat{\theta}$ é sempre perpendicular ao vetor $\vec{r}-\vec{r}'$ que aponta do elemento ao centro (pois todo ponto do arco está à distância $R$ do centro, radialmente). Logo $|d\vec{\ell}'\times(\vec{r}-\vec{r}')|=R\,d\theta\cdot R = R^2d\theta$, e todas as contribuições apontam na mesma direção (perpendicular ao plano do arco, pela regra da mão direita). Por Biot-Savart:
+
+$$
+dB = \frac{\mu_0 I}{4\pi}\frac{R^2\,d\theta}{R^3} = \frac{\mu_0 I}{4\pi R}d\theta
+$$
+
+Integrando de $\theta=0$ a $\theta=\pi/2$ (um quarto de volta):
+
+$$
+B = \frac{\mu_0 I}{4\pi R}\cdot\frac{\pi}{2} = \frac{\mu_0 I}{8R}
+$$
+
+$$
+\boxed{B_{\text{arco }90°} = \frac{\mu_0 I}{8R}}
+$$
+
+que é exatamente $1/4$ do campo de uma espira completa no seu centro ($\mu_0I/(2R)$), como esperado, já que a espira completa é $4\times$ o arco de $90°$ e a contribuição por unidade de ângulo é constante ($dB/d\theta=\mu_0I/(4\pi R)$, independente de $\theta$).
+
+Quanto aos trechos retos: se o fio reto (antes ou depois do arco) está ao longo de uma reta que passa pelo centro do arco (radial), então para qualquer elemento $d\vec{\ell}'$ desse trecho, o vetor $(\vec{r}-\vec{r}')$ (do elemento até o centro) é **colinear** com $d\vec{\ell}'$ (ambos ao longo da mesma reta radial). Como $d\vec{\ell}'\times(\vec{r}-\vec{r}')=0$ para vetores paralelos (ou antiparalelos), esses trechos **não contribuem** para o campo no centro do arco — apenas o próprio arco contribui.
+
+**E9** (a) Cálculo direto da circulação sobre o retângulo $(0,0)\to(2,0)\to(2,3)\to(0,3)\to(0,0)$, com $\vec F = x^2\hat y$ (então $F_x=0$ em todo ponto):
+
+- Trecho $(0,0)\to(2,0)$: ao longo de $y=0$, $d\vec\ell=dx\,\hat x$; como $\vec F\cdot\hat x=0$, contribuição nula.
+- Trecho $(2,0)\to(2,3)$: ao longo de $x=2$, $d\vec\ell=dy\,\hat y$; $\vec F\cdot d\vec\ell = x^2\,dy=4\,dy$. Integrando de $y=0$ a $3$: $\int_0^3 4\,dy=12$.
+- Trecho $(2,3)\to(0,3)$: ao longo de $y=3$, $d\vec\ell=dx\,\hat x$ (mas percorrido de $x=2$ a $x=0$); $\vec F\cdot\hat x=0$, contribuição nula.
+- Trecho $(0,3)\to(0,0)$: ao longo de $x=0$, $d\vec\ell=dy\,\hat y$; $\vec F\cdot d\vec\ell = x^2\,dy=0$ (pois $x=0$). Contribuição nula.
+
+$$
+\oint_C\vec F\cdot d\vec\ell = 0+12+0+0 = 12
+$$
+
+(b) O rotacional de $\vec F=x^2\hat y$:
+
+$$
+\nabla\times\vec F = \left(\frac{\partial F_y}{\partial x}-\frac{\partial F_x}{\partial y}\right)\hat z = (2x-0)\hat z = 2x\,\hat z
+$$
+
+Integrando sobre a superfície plana retangular ($0\le x\le2$, $0\le y\le3$), com $d\vec A=dx\,dy\,\hat z$:
+
+$$
+\int_S(\nabla\times\vec F)\cdot d\vec A = \int_0^3\int_0^2 2x\,dx\,dy = 3\times\left[x^2\right]_0^2 = 3\times4=12
+$$
+
+$$
+\boxed{\oint_C\vec F\cdot d\vec\ell = \int_S(\nabla\times\vec F)\cdot d\vec A = 12}
+$$
+
+Os dois resultados coincidem, confirmando o Teorema de Stokes para este campo e contorno.
+
+**E10** (Desafio) Em coordenadas cilíndricas, o rotacional de um campo puramente azimutal $\vec B = B_\phi(s)\hat\phi$ (sem dependência de $\phi$ ou $z$) tem componente $z$:
+
+$$
+(\nabla\times\vec B)_z = \frac{1}{s}\frac{\partial(sB_\phi)}{\partial s}
+$$
+
+(as demais componentes, $\hat s$ e $\hat\phi$, envolvem derivadas em $\phi$ ou $z$ que são nulas aqui). Substituindo $B_\phi=\mu_0I/(2\pi s)$:
+
+$$
+sB_\phi = \frac{\mu_0 I}{2\pi} = \text{constante (independente de }s\text{)}
+$$
+
+$$
+(\nabla\times\vec B)_z = \frac{1}{s}\frac{\partial}{\partial s}\left(\frac{\mu_0I}{2\pi}\right) = \frac{1}{s}\times0 = 0
+$$
+
+$$
+\boxed{\nabla\times\vec B = \vec 0 \quad\text{para todo } s\neq0}
+$$
+
+Isso é consistente com $\nabla\times\vec B=\mu_0\vec J$, pois $\vec J=0$ em todos os pontos fora do fio ($s\neq0$) — toda a corrente está concentrada exatamente em $s=0$. Matematicamente, $J_z(s)=I\delta^2(\vec s)$ (uma distribuição tipo delta de Dirac bidimensional no plano $xy$, análoga à carga puntiforme em eletrostática, cujo campo também satisfaz $\nabla\cdot\vec E=0$ em todo ponto $r\neq0$ apesar de existir uma fonte na origem). A "singularidade" do rotacional está inteiramente concentrada no fio; a integral de $\nabla\times\vec B$ sobre qualquer superfície que atravesse o fio recupera $\mu_0I$ via o Teorema de Stokes, consistente com a Lei de Ampère integral.
+
+**E11** Campo dentro do solenoide: $B=\mu_0nI$.
+
+$$
+B = (4\pi\times10^{-7})(2000)(3) = 4\pi\times10^{-7}\times6000 = 7{,}5398\times10^{-3}\,\text{T}
+$$
+
+$$
+\boxed{B\approx7{,}540\times10^{-3}\,\text{T} = 7{,}540\,\text{mT}}
+$$
+
+Para a indutância, usamos $L=\mu_0n^2A\ell$ (citada na Seção “Densidade de energia magnética”). Com $n=2000\,\text{m}^{-1}$, $A=4\times10^{-4}\,\text{m}^2$, $\ell=0{,}5\,\text{m}$:
+
+$$
+L = (4\pi\times10^{-7})(2000)^2(4\times10^{-4})(0{,}5)
+$$
+
+$$
+L = (4\pi\times10^{-7})(4\times10^6)(4\times10^{-4})(0{,}5) = (4\pi\times10^{-7})\times800
+$$
+
+$$
+L = 4\pi\times800\times10^{-7} = 3200\pi\times10^{-7} \approx 1{,}0053\times10^{-3}\,\text{H}
+$$
+
+$$
+\boxed{L\approx 1{,}005\,\text{mH}}
+$$
+
+**E12** (Desafio) Por simetria (o toroide tem simetria de rotação em torno de seu eixo central), o campo $\vec B$ dentro do núcleo é puramente azimutal (na direção de circulação do toroide) e sua magnitude depende apenas da distância $s$ ao eixo central de simetria. Escolhendo um caminho amperiano circular de raio $s$, concêntrico ao eixo do toroide e **inteiramente contido no núcleo**, a circulação é:
+
+$$
+\oint_C\vec B\cdot d\vec\ell = B(2\pi s)
+$$
+
+A corrente total enlaçada por esse caminho é a corrente que atravessa a superfície delimitada por ele: cada uma das $N$ espiras atravessa essa superfície uma vez, contribuindo $I$ cada:
+
+$$
+I_{env} = NI
+$$
+
+Pela Lei de Ampère:
+
+$$
+B(2\pi s) = \mu_0 NI \quad\Rightarrow\quad \boxed{B = \frac{\mu_0 NI}{2\pi s}}
+$$
+
+(análogo à dedução do solenoide, Seção “Aplicações com simetria”: lá, o caminho retangular capturava $nL$ espiras; aqui, o caminho circular fechado captura exatamente as $N$ espiras que "perfuram" a superfície do toroide uma vez cada). Note que $B$ depende de $s$ dentro do núcleo (ao contrário do solenoide ideal, onde $B$ é uniforme) — mas para um toroide fino ($s\approx r$, raio médio, com pequena variação), $B$ é aproximadamente uniforme.
+
+Numericamente, com $r=0{,}1\,\text{m}$, $N=500$, $I=2\,\text{A}$:
+
+$$
+B = \frac{(4\pi\times10^{-7})(500)(2)}{2\pi(0{,}1)} = \frac{4\pi\times10^{-7}\times1000}{0{,}2\pi} = \frac{4\times10^{-4}}{0{,}2} = 2{,}0\times10^{-3}\,\text{T}
+$$
+
+$$
+\boxed{B \approx 2{,}0\times10^{-3}\,\text{T} = 2{,}0\,\text{mT}}
+$$
+
+Para um caminho amperiano de raio $s$ **menor que o raio interno** do núcleo toroidal: nenhuma espira atravessa a superfície delimitada (as espiras "contornam" o núcleo sem cruzar o interior vazio do toroide), logo $I_{env}=0\Rightarrow B=0$. Para um caminho de raio $s$ **maior que o raio externo**: cada espira atravessa a superfície delimitada **duas vezes**, uma vez "entrando" e outra "saindo" (a corrente de ida e de volta de cada espira), com sinais opostos — a corrente líquida enlaçada é $I_{env}=N I - NI=0\Rightarrow B=0$. Assim, o campo do toroide ideal fica inteiramente confinado ao núcleo, tal como o solenoide confina o campo ao seu interior.
+
+**E13** As quatro regiões, aplicando $\oint\vec B\cdot d\vec\ell=B(2\pi s)=\mu_0I_{env}$:
+
+**Região 1 ($s<a=2\,\text{mm}$)**: dentro do condutor interno maciço, a densidade de corrente é uniforme, $J=I/(\pi a^2)$. A corrente enlaçada por um círculo de raio $s$ é a fração da área:
+
+$$
+I_{env} = I\frac{s^2}{a^2}
+$$
+
+$$
+B(2\pi s) = \mu_0 I\frac{s^2}{a^2} \quad\Rightarrow\quad B = \frac{\mu_0 I s}{2\pi a^2}
+$$
+
+Em $s=1\,\text{mm}=a/2$: $B = \dfrac{(4\pi\times10^{-7})(50)(10^{-3})}{2\pi(2\times10^{-3})^2} = \dfrac{2\times10^{-8}}{8\times10^{-6}} = 2{,}5\times10^{-3}\,\text{T}$.
+
+$$
+\boxed{B(s) = \frac{\mu_0 I s}{2\pi a^2}\quad (s<a)}
+$$
+
+**Região 2 ($a<s<b$, ou seja, $2\,\text{mm}<s<6\,\text{mm}$)**: toda a corrente $I$ do condutor interno está enlaçada; a região entre $a$ e $b$ é vácuo/dielétrico (sem corrente):
+
+$$
+B = \frac{\mu_0 I}{2\pi s}
+$$
+
+Em $s=4\,\text{mm}$: com $\mu_0I=2\times10^{-5}\,\text{T·m}$ e $2\pi s = 2\pi\times0{,}004=0{,}02513\,\text{m}$:
+
+$$
+B = \frac{2\times10^{-5}}{0{,}02513} = 2{,}5\times10^{-3}\,\text{T}
+$$
+
+$$
+\boxed{B(s) = \frac{\mu_0 I}{2\pi s}\quad (a<s<b)}
+$$
+
+Em $s=b=6\,\text{mm}$ (limite de continuidade com a próxima região): $B=\mu_0I/(2\pi b) = 2\times10^{-5}/(2\pi\times0{,}006)=1{,}667\times10^{-3}\,\text{T}$.
+
+**Região 3 ($b<s<c$, ou seja, $6\,\text{mm}<s<8\,\text{mm}$)**: dentro da casca externa, parte da corrente de retorno $-I$ já foi enlaçada. Densidade de corrente na casca (uniforme): $J_{\text{casca}} = -I/[\pi(c^2-b^2)]$. A fração da casca enlaçada até o raio $s$:
+
+$$
+I_{\text{casca,env}} = -I\,\frac{s^2-b^2}{c^2-b^2}
+$$
+
+$$
+I_{env} = I - I\,\frac{s^2-b^2}{c^2-b^2}
+$$
+
+$$
+B = \frac{\mu_0}{2\pi s}\left[I - I\,\frac{s^2-b^2}{c^2-b^2}\right] = \frac{\mu_0 I}{2\pi s}\left[\frac{c^2-s^2}{c^2-b^2}\right]
+$$
+
+Verificação em $s=b=6\,\text{mm}$ (deve casar com a Região 2): $\dfrac{c^2-b^2}{c^2-b^2}=1\Rightarrow B=\mu_0I/(2\pi b)=1{,}667\times10^{-3}\,\text{T}$ ✓ (idêntico ao limite da região 2).
+
+Em $s=7\,\text{mm}$: $c^2-s^2 = 64-49=15\,\text{mm}^2$; $c^2-b^2=64-36=28\,\text{mm}^2$;
+
+$$
+B = \frac{(4\pi\times10^{-7})(50)}{2\pi(0{,}007)}\times\frac{15}{28} = \frac{2\times10^{-5}}{0{,}04398}\times0{,}5357 \approx 1{,}4286\times10^{-3}\times0{,}5357 \approx 7{,}653\times10^{-4}\,\text{T}
+$$
+
+$$
+\boxed{B(s) = \frac{\mu_0 I}{2\pi s}\cdot\frac{c^2-s^2}{c^2-b^2}\quad(b<s<c)}
+$$
+
+**Região 4 ($s>c=8\,\text{mm}$)**: toda a corrente de retorno foi enlaçada, cancelando exatamente a corrente do condutor interno:
+
+$$
+I_{env} = I + (-I) = 0 \quad\Rightarrow\quad \boxed{B=0\quad(s>c)}
+$$
+
+**Continuidade**: verificamos acima que em $s=b$, as expressões das regiões 2 e 3 coincidem ($1{,}667\times10^{-3}\,\text{T}$), e em $s=c$, a expressão da região 3 se anula ($c^2-s^2\to0$), casando continuamente com $B=0$ da região 4. O campo do cabo coaxial é, portanto, contínuo em todo o espaço e nulo fora do cabo — propriedade essencial para blindagem eletromagnética.
+
+**E14** Em coordenadas cilíndricas, para um campo puramente azimutal $B_\phi(s)$ sem dependência de $\phi,z$, a componente $z$ do rotacional é:
+
+$$
+(\nabla\times\vec B)_z = \frac{1}{s}\frac{\partial(sB_\phi)}{\partial s}
+$$
+
+Substituindo $B_\phi=\mu_0J_0s/2$:
+
+$$
+sB_\phi = \frac{\mu_0J_0}{2}s^2
+$$
+
+$$
+\frac{\partial(sB_\phi)}{\partial s} = \mu_0J_0 s
+$$
+
+$$
+(\nabla\times\vec B)_z = \frac{1}{s}(\mu_0J_0s) = \mu_0J_0
+$$
+
+$$
+\boxed{(\nabla\times\vec B)_z = \mu_0 J_0 = \mu_0 J_z}
+$$
+
+que é exatamente a componente $z$ de $\mu_0\vec J$ (já que $\vec J=J_0\hat z$). As componentes $\hat s$ e $\hat\phi$ do rotacional são identicamente nulas (não há dependência em $z$ ou $\phi$, e não há componentes $B_s$, $B_z$), casando com $J_s=J_\phi=0$. A Lei de Ampère pontual é satisfeita ponto a ponto dentro do cilindro, confirmando que o perfil linear $B_\phi\propto s$ é a solução correta para densidade de corrente uniforme.
+
+**E15** Força atrativa (mesmo sentido de corrente):
+
+$$
+\frac{F}{\ell} = \frac{\mu_0I_1I_2}{2\pi d} = \frac{(4\pi\times10^{-7})(30)(30)}{2\pi(0{,}05)}
+$$
+
+$$
+\frac{F}{\ell} = \frac{4\pi\times10^{-7}\times900}{2\pi\times0{,}05} = \frac{2\times900\times10^{-7}}{0{,}05} = \frac{1{,}8\times10^{-4}}{0{,}05} = 3{,}6\times10^{-3}\,\text{N/m}
+$$
+
+$$
+\boxed{\frac{F}{\ell} = 3{,}6\times10^{-3}\,\text{N/m} = 3{,}6\,\text{mN/m}\quad(\text{atrativa})}
+$$
+
+**E16** O fio central (fio 2) sofre a ação dos fios 1 e 3, ambos a distância $d=4\,\text{cm}$, com correntes no mesmo sentido — logo ambas as forças são **atrativas**, mas em **sentidos opostos** (fio 1 puxa o fio 2 para um lado, fio 3 puxa para o lado oposto), pois os três fios estão alinhados.
+
+$$
+\frac{F_{12}}{\ell} = \frac{\mu_0I^2}{2\pi d}\quad\text{(atrai fio 2 em direção ao fio 1)}
+$$
+
+$$
+\frac{F_{32}}{\ell} = \frac{\mu_0I^2}{2\pi d}\quad\text{(atrai fio 2 em direção ao fio 3, sentido oposto a }F_{12})
+$$
+
+Como $|F_{12}|=|F_{32}|$ (mesma corrente, mesma distância $d$) e atuam em sentidos opostos ao longo da mesma reta:
+
+$$
+\boxed{\frac{F_{\text{resultante}}}{\ell} = \frac{F_{12}}{\ell}-\frac{F_{32}}{\ell} = 0}
+$$
+
+A força resultante sobre o fio central é **nula** por simetria — o fio 2 está em equilíbrio (instável) entre os fios 1 e 3. Como verificação numérica, cada força individual vale:
+
+$$
+\frac{F_{12}}{\ell} = \frac{(4\pi\times10^{-7})(20)^2}{2\pi(0{,}04)} = \frac{4\pi\times10^{-7}\times400}{2\pi\times0{,}04} = \frac{2\times400\times10^{-7}}{0{,}04} = 2{,}0\times10^{-3}\,\text{N/m}
+$$
+
+de modo que $F_{12}/\ell = F_{32}/\ell = 2{,}0\times10^{-3}\,\text{N/m}$, cancelando-se exatamente.
+
+**E17** Escolhendo o ponto de observação sobre a mediatriz do fio (em $z=0$, sendo o fio de $z'=-L/2$ a $z'=+L/2$), a distância ao elemento de corrente em $z'$ é $\sqrt{\rho^2+z'^2}$. Como $d\vec\ell'=dz'\,\hat z$ é sempre paralelo a $\hat z$, o potencial vetor resultante é puramente na direção $\hat z$:
+
+$$
+A_z = \frac{\mu_0 I}{4\pi}\int_{-L/2}^{L/2}\frac{dz'}{\sqrt{\rho^2+z'^2}}
+$$
+
+Esta é uma integral padrão, $\displaystyle\int\frac{dz'}{\sqrt{\rho^2+z'^2}} = \ln\left(z'+\sqrt{\rho^2+z'^2}\right)+\text{const}$. Avaliando entre os limites:
+
+$$
+A_z = \frac{\mu_0 I}{4\pi}\left[\ln\left(\frac{L}{2}+\sqrt{\rho^2+\frac{L^2}{4}}\right)-\ln\left(-\frac{L}{2}+\sqrt{\rho^2+\frac{L^2}{4}}\right)\right]
+$$
+
+$$
+\boxed{A_z = \frac{\mu_0I}{4\pi}\ln\!\left(\frac{L/2+\sqrt{(L/2)^2+\rho^2}}{-L/2+\sqrt{(L/2)^2+\rho^2}}\right)}
+$$
+
+Numericamente, com $I=20\,\text{A}$, $L=0{,}4\,\text{m}$ ($L/2=0{,}2\,\text{m}$), $\rho=0{,}1\,\text{m}$:
+
+$$
+\sqrt{(0{,}2)^2+(0{,}1)^2} = \sqrt{0{,}05} = 0{,}2236\,\text{m}
+$$
+
+$$
+\frac{L/2+\sqrt{\cdots}}{-L/2+\sqrt{\cdots}} = \frac{0{,}2+0{,}2236}{-0{,}2+0{,}2236} = \frac{0{,}4236}{0{,}0236} = 17{,}95
+$$
+
+$$
+A_z = \frac{(4\pi\times10^{-7})(20)}{4\pi}\ln(17{,}95) = (10^{-7}\times20)\times2{,}887 = 2\times10^{-6}\times2{,}887
+$$
+
+$$
+A_z \approx 5{,}774\times10^{-6}\,\text{T·m}
+$$
+
+$$
+\boxed{A_z \approx 5{,}77\times10^{-6}\,\text{T·m}}
+$$
+
+**E18** (Desafio) Para $\vec A = x^2y\,\hat z$ (ou seja, $A_x=0$, $A_y=0$, $A_z=x^2y$):
+
+**Lado direito**: $\nabla\cdot\vec A = \dfrac{\partial A_x}{\partial x}+\dfrac{\partial A_y}{\partial y}+\dfrac{\partial A_z}{\partial z} = 0+0+0=0$ (pois $A_z=x^2y$ não depende de $z$). Logo $\nabla(\nabla\cdot\vec A)=\vec 0$.
+
+O laplaciano vetorial (aplicado componente a componente em cartesianas): $\nabla^2\vec A = (\nabla^2A_x,\nabla^2A_y,\nabla^2A_z)$. Como $A_x=A_y=0$, só resta:
+
+$$
+\nabla^2A_z = \frac{\partial^2A_z}{\partial x^2}+\frac{\partial^2A_z}{\partial y^2}+\frac{\partial^2A_z}{\partial z^2} = 2y + 0 + 0 = 2y
+$$
+
+Logo $\nabla^2\vec A = 2y\,\hat z$, e o lado direito da identidade:
+
+$$
+\nabla(\nabla\cdot\vec A)-\nabla^2\vec A = \vec0 - 2y\hat z = -2y\,\hat z
+$$
+
+**Lado esquerdo**: primeiro, $\vec B\equiv\nabla\times\vec A$. Com $A_z=x^2y$, $A_x=A_y=0$:
+
+$$
+\nabla\times\vec A = \left(\frac{\partial A_z}{\partial y}-\frac{\partial A_y}{\partial z}\right)\hat x + \left(\frac{\partial A_x}{\partial z}-\frac{\partial A_z}{\partial x}\right)\hat y + \left(\frac{\partial A_y}{\partial x}-\frac{\partial A_x}{\partial y}\right)\hat z
+$$
+
+$$
+\nabla\times\vec A = (x^2-0)\hat x + (0-2xy)\hat y + (0-0)\hat z = x^2\hat x - 2xy\,\hat y
+$$
+
+Agora calculamos $\nabla\times(\nabla\times\vec A) = \nabla\times(x^2\hat x - 2xy\,\hat y)$. Com $F_x=x^2$, $F_y=-2xy$, $F_z=0$:
+
+$$
+\nabla\times\vec F = \left(\frac{\partial F_z}{\partial y}-\frac{\partial F_y}{\partial z}\right)\hat x + \left(\frac{\partial F_x}{\partial z}-\frac{\partial F_z}{\partial x}\right)\hat y + \left(\frac{\partial F_y}{\partial x}-\frac{\partial F_x}{\partial y}\right)\hat z
+$$
+
+$$
+= (0-0)\hat x + (0-0)\hat y + (-2y-0)\hat z = -2y\,\hat z
+$$
+
+$$
+\boxed{\nabla\times(\nabla\times\vec A) = -2y\,\hat z = \nabla(\nabla\cdot\vec A)-\nabla^2\vec A}
+$$
+
+Os dois lados coincidem exatamente ($-2y\hat z$ em ambos os casos), verificando a identidade vetorial para este campo específico.
+
+**E19** Energia armazenada no indutor:
+
+$$
+U = \frac{1}{2}LI^2 = \frac{1}{2}(0{,}2)(4)^2 = \frac{1}{2}(0{,}2)(16) = 1{,}6\,\text{J}
+$$
+
+$$
+\boxed{U = 1{,}6\,\text{J}}
+$$
+
+Densidade de energia magnética para $B=1{,}2\,\text{T}$ no vácuo:
+
+$$
+u_B = \frac{B^2}{2\mu_0} = \frac{(1{,}2)^2}{2(4\pi\times10^{-7})} = \frac{1{,}44}{2{,}5133\times10^{-6}}
+$$
+
+$$
+u_B \approx 5{,}730\times10^{5}\,\text{J/m}^3
+$$
+
+$$
+\boxed{u_B \approx 5{,}73\times10^{5}\,\text{J/m}^3}
+$$
+
+**E20** A indutância mútua é definida por $k=M/\sqrt{L_1L_2}$, logo $M=k\sqrt{L_1L_2}$:
+
+$$
+M = 0{,}6\sqrt{(0{,}5)(0{,}8)} = 0{,}6\sqrt{0{,}4} = 0{,}6\times0{,}6325 = 0{,}3795\,\text{H}
+$$
+
+$$
+\boxed{M \approx 0{,}3795\,\text{H}}
+$$
+
+A energia total (acoplamento direto, sinal positivo):
+
+$$
+U = \frac{1}{2}L_1I_1^2 + \frac{1}{2}L_2I_2^2 + MI_1I_2
+$$
+
+$$
+U = \frac{1}{2}(0{,}5)(2)^2 + \frac{1}{2}(0{,}8)(3)^2 + (0{,}3795)(2)(3)
+$$
+
+$$
+U = \frac{1}{2}(0{,}5)(4) + \frac{1}{2}(0{,}8)(9) + 2{,}277
+$$
+
+$$
+U = 1{,}0 + 3{,}6 + 2{,}277 = 6{,}877\,\text{J}
+$$
+
+$$
+\boxed{M\approx0{,}380\,\text{H}\,;\quad U\approx6{,}877\,\text{J}}
+$$

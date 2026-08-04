@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5. Introdução ao SPICE para problemas EMC — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>5. Introdução ao SPICE para problemas EMC</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>5. Introdução ao SPICE para problemas EMC</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="04_normas_padronizacoes_ensaios.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">4. Normas, Padronizações e Ensaios de EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="06_componentes_nao_ideais.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">6. Comportamento não ideal de componentes</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>5. Introdução ao SPICE para problemas EMC</h1>
+<blockquote>
+<p>SPICE é um simulador de circuitos. Em EMC, ele é especialmente útil para parasitas, filtros, PDN, transientes, linhas de transmissão e proteção de portas. Ele não substitui um solucionador de campos nem um ensaio de conformidade.</p>
+</blockquote>
+<p>Uma das implementações de código aberto mais utilizadas é o <a href="https://ngspice.sourceforge.io/">ngspice</a>, disponível para Linux, macOS e Windows e frequentemente integrado ao KiCad.</p>
+<h2 id="objetivos-de-aprendizagem"><span class="heading-number">5.1</span> Objetivos de aprendizagem</h2>
+<p>Ao final, você deve ser capaz de:</p>
+<ol>
+<li>ler e escrever uma netlist SPICE;</li>
+<li>escolher análises de ponto de operação, AC, transiente e Fourier;</li>
+<li>representar componentes reais e caminhos parasitas;</li>
+<li>usar modelos, subcircuitos, parâmetros e varreduras;</li>
+<li>verificar passo temporal, convergência e casos-limite;</li>
+<li>distinguir resultado de circuito, estimativa EMC e conformidade.</li>
+</ol>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#o-que-o-spice-resolve">O que o SPICE resolve</a></li>
+<li><a href="#anatomia-de-uma-netlist">Anatomia de uma netlist</a></li>
+<li><a href="#an%C3%A1lises-fundamentais">Análises fundamentais</a></li>
+<li><a href="#componentes-reais">Componentes reais</a></li>
+<li><a href="#fontes-%C3%BAteis-em-emc">Fontes úteis em EMC</a></li>
+<li><a href="#linhas-de-transmiss%C3%A3o">Linhas de transmissão</a></li>
+<li><a href="#par%C3%A2metros-varreduras-e-medidas">Parâmetros, varreduras e medidas</a></li>
+<li><a href="#exemplo-completo--imped%C3%A2ncia-de-uma-pdn">Exemplo completo — impedância de uma PDN</a></li>
+<li><a href="#converg%C3%AAncia-e-integridade-num%C3%A9rica">Convergência e integridade numérica</a></li>
+<li><a href="#o-que-spice-n%C3%A3o-demonstra">O que SPICE não demonstra</a></li>
+<li><a href="#protocolo-de-uma-simula%C3%A7%C3%A3o-audit%C3%A1vel">Protocolo de uma simulação auditável</a></li>
+<li><a href="#exerc%C3%ADcios">Exercícios</a></li>
+<li><a href="#refer%C3%AAncias-e-compatibilidade">Referências e compatibilidade</a></li>
+</ol></nav>
+<h2 id="o-que-o-spice-resolve"><span class="heading-number">5.2</span> O que o SPICE resolve</h2>
+<p>SPICE formula as equações do circuito por análise nodal modificada. Resistores, fontes, capacitores, indutores e dispositivos não lineares tornam-se um sistema algébrico ou diferencial. Em forma compacta,</p>
+
+<div class="math-display">
+$$
+
+\mathbf C(\mathbf x)\frac{d\mathbf x}{dt}+\mathbf G(\mathbf x)\mathbf x
+=\mathbf u(t).
+
+$$
+</div>
+
+<p>Na análise AC, o circuito é linearizado em torno do ponto de operação e resolvido para cada frequência:</p>
+
+<div class="math-display">
+$$
+
+\left(\mathbf G+j\omega\mathbf C\right)\mathbf X=\mathbf U.
+
+$$
+</div>
+
+<p>Consequentemente, a análise AC não representa saturação harmônica de grande sinal; ela representa a resposta incremental do circuito linearizado.</p>
+<h2 id="anatomia-de-uma-netlist"><span class="heading-number">5.3</span> Anatomia de uma netlist</h2>
+<p>Cada elemento ocupa uma linha. O primeiro caractere identifica o tipo; o nó <code>0</code> é a referência global.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">*</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">comentário</span><span style="color: #F8F8F2">: </span><span style="color: #A6E22E">filtro</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">RC</span>
+<span style="color: #A6E22E">V1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">DC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">R1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">k</span>
+<span style="color: #A6E22E">C1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">n</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">40</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">Meg</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">vp</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<ul>
+<li><code>V1</code>: fonte entre <code>in</code> e <code>0</code>;</li>
+<li><code>R1</code>: resistor entre <code>in</code> e <code>out</code>;</li>
+<li><code>C1</code>: capacitor entre <code>out</code> e <code>0</code>;</li>
+<li><code>.ac dec 40</code>: 40 pontos por década, aqui suficientes para localizar o polo de 15,9 kHz;</li>
+<li><code>vm</code> e <code>vp</code>: magnitude e fase.</li>
+</ul>
+<p>Sufixos comuns incluem <code>p</code>, <code>n</code>, <code>u</code>, <code>m</code>, <code>k</code>, <code>meg</code> e <code>g</code>. Em muitas variantes SPICE, <code>M</code> significa <em>milli</em>, não mega; use <code>Meg</code> para evitar ambiguidade.</p>
+<h2 id="análises-fundamentais"><span class="heading-number">5.4</span> Análises fundamentais</h2>
+<h3 id="ponto-de-operação"><span class="heading-number">5.4.1</span> Ponto de operação</h3>
+<p><code>.op</code> calcula tensões e correntes DC. É indispensável antes de uma análise AC de circuitos com semicondutores, pois define o ponto de linearização.</p>
+<h3 id="varredura-ac"><span class="heading-number">5.4.2</span> Varredura AC</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">V1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">DC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">R1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span>
+<span style="color: #A6E22E">L1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10u</span>
+<span style="color: #A6E22E">C1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Rload</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">Meg</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">vp</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Com <code>AC 1</code>, a tensão de saída também representa diretamente a função de transferência, desde que a grandeza desejada seja tensão e as portas estejam corretamente definidas.</p>
+<h3 id="análise-transiente"><span class="heading-number">5.4.3</span> Análise transiente</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">Vclk</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">PULSE</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3.3</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">500</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">500</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2">)</span>
+<span style="color: #A6E22E">Rsrc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">line</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">33</span>
+<span style="color: #A6E22E">Cload</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">line</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Rleak</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">line</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">25</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">line</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Em <code>.tran tstep tstop tstart tmax</code>, <code>tstep</code> define o espaçamento solicitado para a saída e <code>tmax</code> limita o passo interno máximo. Para capturar uma borda, use inicialmente $t_{max}\le t_r/20$, salve ao menos 10 pontos por borda e repita com metade de <code>tmax</code>. Simule apenas os períodos necessários para observar a partida e o regime permanente.</p>
+<h3 id="fourier-e-espectro"><span class="heading-number">5.4.4</span> Fourier e espectro</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #F8F8F2">.</span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2u</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1u</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">500</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">four</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">Meg</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">line</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+</div>
+
+<p>Ignore o início transitório antes de analisar regime periódico. Neste exemplo, o período é 100 ns; o trecho salvo após <code>tstart</code> contém 10 períodos e a saída tem 100 amostras por período. A diretiva <code>.four</code> calcula os harmônicos a partir do período final; uma FFT do visualizador depende da janela temporal, amostragem e número inteiro de períodos.</p>
+<h2 id="componentes-reais"><span class="heading-number">5.5</span> Componentes reais</h2>
+<h3 id="capacitor-com-esr-e-esl"><span class="heading-number">5.5.1</span> Capacitor com ESR e ESL</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #F8F8F2">.</span><span style="color: #A6E22E">subckt</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">params</span><span style="color: #F8F8F2">: </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">L_esl</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">x</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">R_esr</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">x</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">y</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">C_main</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">y</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">}</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ends</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span>
+
+<span style="color: #A6E22E">Xc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">25</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">700</span><span style="color: #66D9EF">p</span>
+</pre></div>
+</div>
+
+<p>A autorressonância ideal do modelo série é</p>
+
+<div class="math-display">
+$$
+
+f_{SR}=\frac{1}{2\pi\sqrt{ESL\,C}}.
+
+$$
+</div>
+
+<h3 id="indutor-real"><span class="heading-number">5.5.2</span> Indutor real</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #F8F8F2">.</span><span style="color: #A6E22E">subckt</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">IND_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">params</span><span style="color: #F8F8F2">: </span><span style="color: #A6E22E">L</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">10u</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CP</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">5</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">R_esr</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">x</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">L_main</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">x</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">L</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">C_par</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">CP</span><span style="color: #F8F8F2">}</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ends</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">IND_REAL</span>
+</pre></div>
+</div>
+
+<p>Acima da ressonância paralela, o componente deixa de se comportar predominantemente como indutor.</p>
+<h3 id="acoplamento-magnético"><span class="heading-number">5.5.3</span> Acoplamento magnético</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">Lpri</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">p1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">p2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Lsec</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">s1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">s2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">K1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Lpri</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Lsec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0.98</span>
+</pre></div>
+</div>
+
+<p>O coeficiente $k$ define $M=k\sqrt{L_1L_2}$. Para choques de modo comum, mantenha a convenção dos pontos coerente com a soma de fluxo no modo comum.</p>
+<h2 id="fontes-úteis-em-emc"><span class="heading-number">5.6</span> Fontes úteis em EMC</h2>
+<h3 id="pulso-com-bordas-finitas"><span class="heading-number">5.6.1</span> Pulso com bordas finitas</h3>
+<p><code>PULSE(V1 V2 TD TR TF PW PER)</code> deve sempre declarar tempos de subida e descida realistas. Bordas zero forçam banda infinita e podem gerar resultados numéricos sem significado físico.</p>
+<h3 id="fonte-arbitrária-comportamental"><span class="heading-number">5.6.2</span> Fonte arbitrária comportamental</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">BESD</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">esd</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">V</span><span style="color: #F8F8F2"> = </span><span style="color: #AE81FF">8000</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">exp</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #A6E22E">time</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">-</span><span style="color: #A6E22E">exp</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #A6E22E">time</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">0.8</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2">))</span>
+</pre></div>
+</div>
+
+<p>A sintaxe de fontes comportamentais varia entre simuladores. Confirme a documentação e normalize a forma para o pico desejado.</p>
+<h3 id="excitação-por-corrente"><span class="heading-number">5.6.3</span> Excitação por corrente</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">Icm</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">chassis</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">PULSE</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1u</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+</div>
+
+<p>Em muitos problemas EMC, fonte de corrente representa melhor $C_p\,dv/dt$ ou uma descarga do que uma fonte ideal de tensão.</p>
+<h2 id="linhas-de-transmissão"><span class="heading-number">5.7</span> Linhas de transmissão</h2>
+<p>Quando atraso e reflexão importam, prefira o elemento de linha disponível no simulador:</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">V1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">PULSE</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2">)</span>
+<span style="color: #A6E22E">Rsrc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span>
+<span style="color: #A6E22E">T1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Z0</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">50</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">TD</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">2</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Rload</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">out</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Uma escada LC é útil para ensino ou quando o elemento distribuído não está disponível, mas exige estudo de convergência com o número de seções.</p>
+<h2 id="parâmetros-varreduras-e-medidas"><span class="heading-number">5.8</span> Parâmetros, varreduras e medidas</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #F8F8F2">.</span><span style="color: #A6E22E">param</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Cdec</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Resr</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Xc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">={</span><span style="color: #A6E22E">Cdec</span><span style="color: #F8F8F2">} </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">={</span><span style="color: #A6E22E">Resr</span><span style="color: #F8F8F2">} </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">n</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">step</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">param</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Resr</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">list</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">m</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">60</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">meas</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Zmin</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">MIN</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">mag</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #A6E22E">i</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">Vtest</span><span style="color: #F8F8F2">))</span>
+</pre></div>
+</div>
+
+<p>Nem todas as variantes aceitam as mesmas expressões em <code>.meas</code> ou <code>.step</code>. Para portabilidade, mantenha uma versão de referência e registre o simulador usado.</p>
+<h2 id="exemplo-completo--impedância-de-uma-pdn"><span class="heading-number">5.9</span> Exemplo completo — impedância de uma PDN</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">*</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">injeta</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">A</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2">: </span><span style="color: #A6E22E">V</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">numericamente</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">igual</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">a</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Z_PDN</span>
+<span style="color: #A6E22E">Itest</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">Rleak</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #A6E22E">Rplane</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Lplane</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">500</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Xbulk</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">10u</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">20</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">2</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Xdec</span><span style="color: #F8F8F2">  </span><span style="color: #A6E22E">n2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">600</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">subckt</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">params</span><span style="color: #F8F8F2">: </span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">L_esl</span><span style="color: #F8F8F2"> </span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">x</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">R_esr</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">x</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">y</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2">}</span>
+<span style="color: #A6E22E">C_main</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">y</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> {</span><span style="color: #A6E22E">C</span><span style="color: #F8F8F2">}</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ends</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CAP_REAL</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">vcc</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p><strong>Verificações:</strong> em baixa frequência, a impedância deve ser capacitiva; nos mínimos, compare ESR; em alta frequência, verifique a inclinação indutiva. Acrescente perdas reais para evitar ressonâncias idealizadas infinitas.</p>
+<p>Os 100 pontos por década deste exemplo são deliberados: a PDN pode apresentar mínimos e antirressonâncias mais estreitos que os filtros anteriores. Para exploração inicial, use 30 a 50 pontos por década; refine a banda ao redor dos extremos antes de extrair valores finais.</p>
+<h2 id="convergência-e-integridade-numérica"><span class="heading-number">5.10</span> Convergência e integridade numérica</h2>
+<p>Problemas comuns:</p>
+<ul>
+<li>nós flutuantes sem caminho DC;</li>
+<li>fontes ideais incompatíveis em paralelo;</li>
+<li>indutores ideais em série com fontes ideais;</li>
+<li>transições abruptas demais;</li>
+<li>elementos sem perdas formando ressonadores de $Q$ infinito;</li>
+<li>modelos de fabricante fora da faixa válida;</li>
+<li>passo temporal insuficiente.</li>
+</ul>
+<p>Tempo de simulação excessivo também é um sintoma de configuração ruim. Em AC, comece com uma malha moderada e refine apenas perto de polos e ressonâncias. Em transiente, escolha <code>tstop</code> pelo maior tempo de acomodação ou pelo número de períodos necessário, <code>tmax</code> pela dinâmica mais rápida e <code>tstep</code> pela resolução realmente necessária no arquivo de saída.</p>
+<p>Estratégia de diagnóstico:</p>
+<ol>
+<li>simplifique até o caso mínimo que converge;</li>
+<li>confira <code>.op</code>;</li>
+<li>adicione resistências físicas pequenas, não “resistores mágicos” sem registro;</li>
+<li>refine passo e tolerâncias gradualmente;</li>
+<li>compare energia, casos-limite e resultado analítico.</li>
+</ol>
+<h2 id="o-que-spice-não-demonstra"><span class="heading-number">5.11</span> O que SPICE não demonstra</h2>
+<p>SPICE não calcula automaticamente:</p>
+<ul>
+<li>radiação tridimensional de uma PCB ou cabo;</li>
+<li>campos próximos dependentes da geometria;</li>
+<li>eficácia de gabinete com aberturas complexas;</li>
+<li>acoplamento distribuído sem um modelo fornecido;</li>
+<li>aprovação em ensaio normativo.</li>
+</ul>
+<p>Esses efeitos podem entrar como parâmetros extraídos, linhas acopladas, fontes equivalentes ou redes de múltiplas portas. A validade passa a depender da extração.</p>
+<h2 id="protocolo-de-uma-simulação-auditável"><span class="heading-number">5.12</span> Protocolo de uma simulação auditável</h2>
+<p>Registre:</p>
+<ol>
+<li>pergunta e decisão de engenharia;</li>
+<li>versão do simulador;</li>
+<li>netlist completa e modelos externos;</li>
+<li>origem e tolerância dos parâmetros;</li>
+<li>análise, banda, passo e condições iniciais;</li>
+<li>casos-limite e estudo de convergência;</li>
+<li>comparação com cálculo ou medição;</li>
+<li>faixa de validade e limitações.</li>
+</ol>
+<h2 id="exercícios"><span class="heading-number">5.13</span> Exercícios</h2>
+<p><strong>E.1</strong> Simule o filtro RC da seção “Anatomia de uma netlist” e compare $f_c$ com $1/(2\pi RC)$.</p>
+<p><strong>E.2</strong> Varra ESR e ESL do capacitor real; identifique mínimo e autorressonância.</p>
+<p><strong>E.3</strong> Compare uma linha ideal de 2 ns com escadas de 5, 10 e 40 seções.</p>
+<p><strong>E.4</strong> Simule uma carga aberta, casada e em curto; confirme os coeficientes de reflexão.</p>
+<p><strong>E.5</strong> Construa uma PDN com dois capacitores e localize a antirressonância.</p>
+<p><strong>E.6</strong> Modele corrente $C_pdv/dt$ de um nó de comutação para o chassi.</p>
+<p><strong>E.7</strong> Repita um transiente com $t_{max}$, $t_{max}/2$ e $t_{max}/4$ e reporte convergência.</p>
+<h3 id="respostas-orientativas"><span class="heading-number">5.13.1</span> Respostas orientativas</h3>
+<p><strong>E.1</strong> $f_c=1/(2\pi\cdot1\,k\Omega\cdot10\,nF)\approx15{,}9$ kHz; a saída deve estar cerca de −3 dB nesse ponto para fonte ideal e carga infinita.</p>
+<p><strong>E.4</strong> Para linha de 50 Ω: $\Gamma_L=+1$ em aberto, $0$ em 50 Ω e $-1$ em curto.</p>
+<p><strong>E.7</strong> O resultado está numericamente convergido quando as grandezas relevantes mudam menos que a tolerância definida pelo problema, não quando as curvas apenas “parecem iguais”.</p>
+<h2 id="referências-e-compatibilidade"><span class="heading-number">5.14</span> Referências e compatibilidade</h2>
+<p>Os exemplos usam sintaxe próxima de <a href="https://ngspice.sourceforge.io/">ngspice</a>, uma implementação de código aberto frequentemente integrada ao KiCad. LTspice, PSpice e outros dialetos podem exigir ajustes em fontes comportamentais, parâmetros, medidas e modelos de linha. Consulte sempre a documentação da implementação usada.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="04_normas_padronizacoes_ensaios.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">4. Normas, Padronizações e Ensaios de EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="06_componentes_nao_ideais.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">6. Comportamento não ideal de componentes</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

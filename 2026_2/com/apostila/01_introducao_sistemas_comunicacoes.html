@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1. Introdução a Sistemas de Comunicações — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>1. Introdução a Sistemas de Comunicações</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>1. Introdução a Sistemas de Comunicações</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><span class="disabled"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">Início da obra</span></span></span><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="02_modulacao_am.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">2. Modulação em Amplitude — Teoria Completa</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>1. Introdução a Sistemas de Comunicações</h1>
+<blockquote>
+<p>Sistemas de Comunicações — Apostila de Curso<br />
+Tópicos: Modelo Completo do Sistema · Recursos e Métricas Fundamentais · Decibéis e Orçamento de Enlace · Ruído e Cascata de Estágios · Capacidade de Shannon · Modulações Analógicas vs. Digitais · Exercícios em Python</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">1.1</span> Antes de começar</h2>
+<p>Ao final, você deve conseguir seguir informação, potência e ruído por toda a cadeia, fechar um orçamento de enlace e distinguir taxa, banda, SNR e $E_b/N_0$. <strong>Diagnóstico:</strong> adicionar 3 dB sempre dobra alguma grandeza? Diga quando isso vale para potência e amplitude. <strong>Evidência mínima:</strong> justificar cada termo de um orçamento de enlace e identificar qual bloco limita a margem.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#modelo-completo-de-um-sistema-de-comunica%C3%A7%C3%B5es">Modelo Completo de um Sistema de Comunicações</a></li>
+<li><a href="#recursos-e-m%C3%A9tricas-fundamentais">Recursos e Métricas Fundamentais</a></li>
+<li><a href="#decib%C3%A9is-e-or%C3%A7amento-de-enlace--dedu%C3%A7%C3%B5es-completas">Decibéis e Orçamento de Enlace — Deduções Completas</a></li>
+<li><a href="#ru%C3%ADdo--fundamentos-f%C3%ADsicos-completos">Ruído — Fundamentos Físicos Completos</a></li>
+<li><a href="#capacidade-de-shannon--deriva%C3%A7%C3%A3o-detalhada">Capacidade de Shannon — Derivação Detalhada</a></li>
+<li><a href="#modula%C3%A7%C3%B5es-anal%C3%B3gicas-vs-digitais--compara%C3%A7%C3%A3o-rigorosa">Modulações Analógicas vs. Digitais — Comparação Rigorosa</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="modelo-completo-de-um-sistema-de-comunicações"><span class="heading-number">1.2</span> Modelo Completo de um Sistema de Comunicações</h2>
+<p>Um sistema de comunicação transfere informação de uma <strong>fonte</strong> a um <strong>destino</strong> por meio de um meio físico imperfeito. O modelo completo envolve uma cadeia de etapas:</p>
+
+<div class="math-display">
+$$
+
+\begin{aligned}
+&amp;\underbrace{\text{Fonte}}_{\text{mensagem}} \to \underbrace{\text{Codif. fonte}}_{\text{compressão}} \to \underbrace{\text{Codif. canal}}_{\text{correção de erros}} \to \underbrace{\text{Modulador}}_{\text{adapta ao canal}} \\
+&amp;\qquad\longrightarrow \boxed{\text{Canal} + \text{ruído} + \text{interferência}} \longrightarrow \underbrace{\text{Demodulador}} \to \underbrace{\text{Decodif. canal}} \to \underbrace{\text{Decodif. fonte}} \to \underbrace{\text{Destino}}
+\end{aligned}
+
+$$
+</div>
+
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> A <strong>fonte</strong> gera a mensagem original. O <strong>canal</strong> é o meio de propagação (fio, fibra, espaço livre). O <strong>destino</strong> recebe e reconstrói a mensagem.</p></aside>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> Codificação de fonte remove redundância; codificação de canal adiciona redundância controlada.</p></aside>
+<h3 id="entropia-de-shannon"><span class="heading-number">1.2.1</span> Entropia de Shannon</h3>
+<p>A entropia mede a <strong>incerteza</strong> de uma fonte:</p>
+
+<div class="math-display">
+$$
+
+\boxed{H(X) = -\sum_{i=1}^{M} p_i\log_2 p_i}
+
+$$
+</div>
+
+<p>Propriedades: $H \ge 0$; $H_{\max} = \log_2 M$ (distribuição uniforme); $H$ contínua em $p_i$.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo — Fonte binária:</strong> $\Pr(X=0)=p$, $\Pr(X=1)=1-p$:</p></aside>
+
+<div class="math-display">
+$$
+
+H(X) = -p\log_2 p - (1-p)\log_2(1-p) = h_2(p)
+
+$$
+</div>
+
+<p>Para $p=1/2$, $H=1$ bit/símbolo (máximo). Para $p=0{,}01$, $H\approx0{,}0808$ bits/símbolo.</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema da codificação de fonte (Shannon, 1948):</strong></p></aside>
+<p>Para blocos longos de uma fonte discreta sem memória, nenhuma codificação sem perdas univocamente decodificável pode ter comprimento médio abaixo de $H(X)$, e existem códigos cujo comprimento médio por símbolo se aproxima arbitrariamente de $H(X)$:</p>
+
+<div class="math-display">
+$$
+\boxed{H(X)\le \bar L &lt; H(X)+1\quad\text{(código símbolo a símbolo)},\qquad
+\bar L_n/n\to H(X)\quad\text{(blocos longos)}.}
+$$
+</div>
+
+<p>Assim, $H(X)$ é um ínfimo assintótico, não necessariamente uma taxa exatamente atingível por um código finito.</p>
+<h3 id="codificação-de-fonte"><span class="heading-number">1.2.2</span> Codificação de fonte</h3>
+<p><strong>PCM (Pulse Code Modulation):</strong> Amostragem $\to$ Quantização $\to$ Codificação binária. Para $n$ bits: $R_b = f_s \cdot n$.</p>
+<p><strong>DPCM (Differential PCM):</strong> Codifica a diferença entre amostra real e prevista — menor variância = menos bits.</p>
+<p><strong>Huffman:</strong> $\bar{L} = \sum p_i \ell_i \ge H(X)$, com $\bar{L} &lt; H(X)+1$.</p>
+<h3 id="codificação-de-canal"><span class="heading-number">1.2.3</span> Codificação de canal</h3>
+<p><strong>Código bloqueio $(n,k)$:</strong> Mapeia $k$ bits $\to$ $n$ bits. Taxa $R = k/n$.</p>
+<p>Distância mínima e capacidade de correção:</p>
+
+<div class="math-display">
+$$
+
+\boxed{t_{\text{corr}} = \left\lfloor\frac{d_{\min}-1}{2}\right\rfloor}
+
+$$
+</div>
+
+<aside class="callout callout-example" role="note"><p><strong>Exemplo — Hamming $(7,4)$:</strong> $d_{\min}=3$, corrige $t=1$ erro, $R=4/7\approx0{,}571$.</p></aside>
+
+<div class="math-display">
+$$
+
+G = \begin{bmatrix}1&amp;0&amp;0&amp;0&amp;1&amp;1&amp;0\\0&amp;1&amp;0&amp;0&amp;1&amp;0&amp;1\\0&amp;0&amp;1&amp;0&amp;0&amp;1&amp;1\\0&amp;0&amp;0&amp;1&amp;1&amp;1&amp;1\end{bmatrix},\quad
+H = \begin{bmatrix}1&amp;1&amp;0&amp;1&amp;1&amp;0&amp;0\\1&amp;0&amp;1&amp;1&amp;0&amp;1&amp;0\\0&amp;1&amp;1&amp;1&amp;0&amp;0&amp;1\end{bmatrix}
+
+$$
+</div>
+
+<p>Síndrome: $\vec{s} = H\vec{c}^T$.</p>
+<h3 id="modulador-e-demodulador"><span class="heading-number">1.2.4</span> Modulador e demodulador</h3>
+
+<div class="math-display">
+$$
+
+s(t) = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t)
+
+$$
+</div>
+
+<h3 id="canal-físico"><span class="heading-number">1.2.5</span> Canal físico</h3>
+<p><strong>AWGN:</strong> $h(t) = a\,\delta(t-\tau)$, ruído gaussiano branco PSD $N_0/2$.</p>
+
+<div class="math-display">
+$$
+
+\boxed{r(t) = s(t)*h(t) + n(t) + i(t)}
+
+$$
+</div>
+
+<p>Modelos: AWGN, fading (Rayleigh, Rician, Nakagami), interferência.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">fs,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #F8F8F2">fc,</span> <span style="color: #F8F8F2">snr_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #F8F8F2">int(fs</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">T),</span> <span style="color: #F8F8F2">endpoint</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">False</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">s</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+<span style="color: #F8F8F2">Ps</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(s</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(Ps</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(snr_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">n</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">sigma,</span> <span style="color: #F8F8F2">len(t))</span>
+<span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">s</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">n</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t,</span> <span style="color: #F8F8F2">s,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$s(t)$&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t,</span> <span style="color: #F8F8F2">r,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$r(t)$&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Tempo (s)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Canal AWGN (SNR = {</span><span style="color: #F8F8F2">snr_dB</span><span style="color: #E6DB74">} dB, $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">sigma={</span><span style="color: #F8F8F2">sigma</span><span style="color: #E6DB74">:.4f}$)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Ps={</span><span style="color: #F8F8F2">Ps</span><span style="color: #E6DB74">:.4f}, Pn={</span><span style="color: #F8F8F2">Ps</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(snr_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">:.6f}, sigma={</span><span style="color: #F8F8F2">sigma</span><span style="color: #E6DB74">:.4f}&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m np.random.seed([32m42[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="recursos-e-métricas-fundamentais"><span class="heading-number">1.3</span> Recursos e Métricas Fundamentais</h2>
+<h3 id="taxa-de-símbolo-e-bits"><span class="heading-number">1.3.1</span> Taxa de símbolo e bits</h3>
+
+<div class="math-display">
+$$
+
+R_s = \frac{1}{T_s},\qquad \boxed{R_b = k R_s,\quad k = \log_2 M}
+
+$$
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Mod.</th>
+<th>$M$</th>
+<th>$k$</th>
+<th>$R_b/R_s$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BPSK</td>
+<td>2</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>QPSK</td>
+<td>4</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>16-QAM</td>
+<td>16</td>
+<td>4</td>
+<td>4</td>
+</tr>
+<tr>
+<td>64-QAM</td>
+<td>64</td>
+<td>6</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+<!-- slides: columns -->
+<h3 id="eficiência-espectral"><span class="heading-number">1.3.2</span> Eficiência espectral</h3>
+
+<div class="math-display">
+$$
+
+\boxed{\eta = \frac{R_b}{B}\ \text{bit/s/Hz}}
+
+$$
+</div>
+
+<p>Com raised-cosine $\alpha$: $B = (1+\alpha)R_s \Rightarrow \eta_{\max} = \dfrac{\log_2 M}{1+\alpha}$.</p>
+<!-- slides: column -->
+<h3 id="e_bn_0-universal"><span class="heading-number">1.3.3</span> $E_b/N_0$ universal</h3>
+
+<div class="math-display">
+$$
+
+P_s = E_b R_b,\quad P_n = N_0 B \Rightarrow \boxed{\frac{E_b}{N_0} = \frac{\text{SNR}}{\eta} = \text{SNR}\cdot\frac{B}{R_b}}
+
+$$
+</div>
+
+<!-- slides: end-columns -->
+<h3 id="teorema-de-nyquist-shannon"><span class="heading-number">1.3.4</span> Teorema de Nyquist-Shannon</h3>
+
+<div class="math-display">
+$$
+
+\boxed{f_s \ge 2B}
+
+$$
+</div>
+
+<p>Reconstrução por interpolador sinc: $x(t) = \sum x(nT_s)\operatorname{sinc}\!\left(\frac{t-nT_s}{T_s}\right)$.</p>
+<h3 id="snr-de-quantização-pcm"><span class="heading-number">1.3.5</span> SNR de quantização PCM</h3>
+
+<div class="math-display">
+$$
+
+\Delta = \frac{V_{pp}}{2^n},\quad P_q = \frac{\Delta^2}{12},\quad P_s = \frac{V_{pp}^2}{8}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_q \approx 6{,}02n + 1{,}76\;\text{dB}}
+
+$$
+</div>
+
+<p>Cada bit $\approx$ 6 dB.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">n_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">17</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">snr_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">6.02</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">n_vals</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1.76</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(n_vals,</span> <span style="color: #F8F8F2">snr_dB,</span> <span style="color: #E6DB74">&#39;o-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">markersize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">,</span>
+        <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">text{SNR}_q </span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">approx 6{,}02n + 1{,}76$ dB&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">60</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;60 dB (CD)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">48</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;48 dB (voz)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Bits $n$&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;SNR (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;SNR de Quantização PCM vs. Bits&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xticks(n_vals)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;n | SNR_q (dB)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">16</span><span style="color: #F8F8F2">]:</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;{</span><span style="color: #F8F8F2">n</span><span style="color: #E6DB74">} | {</span><span style="color: #AE81FF">6.02</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">n</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1.76</span><span style="color: #E6DB74">:.2f}&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m n_vals = np.arange([32m1[39m, [32m17[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="decibéis-e-orçamento-de-enlace--deduções-completas"><span class="heading-number">1.4</span> Decibéis e Orçamento de Enlace — Deduções Completas</h2>
+<h3 id="conversão-db-dbm-dbw"><span class="heading-number">1.4.1</span> Conversão dB, dBm, dBW</h3>
+
+<div class="math-display">
+$$
+
+G_{\text{dB}} = 10\log_{10}\!\left(\frac{P_2}{P_1}\right),\quad
+G_{\text{dB}} = 20\log_{10}\!\left(\frac{A_2}{A_1}\right)\ \text{(amplitude)}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+P_{\text{dBm}} = 10\log_{10}\!\left(\frac{P}{1\,\text{mW}}\right),\quad
+\boxed{P_{\text{dBm}} = P_{\text{dBW}} + 30}
+
+$$
+</div>
+
+<p>Exemplos: $2\,\text{W} = 33{,}01\,\text{dBm}$; $43\,\text{dBm} = 19{,}95\,\text{W}$; $-85\,\text{dBm} = 3{,}162\,\text{pW}$.</p>
+<h3 id="friis--dedução-completa"><span class="heading-number">1.4.2</span> Friis — Dedução completa</h3>
+<p><strong>Passo 1:</strong> Densidade de potência isotrópica: $S = P_t/(4\pi d^2)$.</p>
+<p><strong>Passo 2:</strong> Com ganho: $S = P_t G_t/(4\pi d^2)$.</p>
+<p><strong>Passo 3:</strong> Potência recebida: $P_r = S\cdot A_{e,r}$.</p>
+<p><strong>Passo 4:</strong> Relação ganho-área:</p>
+
+<div class="math-display">
+$$
+
+\boxed{G = \frac{4\pi}{\lambda^2}A_e}
+
+$$
+</div>
+
+<p><strong>Passo 5:</strong> Friis:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_r = P_t G_t G_r\left(\frac{\lambda}{4\pi d}\right)^2}
+
+$$
+</div>
+
+<p><strong>Forma em dB:</strong></p>
+
+<div class="math-display">
+$$
+
+P_r[\text{dBm}] = P_t[\text{dBm}] + G_t + G_r - L_{fs}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+L_{fs} = 32{,}45 + 20\log_{10}(d_{\text{km}}) + 20\log_{10}(f_{\text{MHz}})
+
+$$
+</div>
+
+<h3 id="orçamento-de-enlace-geral"><span class="heading-number">1.4.3</span> Orçamento de enlace geral</h3>
+
+<div class="math-display">
+$$
+
+\boxed{P_r[\text{dBm}]=\text{EIRP}+G_r-L_{fs}-L_{\text{outros}}}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{M_{\text{disp}}=P_r-P_{\text{sens}},\qquad
+M_{\text{res}}=M_{\text{disp}}-M_{\text{req}}}
+
+$$
+</div>
+
+<p>A margem requerida $M_{\text{req}}$ é um critério de projeto para acomodar desvanecimento e incertezas; não é uma perda física que também deva ser embutida em $P_r$. O enlace atende ao projeto quando $M_{\text{res}}\ge0$.</p>
+<p>Perda de polarização: $L_{\text{pol}} = -20\log_{10}|\cos\theta|$.</p>
+<h3 id="exemplo-numérico"><span class="heading-number">1.4.4</span> Exemplo numérico</h3>
+<p>$f=2{,}4\,\text{GHz}$, $d=10\,\text{km}$, $P_t=20\,\text{dBm}$, $G_t=G_r=15\,\text{dBi}$, perdas totais $3\,\text{dB}$ e margem requerida $10\,\text{dB}$. Suponha $P_{\text{sens}}=-100\,\text{dBm}$.</p>
+<p>$L_{fs}=120{,}05\,\text{dB}$ e $\text{EIRP}=35\,\text{dBm}$ se as perdas forem todas contabilizadas depois da antena transmissora. Logo $P_r=35+15-120{,}05-3=-73{,}05\,\text{dBm}$. A margem disponível é $26{,}95\,\text{dB}$ e a residual após reservar 10 dB é $16{,}95\,\text{dB}$. Se parte dos 3 dB estiver antes da antena, deve-se retirá-la da EIRP e não subtraí-la novamente.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">c,</span> <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">3e8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2.4e9</span>
+<span style="color: #F8F8F2">wavelength</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">f</span>
+<span style="color: #F8F8F2">Pt,</span> <span style="color: #F8F8F2">Gt,</span> <span style="color: #F8F8F2">Gr,</span> <span style="color: #F8F8F2">Lc,</span> <span style="color: #F8F8F2">margin,</span> <span style="color: #F8F8F2">Psens</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">100</span>
+
+<span style="color: #F8F8F2">dist_km</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">dist_m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">dist_km</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e3</span>
+<span style="color: #F8F8F2">Lfs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(</span><span style="color: #AE81FF">4</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">dist_m</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">wavelength)</span>
+<span style="color: #F8F8F2">Pr</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Pt</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Gt</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Gr</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">Lfs</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">Lc</span>
+<span style="color: #F8F8F2">margin_available</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Pr</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">Psens</span>
+<span style="color: #F8F8F2">margin_residual</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">margin_available</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">margin</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(dist_km,</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(Pr</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$P_r(d)$&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(Psens</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Sens ({</span><span style="color: #F8F8F2">Psens</span><span style="color: #E6DB74">} dBm)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Distância $d$ (km)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Potência (mW)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Orçamento de Enlace: $P_r$ vs. Distância&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(dist_km,</span> <span style="color: #F8F8F2">margin_residual,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Margem zero&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Distância $d$ (km)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Margem (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Margem residual após reservar 10 dB&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhspan(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;yellow&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">d_max</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">dist_km[np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">where(margin_residual</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">][</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]]</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Distância máxima: {</span><span style="color: #F8F8F2">d_max</span><span style="color: #E6DB74">:.1f} km&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m c, f = [32m3e8[39m, [32m2.4e9[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="ruído--fundamentos-físicos-completos"><span class="heading-number">1.5</span> Ruído — Fundamentos Físicos Completos</h2>
+<h3 id="ruído-térmico--dedução-de-johnson-nyquist"><span class="heading-number">1.5.1</span> Ruído térmico — Dedução de Johnson-Nyquist</h3>
+<p>Movimento térmico aleatório de portadores. Pela teoria de Nyquist (1928):</p>
+
+<div class="math-display">
+$$
+
+S_V(f) = 4k_BTR \Rightarrow \boxed{V_n^2 = 4k_BTRB}
+
+$$
+</div>
+
+<p>Potência disponível: $P_{\text{disponível}} = \dfrac{V_n^2}{4R} = k_BTB$ (não depende de $R$).</p>
+
+<div class="math-display">
+$$
+
+\boxed{N_0 = k_B T}
+
+$$
+</div>
+
+<p>A $T_0 = 290\,\text{K}$: $N_0 = 4{,}004\times10^{-21}\,\text{W/Hz}$, $N_0[\text{dBm/Hz}] = -174\,\text{dBm/Hz}$.</p>
+
+<div class="math-display">
+$$
+
+\boxed{N_0|_{290\text{K}} = -174\;\text{dBm/Hz}}
+
+$$
+</div>
+
+<h3 id="figura-de-ruído"><span class="heading-number">1.5.2</span> Figura de ruído</h3>
+
+<div class="math-display">
+$$
+
+\boxed{F = \frac{\text{SNR}_{\text{in}}}{\text{SNR}_{\text{out}}}} \ge 1,\quad \boxed{NF = 10\log_{10}F}
+
+$$
+</div>
+
+<p>Temperatura equivalente: $\boxed{T_e = T_0(F-1)}$. LNA com $NF=1\,\text{dB} \Rightarrow T_e = 75{,}1\,\text{K}$.</p>
+<h3 id="cascata--dedução-friis-para-ruído"><span class="heading-number">1.5.3</span> Cascata — Dedução Friis para ruído</h3>
+<p><strong>Passo 1:</strong> $N_{\text{in}} = k_B T_0 B$. <strong>Passo 2:</strong> $\text{SNR}_{\text{in}} = S_{\text{in}}/(k_B T_0 B)$.</p>
+<p><strong>Passo 3:</strong> Ruído próprio estágio 1: $N_{a1} = k_B T_0 B(F_1-1)$.</p>
+<p><strong>Passo 4:</strong> Saída estágio 1: $N_1 = k_B T_0 B\,G_1 F_1$.</p>
+<p><strong>Passo 5:</strong> Estágio 2: $N_2 = G_2 N_1 + k_B T_0 B(F_2-1)$.</p>
+<p><strong>Passo 6–7:</strong> Generalizando:</p>
+
+<div class="math-display">
+$$
+
+\boxed{F_{\text{tot}} = F_1 + \frac{F_2-1}{G_1} + \frac{F_3-1}{G_1G_2} + \cdots + \frac{F_n-1}{G_1G_2\cdots G_{n-1}}}
+
+$$
+</div>
+
+<aside class="callout callout-result" role="status"><p><strong>Conclusão:</strong> os primeiros estágios dominam. Convém colocar o LNA de baixo $F$ e ganho adequado o mais cedo possível, mas filtros de pré-seleção, duplexadores e proteção podem precisar vir antes dele. Suas perdas entram como fatores de ruído e devem ser minimizadas; “LNA sempre primeiro” não é uma regra física absoluta.</p></aside>
+<h3 id="sensibilidade-do-receptor"><span class="heading-number">1.5.4</span> Sensibilidade do receptor</h3>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{sens}}[\text{dBm}] = -174 + 10\log_{10}B + NF + \text{SNR}_{\text{req}}[\text{dB}]}
+
+$$
+</div>
+
+<p>Exemplo: $B=1\,\text{MHz}$, $NF=5\,\text{dB}$, $\text{SNR}_{\text{req}}=10\,\text{dB} \Rightarrow P_{\text{sens}} = -99\,\text{dBm}$.</p>
+<h3 id="snr-em-modulações-analógicas"><span class="heading-number">1.5.5</span> SNR em modulações analógicas</h3>
+<p><strong>DSB-SC:</strong> um detector coerente ideal preserva a SNR quando entrada e saída são comparadas usando bandas de ruído equivalentes. Um aparente fator 2 surge se a entrada contabiliza duas bandas laterais de ruído e a saída apenas uma banda-base; é uma mudança de banda de referência, não criação de SNR.</p>
+<p><strong>FM:</strong> para mensagem senoidal e a convenção de $N_0$ desta apostila,</p>
+
+<div class="math-display">
+$$
+\boxed{\text{SNR}_{\text{out}}=\frac32\beta^2(C/N)_W},\qquad B_{\text{FM}}\approx2W(1+\beta).
+$$
+</div>
+
+<p>Se a entrada for medida na banda RF $B_r$, use $\text{SNR}_{out}=(3/2)\beta^2(B_r/W)\text{SNR}_{in,B_r}$. FM troca banda por SNR, mas a comparação só é válida depois de declarar a banda de referência.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Cuidado:</strong> Fórmula FM só vale acima do limiar de deteção (~10 dB).</p></aside>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Cascata de ruído</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">stages</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;LNA&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;Mixer&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;RF Amp&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;IF Amp&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;Demod.&#39;</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">F_lin</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">1.259</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5.012</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6.310</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3.162</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10.000</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">G_lin</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">15.85</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3.162</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">])</span>
+
+<span style="color: #F8F8F2">F_cum</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">F_cum[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">F_lin[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">F_cum[i]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">F_cum[i</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(F_lin[i]</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">prod(G_lin[:i])</span>
+
+<span style="color: #F8F8F2">NF_cum</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(F_cum)</span>
+<span style="color: #F8F8F2">NF_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(F_lin)</span>
+<span style="color: #F8F8F2">G_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(G_lin)</span>
+
+<span style="color: #F8F8F2">x</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">width</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.6</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">bar(x,</span> <span style="color: #F8F8F2">NF_cum,</span> <span style="color: #F8F8F2">width,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">edgecolor</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;white&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Estágio&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;NF acumulada (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Figura de Ruído em Cascata&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xticks(x);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xticklabels(stages)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(axis</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;y&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i,</span> <span style="color: #F8F8F2">nf</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">enumerate(NF_cum):</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">annotate(</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">nf</span><span style="color: #E6DB74">:.1f} dB&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(i,</span> <span style="color: #F8F8F2">nf),</span> <span style="color: #F8F8F2">textcoords</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;offset points&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">xytext</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">ha</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;center&#39;</span><span style="color: #F8F8F2">,</span>
+                <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">weight</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;bold&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Estágio | NF(dB) | G(dB) | NF_acum(dB)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;{</span><span style="color: #F8F8F2">stages[i]</span><span style="color: #E6DB74">:7s} | {</span><span style="color: #F8F8F2">NF_dB[i]</span><span style="color: #E6DB74">:6.1f} | {</span><span style="color: #F8F8F2">G_dB[i]</span><span style="color: #E6DB74">:6.1f} | {</span><span style="color: #F8F8F2">NF_cum[i]</span><span style="color: #E6DB74">:11.1f}&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Cascata de ruído[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="capacidade-de-shannon--derivação-detalhada"><span class="heading-number">1.6</span> Capacidade de Shannon — Derivação Detalhada</h2>
+<h3 id="teorema-de-shannon-hartley"><span class="heading-number">1.6.1</span> Teorema de Shannon-Hartley</h3>
+
+<div class="math-display">
+$$
+
+\boxed{C = B\log_2\!\left(1+\frac{P}{N_0B}\right) = B\log_2(1+\text{SNR})\ \text{bit/s}}
+
+$$
+</div>
+
+<p><strong>Dedução:</strong> Discretização de Nyquist ($2B$ canais/seg), cada um $Y_i=X_i+Z_i$, $Z\sim\mathcal{N}(0,\sigma^2)$. Capacidade maximizada com entrada gaussiana:</p>
+
+<div class="math-display">
+$$
+
+C_i = \tfrac{1}{2}\log_2\!\left(1+\frac{P_s}{\sigma^2}\right),\quad C = B\log_2\!\left(1+\frac{P}{N_0B}\right)
+
+$$
+</div>
+
+<h3 id="relação-com-e_bn_0"><span class="heading-number">1.6.2</span> Relação com $E_b/N_0$</h3>
+<p>Substituindo $\text{SNR} = \frac{E_b}{N_0}\cdot\frac{R_b}{B} = \eta\frac{E_b}{N_0}$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\eta &lt; \log_2\!\left(1+\eta\frac{E_b}{N_0}\right)},\quad \boxed{\frac{E_b}{N_0} &gt; \frac{2^{\eta}-1}{\eta}}
+
+$$
+</div>
+
+<h3 id="limite-fundamental-e_bn_0-ge-ln-2---159textdb"><span class="heading-number">1.6.3</span> Limite fundamental: $E_b/N_0 \ge \ln 2 = -1{,}59\,\text{dB}$</h3>
+<p>L'Hôpital: $\lim_{\eta\to0}\dfrac{2^{\eta}-1}{\eta} = \ln 2 \approx 0{,}6931$.</p>
+<p>Via $B\to\infty$: $C \to \dfrac{P}{N_0\ln 2} \Rightarrow E_b \to N_0\ln 2$.</p>
+
+<div class="math-display">
+$$
+
+\boxed{\left(\frac{E_b}{N_0}\right)_{\min} = \ln 2 = -1{,}59\,\text{dB}}
+
+$$
+</div>
+
+<h3 id="trade-off-bandaenergia"><span class="heading-number">1.6.4</span> Trade-off banda/energia</h3>
+
+<div class="math-display">
+$$
+
+\boxed{\left(\frac{E_b}{N_0}\right)_{\text{Shannon}} = \frac{2^{\eta}-1}{\eta}}
+
+$$
+</div>
+
+<p>$\eta=1\to0\,\text{dB}$, $\eta=3\to3{,}68\,\text{dB}$, $\eta=6\to10{,}21\,\text{dB}$.</p>
+<h3 id="códigos-de-correção-de-erro"><span class="heading-number">1.6.5</span> Códigos de correção de erro</h3>
+<table>
+<thead>
+<tr>
+<th>Código</th>
+<th>Gap (dB)</th>
+<th>Ano</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hamming (7,4)</td>
+<td>$\approx7$</td>
+<td>1950</td>
+</tr>
+<tr>
+<td>Convolucional</td>
+<td>$\approx2$</td>
+<td>1967</td>
+</tr>
+<tr>
+<td>Turbo</td>
+<td>$\approx0{,}5$</td>
+<td>1993</td>
+</tr>
+<tr>
+<td>LDPC</td>
+<td>$\approx0{,}01$</td>
+<td>2000s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gráfico-e_bn_0-vs-eta"><span class="heading-number">1.6.6</span> Gráfico $E_b/N_0$ vs $\eta$</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">eta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">EbN0_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10((</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">eta</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">eta)</span>
+<span style="color: #F8F8F2">EbN0_min</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(eta,</span> <span style="color: #F8F8F2">EbN0_dB,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Limite de Shannon&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(EbN0_min,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Limite inf: {</span><span style="color: #F8F8F2">EbN0_min</span><span style="color: #E6DB74">:.2f} dB&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#64748b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">eta=1$&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Eficiência $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">eta$ (bit/s/Hz)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ mín. (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Limite de Shannon: $E_b/N_0$ vs Eficiência Espectral&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">16</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">annotate(</span><span style="color: #E6DB74">&#39;BPSK ($</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">eta=1$)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">xy</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">xytext</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">arrowprops</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">dict(arrowstyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;-&gt;&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m eta = np.linspace([32m0.01[39m, [32m10[39m, [32m500[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="limitações-práticas"><span class="heading-number">1.6.7</span> Limitações práticas</h3>
+<p>Códigos infinitos $\Rightarrow$ latência infinita. Cada $0{,}5$ dB de aproximação custa $\sim 10\times$ em complexidade.</p>
+<h2 id="modulações-analógicas-vs-digitais--comparação-rigorosa"><span class="heading-number">1.7</span> Modulações Analógicas vs. Digitais — Comparação Rigorosa</h2>
+<h3 id="am"><span class="heading-number">1.7.1</span> AM</h3>
+
+<div class="math-display">
+$$
+
+s_{\text{AM}}(t) = A_c[1+\mu\,m(t)]\cos(2\pi f_c t),\quad P_T = P_c\!\left(1+\frac{\mu^2}{2}\right),\quad B_{\text{AM}} = 2f_m
+
+$$
+</div>
+
+<p>$P_c$ não carrega informação (desperdício). $\text{SNR}_{\text{out}} \le \text{SNR}_{\text{in}}$. Sem ganho de processamento.</p>
+<h3 id="fm"><span class="heading-number">1.7.2</span> FM</h3>
+
+<div class="math-display">
+$$
+
+s_{\text{FM}}(t) = A_c\cos\!\left(2\pi f_c t + 2\pi k_f\!\int_0^t m(\tau)\,d\tau\right)
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+B_{\text{FM}}\approx2f_m(1+\beta),\quad
+\boxed{\text{SNR}_{\text{out}}^{\text{FM}}=\frac32\beta^2(C/N)_{f_m}}
+
+$$
+</div>
+
+<p>Acima do limiar. Abaixo de $\sim10\,\text{dB}$, colapso catastrófico (threshold effect).</p>
+<h3 id="pcm-vs-pam-vs-dm"><span class="heading-number">1.7.3</span> PCM vs. PAM vs. DM</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>PAM</th>
+<th>PCM</th>
+<th>DM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tipo</td>
+<td>Analógico</td>
+<td>Digital</td>
+<td>Digital</td>
+</tr>
+<tr>
+<td>Amplitude</td>
+<td>Contínua</td>
+<td>$n$ bits</td>
+<td>1-bit</td>
+</tr>
+<tr>
+<td>Banda</td>
+<td>$f_s/2$</td>
+<td>$nf_s/2$</td>
+<td>Alta</td>
+</tr>
+<tr>
+<td>Imunidade</td>
+<td>Baixa</td>
+<td>Alta</td>
+<td>Média</td>
+</tr>
+<tr>
+<td>SNR</td>
+<td>Limitado</td>
+<td>$6n+1{,}76$ dB</td>
+<td>$\sim10\log_{10}(3f_s/2f_m)$</td>
+</tr>
+</tbody>
+</table>
+<h3 id="vantagens-digitais"><span class="heading-number">1.7.4</span> Vantagens digitais</h3>
+<ol>
+<li><strong>Regeneração</strong> — sem acúmulo de ruído</li>
+<li><strong>Criptografia</strong> — dados nativamente cifráveis</li>
+<li><strong>Multiplexação</strong> — TDM natural</li>
+<li><strong>Correção de erros</strong> — BER arbitrariamente baixo</li>
+<li><strong>Flexibilidade</strong> — mesma infraestrutura para voz/dados/vídeo</li>
+</ol>
+<h3 id="desvantagens-digitais"><span class="heading-number">1.7.5</span> Desvantagens digitais</h3>
+<ol>
+<li><strong>Banda</strong> — geralmente maior</li>
+<li><strong>Complexidade</strong> — A/D, codificação, sincronismo</li>
+<li><strong>Latência</strong> — codificação/decodificação</li>
+<li><strong>SNR mínimo</strong> — limiar de demodulação</li>
+</ol>
+<h3 id="tabela-comparativa"><span class="heading-number">1.7.6</span> Tabela comparativa</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>AM</th>
+<th>DSB-SC</th>
+<th>FM</th>
+<th>BPSK</th>
+<th>QPSK</th>
+<th>16-QAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\eta$</td>
+<td>$f_m/2f_m$</td>
+<td>$f_m/2f_m$</td>
+<td>$f_m/2f_m(1+\beta)$</td>
+<td>$0{,}5$</td>
+<td>$1{,}0$</td>
+<td>$2{,}0$</td>
+</tr>
+<tr>
+<td>$E_b/N_0$ BER=$10^{-5}$</td>
+<td>—</td>
+<td>—</td>
+<td>$\sim10$ dB</td>
+<td>$9{,}6$ dB</td>
+<td>$12{,}6$ dB</td>
+<td>$19{,}6$ dB</td>
+</tr>
+<tr>
+<td>Imunidade</td>
+<td>Baixa</td>
+<td>Média</td>
+<td>Alta</td>
+<td>Média</td>
+<td>Média</td>
+<td>Baixa</td>
+</tr>
+<tr>
+<td>Regenerável</td>
+<td>Não</td>
+<td>Sim</td>
+<td>Não</td>
+<td>Sim</td>
+<td>Sim</td>
+<td>Sim</td>
+</tr>
+</tbody>
+</table>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">1.8</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">1.8.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> fechar orçamentos de enlace, quantização, cascatas de ruído e limites de Shannon. <strong>Unidades:</strong> faça conversões dB/dBm apenas nas fronteiras do cálculo e mantenha grandezas lineares internamente. <strong>Validação:</strong> confira casos-limite, margem do enlace e o limite $E_b/N_0\ge\ln2$.</p>
+<h3 id="exercício-1-orçamento-de-enlace-com-fade-margins"><span class="heading-number">1.8.2</span> Exercício 1: Orçamento de enlace com fade margins</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">c,</span> <span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">3e8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5.8e9</span>
+<span style="color: #F8F8F2">wavelength</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">c</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">f</span>
+<span style="color: #F8F8F2">EIRP</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">30</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">12</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span>  <span style="color: #959077"># Pt=30 dBm, Gt=12 dBi, Lcable=1 dB</span>
+<span style="color: #F8F8F2">Gr,</span> <span style="color: #F8F8F2">Lcr,</span> <span style="color: #F8F8F2">NF</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span>
+<span style="color: #F8F8F2">Psens</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">174</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(</span><span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">NF</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">10</span>  <span style="color: #959077"># B=1 MHz, SNR_req=10 dB</span>
+
+<span style="color: #F8F8F2">dist_km</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">Lfs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(</span><span style="color: #AE81FF">4</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">dist_km</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">wavelength)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">margins</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">colors</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span><span style="color: #E6DB74">&#39;#9333ea&#39;</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i,</span> <span style="color: #F8F8F2">mf</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">enumerate(margins):</span>
+    <span style="color: #F8F8F2">Pr</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">EIRP</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Gr</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">Lfs</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">Lcr</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">mf</span>
+    <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">axes[i</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">i</span><span style="color: #FF4689">%</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(dist_km,</span> <span style="color: #F8F8F2">Pr,</span> <span style="color: #E6DB74">&#39;o-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;$P_r$ (M={</span><span style="color: #F8F8F2">mf</span><span style="color: #E6DB74">} dB)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">colors[i])</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(Psens,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Sens.&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Distância $d$ (km)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;$P_r$ (dBm)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Margem Fade = {</span><span style="color: #F8F8F2">mf</span><span style="color: #E6DB74">} dB&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend(fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(dist_km,</span> <span style="color: #F8F8F2">EIRP</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">Gr</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">Lfs</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">Lcr</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">Psens,</span> <span style="color: #E6DB74">&#39;o-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Distância $d$ (km)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Margem (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Margem de Enlace&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;M(fade)| Dist. máx (km)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">mf</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">margins:</span>
+    <span style="color: #F8F8F2">Pr_tmp</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">EIRP</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Gr</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">Lfs</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">Lcr</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">mf</span>
+    <span style="color: #F8F8F2">mask</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Pr_tmp</span> <span style="color: #FF4689">&gt;</span> <span style="color: #F8F8F2">Psens</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  {</span><span style="color: #F8F8F2">mf</span><span style="color: #E6DB74">:2d} dB   |  {</span><span style="color: #F8F8F2">dist_km[mask][</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #E6DB74">:7.1f} km&quot;</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">any(mask)</span> <span style="color: #66D9EF">else</span> <span style="color: #E6DB74">f&quot;  {</span><span style="color: #F8F8F2">mf</span><span style="color: #E6DB74">:2d} dB   |  --&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m c, f = [32m3e8[39m, [32m5.8e9[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-2-snr-de-quantização-pcm--teórico-vs-simulado"><span class="heading-number">1.8.3</span> Exercício 2: SNR de quantização PCM — Teórico vs. Simulado</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">n_theo</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">17</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">snr_theo</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">6.02</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">n_theo</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1.76</span>
+
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">n_sim</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">14</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">snr_sim</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">nb</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">n_sim:</span>
+    <span style="color: #F8F8F2">sig</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">uniform(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">step</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">nb)</span>
+    <span style="color: #F8F8F2">quant</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">round(sig</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">step)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">step</span>
+    <span style="color: #F8F8F2">err</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sig</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">quant</span>
+    <span style="color: #F8F8F2">snr_sim</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(sig</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(err</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(n_theo,</span> <span style="color: #F8F8F2">snr_theo,</span> <span style="color: #E6DB74">&#39;-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$6{,}02n+1{,}76$ dB&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(n_sim,</span> <span style="color: #F8F8F2">snr_sim,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">80</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">zorder</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Monte Carlo&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">edgecolors</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;white&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Bits $n$&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;SNR (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;SNR de Quantização PCM: Teórico vs. Simulado&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">ni,</span> <span style="color: #F8F8F2">si</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(n_sim,</span> <span style="color: #F8F8F2">snr_sim):</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">annotate(</span><span style="color: #E6DB74">f&#39;  {</span><span style="color: #F8F8F2">si</span><span style="color: #E6DB74">:.1f} dB&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(ni,</span> <span style="color: #F8F8F2">si),</span> <span style="color: #F8F8F2">textcoords</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;offset points&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">xytext</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">25</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">),</span>
+                <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">weight</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;bold&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m n_theo = np.arange([32m2[39m, [32m17[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-3-cascata-de-ruído--lnamixerrf-amp"><span class="heading-number">1.8.4</span> Exercício 3: Cascata de ruído — LNA/mixer/RF amp</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">stages</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #E6DB74">&#39;LNA&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;Mixer&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;RF Amp&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;IF Amp&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;Demod.&#39;</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">F</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">1.259</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5.012</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6.310</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3.162</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10.000</span><span style="color: #F8F8F2">])</span>  <span style="color: #959077"># 1,7,8,5,10 dB</span>
+<span style="color: #F8F8F2">G</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">15.85</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3.162</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">])</span>         <span style="color: #959077"># 12,-3,5,10,0 dB</span>
+
+<span style="color: #F8F8F2">F_cum</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">F_cum[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">F[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">F_cum[i]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">F_cum[i</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(F[i]</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">prod(G[:i])</span>
+
+<span style="color: #F8F8F2">NF_cum</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(F_cum)</span>
+<span style="color: #F8F8F2">B</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e6</span>
+<span style="color: #F8F8F2">Psens</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">174</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(B)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">NF_cum[</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">10</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">x</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">bar(x,</span> <span style="color: #F8F8F2">NF_cum,</span> <span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">edgecolor</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;white&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">174</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(B),</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Piso ruído&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Estágio&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;NF acumulada (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Figura de Ruído em Cascata&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xticks(x);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xticklabels(stages)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(axis</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;y&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i,</span> <span style="color: #F8F8F2">nf</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">enumerate(NF_cum):</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">annotate(</span><span style="color: #E6DB74">f&#39;{</span><span style="color: #F8F8F2">nf</span><span style="color: #E6DB74">:.1f}&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">(i,</span> <span style="color: #F8F8F2">nf),</span> <span style="color: #F8F8F2">textcoords</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;offset points&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">xytext</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">ha</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;center&#39;</span><span style="color: #F8F8F2">,</span>
+                <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">weight</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;bold&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Sensibilidade do receptor: {</span><span style="color: #F8F8F2">Psens</span><span style="color: #E6DB74">:.1f} dBm&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m stages = [[33m'[39m[33mLNA[39m[33m'[39m, [33m'[39m[33mMixer[39m[33m'[39m, [33m'[39m[33mRF Amp[39m[33m'[39m, [33m'[39m[33mIF Amp[39m[33m'[39m, [33m'[39m[33mDemod.[39m[33m'[39m]
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-4-capacidade-de-shannon-vs-ebn0"><span class="heading-number">1.8.5</span> Exercício 4: Capacidade de Shannon vs. Eb/N0</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">eta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">EbN0_Shannon</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">eta</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">eta</span>
+<span style="color: #F8F8F2">EbN0_Shannon_dB</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(EbN0_Shannon)</span>
+
+<span style="color: #959077"># BER para BPSK, QPSK, 16-QAM (aproximações)</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.stats </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">norm</span>
+<span style="color: #F8F8F2">EbN0_linear_BPSK</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">500</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">EbN0_dB_BPSK</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(EbN0_linear_BPSK)</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erf</span>
+<span style="color: #F8F8F2">BER_BPSK</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">erf(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(EbN0_linear_BPSK)))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #959077"># Esquerda: Eb/N0 vs eta</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(eta,</span> <span style="color: #F8F8F2">EbN0_Shannon_dB,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Limite Shannon&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.59</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;-1.59 dB&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#64748b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">eta=1$&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Eficiência $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">eta$ (bit/s/Hz)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Limite de Shannon&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">16</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Direita: BER vs Eb/N0 para BPSK</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(EbN0_dB_BPSK,</span> <span style="color: #F8F8F2">BER_BPSK,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BPSK (coerente)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">1e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BER = 10⁻³&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">1e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ls</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;BER = 10⁻⁶&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;BER de BPSK vs. $E_b/N_0$&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+
+<span style="color: #959077"># Encontrar Eb/N0 para BER=10^-5 em BPSK</span>
+<span style="color: #F8F8F2">idx_1e5</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">argmin(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(BER_BPSK</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1e-5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;BPSK: BER=10^-5 em Eb/N0 = {</span><span style="color: #F8F8F2">EbN0_dB_BPSK[idx_1e5]</span><span style="color: #E6DB74">:.1f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Shannon para eta=1: Eb/N0 = 0 dB&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Gap: {</span><span style="color: #F8F8F2">EbN0_dB_BPSK[idx_1e5]</span><span style="color: #E6DB74">:.1f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m eta = np.linspace([32m0.01[39m, [32m10[39m, [32m500[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">1.9</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> (Numérico) Converta as seguintes potências:<br />
+a) $15\,\text{W}$ em dBm.<br />
+b) $-50\,\text{dBm}$ em watts.<br />
+c) $100\,\text{mW}$ em dBW.</p>
+<p><strong>E2.</strong> (Numérico) Um enlace de micro-ondas opera a $6\,\text{GHz}$ com $d=40\,\text{km}$. $P_t=23\,\text{dBm}$, $G_t=G_r=32\,\text{dBi}$ e há $2{,}5\,\text{dB}$ de perda em cada cabo terminal. A margem de fade requerida é 12 dB. Calcule $P_r$, a margem disponível e a margem residual se $P_{\text{sens}}=-90\,\text{dBm}$.</p>
+<p><strong>E3.</strong> (Teórico) Derive a equação de Friis do espaço livre partindo do conceito de densidade de potência e da relação $G = \frac{4\pi}{\lambda^2}A_e$. Mostre cada passo explicitamente.</p>
+<p><strong>E4.</strong> (Numérico) Para o código Hamming $(7,4)$, codifique a palavra $1011$ e determine os 3 bits de paridade. Suponha erro no 3º bit do codeword; calcule a síndrome e verifique que o erro é corrigido.</p>
+<p><strong>E5.</strong> (Numérico) Três estágios em cascata: LNA ($G=20\,\text{dB}$, $NF=1{,}5\,\text{dB}$), Mixer ($G=-5\,\text{dB}$, $NF=8\,\text{dB}$), RF Amplifier ($G=15\,\text{dB}$, $NF=4\,\text{dB}$). Calcule a figura de ruído total e a temperatura equivalente.</p>
+<p><strong>E6.</strong> (Teórico) Demonstre que, para o limite de Shannon, $\lim_{B\to\infty} C = \dfrac{P}{N_0\ln 2}$ e que isso implica $E_b/N_0 &gt; \ln 2 = -1{,}59\,\text{dB}$.</p>
+<p><strong>E7.</strong> (Numérico) Um sistema FM com $\Delta f=50\,\text{kHz}$ e tom $f_m=W=5\,\text{kHz}$ opera com $(C/N)_W=20\,\text{dB}$. Calcule $\beta$, a banda de Carson e a SNR de saída acima do limiar. Compare sua banda com AM de mesma $W$.</p>
+<p><strong>E8.</strong> (Conceitual) Explique por que o LNA deve vir sempre primeiro no receptor, usando a fórmula de Friis para cascata. Dê um exemplo numérico comparando duas configurações: (a) LNA primeiro, (b) Mixer primeiro.</p>
+<p><strong>E9.</strong> (Numérico) Calcule a capacidade de Shannon para $B=10\,\text{MHz}$ e $\text{SNR}=30\,\text{dB}$. Qual seria a $E_b/N_0$ necessária? Compare com o limite fundamental.</p>
+<p><strong>E10.</strong> (Conceitual) Compare as modulações FM e BPSK em termos de: eficiência espectral, imunidade a ruído, complexidade, regenerabilidade, e aplicação típica. Justifique por que FM foi substituída por QPSK/16-QAM em sistemas modernos de banda larga.</p>
+<p><strong>E11.</strong> (Numérico) Para PCM com $f_s=8\,\text{kHz}$ (voz), determine o número mínimo de bits $n$ para atingir $\text{SNR}_q \ge 42\,\text{dB}$. Calcule a taxa de bits resultante e a largura de banda mínima Nyquist.</p>
+<p><strong>E12.</strong> (Desafio) Mostre que, para uma fonte de entropia $H(X)$, o código de Huffman atinge $\bar{L} &lt; H(X)+1$. Construa o código de Huffman para uma fonte com distribuição $\{0{,}40, 0{,}25, 0{,}15, 0{,}10, 0{,}05\}$ e verifique o limite.</p>
+<h2 id="gabarito"><span class="heading-number">1.10</span> Gabarito</h2>
+<p><strong>E1.</strong><br />
+a) $10\log_{10}(15000) = 41{,}76\,\text{dBm}$.<br />
+b) $10^{-50/10}\,\text{mW} = 10^{-5}\,\text{mW} = 10^{-8}\,\text{W} = 10\,\text{nW}$.<br />
+c) $10\log_{10}(0{,}1) = -10\,\text{dBW}$.</p>
+<p><strong>E2.</strong> $f=6\,\text{GHz}$, $d=40\,\text{km}$:</p>
+
+<div class="math-display">
+$$
+
+L_{fs} = 32{,}45 + 20\log_{10}(40) + 20\log_{10}(6000) = 32{,}45 + 32{,}04 + 75{,}56 = 140{,}05\,\text{dB}
+
+$$
+</div>
+
+<p>$\text{EIRP} = 23 + 32 - 2{,}5 = 52{,}5\,\text{dBm}$.</p>
+
+<div class="math-display">
+$$
+
+P_r=52{,}5+32-140{,}05-2{,}5=-58{,}05\,\text{dBm}.
+
+$$
+</div>
+
+<p>A margem disponível é $-58{,}05-(-90)=31{,}95$ dB. Depois de reservar 12 dB para fade, a margem residual é $31{,}95-12=\boxed{19{,}95\,\text{dB}}$. A margem requerida não é subtraída de $P_r$.</p>
+<p><strong>E3.</strong> Ver Seção “Friis — Dedução completa”. Dedução passo a passo a partir de $S = P_tG_t/(4\pi d^2)$ e $P_r = S\cdot A_e$, com $A_e = \frac{\lambda^2}{4\pi}G_r$, resulta em $P_r = P_tG_tG_r\left(\frac{\lambda}{4\pi d}\right)^2$.</p>
+<p><strong>E4.</strong> Dados: $d_1=1,d_2=0,d_3=1,d_4=1$. Paridades (Hamming (7,4)):</p>
+<p>$p_1 = d_1\oplus d_2\oplus d_4 = 1\oplus0\oplus1 = 0$<br />
+$p_2 = d_1\oplus d_3\oplus d_4 = 1\oplus1\oplus1 = 1$<br />
+$p_3 = d_2\oplus d_3\oplus d_4 = 0\oplus1\oplus1 = 0$</p>
+<p>Codeword: $1011\,010$. Com erro no 3º bit: $1001010$. Síndrome: $s = H\vec{c}'^T$. A terceira coluna de $H$ é $(0,1,1)^T = 3$, indicando erro no bit 3. Corrigindo: volta a $1011010$.</p>
+<p><strong>E5.</strong> Convertendo para linear: $G_1=100$, $F_1=1{,}413$; $G_2=0{,}316$, $F_2=6{,}310$; $G_3=31{,}62$, $F_3=2{,}512$.</p>
+
+<div class="math-display">
+$$
+
+F_{\text{tot}} = 1{,}413 + \frac{6{,}310-1}{100} + \frac{2{,}512-1}{100\cdot0{,}316} = 1{,}413 + 0{,}0531 + 0{,}0795 = 1{,}546
+
+$$
+</div>
+
+<p>$NF_{\text{tot}} = 10\log_{10}(1{,}546) = 1{,}89\,\text{dB}$.</p>
+<p>$T_e = 290(1{,}546-1) = 158{,}3\,\text{K}$.</p>
+<p><strong>E6.</strong> Via L'Hôpital: $\lim_{\eta\to0}\dfrac{2^{\eta}-1}{\eta} = \ln 2$. Via $B\to\infty$: $C = B\ln\!\left(1+\frac{P}{N_0B}\right) \approx B\cdot\dfrac{P}{N_0B}\cdot\dfrac{1}{\ln 2} \to \dfrac{P}{N_0\ln 2}$. Logo $E_b = P/C \to N_0\ln 2$, $E_b/N_0 \to \ln 2$.</p>
+<p><strong>E7.</strong> $\beta = 50/5 = 10$. $B_{\text{FM}} = 2\cdot5(1+10) = 110\,\text{kHz}$.</p>
+<p>Como $(C/N)_W=10^{20/10}=100$, $\text{SNR}_{out}=(3/2)\beta^2(C/N)_W=1{,}5(100)(100)=15000$, ou $41{,}76\,\text{dB}$. O ganho referido a $(C/N)_W$ é $21{,}76$ dB. AM ocupa $2W=10$ kHz; FM ocupa 110 kHz, portanto a razão de bandas é 11.</p>
+<p><strong>E8.</strong> Por Friis: $F_{\text{tot}} \approx F_1 + (F_2-1)/G_1$. Se LNA primeiro com $G_1=100$, $(F_2-1)/100 \approx 0{,}053$. Se mixer primeiro com $G_1=0{,}316$, $(F_2-1)/0{,}316 \approx 19$. A diferença é enorme.</p>
+<p><strong>E9.</strong> $C = 10^7\log_2(1+1000) = 10^7\log_2(1001) \approx 99{,}7\,\text{Mbit/s}$.</p>
+<p>$\text{SNR}=1000$ e, operando em $R_b=C$, $\eta=C/B\approx9{,}967$. Assim, $E_b/N_0=\text{SNR}/\eta\approx100{,}33$, ou $20{,}01$ dB. Pela fronteira de Shannon, $(2^\eta-1)/\eta=1000/9{,}967\approx100{,}33$: os valores coincidem porque escolhemos exatamente $R_b=C$. Uma implementação prática opera abaixo da capacidade.</p>
+<p><strong>E10.</strong> FM: alta imunidade, baixa eficiência espectral. BPSK/QPSK: boa imunidade, alta eficiência, regenerável, criptografável. FM é analógica (não regenerável), ocupa banda proporcional a $\beta$, não é digital (não há correção de erros). Sistemas de banda larga exigem $\eta$ alto (QPSK, 16-QAM, etc.) e tolerância a erro via código — impossível com FM.</p>
+<p><strong>E11.</strong> $6{,}02n+1{,}76 \ge 42 \Rightarrow n \ge 6{,}69 \Rightarrow n=7$ bits. $R_b = 8000\times7 = 56\,\text{kbit/s}$. $B_{\min} = 28\,\text{kHz}$ (Nyquist).</p>
+<p><strong>E12.</strong> Huffman: $\{0{,}40\to0,\; 0{,}25\to10,\; 0{,}15\to110,\; 0{,}10\to1110,\; 0{,}05\to1111\}$.</p>
+<p>$\bar{L} = 0{,}40(1)+0{,}25(2)+0{,}15(3)+0{,}10(4)+0{,}05(4) = 0{,}40+0{,}50+0{,}45+0{,}40+0{,}20 = 1{,}95$ bits/símbolo.</p>
+<p>$H = -\sum p_i\log_2 p_i = 0{,}40(1{,}322)+0{,}25(2)+0{,}15(2{,}737)+0{,}10(3{,}322)+0{,}05(4{,}322) = 0{,}529+0{,}500+0{,}411+0{,}332+0{,}216 = 1{,}988$ bits/símbolo.</p>
+<p>$\bar{L} = 1{,}95 &lt; 1{,}988+1 = 2{,}988$. Verificado.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><span class="disabled"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">Início da obra</span></span></span><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="02_modulacao_am.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">2. Modulação em Amplitude — Teoria Completa</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

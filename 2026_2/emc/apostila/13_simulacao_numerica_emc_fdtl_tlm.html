@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13. Simulação numérica de EMC: FDTD e TLM — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>13. Simulação numérica de EMC: FDTD e TLM</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>13. Simulação numérica de EMC: FDTD e TLM</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="12_blindagem.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">12. Blindagem</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="14_modelagem_problemas_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">14. Modelagem de problemas EMC</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>13. Simulação numérica de EMC: FDTD e TLM</h1>
+<blockquote>
+<p>Enquanto modelos de circuito e SPICE são poderosos para frequências baixas e parâmetros distribuídos, muitos problemas de EMC envolvem comprimentos de onda comparáveis às dimensões físicas do sistema. Nestes casos, métodos numéricos de onda completa como FDTD (Finite-Difference Time-Domain) e TLM (Transmission Line Matrix) são necessários para resolver as equações de Maxwell diretamente nos domínios do tempo ou da frequência.</p>
+</blockquote>
+<h2 id="objetivos-de-aprendizagem"><span class="heading-number">13.1</span> Objetivos de aprendizagem</h2>
+<p>Ao final, você deve ser capaz de:</p>
+<ol>
+<li>entender a formulação das equações de Maxwell para simulação no domínio do tempo;</li>
+<li>descrever a grade de Yee e o esquema de discretização FDTD;</li>
+<li>aplicar a condição de estabilidade CFL (Courant-Friedrichs-Lewy);</li>
+<li>explicar o método TLM e sua analogia com linhas de transmissão;</li>
+<li>identificar condições de contorno e camadas absorvedoras (PML);</li>
+<li>comparar FDTD e TLM em termos de aplicação e limitações práticas.</li>
+</ol>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#o-problema-eletromagn%C3%A9tico-completo">O problema eletromagnético completo</a></li>
+<li><a href="#fdt-e-a-grade-de-yee">FDTD e a grade de Yee</a></li>
+<li><a href="#condi%C3%A7%C3%B5es-de-contorno-e-absor%C3%A7%C3%A3o">Condições de contorno e absorção</a></li>
+<li><a href="#tlm--transmission-line-matrix">TLM — Transmission Line Matrix</a></li>
+<li><a href="#compara%C3%A7%C3%A3o-fdt-vs-tlm">Comparação FDTD vs TLM</a></li>
+<li><a href="#limita%C3%A7%C3%B5es-e-considera%C3%A7%C3%B5es-pr%C3%A1ticas">Limitações e considerações práticas</a></li>
+</ol></nav>
+<h2 id="o-problema-eletromagnético-completo"><span class="heading-number">13.2</span> O problema eletromagnético completo</h2>
+<p>As equações de Maxwell na forma diferencial, em um meio linear, isotrópico e sem fontes livres, são:</p>
+
+<div class="math-display">
+$$
+
+\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\nabla \times \mathbf{H} = \frac{\partial \mathbf{D}}{\partial t} + \mathbf{J}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\nabla \cdot \mathbf{D} = \rho
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\nabla \cdot \mathbf{B} = 0
+
+$$
+</div>
+
+<p>Com $\mathbf{D} = \varepsilon \mathbf{E}$ e $\mathbf{B} = \mu \mathbf{H}$. Para simulação no domínio do tempo, discretizamos o espaço e o tempo, transformando as derivadas parciais em diferenças finitas.</p>
+<h2 id="fdtd-e-a-grade-de-yee"><span class="heading-number">13.3</span> FDTD e a grade de Yee</h2>
+<p>O método FDTD, introduzido por Kane Yee em 1966, discretiza o espaço usando uma grade escalonada conhecida como <strong>célula de Yee</strong>. Nesta célula, as componentes do campo elétrico ($E_x, E_y, E_z$) e as componentes do campo magnético ($H_x, H_y, H_z$) estão deslocadas por meio passo de grade no espaço.</p>
+<h3 id="esquema-de-discretização"><span class="heading-number">13.3.1</span> Esquema de discretização</h3>
+<p>Em uma célula de Yee cúbica com passo $\Delta x = \Delta y = \Delta z = \Delta$, os campos são atualizados iterativamente no tempo usando diferenças finitas centrais. Para a componente $H_x$:</p>
+
+<div class="math-display">
+$$
+
+H_x^{n+1/2}\left(i,j+\tfrac{1}{2},k+\tfrac{1}{2}\right) = H_x^{n-1/2}\left(i,j+\tfrac{1}{2},k+\tfrac{1}{2}\right) - \frac{\Delta t}{\mu \Delta} \left[ E_y^n\left(i,j+\tfrac{1}{2},k+1\right) - E_y^n\left(i,j+\tfrac{1}{2},k\right) - E_z^n\left(i,j+1,k+\tfrac{1}{2}\right) + E_z^n\left(i,j,k+\tfrac{1}{2}\right) \right]
+
+$$
+</div>
+
+<p>Equações análogas valem para $H_y, H_z$ e para as componentes de $\mathbf{E}$, que são atualizadas a partir de $\mathbf{H}$ usando a lei de Ampère.</p>
+<h3 id="condição-de-estabilidade-cfl"><span class="heading-number">13.3.2</span> Condição de estabilidade CFL</h3>
+<p>O esquema explícito FDTD requer uma condição de estabilidade para evitar divergência numérica. A condição de Courant-Friedrichs-Lewy (CFL) para uma grade cúbica é:</p>
+
+<div class="math-display">
+$$
+
+\Delta t \leq \frac{\Delta}{c \sqrt{3}}
+
+$$
+</div>
+
+<p>onde $c$ é a velocidade da luz no meio. Para grades não cúbicas, a condição geral é:</p>
+
+<div class="math-display">
+$$
+
+\frac{1}{\Delta t^2} \geq c^2 \left( \frac{1}{\Delta x^2} + \frac{1}{\Delta y^2} + \frac{1}{\Delta z^2} \right)
+
+$$
+</div>
+
+<h2 id="condições-de-contorno-e-absorção"><span class="heading-number">13.4</span> Condições de contorno e absorção</h2>
+<p>Para um domínio não limitado, o FDTD requer o truncamento do domínio computacional. Condições de contorno simples incluem:</p>
+<ul>
+<li><strong>PEC (Perfect Electric Conductor):</strong> $\mathbf{E}_t = 0$ na superfície.</li>
+<li><strong>PMC (Perfect Magnetic Conductor):</strong> $\mathbf{H}_t = 0$ na superfície.</li>
+</ul>
+<p>Para fronteiras abertas (radiação para o espaço livre), usam-se <strong>Condições de Contorno Absorvedoras (ABC)</strong> ou <strong>Camadas Perfeitamente Casadas (PML - Perfectly Matched Layer)</strong>. A PML introduz um meio artificial com perdas concordantes que absorve as ondas incidentes sem reflexão, independentemente do ângulo ou frequência.</p>
+<h2 id="tlm--transmission-line-matrix"><span class="heading-number">13.5</span> TLM — Transmission Line Matrix</h2>
+<p>O método TLM, desenvolvido por John Shepherd, é outra técnica de domínio do tempo que modela o campo eletromagnético como uma rede de linhas de transmissão. Cada nó na malha TLM representa um ponto no espaço, e as linhas representam a propagação de ondas de tensão e corrente (análogas aos campos $\mathbf{E}$ e $\mathbf{H}$).</p>
+<h3 id="esquema-de-espalhamento-e-conexão"><span class="heading-number">13.5.1</span> Esquema de espalhamento e conexão</h3>
+<p>No TLM, a matriz de espalhamento em cada nó descreve como as ondas incidentes são refletidas e transmitidas. A evolução temporal é obtida resolvendo iterativamente os passos de <strong>espalhamento</strong> (scattering) e <strong>conexão</strong> (connection):</p>
+<ol>
+<li><strong>Espalhamento:</strong> Ondas incidentes chegam ao nó e são espalhadas de acordo com a matriz de espalhamento do nó (que depende das impedâncias características das linhas conectadas).</li>
+<li><strong>Conexão:</strong> Ondas espalhadas de um nó tornam-se ondas incidentes para os nós vizinhos, propagando-se ao longo das linhas de transmissão.</li>
+</ol>
+<h3 id="vantagens-do-tlm"><span class="heading-number">13.5.2</span> Vantagens do TLM</h3>
+<p>O TLM é particularmente útil para modelar:</p>
+<ul>
+<li>Geometrias complexas e irregulares;</li>
+<li>Materiais anisotrópicos e não lineares;</li>
+<li>Problemas de acoplamento em eletrônica de potência.</li>
+</ul>
+<p>A rede de linhas de transmissão pode ser adaptada facilmente para diferentes propriedades de material, modificando as impedâncias características e tempos de viagem das linhas.</p>
+<h2 id="comparação-fdtd-vs-tlm"><span class="heading-number">13.6</span> Comparação FDTD vs TLM</h2>
+<table>
+<thead>
+<tr>
+<th>Característica</th>
+<th>FDTD</th>
+<th>TLM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Formulação base</strong></td>
+<td>Discretização direta das equações de Maxwell (leis de Faraday e Ampère)</td>
+<td>Rede equivalente de linhas de transmissão</td>
+</tr>
+<tr>
+<td><strong>Grade espacial</strong></td>
+<td>Grade de Yee (campos E e H escalonados)</td>
+<td>Malha de nós com linhas de transmissão conectadas</td>
+</tr>
+<tr>
+<td><strong>Variáveis de campo</strong></td>
+<td>$\mathbf{E}$ e $\mathbf{H}$ diretamente</td>
+<td>Tensões e correntes nas linhas (análogas a $\mathbf{E}$ e $\mathbf{H}$)</td>
+</tr>
+<tr>
+<td><strong>Implementação</strong></td>
+<td>Amplamente implementada em softwares de EMC e antenas (CST, Meep, L-CAD)</td>
+<td>Uso histórico em engenharia de micro-ondas; aplicações específicas em EMI de potência</td>
+</tr>
+<tr>
+<td><strong>Materiais complexos</strong></td>
+<td>Requer modelos auxiliares (ADE, PSTD, Drude-Lorentz)</td>
+<td>Adaptação natural via impedâncias e constantes de tempo das linhas</td>
+</tr>
+</tbody>
+</table>
+<p>Ambos os métodos são técnicas explícitas de domínio do tempo e exigem condições de estabilidade similares.</p>
+<h2 id="limitações-e-considerações-práticas"><span class="heading-number">13.7</span> Limitações e considerações práticas</h2>
+<h3 id="dispersão-numérica"><span class="heading-number">13.7.1</span> Dispersão numérica</h3>
+<p>A velocidade de fase numérica depende da frequência e da direção de propagação na grade. Para minimizar a dispersão numérica, o tamanho da célula deve ser pequeno o suficiente:</p>
+
+<div class="math-display">
+$$
+
+\Delta \leq \frac{\lambda_{\min}}{10} \quad \text{ou} \quad \Delta \leq \frac{\lambda_{\min}}{20}
+
+$$
+</div>
+
+<p>onde $\lambda_{\min}$ é o menor comprimento de onda de interesse no meio.</p>
+<h3 id="dispersão-material"><span class="heading-number">13.7.2</span> Dispersão material</h3>
+<p>Materiais com perdas ou dispersão (frequência-dependentes) requerem modelos auxiliares, como:</p>
+<ul>
+<li>Modelos de Drude, Lorentz e Debye para dielétricos dispersivos;</li>
+<li>Método ADE (Auxiliary Differential Equation) ou PSTD (Pseudospectral Time-Domain) para acoplar dispersão material com FDTD.</li>
+</ul>
+<h3 id="tempo-de-simulação"><span class="heading-number">13.7.3</span> Tempo de simulação</h3>
+<p>Simulações no domínio do tempo exigem muitas iterações para:</p>
+<ul>
+<li>Alcançar o regime permanente (para análise de frequência via transformada de Fourier);</li>
+<li>Capturar transientes de longa duração ou baixas frequências.</li>
+</ul>
+<p>A transformada de Fourier de tempo finito (FTFT) ou a transformada discreta de Fourier (DFT) são aplicadas às campos registrados para obter a resposta em frequência.</p>
+<h3 id="recursos-computacionais"><span class="heading-number">13.7.4</span> Recursos computacionais</h3>
+<p>FDTD e TLM são métodos <em>memory-intensive</em> e <em>compute-intensive</em>:</p>
+<ul>
+<li>O armazenamento dos campos $\mathbf{E}$ e $\mathbf{H}$ em 3D requer $O(N_x N_y N_z)$ palavras de memória;</li>
+<li>O passo de tempo $\Delta t$ é limitado pela menor célula da grade, o que pode exigir milhões de iterações para domínios grandes ou baixas frequências.</li>
+</ul>
+<p>Técnicas de paralelização (MPI, GPU) e adaptabilidade de grade (unstructured grids, multigrid) são essenciais para simulações EMC de larga escala.</p>
+<h2 id="referências-e-ferramentas"><span class="heading-number">13.8</span> Referências e ferramentas</h2>
+<ul>
+<li><strong>FDTD original:</strong> K. S. Yee, &quot;Numerical solution of initial boundary value problems involving maxwell's equations in isotropic media,&quot; <em>IEEE Transactions on Antennas and Propagation</em>, vol. 14, no. 3, pp. 302-307, May 1966.</li>
+<li><strong>TLM original:</strong> J. B. Shepherd, &quot;The transmission-line matrix method for the solution of electromagnetic problems,&quot; <em>Proceedings of the IEE</em>, vol. 127, Part C, no. 3, pp. 139-144, 1980.</li>
+<li><strong>Softwares FDTD abertos:</strong> <a href="https://meep.readthedocs.io">Meep</a>, <a href="https://github.com/l-cad">L-CAD</a>, <a href="https://rfsoftware.com">XFDTD</a>.</li>
+<li><strong>Softwares comerciais:</strong> CST Studio Suite (solver Time Domain), ANSYS HFSS (solver transient), FEKO.</li>
+</ul>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="12_blindagem.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">12. Blindagem</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="14_modelagem_problemas_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">14. Modelagem de problemas EMC</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>19. Projeto e simulação com KiCad — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>19. Projeto e simulação com KiCad</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>19. Projeto e simulação com KiCad</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="18_efeitos_radiacoes_ser_humano.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">18. Efeitos das Radiações Eletromagnéticas no Ser Humano</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><span class="disabled page-nav-next"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">Fim da obra</span></span><span class="page-nav-arrow">→</span></span></nav><div class="chapter"><h1>19. Projeto e simulação com KiCad</h1>
+<blockquote>
+<p>Pré-requisito recomendado: <a href="05_introducao_spice_para_emc.html">Introdução ao SPICE para EMC</a>. Este capítulo aplica a sintaxe e os critérios de validação ao fluxo KiCad/ngspice e ao layout de PCB.</p>
+</blockquote>
+<p>O KiCad é uma suite de EDA (Electronic Design Automation) open-source amplamente utilizada para projeto de esquemáticos e PCBs. Para EMC e integridade de sinal, o KiCad oferece capacidades de simulação SPICE integradas (baseadas em Ngspice) que permitem analisar reflexões, ringing, impedância da PDN e espectro de sinais antes da fabricação.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#introdu%C3%A7%C3%A3o-ao-kicad-para-emc">Introdução ao KiCad para EMC</a></li>
+<li><a href="#configura%C3%A7%C3%A3o-do-simulador-spice-no-kicad">Configuração do simulador SPICE no KiCad</a></li>
+<li><a href="#modelagem-de-componentes-n%C3%A3o-ideais-no-esquem%C3%A1tico">Modelagem de componentes não ideais no esquemático</a></li>
+<li><a href="#regras-de-layout-para-emc-no-pcb-editor">Regras de layout para EMC no PCB Editor</a></li>
+<li><a href="#simula%C3%A7%C3%A3o-spice-integrada-no-kicad">Simulação SPICE integrada no KiCad</a></li>
+<li><a href="#exemplos-pr%C3%A1ticos-de-simula%C3%A7%C3%A3o-no-kicad">Exemplos práticos de simulação no KiCad</a></li>
+<li><a href="#fluxo-de-trabalho-recomendado-para-emc-no-kicad">Fluxo de trabalho recomendado para EMC no KiCad</a></li>
+<li><a href="#limita%C3%A7%C3%B5es-das-simula%C3%A7%C3%B5es-no-kicad">Limitações das simulações no KiCad</a></li>
+<li><a href="#c%C3%B3digo-python--gerador-de-netlist-spice-para-kicad">Código Python — Gerador de netlist SPICE para KiCad</a></li>
+<li><a href="#interpreta%C3%A7%C3%A3o-de-resultados-no-simulador-do-kicad">Interpretação de resultados no simulador do KiCad</a></li>
+<li><a href="#exerc%C3%ADcios-pr%C3%A1ticos-com-kicad">Exercícios práticos com KiCad</a></li>
+<li><a href="#valida%C3%A7%C3%A3o-cruzada-kicadpython">Validação cruzada KiCad–Python</a></li>
+<li><a href="#netlist-completa--filtro-de-entrada">Netlist completa — filtro de entrada</a></li>
+<li><a href="#crit%C3%A9rios-de-converg%C3%AAncia-e-documenta%C3%A7%C3%A3o">Critérios de convergência e documentação</a></li>
+<li><a href="#refer%C3%AAncia-principal">Referência principal</a></li>
+</ol></nav>
+<h2 id="introdução-ao-kicad-para-emc"><span class="heading-number">19.1</span> Introdução ao KiCad para EMC</h2>
+<p>O fluxo de trabalho do KiCad para projetos EMC inclui:</p>
+<ol>
+<li><strong>Eeschema</strong>: Captura esquemática com modelagem de componentes não ideais.</li>
+<li><strong>PCBNew</strong>: Layout de PCB com regras de EMC (planos de referência, roteamento diferenciado, etc.).</li>
+<li><strong>Simulador SPICE</strong>: Análise transiente, AC e Fourier para validação de integridade de sinal e emissões.</li>
+</ol>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: O KiCad não é um simulador de campos eletromagnéticos 3D como CST ou HFSS. Ele é um simulador de circuitos (SPICE). Para EMC de baixa e média frequência (integridade de sinal, acoplamento por impedância comum, reflexões em linhas), o SPICE é suficiente e muito mais rápido. Para radiação direta e acoplamento por campo próximo complexo, ferramentas 3D são necessárias.</p>
+</blockquote>
+<h2 id="configuração-do-simulador-spice-no-kicad"><span class="heading-number">19.2</span> Configuração do simulador SPICE no KiCad</h2>
+<p>No KiCad 8+, o simulador SPICE é integrado e baseado em Ngspice. Para configurar:</p>
+<ol>
+<li>Abra o Eeschema e vá em <code>Simulação &gt; Configuração do Simulador SPICE</code>.</li>
+<li>Selecione o tipo de simulação: Transiente, AC, DC Sweep, ou Fourier.</li>
+<li>Configure os parâmetros:
+<ul>
+<li><strong>Transiente</strong>: tempo inicial, tempo final, passo de máxima.</li>
+<li><strong>AC</strong>: tipo de varredura (dec, lin, log), número de pontos por década, frequência inicial e final.</li>
+<li><strong>Fourier</strong>: frequência fundamental, número de harmônicos.</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p><strong>Dica Pedagógica</strong>: Sempre valide se os modelos SPICE dos componentes estão corretos. Componentes padrão do KiCad podem não incluir ESL/ESR. Use modelos personalizados ou subcircuitos para precisão EMC.</p>
+</blockquote>
+<h2 id="modelagem-de-componentes-não-ideais-no-esquemático"><span class="heading-number">19.3</span> Modelagem de componentes não ideais no esquemático</h2>
+<p>Para simulações realistas de EMC, é crucial incluir parasitas:</p>
+<ul>
+<li><strong>Capacitores</strong>: Inclua ESL e ESR nos modelos SPICE. No KiCad, isso é feito usando modelos SPICE personalizados ou subcircuitos.</li>
+<li><strong>Indutores</strong>: Inclua capacitância parasita e resistência série.</li>
+<li><strong>Trilhas como linhas de transmissão</strong>: Use modelos T-line ou delay lines no SPICE.</li>
+</ul>
+<h3 id="modelo-spice-de-capacitor-real"><span class="heading-number">19.3.1</span> Modelo SPICE de capacitor real</h3>
+<p>Um capacitor real pode ser modelado como:</p>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>.subckt REAL_CAP C_node E_node
+R_esr C_node e1 {ESR}
+L_esl e1 e2 {ESL}
+C_main e2 E_node {C_val}
+.ends REAL_CAP</code></pre></div>
+
+<p>No esquemático do KiCad, você pode usar um componente &quot;SPICE: subcircuit&quot; e vincular este modelo.</p>
+<h2 id="regras-de-layout-para-emc-no-pcb-editor"><span class="heading-number">19.4</span> Regras de layout para EMC no PCB Editor</h2>
+<h3 id="planos-de-referência"><span class="heading-number">19.4.1</span> Planos de referência</h3>
+<ul>
+<li>Mantenha um plano de terra contínuo sob trilhas de alta velocidade.</li>
+<li>Evite splits no plano sob trilhas críticas.</li>
+</ul>
+<h3 id="roteamento-de-sinais-diferenciais"><span class="heading-number">19.4.2</span> Roteamento de sinais diferenciais</h3>
+<ul>
+<li>Mantenha o espaçamento constante entre os pares.</li>
+<li>Roteie o par sobre o mesmo plano de referência.</li>
+</ul>
+<h3 id="desacoplamento-e-pdn"><span class="heading-number">19.4.3</span> Desacoplamento e PDN</h3>
+<ul>
+<li>Coloque capacitores de desacoplamento o mais próximo possível dos pinos de alimentação do CI.</li>
+<li>Use vias múltiplas para conectar capacitores aos planos.</li>
+</ul>
+<h2 id="simulação-spice-integrada-no-kicad"><span class="heading-number">19.5</span> Simulação SPICE integrada no KiCad</h2>
+<p>O KiCad 8+ inclui um simulador SPICE integrado baseado em Ngspice. Para configurar:</p>
+<ol>
+<li>No Eeschema, adicione as diretivas SPICE: <code>SPICE: transient</code>, <code>SPICE: ac</code>, <code>SPICE: fourier</code>.</li>
+<li>Use o menu <code>Simulação &gt; Simulador SPICE</code>.</li>
+</ol>
+<h3 id="simulação-transiente-para-integridade-de-sinal"><span class="heading-number">19.5.1</span> Simulação transiente para integridade de sinal</h3>
+<p>Para analisar reflexões e ringing em uma linha de transmissão, modele a linha como uma rede L-C pi ou use linhas de transmissão distribuídas.</p>
+<p><strong>Netlist SPICE de exemplo para linha com reflexões:</strong></p>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>* Linha de transmissão modelada como rede L-C
+Vsrc src 0 PULSE(0 3.3 0 50p 50p 1n 2n)
+Rs src n1 50
+* Modelo de linha: L=10nH, C=5pF
+L1 n1 n2 10nH
+C1 n2 n3 5pF
+L2 n3 n4 10nH
+C2 n4 0 5pF
+Rload n4 0 50
+.tran 0.05n 5n
+.probe tran V(n4)
+.end</code></pre></div>
+
+<p>No KiCad, você pode criar este esquemático usando componentes <code>R</code>, <code>L</code>, <code>C</code> e uma fonte <code>PULSE</code>. Execute a simulação transiente e observe a tensão em <code>n4</code>: para carga casada ($R_{load}=50\ \Omega$), não deve haver reflexões; para carga aberta, espera-se overshoot.</p>
+<h3 id="simulação-ac-para-impedância-da-pdn"><span class="heading-number">19.5.2</span> Simulação AC para impedância da PDN</h3>
+<p>Para calcular a impedância da Power Distribution Network (PDN):</p>
+<ol>
+<li>Crie um esquemático com a fonte de alimentação e os capacitores de desacoplamento.</li>
+<li>Adicione uma fonte de corrente AC de 1 A entre VCC e GND no ponto de interesse.</li>
+<li>Configure análise AC: <code>.ac dec 100 10k 100M</code></li>
+<li>Meça a tensão no nodo VCC: <code>Z_pdN = V(VCC)/I(Vsrc)</code></li>
+</ol>
+<p><strong>Netlist SPICE de exemplo para PDN:</strong></p>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>* PDN com capacitores de desacoplamento
+Vcc vcc 0 DC 3.3
+* Fonte de corrente AC para medição de impedância
+Iac vcc 0 AC 1
+* Capacitores: 10uF, 100nF, 10nF
+C1 vcc gnd 10uF ESL=5nH ESR=50m
+C2 vcc gnd 100nF ESL=1nH ESR=30m
+C3 vcc gnd 10nF ESL=0.5nH ESR=20m
+.ac dec 100 10k 100M
+.probe ac V(vcc)
+.end</code></pre></div>
+
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: Na simulação AC do KiCad, a impedância é medida como $Z = V/I$. Como $I=1$ A AC, $Z$ em volts é numericamente igual a $Z$ em ohms. Plotando <code>V(vcc)</code> em escala logarítmica, você obtém diretamente a magnitude da impedância da PDN.</p>
+</blockquote>
+<h3 id="análise-de-fourier-para-emissões-espectrais"><span class="heading-number">19.5.3</span> Análise de Fourier para emissões espectrais</h3>
+<p>Para estimar as emissões conduzidas/radiadas a partir de sinais digitais:</p>
+<ol>
+<li>Execute simulação transiente por vários ciclos em regime estacionário.</li>
+<li>Adicione diretiva <code>.four N f0 V(nodo)</code>, onde <code>N</code> é o número de harmônicos e <code>f0</code> é a frequência fundamental.</li>
+</ol>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo de diretiva Fourier:</strong></p></aside>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>.four 100MHz V(clock_node)</code></pre></div>
+
+<p>Isso gera os coeficientes de Fourier no arquivo de saída, permitindo estimar o espectro de emissões.</p>
+<h2 id="exemplos-práticos-de-simulação-no-kicad"><span class="heading-number">19.6</span> Exemplos práticos de simulação no KiCad</h2>
+<h3 id="exemplo-reflexão-em-linha-aberta"><span class="heading-number">19.6.1</span> Exemplo: reflexão em linha aberta</h3>
+<p><strong>Esquemático SPICE:</strong></p>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>Vsrc src 0 PULSE(0 3.3 0 50p 50p 1n 2n)
+Rs src n1 50
+L1 n1 n2 10nH
+C1 n2 0 5pF
+Rload n2 0 open
+.tran 0.1n 5n</code></pre></div>
+
+<p>No KiCad, use componentes <code>R</code>, <code>L</code>, <code>C</code> e configure a fonte PULSE. Execute a simulação transiente e observe a tensão em <code>n2</code>: para carga aberta, espera-se overshoot de 2x (6.6 V) após o atraso de propagação.</p>
+<h3 id="exemplo-impedância-da-pdn-com-múltiplos-capacitores"><span class="heading-number">19.6.2</span> Exemplo: impedância da PDN com múltiplos capacitores</h3>
+<p><strong>Configuração:</strong></p>
+<ul>
+<li>Fonte VCC = 3.3 V.</li>
+<li>Capacitores: 10 µF, 100 nF, 10 nF com ESL e ESR modelados.</li>
+<li>Fonte de corrente AC 1 A entre VCC e GND.</li>
+</ul>
+<aside class="callout callout-result" role="status"><p><strong>Resultado esperado:</strong> A impedância deve ser &lt; 50 mΩ na faixa de 100 kHz a 10 MHz, com ressonâncias nas frequências de autorressonância dos capacitores.</p></aside>
+<h2 id="fluxo-de-trabalho-recomendado-para-emc-no-kicad"><span class="heading-number">19.7</span> Fluxo de trabalho recomendado para EMC no KiCad</h2>
+<ol>
+<li><strong>Esquemático</strong>: Inclua modelagem SPICE para componentes críticos.</li>
+<li><strong>Simulação pré-layout</strong>: Valide integridade de sinal e PDN com modelos simplificados.</li>
+<li><strong>Layout PCB</strong>: Aplique regras de EMC (planos, roteamento, decap).</li>
+<li><strong>Extração parasita</strong>: Após o layout, extraia L, C, R parasitas (se o KiCad ou ferramenta externa suportar).</li>
+<li><strong>Simulação pós-layout</strong>: Revalide com modelos realistas.</li>
+</ol>
+<h2 id="limitações-das-simulações-no-kicad"><span class="heading-number">19.8</span> Limitações das simulações no KiCad</h2>
+<p>O KiCad SPICE é limitado a modelos de circuito concentrado e linhas de transmissão distribuídas simples. Para:</p>
+<ul>
+<li>Acoplamento capacitivo/indutivo detalhado entre trilhas: use ferramentas de extrator de parasitas (como Q3D Extractor, que se integra ao KiCad).</li>
+<li>Simulação de radiação e antenas: use CST Studio, HFSS ou FEKO.</li>
+<li>Análise de campo próximo 3D: use ferramentas especializadas.</li>
+</ul>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: O KiCad é excelente para a fase inicial de validação de conceitos e para simulações de integridade de sinal e PDN. Para problemas de EMC radiada e acoplamento complexo por campo, o fluxo típico é: KiCad para layout e extração de parasitas, depois ferramenta 3D para análise de campos.</p>
+</blockquote>
+<h2 id="código-python--gerador-de-netlist-spice-para-kicad"><span class="heading-number">19.9</span> Código Python — Gerador de netlist SPICE para KiCad</h2>
+<p>Para facilitar a criação de modelos complexos, um script Python pode gerar netlists SPICE prontas para uso no KiCad:</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #959077"># generate_spice_netlist.py</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">generate_transmission_line_netlist</span><span style="color: #F8F8F2">(length_m,</span> <span style="color: #F8F8F2">z0_ohm,</span> <span style="color: #F8F8F2">vp_m_s,</span> <span style="color: #F8F8F2">pulse_amplitude,</span> <span style="color: #F8F8F2">pulse_tr_ns,</span> <span style="color: #F8F8F2">file_out</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tl_line.sp&#39;</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Gera netlist SPICE para linha de transmissão modelada como rede L-C pi.&quot;&quot;&quot;</span>
+    <span style="color: #959077"># Parâmetros da linha</span>
+    <span style="color: #959077"># Z0 = sqrt(L/C), vp = 1/sqrt(LC)</span>
+    <span style="color: #959077"># L = Z0 / vp, C = 1 / (Z0 * vp)</span>
+    <span style="color: #F8F8F2">L_per_section</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">z0_ohm</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">vp_m_s</span>  <span style="color: #959077"># H</span>
+    <span style="color: #F8F8F2">C_per_section</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(z0_ohm</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">vp_m_s)</span>  <span style="color: #959077"># F</span>
+    
+    <span style="color: #959077"># Número de seções pi (regra prática: &gt;= 5 para precisão)</span>
+    <span style="color: #F8F8F2">n_sections</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5</span>
+    <span style="color: #F8F8F2">L_sec</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">L_per_section</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">length_m</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">n_sections</span>
+    <span style="color: #F8F8F2">C_sec</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">C_per_section</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">length_m</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">n_sections</span>
+    
+    <span style="color: #66D9EF">with</span> <span style="color: #F8F8F2">open(file_out,</span> <span style="color: #E6DB74">&#39;w&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">as</span> <span style="color: #F8F8F2">f:</span>
+        <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;* Linha de transmissão: L={</span><span style="color: #F8F8F2">length_m</span><span style="color: #E6DB74">}m, Z0={</span><span style="color: #F8F8F2">z0_ohm</span><span style="color: #E6DB74">}Ohm, vp={</span><span style="color: #F8F8F2">vp_m_s</span><span style="color: #E6DB74">}m/s</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;Vsrc src 0 PULSE(0 {</span><span style="color: #F8F8F2">pulse_amplitude</span><span style="color: #E6DB74">} 0 {</span><span style="color: #F8F8F2">pulse_tr_ns</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-9</span><span style="color: #E6DB74">} {</span><span style="color: #F8F8F2">pulse_tr_ns</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-9</span><span style="color: #E6DB74">} {</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">pulse_tr_ns</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-9</span><span style="color: #E6DB74">} {</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">pulse_tr_ns</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-9</span><span style="color: #E6DB74">})</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;Rs src n1 {</span><span style="color: #F8F8F2">z0_ohm</span><span style="color: #E6DB74">}</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+        
+        <span style="color: #959077"># Rede L-C pi</span>
+        <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(n_sections):</span>
+            <span style="color: #F8F8F2">n_in</span> <span style="color: #FF4689">=</span> <span style="color: #E6DB74">f&quot;n{</span><span style="color: #F8F8F2">i</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #E6DB74">}&quot;</span>
+            <span style="color: #F8F8F2">n_mid</span> <span style="color: #FF4689">=</span> <span style="color: #E6DB74">f&quot;n{</span><span style="color: #F8F8F2">i</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #E6DB74">}&quot;</span>
+            <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;L{</span><span style="color: #F8F8F2">i</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #E6DB74">} {</span><span style="color: #F8F8F2">n_in</span><span style="color: #E6DB74">} {</span><span style="color: #F8F8F2">n_mid</span><span style="color: #E6DB74">} {</span><span style="color: #F8F8F2">L_sec</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #E6DB74">}nH</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+            <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;C{</span><span style="color: #F8F8F2">i</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #E6DB74">} {</span><span style="color: #F8F8F2">n_mid</span><span style="color: #E6DB74">} 0 {</span><span style="color: #F8F8F2">C_sec</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e12</span><span style="color: #E6DB74">}pF</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+            <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+                <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;C{</span><span style="color: #F8F8F2">i</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #E6DB74">} {</span><span style="color: #F8F8F2">n_mid</span><span style="color: #E6DB74">} 0 {</span><span style="color: #F8F8F2">C_sec</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e12</span><span style="color: #E6DB74">}pF</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+        
+        <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;Rload n{</span><span style="color: #F8F8F2">n_sections</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #E6DB74">} 0 {</span><span style="color: #F8F8F2">z0_ohm</span><span style="color: #E6DB74">}</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;.tran 0.01n {</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">pulse_tr_ns</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e-9</span><span style="color: #E6DB74">}</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">f&quot;.probe tran V(n{</span><span style="color: #F8F8F2">n_sections</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #E6DB74">})</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">f</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">write(</span><span style="color: #E6DB74">&quot;.end</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">&quot;</span><span style="color: #F8F8F2">)</span>
+    
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Netlist gerada: {</span><span style="color: #F8F8F2">file_out</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Exemplo de uso:</span>
+<span style="color: #959077"># generate_transmission_line_netlist(length_m=0.3, z0_ohm=50, vp_m_s=2e8, pulse_amplitude=3.3, pulse_tr_ns=0.1)</span>
+</pre></div>
+</div>
+
+<h2 id="interpretação-de-resultados-no-simulador-do-kicad"><span class="heading-number">19.10</span> Interpretação de resultados no simulador do KiCad</h2>
+<p>Após executar uma simulação no KiCad:</p>
+<ol>
+<li><strong>Gráficos Transientes</strong>: Use o visualizador para plotar tensões e correntes. Identifique ringing, overshoot, e tempo de estabilização.</li>
+<li><strong>Gráficos AC</strong>: Para impedância da PDN, plotee <code>V(vcc)</code> em escala logarítmica. A linha horizontal de <code>Z_target</code> (ex: 50 mΩ) deve ser respeitada.</li>
+<li><strong>Saída Fourier</strong>: O arquivo de texto gerado contém os coeficientes. Converta dBmV para estimar emissões.</li>
+</ol>
+<blockquote>
+<p><strong>Insight para Estudantes</strong>: O simulador do KiCad é baseado em Ngspice, que usa métodos numéricos de integração. Para sinais com bordas muito rápidas (&lt; 10 ps), reduza o passo de simulação máxima e verifique a convergência. Instabilidades numéricas podem gerar oscilações falsas.</p>
+</blockquote>
+<h2 id="exercícios-práticos-com-kicad"><span class="heading-number">19.11</span> Exercícios práticos com KiCad</h2>
+<p><strong>E.1</strong> Monte um esquemático no KiCad com uma fonte PULSE e linha de transmissão modelada como rede L-C. Execute simulação transiente e observe reflexões.</p>
+<p><strong>E.2</strong> Projete uma PDN com 3 capacitores e simule a impedância AC. Verifique se atinge &lt; 50 mΩ na banda desejada.</p>
+<p><strong>E.3</strong> Simule um sinal clock com análise de Fourier e extraia os níveis dos harmônicos para estimar emissões.</p>
+<p><strong>E.4</strong> Use o script Python acima para gerar uma netlist de linha de transmissão e importe no KiCad para simulação.</p>
+<h2 id="validação-cruzada-kicadpython"><span class="heading-number">19.12</span> Validação cruzada KiCad–Python</h2>
+<p>Um experimento reproduzível deve usar os mesmos parâmetros em ambos os ambientes. Para um capacitor real,</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">*</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">capacitor</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">real</span><span style="color: #F8F8F2">: </span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">nF</span><span style="color: #F8F8F2">, </span><span style="color: #A6E22E">ESR</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">30</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">mΩ</span><span style="color: #F8F8F2">, </span><span style="color: #A6E22E">ESL</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">nH</span>
+<span style="color: #A6E22E">V1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">DC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">L_esl</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">R_esr</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">C_main</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">in</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">mag</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">v1</span><span style="color: #FF4689">#</span><span style="color: #A6E22E">branch</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Compare $|Z|=|V/I|$ com o cálculo Python de <strong>Comportamento não ideal de componentes</strong>. Critérios mínimos:</p>
+<ul>
+<li>autorressonância dentro de 1% com a mesma discretização;</li>
+<li>assíntotas capacitivas e indutivas com inclinação correta;</li>
+<li>ESR igual ao mínimo de impedância no modelo série;</li>
+<li>análise repetida com passo mais fino.</li>
+</ul>
+<h2 id="netlist-completa--filtro-de-entrada"><span class="heading-number">19.13</span> Netlist completa — filtro de entrada</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">*</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">fonte</span><span style="color: #F8F8F2">, </span><span style="color: #A6E22E">filtro</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">LC</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">real</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">e</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">carga</span>
+<span style="color: #A6E22E">Vsrc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">Rsrc</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">src</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span>
+<span style="color: #A6E22E">L1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">4.7</span><span style="color: #A6E22E">u</span>
+<span style="color: #A6E22E">R_L</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n2</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n3</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">80</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Cpar</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n3</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">8</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">L_esl</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n3</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n4</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1.2</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">R_esr</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n4</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n5</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">30</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">C1</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n5</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">220</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Rload</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">n3</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">n3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Varra ESR, ESL, $Z_S$ e carga. Compare a perda de inserção com a rede ABCD de <strong>Modelagem de problemas EMC</strong>; diferenças indicam topologia ou convenções de porta inconsistentes.</p>
+<h2 id="critérios-de-convergência-e-documentação"><span class="heading-number">19.14</span> Critérios de convergência e documentação</h2>
+<p>Em transiente, limite o passo máximo a uma fração do menor tempo de subida ou atraso relevante e repita com metade do passo. Em AC, refine a malha em ressonâncias. Registre versão do KiCad/ngspice, modelos, opções do solver, condições iniciais e mensagens de convergência.</p>
+<h2 id="referência-principal"><span class="heading-number">19.15</span> Referência principal</h2>
+<p>Documentação do KiCad Simulation (Ngspice), Guias de Layout para EMC, e práticas de integridade de sinal em projetos open-source.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="18_efeitos_radiacoes_ser_humano.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">18. Efeitos das Radiações Eletromagnéticas no Ser Humano</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><span class="disabled page-nav-next"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">Fim da obra</span></span><span class="page-nav-arrow">→</span></span></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

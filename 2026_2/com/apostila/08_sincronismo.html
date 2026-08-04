@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8. Sincronismo — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>8. Sincronismo</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>8. Sincronismo</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="07_equalizacao.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">7. Equalização — Compensação da Dispersão do Canal</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="09_codigos_corretores_erros.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">9. Códigos Corretores de Erros</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>8. Sincronismo</h1>
+<blockquote>
+<p>Comunicações Digitais — Apostila de Curso<br />
+Tópicos: Sincronismo de Portadora · Símbolo (Timing) · Quadro (Frame) · Análise de Performance · OFDM</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">8.1</span> Antes de começar</h2>
+<p>Ao final, você deve separar aquisição de rastreio e distinguir erros de portadora, símbolo e quadro pelos seus efeitos observáveis. <strong>Diagnóstico:</strong> uma constelação que gira, um olho fechado e um quadro deslocado apontam para o mesmo estimador? <strong>Evidência mínima:</strong> injetar CFO, fase, timing e atraso de quadro separadamente e demonstrar qual malha corrige cada caso.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#o-problema-do-sincronismo">O Problema do Sincronismo</a></li>
+<li><a href="#sincronismo-de-portadora-carrier-recovery">Sincronismo de Portadora (Carrier Recovery)</a></li>
+<li><a href="#sincronismo-de-s%C3%ADmbolo-timing-recovery">Sincronismo de Símbolo (Timing Recovery)</a></li>
+<li><a href="#sincronismo-de-quadro-frameblock-synchronization">Sincronismo de Quadro (Frame/Block Synchronization)</a></li>
+<li><a href="#sincronismo-em-sistemas-ofdm">Sincronismo em Sistemas OFDM</a></li>
+<li><a href="#an%C3%A1lise-de-performance-com-erro-de-sincronismo">Análise de Performance com Erro de Sincronismo</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="o-problema-do-sincronismo"><span class="heading-number">8.2</span> O Problema do Sincronismo</h2>
+<p>Em todo receptor digital, a informação está codificada em parâmetros de uma portadora — amplitude, fase, frequência ou tempo de chegada de cada símbolo. Se o receptor não conhece esses parâmetros, sua decisão é essencialmente aleatória. O <strong>sincronismo</strong> é o conjunto de técnicas que estima e rastreia esses parâmetros, permitindo que o receptor recupere os dados transmitidos.</p>
+<h3 id="tipologias-de-sincronismo"><span class="heading-number">8.2.1</span> Tipologias de Sincronismo</h3>
+<p>Existem <strong>quatro</strong> níveis fundamentais de sincronismo, cada um resolvendo um problema distinto:</p>
+<ul>
+<li><strong>Sincronismo de portadora</strong>: o receptor deve reconstruir a portadora $\cos(2\pi f_c t + \phi)$ com a mesma frequência e fase (dentro de uma ambiguidade) da transmitida. Sem isso, a constelação rotaciona continuamente (se houver offset de frequência) ou gira por um ângulo fixo (se houver offset de fase).</li>
+<li><strong>Sincronismo de símbolo (timing recovery)</strong>: o receptor deve determinar o instante ótimo de amostragem $t_k = kT_s + \tau$ para amostrar o sinal após o filtro casado. Amostrar fora do instante ótimo gera <em>interferência inter-simbólica</em> (ISI).</li>
+<li><strong>Sincronismo de quadro (frame sync)</strong>: o receptor precisa detectar onde começa e termina cada quadro de dados, geralmente usando um padrão conhecido (preâmbulo ou <em>frame alignment word</em>).</li>
+<li><strong>Sincronismo de bloco (channel code sync)</strong>: em esquemas com codificação de canal (convolucional, LDPC, turbo), pode ser necessário sincronizar com a estrutura interna do código — tópico avançado fora do escopo desta apostila.</li>
+</ul>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: os quatro níveis são interdependentes. Um erro de portadora afeta a performance do detector de timing; um erro de timing afeta a estimação de canal e, por conseguinte, as decisões usadas no <em>carrier recovery</em>. Receptores práticos usam <strong>aquisição</strong> (busca em faixa ampla) seguida de <strong>rastreamento</strong> (malha estreita para acompanhar variações lentas).</p></aside>
+<h3 id="dedução-impacto-do-erro-de-timing-sobre-a-amostra"><span class="heading-number">8.2.2</span> DEDUÇÃO: Impacto do Erro de Timing sobre a Amostra</h3>
+<p>Considere o sinal após o filtro casado, amostrado no instante $t = kT_s + \epsilon$, onde $\epsilon$ é o erro de timing (offset). O sinal amostrado é:</p>
+
+<div class="math-display">
+$$
+
+y(kT_s + \epsilon) = s(kT_s + \epsilon) + n(kT_s + \epsilon)
+
+$$
+</div>
+
+<p>Expandindo em série de Taylor ao redor do instante ideal $kT_s$:</p>
+
+<div class="math-display">
+$$
+
+s(kT_s + \epsilon) = s(kT_s) + \epsilon\,s'(kT_s) + \frac{\epsilon^2}{2}\,s''(kT_s) + \mathcal{O}(\epsilon^3)
+
+$$
+</div>
+
+<p>O primeiro termo $s(kT_s)$ é o símbolo desejado. O segundo termo $\epsilon\,s'(kT_s)$ é a <strong>componente de interferência</strong> — proporcional à derivada do pulso no instante de amostragem. Se $\epsilon = 0$, essa interferência desaparece (desde que o pulso satisfaça o critério de Nyquist).</p>
+<p>Para um pulso $p(t)$ transmitido com símbolos $a_n$:</p>
+
+<div class="math-display">
+$$
+
+s(t) = \sum_{n=-\infty}^{\infty} a_n\,p(t - nT_s)
+
+$$
+</div>
+
+<p>Logo:</p>
+
+<div class="math-display">
+$$
+
+y(kT_s + \epsilon) = \sum_{n=-\infty}^{\infty} a_n\,p((k-n)T_s + \epsilon) + n_k
+
+$$
+</div>
+
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> de interferência inter-simbólica (ISI) induzida por timing offset: quando $\epsilon \neq 0$, os termos com $n \neq k$ não se anulam mais, contaminando a decisão do símbolo $a_k$ com contribuições de símbolos adjacentes.</p></aside>
+<p>A potência da ISI depende de $|\epsilon|$ e da forma do pulso $p(t)$. Para um pulso <em>raised cosine</em> com fator de <em>rolloff</em> $\alpha$, a ISI induzida por $\epsilon$ é:</p>
+
+<div class="math-display">
+$$
+
+\text{ISI}(\epsilon) = \sum_{n\neq 0} a_{k-n}\,p(nT_s + \epsilon)
+
+$$
+</div>
+
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong> crucial: para $\alpha = 1$ (raised cosine com rolloff total), a ISI cresce aproximadamente linearmente com $|\epsilon|/T_s$ para pequenos offsets. Para $\alpha = 0$ (sinc, banda estreita), a ISI cresce mais rapidamente porque as laterais do sinc são mais lentas.</p></aside>
+<h3 id="jitter-e-phase-noise"><span class="heading-number">8.2.3</span> Jitter e Phase Noise</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> de <em>jitter</em>: variação temporal aleatória do instante de amostragem em relação ao valor ideal. O jitter é caracterizado pelo seu desvio padrão $\sigma_\tau$ ou pela sua densidade espectral de fase.</p></aside>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> de <em>phase noise</em>: flutuação aleatória de fase da portadora no receptor, tipicamente causada pela instabilidade do oscilador local. O phase noise é descrito pela densidade espectral lateral $S_\phi(f)$ ou, equivalentemente, pelo <em>single-sideband noise</em> $L(f)$.</p></aside>
+<p>Em termos de constelação, o jitter provoca espalhamento radial (ao longo do raio), enquanto o phase noise provoca espalhamento angular (ao longo da circunferência). Ambos degradam a BER, mas de formas distintas — o jitter afeta principalmente a detecção de amplitude (ASK, PAM), enquanto o phase noise afeta a detecção de fase (PSK, QAM).</p>
+<h3 id="modelo-unificado-do-receptor"><span class="heading-number">8.2.4</span> Modelo Unificado do Receptor</h3>
+<p>O modelo de banda base equivalente de um receptor com erros de sincronismo é:</p>
+
+<div class="math-display">
+$$
+
+r(t) = a\,e^{j(2\pi\Delta f t + \phi)}\sum_{n} a_n\,p(t - nT_s - \tau) + n(t)
+
+$$
+</div>
+
+<p>onde:</p>
+<ul>
+<li>$a$: ganho do canal (atenuação)</li>
+<li>$\Delta f$: offset de frequência da portadora (CFO, <em>Carrier Frequency Offset</em>)</li>
+<li>$\phi$: offset de fase residual</li>
+<li>$a_n$: símbolos transmitidos (constelação)</li>
+<li>$p(t)$: forma de pulso (raised cosine, geralmente)</li>
+<li>$\tau$: erro de timing (offset de amostragem)</li>
+<li>$n(t)$: ruído AWGN</li>
+</ul>
+<p>O objetivo do sincronismo é estimar $a$, $\Delta f$, $\phi$ e $\tau$ a partir de $r(t)$ e compensá-los antes da decisão.</p>
+<h2 id="sincronismo-de-portadora-carrier-recovery"><span class="heading-number">8.3</span> Sincronismo de Portadora (Carrier Recovery)</h2>
+<h3 id="o-problema"><span class="heading-number">8.3.1</span> O Problema</h3>
+<p>Para demodulação coerente, o receptor precisa de uma referência com a mesma frequência e fase da portadora transmitida. O oscilador local do receptor geralmente opera em uma frequência $f_c + \Delta f$ e fase $\hat{\phi}$ diferentes das ideais. O sinal demodulado torna-se:</p>
+
+<div class="math-display">
+$$
+
+r_{\text{demod}}(t) = r(t)\cdot 2\cos(2\pi f_c t + \hat{\phi}) = \text{Re}\left\{r(t)\,e^{-j\hat{\phi}}\right\}
+
+$$
+</div>
+
+<p>Em banda base equivalente, isso equivale a multiplicar $r(t)$ por $e^{-j\hat{\phi}}$, o que <strong>roda a constelação</strong> por $-\hat{\phi}$. Se $\Delta f \neq 0$, a rotação é contínua: $e^{j(2\pi\Delta f t + \phi - \hat{\phi})}$.</p>
+<h3 id="costas-loop-para-psk"><span class="heading-number">8.3.2</span> Costas Loop para PSK</h3>
+<p>Um <em>Costas loop</em> é um PLL cuja variável de erro é construída a partir das componentes I/Q, de modo que a modulação de dados não produza erro médio quando a malha está travada. Em uma implementação <strong>decision-directed</strong>, decide-se o símbolo mais próximo $\hat a_n$ e usa-se, por exemplo,</p>
+
+<div class="math-display">
+$$
+e_\phi[n]=\operatorname{Im}\{r_n\hat a_n^*\}.
+$$
+</div>
+
+<p>Outro recuperador não orientado a decisão, frequentemente apresentado junto do Costas, é o método da <strong>$M$-ésima potência</strong>. Ele eleva o sinal à potência $M$ para remover os dados de uma constelação M-PSK. Para $a_n=e^{j2\pi k/M}$:</p>
+
+<div class="math-display">
+$$
+
+\left(a_n\,e^{j(\omega t + \theta)}\right)^M = a_n^M\,e^{jM(\omega t + \theta)} = 1 \cdot e^{jM(\omega t + \theta)}
+
+$$
+</div>
+
+<p>pois $a_n^M = e^{j2\pi k} = 1$. A informação de dados foi removida; resta apenas o termo $e^{jM(\omega t + \theta)}$ que carrega a fase.</p>
+<h4 id="dedução-do-erro-decision-directed-para-qpsk"><span class="heading-number">8.3.2.1</span> Dedução do erro decision-directed para QPSK</h4>
+<p>Considere QPSK ($M=4$). O sinal recebido após o conversor de fase é:</p>
+
+<div class="math-display">
+$$
+
+r_{\text{mix}} = a_n\,e^{j(\omega t + \theta)} \cdot e^{-j\hat{\phi}} = a_n\,e^{j(\omega t + \theta - \hat{\phi})}
+
+$$
+</div>
+
+<p>onde $\theta$ é a fase da portadora transmitida e $\hat{\phi}$ é a fase do NCO (<em>Numerically Controlled Oscillator</em>). Defina o erro de fase residual $\epsilon_\phi = \theta - \hat{\phi}$.</p>
+<p>Suponha que a decisão esteja correta, $\hat a_n=a_n$, e omita o CFO durante a análise local. Então</p>
+
+<div class="math-display">
+$$
+r_n\hat a_n^*=a_ne^{j\epsilon_\phi}a_n^*=|a_n|^2e^{j\epsilon_\phi}.
+$$
+</div>
+
+<p>Como QPSK tem $|a_n|^2=1$,</p>
+
+<div class="math-display">
+$$
+\boxed{e_\phi[n]=\operatorname{Im}\{r_n\hat a_n^*\}=\sin\epsilon_\phi\approx\epsilon_\phi.}
+$$
+</div>
+
+<p>O erro é aproximadamente linear perto do lock. A ambiguidade de $90^\circ$ permanece: uma rotação de $k\pi/2$ apenas permuta os símbolos QPSK e precisa ser resolvida por preâmbulo ou codificação diferencial. Já o detector de quarta potência tem característica proporcional a $\sin(4\epsilon_\phi)$; são detectores diferentes e suas curvas não devem ser misturadas.</p>
+<h3 id="teorema-da-estabilidade-do-costas-loop"><span class="heading-number">8.3.3</span> Teorema da Estabilidade do Costas Loop</h3>
+<p>Para o detector da $M$-ésima potência, $e(\epsilon)=\sin(M\epsilon)$. Com realimentação de sinal correto, os equilíbrios de inclinação positiva, $\epsilon=2k\pi/M$, são estáveis; os pontos intermediários, $\epsilon=(2k+1)\pi/M$, são instáveis. A região local ao redor de cada equilíbrio estável é delimitada pelos equilíbrios instáveis:</p>
+
+<div class="math-display">
+$$
+
+\boxed{-\frac{\pi}{M}&lt;\epsilon_\phi-\frac{2k\pi}{M}&lt;\frac{\pi}{M}.}
+
+$$
+</div>
+
+<p>Isso descreve apenas a dinâmica ideal de fase, sem CFO, ruído, atraso ou saturação. Não é um teorema “se e somente se” de aquisição do PLL completo. Como os $M$ equilíbrios estáveis diferem por $2\pi/M$, todos são equivalentes geometricamente para M-PSK, mas o mapeamento de bits continua ambíguo.</p>
+<h3 id="pll-de-primeira-ordem-para-carrier-recovery"><span class="heading-number">8.3.4</span> PLL de Primeira Ordem para Carrier Recovery</h3>
+<p>Um PLL de primeira ordem consiste em:</p>
+<ol>
+<li><strong>Detector de fase</strong>: produz erro $e_\phi$ (ex.: $\sin(M\epsilon_\phi)$ para Costas loop).</li>
+<li><strong>Filtro de malha</strong>: para PLL de 1ª ordem, é um ganho constante $K$.</li>
+<li><strong>NCO</strong>: gera $e^{j(\omega t + \hat{\phi})}$ onde $\dot{\hat{\phi}} = K\cdot e_\phi$.</li>
+</ol>
+<p>Em lock, o erro de fase em regime permanente para um offset de frequência constante $\Delta f$ é:</p>
+
+<div class="math-display">
+$$
+
+\epsilon_\phi^{\text{ss}} = \frac{\Delta\omega}{K_dK_0} = \frac{2\pi\Delta f}{K_dK_0}
+
+$$
+</div>
+
+<p>onde $K_dK_0$ deve estar em rad/s por rad. Em uma implementação discreta, o ganho precisa ser definido junto com $T_s$; não se pode dividir uma frequência em hertz por um ganho adimensional e chamar o resultado de fase.</p>
+<p><strong>Faixa de lock</strong> (hold range): o intervalo de frequências dentro do qual o PLL mantém lock:</p>
+
+<div class="math-display">
+$$
+
+\boxed{|\Delta\omega| &lt; K_dK_0\,e_{\max}}
+
+$$
+</div>
+
+<p>com $e_{\max}$ igual ao maior valor útil da característica do detector. A faixa exata depende, portanto, dos ganhos, unidades e não linearidade da malha — não apenas da ordem $M$.</p>
+<p><strong>Faixa de aquisição</strong> (lock range): o intervalo maior dentro do qual o PLL pode eventualmente adquirir lock, geralmente maior que a faixa de lock devido a efeitos de varredura de frequência.</p>
+<h3 id="carrier-recovery-para-qam-decision-directed-e-piloto-assisted"><span class="heading-number">8.3.5</span> Carrier Recovery para QAM: Decision-Directed e Piloto-Assisted</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> de <em>decision-directed carrier recovery</em>: após o detector de decisão, os símbolos decididos $\hat{a}_k$ são usados para gerar uma referência de fase. O erro de fase é:</p></aside>
+
+<div class="math-display">
+$$
+
+e_\phi[k] = \operatorname{Im}\{r_k \cdot \hat{a}_k^*\}
+
+$$
+</div>
+
+<p>onde $r_k$ é o símbolo recebido e $\hat{a}_k^*$ é o complexo conjugado do símbolo decidido (normalizado para unit magnitude). Este erro é proporcional a $\sin\epsilon_\phi$ para pequenos erros.</p>
+<p><strong>Estimativa de fase por pilotos</strong>: quando pilotos conhecidos $\{d_p\}$ são inseridos em posições específicas do símbolo, a estimativa de fase é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\hat{\phi}_k = \arg\left(\sum_{p \in \text{pilotos}} r_p\,d_p^*\right)}
+
+$$
+</div>
+
+<p>Os pilotos fornecem uma referência confiável independente das decisões, sendo adequados para baixa SNR. O custo é o <em>overhead</em> de taxa: cada símbolo piloto não carrega dados.</p>
+<p><strong>Comparação</strong>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Decision-Directed</th>
+<th>Piloto-Assisted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overhead</td>
+<td>zero</td>
+<td>$\approx$ 5-10% típico</td>
+</tr>
+<tr>
+<td>SNR mínima</td>
+<td>moderada (decisões corretas)</td>
+<td>qualquer (independente de decisões)</td>
+</tr>
+<tr>
+<td>Dinâmica</td>
+<td>bom tracking em lock</td>
+<td>preciso mas computacionalmente mais pesado</td>
+</tr>
+<tr>
+<td>Aplicação</td>
+<td>enlaces estáveis</td>
+<td>enlaces com fade rápido ou baixa SNR</td>
+</tr>
+</tbody>
+</table>
+<h3 id="estimador-de-cfo-por-preâmbulo-repetido"><span class="heading-number">8.3.6</span> Estimador de CFO por Preâmbulo Repetido</h3>
+<p>Um método simples e poderoso para estimar o offset de frequência é usar um <strong>preâmbulo repetido</strong>: duas cópias idênticas de um padrão, separadas por $D$ amostras. A correlação entre as duas partes contém o termo de fase acumulada:</p>
+
+<div class="math-display">
+$$
+
+P = \sum_{n=0}^{L-1} r[n+D] \cdot r^*[n]
+
+$$
+</div>
+
+<p>Se $r[n] = a_n e^{j(2\pi\Delta f n/F_s + \phi)} + \text{ruído}$, então:</p>
+
+<div class="math-display">
+$$
+
+P = \sum_{n=0}^{L-1} |a_n|^2 e^{j2\pi\Delta f D/F_s} + \text{termos de ruído}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{\widehat{\Delta f} = \frac{F_s}{2\pi D}\arg(P)}
+
+$$
+</div>
+
+<p>A <strong>faixa não ambígua</strong> é determinada pela condição de que a fase acumulada em $D$ amostras seja menor que $\pi$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{|\Delta f| &lt; \frac{F_s}{2D}}
+
+$$
+</div>
+
+<p>Esta faixa é tipicamente estreita (da ordem de kHz para $D \approx 64$ e $F_s = 1$ MHz), mas suficiente como estimativa grosseira, seguida de um Costas loop para rastreamento fino.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># === Costas Loop para QPSK: Tracking de Fase ===</span>
+<span style="color: #959077"># Objetivo: demonstrar a convergência do Costas loop e o efeito</span>
+<span style="color: #959077"># do ganho de malha K na velocidade de tracking vs. jitter residual.</span>
+
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2000</span>          <span style="color: #959077"># número de símbolos</span>
+<span style="color: #F8F8F2">M</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span>             <span style="color: #959077"># QPSK</span>
+<span style="color: #F8F8F2">K</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.05</span>          <span style="color: #959077"># ganho de malha</span>
+<span style="color: #F8F8F2">F_c</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.02</span>        <span style="color: #959077"># offset de frequência normalizado (cycles/symbol)</span>
+<span style="color: #F8F8F2">phi_init</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.4</span>    <span style="color: #959077"># erro de fase inicial (radianos)</span>
+
+<span style="color: #959077"># Gerar símbolos QPSK</span>
+<span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N))</span>
+
+<span style="color: #959077"># Gerar ruído AWGN (SNR = 15 dB)</span>
+<span style="color: #F8F8F2">EbN0_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">EbN0_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">20</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(N)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(N))</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Simular canal com CFO e fase inicial</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(N)</span>
+<span style="color: #F8F8F2">channel</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">F_c</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">phi_init))</span>
+<span style="color: #F8F8F2">received</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">channel</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+
+<span style="color: #959077"># Costas loop (decision-directed para QPSK)</span>
+<span style="color: #F8F8F2">phase_est</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(N)</span>
+<span style="color: #F8F8F2">phase_dot</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">phi_init</span>
+<span style="color: #F8F8F2">corrected</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(N,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+    <span style="color: #F8F8F2">demod</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">received[k]</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">phase_dot)</span>
+    <span style="color: #F8F8F2">d_i</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">demod</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0</span> <span style="color: #66D9EF">else</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span>
+    <span style="color: #F8F8F2">d_q</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">demod</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0</span> <span style="color: #66D9EF">else</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span>
+    <span style="color: #F8F8F2">decision</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">d_i</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">d_q</span>
+    <span style="color: #F8F8F2">error</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag(demod</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(decision)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(decision))</span>
+    <span style="color: #F8F8F2">phase_dot</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">K</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">error</span>
+    <span style="color: #F8F8F2">phase_est[k]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">phase_dot</span> <span style="color: #FF4689">%</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi)</span>
+    <span style="color: #F8F8F2">corrected[k]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">received[k]</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">phase_dot)</span>
+
+<span style="color: #F8F8F2">phase_error</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">((phase_est</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">phi_init</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">F_c</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi)</span> <span style="color: #FF4689">%</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi))</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Erro RMS residual: {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">std(phase_error)</span><span style="color: #E6DB74">:.4f} rad ({</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">std(phase_error)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">180</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #E6DB74">:.2f}°)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Erro médio residual: {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(phase_error)</span><span style="color: #E6DB74">:.4f} rad&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Plot: rastreamento de fase</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(phase_est[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Fase estimada&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot((phi_init</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">F_c</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">))</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Fase real&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Símbolo&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Fase (π rad)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Costas Loop: rastreamento de fase QPSK (K=0.05, SNR=15 dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #959077"># Plot: constelação corrigida</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(corrected[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">corrected[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ideal</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j])</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(ideal</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real,</span> <span style="color: #F8F8F2">ideal</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag,</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">120</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">facecolors</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;none&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span>
+           <span style="color: #F8F8F2">marker</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;x&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidths</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;I&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Q&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Constelação QPSK após Costas loop (corrigida)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_aspect(</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #959077"># Sensibilidade ao ganho K</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">K_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0.001</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">rms_errors</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">K_test</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">K_vals:</span>
+    <span style="color: #F8F8F2">ph</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">phi_init</span>
+    <span style="color: #F8F8F2">errs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+        <span style="color: #F8F8F2">demod</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">received[k]</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">ph)</span>
+        <span style="color: #F8F8F2">d_i</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">demod</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0</span> <span style="color: #66D9EF">else</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span>
+        <span style="color: #F8F8F2">d_q</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">demod</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #AE81FF">0</span> <span style="color: #66D9EF">else</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span>
+        <span style="color: #F8F8F2">err</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag(demod</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(d_i</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">d_q)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(d_i</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">d_q))</span>
+        <span style="color: #F8F8F2">ph</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">K_test</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">err</span>
+        <span style="color: #F8F8F2">phase_err</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">((ph</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">phi_init</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">F_c</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi)</span> <span style="color: #FF4689">%</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi))</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span>
+        <span style="color: #F8F8F2">errs</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(phase_err)</span>
+    <span style="color: #F8F8F2">rms_errors</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">std(errs))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(K_vals,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(rms_errors)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">180</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#7c3aed&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Ganho de malha K&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Erro RMS (graus)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Trade-off: ganho K vs. jitter residual (SNR=15 dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ Costas loop simulation complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# === Costas Loop para QPSK: Tracking de Fase ===[39;00m
+[32m      5[39m [38;5;66;03m# Objetivo: demonstrar a convergência do Costas loop e o efeito[39;00m
+[32m      6[39m [38;5;66;03m# do ganho de malha K na velocidade de tracking vs. jitter residual.[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="sincronismo-de-símbolo-timing-recovery"><span class="heading-number">8.4</span> Sincronismo de Símbolo (Timing Recovery)</h2>
+<h3 id="definição-e-objetivo"><span class="heading-number">8.4.1</span> Definição e Objetivo</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: sincronismo de símbolo (ou <em>timing recovery</em>) é o processo de ajustar o instante de amostragem do receptor para que cada símbolo seja amostrado no ponto ótimo (máximo da &quot;janela do olho&quot;), minimizando a interferência inter-simbólica (ISI).</p></aside>
+<p>O receptor geralmente opera com uma taxa de amostragem $F_s$ que é um múltiplo inteiro (ou racional) da taxa de símbolos $R_s = 1/T_s$. O objetivo é determinar o <strong>offset fracionário</strong> $\tau$ tal que as amostras no instante $t_k = k/F_s + \tau$ correspondam aos instantes ótimos de amostragem.</p>
+<h3 id="dedução-extração-de-componente-periódica-do-sinal"><span class="heading-number">8.4.2</span> DEDUÇÃO: Extração de Componente Periódica do Sinal</h3>
+<p>Considere o sinal recebido após o filtro casado:</p>
+
+<div class="math-display">
+$$
+
+r(t) = \sum_{n=-\infty}^{\infty} a_n\,p(t - nT_s + \epsilon T_s) + n(t)
+
+$$
+</div>
+
+<p>onde $\epsilon T_s$ é o erro de timing (agora normalizado por $T_s$). Mesmo quando $\epsilon \neq 0$, o sinal $r(t)$ possui uma <strong>componente periódica</strong> na frequência $R_s = 1/T_s$, pois os símbolos $a_n$ são estacionários.</p>
+<p>A densidade espectral de potência (PSD) do sinal transmitido com pulso $p(t)$ é:</p>
+
+<div class="math-display">
+$$
+
+S_s(f) = \frac{1}{T_s}|P(f)|^2 \cdot S_a(f)
+
+$$
+</div>
+
+<p>onde $S_a(f)$ é a PSD da sequência de símbolos. Se a sequência é aleatória i.i.d., $S_a(f)$ é plana, e a PSD é simplesmente $|P(f)|^2/T_s$.</p>
+<p><strong>Estratégia</strong>: elevar o sinal ao quadrado (ou à potência $2M$ para $M$-PSK). A não-linearidade cria componentes espectrais em múltiplos de $R_s$. Para um pulso raised cosine, o produto cruzado $a_n a_m\,p(t-nT_s)p(t-mT_s)$ gera termos periódicos em $f = k/T_s$. Um filtro passa-faixa estreito em torno de $R_s$ extrai a componente de clock:</p>
+
+<div class="math-display">
+$$
+
+y_{\text{clock}}(t) \approx C \cdot \cos(2\pi R_s t + \varphi)
+
+$$
+</div>
+
+<p>onde $\varphi$ depende de $\epsilon$. Um detector de zero-crossing produz pulsos de clock sincronizados com a taxa de símbolos, cujo timing é ajustado pela fase $\varphi$.</p>
+<p><strong>Limitação</strong>: funciona melhor para sinais com envelope constante (PSK) e falha para sinais com variação de amplitude (QAM, PAM).</p>
+<h3 id="detector-de-erro-de-timing-ted-gardner"><span class="heading-number">8.4.3</span> Detector de Erro de Timing (TED): Gardner</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> do detector de erro de timing de Gardner, com duas amostras por símbolo:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{e_k=\operatorname{Re}\!\left\{y_k^*\bigl(y_{k-1/2}-y_{k+1/2}\bigr)\right\}}
+
+$$
+</div>
+
+<p>onde $y_{k}$ é a amostra em $kT$ e $y_{k\pm 1/2}$ são as amostras em $(k\pm 1/2)T$.</p>
+<h4 id="dedução-do-gardner-ted"><span class="heading-number">8.4.3.1</span> DEDUÇÃO do Gardner TED</h4>
+<p>Para QPSK, $a_n = I_n + jQ_n$ com $I_n, Q_n \in \{\pm 1/\sqrt{2}\}$. A componente I é:</p>
+
+<div class="math-display">
+$$
+
+y_I(t) = \sum_n I_n p(t - nT_s + \epsilon T_s)
+
+$$
+</div>
+
+<p>O detector usa, em cada atualização, a amostra de símbolo e as duas meias-amostras adjacentes. O sinal global pode mudar conforme a convenção adotada pelo interpolador; aqui usamos “anterior menos posterior”. Para dados reais, a expressão reduz-se ao produto usual $y_k(y_{k-1/2}-y_{k+1/2})$.</p>
+<p>Para $\epsilon=0$, a diferença não precisa ser zero em cada símbolo. O resultado relevante é estatístico: para símbolos independentes, de média zero, e um pulso simétrico, $\mathbb E[e_k]=0$ no instante correto. Para pequeno erro, $\mathbb E[e_k]\approx K_d\epsilon$, onde a inclinação $K_d$ depende do pulso, do rolloff e da potência dos símbolos.</p>
+<p>O Gardner é <strong>não orientado a decisão</strong> e funciona com PAM, PSK e QAM; QAM não tem amplitude constante, nem isso é necessário. Ele requer transições estatísticas suficientes e excesso de banda para uma curva-S útil. Quando $\alpha\to0$, a informação de timing e a inclinação do detector diminuem, tornando aquisição e jitter piores; portanto, “funciona para qualquer $\alpha$” não significa desempenho uniforme, e no limite ideal $\alpha=0$ pode haver degeneração.</p>
+<p><strong>Vantagens do Gardner</strong>:</p>
+<ul>
+<li>Não requer decisões (non-data-directed)</li>
+<li>Funciona numa ampla faixa de rolloff; a inclinação piora quando $\alpha\to0$</li>
+<li>Opera a 2 amostras/símbolo (eficiente)</li>
+</ul>
+<p><strong>Limitação</strong>: zona morta muito estreta em $\epsilon = 0$, dificultando aquisição para offsets grandes.</p>
+<h3 id="detector-de-mueller--müller-mm"><span class="heading-number">8.4.4</span> Detector de Mueller &amp; Müller (M&amp;M)</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> do detector de Mueller &amp; Müller: opera a <strong>1 amostra por símbolo</strong> e é <strong>decision-directed</strong>:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{e_k=\operatorname{Re}\!\left\{y_k\hat a_{k-1}^*-y_{k-1}\hat a_k^*\right\}}
+
+$$
+</div>
+
+<p>O sinal pode ser invertido conforme a convenção do interpolador. As decisões $\hat a_k$ removem a dependência dos dados; por isso o M&amp;M funciona melhor depois de uma aquisição inicial e degrada quando há muitos erros de decisão.</p>
+<h4 id="dedução-do-mm"><span class="heading-number">8.4.4.1</span> DEDUÇÃO do M&amp;M</h4>
+<p>Para um pulso raised cosine, $p(nT_s) = \delta[n]$ apenas quando $\epsilon = 0$. Quando $\epsilon \neq 0$:</p>
+
+<div class="math-display">
+$$
+
+y_k \approx a_k p(\epsilon T_s) + a_{k-1} p((1-\epsilon)T_s) + a_{k+1} p((-1-\epsilon)T_s) + \dots
+
+$$
+</div>
+
+<p>O M&amp;M combina duas amostras consecutivas e suas decisões. Sob decisões corretas e média sobre dados independentes, os termos desejados se cancelam e sobra uma função ímpar do erro de timing; perto do lock, $\mathbb E[e_k]\approx K_{\rm MM}\epsilon$.</p>
+
+<div class="math-display">
+$$
+
+\boxed{\mathbb E[e_k]\propto p((1+\epsilon)T_s)-p((1-\epsilon)T_s)}
+
+$$
+</div>
+
+<p><strong>Vantagens do M&amp;M</strong>: opera a 1 amostra/símbolo; função de erro linear em $\epsilon$; sem zona morta.<br />
+<strong>Limitação</strong>: decision-directed, requer lock prévio do carrier recovery e SNR suficiente.</p>
+<h3 id="pll-de-timing-e-interpolador"><span class="heading-number">8.4.5</span> PLL de Timing e Interpolador</h3>
+<p>A estrutura do PLL de timing é análoga ao PLL de fase:</p>
+<ol>
+<li><strong>TED</strong> (Gardner ou M&amp;M): produz erro $e_k$</li>
+<li><strong>Filtro de malha</strong>: filtro digital (tipicamente IIR ou FIR)</li>
+<li><strong>VCO de taxa de símbolos</strong>: ajusta a taxa de amostragem efetiva</li>
+</ol>
+<p>O <strong>interpolador fracionário</strong> é o bloco que realiza a correção de timing em escala sub-símbolo. Um interpolador FIR com $M$ taps gera uma amostra interpolada em qualquer instante $\tau$:</p>
+
+<div class="math-display">
+$$
+
+y(\tau) = \sum_{n=0}^{M-1} x[n] \cdot p_{\text{interp}}(\tau - nT_s)
+
+$$
+</div>
+
+<p>O <strong>interpolar polifásico</strong> é a implementação eficiente: o filtro é dividido em $L$ fases, cada uma correspondendo a um deslocamento de $\tau = k/L$.</p>
+<h3 id="comparação-de-teds"><span class="heading-number">8.4.6</span> Comparação de TEDs</h3>
+<table>
+<thead>
+<tr>
+<th>Detector</th>
+<th>Amostragem</th>
+<th>Data-directed</th>
+<th>Zona morta</th>
+<th>Complexidade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Early-Late</td>
+<td>$\geq 2$/símbolo</td>
+<td>Não</td>
+<td>Sim (depende de $\alpha$)</td>
+<td>Baixa</td>
+</tr>
+<tr>
+<td>Gardner</td>
+<td>2/símbolo</td>
+<td>Não</td>
+<td>Mínima</td>
+<td>Moderada</td>
+</tr>
+<tr>
+<td>Mueller &amp; Müller</td>
+<td>1/símbolo</td>
+<td>Sim</td>
+<td>Não</td>
+<td>Moderada</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># === Timing Error Detector (TED): Resposta ao erro de timing ===</span>
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10000</span>
+<span style="color: #F8F8F2">alpha</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.25</span>
+<span style="color: #F8F8F2">Fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4</span>
+<span style="color: #F8F8F2">SNR_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span>
+
+<span style="color: #959077"># Gerar símbolos QAM-16</span>
+<span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,N)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,N)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">symbols</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rc_pulse</span><span style="color: #F8F8F2">(t_vals,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.25</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">result</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(t_vals)</span>
+    <span style="color: #F8F8F2">eps</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-12</span>
+    <span style="color: #F8F8F2">near_zero</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(t_vals)</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">eps</span>
+    <span style="color: #F8F8F2">near_edge</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(t_vals)</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">0.5</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">alpha)</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">eps</span>
+    <span style="color: #F8F8F2">result[near_zero]</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+    <span style="color: #F8F8F2">result[near_edge]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">4</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sinc(</span><span style="color: #AE81FF">0.5</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">alpha)</span>
+    <span style="color: #F8F8F2">not_special</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">~</span><span style="color: #F8F8F2">near_zero</span> <span style="color: #FF4689">&amp;</span> <span style="color: #FF4689">~</span><span style="color: #F8F8F2">near_edge</span>
+    <span style="color: #F8F8F2">t_s</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">t_vals[not_special]</span>
+    <span style="color: #F8F8F2">result[not_special]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sinc(t_s)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t_s)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t_s)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">result</span>
+
+<span style="color: #F8F8F2">t_full</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">30</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">Fs</span>
+<span style="color: #F8F8F2">tx_signal</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(len(t_full),</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+    <span style="color: #F8F8F2">tx_signal</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">symbols[n]</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">rc_pulse(t_full</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">n,</span> <span style="color: #F8F8F2">alpha)</span>
+
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">SNR_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">20</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(tx_signal))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(tx_signal)))</span>
+<span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">tx_signal</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+
+<span style="color: #959077"># Varredura de erro de timing</span>
+<span style="color: #F8F8F2">epsilons</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">0.45</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.45</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">91</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">gardeners</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(epsilons)</span>
+<span style="color: #F8F8F2">mm_errors</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(epsilons)</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i,</span> <span style="color: #F8F8F2">eps</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">enumerate(epsilons):</span>
+    <span style="color: #F8F8F2">sample_indices</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">15</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">eps</span>
+    <span style="color: #F8F8F2">samples</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">interp(sample_indices,</span> <span style="color: #F8F8F2">t_full,</span> <span style="color: #F8F8F2">r)</span>
+    
+    <span style="color: #F8F8F2">g_errs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">):</span>
+        <span style="color: #F8F8F2">y0,</span> <span style="color: #F8F8F2">y_half1,</span> <span style="color: #F8F8F2">y_half2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">samples[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k],</span> <span style="color: #F8F8F2">samples[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">samples[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+        <span style="color: #F8F8F2">g_errs</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(y0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(y_half1))</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(y0)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">y_half2))</span>
+    <span style="color: #F8F8F2">gardeners[i]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(g_errs))</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">g_errs</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0</span>
+    
+    <span style="color: #F8F8F2">mm_errs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">k</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">):</span>
+        <span style="color: #F8F8F2">y_even,</span> <span style="color: #F8F8F2">y_odd</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">samples[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k],</span> <span style="color: #F8F8F2">samples[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span>
+        <span style="color: #F8F8F2">d_even</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">symbols[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k]</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(symbols[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k])</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(symbols[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k])</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">1e-10</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0</span>
+        <span style="color: #F8F8F2">d_odd</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">symbols[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(symbols[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(symbols[</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">k</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">1e-10</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0</span>
+        <span style="color: #F8F8F2">mm_errs</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real((y_even</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">d_even)</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(d_odd))</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">conj(d_even)</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(y_odd</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">d_odd)))</span>
+    <span style="color: #F8F8F2">mm_errors[i]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(mm_errs)</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">mm_errs</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(epsilons,</span> <span style="color: #F8F8F2">gardeners,</span> <span style="color: #E6DB74">&#39;b-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Gardner (magnitude média)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(epsilons,</span> <span style="color: #F8F8F2">mm_errors,</span> <span style="color: #E6DB74">&#39;r-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Mueller &amp; Müller&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">r&#39;Erro de timing $\epsilon$ (símbolos)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Valor médio do erro (TED)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Resposta do TED: Gardner vs. Mueller-Müller (QAM-16, α=0.25, SNR=20 dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #959077"># Constelação vs. erro de timing</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">7</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">eps_test</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">0.4</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.45</span><span style="color: #F8F8F2">]</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">ax,</span> <span style="color: #F8F8F2">eps</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(axes</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">flat,</span> <span style="color: #F8F8F2">eps_test):</span>
+    <span style="color: #F8F8F2">idx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">clip((np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(N)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">eps)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int),</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">len(r)</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">sampled</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r[idx][::int(Fs)]</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(sampled</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">sampled</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag[:</span><span style="color: #AE81FF">500</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">epsilon$ = {</span><span style="color: #F8F8F2">eps</span><span style="color: #E6DB74">:+.2f}&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_aspect(</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.15</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Q&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">axes[:,</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">else</span> <span style="color: #66D9EF">None</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;I&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,:]</span> <span style="color: #66D9EF">else</span> <span style="color: #66D9EF">None</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">suptitle(</span><span style="color: #E6DB74">&#39;Constelação amostrada vs. erro de timing (QAM-16, SNR=20 dB)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">11</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">y</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.01</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ Timing error detector simulations complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# === Timing Error Detector (TED): Resposta ao erro de timing ===[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="sincronismo-de-quadro-frameblock-synchronization"><span class="heading-number">8.5</span> Sincronismo de Quadro (Frame/Block Synchronization)</h2>
+<h3 id="o-problema-1"><span class="heading-number">8.5.1</span> O Problema</h3>
+<p>Após recuperar a portadora e o timing, o receptor ainda não sabe onde começa e termina cada quadro (frame) de dados. O <strong>sincronismo de quadro</strong> resolve este problema, identificando a posição inicial de cada bloco de bits/símbolos.</p>
+<h3 id="preâmbulo-e-detecção-por-correlação"><span class="heading-number">8.5.2</span> Preâmbulo e Detecção por Correlação</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> de preâmbulo: sequência de bits ou símbolos conhecida, transmitida no início de cada quadro. O receptor correlaciona o sinal recebido com a sequência esperada; quando a correlação excede um limiar, um novo quadro foi detectado.</p></aside>
+<p>A correlação sliding é:</p>
+
+<div class="math-display">
+$$
+
+C[k] = \sum_{n=0}^{L-1} r[k+n] \cdot p^*[n]
+
+$$
+</div>
+
+<p>onde $L$ é o comprimento do preâmbulo, $p[n]$ é a sequência conhecida, e $r[k]$ é o sinal recebido (amostrado no instante ótimo).</p>
+<p>Para detecção robusta, normaliza-se a correlação pela energia recebida:</p>
+
+<div class="math-display">
+$$
+
+\rho[k] = \frac{|C[k]|^2}{\left(\sum_{n=0}^{L-1} |r[k+n]|^2\right) \cdot \left(\sum_{n=0}^{L-1} |p[n]|^2\right)}
+
+$$
+</div>
+
+<h3 id="dedução-da-probabilidade-de-falso-alarme"><span class="heading-number">8.5.3</span> DEDUÇÃO da Probabilidade de Falso Alarme</h3>
+<p>Sob hipótese nula ($H_0$, apenas ruído AWGN $n[k] \sim \mathcal{CN}(0, \sigma_n^2)$):</p>
+
+<div class="math-display">
+$$
+
+C[k] = \sum_{n=0}^{L-1} n[k+n] \cdot p^*[n]
+
+$$
+</div>
+
+<p>O módulo ao quadrado $|C[k]|^2$ segue distribuição exponencial:</p>
+
+<div class="math-display">
+$$
+
+|C[k]|^2 \sim \text{Exp}(\lambda), \quad \lambda = \frac{1}{\sigma_n^2 E_p}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{P_{FA} = \Pr\{|C[k]|^2 &gt; \gamma\} = e^{-\gamma/(\sigma_n^2 E_p)} = e^{-\gamma/(N_0 E_p/2)}}
+
+$$
+</div>
+
+<p>Para $E_p/N_0 = 20$ dB e $\gamma = 10 \cdot \sigma_n^2 E_p$:</p>
+
+<div class="math-display">
+$$
+
+P_{FA} = e^{-10} \approx 4{,}5 \times 10^{-5}
+
+$$
+</div>
+
+<h3 id="frame-alignment-word-faw-e-sequências-m"><span class="heading-number">8.5.4</span> Frame Alignment Word (FAW) e Sequências m</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> de Frame Alignment Word (FAW): padrão de bits com propriedades de auto-correlação excepcionais, usado para sincronismo de quadro em sistemas digitais (SDH/SONET, GSM). Um FAW ideal tem:</p></aside>
+<ul>
+<li>Auto-correlação quase-perfita em zero-lag (pico alto)</li>
+<li>Auto-correlação lateral próxima de zero (picos espúrios baixos)</li>
+<li>Baixa ambiguidade de sincronismo</li>
+</ul>
+<p><strong>Sequências m (m-sequences)</strong>: geradas por registradores de deslocamento com feedback linear:</p>
+
+<div class="math-display">
+$$
+
+R_m(\tau) = \begin{cases} m &amp; \tau = 0 \\ -1 &amp; \tau \neq 0 \end{cases}
+
+$$
+</div>
+
+<p>onde $m = 2^n - 1$ é o período. A relação de pico-lateral é $(m+1)/(m-1) \approx 1$ para $m$ grande — <strong>ruim</strong> para detecção direta.</p>
+<p><strong>Melhoria</strong>: sequências de Barker (comprimentos: 2, 3, 4, 5, 7, 11, 13) ou Zadoff–Chu (para OFDM).</p>
+<h3 id="algoritmo-de-busca"><span class="heading-number">8.5.5</span> Algoritmo de Busca</h3>
+<ol>
+<li><strong>Sliding correlation</strong>: $O(L \cdot N_{\text{samples}})$. Simples, mas lento.</li>
+<li><strong>Parallel correlation (FFT)</strong>: $O(N_{\text{samples}} \log N_{\text{samples}})$. Mais rápido para preâmbulos longos.</li>
+</ol>
+<p>Prática: etapa grossa (FFT) + etapa fina (sliding na região de interesse).</p>
+<h3 id="detecção-de-pacote"><span class="heading-number">8.5.6</span> Detecção de Pacote</h3>
+<p>Em sistemas burst, detectar o início do pacote antes do preâmbulo:</p>
+
+<div class="math-display">
+$$
+
+E[k] = \sum_{n=0}^{M-1} |r[k+n]|^2
+
+$$
+</div>
+
+<p>Quando $E[k]$ excede um limiar baseado no nível de ruído estimado, um pacote foi detectado.</p>
+<h3 id="dedução-ganho-de-correlação-com-preâmbulo-repetido"><span class="heading-number">8.5.7</span> DEDUÇÃO: Ganho de Correlação com Preâmbulo Repetido</h3>
+<p>Com duas cópias idênticas $p$ de comprimento $L/2$:</p>
+
+<div class="math-display">
+$$
+
+P[k] = \sum_{n=0}^{L/2-1} r[k+n+L/2] \cdot r^*[k+n]
+
+$$
+</div>
+
+<p>Para $E_s \gg N_0$:</p>
+
+<div class="math-display">
+$$
+
+\text{SNR}_{\text{det}} \approx \frac{L}{2} \cdot \frac{E_s}{N_0}
+
+$$
+</div>
+
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: ganho de correlação de $L/2$. Para 64 símbolos: ganho de 18 dB.</p></aside>
+<h2 id="sincronismo-em-sistemas-ofdm"><span class="heading-number">8.6</span> Sincronismo em Sistemas OFDM</h2>
+<!-- slides: columns -->
+<h3 id="desafios-do-ofdm"><span class="heading-number">8.6.1</span> Desafios do OFDM</h3>
+<p>OFDM exige <strong>três tipos</strong> de sincronismo simultaneamente:</p>
+<ol>
+<li><strong>Timing sync</strong>: identificar o início da FFT window (antes do CP)</li>
+<li><strong>FFT bin sync</strong>: alinhar a FFT com as subportadoras</li>
+<li><strong>Carrier offset sync</strong>: corrigir fase residual por subportadora</li>
+</ol>
+<p>Sem estes, a ortogonalidade entre subportadoras é perdida, gerando <strong>interferência entre portadoras</strong> (ICI).</p>
+<!-- slides: column -->
+<h3 id="sincronismo-de-timing-correlação-do-guard-interval-cp"><span class="heading-number">8.6.2</span> Sincronismo de Timing: Correlação do Guard Interval (CP)</h3>
+<p>O <strong>cyclic prefix</strong> (CP) é uma cópia do final do símbolo OFDM copiada para o início. Permite estimar o timing pelo pico de correlação:</p>
+
+<div class="math-display">
+$$
+
+C_{CP}(d)=\sum_{n=0}^{N_g-1}r[d+n]r^*[d+n+N]
+
+$$
+</div>
+
+<p>Aqui $N$ é o tamanho da IFFT e $N_g$ é o comprimento do CP. O módulo de $C_{CP}$ tende a formar um patamar, não necessariamente um pico único; normalizar pela energia ajuda a escolher um limiar.</p>
+<!-- slides: end-columns -->
+<h3 id="estimador-de-timing-de-schmidl--cox"><span class="heading-number">8.6.3</span> Estimador de Timing de Schmidl &amp; Cox</h3>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong> do estimador de Schmidl &amp; Cox: usa um símbolo de treinamento cujo trecho útil contém duas metades idênticas, $S=[T,T]$, cada uma com $L$ amostras. Isso é diferente de correlacionar o CP.</p></aside>
+<p>A métrica de timing é:</p>
+
+<div class="math-display">
+$$
+
+P(d)=\sum_{n=0}^{L-1}r^*[d+n]r[d+n+L],\qquad
+R(d)=\sum_{n=0}^{L-1}|r[d+n+L]|^2,
+
+$$
+</div>
+
+<p>e a métrica normalizada é</p>
+
+<div class="math-display">
+$$
+\boxed{M(d)=\frac{|P(d)|^2}{R^2(d)+\varepsilon}},
+$$
+</div>
+
+<p>onde $\varepsilon$ apenas evita divisão por zero. Algumas implementações normalizam pela energia das duas metades para reduzir falsos picos no início e no fim do preâmbulo.</p>
+
+<div class="math-display">
+$$
+
+\boxed{\hat d=\text{início do patamar em que }M(d)&gt;\theta}
+
+$$
+</div>
+
+<h3 id="teorema-da-robustez-do-cp-ao-timing-offset"><span class="heading-number">8.6.4</span> Teorema da Robustez do CP ao Timing Offset</h3>
+<p>O prefixo cíclico cria uma <strong>janela segura de temporização</strong>, mas não torna todo offset com $|\Delta|&lt;N_g$ automaticamente inofensivo. Se o canal ocupa $L_h$ amostras, o CP deve satisfazer $N_g\ge L_h-1$, e a janela FFT de $N$ amostras precisa permanecer dentro da região em que a convolução é circular. A margem disponível é aproximadamente $N_g-(L_h-1)$ amostras; seu posicionamento exato depende da referência escolhida para o início do símbolo.</p>
+<aside class="callout callout-proof" role="note"><p><strong>Demonstração</strong>: quando a janela permanece nessa região segura, um deslocamento inteiro $\Delta$ introduz apenas uma <strong>fase linear</strong>:</p></aside>
+
+<div class="math-display">
+$$
+
+Y[k] = H[k]\cdot X[k]\cdot e^{-j2\pi k\Delta/N} + \text{ruído}
+
+$$
+</div>
+
+<p>Esta fase é constante ao longo do símbolo em cada subportadora e é corrigível por equalização. Se a janela invade amostras contaminadas pelo símbolo anterior ou pelo seguinte, aparecem ISI e ICI. $\blacksquare$</p>
+<h3 id="estimador-de-cfo-e-pilotos-ofdm"><span class="heading-number">8.6.5</span> Estimador de CFO e Pilotos OFDM</h3>
+
+<div class="math-display">
+$$
+
+\boxed{\widehat{\Delta f}=-\frac{F_s}{2\pi N}\arg\left(\sum_{n=0}^{N_g-1} r[d+n]\,r^*[d+n+N]\right)}
+
+$$
+</div>
+
+<p>As amostras do CP repetem as últimas $N_g$ amostras do símbolo útil e estão separadas por $N$, não por $N_g$. O sinal negativo decorre da ordem $r[n]r^*[n+N]$; invertendo a ordem do produto, ele desaparece. A estimativa é ambígua módulo $F_s/N$, logo sua faixa principal é $|\Delta f|&lt;F_s/(2N)$.</p>
+<p>Pilotos por subportadora:</p>
+
+<div class="math-display">
+$$
+
+\hat{\phi}[k] = \arg\left(R[k] \cdot D[k]^*\right)
+
+$$
+</div>
+
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># === Sincronismo OFDM: Schmidl &amp; Cox ===</span>
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">N_fft</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">64</span>
+<span style="color: #F8F8F2">N_cp</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">16</span>
+<span style="color: #F8F8F2">N_sym</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N_fft</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">N_cp</span>
+
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">L</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N_fft</span> <span style="color: #FF4689">//</span> <span style="color: #AE81FF">2</span>
+<span style="color: #F8F8F2">train_half</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(L)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(L)</span>
+<span style="color: #F8F8F2">train_symbol</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">concatenate([train_half,</span> <span style="color: #F8F8F2">train_half])</span>
+<span style="color: #F8F8F2">cp_symbol</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">concatenate([train_symbol[</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">N_cp:],</span> <span style="color: #F8F8F2">train_symbol])</span>
+<span style="color: #F8F8F2">training_frame</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">concatenate([cp_symbol,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(</span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)])</span>
+
+<span style="color: #F8F8F2">snr_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">snr_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">20</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(training_frame))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(training_frame)))</span>
+<span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">training_frame</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+
+<span style="color: #959077"># Offset de timing artificial</span>
+<span style="color: #F8F8F2">timing_offset</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span>
+<span style="color: #F8F8F2">r_shifted</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">roll(r,</span> <span style="color: #F8F8F2">timing_offset)</span>
+
+<span style="color: #959077"># Schmidl &amp; Cox</span>
+<span style="color: #F8F8F2">gamma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(len(r_shifted)</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">L,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+<span style="color: #F8F8F2">sigma_sq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(len(r_shifted)</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">L)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">d</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(len(gamma)):</span>
+    <span style="color: #F8F8F2">first</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r_shifted[d:d</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">L]</span>
+    <span style="color: #F8F8F2">second</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r_shifted[d</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">L:d</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">L]</span>
+    <span style="color: #F8F8F2">gamma[d]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">vdot(first,</span> <span style="color: #F8F8F2">second)</span>
+    <span style="color: #F8F8F2">sigma_sq[d]</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(second)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">P</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(gamma)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(sigma_sq</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">threshold</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5.0</span>
+<span style="color: #F8F8F2">detections</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">where(P</span> <span style="color: #FF4689">&gt;</span> <span style="color: #F8F8F2">threshold)[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">d_start</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">detections[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">len(detections)</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span> <span style="color: #66D9EF">else</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Schmidl &amp; Cox: detecção d={</span><span style="color: #F8F8F2">d_start</span><span style="color: #E6DB74">}, offset real {</span><span style="color: #F8F8F2">timing_offset</span><span style="color: #E6DB74">}, erro {</span><span style="color: #F8F8F2">abs(d_start</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">timing_offset)</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># CFO</span>
+<span style="color: #F8F8F2">df_true</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.03</span>
+<span style="color: #F8F8F2">r_cfo</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r_shifted</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">df_true</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(len(r_shifted)))</span>
+<span style="color: #F8F8F2">first_cfo</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r_cfo[timing_offset</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">N_cp:timing_offset</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">N_cp</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">L]</span>
+<span style="color: #F8F8F2">second_cfo</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">r_cfo[timing_offset</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">N_cp</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">L:timing_offset</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">N_cp</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">L]</span>
+<span style="color: #F8F8F2">gamma_cfo</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">vdot(first_cfo,</span> <span style="color: #F8F8F2">second_cfo)</span>
+<span style="color: #F8F8F2">df_est</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">L))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">angle(gamma_cfo)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;CFO: real={</span><span style="color: #F8F8F2">df_true</span><span style="color: #E6DB74">:.4f}, estimado={</span><span style="color: #F8F8F2">df_est</span><span style="color: #E6DB74">:.4f}, erro={</span><span style="color: #F8F8F2">abs(df_true</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">df_est)</span><span style="color: #E6DB74">:.6f}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Plot: métrica P(d)</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">plot_range</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">slice(max(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">d_start</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">20</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">min(len(P),</span> <span style="color: #F8F8F2">d_start</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(len(P))[plot_range],</span> <span style="color: #F8F8F2">P[plot_range],</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(threshold,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Limiar = {</span><span style="color: #F8F8F2">threshold</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(d_start,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Detecção: d = {</span><span style="color: #F8F8F2">d_start</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(timing_offset,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#7c3aed&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Real: d = {</span><span style="color: #F8F8F2">timing_offset</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Amostra d&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Métrica P(d)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Schmidl &amp; Cox: Timing OFDM (SNR={</span><span style="color: #F8F8F2">snr_db</span><span style="color: #E6DB74">} dB, N_cp={</span><span style="color: #F8F8F2">N_cp</span><span style="color: #E6DB74">})&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #959077"># Plot: CFO</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3.5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">const_no</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">train_half</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">df_true</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(len(train_half)))</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(const_no</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real[:</span><span style="color: #AE81FF">300</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">const_no</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag[:</span><span style="color: #AE81FF">300</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Sem correção de CFO&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_aspect(</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">scatter(train_half</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real[:</span><span style="color: #AE81FF">300</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">train_half</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag[:</span><span style="color: #AE81FF">300</span><span style="color: #F8F8F2">],</span> <span style="color: #F8F8F2">s</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Com correção de CFO&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_aspect(</span><span style="color: #E6DB74">&#39;equal&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">suptitle(</span><span style="color: #E6DB74">&#39;OFDM: efeito do CFO na constelação&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">11</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ OFDM synchronization simulation complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# === Sincronismo OFDM: Schmidl &amp; Cox ===[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="análise-de-performance-com-erro-de-sincronismo"><span class="heading-number">8.7</span> Análise de Performance com Erro de Sincronismo</h2>
+<h3 id="ber-vs-erro-de-timing-epsilon"><span class="heading-number">8.7.1</span> BER vs. Erro de Timing $\epsilon$</h3>
+<p>Para BPSK com pulso raised cosine, amostrado com erro $\epsilon T_s$:</p>
+
+<div class="math-display">
+$$
+
+y_k = \pm\sqrt{E_s}\cdot p(\epsilon T_s) + \sum_{n\neq k} \pm\sqrt{E_s}\cdot p((k-n)T_s + \epsilon T_s) + n_k
+
+$$
+</div>
+
+<p>O primeiro termo é atenuado por $p(\epsilon T_s)$ e o segundo é ISI. Aqui $\epsilon$ é adimensional; o deslocamento físico é $\epsilon T_s$. Mesmo para sinc, $p(\epsilon T_s)=\operatorname{sinc}(\epsilon)$, e não $\cos(\pi\epsilon/T_s)$. Se a ISI for temporariamente desprezada para isolar a atenuação do símbolo desejado,</p>
+
+<div class="math-display">
+$$
+
+P_b(\epsilon)\approx Q\!\left(\sqrt{\frac{2E_b}{N_0}}\,|p(\epsilon T_s)|\right),\qquad
+L_t=-10\log_{10}|p(\epsilon T_s)|^2.
+
+$$
+</div>
+
+<p>Para sinc, $\operatorname{sinc}(\epsilon)\approx1-\pi^2\epsilon^2/6$, logo</p>
+
+<div class="math-display">
+$$
+\boxed{L_t\approx\frac{10\pi^2}{3\ln10}\epsilon^2\approx14{,}3\epsilon^2\ \text{dB}.}
+$$
+</div>
+
+<p>Esse resultado é otimista porque ignora a ISI. A tolerância real depende do pulso RC/RRC, rolloff, canal e jitter; $|\epsilon|&lt;0{,}1$ é uma meta conservadora comum, não um limite universal deduzido de 0,5 dB.</p>
+<h3 id="ber-vs-erro-de-fase-deltaphi"><span class="heading-number">8.7.2</span> BER vs. Erro de Fase $\Delta\phi$</h3>
+<p>Para PSK com erro de fase:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_b(\Delta\phi) \approx Q\left(\sqrt{\frac{2E_b}{N_0}}\cos(\Delta\phi)\right)}
+
+$$
+</div>
+
+<p>Perda:</p>
+
+<div class="math-display">
+$$
+
+\boxed{L_\phi=-10\log_{10}(\cos^2\Delta\phi)\approx\frac{10}{\ln10}\Delta\phi^2\approx4{,}34\Delta\phi^2\ \text{dB}}
+
+$$
+</div>
+
+<p>Para perda $&lt; 0{,}5$ dB:</p>
+
+<div class="math-display">
+$$
+
+\boxed{|\Delta\phi|&lt;\sqrt{0{,}5/4{,}34}\approx0{,}34\ \text{rad}\approx19{,}5^\circ}
+
+$$
+</div>
+
+<h3 id="efeito-do-erro-de-frequência"><span class="heading-number">8.7.3</span> Efeito do Erro de Frequência</h3>
+<p>Offset $\Delta f$ provoca a rotação cumulativa $\phi_k=\phi_0+2\pi\Delta f\,kT_s$. Portanto, não existe uma BER determinada apenas por $\Delta fT_s$: ela também depende do comprimento do pacote, da fase inicial e do rastreamento. Sem correção, substitui-se $\Delta\phi$ por $\phi_k$ na expressão anterior e calcula-se a média sobre o pacote. Uma especificação útil limita a deriva total, por exemplo $2\pi|\Delta f|N_pT_s&lt;\phi_{\max}$ para $N_p$ símbolos.</p>
+<h3 id="ber-combinada"><span class="heading-number">8.7.4</span> BER Combinada</h3>
+
+<div class="math-display">
+$$
+
+P_b^{\text{eff}} \approx Q\left(\sqrt{\frac{2E_b}{N_0}}\cdot p(\epsilon)\cdot\cos(\Delta\phi)\right)
+
+$$
+</div>
+
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #959077"># === BER vs. Erro de Sincronismo ===</span>
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ber_theory_bpsk</span><span style="color: #F8F8F2">(EbN0_lin,</span> <span style="color: #F8F8F2">timing_err</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">phase_err</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.0</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">alpha</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.25</span>
+    <span style="color: #F8F8F2">p_eps</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">timing_err)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">timing_err)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">cos_phi</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phase_err)</span>
+    <span style="color: #F8F8F2">eff</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">EbN0_lin</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">p_eps</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">cos_phi</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">0.5</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">erfc(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(eff))</span>
+
+<span style="color: #959077"># BER teórica</span>
+<span style="color: #F8F8F2">EbN0_dbs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">15</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">300</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">eps,</span> <span style="color: #F8F8F2">lbl,</span> <span style="color: #F8F8F2">clr</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[(</span><span style="color: #AE81FF">0.0</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;Ideal&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.05</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">epsilon=0.05$&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">),</span>
+                        <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.10</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">epsilon=0.10$&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">epsilon=0.15$&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;#7c3aed&#39;</span><span style="color: #F8F8F2">)]:</span>
+    <span style="color: #F8F8F2">ber</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[ber_theory_bpsk(</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">timing_err</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">eps)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">EbN0_dbs]</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(EbN0_dbs,</span> <span style="color: #F8F8F2">ber,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">clr,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">lbl)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;BER vs. $E_b/N_0$ para diferentes erros de timing (BPSK, α=0.25)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #959077"># BER Monte Carlo</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">N_mc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50000</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">eps,</span> <span style="color: #F8F8F2">lbl,</span> <span style="color: #F8F8F2">clr</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[(</span><span style="color: #AE81FF">0.0</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;MC Ideal&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.05</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;MC $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">epsilon=0.05$&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">),</span>
+                        <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.10</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;MC $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">epsilon=0.10$&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">)]:</span>
+    <span style="color: #F8F8F2">bers</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">db</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">EbN0_dbs:</span>
+        <span style="color: #F8F8F2">EbN0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">EbN0)</span>
+        <span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N_mc)</span>
+        <span style="color: #F8F8F2">sym</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span>
+        <span style="color: #F8F8F2">alpha</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.25</span>
+        <span style="color: #F8F8F2">p_eps</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">eps)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">eps)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+        <span style="color: #F8F8F2">sym_tx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sym</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">p_eps</span>
+        <span style="color: #959077"># ISI simples</span>
+        <span style="color: #F8F8F2">isi</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.3</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">eps</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">diff(sym,</span> <span style="color: #F8F8F2">prepend</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">sym[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">])</span>
+        <span style="color: #F8F8F2">rx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sym_tx</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">0.3</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">eps</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">isi</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">sigma</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(N_mc)</span>
+        <span style="color: #F8F8F2">errs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum((np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sign(rx)</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">sym))</span>
+        <span style="color: #F8F8F2">bers</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(errs</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">N_mc)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(EbN0_dbs,</span> <span style="color: #F8F8F2">bers,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">clr,</span> <span style="color: #F8F8F2">marker</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;o&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ms</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">lbl)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;BER&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;BER Monte Carlo vs. Timing Error (BPSK)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ BER analysis complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01mspecial[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m erfc
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">8.8</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">8.8.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> medir aquisição e rastreio de fase, CFO, timing e quadro. <strong>Controle experimental:</strong> declare offsets, jitter, largura de malha, preâmbulo e limiar. <strong>Validação:</strong> reporte tempo de aquisição, erro residual, falsos alarmes, perdas de detecção e BER após cada correção.</p>
+<h3 id="exercício-1-simulação-completa-de-costas-loop"><span class="heading-number">8.8.2</span> Exercício 1: Simulação Completa de Costas Loop</h3>
+<p>Implementar um Costas loop para QPSK com tracking de fase, CFO e análise de constelação.</p>
+<p>O código acima na Seção “Estimador de CFO por Preâmbulo Repetido” resolve este exercício. Verificar os plots de:</p>
+<ol>
+<li>Rastreamento de fase ao longo dos símbolos</li>
+<li>Constelação corrigida após o loop</li>
+<li>Trade-off entre ganho K e jitter residual</li>
+</ol>
+<h3 id="exercício-2-timing-error-detector--resposta-ao-erro"><span class="heading-number">8.8.3</span> Exercício 2: Timing Error Detector — Resposta ao Erro</h3>
+<p>Implementar e comparar Gardner e M&amp;M para diferentes valores de $\epsilon$.</p>
+<p>O código acima na Seção “Comparação de TEDs” resolve este exercício. Verificar que:</p>
+<ul>
+<li>Gardner é simétrico em $\epsilon$ e não-data-directed</li>
+<li>M&amp;M é linear para pequenos $\epsilon$ e decision-directed</li>
+<li>Ambos convergem a zero em $\epsilon = 0$</li>
+</ul>
+<h3 id="exercício-3-ber-vs-erro-de-sincronismo"><span class="heading-number">8.8.4</span> Exercício 3: BER vs. Erro de Sincronismo</h3>
+<p>Simular BER para BPSK com diferentes valores de $\epsilon$ e $\Delta\phi$.</p>
+<p>O código acima na Seção “BER Combinada” resolve este exercício. Verificar que:</p>
+<ul>
+<li>Para $\epsilon &lt; 0{,}1 T_s$, a perda é $&lt; 0{,}5$ dB</li>
+<li>Para $\Delta\phi &lt; 0{,}24$ rad, a perda é $&lt; 0{,}5$ dB</li>
+<li>BER Monte Carlo confirma BER teórica</li>
+</ul>
+<h3 id="exercício-4-detecção-de-frame-sync-por-correlação"><span class="heading-number">8.8.5</span> Exercício 4: Detecção de Frame Sync por Correlação</h3>
+<p>Implementar a detecção de preâmbulo por correlação sliding e analisar $P_D$ e $P_{FA}$.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># === Detecção de Frame Sync por Correlação ===</span>
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">42</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Parâmetros</span>
+<span style="color: #F8F8F2">L_preamble</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">64</span>           <span style="color: #959077"># comprimento do preâmbulo</span>
+<span style="color: #F8F8F2">N_frames</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100</span>            <span style="color: #959077"># número de quadros</span>
+<span style="color: #F8F8F2">bits_per_frame</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">512</span>      <span style="color: #959077"># bits por quadro</span>
+<span style="color: #F8F8F2">Fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span>                    <span style="color: #959077"># normalizado</span>
+<span style="color: #F8F8F2">snr_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">12</span>               <span style="color: #959077"># SNR em dB</span>
+
+<span style="color: #959077"># Sequência de preâmbulo (Barker-like, pseudo-aleatória)</span>
+<span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">seed(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">preamble_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">L_preamble)</span>
+<span style="color: #F8F8F2">preamble</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">preamble_bits</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span>  <span style="color: #959077"># BPSK: ±1</span>
+
+<span style="color: #959077"># Gerar quadros aleatórios</span>
+<span style="color: #F8F8F2">all_bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">N_frames</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">bits_per_frame)</span>
+<span style="color: #F8F8F2">all_symbols</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">all_bits</span> <span style="color: #FF4689">-</span> <span style="color: #AE81FF">1</span>
+
+<span style="color: #959077"># Montar frames com preâmbulos</span>
+<span style="color: #F8F8F2">frame_samples</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #F8F8F2">frame_starts</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #F8F8F2">sample_idx</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N_frames):</span>
+    <span style="color: #F8F8F2">frame_samples</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">extend(preamble</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tolist())</span>
+    <span style="color: #F8F8F2">frame_starts</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(sample_idx)</span>
+    <span style="color: #F8F8F2">sample_idx</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">L_preamble</span>
+    <span style="color: #F8F8F2">frame_samples</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">extend(all_symbols[i</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">bits_per_frame:(i</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">bits_per_frame]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tolist())</span>
+    <span style="color: #F8F8F2">sample_idx</span> <span style="color: #FF4689">+=</span> <span style="color: #F8F8F2">bits_per_frame</span>
+
+<span style="color: #959077"># Adicionar ruído</span>
+<span style="color: #F8F8F2">snr_lin</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(snr_db</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">snr_lin)</span>
+<span style="color: #F8F8F2">noise</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(frame_samples))</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randn(len(frame_samples)))</span>
+<span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array(frame_samples,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">noise</span>
+
+<span style="color: #959077"># Detecção por correlação sliding</span>
+<span style="color: #F8F8F2">corr</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">correlate(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(r),</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(preamble),</span> <span style="color: #F8F8F2">mode</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;valid&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">corr_norm</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">corr</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">correlate(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(r)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ones(L_preamble),</span> <span style="color: #F8F8F2">mode</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;valid&#39;</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Limiar adaptativo (estimado do ruído)</span>
+<span style="color: #F8F8F2">noise_floor</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">median(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(corr_norm[corr_norm</span> <span style="color: #FF4689">&lt;</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">percentile(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(corr_norm),</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)]))</span>
+<span style="color: #F8F8F2">threshold</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">3.0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">noise_floor</span>
+
+<span style="color: #959077"># Detectar picos</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.signal </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">find_peaks</span>
+<span style="color: #F8F8F2">peaks,</span> <span style="color: #F8F8F2">_</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">find_peaks(corr_norm,</span> <span style="color: #F8F8F2">height</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">threshold,</span> <span style="color: #F8F8F2">distance</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">L_preamble</span><span style="color: #FF4689">//</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Detecção de Frame Sync:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Preâmbulo real em: {</span><span style="color: #F8F8F2">[fs </span><span style="color: #66D9EF">for</span><span style="color: #F8F8F2"> fs </span><span style="color: #FF4689">in</span><span style="color: #F8F8F2"> frame_starts]</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Detecções em:      {</span><span style="color: #F8F8F2">peaks</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tolist()</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Comprimento preâmbulo: {</span><span style="color: #F8F8F2">L_preamble</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Limiar: {</span><span style="color: #F8F8F2">threshold</span><span style="color: #E6DB74">:.3f}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Contar detecções corretas</span>
+<span style="color: #F8F8F2">correct</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0</span>
+<span style="color: #F8F8F2">missed</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0</span>
+<span style="color: #F8F8F2">false_alarms</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">frame_starts:</span>
+    <span style="color: #F8F8F2">found</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">any(abs(p</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">fs)</span> <span style="color: #FF4689">&lt;</span> <span style="color: #AE81FF">5</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">p</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">peaks)</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">found:</span>
+        <span style="color: #F8F8F2">correct</span> <span style="color: #FF4689">+=</span> <span style="color: #AE81FF">1</span>
+    <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #F8F8F2">missed</span> <span style="color: #FF4689">+=</span> <span style="color: #AE81FF">1</span>
+<span style="color: #F8F8F2">false_alarms</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">len(peaks)</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">correct</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Corretas: {</span><span style="color: #F8F8F2">correct</span><span style="color: #E6DB74">}/{</span><span style="color: #F8F8F2">N_frames</span><span style="color: #E6DB74">}, Perdidas: {</span><span style="color: #F8F8F2">missed</span><span style="color: #E6DB74">}, Falsas: {</span><span style="color: #F8F8F2">false_alarms</span><span style="color: #E6DB74">}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Plot: correlação com preâmbulos</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(corr_norm,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#2563eb&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Correlação normalizada&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">frame_starts:</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(fs,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#dc2626&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Preâmbulo real&#39;</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">==</span> <span style="color: #F8F8F2">frame_starts[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">else</span> <span style="color: #E6DB74">&#39;&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">p</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">peaks:</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(p,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#047857&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.6</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(threshold,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;#7c3aed&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;-&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;Limiar = {</span><span style="color: #F8F8F2">threshold</span><span style="color: #E6DB74">:.3f}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Amostra&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Correlação normalizada&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;Detecção de Frame Sync (BPSK, SNR={</span><span style="color: #F8F8F2">snr_db</span><span style="color: #E6DB74">} dB, L={</span><span style="color: #F8F8F2">L_preamble</span><span style="color: #E6DB74">})&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">close()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;✓ Frame sync simulation complete.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# === Detecção de Frame Sync por Correlação ===[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">8.9</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Um CFO de 1 kHz a 100 ksym/s gera quantos graus de rotação por símbolo? Mostre numericamente.</p>
+<p><strong>E2.</strong> Qual a faixa não ambígua do estimador por preâmbulo repetido para $F_s = 1$ MHz e $D = 100$?</p>
+<p><strong>E3.</strong> Um Costas loop QPSK de primeira ordem tem ganho combinado $K_dK_0=5000\,\text{rad/s por rad}$. Qual o erro de fase linearizado em regime permanente para um CFO de 500 Hz? O valor está dentro da região aproximadamente linear do detector?</p>
+<p><strong>E4.</strong> Deduza a expressão da BER para QPSK com erro de fase $\Delta\phi$ e compare com BPSK.</p>
+<p><strong>E5.</strong> Implemente um detector de Gardner para 16-QAM e meça o jitter residual em função do SNR.</p>
+<p><strong>E6.</strong> Para um preâmbulo de 128 símbolos BPSK a $E_b/N_0 = 15$ dB, calcule $P_{FA}$ para limiares $\gamma = \{5, 10, 15\} \cdot \sigma_n^2 E_p$.</p>
+<p><strong>E7.</strong> Compare a BER de BPSK com $\epsilon = 0{,}05\,T_s$ e $\Delta\phi = 10°$ — qual erro causa maior degradação?</p>
+<p><strong>E8.</strong> Implemente o estimador de Schmidl &amp; Cox para DVB-T (64/256/1024 pontos FFT) e meça a precisão do timing em função do SNR.</p>
+<p><strong>E9.</strong> Para um sistema OFDM com $N=64$ e $N_{cp}=16$, é possível determinar a janela segura de timing sem conhecer a duração do canal e a convenção de referência da janela FFT? Se o canal tiver $L_h=5$ amostras, qual é a margem total disponível dentro do CP?</p>
+<p><strong>E10.</strong> (Desafio) Implemente um receptor completo BPSK com: Costas loop, Gardner TED, detecção de preâmbulo, e decisor. Meça a BER final em função do SNR e compare com a curva teórica ideal.</p>
+<h2 id="gabarito"><span class="heading-number">8.10</span> Gabarito</h2>
+<p><strong>E1.</strong> Rotação por símbolo: $360° \cdot \Delta f / R_s = 360° \cdot 1000 / 100000 = \boxed{3{,}6°}$.</p>
+<p><strong>E2.</strong> Faixa não ambígua: $\boxed{|\Delta f| &lt; F_s/(2D) = 1\,\text{MHz}/200 = 5\,\text{kHz}}$.</p>
+<p><strong>E3.</strong> $\Delta\omega=2\pi(500)=3141{,}6\,\text{rad/s}$. Pela aproximação linear, $\epsilon_\phi^{\text{ss}}=\Delta\omega/(K_dK_0)=3141{,}6/5000\approx\boxed{0{,}628\,\text{rad}=36°}$. Esse erro já é grande para a linearização e, em QPSK, aproxima-se do limite da bacia desejada; deve-se aumentar a largura de malha ou realizar aquisição grosseira de CFO antes do rastreio.</p>
+<p><strong>E4.</strong> Para QPSK com erro de fase $\Delta\phi$: $P_b\approx Q(\sqrt{2E_b/N_0}\cos\Delta\phi)$ na aproximação que despreza o acoplamento entre eixos. A perda positiva é $L_\phi=-10\log_{10}(\cos^2\Delta\phi)$.</p>
+<p><strong>E5.</strong> Use a forma complexa $e_k=\operatorname{Re}\{y_k^*(y_{k-1/2}-y_{k+1/2})\}$, que combina I e Q e não pressupõe envelope constante. Meça o desvio padrão de $\hat\epsilon$ após descartar o transitório. Em regime dominado por ruído térmico, espera-se queda aproximadamente proporcional a $1/\sqrt{\mathrm{SNR}}$; em SNR alta, truncamento do interpolador e ruído próprio dos dados podem criar um piso de jitter.</p>
+<p><strong>E6.</strong> $P_{FA} = e^{-\gamma/(\sigma_n^2 E_p)}$. Para $\gamma = 5 \cdot \sigma_n^2 E_p$: $P_{FA} = e^{-5} \approx 6{,}7 \times 10^{-3}$. Para $\gamma = 10$: $e^{-10} \approx 4{,}5 \times 10^{-5}$. Para $\gamma = 15$: $e^{-15} \approx 3{,}1 \times 10^{-7}$.</p>
+<p><strong>E7.</strong> Desprezando a ISI, para sinc e $\epsilon=0{,}05$, $L_t\approx14{,}3(0{,}05)^2\approx0{,}036$ dB. Para $\Delta\phi=10^\circ=0{,}1745$ rad, $L_\phi\approx4{,}34(0{,}1745)^2\approx0{,}132$ dB. Assim, nesse modelo simplificado, $\boxed{\Delta\phi=10^\circ\text{ causa maior perda}}$; uma simulação com ISI deve confirmar a comparação para o pulso escolhido.</p>
+<p><strong>E8.</strong> Resposta: implementar o algoritmo da Seção “Estimador de Timing de Schmidl &amp; Cox” para cada tamanho FFT, variar SNR de 0 a 20 dB, e plotar a probabilidade de detecção correta vs. SNR. A precisão melhora com SNR maior e com maior $N_{cp}/N$.</p>
+<p><strong>E9.</strong> Não: $N_{cp}$ sozinho não determina um intervalo simétrico $|\Delta|&lt;N_{cp}$. É preciso saber onde $\Delta=0$ foi colocado e quantas amostras do CP são consumidas pela memória do canal. Com $L_h=5$, a memória é $L_h-1=4$ amostras e a margem total restante é $N_{cp}-(L_h-1)=16-4=\boxed{12\text{ amostras}}$. Essa margem pode ser distribuída de modo assimétrico entre avanço e atraso da janela.</p>
+<p><strong>E10.</strong> Receptor completo:</p>
+<ol>
+<li>Detecção de pacote por energia</li>
+<li>Estimador de CFO por preâmbulo repetido</li>
+<li>Costas loop para tracking fino de fase</li>
+<li>Gardner TED para timing</li>
+<li>Detecção de preâmbulo de frame</li>
+<li>Decisor BPSK<br />
+BER final deve convergir para a curva teórica $Q(\sqrt{2E_b/N_0})$ para SNR &gt; 8 dB, com degradação de $\approx 0{,}2$ dB devido ao jitter residual do loop.</li>
+</ol>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="07_equalizacao.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">7. Equalização — Compensação da Dispersão do Canal</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="09_codigos_corretores_erros.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">9. Códigos Corretores de Erros</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

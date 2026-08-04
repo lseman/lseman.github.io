@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>16. Projeto de PCBs Considerando Técnicas EMC — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>16. Projeto de PCBs Considerando Técnicas EMC</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>16. Projeto de PCBs Considerando Técnicas EMC</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="15_minimizacao_interferencias.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">15. Minimização de interferências EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="17_projeto_sistemas_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">17. Projeto de sistemas para EMC</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>16. Projeto de PCBs Considerando Técnicas EMC</h1>
+<blockquote>
+<p>Compatibilidade Eletromagnética — Apostila de Curso<br />
+Tópicos: Filosofia de Projeto PCB · Stack-up · Grounding · Decoupling/PDN · Routing · Isolamento · Conectores · Verificação EMC</p>
+</blockquote>
+<hr />
+<h2 id="antes-de-começar"><span class="heading-number">16.1</span> Antes de começar</h2>
+<p>Ao final, você deve revisar stack-up, retorno, PDN, roteamento, conectores e proteção como um sistema único. <strong>Diagnóstico:</strong> uma trilha curta pode ainda gerar grande emissão? <strong>Evidência mínima:</strong> anotar layout e esquema com caminhos de ida/retorno, correntes transitórias, zonas, interfaces e pontos previstos de medição.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#filosofia-de-projeto-pcb-para-emc">Filosofia de Projeto PCB para EMC</a></li>
+<li><a href="#sele%C3%A7%C3%A3o-de-stack-up-de-pcb">Seleção de Stack-up de PCB</a></li>
+<li><a href="#grounding--o-pilar-do-emc-em-pcb">Grounding — O Pilar do EMC em PCB</a></li>
+<li><a href="#decoupling-e-distribui%C3%A7%C3%A3o-de-energia-pdn">Decoupling e Distribuição de Energia (PDN)</a></li>
+<li><a href="#routing-para-emc--regras-pr%C3%A1ticas">Routing para EMC — Regras Práticas</a></li>
+<li><a href="#isolamento-e-separa%C3%A7%C3%A3o-de-sinais">Isolamento e Separação de Sinais</a></li>
+<li><a href="#conectores-e-interfaces--emc">Conectores e Interfaces — EMC</a></li>
+<li><a href="#verifica%C3%A7%C3%A3o-emc-em-pcb--antes-de-ir-para-o-proto">Verificação EMC em PCB — Antes de Ir para o Proto</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#estudo-integrado--interface-digital-com-cabo">Estudo integrado — interface digital com cabo</a></li>
+<li><a href="#laborat%C3%B3rio-spice--efeito-da-montagem-na-pdn">Laboratório SPICE — efeito da montagem na PDN</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<hr />
+<h2 id="filosofia-de-projeto-pcb-para-emc"><span class="heading-number">16.2</span> Filosofia de Projeto PCB para EMC</h2>
+<!-- slides: columns -->
+<h3 id="emc-desde-o-início--design-for-compliance"><span class="heading-number">16.2.1</span> EMC desde o Início — Design-for-Compliance</h3>
+<p>Projetar uma PCB considerando EMC desde a fase inicial (design-for-compliance) é <strong>cinco a dez vezes mais barato</strong> que corrigir problemas em protótipos avançados. Cada iteração de redesign custa tempo, dinheiro e atraso no time-to-market.</p>
+<p><strong>Princípio fundamental:</strong> EMC não é um problema de &quot;testes finais&quot;. É uma consequência direta das decisões de projeto tomadas na fase inicial: escolha de stack-up, posicionamento de componentes, routing e estratégia de grounding.</p>
+<!-- slides: column -->
+<h3 id="trade-offs-do-projeto-emc"><span class="heading-number">16.2.2</span> Trade-offs do Projeto EMC</h3>
+<p>Todo projeto EMC envolve compromissos entre:</p>
+<ul>
+<li><strong>Custo</strong> — mais camadas de PCB, blindagens, filtros aumentam o custo</li>
+<li><strong>Tamanho</strong> — spacing maior, blindagens aumentam a área</li>
+<li><strong>Performance</strong> — limites EMC podem restringir velocidades de clock e slew rates</li>
+<li><strong>Confiabilidade</strong> — filtros e supressores adicionam pontos potenciais de falha</li>
+</ul>
+<!-- slides: end-columns -->
+<h3 id="checklist-emc-por-fase-de-projeto"><span class="heading-number">16.2.3</span> Checklist EMC por Fase de Projeto</h3>
+<p><strong>Fase 1 — Especificação:</strong></p>
+<ul>
+<li>Definir normas aplicáveis (FCC, CE, CISPR)</li>
+<li>Classificar o produto (classe A ou B)</li>
+<li>Definir faixas de frequência de interesse</li>
+<li>Identificar fontes de ruído e vias de acoplamento</li>
+</ul>
+<p><strong>Fase 2 — Arquitetura:</strong></p>
+<ul>
+<li>Escolher stack-up adequado</li>
+<li>Definir estratégia de grounding</li>
+<li>Selecionar componentes de filtering</li>
+<li>Planejar zonas de sinais analógicos e digitais</li>
+</ul>
+<p><strong>Fase 3 — Layout:</strong></p>
+<ul>
+<li>Minimizar áreas de loop de corrente</li>
+<li>Manter planos de referência contínuos</li>
+<li>Routing de impedância controlada</li>
+<li>Decoupling adequado</li>
+</ul>
+<p><strong>Fase 4 — Verificação:</strong></p>
+<ul>
+<li>Regra de spacing e clearance</li>
+<li>Análise de integridade de sinal</li>
+<li>Simulação de EMC (se disponível)</li>
+<li>Revisão de conectores e blindagem</li>
+</ul>
+<h3 id="metodologia-de-projeto-emc"><span class="heading-number">16.2.4</span> Metodologia de Projeto EMC</h3>
+<p>A metodologia recomendada segue um ciclo iterativo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{Análise de Risco} \to \text{Design} \to \text{Simulação} \to \text{Teste} \to \text{Iteração}}
+
+$$
+</div>
+
+<ol>
+<li><strong>Análise de risco:</strong> identificar potenciais problemas de EMC antes do layout</li>
+<li><strong>Design:</strong> aplicar regras EMC no layout</li>
+<li><strong>Simulação:</strong> validar com ferramentas EM (FEM, FDTD, MoM)</li>
+<li><strong>Teste:</strong> medir emissões e imunidade em câmara anecoica</li>
+<li><strong>Iteração:</strong> corrigir problemas e repetir</li>
+</ol>
+<hr />
+<h2 id="seleção-de-stack-up-de-pcb"><span class="heading-number">16.3</span> Seleção de Stack-up de PCB</h2>
+<h3 id="stack-up-de-2-4-e-6-camadas"><span class="heading-number">16.3.1</span> Stack-up de 2, 4 e 6+ Camadas</h3>
+<p><strong>PCB de 2 camadas:</strong> pode ser adequada, mas exige disciplina para reservar cobre contínuo ao retorno e evitar que o roteamento fragmente esse caminho. Não existe corte universal em 10 MHz: conteúdo espectral é determinado sobretudo pelos tempos de subida/descida, comprimentos, correntes e geometria. Uma interface com <em>clock</em> baixo e bordas rápidas ainda pode exigir tratamento de alta frequência.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo comum</strong>, não configuração universalmente ideal, de stack-up de 4 camadas:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\text{Camada 1: Signal} \mid \text{Camada 2: Ground} \mid \text{Camada 3: Power} \mid \text{Camada 4: Signal}}
+
+$$
+</div>
+
+<p>O plano de ground na camada 2, adjacente à camada de sinal 1, fornece:</p>
+<ul>
+<li>Caminho de retorno de baixa impedância para sinais na camada 1</li>
+<li>Blindagem entre sinais das camadas 1 e 4</li>
+<li>Capacitância parasita natural entre signal e ground</li>
+</ul>
+<p><strong>PCB de 6+ camadas:</strong> oferece mais liberdade para manter referências adjacentes, controlar impedância e distribuir alimentação. A necessidade depende de densidade, interfaces, potência, fabricação, custo e metas de SI/PI/EMC.</p>
+<h3 id="impedância-de-microstrip-e-strip-line"><span class="heading-number">16.3.2</span> Impedância de Microstrip e Strip-line</h3>
+<p>A impedância característica de um traço microstrip (na borda da PCB) é dada aproximadamente pela fórmula de Hammerstad e Jensen:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_0 = \frac{87}{\sqrt{\varepsilon_r + 1{,}41}} \ln\left(\frac{5{,}98h}{0{,}8w + t}\right) \quad [\Omega]}
+
+$$
+</div>
+
+<p>onde:</p>
+<ul>
+<li>$h$ é a espessura do dieletrico entre o traço e o plano de referência (mm)</li>
+<li>$w$ é a largura do traço (mm)</li>
+<li>$t$ é a espessura do cobre (mm)</li>
+<li>$\varepsilon_r$ é a constante dielétrica do substrato</li>
+</ul>
+<p>Esta fórmula é válida para $0{,}1 &lt; w/h &lt; 2{,}0$ e $1 &lt; \varepsilon_r &lt; 15$.</p>
+<p>Para um traço strip-line (entre dois planos de referência):</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_0 = \frac{60}{\sqrt{\varepsilon_r}} \ln\left(\frac{4h}{0{,}67\pi w t}\right) \quad [\Omega]}
+
+$$
+</div>
+
+<p>onde $2h$ é a distância total entre os dois planos.</p>
+<h3 id="espessura-do-dieletrico-e-impacto-na-impedância"><span class="heading-number">16.3.3</span> Espessura do Dieletrico e Impacto na Impedância</h3>
+<p>O spacing entre o traço e o plano de referência determina:</p>
+<ol>
+<li>A impedância característica (para impedância controlada)</li>
+<li>A capacitância acoplada ao plano de referência</li>
+<li>A indutância do loop de retorno</li>
+</ol>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> Um spacing menor aumenta a capacitância distribuída (bom para decoupling) mas dificulta a fabricação e reduz a impedância característica.</p></aside>
+<p><strong>Capacitância entre traço e plano de referência:</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{C = \frac{\varepsilon_0 \varepsilon_r w L}{h}}
+
+$$
+</div>
+
+<p>onde $L$ é o comprimento do traço. Esta capacitância é essencial para o acoplamento de alta frequência ao plano de referência e para a eficácia do decoupling.</p>
+<p><strong>Spacing típico:</strong> Para FR-4 ($\varepsilon_r \approx 4{,}2$), um spacing de $h = 0{,}2\,\text{mm}$ (6 mil) entre sinal e ground produz impendâncias ~50 $\Omega$ com largura $w \approx 0{,}4\,\text{mm}$.</p>
+<hr />
+<h2 id="grounding--o-pilar-do-emc-em-pcb"><span class="heading-number">16.4</span> Grounding — O Pilar do EMC em PCB</h2>
+<h3 id="plano-de-ground-contínuo-vs-segmentado"><span class="heading-number">16.4.1</span> Plano de Ground Contínuo vs. Segmentado</h3>
+<p>Um <strong>plano de ground contínuo</strong> (solid ground plane) é o melhor para EMC em altas frequências. Fornece:</p>
+<ul>
+<li>Caminho de retorno de baixa impedância</li>
+<li>Capacitância distribuída com o plano de power (acoplamento de alta frequência)</li>
+<li>Blindagem contra campos eletromagnéticos</li>
+</ul>
+<p>Um <strong>plano segmentado</strong> (split plane) deve ser evitado em PCBs de alta velocidade. As lacunas no plano de ground forçam correntes de retorno a contornar as lacunas, criando loops grandes e antenas eficientes.</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> a decisão não depende apenas da frequência nominal. Planos segmentados podem ser necessários por segurança, isolamento ou arquitetura, mas nenhum sinal rápido deve cruzar uma fenda sem um caminho de retorno planejado. Analise a corrente e sua borda espectral; “baixa frequência” não torna automaticamente inofensivo um retorno interrompido.</p></aside>
+<h3 id="single-point-ground-vs-multi-point-ground"><span class="heading-number">16.4.2</span> Single-Point Ground vs. Multi-Point Ground</h3>
+<p><strong>Single-point ground (terra único):</strong> Todos os pontos do circuito são conectados a um único ponto físico. A impedância entre quaisquer dois pontos é puramente resistiva em baixas frequências. Adequado para:</p>
+
+<div class="math-display">
+$$
+
+\boxed{f &lt; f_{\text{crossover}} = \frac{1}{2\sqrt{LC}} \quad \text{(single-point)}}
+
+$$
+</div>
+
+<p><strong>Multi-point ground (terra múltiplo):</strong> Cada módulo ou subcircuito tem seu próprio ponto de conexão ao ground. A impedância é minimizada pelos capacitores de bypass e pela indutância do plano. Adequado para:</p>
+
+<div class="math-display">
+$$
+
+\boxed{f &gt; f_{\text{crossover}} \quad \text{(multi-point)}}
+
+$$
+</div>
+
+<p><strong>Frequência de crossover:</strong> O ponto de transição entre single-point e multi-point depende da indutância $L$ e capacitância $C$ do caminho de retorno:</p>
+
+<div class="math-display">
+$$
+
+\boxed{f_{\text{crossover}} \approx \frac{1}{2\pi\sqrt{L_{\text{ground}} C_{\text{bypass}}}}}
+
+$$
+</div>
+
+<p>Para uma PCB típica ($L_{\text{ground}} \approx 1\,\text{nH}$, $C_{\text{bypass}} \approx 100\,\text{nF}$):</p>
+
+<div class="math-display">
+$$
+
+f_{\text{crossover}} \approx \frac{1}{2\pi\sqrt{10^{-9} \cdot 10^{-7}}} \approx 1{,}6\,\text{MHz}
+
+$$
+</div>
+
+<h3 id="impedância-do-plano-de-ground"><span class="heading-number">16.4.3</span> Impedância do Plano de Ground</h3>
+<p>A impedância de um plano de ground vista de uma frequência $f$ é dominada pela indutância:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_{\text{ground}} \approx j\omega \frac{h}{w} \sqrt{\frac{\mu_0}{\varepsilon_0}} \quad (\text{aproximação})}
+
+$$
+</div>
+
+<p>onde $h$ é a distância entre o plano e o sinal, e $w$ é a largura do caminho de retorno. Em um plano sólido, a indutância por quadrado é aproximadamente constante:</p>
+
+<div class="math-display">
+$$
+
+\boxed{L_{\square} \approx \frac{\mu_0}{2\pi} \approx 633\,\text{pH/quadrado}}
+
+$$
+</div>
+
+<p>Portanto, a indutância de um caminho de retorno é proporcional ao número de quadrados do trajeto.</p>
+<h3 id="stitching-vias"><span class="heading-number">16.4.4</span> Stitching Vias</h3>
+<p>Vias de stitching conectam planos de ground em PCBs multicamada, reduzindo a impedância entre planos.</p>
+
+<div class="math-display">
+$$
+
+\boxed{L_{\text{via}} \approx 1\,\text{nH}/\text{via} \quad (\text{via típica})}
+
+$$
+</div>
+
+<p>Para ser efetiva em alta frequência, o spacing entre stitching vias deve ser pequeno:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s \leq \frac{\lambda_g}{20} = \frac{\lambda_0}{20\sqrt{\varepsilon_r}}}
+
+$$
+</div>
+
+<p>Para 1 GHz em FR-4 ($\varepsilon_r = 4{,}2$): $\lambda_g \approx 73\,\text{mm}$, logo $s \leq 3{,}7\,\text{mm}$.</p>
+<p><strong>Prática recomendada:</strong> colocar stitching vias a cada 5–10 mm nas bordas da PCB e ao redor de componentes de alta velocidade.</p>
+<hr />
+<h2 id="decoupling-e-distribuição-de-energia-pdn"><span class="heading-number">16.5</span> Decoupling e Distribuição de Energia (PDN)</h2>
+<h3 id="impedância-target-da-pdn"><span class="heading-number">16.5.1</span> Impedância Target da PDN</h3>
+<p>A Power Distribution Network (PDN) deve fornecer corrente suficiente a qualquer CI em qualquer frequência, mantendo a tensão de alimentação dentro da tolerância:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_{\text{target}} = \frac{V_{\text{ripple}}}{I_{\text{transient}}}}
+
+$$
+</div>
+
+<p>onde:</p>
+<ul>
+<li>$V_{\text{ripple}}$ é a tensão máxima permitida de ripple (tipicamente 5% de $V_{\text{DD}}$)</li>
+<li>$I_{\text{transient}}$ é a corrente transitória máxima demandada pelo CI</li>
+</ul>
+<p>Para um CI com $V_{\text{DD}} = 3{,}3\,\text{V}$, $V_{\text{ripple}} = 0{,}165\,\text{V}$ e $I_{\text{transient}} = 1\,\text{A}$:</p>
+
+<div class="math-display">
+$$
+
+Z_{\text{target}} = \frac{0{,}165}{1} = 0{,}165\,\Omega
+
+$$
+</div>
+
+<h3 id="capacitores-de-decoupling"><span class="heading-number">16.5.2</span> Capacitores de Decoupling</h3>
+<p>Capacitores de decoupling fornecem carga local para transientes de corrente, reduzindo a impedância da PDN na faixa de alta frequência. Múltiplos valores são necessários para cobrir uma banda larga:</p>
+<p>Não existe “Lei das Décadas” que garanta uma PDN plana. Misturar valores por fatores de 10 pode <strong>criar</strong> anti-ressonâncias entre capacitâncias e indutâncias. A seleção deve usar modelos de componentes e montagem, impedância do plano/VRM e simulação ou medição contra $Z_{\text{target}}$. Em muitos casos, vários capacitores iguais e bem montados reduzem impedância de modo mais previsível.</p>
+<table>
+<thead>
+<tr>
+<th>Escolha</th>
+<th>Papel típico</th>
+<th>O que realmente define a faixa útil</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bulk/VRM</td>
+<td>Corrente de baixa frequência e energia do conversor</td>
+<td>Controle do VRM, ESR e interconexão</td>
+</tr>
+<tr>
+<td>MLCCs próximos à carga</td>
+<td>Transientes locais</td>
+<td>ESL de montagem, plano de referência, SRF e anti-ressonâncias</td>
+</tr>
+<tr>
+<td>Capacitores pequenos/RF</td>
+<td>Ajuste pontual quando justificado</td>
+<td>Modelo S-parameter, geometria e meta de impedância</td>
+</tr>
+</tbody>
+</table>
+<p>O valor nominal, por si só, não determina uma faixa de frequência universal. Um MLCC de mesmo valor pode ter SRF muito diferente conforme encapsulamento, viás, distância ao CI, viés DC e plano de retorno.</p>
+<h3 id="capacitor-real-com-elementos-parasitas"><span class="heading-number">16.5.3</span> Capacitor Real com Elementos Parasitas</h3>
+<p>Um capacitor real possui indutância série ($L_s$) e resistência série ($R_s$):</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z(s) = R_s + sL_s + \frac{1}{sC} = R_s + j\omega L_s - j\frac{1}{\omega C}}
+
+$$
+</div>
+
+<p>A impedância tem formato de &quot;V&quot;: diminui com a frequência (comportamento capacitivo) até a <strong>frequência de auto-ressonância</strong>, onde $X_L = X_C$, e depois aumenta (comportamento indutivo).</p>
+<p><strong>Frequência de auto-ressonância:</strong></p>
+
+<div class="math-display">
+$$
+
+\boxed{f_{SR} = \frac{1}{2\pi\sqrt{L_s C}}}
+
+$$
+</div>
+
+<p>Um capacitor de 100 nF com $L_s = 2\,\text{nH}$ ressona em:</p>
+
+<div class="math-display">
+$$
+
+f_{SR} = \frac{1}{2\pi\sqrt{2\times 10^{-9} \cdot 100\times 10^{-9}}} \approx 11{,}25\,\text{MHz}
+
+$$
+</div>
+
+<p>Acima de $f_{SR}$, o ramo torna-se indutivo; isso não o torna instantaneamente “inútil”. Sua impedância pode continuar abaixo de $Z_{\text{target}}$ por alguma faixa e interagir com a PDN. Avalie o módulo e o caminho de montagem, não apenas o sinal da reatância.</p>
+<h3 id="pdn-resonance-e-anti-resonance"><span class="heading-number">16.5.4</span> PDN Resonance e Anti-Resonance</h3>
+<p>Quando múltiplos capacitores são usados, interagem formando picos de impedância na PDN.</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> Anti-resonâncias causam picos de impedância que podem exceder $Z_{\text{target}}$, levando a violações de ruído de terra e emissões conduzidas.</p></aside>
+<p>A impedância máxima no anti-resonance é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_{\text{max}} = \frac{L_{s1}}{R_{s1} C_{s1}}}
+
+$$
+</div>
+
+<p>O anti-resonance ocorre quando a indutância de um capacitor ressona com a capacitância de outro:</p>
+
+<div class="math-display">
+$$
+
+\boxed{f_{\text{anti-res}} = \frac{1}{2\pi\sqrt{L_{s1} C_2}} \quad (\text{para } L_1 C_2 \neq L_2 C_1)}
+
+$$
+</div>
+
+<p><strong>Prática recomendada:</strong> calcule a impedância do conjunto com ESR/ESL e montagem reais; adicione amortecimento quando necessário. A razão entre valores, sozinha, não prevê a altura do pico de anti-ressonância.</p>
+<h3 id="estratégia-de-distribuição-de-decoupling"><span class="heading-number">16.5.5</span> Estratégia de Distribuição de Decoupling</h3>
+<p>Distribuir capacitores por toda a PCB, o mais próximo possível dos pins de alimentação dos CIs:</p>
+<ol>
+<li><strong>Capacitor de bypass do CI:</strong> 0,1 µF o mais próximo possível de cada par VDD/GND</li>
+<li><strong>Capacitores de placa:</strong> 1–10 µF a cada 2–3 cm para distribuir corrente</li>
+<li><strong>Capacitor de entrada:</strong> 10–100 µF na entrada da alimentação</li>
+</ol>
+<hr />
+<h2 id="routing-para-emc--regras-práticas"><span class="heading-number">16.6</span> Routing para EMC — Regras Práticas</h2>
+<h3 id="regra-do-loop-mínimo"><span class="heading-number">16.6.1</span> Regra do Loop Mínimo</h3>
+<p>A área do loop de corrente é diretamente proporcional à emissão de campo magnético.</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema:</strong> O momento de dipolo magnético de um loop é $m = I \cdot A_{\text{loop}}$. A potência irradiada é proporcional a $|m|^2 \cdot f^4$, logo reduzir $A_{\text{loop}}$ tem impacto quadrático na redução de emissões.</p></aside>
+<p>A área do loop de corrente é diretamente proporcional à emissão de campo magnético:</p>
+
+<div class="math-display">
+$$
+
+\boxed{A_{\text{loop}} \leq \frac{\lambda}{20} \times \text{spacing}}
+
+$$
+</div>
+
+<p>Para minimizar emissões, o caminho de retorno deve seguir diretamente abaixo do traço de sinal (sobre o plano de ground). Isso minimiza $A_{\text{loop}}$.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> O caminho de retorno de alta frequência segue o caminho de <strong>mínima indutância</strong>, não de mínima resistência. Para frequências acima de ~1 MHz, este caminho está diretamente abaixo do traço de sinal no plano de referência adjacente.</p></aside>
+<h3 id="trace-length-matching"><span class="heading-number">16.6.2</span> Trace Length Matching</h3>
+<p>Para buses de dados sincronizados, o matching de comprimento minimiza skew:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\Delta L \leq \frac{c \cdot \Delta t}{\sqrt{\varepsilon_{\text{eff}}}}}
+
+$$
+</div>
+
+<p>onde $\Delta t$ é o skew máximo tolerável e $\varepsilon_{\text{eff}}$ é a constante dielétrica efetiva do trajeto.</p>
+<p>Para um clock de 100 MHz ($T = 10\,\text{ns}$), com $\varepsilon_{\text{eff}} = 3{,}5$ e $\Delta t = 0{,}5\,\text{ns}$:</p>
+
+<div class="math-display">
+$$
+
+\Delta L \leq \frac{3\times 10^8 \cdot 0{,}5\times 10^{-9}}{\sqrt{3{,}5}} \approx 25{,}4\,\text{mm}
+
+$$
+</div>
+
+<h3 id="regras-de-spacing-para-reduzir-coupling"><span class="heading-number">16.6.3</span> Regras de Spacing para Reduzir Coupling</h3>
+<p>O coupling entre traces paralelos é minimizado com spacing adequado:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s \geq 3w \quad \text{(para acoplamento mínimo)}}
+
+$$
+</div>
+
+<p>onde $s$ é o spacing e $w$ é a largura do traço.</p>
+<p>Acoplamento capacitivo entre traces paralelos:</p>
+
+<div class="math-display">
+$$
+
+C_{\text{mut}} \approx \frac{\varepsilon_0 \varepsilon_r L}{s} \quad (\text{aproximação})
+
+$$
+</div>
+
+<p>O crosstalk induzido é proporcional a $dV/dt$ do sinal agressor e à capacitância mútua:</p>
+
+<div class="math-display">
+$$
+
+V_{\text{xtalk}} \approx Z_0 \cdot C_{\text{mut}} \cdot \frac{dV_{\text{aggressor}}}{dt}
+
+$$
+</div>
+
+<h3 id="via-minimization"><span class="heading-number">16.6.4</span> Via Minimization</h3>
+<p>Cada via adiciona indutância parasita e descontinuidade de impedância:</p>
+
+<div class="math-display">
+$$
+
+\boxed{L_{\text{parasitic}} \approx 0{,}5\text{--}2\,\text{nH}/\text{via}}
+
+$$
+</div>
+
+<p>A indutância parcial de uma via isolada pode ser estimada, em SI, por:</p>
+
+<div class="math-display">
+$$
+
+\boxed{L_{\text{via}} \approx \frac{\mu_0h}{2\pi} \left(\ln\frac{4h}{r} - 1\right)}
+
+$$
+</div>
+
+<p>Aqui $h$ e $r$ devem estar na mesma unidade dentro do logaritmo e $h$ deve estar em metros no fator externo. O valor efetivo depende fortemente do caminho de retorno, antipads, vias próximas e planos; use solver/TDR para descontinuidades críticas.</p>
+<p><strong>Prática:</strong> minimizar o número de vias em sinais de alta frequência. Cada via é uma descontinuidade que pode causar reflexão e emissão.</p>
+<h3 id="guard-traces"><span class="heading-number">16.6.5</span> Guard Traces</h3>
+<p>Guard traces são condutores aterrados colocados entre traces para reduzir acoplamento. Sua eficácia é limitada e depende do spacing e do número de stitching vias:</p>
+<p>Não existe redução universal pela metade. Uma guarda flutuante pode até ressoar ou aumentar acoplamento; uma guarda bem referenciada requer vias suficientemente próximas para a banda de interesse. Compare geometria em solver ou por cupom. Em geral, aumentar espaçamento e aproximar a referência são intervenções mais previsíveis.</p>
+<hr />
+<h2 id="isolamento-e-separação-de-sinais"><span class="heading-number">16.7</span> Isolamento e Separação de Sinais</h2>
+<h3 id="separação-analógico-digital"><span class="heading-number">16.7.1</span> Separação Analógico-Digital</h3>
+<p>Sinais digitais (ruídosos, alta $dV/dt$) devem ser fisicamente separados de sinais analógicos (sensíveis).</p>
+<aside class="callout callout-definition" role="note"><p><strong>Definição:</strong> O princípio de zoning EMC estabelece que sinais com diferentes perfis de interferência devem ser alocados em regiões distintas da PCB, com boundaries bem definidos e retorno de corrente controlado.</p></aside>
+<p>Não há regra útil do tipo “separe analógico e digital por $\lambda/10$”: em muitas PCBs isso exigiria distância maior que a própria placa e ainda ignoraria o mecanismo de acoplamento. Determine o espaçamento por campo próximo, paralelismo, impedâncias, bordas e sensibilidade; mantenha cada corrente sobre sua região de referência e evite que retornos ruidosos atravessem nós analógicos sensíveis.</p>
+<h3 id="zoning-na-pcb"><span class="heading-number">16.7.2</span> Zoning na PCB</h3>
+<p>A PCB deve ser dividida em zonas funcionais:</p>
+<ul>
+<li><strong>Zona digital:</strong> clocks, buffers, CIs digitais</li>
+<li><strong>Zona analógica:</strong> amplificadores, sensores, referências</li>
+<li><strong>Zona de potência:</strong> reguladores, drivers</li>
+<li><strong>Zona de interface:</strong> conectores, drivers de linha</li>
+</ul>
+<p>Em muitas placas mistas, as zonas compartilham um plano de referência contínuo e são separadas pelo posicionamento e pelos caminhos de corrente, não por uma fenda. Sinais que cruzam zonas precisam levar seu retorno. Isolação galvânica ou requisitos de segurança podem exigir domínios separados; nesse caso, respeite a barreira e controle capacitâncias e componentes de travessia.</p>
+<h3 id="isoladores"><span class="heading-number">16.7.3</span> Isoladores</h3>
+<p>Para isolação galvânica completa:</p>
+<ul>
+<li><strong>Amplificadores de isolamento:</strong> precisão e bandwidth limitadas</li>
+<li><strong>Isoladores ópticos (optocouplers):</strong> isolamento &gt; 5 kV, bandwidth até 10 MHz</li>
+<li><strong>Transformadores de isolamento:</strong> isolamento em sinais diferenciais, acoplamento CA</li>
+</ul>
+<p>Impedância de common-mode choke em interfaces:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_{\text{CM}} = j\omega L_{\text{CM}}}
+
+$$
+</div>
+
+<p>Um choke com $L_{\text{CM}} = 10\,\text{mH}$ a 10 MHz tem $Z_{\text{CM}} = 2\pi \cdot 10^7 \cdot 10^{-2} \approx 630\,\text{k}\Omega$.</p>
+<hr />
+<h2 id="conectores-e-interfaces--emc"><span class="heading-number">16.8</span> Conectores e Interfaces — EMC</h2>
+<h3 id="conectores-como-porta-de-entrada-de-emi"><span class="heading-number">16.8.1</span> Conectores como Porta de Entrada de EMI</h3>
+<p>Conectores são vias preferenciais para acoplamento de interferência, pois os fios conectados atuam como antenas eficientes:</p>
+<ul>
+<li>Cabos de I/O podem irradiar ou receber energia EM</li>
+<li>A blindagem do conector deve ser conectada ao chassi em 360°</li>
+<li>Sinais de alta frequência devem ter retorno próximo ao conector</li>
+</ul>
+<h3 id="filtering-nos-conectores"><span class="heading-number">16.8.2</span> Filtering nos Conectores</h3>
+<p>Filtros nos conectores bloqueiam ruído conduzido:</p>
+<ul>
+<li><strong>Ferrites:</strong> $Z_{\text{ferrite}} = R + j\omega L$, inserção em série com o cabo</li>
+<li><strong>Capacitores feedthrough:</strong> conectados diretamente ao shell do conector</li>
+<li><strong>Filtros π:</strong> LC combinados para atenuação em banda larga</li>
+</ul>
+<h3 id="grounding-do-shell-do-conector"><span class="heading-number">16.8.3</span> Grounding do Shell do Conector</h3>
+<p>Conexão do shell do conector ao chassi.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante:</strong> Um shell não conectado adequadamente ao chassi age como antena, acoplando ruído interno ao cabo e ruído externo ao circuito interno. A qualidade do bonding determina a efetividade do blindamento do conector.</p></aside>
+<p><strong>360° contact (ideal):</strong> O shell do conector é montado em uma ferrule metálica que faz contato circunferencial completo com o chassi. Esta é a prática recomendada para frequências acima de 10 MHz.</p>
+<p><strong>Pigtail (não recomendado para EMC):</strong> Fio conectando o shell ao chassi. A indutância do fio ($\approx 250\,\text{nH/m}$) torna a conexão ineficaz acima de ~10 MHz.</p>
+<h3 id="cable-exit-strategies"><span class="heading-number">16.8.4</span> Cable Exit Strategies</h3>
+<p>Ao sair da PCB para o cabo, o harness (conjunto de cabos) deve ser <strong>bonded</strong> (conectado) ao chassi na borda da carcaça:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_{\text{bond}} \leq \frac{1}{20\pi f C_{\text{parasita}}}}
+
+$$
+</div>
+
+<p>A capacitância parasita entre o harness e o chassi deve ser maximizada (largura de bonding larga) para fornecer caminho de retorno de baixa impedância.</p>
+<hr />
+<h2 id="verificação-emc-em-pcb--antes-de-ir-para-o-proto"><span class="heading-number">16.9</span> Verificação EMC em PCB — Antes de Ir para o Proto</h2>
+<h3 id="checklist-de-revisão-emc"><span class="heading-number">16.9.1</span> Checklist de Revisão EMC</h3>
+<p>Antes de enviar o layout para fabricação, verificar todos os itens abaixo.</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação:</strong> A maioria dos problemas de EMC pode ser detectada em uma revisão de layout antes da fabricação. Um problema detectado após o proto custa ~10× mais para corrigir.</p></aside>
+<ol>
+<li><strong>Stack-up:</strong> plano de ground contínuo? spacing adequado?</li>
+<li><strong>Decoupling:</strong> capacitor em cada par VDD/GND do CI? valores corretos?</li>
+<li><strong>Grounding:</strong> single-point ou multi-point conforme a frequência?</li>
+<li><strong>Routing:</strong> loops minimizados? impedance controlada? spacing adequado?</li>
+<li><strong>Via:</strong> mínimo de vias em sinais críticos? stitching vias suficientes?</li>
+<li><strong>Conectores:</strong> filtering presente? shell bonded ao chassi?</li>
+<li><strong>Zoning:</strong> analógico e digital separados?</li>
+<li><strong>Boundary:</strong> bordas da PCB afastadas do plano de ground?</li>
+</ol>
+<h3 id="simulação-em"><span class="heading-number">16.9.2</span> Simulação EM</h3>
+<p>Ferramentas de simulação EM permitem prever problemas de EMC antes da fabricação:</p>
+<ul>
+<li><strong>FEM (Finite Element Method):</strong> ideal para estruturas 3D, blindagens, conectores</li>
+<li><strong>FDTD (Finite-Difference Time-Domain):</strong> ideal para problemas de irradiação e acoplamento</li>
+<li><strong>Method of Moments (MoM):</strong> ideal para antenas e PCBs planares</li>
+</ul>
+<h3 id="medida-de-impedância-do-pdn"><span class="heading-number">16.9.3</span> Medida de Impedância do PDN</h3>
+<p>Antes da fabricação, a impedância do PDN pode ser estimada via simulação. Após a fabricação, medidas com analisador de rede vetor (VNA) validam o projeto:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Z_{\text{PDN}}(f) = \frac{V(f)}{I(f)}}
+
+$$
+</div>
+
+<p>Medindo $S_{21}$ com um probe de força de corrente e comparando com $Z_{\text{target}}$.</p>
+<h3 id="near-field-scanning"><span class="heading-number">16.9.4</span> Near-Field Scanning</h3>
+<p>Após a fabricação, near-field probes (sondas de campo próximo) identificam hotspots de EMI:</p>
+<ul>
+<li>Sonda E (campo elétrico): detecta acoplamento capacitivo</li>
+<li>Sonda H (campo magnético): detecta correntes de loop</li>
+<li>Mapeamento raster sobre a PCB revela emissões concentradas</li>
+</ul>
+<hr />
+<h3 id="plano-de-pré-conformidade-e-critérios-de-saída"><span class="heading-number">16.9.5</span> Plano de pré-conformidade e critérios de saída</h3>
+<p>Antes do laboratório formal, transforme riscos de layout em medições reproduzíveis:</p>
+<ol>
+<li><strong>Baseline:</strong> firmware, carga, cabos, alimentação e modos operacionais definidos.</li>
+<li><strong>Emissão conduzida:</strong> LISN ou rede equivalente apropriada, detector e RBW documentados.</li>
+<li><strong>Corrente de cabo:</strong> sonda de corrente de RF em cada interface e sobre o feixe completo para separar DM/CM.</li>
+<li><strong>Campo próximo:</strong> mapas E/H com escala, distância e orientação constantes; mapas servem para localizar fontes, não para prever diretamente o campo distante.</li>
+<li><strong>PDN:</strong> impedância por VNA com fixture/de-embedding adequado e comparação com $Z_{target}=\Delta V/\Delta I$.</li>
+<li><strong>Integridade de retorno:</strong> TDR ou inspeção orientada por corrente para vias, conectores, fendas e mudanças de camada.</li>
+<li><strong>Imunidade exploratória:</strong> injeção controlada somente com limites de segurança e critérios funcionais definidos.</li>
+</ol>
+<p>O projeto só deve sair da revisão quando cada risco alto tiver responsável, evidência, margem-alvo e ação de contingência. “Passou no protótipo” sem configuração e incerteza registradas não é um critério reutilizável.</p>
+<h3 id="checklist-de-revisão-baseado-em-corrente"><span class="heading-number">16.9.6</span> Checklist de revisão baseado em corrente</h3>
+<ul>
+<li>Onde nasce cada corrente transitória?</li>
+<li>Qual é o caminho de ida e qual é o retorno em cada faixa de frequência?</li>
+<li>A corrente cruza uma mudança de referência, conector ou fenda?</li>
+<li>Existe uma interface capaz de converter modo diferencial em comum?</li>
+<li>Capacitores de desacoplamento fecham o loop localmente antes de alimentar o plano inteiro?</li>
+<li>Proteções ESD descarregam ao chassi sem atravessar circuitos sensíveis?</li>
+<li>A blindagem termina em baixa impedância ou por um <em>pigtail</em> indutivo?</li>
+<li>Pontos de teste permitem medir corrente CM, PDN e sinais críticos sem alterar excessivamente o sistema?</li>
+</ul>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">16.10</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">16.10.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> apoiar decisões de stack-up, PDN e acoplamento antes do protótipo. <strong>Hipóteses:</strong> registre geometria, $\varepsilon_r(f)$, perdas, modelos de capacitor e retorno. <strong>Validação:</strong> compare aproximações com solver ou medição quando o comprimento elétrico, as descontinuidades ou as tolerâncias invalidarem fórmulas fechadas.</p>
+<h3 id="cálculo-de-impedância-de-microstrip-e-coplanar-waveguide"><span class="heading-number">16.10.2</span> Cálculo de Impedância de Microstrip e Coplanar Waveguide</h3>
+<p><strong>Exercício:</strong> Calcule a impedância característica de um microstrip em FR-4 com $h = 0{,}2\,\text{mm}$, $w = 0{,}4\,\text{mm}$, $t = 0{,}035\,\text{mm}$, $\varepsilon_r = 4{,}2$.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">microstrip_impedance</span><span style="color: #F8F8F2">(w,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">t</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.035</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">er</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">4.2</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Calcula a impedância de um microstrip usando a fórmula de Hammerstad e Jensen.</span>
+<span style="color: #E6DB74">    </span>
+<span style="color: #E6DB74">    Parâmetros (mm):</span>
+<span style="color: #E6DB74">        w: largura do traço</span>
+<span style="color: #E6DB74">        h: espessura do dieletrico</span>
+<span style="color: #E6DB74">        t: espessura do cobre</span>
+<span style="color: #E6DB74">        er: constante dielétrica</span>
+<span style="color: #E6DB74">    </span>
+<span style="color: #E6DB74">    Retorna:</span>
+<span style="color: #E6DB74">        Z0 em Ohms</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">h</span> <span style="color: #FF4689">&lt;</span> <span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #959077"># Equação para traces estreitos</span>
+        <span style="color: #F8F8F2">Z0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">60</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(er))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log((</span><span style="color: #AE81FF">4</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">h)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.67</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">t))</span>
+    <span style="color: #66D9EF">elif</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">h</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">2.0</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #959077"># Equação para traces largos</span>
+        <span style="color: #F8F8F2">Z0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">120</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(er)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(w</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">h</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1.393</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">0.667</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log(w</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">h</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1.444</span><span style="color: #F8F8F2">)))</span>
+    <span style="color: #66D9EF">else</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #959077"># Equação de Hammerstad e Jensen</span>
+        <span style="color: #F8F8F2">Z0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">87</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(er</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1.41</span><span style="color: #F8F8F2">))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log((</span><span style="color: #AE81FF">5.98</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">h)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.8</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">t))</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">Z0</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">stripline_impedance</span><span style="color: #F8F8F2">(w,</span> <span style="color: #F8F8F2">b,</span> <span style="color: #F8F8F2">t</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.035</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">er</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">4.2</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Aproximação didática para stripline simétrica; b é distância entre planos.&quot;&quot;&quot;</span>
+    <span style="color: #959077"># O argumento do logaritmo deve ser adimensional. Esta aproximação não</span>
+    <span style="color: #959077"># substitui o solver do fabricante para cobre trapezoidal/máscara/tolerâncias.</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">60</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(er))</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log((</span><span style="color: #AE81FF">4</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">b)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.67</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0.8</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">t)))</span>
+
+<span style="color: #959077"># Parâmetros FR-4</span>
+<span style="color: #F8F8F2">h</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.2</span>    <span style="color: #959077"># mm (6 mil)</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.035</span>  <span style="color: #959077"># mm (1 oz)</span>
+<span style="color: #F8F8F2">er</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4.2</span>
+
+<span style="color: #959077"># Variação de Z0 com w</span>
+<span style="color: #F8F8F2">ws</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># mm</span>
+<span style="color: #F8F8F2">Z0_micro</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[microstrip_impedance(w,</span> <span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">t,</span> <span style="color: #F8F8F2">er)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">ws]</span>
+<span style="color: #F8F8F2">Z0_strip</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[stripline_impedance(w,</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">h,</span> <span style="color: #F8F8F2">t,</span> <span style="color: #F8F8F2">er)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">ws]</span>  <span style="color: #959077"># b = 2h</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(ws,</span> <span style="color: #F8F8F2">Z0_micro,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;Microstrip&quot;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(ws,</span> <span style="color: #F8F8F2">Z0_strip,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;Strip-line&quot;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">50</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;50 Ω target&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">75</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;green&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;:&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;75 Ω target&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&quot;Largura do traço $w$ [mm]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&quot;Impedância $Z_0$ [$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">Omega$]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&quot;Impedância de Microstrip vs. Strip-line (FR-4, $h=0.2$ mm)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #959077"># Valores para 50 Ω</span>
+<span style="color: #959077"># Z0 decresce com w; np.interp requer o eixo x crescente.</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Para 50 Ω microstrip com h={</span><span style="color: #F8F8F2">h</span><span style="color: #E6DB74">}mm: w ≈ {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">interp(</span><span style="color: #AE81FF">50</span><span style="color: #F8F8F2">, Z0_micro[::</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">], ws[::</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span><span style="color: #E6DB74">:.3f} mm&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Para 50 Ω strip-line com 2h={</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">h</span><span style="color: #E6DB74">}mm: w ≈ {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">interp(</span><span style="color: #AE81FF">50</span><span style="color: #F8F8F2">, Z0_strip[::</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">], ws[::</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">])</span><span style="color: #E6DB74">:.3f} mm&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mmicrostrip_impedance[39m(w, h, t=[32m0.035[39m, er=[32m4.2[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="simulação-de-pdn-impedance-com-múltiplos-capacitores"><span class="heading-number">16.10.3</span> Simulação de PDN Impedance com Múltiplos Capacitores</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">pdn_impedance</span><span style="color: #F8F8F2">(f,</span> <span style="color: #F8F8F2">C_vals,</span> <span style="color: #F8F8F2">Ls_vals,</span> <span style="color: #F8F8F2">Rs_vals</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Simula a impedância da PDN com múltiplos capacitores de decoupling.</span>
+<span style="color: #E6DB74">    </span>
+<span style="color: #E6DB74">    Parâmetros:</span>
+<span style="color: #E6DB74">        f: array de frequências (Hz)</span>
+<span style="color: #E6DB74">        C_vals: lista de capacitâncias (F)</span>
+<span style="color: #E6DB74">        Ls_vals: lista de indutâncias série (H)</span>
+<span style="color: #E6DB74">        Rs_vals: resistência série (Ω)</span>
+<span style="color: #E6DB74">    </span>
+<span style="color: #E6DB74">    Retorna:</span>
+<span style="color: #E6DB74">        Z: array de impedâncias (Ω)</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">omega</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">f</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">isscalar(Rs_vals):</span>
+        <span style="color: #F8F8F2">Rs_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">full(len(C_vals),</span> <span style="color: #F8F8F2">Rs_vals,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">float)</span>
+    <span style="color: #959077"># Cada ramo é R-ESL-C em série; os ramos ficam em paralelo na PDN.</span>
+    <span style="color: #F8F8F2">Y_total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros_like(f,</span> <span style="color: #F8F8F2">dtype</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">complex)</span>
+    <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">C,</span> <span style="color: #F8F8F2">Ls,</span> <span style="color: #F8F8F2">Rs</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(C_vals,</span> <span style="color: #F8F8F2">Ls_vals,</span> <span style="color: #F8F8F2">Rs_vals):</span>
+        <span style="color: #F8F8F2">Z_branch</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Rs</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">omega</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Ls</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">omega</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">C)</span>
+        <span style="color: #F8F8F2">Y_total</span> <span style="color: #FF4689">+=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">Z_branch</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">Y_total</span>
+
+<span style="color: #959077"># Capacitores típicos: valores, indutância série (SMD 0402)</span>
+<span style="color: #F8F8F2">capacitors</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">{</span>
+    <span style="color: #E6DB74">&#39;10 µF&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5e-9</span><span style="color: #F8F8F2">),</span>   <span style="color: #959077"># C, Ls</span>
+    <span style="color: #E6DB74">&#39;1 µF&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3e-9</span><span style="color: #F8F8F2">),</span>
+    <span style="color: #E6DB74">&#39;100 nF&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">100e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2e-9</span><span style="color: #F8F8F2">),</span>
+    <span style="color: #E6DB74">&#39;10 nF&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1e-9</span><span style="color: #F8F8F2">),</span>
+    <span style="color: #E6DB74">&#39;1 nF&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.5e-9</span><span style="color: #F8F8F2">),</span>
+    <span style="color: #E6DB74">&#39;100 pF&#39;</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">100e-12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.3e-9</span><span style="color: #F8F8F2">),</span>
+<span style="color: #F8F8F2">}</span>
+
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 10 kHz a 10 GHz</span>
+<span style="color: #F8F8F2">C_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[c[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">c</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">capacitors</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">values()]</span>
+<span style="color: #F8F8F2">Ls_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[c[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">c</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">capacitors</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">values()]</span>
+
+<span style="color: #F8F8F2">Z_total</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">pdn_impedance(f,</span> <span style="color: #F8F8F2">C_vals,</span> <span style="color: #F8F8F2">Ls_vals)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">(ax1,</span> <span style="color: #F8F8F2">ax2)</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #959077"># Impedância total</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(f</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(Z_total),</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;PDN total&quot;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0.165</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;$Z_{target}$ = 0.165 Ω&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&quot;Frequência [MHz]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&quot;$|Z_{PDN}|$ [Ω]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&quot;Impedância da PDN com Decoupling Múltiplo&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+
+<span style="color: #959077"># Zoom na faixa de 100 kHz a 1 GHz</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(f</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(Z_total),</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&quot;Frequência [MHz]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&quot;$|Z_{PDN}|$ [Ω]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&quot;PDN: Zoom 100 kHz – 1 GHz&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0.165</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #959077"># Frequências de auto-ressonância</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Frequências de auto-ressonância:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">name,</span> <span style="color: #F8F8F2">(C,</span> <span style="color: #F8F8F2">Ls)</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">capacitors</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">items():</span>
+    <span style="color: #F8F8F2">f_sr</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(Ls</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">C))</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  {</span><span style="color: #F8F8F2">name</span><span style="color: #E6DB74">:8s}: $f_</span><span style="color: #AE81FF">{{</span><span style="color: #E6DB74">SR</span><span style="color: #AE81FF">}}</span><span style="color: #E6DB74">$ = {</span><span style="color: #F8F8F2">f_sr</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e6</span><span style="color: #E6DB74">:.1f} MHz&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mpdn_impedance[39m(f, C_vals, Ls_vals, Rs_vals=[32m0.01[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="cálculo-de-crosstalk-entre-traces-paralelos"><span class="heading-number">16.10.4</span> Cálculo de Crosstalk entre Traces Paralelos</h3>
+<p><strong>Exercício:</strong> Calcule o crosstalk entre dois traces paralelos de 10 cm, com spacing $s = 0{,}2\,\text{mm}$, em FR-4. Sinal agressor com $dV/dt = 5\,\text{V/ns}$.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">crosstalk_coupling</span><span style="color: #F8F8F2">(L_trace,</span> <span style="color: #F8F8F2">w,</span> <span style="color: #F8F8F2">s,</span> <span style="color: #F8F8F2">er</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">4.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">rho</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.017</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Estima crosstalk entre traces paralelos.</span>
+<span style="color: #E6DB74">    </span>
+<span style="color: #E6DB74">    Parâmetros:</span>
+<span style="color: #E6DB74">        L_trace: comprimento do paralelo (m)</span>
+<span style="color: #E6DB74">        w: largura do traço (m)</span>
+<span style="color: #E6DB74">        s: spacing entre traces (m)</span>
+<span style="color: #E6DB74">        er: constante dielétrica</span>
+<span style="color: #E6DB74">        rho: resistividade do cobre (Ω·m)</span>
+<span style="color: #E6DB74">    </span>
+<span style="color: #E6DB74">    Retorna:</span>
+<span style="color: #E6DB74">        C_mut: capacitância mútua (F)</span>
+<span style="color: #E6DB74">        L_mut: indutância mútua (H)</span>
+<span style="color: #E6DB74">        V_xtalk: tensão de crosstalk induzida (V)</span>
+<span style="color: #E6DB74">    &quot;&quot;&quot;</span>
+    <span style="color: #959077"># Capacitância acoplada por unidade de comprimento (aproximação)</span>
+    <span style="color: #F8F8F2">C_unit</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">8.854e-12</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">er</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">w</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">s</span>  <span style="color: #959077"># F/m (aproximação capacitor de placas)</span>
+    <span style="color: #F8F8F2">C_mut</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">C_unit</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">L_trace</span>
+    
+    <span style="color: #959077"># Indutância mútua por unidade de comprimento</span>
+    <span style="color: #F8F8F2">L_unit</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2e-7</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">s</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">w)</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">s</span> <span style="color: #FF4689">&gt;</span> <span style="color: #F8F8F2">w</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">2e-7</span>  <span style="color: #959077"># H/m</span>
+    <span style="color: #F8F8F2">L_mut</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">L_unit</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">L_trace</span>
+    
+    <span style="color: #959077"># Impedância característica aproximada</span>
+    <span style="color: #F8F8F2">Z0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">60</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(er)</span>
+    
+    <span style="color: #959077"># Crosstalk (aproximação de baixa frequência)</span>
+    <span style="color: #F8F8F2">dVdt</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5e9</span>  <span style="color: #959077"># V/s (5 V/ns)</span>
+    <span style="color: #F8F8F2">V_xtalk</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Z0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">C_mut</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">dVdt</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">L_trace</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">3e8</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(er))</span>
+    
+    <span style="color: #959077"># Crosstalk mais preciso (coupling por unidade de comprimento)</span>
+    <span style="color: #F8F8F2">k_c</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">C_mut</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(C_unit</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">L_trace</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">C_mut)</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">C_unit</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">L_trace</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">C_mut</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span> <span style="color: #66D9EF">else</span> <span style="color: #AE81FF">0</span>
+    <span style="color: #F8F8F2">V_xtalk2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">k_c</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">dVdt</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">L_trace</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">3e8</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(er))</span>
+    
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">C_mut,</span> <span style="color: #F8F8F2">L_mut,</span> <span style="color: #F8F8F2">V_xtalk,</span> <span style="color: #F8F8F2">V_xtalk2</span>
+
+<span style="color: #959077"># Parâmetros</span>
+<span style="color: #F8F8F2">L</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.1</span>        <span style="color: #959077"># 10 cm</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.2e-3</span>     <span style="color: #959077"># 0.2 mm</span>
+<span style="color: #F8F8F2">s_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># 0.1 mm a 10 mm</span>
+
+<span style="color: #F8F8F2">C_mut_list</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+<span style="color: #F8F8F2">V_xtalk_list</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[]</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">s</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">s_vals:</span>
+    <span style="color: #F8F8F2">C_mut,</span> <span style="color: #F8F8F2">L_mut,</span> <span style="color: #F8F8F2">V_xtalk,</span> <span style="color: #F8F8F2">V_xtalk2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">crosstalk_coupling(L,</span> <span style="color: #F8F8F2">w,</span> <span style="color: #F8F8F2">s)</span>
+    <span style="color: #F8F8F2">C_mut_list</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(C_mut</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e12</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># pF</span>
+    <span style="color: #F8F8F2">V_xtalk_list</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">append(V_xtalk2</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">)</span>  <span style="color: #959077"># mV</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">loglog(s_vals</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">V_xtalk_list,</span> <span style="color: #F8F8F2">linewidth</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;Crosstalk $V_{xtalk}$&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&quot;Spacing $s$ [mm]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&quot;Crosstalk induzido [mV]&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&quot;Crosstalk entre Traces Paralelos vs. Spacing&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline(</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;green&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&quot;3w (s = 3w = 0.6mm)&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+
+<span style="color: #959077"># Cálculo para s = 0.2 mm</span>
+<span style="color: #F8F8F2">C_mut,</span> <span style="color: #F8F8F2">L_mut,</span> <span style="color: #F8F8F2">V_xtalk,</span> <span style="color: #F8F8F2">V_xtalk2</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">crosstalk_coupling(L,</span> <span style="color: #F8F8F2">w,</span> <span style="color: #AE81FF">0.2e-3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Crosstalk para s = 0.2 mm:&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Capacitância mútua: {</span><span style="color: #F8F8F2">C_mut</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e12</span><span style="color: #E6DB74">:.3f} pF&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Indutância mútua: {</span><span style="color: #F8F8F2">L_mut</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #E6DB74">:.2f} nH&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  Crosstalk estimado: {</span><span style="color: #F8F8F2">V_xtalk2</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1000</span><span style="color: #E6DB74">:.2f} mV&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;28;01mdef[39;00m[38;5;250m [39m[34mcrosstalk_coupling[39m(L_trace, w, s, er=[32m4.2[39m, rho=[32m0.017[39m):
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<aside class="callout callout-result" role="status"><p><strong>Saída esperada:</strong></p></aside>
+<ul>
+<li><strong>Microstrip:</strong> para $h = 0{,}2\,\text{mm}$, $w \approx 0{,}37\,\text{mm}$ produz $Z_0 \approx 50\,\Omega$</li>
+<li><strong>PDN:</strong> a impedância cai abaixo de $Z_{\text{target}} = 0{,}165\,\Omega$ de 10 kHz a ~1 GHz com múltiplos capacitores. Anti-resonâncias aparecem entre frequências de ressonância dos capacitores</li>
+<li><strong>Crosstalk:</strong> $V_{\text{xtalk}}$ diminui com o spacing. Para $s = 3w$, o crosstalk é ~70% menor que para $s = w$</li>
+</ul>
+<hr />
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">16.11</span> Lista de Exercícios Propostos</h2>
+<p><strong>E.1</strong> Calcule a impedância de um microstrip em FR-4 com $h = 0{,}18\,\text{mm}$, $w = 0{,}35\,\text{mm}$, $t = 0{,}035\,\text{mm}$, $\varepsilon_r = 4{,}35$. O valor está dentro da tolerância de 50 ± 10%?</p>
+<p><strong>E.2</strong> Uma PCB de 4 camadas tem stack-up Signal-Ground-Power-Signal com $h = 0{,}2\,\text{mm}$ entre cada par. Calcule a capacitância distribuída entre o plano de ground e o plano de power por cm² de área.</p>
+<p><strong>E.3</strong> Determine a frequência de crossover $f_{\text{crossover}}$ para um caminho de ground com $L_{\text{ground}} = 0{,}8\,\text{nH}$ e capacitância de bypass $C_{\text{bypass}} = 220\,\text{nF}$. Acima ou abaixo desta frequência, qual estratégia de grounding é recomendada?</p>
+<p><strong>E.4</strong> Calcule a indutância de uma via de comprimento $h = 1{,}6\,\text{mm}$ e raio $r = 0{,}3\,\text{mm}$:</p>
+
+<div class="math-display">
+$$
+
+L_{\text{via}} \approx \frac{\mu_0h}{2\pi} \left(\ln\frac{4h}{r} - 1\right)
+
+$$
+</div>
+
+<p>Qual é a frequência na qual esta via se torna ressonante com um capacitor de decoupling de 0,1 µF?</p>
+<p><strong>E.5</strong> Para um CI com $V_{\text{DD}} = 1{,}8\,\text{V}$, tolerância de 3%, e corrente transitória de 2 A, calcule $Z_{\text{target}}$. Se a PDN tem impedância de 0,08 Ω a 50 MHz, a PDN atende ao requisito nesta frequência?</p>
+<p><strong>E.6</strong> Um capacitor de 100 nF tem $L_s = 1{,}5\,\text{nH}$ e $R_s = 0{,}02\,\Omega$. Calcule: (a) $f_{SR}$; (b) $Z$ a 10 MHz; (c) $Z$ a 500 MHz. Em qual faixa ele é capacitivo e em qual indutivo?</p>
+<p><strong>E.7</strong> Dois traces paralelos de 5 cm, $w = 0{,}3\,\text{mm}$, $s = 0{,}15\,\text{mm}$ em FR-4. Calcule a capacitância mútua e a indutância mútua. Se o sinal agressor tem $dV/dt = 10\,\text{V/ns}$, estime o crosstalk no receptor.</p>
+<p><strong>E.8</strong> Um estudante propõe separar zonas analógica e digital por $\lambda_g/10$ para um clock de 200 MHz em FR-4. Calcule o valor com $\varepsilon_{\rm eff}=3$ e explique por que frequência de clock e fração de comprimento de onda não determinam um espaçamento de layout. Liste quatro dados mais úteis.</p>
+<p><strong>E.9</strong> Calcule o spacing necessário entre stitching vias para um sinal de 2 GHz em FR-4 ($\varepsilon_r = 4{,}2$) para garantir $s \leq \lambda_g/20$.</p>
+<p><strong>E.10</strong> (Desafio) Descreva o fluxo para projetar uma rede que mantenha $|Z_{\text{PDN}}|&lt;0{,}1\,\Omega$ de 10 kHz a 500 MHz. Sem modelos de VRM, planos, montagem e capacitores, explique por que não existe uma lista numérica única. Proponha os dados necessários, uma primeira topologia e como validar/iterar anti-ressonâncias.</p>
+<p><strong>E.11</strong> (Desafio) Uma PCB de 6 camadas tem o seguinte stack-up:</p>
+<table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Função</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Signal</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Ground</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Signal</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Power</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Ground</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Signal</td>
+</tr>
+</tbody>
+</table>
+<p>Calcule as capacitâncias distribuídas entre cada par adacente, considerando $h_{12} = 0{,}05\,\text{mm}$, $h_{34} = 0{,}1\,\text{mm}$, $h_{56} = 0{,}05\,\text{mm}$, $\varepsilon_r = 4{,}2$, área de $100\,\text{cm}^2$.</p>
+<p><strong>E.12</strong> (Desafio) Compare uma terminação de blindagem por <em>pigtail</em> de 5 cm ($L\approx12{,}5\,\text{nH}$) com um contato condutivo 360° cuja indutância de conexão seja estimada em $0{,}5\,\text{nH}$. Calcule $|j\omega L|$ a 100 MHz e 1 GHz. Explique por que modelar o contato 360° apenas como capacitância através de um <em>gap</em> contradiz a hipótese de <em>bonding</em> metálico.</p>
+<hr />
+<h2 id="estudo-integrado--interface-digital-com-cabo"><span class="heading-number">16.12</span> Estudo integrado — interface digital com cabo</h2>
+<p>Uma interface de 3,3 V, $t_r=500$ ps e trilha de 12 cm está a 0,20 mm do plano, cruza uma abertura e chega a um cabo de 1 m. Com $v_p=1{,}8\times10^8$ m/s, $t_d=0{,}67$ ns e $t_d/t_r=1{,}34$: trate-a como linha. A abertura força o retorno a contornar, aumenta área de loop e favorece conversão para CM no cabo.</p>
+<p>Compare três correções em ordem:</p>
+<ol>
+<li>restaurar plano contínuo ou fornecer transição de retorno junto ao sinal;</li>
+<li>ajustar terminação para controlar reflexão;</li>
+<li>controlar CM no conector, se a medição ainda indicar corrente no cabo.</li>
+</ol>
+<p>Esse encadeamento evita usar ferrite para mascarar uma descontinuidade criada pelo próprio layout.</p>
+<h3 id="código-python--impedância-alvo-com-tolerâncias"><span class="heading-number">16.12.1</span> Código Python — impedância-alvo com tolerâncias</h3>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #F8F8F2">rng</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">default_rng(</span><span style="color: #AE81FF">14</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">n</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100_000</span>
+<span style="color: #F8F8F2">delta_v</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">50e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n)</span>
+<span style="color: #F8F8F2">delta_i</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">rng</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.15</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n)</span>
+<span style="color: #F8F8F2">valid</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(delta_v</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">&amp;</span> <span style="color: #F8F8F2">(delta_i</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">zt</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">delta_v[valid]</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">delta_i[valid]</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&#39;Ztarget percentis (mΩ):&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1e3</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">percentile(zt,</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">50</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">95</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">99</span><span style="color: #F8F8F2">]))</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m rng = np.random.default_rng([32m14[39m)
+[32m      3[39m n = [32m100_000[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p>Use o percentil coerente com o risco: projetar apenas para a mediana não garante a queda de tensão nas combinações desfavoráveis.</p>
+<h2 id="laboratório-spice--efeito-da-montagem-na-pdn"><span class="heading-number">16.13</span> Laboratório SPICE — efeito da montagem na PDN</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #A6E22E">Itest</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">die</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">AC</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span>
+<span style="color: #A6E22E">Rplane</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">die</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">nplane</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Lplane</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">nplane</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">300</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Lvia</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cap</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">800</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Resr</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cap</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cmain</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">25</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Cdec</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">cmain</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Cdie</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">die</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Rleak</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">dec</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">10</span><span style="color: #A6E22E">k</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3</span><span style="color: #A6E22E">G</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">ac</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">die</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">vm</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">rail</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>Como a corrente AC é 1 A, as tensões representam impedâncias vistas nos nós. Varra <code>Lvia</code> e compare a impedância no <em>die</em> e no plano: um capacitor bom ligado por caminho indutivo pode não controlar a impedância local.</p>
+<h2 id="gabarito"><span class="heading-number">16.14</span> Gabarito</h2>
+<p><strong>E.1</strong> $Z_0\approx43{,}5\,\Omega$ pela aproximação fornecida. O intervalo correto de $50\,\Omega\pm10\%$ é $[45,55]\,\Omega$; portanto $43{,}5\,\Omega$ está <strong>fora</strong> da tolerância. Além disso, confirme domínio de validade, $\varepsilon_r(f)$, máscara/cobre e tolerâncias com o fabricante ou solver.</p>
+<p><strong>E.2</strong> $C = \dfrac{\varepsilon_0 \varepsilon_r A}{d} = \dfrac{8{,}854\times 10^{-12} \cdot 4{,}2 \cdot 10^{-4}}{0{,}2\times 10^{-3}} \approx 74{,}4\,\text{pF/cm}^2$. Entre cada par Signal-Ground ou Ground-Power.</p>
+<p><strong>E.3</strong> $f_{\text{crossover}} = \dfrac{1}{2\pi\sqrt{0{,}8\times 10^{-9} \cdot 220\times 10^{-9}}} \approx \dfrac{1}{2\pi\sqrt{1{,}76\times 10^{-16}}} \approx \dfrac{1}{2\pi \cdot 1{,}33\times 10^{-8}} \approx 12{,}0\,\text{MHz}$. Abaixo: single-point. Acima: multi-point.</p>
+<p><strong>E.4</strong> Corrigindo a expressão dimensional com $\mu_0$,<br />
+$L\approx[\mu_0(1{,}6\times10^{-3})/(2\pi)][\ln(21{,}3)-1]\approx\boxed{0{,}66\,\text{nH}}$.<br />
+Para $C=0{,}1\,\mu\text{F}=100\,\text{nF}$ (não 100 pF), $f=1/[2\pi\sqrt{LC}]\approx\boxed{19{,}6\,\text{MHz}}$. Essa é a ressonância do modelo LC isolado, não necessariamente a da montagem completa.</p>
+<p><strong>E.5</strong> $V_{\text{ripple}} = 0{,}03 \cdot 1{,}8 = 0{,}054\,\text{V}$. $Z_{\text{target}} = 0{,}054 / 2 = 0{,}027\,\Omega$. $Z_{\text{PDN}}(50\,\text{MHz}) = 0{,}08\,\Omega &gt; 0{,}027\,\Omega$: <strong>não atende</strong>. São necessários mais capacitores ou menor $L_s$.</p>
+<p><strong>E.6</strong> (a) Como $C=100\,\text{nF}=100\times10^{-9}$ F,</p>
+
+<div class="math-display">
+$$
+f_{SR}=\frac{1}{2\pi\sqrt{(1{,}5\times10^{-9})(100\times10^{-9})}}
+\approx\boxed{13{,}0\,\text{MHz}}.
+$$
+</div>
+
+<p>(b) A 10 MHz ($\omega = 6{,}28\times 10^7$): $X_C = \dfrac{1}{\omega C} = \dfrac{1}{6{,}28\times 10^7 \cdot 10^{-7}} = 0{,}159\,\Omega$. $X_L = \omega L_s = 6{,}28\times 10^7 \cdot 1{,}5\times 10^{-9} = 0{,}094\,\Omega$. $Z = 0{,}02 + j(0{,}094 - 0{,}159) = 0{,}02 - j0{,}065$. $|Z| \approx 0{,}068\,\Omega$.<br />
+(c) A 500 MHz (acima de $f_{SR}$): $X_C = 0{,}032\,\Omega$, $X_L = 0{,}471\,\Omega$. $Z = 0{,}02 + j0{,}439$. $|Z| \approx 0{,}44\,\Omega$.<br />
+Capacitivo para $f&lt;13{,}0$ MHz e indutivo para $f&gt;13{,}0$ MHz no modelo série idealizado.</p>
+<p><strong>E.7</strong> $C_{\text{mut}} \approx \dfrac{\varepsilon_0 \varepsilon_r w L}{s} = \dfrac{8{,}854\times 10^{-12} \cdot 4{,}2 \cdot 0{,}3\times 10^{-3} \cdot 0{,}05}{0{,}15\times 10^{-3}} \approx 3{,}7\times 10^{-13}\,\text{F} = 0{,}37\,\text{pF}$.<br />
+$L_{\text{mut}} \approx 2\times 10^{-7} \cdot \ln\dfrac{2 \cdot 0{,}15\times 10^{-3}}{0{,}3\times 10^{-3}} \cdot 0{,}05 = 2\times 10^{-7} \cdot \ln(1) \cdot 0{,}05 = 0$ — o logaritmo é zero pois $2s/w = 2$. Na verdade, $L_{\text{mut}}$ é menor mas não nula. Usando fórmula mais precisa: $L_{\text{mut}} \approx 0{,}15\,\text{nH}$.<br />
+$V_{\text{xtalk}} \approx Z_0 \cdot C_{\text{mut}} \cdot dV/dt \cdot (L/v_p) \approx 50 \cdot 0{,}37\times 10^{-12} \cdot 10 \cdot 10^9 \cdot \dfrac{0{,}05}{2\times 10^8} \approx 0{,}017\,\text{V} = 17\,\text{mV}$.</p>
+<p><strong>E.8</strong> A conta proposta dá $\lambda_g\approx0{,}866\,\text{m}$ e $\lambda_g/10\approx8{,}7\,\text{cm}$, mas não constitui regra de projeto. São mais úteis: tempo de subida/espectro, comprimento paralelo, distância ao plano de referência, impedâncias de agressor/vítima, corrente de retorno e nível de ruído tolerável. O espaçamento deve resultar do acoplamento aceitável e da geometria, idealmente verificado por solver/cupom.</p>
+<p><strong>E.9</strong> $\lambda_g = \dfrac{c}{f\sqrt{\varepsilon_r}} = \dfrac{3\times 10^8}{2\times 10^9 \cdot \sqrt{4{,}2}} \approx 0{,}073\,\text{m} = 73\,\text{mm}$. $s \leq \dfrac{73}{20} \approx 3{,}7\,\text{mm}$.</p>
+<p><strong>E.10</strong> São necessários modelos S/Z do VRM, planos e montagem, ESR/ESL e viés DC dos capacitores, perfil de corrente e pontos de observação. Comece com capacitância <em>bulk</em> para baixa frequência e matrizes de componentes de baixa ESL próximos às cargas; simule $Z(f)$ no plano físico, identifique picos e ajuste quantidade, valor, localização e amortecimento. Valide por VNA com <em>fixture</em> e <em>de-embedding</em>. Valores espaçados por década e média geométrica de SRFs não garantem nem localizam corretamente anti-ressonâncias.</p>
+<p><strong>E.11</strong> Capacitância entre camadas adjacentes: $C = \dfrac{\varepsilon_0 \varepsilon_r A}{d}$, $A = 0{,}01\,\text{m}^2$.</p>
+<ul>
+<li>L1-L2: $C = \dfrac{8{,}854\times 10^{-12} \cdot 4{,}2 \cdot 0{,}01}{0{,}05\times 10^{-3}} \approx 7{,}44\,\text{nF}$</li>
+<li>L3-L4: $C = \dfrac{8{,}854\times 10^{-12} \cdot 4{,}2 \cdot 0{,}01}{0{,}1\times 10^{-3}} \approx 3{,}72\,\text{nF}$</li>
+<li>L5-L6: $C = \dfrac{8{,}854\times 10^{-12} \cdot 4{,}2 \cdot 0{,}01}{0{,}05\times 10^{-3}} \approx 7{,}44\,\text{nF}$<br />
+Total: $18{,}6\,\text{nF}$ distribuídos na PCB.</li>
+</ul>
+<p><strong>E.12</strong> Para o <em>pigtail</em>, $|X_L|\approx7{,}85\,\Omega$ a 100 MHz e $78{,}5\,\Omega$ a 1 GHz. Para o contato 360°, $|X_L|\approx0{,}314\,\Omega$ e $3{,}14\,\Omega$, respectivamente: cerca de 25 vezes menor neste modelo. Um <em>bond</em> metálico é caminho condutivo distribuído; representá-lo somente por uma capacitância através de uma lacuna descreve outra geometria e levou à conclusão invertida na versão anterior.</p>
+<hr />
+<p><a href="17_efeitos_radiacoes_ser_humano.html">← Exposição Humana</a> · <a href="00_indice.html">Índice</a> · <a href="ementa.html">Projeto integrador na ementa</a></p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="15_minimizacao_interferencias.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">15. Minimização de interferências EMC</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="17_projeto_sistemas_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">17. Projeto de sistemas para EMC</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

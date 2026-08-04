@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2. Modulação em Amplitude — Teoria Completa — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>2. Modulação em Amplitude — Teoria Completa</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>2. Modulação em Amplitude — Teoria Completa</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="01_introducao_sistemas_comunicacoes.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">1. Introdução a Sistemas de Comunicações</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="03_modulacao_fm.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">3. Modulação em Frequência (FM)</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>2. Modulação em Amplitude — Teoria Completa</h1>
+<blockquote>
+<p>Comunicações Eletrônicas — Apostila de Curso<br />
+Tópicos: Modulação AM · DSB-SC · detecção coerente e de envelope · SSB · VSB · análise de ruído</p>
+</blockquote>
+<h2 id="antes-de-começar"><span class="heading-number">2.1</span> Antes de começar</h2>
+<p>Ao final, você deve conseguir derivar os espectros de DSB-SC, AM, SSB e VSB; calcular banda e potência; e escolher um detector coerente ou de envelope. <strong>Diagnóstico:</strong> qual parte da potência da AM convencional transporta informação? <strong>Evidência mínima:</strong> prever e depois simular sobremodulação, erro de fase e escolha da constante $RC$.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#por-que-modular-fundamentos-da-modula%C3%A7%C3%A3o-anal%C3%B3gica">Por que modular? Fundamentos da modulação analógica</a></li>
+<li><a href="#modula%C3%A7%C3%A3o-dsb-sc--teoria-completa">Modulação DSB-SC — Teoria Completa</a></li>
+<li><a href="#detec%C3%A7%C3%A3o-coerente-de-dsb-sc">Detecção Coerente de DSB-SC</a></li>
+<li><a href="#modula%C3%A7%C3%A3o-am-convencional-dsb-lc">Modulação AM Convencional (DSB-LC)</a></li>
+<li><a href="#detec%C3%A7%C3%A3o-de-envelope-de-am">Detecção de Envelope de AM</a></li>
+<li><a href="#modula%C3%A7%C3%A3o-ssb--teoria-e-implementa%C3%A7%C3%A3o">Modulação SSB — Teoria e Implementação</a></li>
+<li><a href="#modula%C3%A7%C3%A3o-vsb--compromisso-pr%C3%A1tico">Modulação VSB — Compromisso Prático</a></li>
+<li><a href="#an%C3%A1lise-de-ru%C3%ADdo-em-modula%C3%A7%C3%A3o-anal%C3%B3gica">Análise de Ruído em Modulação Analógica</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<h2 id="por-que-modular-fundamentos-da-modulação-analógica"><span class="heading-number">2.2</span> Por que modular? Fundamentos da Modulação Analógica</h2>
+<h3 id="a-necessidade-fundamental-da-modulação"><span class="heading-number">2.2.1</span> A necessidade fundamental da modulação</h3>
+<p>A modulação é o processo de variar um ou mais parâmetros de uma onda portadora (senoidal de alta frequência) em função de um sinal de mensagem (banda base, de frequência mais baixa). Este é o pilar de <strong>todas</strong> as comunicações sem fio — de rádio AM/FM a enlaces de micro-ondas, satélites e sistemas celulares.</p>
+<p>Existem <strong>três razões físicas e práticas</strong> fundamentais:</p>
+<ol>
+<li>
+<p><strong>Antenas de tamanho prático</strong>: O comprimento de onda $\lambda = c/f$ deve ser comparável às dimensões da antena (tipicamente $\lambda/4$ ou $\lambda/2$). Para um sinal de áudio com $f_{\text{áudio}} = 1\,\text{kHz}$, teríamos $\lambda \approx 300\,\text{km}$ — uma antena de $75\,\text{km}$ é impraticável. Modulado para $f_c = 100\,\text{MHz}$ (banda FM), $\lambda = 3\,\text{m}$ e a antena cabe na palma da mão.</p>
+</li>
+<li>
+<p><strong>Multiplexação por divisão em frequência (FDM)</strong>: Vários sinais podem coexistir no mesmo meio físico (espaço livre, cabo coaxial, fibra) se cada um for modulado em uma faixa de frequência diferente. Sem modulação, todos os sinais ocupariam a mesma banda base e se sobreporiam destrutivamente.</p>
+</li>
+<li>
+<p><strong>Adaptação ao canal</strong>: Diferentes canais têm diferentes características de transmissão (atenuação seletiva, interferências, largura de banda disponível). Modular permite &quot;encaixar&quot; o sinal na janela de frequência onde o canal tem melhor resposta.</p>
+</li>
+</ol>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: um sinal de mensagem $m(t)$ é dito <strong>banda base</strong> se seu espectro $M(f)$ é nulo para $|f| &gt; W$, onde $W$ é a <strong>largura de banda</strong> do sinal. Assumimos sempre $f_c \gg W$ para que não haja sobreposição espectral.</p></aside>
+<h3 id="representação-analítica"><span class="heading-number">2.2.2</span> Representação analítica</h3>
+<p>Para qualquer sinal real $s(t)$ de banda estreita, definimos o <strong>sinal analítico</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\tilde{s}(t) = s(t) + j\,\hat{s}(t)}
+
+$$
+</div>
+
+<p>onde $\hat{s}(t)$ é a <strong>transformada de Hilbert</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\hat{s}(t) = s(t) * \frac{1}{\pi t}}
+
+$$
+</div>
+
+<p>No domínio da frequência, $\hat{S}(f) = -j\,\text{sgn}(f)\,S(f)$, e $\tilde{S}(f) = 2\,U(f)\,S(f)$ (apenas frequências positivas, duplicadas).</p>
+<p>O <strong>sinal complexo envolvente</strong> (<em>baseband</em> equivalente):</p>
+
+<div class="math-display">
+$$
+
+\boxed{\tilde{s}_L(t) = \tilde{s}(t)\,e^{-j2\pi f_c t}}
+
+$$
+</div>
+
+<p>Recupera-se $s(t)$ por:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s(t) = \Re\{\tilde{s}_L(t)\,e^{j2\pi f_c t}\}}
+
+$$
+</div>
+
+<h3 id="representação-quadratura-iq"><span class="heading-number">2.2.3</span> Representação quadratura (I/Q)</h3>
+<p>Escrevendo $\tilde{s}_L(t) = I(t) + j\,Q(t)$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s(t) = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t)}
+
+$$
+</div>
+
+<ul>
+<li>$I(t)$: componente em fase (<em>in-phase</em>);</li>
+<li>$Q(t)$: componente em quadratura (<em>quadrature</em>);</li>
+<li>$A(t) = \sqrt{I^2(t) + Q^2(t)}$: envelope instantâneo;</li>
+<li>$\phi(t) = \arctan(Q/I)$: fase instantânea.</li>
+</ul>
+<p>Toda modulação em amplitude usa $Q(t) = 0$; modulações de fase/frequência manipulam $Q$ e $\phi$.</p>
+<h3 id="espectro-de-modulação-e-bandas-laterais"><span class="heading-number">2.2.4</span> Espectro de modulação e bandas laterais</h3>
+<p>Para um sinal de mensagem $m(t)$, real, limitado a $|f| \leq W$, com transformada de Fourier $M(f)$, a modulação em amplitude traduz o espectro $M(f)$ para as vizinhanças de $\pm f_c$. Este é o efeito da <strong>modulação por multiplicação</strong>:</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: multiplicar no tempo por $\cos(2\pi f_c t)$ corresponde a convolucionar o espectro com $\tfrac{1}{2}[\delta(f-f_c)+\delta(f+f_c)]$, o que produz <strong>duas cópias</strong> de $M(f)$, centradas em $+f_c$ e $-f_c$.</p></aside>
+<p>Para $m(t)$ <strong>real</strong>, $M(f)$ possui simetria conjugada: $M(-f) = M^*(f)$. As duas bandas laterais (BSL) são, portanto, <strong>espelhos complexos conjugados</strong> e contêm <strong>informação redundante</strong> — esta redundância é o que permite a simplificação SSB.</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: a largura de banda do sinal modulado é sempre o dobro da largura de banda da mensagem, no caso de dupla banda lateral (DSB): $B_{\text{mod}} = 2W$. SSB reduz para $B_{\text{mod}} = W$.</p></aside>
+<h3 id="eficiência-espectral-e-energética-como-critérios-de-escolha"><span class="heading-number">2.2.5</span> Eficiência espectral e energética como critérios de escolha</h3>
+<p>Ao comparar esquemas de modulação, dois critérios são essenciais:</p>
+<ul>
+<li><strong>Eficiência espectral</strong> ($\eta_f$): quantos bits/s (ou quanta informação) por hertz de banda ocupada. Quanto menor a banda, melhor.</li>
+<li><strong>Eficiência energética</strong> ($\eta_P$): fração da potência total do sinal modulado que transporta informação (não é desperdiçada em portadora ou bandas redundantes).</li>
+</ul>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>:</p></aside>
+<table>
+<thead>
+<tr>
+<th>Esquema</th>
+<th style="text-align:right">Banda</th>
+<th style="text-align:right">Ef. espectral</th>
+<th style="text-align:right">Ef. energética</th>
+<th>Complexidade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AM (DSB-LC)</td>
+<td style="text-align:right">$2W$</td>
+<td style="text-align:right">baixa</td>
+<td style="text-align:right">$\leq 33\%$ (tom único)</td>
+<td>baixa (detector envelope)</td>
+</tr>
+<tr>
+<td>DSB-SC</td>
+<td style="text-align:right">$2W$</td>
+<td style="text-align:right">média</td>
+<td style="text-align:right">$100\%$ (sem portadora)</td>
+<td>média (detector coerente)</td>
+</tr>
+<tr>
+<td>SSB</td>
+<td style="text-align:right">$W$</td>
+<td style="text-align:right">alta</td>
+<td style="text-align:right">$100\%$</td>
+<td>alta (filtro/Hilbert)</td>
+</tr>
+<tr>
+<td>VSB</td>
+<td style="text-align:right">$\approx W$</td>
+<td style="text-align:right">intermediária</td>
+<td style="text-align:right">intermediária</td>
+<td>intermediária</td>
+</tr>
+</tbody>
+</table>
+<p>Esta tabela orienta a escolha do esquema: AM para emissão <em>broadcasting</em> (simplicidade do receptor), DSB-SC para enlace ponto-a-ponto eficiente, SSB para comunicações de longa distância (HF), VSB para vídeo (compromisso prático).</p>
+<h2 id="modulação-dsb-sc--teoria-completa"><span class="heading-number">2.3</span> Modulação DSB-SC — Teoria Completa</h2>
+<h3 id="definição-e-modelo"><span class="heading-number">2.3.1</span> Definição e modelo</h3>
+<p>Na <strong>modulação DSB-SC</strong> (<em>Double Sideband — Suppressed Carrier</em>, ou &quot;bandas laterais duplas com portadora suprimida&quot;), o sinal modulado é simplesmente o produto do sinal de mensagem pela portadora:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)}
+
+$$
+</div>
+
+<p>onde:</p>
+<ul>
+<li>$A_c$ é a amplitude da portadora (parâmetro de ganho do modulador);</li>
+<li>$m(t)$ é o sinal de mensagem, com $\max|m(t)| \leq 1$ (normalizado);</li>
+<li>$f_c \gg W$ é a frequência da portadora.</li>
+</ul>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: o prefixo &quot;SC&quot; (<em>suppressed carrier</em>) indica que <strong>nenhuma portadora discreta</strong> aparece no espectro — toda a potência do sinal modulado está contida nas bandas laterais, que carregam informação.</p></aside>
+<h3 id="dedução-completa-do-espectro"><span class="heading-number">2.3.2</span> Dedução completa do espectro</h3>
+<p>Aplicamos a transformada de Fourier a $s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)$. Usamos a propriedade da multiplicação:</p>
+
+<div class="math-display">
+$$
+
+\mathcal{F}\{x(t)\,y(t)\} = X(f) * Y(f)
+
+$$
+</div>
+
+<p>Sabemos que $\cos(2\pi f_c t) \;\xrightarrow{\mathcal{F}}\; \dfrac{1}{2}\bigl[\delta(f-f_c)+\delta(f+f_c)\bigr]$. Logo:</p>
+
+<div class="math-display">
+$$
+
+S_{\text{DSB-SC}}(f) = A_c\,M(f) * \frac{1}{2}\bigl[\delta(f-f_c)+\delta(f+f_c)\bigr]
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{S_{\text{DSB-SC}}(f) = \frac{A_c}{2}\Bigl[M(f-f_c) + M(f+f_c)\Bigr]}
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Interpretação física</strong>: o espectro de $m(t)$ é &quot;copiado&quot; duas vezes: uma cópia deslocada para $+f_c$ (banda lateral superior) e outra para $-f_c$ (banda lateral inferior). Como $M(f)$ é zero para $|f| &gt; W$, o espectro modulado ocupa a faixa $[f_c-W,\;f_c+W]$ e $[-f_c-W,\;-f_c+W]$.</p></aside>
+<p><strong>Largura de banda</strong>: a banda ocupada em cada lado é $W$, mas a banda total (do mínimo ao máximo frequência positiva) é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{B_{\text{DSB-SC}} = 2W}
+
+$$
+</div>
+
+<h3 id="potência-do-sinal-dsb-sc"><span class="heading-number">2.3.3</span> Potência do sinal DSB-SC</h3>
+<p>A potência média de um sinal real $s(t)$ com carga de referência $1\,\Omega$ é:</p>
+
+<div class="math-display">
+$$
+
+P_s = \lim_{T\to\infty}\frac{1}{T}\int_{-T/2}^{T/2}|s(t)|^2\,dt = \langle s^2(t)\rangle
+
+$$
+</div>
+
+<p>Para $s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)$:</p>
+
+<div class="math-display">
+$$
+
+s^2(t) = A_c^2\,m^2(t)\,\cos^2(2\pi f_c t) = A_c^2\,m^2(t)\cdot\frac{1+\cos(4\pi f_c t)}{2}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+P_s = \frac{A_c^2}{2}\,\langle m^2(t)\rangle + \frac{A_c^2}{2}\,\bigl\langle m^2(t)\,\cos(4\pi f_c t)\bigr\rangle
+
+$$
+</div>
+
+<p>O segundo termo se anula por média temporal (o termo em $2f_c$ oscila muito mais rápido que $m^2(t)$, e sua média tende a zero para $f_c \gg W$). Definindo $P_m = \langle m^2(t)\rangle$ como a potência do sinal de mensagem:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_s = \frac{A_c^2}{2}\,P_m}
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: em DSB-SC, <strong>100% da potência</strong> transporta informação (não há componente de portadora separada). Esta é a vantagem fundamental sobre AM convencional.</p></aside>
+<h3 id="representação-no-plano-iq"><span class="heading-number">2.3.4</span> Representação no plano I/Q</h3>
+<p>Para DSB-SC, comparando com a forma quadratura $s(t) = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t)$:</p>
+<ul>
+<li>Componente I: $\boxed{I(t) = A_c\,m(t)}$</li>
+<li>Componente Q: $\boxed{Q(t) = 0}$</li>
+</ul>
+<p>O sinal complexo envolvente é puramente real:</p>
+
+<div class="math-display">
+$$
+
+\tilde{s}_L(t) = A_c\,m(t)
+
+$$
+</div>
+
+<p>e o envelope instantâneo é $|\tilde{s}_L(t)| = A_c|m(t)|$. Em DSB-SC, o envelope <strong>cruza zero</strong> sempre que $m(t)$ cruza zero — isso significa que o sinal <strong>inverte de fase</strong> a cada zero, e um detector de envelope simples não funciona (explicado na Seção “Detecção de Envelope de AM”).</p>
+<h3 id="transformada-de-hilbert-de-um-sinal-dsb-sc"><span class="heading-number">2.3.5</span> Transformada de Hilbert de um sinal DSB-SC</h3>
+<p>No domínio da frequência: $\hat{S}(f) = -j\,\text{sgn}(f)\,S(f)$. Para DSB-SC concentrado em $\pm f_c$:</p>
+<ul>
+<li>$f &gt; 0$: $\hat{S}(f) = -j\,S(f)$</li>
+<li>$f &lt; 0$: $\hat{S}(f) = +j\,S(f)$</li>
+</ul>
+<p>Invertendo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\hat{s}_{\text{DSB-SC}}(t) = A_c\,m(t)\,\sin(2\pi f_c t)}
+
+$$
+</div>
+
+<p>Sinal analítico: $\tilde{s}(t) = A_c\,m(t)\,e^{j2\pi f_c t}$, envelope complexo $\tilde{s}_L(t) = A_c\,m(t)$ — confirmando Seção “Representação no plano I/Q”.</p>
+<h3 id="exemplo-numérico"><span class="heading-number">2.3.6</span> Exemplo numérico</h3>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo</strong>: mensagem $m(t) = \cos(2\pi\cdot 1000\,t)$, $f_c = 100\,\text{kHz}$, $A_c = 1$.</p></aside>
+
+<div class="math-display">
+$$
+
+s_{\text{DSB-SC}}(t) = \cos(2\pi\cdot 10^3\,t)\,\cos(2\pi\cdot 10^5\,t)
+
+$$
+</div>
+
+<p>Usando a identidade trigonométrica $\cos A\cos B = \tfrac{1}{2}[\cos(A-B)+\cos(A+B)]$:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{DSB-SC}}(t) = \frac{1}{2}\cos(2\pi\cdot 99\,000\,t) + \frac{1}{2}\cos(2\pi\cdot 101\,000\,t)
+
+$$
+</div>
+
+<p>Espectro: duas linhas em $\pm 99\,\text{kHz}$ e $\pm 101\,\text{kHz}$, cada uma com amplitude $1/2$.</p>
+<p>Potência: $P_m = \langle\cos^2(2\pi\cdot 10^3\,t)\rangle = 1/2$, logo $P_s = \tfrac{1}{2}\cdot\tfrac{1}{2} = \tfrac{1}{4}$. Cada banda lateral contribui com $1/8$.</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: note que não há nenhuma linha espectral em $f_c = 100\,\text{kHz}$ — a portadora está completamente suprimida. Esta é a assinatura espectral do DSB-SC.</p></aside>
+<h2 id="detecção-coerente-de-dsb-sc"><span class="heading-number">2.4</span> Detecção Coerente de DSB-SC</h2>
+<h3 id="princípio-da-detecção-coerente-síncrona"><span class="heading-number">2.4.1</span> Princípio da detecção coerente (síncrona)</h3>
+<p>Para recuperar $m(t)$ de $s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)$, o método mais direto é <strong>multiplicar pelo mesmo coseno</strong> que foi usado na modulação e filtrar:</p>
+
+<div class="math-display">
+$$
+
+\boxed{r(t) = 2\,s_{\text{DSB-SC}}(t)\,\cos(2\pi f_c t)}
+
+$$
+</div>
+
+<p>O fator $2$ é introduzido para simplificar a recuperação (compensar o fator $1/2$ da multiplicação trigonométrica).</p>
+<h3 id="dedução-completa-da-recuperação"><span class="heading-number">2.4.2</span> Dedução completa da recuperação</h3>
+<p>Desenvolvendo:</p>
+
+<div class="math-display">
+$$
+
+r(t) = 2\,A_c\,m(t)\,\cos(2\pi f_c t)\,\cos(2\pi f_c t) = 2\,A_c\,m(t)\,\cos^2(2\pi f_c t)
+
+$$
+</div>
+
+<p>Usando $\cos^2\theta = \frac{1}{2}\bigl[1+\cos(2\theta)\bigr]$:</p>
+
+<div class="math-display">
+$$
+
+r(t) = 2\,A_c\,m(t)\cdot\frac{1+\cos(4\pi f_c t)}{2} = A_c\,m(t) + A_c\,m(t)\,\cos(4\pi f_c t)
+
+$$
+</div>
+
+<p>O segundo termo é um sinal centrado em $2f_c$. Passando por um <strong>filtro passa-baixas</strong> $H_{\text{LP}}(f)$ com largura de corte $B_{\text{LP}} \geq W$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{y(t) = A_c\,m(t)}
+
+$$
+</div>
+
+<p>A mensagem é recuperada com ganho $A_c$. Um amplificador com ganho $1/A_c$ a seguir fornece a saída final $m(t)$.</p>
+<h3 id="efeito-do-erro-de-fase-phi"><span class="heading-number">2.4.3</span> Efeito do erro de fase $\phi$</h3>
+<p>Na prática, o oscilador local do receptor pode não estar perfeitamente sincronizado em fase com a portadora. Suponha que o oscilador local seja $\cos(2\pi f_c t + \phi)$, com erro de fase $\phi$:</p>
+
+<div class="math-display">
+$$
+
+r_\phi(t) = 2\,s_{\text{DSB-SC}}(t)\,\cos(2\pi f_c t + \phi) = 2\,A_c\,m(t)\,\cos(2\pi f_c t)\,\cos(2\pi f_c t + \phi)
+
+$$
+</div>
+
+<p>Usando $2\cos A\cos B = \cos(A-B) + \cos(A+B)$:</p>
+
+<div class="math-display">
+$$
+
+r_\phi(t) = A_c\,m(t)\bigl[\cos(-\phi) + \cos(4\pi f_c t + \phi)\bigr]
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+r_\phi(t) = A_c\,m(t)\,\cos\phi + A_c\,m(t)\,\cos(4\pi f_c t + \phi)
+
+$$
+</div>
+
+<p>Após o filtro passa-baixas:</p>
+
+<div class="math-display">
+$$
+
+\boxed{y_\phi(t) = A_c\,m(t)\,\cos\phi}
+
+$$
+</div>
+
+<p><strong>Análise de perda</strong>:</p>
+<ul>
+<li>$\phi = 0$: recuperação perfeita $y(t) = A_c\,m(t)$.</li>
+<li>$\phi = 90° = \pi/2$: $y(t) = 0$ — <strong>perda total</strong> do sinal.</li>
+<li>$\phi = 180° = \pi$: $y(t) = -A_c\,m(t)$ — recuperação com inversão de polaridade (geralmente tolerável).</li>
+</ul>
+<p>A <strong>perda de potência</strong> devido ao erro de fase é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{loss}} = 1 - \cos^2\phi = \sin^2\phi}
+
+$$
+</div>
+
+<p>Ou seja, a potência do sinal recuperado é $\cos^2\phi$ vezes a potência original. Para $\phi = 30°$, por exemplo: $\cos^2 30° = 3/4 = 75\%$ da potência é mantida.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: este é o principal problema da detecção coerente — exige que o receptor gere uma portadora local <strong>sincronizada em fase</strong> com a portadora original. Qualquer erro de fase causa atenuação proporcional a $\cos\phi$.</p></aside>
+<h3 id="efeito-do-erro-de-frequência-delta-f"><span class="heading-number">2.4.4</span> Efeito do erro de frequência $\Delta f$</h3>
+<p>Suponha agora que o oscilador local tenha frequência $f_c + \Delta f$, com $\Delta f \neq 0$:</p>
+
+<div class="math-display">
+$$
+
+r_{\Delta f}(t) = 2\,A_c\,m(t)\,\cos(2\pi f_c t)\,\cos\bigl(2\pi(f_c+\Delta f)t\bigr)
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+= A_c\,m(t)\Bigl[\cos\bigl(2\pi\Delta f\,t\bigr) + \cos\bigl(2\pi(2f_c+\Delta f)t\bigr)\Bigr]
+
+$$
+</div>
+
+<p>Após o filtro passa-baixas:</p>
+
+<div class="math-display">
+$$
+
+\boxed{y_{\Delta f}(t) = A_c\,m(t)\,\cos(2\pi\Delta f\,t)}
+
+$$
+</div>
+
+<p><strong>Análise</strong>: o sinal recuperado é multiplicado por um <strong>batimento</strong> $\cos(2\pi\Delta f\,t)$. Se $\Delta f$ é pequeno (da ordem de $W$), o batimento se manifesta como uma flutuação audível na voz (em áudio) ou como cintilação na imagem (em vídeo). Se $\Delta f$ é grande, o batimento está fora da banda de interesse e pode ser filtrado.</p>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo</strong>: para áudio ($W = 4\,\text{kHz}$), um erro de $\Delta f = 50\,\text{Hz}$ produz um batimento de $50\,\text{Hz}$ na saída — perceptível como zumbido. Erros de $f_c$ devem ser mantidos abaixo de $\sim 10\%$ de $W$.</p></aside>
+<h3 id="prova-da-perda-de-potência-por-erro-de-fase"><span class="heading-number">2.4.5</span> Prova da perda de potência por erro de fase</h3>
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: seja $m(t)$ um processo estacionário com potência $P_m$. A potência do sinal recuperado com erro de fase $\phi$ é:</p></aside>
+
+<div class="math-display">
+$$
+
+P_y = \langle y_\phi^2(t)\rangle = \langle A_c^2\,m^2(t)\,\cos^2\phi\rangle = A_c^2\,\cos^2\phi\,\langle m^2(t)\rangle = A_c^2\,\cos^2\phi\,P_m
+
+$$
+</div>
+
+<p>Sem erro de fase ($\phi = 0$):</p>
+
+<div class="math-display">
+$$
+
+P_{y,0} = A_c^2\,P_m
+
+$$
+</div>
+
+<p>A fração de potência mantida é:</p>
+
+<div class="math-display">
+$$
+
+\frac{P_y}{P_{y,0}} = \cos^2\phi
+
+$$
+</div>
+
+<p>A fração de potência perdida é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{loss}} = 1 - \cos^2\phi = \sin^2\phi}
+
+$$
+</div>
+
+<p>$\blacksquare$</p>
+<h3 id="recuperação-da-portadora-costas-loop"><span class="heading-number">2.4.6</span> Recuperação da portadora: Costas Loop</h3>
+<p>Em sistemas reais, a portadora não é transmitida (é suprimida), mas o receptor precisa de uma referência de fase. Uma solução é o <strong>Costas Loop</strong> (ou <em>Costas PLL</em>), que é um Phase-Locked Loop (PLL) especializado para sinais DSB-SC:</p>
+<p>O Costas Loop usa um multiplicador (detector de fase) que compara o sinal recebido com um VCO (<em>Voltage-Controlled Oscillator</em>) local. O erro de fase é filtrado e realimentado para controlar o VCO, forçando $\phi \to 0$. A topologia do Costas Loop é particularmente eficiente para DSB-SC porque o sinal de erro é proporcional a $\sin(2\phi)$, proporcionando forte ação corretiva.</p>
+<h3 id="limitações-práticas"><span class="heading-number">2.4.7</span> Limitações práticas</h3>
+<p>A detecção coerente de DSB-SC apresenta duas desvantagens fundamentais:</p>
+<ol>
+<li><strong>Complexidade do oscilador local</strong>: requer um VCO estável, com PLL ou Costas Loop para rastrear a fase da portadora. Isso aumenta o custo e a complexidade do receptor.</li>
+<li><strong>Sensibilidade a desvanecimento seletivo</strong>: se o canal introduz desvanecimento seletivo em frequência, a recuperação da portadora pode falhar em certas condições.</li>
+</ol>
+<p>Estas desvantagens motivam o uso de AM convencional (DSB-LC), onde a portadora é transmitida em alta potência e pode ser usada diretamente como referência de fase pelo detector de envelope — sem necessidade de PLL.</p>
+<h2 id="modulação-am-convencional-dsb-lc"><span class="heading-number">2.5</span> Modulação AM Convencional (DSB-LC)</h2>
+<h3 id="definição-e-modelo-1"><span class="heading-number">2.5.1</span> Definição e modelo</h3>
+<p>Na <strong>modulação AM convencional</strong> (<em>Double Sideband — Large Carrier</em>, ou &quot;bandas laterais duplas com portadora forte&quot;), adicionamos uma componente DC à mensagem antes de modular:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s_{\text{AM}}(t) = A_c\bigl[1 + \mu\,m_n(t)\bigr]\,\cos(2\pi f_c t)}
+
+$$
+</div>
+
+<p>onde:</p>
+<ul>
+<li>$A_c$ é a amplitude da portadora;</li>
+<li>$\mu$ é o <strong>índice de modulação</strong> (ou profundidade de modulação);</li>
+<li>$m_n(t)$ é o sinal de mensagem <strong>normalizado</strong>: $\max|m_n(t)| = 1$.</li>
+</ul>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: o sinal normalizado é $m_n(t) = \dfrac{m(t)}{\max|m(t)|}$. Para um tom único $m(t) = A_m\cos(2\pi f_m t)$, temos $m_n(t) = \cos(2\pi f_m t)$.</p></aside>
+<p>O termo $1 + \mu\,m_n(t)$ deve ser <strong>sempre não-negativo</strong> para que o envelope seja não-negativo. Isso implica:</p>
+
+<div class="math-display">
+$$
+
+\boxed{0 \leq \mu \leq 1 \qquad\text{(condição de modulação sem sobremodulação)}}
+
+$$
+</div>
+
+<p>Quando $\mu &gt; 1$, ocorre <strong>sobremodulação</strong>: $1 + \mu\,m_n(t)$ cruza zero, o envelope se inverte e o detector de envelope produz distorção severa.</p>
+<h3 id="espectro-da-am"><span class="heading-number">2.5.2</span> Espectro da AM</h3>
+<p>Expandindo $s_{\text{AM}}(t)$:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{AM}}(t) = A_c\,\cos(2\pi f_c t) + \mu\,A_c\,m_n(t)\,\cos(2\pi f_c t)
+
+$$
+</div>
+
+<p>O primeiro termo é a <strong>portadora pura</strong>; o segundo termo é um sinal DSB-SC modulando a portadora com amplitude $\mu A_c$.</p>
+<p>Aplicando a transformada de Fourier:</p>
+
+<div class="math-display">
+$$
+
+\boxed{S_{\text{AM}}(f) = \frac{A_c}{2}\bigl[\delta(f-f_c) + \delta(f+f_c)\bigr] + \frac{\mu A_c}{2}\bigl[M_n(f-f_c) + M_n(f+f_c)\bigr]}
+
+$$
+</div>
+
+<p>O espectro AM contém <strong>três componentes</strong>:</p>
+<ol>
+<li><strong>Portadora</strong>: duas deltas em $\pm f_c$, cada uma com peso $A_c/2$.</li>
+<li><strong>BSL superior (USB)</strong>: $M_n(f)$ copiada para $+f_c$, com peso $\mu A_c/2$.</li>
+<li><strong>BSL inferior (LSB)</strong>: $M_n(f)$ copiada para $-f_c$, com peso $\mu A_c/2$.</li>
+</ol>
+<p>A banda total ocupada é $B_{\text{AM}} = 2W$ (mesma do DSB-SC).</p>
+<h3 id="análise-de-potências"><span class="heading-number">2.5.3</span> Análise de potências</h3>
+<p>Considere carga de $1\,\Omega$. A potência de cada componente:</p>
+<p><strong>Portadora</strong>:</p>
+
+<div class="math-display">
+$$
+
+P_c = \biggl\langle\bigl[A_c\,\cos(2\pi f_c t)\bigr]^2\biggr\rangle = \frac{A_c^2}{2}
+
+$$
+</div>
+
+<p><strong>Bandas laterais</strong> (DSB-SC com amplitude $\mu A_c$):</p>
+
+<div class="math-display">
+$$
+
+P_{\text{SB}} = \frac{(\mu A_c)^2}{2}\,P_{m_n} = \frac{\mu^2 A_c^2}{2}\,P_{m_n}
+
+$$
+</div>
+
+<p>onde $P_{m_n} = \langle m_n^2(t)\rangle$ é a potência do sinal normalizado. Para $m_n(t) = \cos(2\pi f_m t)$, $P_{m_n} = 1/2$.</p>
+<p><strong>Potência total</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_T = P_c + P_{\text{SB}} = \frac{A_c^2}{2}\Bigl(1 + \mu^2\,P_{m_n}\Bigr)}
+
+$$
+</div>
+
+<h3 id="eficiência-de-potência"><span class="heading-number">2.5.4</span> Eficiência de potência</h3>
+<p>A <strong>eficiência de potência</strong> é a fração da potência total que está nas bandas laterais (portando informação):</p>
+
+<div class="math-display">
+$$
+
+\boxed{\eta_P = \frac{P_{\text{SB}}}{P_T} = \frac{\mu^2\,P_{m_n}}{1 + \mu^2\,P_{m_n}}}
+
+$$
+</div>
+
+<p>Para o caso de <strong>tom único</strong> ($m_n(t) = \cos(2\pi f_m t)$), $P_{m_n} = 1/2$:</p>
+
+<div class="math-display">
+$$
+
+\eta_P = \frac{\mu^2/2}{1+\mu^2/2} = \frac{\mu^2}{2+\mu^2}
+
+$$
+</div>
+
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong> da eficiência máxima da AM: para tom único com $\mu = 1$ (máxima modulação sem sobremodulação):</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\eta_{\max} = \frac{1^2}{2+1^2} = \frac{1}{3} \approx 33{,}3\%}
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: isto significa que <strong>mesmo no caso melhor</strong>, $2/3$ da potência é desperdiçada na portadora — uma enorme ineficiência. Esta é a principal crítica à modulação AM convencional e a motivação para DSB-SC e SSB.</p></aside>
+<h3 id="análise-de-potências-por-componente-tom-único"><span class="heading-number">2.5.5</span> Análise de potências por componente (tom único)</h3>
+<p>Para $m_n(t) = \cos(2\pi f_m t)$, $\mu = 1$:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{AM}}(t) = A_c\bigl[1+\cos(2\pi f_m t)\bigr]\,\cos(2\pi f_c t)
+
+$$
+</div>
+
+<p>Usando $\cos A\cos B = \tfrac{1}{2}[\cos(A-B)+\cos(A+B)]$:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{AM}}(t) = A_c\cos(2\pi f_c t) + \frac{A_c}{2}\cos\bigl(2\pi(f_c-f_m)t\bigr) + \frac{A_c}{2}\cos\bigl(2\pi(f_c+f_m)t\bigr)
+
+$$
+</div>
+
+<p>Potências (carga $1\,\Omega$):</p>
+<ul>
+<li>Portadora: $P_c = A_c^2/2$</li>
+<li>BSL inferior (LSB): $P_{\text{LSB}} = \bigl(\tfrac{A_c}{2}\bigr)^2\cdot\tfrac{1}{2} = \tfrac{A_c^2}{8}$</li>
+<li>BSL superior (USB): $P_{\text{USB}} = \tfrac{A_c^2}{8}$</li>
+</ul>
+<p>Total: $P_T = \dfrac{A_c^2}{2} + \dfrac{A_c^2}{8} + \dfrac{A_c^2}{8} = \dfrac{3A_c^2}{4}$</p>
+<p>Eficiência: $\eta_P = \dfrac{A_c^2/4}{3A_c^2/4} = \dfrac{1}{3}$ — confirmado.</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: a portadora carrega $66{,}7\%$ da potência total e <strong>zero informação</strong>. As duas laterais, juntas com $33{,}3\%$, carregam toda a informação — e são redundantes (para $m(t)$ real).</p></aside>
+<h3 id="sobremodulação-distorção-e-problemas"><span class="heading-number">2.5.6</span> Sobremodulação: distorção e problemas</h3>
+<p>Quando $\mu &gt; 1$, o envelope $1+\mu\,m_n(t)$ torna-se negativo em alguns pontos. Como o detector de envelope (diodo+RC) não pode seguir valores negativos, o envelope detectado é o módulo $|1+\mu\,m_n(t)|$, produzindo distorção severa:</p>
+<ul>
+<li><strong>Cruzamento de zero</strong>: o envelope passa por zero, invertendo a fase do sinal modulado em $180°$.</li>
+<li><strong>Distorção não-linear</strong>: o detector recupera $|1+\mu\,m_n(t)| \neq 1+\mu\,m_n(t)$, introduzindo harmônicos que não estavam na mensagem original.</li>
+<li><strong>Interferência entre canais</strong>: a distorção gera conteúdo espectral que se espalha além da banda $2W$, interferindo em canais adjacentes.</li>
+</ul>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: a <strong>sobremodulação</strong> ocorre quando $\mu &gt; 1$, isto é, quando a amplitude da mensagem excede a amplitude da portadora: $\mu\,A_c &gt; A_c$.</p></aside>
+<h2 id="detecção-de-envelope-de-am"><span class="heading-number">2.6</span> Detecção de Envelope de AM</h2>
+<h3 id="princípio-do-detector-de-envelope"><span class="heading-number">2.6.1</span> Princípio do detector de envelope</h3>
+<p>O <strong>detector de envelope</strong> (ou detector de pico) é o receptor mais simples para modulação AM. Consiste basicamente de:</p>
+<ol>
+<li>Um <strong>diodo</strong> (retificador de meia onda ou onda completa);</li>
+<li>Um circuito <strong>RC passa-baixas</strong> (filtro de descarga).</li>
+</ol>
+<p>O diodo retifica o sinal (remove a metade negativa), e o capacitor C carrega até o pico do envelope e descarrega através de R com constante de tempo $\tau = RC$.</p>
+<h3 id="dedução-da-condição-de-rc"><span class="heading-number">2.6.2</span> Dedução da condição de RC</h3>
+<p>Para que o detector funcione corretamente, a constante de tempo $RC$ deve satisfazer duas condições opostas:</p>
+<p><strong>Condição 1 — Filtrar a portadora</strong> (R grande o suficiente para não &quot;ver&quot; a oscilação em $f_c$):</p>
+
+<div class="math-display">
+$$
+
+\boxed{RC\gg\frac{1}{2\pi f_c}}
+
+$$
+</div>
+
+<p>Isto garante que o capacitor não descarregue significativamente durante um ciclo da portadora.</p>
+<p><strong>Condição 2 — Rastrear a mensagem</strong> (R pequeno o suficiente para acompanhar variações rápidas de $m(t)$):</p>
+
+<div class="math-display">
+$$
+
+\boxed{RC\ll\frac{1}{2\pi W}}
+
+$$
+</div>
+
+<p>Isto garante que o capacitor descarregue o suficiente entre picos consecutivos do envelope para seguir as variações da mensagem.</p>
+<p><strong>Condição combinada</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\frac{1}{2\pi f_c} \ll RC \ll \frac{1}{2\pi W}}
+
+$$
+</div>
+
+<p>Esta janela de projeto é mais ampla quanto maior for a relação $f_c/W$ (quanto mais alta for a portadora em relação à largura de banda da mensagem).</p>
+<h3 id="teorema-da-condição-anti-diagonal-clipping"><span class="heading-number">2.6.3</span> Teorema da condição anti-diagonal clipping</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong>: para sinal AM tonal $s_{\text{AM}}(t) = A_c[1+\mu\cos(2\pi f_m t)]\cos(2\pi f_c t)$, a condição para evitar <strong>diagonal clipping</strong> é:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{RC \leq \frac{\sqrt{1-\mu^2}}{\mu\,\omega_m}}
+
+$$
+</div>
+
+<p>onde $\omega_m = 2\pi f_m$.</p>
+<aside class="callout callout-proof" role="note"><p><strong>Prova</strong>: o envelope $E(t) = A_c[1+\mu\cos(\omega_m t)]$ desce com taxa $|dE/dt| = A_c\,\mu\,\omega_m\,|\sin(\omega_m t)|$. A descarga do capacitor tem taxa $E(t)/RC$. No pior caso ($\cos(\omega_m t) = -\mu$, $|\sin| = \sqrt{1-\mu^2}$):</p></aside>
+
+<div class="math-display">
+$$
+
+\frac{E}{|dE/dt|} = \frac{A_c(1-\mu^2)}{A_c\,\mu\,\omega_m\,\sqrt{1-\mu^2}} = \frac{\sqrt{1-\mu^2}}{\mu\,\omega_m} \quad\Rightarrow\quad RC \leq \frac{\sqrt{1-\mu^2}}{\mu\,\omega_m}
+
+$$
+</div>
+
+<p>$\blacksquare$</p>
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: para $\mu \to 1$, limite $\to 0$ — qualquer RC causa clipping. Na prática, $\mu \leq 0{,}8$.</p></aside>
+<h3 id="distorção-por-negative-peak-clipping"><span class="heading-number">2.6.4</span> Distorção por <em>negative peak clipping</em></h3>
+<p>Outro tipo de distorção ocorre quando o resistor de carga $R_L$ é conectado ao detector (por exemplo, através de um capacitor acoplador). A descarga do capacitor através do circuito de carga pode causar o <strong>negative peak clipping</strong>: quando o envelope sobe rapidamente (carga rápida via diodo), mas desce lentamente (descarga através de $R_L$), os picos negativos do sinal são cortados.</p>
+<h3 id="snr-de-saída-do-detector-de-envelope"><span class="heading-number">2.6.5</span> SNR de saída do detector de envelope</h3>
+<p>Para um detector de envelope em AM operando acima do limiar, isto é, com razão portadora-ruído suficientemente alta para linearizar o módulo, a SNR de saída é aproximadamente:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{out}} \approx \frac{\mu^2\,P_{m_n}}{1+\mu^2\,P_{m_n}}\cdot\text{SNR}_{\text{in}}}
+
+$$
+</div>
+
+<p>onde $\text{SNR}_{\text{in}}$ é a razão sinal-ruído na entrada do detector (banda $2W$ centrada em $f_c$).</p>
+<p>Para tom único com $\mu = 1$: $\text{SNR}_{\text{out}} \approx \tfrac{1}{3}\,\text{SNR}_{\text{in}}$ — pior que a entrada (ganho de SNR $&lt; 1$).</p>
+<p><strong>Comparação</strong>: o DSB-SC coerente tem $\text{SNR}_{\text{out}} = 2\,\text{SNR}_{\text{in}}$ (ganho de 3 dB), superior ao AM. Porém, o AM não precisa de oscilador local sincronizado — é uma troca entre desempenho e complexidade.</p>
+<h3 id="exemplo-projeto-de-detector-de-envelope-para-am-broadcast"><span class="heading-number">2.6.6</span> Exemplo: projeto de detector de envelope para AM broadcast</h3>
+<aside class="callout callout-example" role="note"><p><strong>Exemplo</strong>: estação de AM broadcast, $f_c = 1000\,\text{kHz}$, largura de áudio $W = 5\,\text{kHz}$, $\mu = 0{,}8$.</p></aside>
+<p>Condição de RC:</p>
+
+<div class="math-display">
+$$
+
+\frac{1}{2\pi\cdot 10^6} \ll RC \ll \frac{1}{2\pi\cdot 5\times 10^3}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+1{,}59\times 10^{-7}\,\text{s} \ll RC \ll 3{,}18\times 10^{-5}\,\text{s}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{0{,}16\,\mu\text{s} \ll RC \ll 31{,}8\,\mu\text{s}}
+
+$$
+</div>
+
+<p>Condição anti-diagonal clipping ($\mu = 0{,}8$, $f_m = 5\,\text{kHz}$):</p>
+
+<div class="math-display">
+$$
+
+RC \leq \frac{\sqrt{1-0{,}8^2}}{0{,}8\cdot 2\pi\cdot 5000} = \frac{0{,}6}{25133} \approx 23{,}9\,\mu\text{s}
+
+$$
+</div>
+
+<p>Escolha prática: $R = 5\,\text{k}\Omega$, $C = 0{,}0047\,\mu\text{F}$, então $RC = 23{,}5\,\mu\text{s}$ — dentro da janela e próximo do limite anti-clipping.</p>
+<h2 id="modulação-ssb--teoria-e-implementação"><span class="heading-number">2.7</span> Modulação SSB — Teoria e Implementação</h2>
+<h3 id="redundância-das-bandas-laterais-em-dsb"><span class="heading-number">2.7.1</span> Redundância das bandas laterais em DSB</h3>
+<p>Em DSB-SC, as duas bandas laterais são <strong>espelhos conjugados</strong>: $S(f_c+f) = S^*(f_c-f)$ para $m(t)$ real. Cada banda lateral contém informação completa sobre $m(t)$. Transmitir ambas é redundante — podemos eliminar uma delas sem perda de informação.</p>
+<aside class="callout callout-definition" role="note"><p><strong>Definição</strong>: a <strong>modulação SSB</strong> (<em>Single Sideband</em>) transmite apenas <strong>uma</strong> das bandas laterais, economizando metade da banda e metade da potência em relação ao DSB-SC.</p></aside>
+<h3 id="transformada-de-hilbert-e-seu-espectro"><span class="heading-number">2.7.2</span> Transformada de Hilbert e seu espectro</h3>
+<p>A <strong>transformada de Hilbert</strong> de um sinal $m(t)$ é definida como:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\hat{m}(t) = m(t) * \frac{1}{\pi t} = \frac{1}{\pi}\,\text{PV}\!\int_{-\infty}^{\infty}\frac{m(\tau)}{t-\tau}\,d\tau}
+
+$$
+</div>
+
+<p>No domínio da frequência:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\hat{M}(f) = -j\,\text{sgn}(f)\,M(f) = \begin{cases}-j\,M(f), &amp; f &gt; 0\\
++j\,M(f), &amp; f &lt; 0\\
+0, &amp; f = 0\\
+\end{cases}}
+
+$$
+</div>
+
+<p>O filtro da transformada de Hilbert tem resposta em frequência:</p>
+
+<div class="math-display">
+$$
+
+\boxed{H_{\text{Hilbert}}(f) = -j\,\text{sgn}(f) = \begin{cases}-j, &amp; f &gt; 0\\
++j, &amp; f &lt; 0\\
+\end{cases}}
+
+$$
+</div>
+
+<p>Este filtro desloca todas as componentes de frequência positiva por $-90°$ e todas as de frequência negativa por $+90°$.</p>
+<p>Propriedades importantes da transformada de Hilbert:</p>
+<ul>
+<li>$\hat{\hat{m}}(t) = -m(t)$ (aplicar duas vezes inverte o sinal);</li>
+<li>$\hat{m}(t)$ e $m(t)$ têm a <strong>mesma energia</strong>: $\int|\hat{m}(t)|^2\,dt = \int|m(t)|^2\,dt$;</li>
+<li>$\langle m(t)\,\hat{m}(t)\rangle = 0$ para sinais ergódicos (são ortogonais).</li>
+</ul>
+<h3 id="dedução-do-sinal-ssb"><span class="heading-number">2.7.3</span> Dedução do sinal SSB</h3>
+<p>A partir do sinal analítico $\tilde{m}(t) = m(t) + j\,\hat{m}(t)$ (espectro nulo para $f &lt; 0$):</p>
+
+<div class="math-display">
+$$
+
+\Re\{\tilde{m}(t)\,e^{j2\pi f_c t}\} = m(t)\,\cos(2\pi f_c t) - \hat{m}(t)\,\sin(2\pi f_c t)
+
+$$
+</div>
+
+<p>Este sinal tem espectro concentrado apenas em $f &gt; f_c$ — <strong>banda lateral superior (USB)</strong>.</p>
+<p>De modo análogo (parte imaginária):</p>
+
+<div class="math-display">
+$$
+
+\Im\{\tilde{m}(t)\,e^{j2\pi f_c t}\} = m(t)\,\sin(2\pi f_c t) + \hat{m}(t)\,\cos(2\pi f_c t)
+
+$$
+</div>
+
+<p>contém apenas <strong>banda lateral inferior (LSB)</strong>.</p>
+<p>Portanto:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s_{\text{SSB}}(t) = \frac{A_c}{2}\Bigl[m(t)\,\cos(2\pi f_c t) \mp \hat{m}(t)\,\sin(2\pi f_c t)\Bigr]}
+
+$$
+</div>
+
+<p>Sinal <strong>menos</strong> = USB, <strong>mais</strong> = LSB. USB = &quot;transmitir frequências acima de $f_c$&quot;.</p>
+<h3 id="espectro-ssb"><span class="heading-number">2.7.4</span> Espectro SSB</h3>
+<p>Para USB:</p>
+
+<div class="math-display">
+$$
+
+S_{\text{USB}}(f) = \frac{A_c}{2}\,M(f-f_c)\,U(f-f_c) + \frac{A_c}{2}\,M^*(f+f_c)\,U(-f-f_c)
+
+$$
+</div>
+
+<p>Simplificando: para $f &gt; 0$, apenas a cópia de $M(f)$ deslocada para $f_c$ (para $f \in [f_c,\,f_c+W]$). Para $f &lt; 0$, apenas a cópia conjugada deslocada para $-f_c$.</p>
+<p><strong>Largura de banda</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{B_{\text{SSB}} = W}
+
+$$
+</div>
+
+<p>Metade do DSB-SC! Esta é a principal vantagem da SSB.</p>
+<h3 id="potência-e-eficiência-da-ssb"><span class="heading-number">2.7.5</span> Potência e eficiência da SSB</h3>
+<p>A potência do sinal SSB (tomando $\hat{m}(t)$ como ortogonal a $m(t)$):</p>
+
+<div class="math-display">
+$$
+
+P_{\text{SSB}} = \frac{A_c^2}{4}\,\bigl[\langle m^2(t)\rangle + \langle\hat{m}^2(t)\rangle\bigr] = \frac{A_c^2}{4}\,(P_m + P_m) = \frac{A_c^2}{2}\,P_m
+
+$$
+</div>
+
+<p>Comparando com DSB-SC: $P_{\text{DSB}} = \dfrac{A_c^2}{2}\,P_m$. Logo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_{\text{SSB}} = \frac{1}{2}\,P_{\text{DSB}}}
+
+$$
+</div>
+
+<p>A SSB usa <strong>metade da potência</strong> do DSB-SC (transmite apenas uma banda lateral).</p>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong> da eficiência de SSB: como não há portadora e não há redundância, toda a potência transporta informação:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\eta_{\text{SSB}} = 100\%}
+
+$$
+</div>
+
+<p>Esta é a máxima eficiência possível em modulação em amplitude.</p>
+<h3 id="método-do-filtro-projeto-do-filtro-passa-banda"><span class="heading-number">2.7.6</span> Método do filtro (projeto do filtro passa-banda)</h3>
+<p>O método mais direto de gerar SSB é:</p>
+<ol>
+<li>Gerar DSB-SC: $s_{\text{DSB}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)$.</li>
+<li>Filtrar por um <strong>filtro passa-banda</strong> seletivo que rejeita uma das bandas laterais.</li>
+</ol>
+<p>O filtro deve ter resposta ideal:</p>
+
+<div class="math-display">
+$$
+
+H_{\text{SSB}}(f) = \begin{cases}1, &amp; f_c \leq |f| \leq f_c+W \quad\text{(USB)}\\
+0, &amp; caso contrário\\
+\end{cases}
+
+$$
+</div>
+
+<p><strong>Desafio de projeto</strong>: o filtro deve ter uma transição extremamente íngreme entre a banda lateral transmitida e a rejeitada. Para $f_c = 1\,\text{MHz}$ e $W = 5\,\text{kHz}$, a transição ocorre em apenas $10\,\text{kHz}$ (de $f_c$ a $f_c+W$ para a outra lateral). Isto exige filtros de alta ordem (centenas de elementos para RF).</p>
+<aside class="callout callout-important" role="alert"><p><strong>Importante</strong>: este método funciona bem quando $W$ é pequena em relação a $f_c$ (alta relação $f_c/W$). Para mensagens de banda base ampla (como áudio telefônico ou vídeo), o filtro se torna impraticável.</p></aside>
+<h3 id="método-de-weaver-para-geração-de-ssb"><span class="heading-number">2.7.7</span> Método de Weaver para geração de SSB</h3>
+<p>O <strong>método de Weaver</strong> (1956) evita o filtro íngreme usando duas etapas de mixagem em frequências intermediárias:</p>
+<p><strong>Passo 1</strong>: Modular $m(t)$ em uma frequência intermediária $f_1$ (baixa, tipicamente alguns kHz):</p>
+
+<div class="math-display">
+$$
+
+s_1(t) = m(t)\,\cos(2\pi f_1 t)
+
+$$
+</div>
+
+<p><strong>Passo 2</strong>: Modular novamente, esta vez em $f_2$ (também baixa, mas diferente de $f_1$):</p>
+
+<div class="math-display">
+$$
+
+s_2(t) = s_1(t)\,\cos(2\pi f_2 t) = m(t)\,\cos(2\pi f_1 t)\,\cos(2\pi f_2 t)
+
+$$
+</div>
+
+<p><strong>Passo 3</strong>: Filtrar por um filtro passa-baixa simples (a banda lateral é bem separada em $f_2 \pm f_1$).</p>
+<p><strong>Passo 4</strong>: Modular o resultado final para a frequência de transmissão $f_c$.</p>
+<p>Este método é amplamente usado em receptores de rádio amador porque os filtros operam em frequências baixas, onde são mais fáceis de implementar.</p>
+<h2 id="modulação-vsb--compromisso-prático"><span class="heading-number">2.8</span> Modulação VSB — Compromisso Prático</h2>
+<h3 id="por-que-vsb"><span class="heading-number">2.8.1</span> Por que VSB?</h3>
+<p>A SSB requer um filtro de transição extremamente íngreme. Para sinais com conteúdo de baixa frequência significativo (como vídeo, onde o espectro vai até DC), cortar abruptamente a banda lateral próxima a $f_c$ é <strong>praticamente impossível</strong> com filtros realizáveis.</p>
+<p>A <strong>modulação VSB</strong> (<em>Vestigial Sideband</em>) resolve este problema transmitindo <strong>uma banda lateral completa</strong> e um <strong>&quot;vestígio&quot; (<em>vestige</em>)</strong> da outra banda lateral.</p>
+<h3 id="dedução-da-condição-de-simetria-vsb"><span class="heading-number">2.8.2</span> Dedução da condição de simetria VSB</h3>
+<p>Seja $H(f)$ a resposta em frequência do filtro de banda lateral usado na geração VSB. O sinal modulado é:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{VSB}}(t) = A_c\,m(t)\,\cos(2\pi f_c t) * h(t)
+
+$$
+</div>
+
+<p>onde $h(t)$ é a resposta ao impulso do filtro. No domínio da frequência:</p>
+
+<div class="math-display">
+$$
+
+S_{\text{VSB}}(f) = \frac{A_c}{2}\,M(f)*\bigl[H(f-f_c)+H(f+f_c)\bigr]
+
+$$
+</div>
+
+<p>Para recuperação sem distorção (detecção coerente), a soma das respostas do filtro nas frequências simétricas em torno de $f_c$ deve ser <strong>constante</strong>:</p>
+
+<div class="math-display">
+$$
+
+\boxed{H(f-f_c) + H(f+f_c) = \text{constante}, \qquad |f| \leq W}
+
+$$
+</div>
+
+<p>Esta é a <strong>condição de vestígio simétrico</strong>. Ela garante que, ao multiplicar por $\cos(2\pi f_c t)$ e filtrar por passa-baixas, o sinal original seja recuperado sem distorção.</p>
+<aside class="callout callout-note" role="note"><p><strong>Interpretação</strong>: o vestígio da banda lateral rejeitada compensa a atenuação da banda lateral transmitida próxima a $f_c$. A simetria do vestígio assegura que a resposta total seja plana na banda de interesse.</p></aside>
+<!-- slides: columns -->
+<h3 id="aplicação-tv-analógica"><span class="heading-number">2.8.3</span> Aplicação: TV analógica</h3>
+<p>A aplicação mais famosa de VSB é a <strong>transmissão de vídeo em TV analógica</strong> (NTSC, PAL, SECAM):</p>
+<ul>
+<li>O sinal de vídeo (luminância) tem espectro de DC até $\sim 4{,}2\,\text{MHz}$ (NTSC) ou $\sim 5\,\text{MHz}$ (PAL).</li>
+<li>Transmitir SSB seria impraticável (filtro íngreme para conteúdo de baixa frequência).</li>
+<li>VSB transmite a USB completa e um vestígio de $\sim 1{,}25\,\text{MHz}$ da LSB.</li>
+<li>Largura de banda total: $\sim 6\,\text{MHz}$ por canal (NTSC).</li>
+</ul>
+<!-- slides: column -->
+<h3 id="largura-de-banda-vsb"><span class="heading-number">2.8.4</span> Largura de banda VSB</h3>
+
+<div class="math-display">
+$$
+
+\boxed{B_{\text{VSB}} = W + f_{\text{vestígio}}}
+
+$$
+</div>
+
+<p>onde $f_{\text{vestígio}}$ é a largura da faixa de transição (tipicamente $0{,}5W$ a $1{,}25W$). Para vídeo NTSC: $W = 4{,}2\,\text{MHz}$, $f_{\text{vestígio}} \approx 1{,}25\,\text{MHz}$, $B_{\text{VSB}} \approx 6\,\text{MHz}$.</p>
+<!-- slides: end-columns -->
+<h3 id="detecção-vsb"><span class="heading-number">2.8.5</span> Detecção VSB</h3>
+<p>A recuperação VSB pode ser feita por:</p>
+<ul>
+<li><strong>Detecção coerente</strong> (mesmo método DSB-SC, multiplicar por $\cos(2\pi f_c t)$ e filtrar).</li>
+<li><strong>Detecção de envelope</strong> (apenas se a portadora for transmitida em nível suficiente, como na TV analógica, onde a portadora de vídeo é transmitida com $\mu \approx 0{,}7$).</li>
+</ul>
+<h3 id="comparação-completa-dsb-vs-ssb-vs-vsb-vs-am"><span class="heading-number">2.8.6</span> Comparação completa: DSB vs SSB vs VSB vs AM</h3>
+<table>
+<thead>
+<tr>
+<th>Propriedade</th>
+<th style="text-align:right">AM (DSB-LC)</th>
+<th style="text-align:right">DSB-SC</th>
+<th style="text-align:right">SSB</th>
+<th style="text-align:right">VSB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Largura de banda</td>
+<td style="text-align:right">$2W$</td>
+<td style="text-align:right">$2W$</td>
+<td style="text-align:right">$W$</td>
+<td style="text-align:right">$W+f_v$</td>
+</tr>
+<tr>
+<td>Potência de portadora</td>
+<td style="text-align:right">$A_c^2/2$</td>
+<td style="text-align:right">$0$</td>
+<td style="text-align:right">$0$ (ou pequena)</td>
+<td style="text-align:right">$A_c^2/2$ (ou suprimida)</td>
+</tr>
+<tr>
+<td>Eficiência energética</td>
+<td style="text-align:right">$\leq 33{,}3\%$</td>
+<td style="text-align:right">$100\%$</td>
+<td style="text-align:right">$100\%$</td>
+<td style="text-align:right">$\approx 60\text{--}75\%$</td>
+</tr>
+<tr>
+<td>Complexidade do TX</td>
+<td style="text-align:right">baixa</td>
+<td style="text-align:right">média</td>
+<td style="text-align:right">alta</td>
+<td style="text-align:right">intermediária</td>
+</tr>
+<tr>
+<td>Complexidade do RX</td>
+<td style="text-align:right">muito baixa</td>
+<td style="text-align:right">alta (coerente)</td>
+<td style="text-align:right">alta (coerente)</td>
+<td style="text-align:right">baixa/média</td>
+</tr>
+<tr>
+<td>Aplicação típica</td>
+<td style="text-align:right">Rádio broadcasting</td>
+<td style="text-align:right">Enlace ponto-a-ponto</td>
+<td style="text-align:right">HF, telecom</td>
+<td style="text-align:right">Vídeo/TV</td>
+</tr>
+</tbody>
+</table>
+<h2 id="análise-de-ruído-em-modulação-analógica"><span class="heading-number">2.9</span> Análise de Ruído em Modulação Analógica</h2>
+<h3 id="modelo-de-ruído-aditivo-branco-gaussiano-awgn"><span class="heading-number">2.9.1</span> Modelo de ruído aditivo branco gaussiano (AWGN)</h3>
+<p>Considere um canal com <strong>ruído aditivo branco gaussiano</strong> (AWGN): $n(t)$ é um processo estacionário com espectro de potência constante:</p>
+
+<div class="math-display">
+$$
+
+\boxed{G_n(f) = \frac{N_0}{2}, \qquad -\infty &lt; f &lt; \infty}
+
+$$
+</div>
+
+<p>onde $N_0$ é a densidade espectral unilateral de potência (W/Hz). A potência de ruído na banda de recepção de largura $B$ é:</p>
+
+<div class="math-display">
+$$
+
+P_n = \frac{N_0}{2}\cdot 2B = N_0\,B
+
+$$
+</div>
+
+<h3 id="snr-na-entrada-do-receptor"><span class="heading-number">2.9.2</span> SNR na entrada do receptor</h3>
+<p>A potência do sinal recebido (assumindo atenuação de canal unitária para simplificar) é $P_R$. O ruído na banda de recepção (banda do sinal modulado) é $N_0\,B$. Logo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{in}} = \frac{P_R}{N_0\,B}}
+
+$$
+</div>
+
+<h3 id="dsb-sc-snr-de-saída"><span class="heading-number">2.9.3</span> DSB-SC: SNR de saída</h3>
+<p>Para DSB-SC, o receptor coerente tem largura de banda de base $W$. O ruído na banda de recepção (passa-banda $2W$) tem potência $N_0\cdot 2W$. Após a mixagem e o filtro passa-baixas de banda $W$, o ruído de saída é $N_0\cdot W$.</p>
+<p>O sinal de saída tem potência $A_c^2 P_m$ (com ganho do oscilador local $= 2$, conforme Seção “Detecção Coerente de DSB-SC”).</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{out}}^{\text{DSB}} = \frac{A_c^2 P_m}{N_0\,W} = 2\cdot\frac{A_c^2 P_m}{2N_0 W} = 2\,\text{SNR}_{\text{in}}}
+
+$$
+</div>
+
+<aside class="callout callout-note" role="note"><p><strong>Observação</strong>: o ganho de SNR é $2$ (3 dB) — o detector coerente de DSB-SC <strong>melhora</strong> a razão sinal-ruído em 3 dB.</p></aside>
+<h3 id="am-snr-de-saída"><span class="heading-number">2.9.4</span> AM: SNR de saída</h3>
+<p>Para AM com índice de modulação $\mu$ e sinal normalizado $m_n(t)$, a potência do sinal é $P_T = \tfrac{A_c^2}{2}(1+\mu^2 P_{m_n})$. Na banda de recepção $2W$, o ruído é $N_0\cdot 2W$.</p>
+<p>O sinal de informação (bandas laterais) tem potência $P_{\text{SB}} = \tfrac{\mu^2 A_c^2}{2}P_{m_n}$.</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{out}}^{\text{AM}} = \frac{\mu^2 P_{m_n}}{1+\mu^2 P_{m_n}}\cdot\text{SNR}_{\text{in}}}
+
+$$
+</div>
+
+<p>Para tom único ($P_{m_n} = 1/2$) com $\mu = 1$: $\text{SNR}_{\text{out}} = \tfrac{1}{3}\,\text{SNR}_{\text{in}}$ — <strong>piora</strong> de 4,77 dB em relação à entrada.</p>
+<p><strong>Comparação</strong>: usando as definições desta seção, para tom único e $\mu=1$ o fator é 2 para DSB-SC e $1/3$ para AM, uma razão 6 ou $7{,}78$ dB — não “aproximadamente 10 dB”. A vantagem do AM é a simplicidade do detector de envelope.</p>
+<h3 id="ssb-snr-de-saída"><span class="heading-number">2.9.5</span> SSB: SNR de saída</h3>
+<p>Para SSB, a banda de recepção é $W$ (metade do DSB). O ruído na entrada é $N_0\cdot W$ (metade do DSB). Após a detecção coerente, o ruído de saída é $N_0\cdot W/2$ (filtro passa-baixas de banda $W/2$ na <em>baseband</em> equivalente).</p>
+<aside class="callout callout-result" role="status"><p><strong>Resultado</strong>: o SNR de saída da SSB é <strong>idêntico</strong> ao do DSB-SC:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{out}}^{\text{SSB}} = \text{SNR}_{\text{out}}^{\text{DSB}} = 2\,\text{SNR}_{\text{in}}}
+
+$$
+</div>
+
+<p>A SSB obtém a mesma qualidade em ruído com <strong>metade da banda</strong> do DSB-SC — a razão pela qual é preferida em enlaces de longa distância HF.</p>
+<h3 id="fm-ganho-de-processamento-e-limiar"><span class="heading-number">2.9.6</span> FM: Ganho de processamento e limiar</h3>
+<p>A <strong>modulação FM</strong> troca largura de banda por SNR. O ganho de processamento:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\frac{\text{SNR}_{\text{out}}^{\text{FM}}}{\text{SNR}_{\text{in}}} = 3\,\beta^2(\beta+1) \qquad\text{para }\beta \gg 1}
+
+$$
+</div>
+
+<p>onde $\beta = \Delta f/W$ é o <strong>índice de modulação FM</strong>.</p>
+<p>Para $\beta = 5$: ganho $= 450$ ($26{,}5\,\text{dB}$).</p>
+<p><strong>Limiar FM</strong> (degradação abrupta abaixo de):</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{in}} \approx 10\,\text{dB}}
+
+$$
+</div>
+
+<p><strong>Trade-off FM</strong>: $B_{\text{FM}} \approx 2(\beta+1)W$ (Carson). Maior $\beta$ = mais banda, mais SNR. WBFM ($\beta \gg 1$): SNR excelente, banda larga. NBFM ($\beta \ll 1$): banda estreita, SNR modesto.</p>
+<h3 id="tabela-comparativa-de-ruído"><span class="heading-number">2.9.7</span> Tabela comparativa de ruído</h3>
+<table>
+<thead>
+<tr>
+<th>Modulação</th>
+<th style="text-align:right">SNR$_{\text{out}}$/SNR$_{\text{in}}$</th>
+<th style="text-align:right">Banda</th>
+<th style="text-align:right">Complexidade de RX</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AM (DSB-LC)</td>
+<td style="text-align:right">$\tfrac{\mu^2 P_{m_n}}{1+\mu^2 P_{m_n}}$</td>
+<td style="text-align:right">$2W$</td>
+<td style="text-align:right">muito baixa</td>
+</tr>
+<tr>
+<td>DSB-SC</td>
+<td style="text-align:right">$2$</td>
+<td style="text-align:right">$2W$</td>
+<td style="text-align:right">alta (coerente)</td>
+</tr>
+<tr>
+<td>SSB</td>
+<td style="text-align:right">$2$</td>
+<td style="text-align:right">$W$</td>
+<td style="text-align:right">alta (coerente)</td>
+</tr>
+<tr>
+<td>FM ($\beta \gg 1$)</td>
+<td style="text-align:right">$3\beta^2(\beta+1)$</td>
+<td style="text-align:right">$2(\beta+1)W$</td>
+<td style="text-align:right">média/alta</td>
+</tr>
+<tr>
+<td>VSB</td>
+<td style="text-align:right">$\approx 2$ (coerente)</td>
+<td style="text-align:right">$W+f_v$</td>
+<td style="text-align:right">intermediária</td>
+</tr>
+</tbody>
+</table>
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">2.10</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">2.10.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> confrontar espectro, potência e recuperação de DSB-SC, AM e SSB. <strong>Amostragem:</strong> use $f_s$ suficientemente maior que $2(f_c+W)$ e declare a normalização da FFT. <strong>Validação:</strong> meça potência no tempo, confira a eficiência teórica e quantifique erro de fase, sobremodulação e rejeição da banda lateral.</p>
+<h3 id="exercício-1-simulação-dsb-sc-com-detecção-coerente-e-erro-de-fase"><span class="heading-number">2.10.2</span> Exercício 1: Simulação DSB-SC com detecção coerente e erro de fase</h3>
+<p>Simule a modulação DSB-SC e a detecção coerente com diferentes erros de fase $\phi$, mostrando o efeito da atenuação por $\cos\phi$.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100_000</span>            <span style="color: #959077"># taxa de amostragem</span>
+<span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5_000</span>              <span style="color: #959077"># frequência da portadora</span>
+<span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">200</span>                <span style="color: #959077"># frequência da mensagem</span>
+<span style="color: #F8F8F2">T</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.02</span>                <span style="color: #959077"># duração total</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span>
+
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fm</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>        <span style="color: #959077"># mensagem (tom único)</span>
+<span style="color: #F8F8F2">Ac</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+
+<span style="color: #959077"># --- DSB-SC ---</span>
+<span style="color: #F8F8F2">s_dsb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Ac</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+
+<span style="color: #959077"># --- Detecção coerente com erro de fase phi ---</span>
+<span style="color: #F8F8F2">phis</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">4</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(len(phis),</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">12</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">sharex</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">ax,</span> <span style="color: #F8F8F2">phi</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(axes,</span> <span style="color: #F8F8F2">phis):</span>
+    <span style="color: #959077"># Misturador: multiplicar por 2*cos(2*pi*fc*t + phi)</span>
+    <span style="color: #F8F8F2">mixer</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">phi)</span>
+    <span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">s_dsb</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">mixer</span>
+
+    <span style="color: #959077"># Filtro passa-baixas: média móvel com janela de 200 amostras</span>
+    <span style="color: #F8F8F2">h_lp</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ones(</span><span style="color: #AE81FF">200</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">200</span>
+    <span style="color: #F8F8F2">y</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">convolve(r,</span> <span style="color: #F8F8F2">h_lp,</span> <span style="color: #F8F8F2">mode</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;full&#39;</span><span style="color: #F8F8F2">)[:len(t)]</span>
+
+    <span style="color: #959077"># Teórico: y = Ac * m * cos(phi)</span>
+    <span style="color: #F8F8F2">y_theory</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Ac</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phi)</span>
+
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">m,</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;m(t)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #959077"># Não normalize cada curva separadamente: isso esconderia a perda cos(phi)</span>
+    <span style="color: #959077"># e causaria divisão por zero em phi=90°. Ac=1 já fornece escala comum.</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">y,</span> <span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.9</span><span style="color: #F8F8F2">,</span>
+            <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">fr&#39;saída ($\phi$={</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rad2deg(phi)</span><span style="color: #E6DB74">:.0f}°)&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">y_theory,</span> <span style="color: #E6DB74">&#39;k--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">,</span>
+            <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">fr&#39;teórico ($\cos\phi$={</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phi)</span><span style="color: #E6DB74">:.3f})&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend(fontsize</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">loc</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;upper right&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">fr&#39;Detecção coerente DSB-SC com erro de fase $\phi$ = {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rad2deg(phi)</span><span style="color: #E6DB74">:.0f}°&#39;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">axes[</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;tempo (ms)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/dsb_phase_error.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bbox_inches</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tight&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #959077"># --- Medição quantitativa ---</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Erro de fase  |  Amplitude recuperada  |  Potência rel.  |  Perda (dB)&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;-&quot;</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">65</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">phi</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">phis:</span>
+    <span style="color: #F8F8F2">amp</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(phi)</span>
+    <span style="color: #F8F8F2">pwr</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">amp</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span>
+    <span style="color: #F8F8F2">loss_db</span> <span style="color: #FF4689">=</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(pwr</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rad2deg(phi)</span><span style="color: #E6DB74">:6.1f}°  |  {</span><span style="color: #F8F8F2">amp</span><span style="color: #E6DB74">:18.5f}  |  {</span><span style="color: #F8F8F2">pwr</span><span style="color: #E6DB74">:15.5f}  |  {</span><span style="color: #F8F8F2">loss_db</span><span style="color: #E6DB74">:10.2f} dB&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m fs = [32m100_000[39m            [38;5;66;03m# taxa de amostragem[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<aside class="callout callout-result" role="status"><p><strong>Saída esperada</strong>:</p></aside>
+
+
+<div class="code-block"><div class="code-header"></div><pre style="background:#272822;color:#f8f8f2;padding:1em;overflow-x:auto;"><code>Erro de fase  |  Amplitude recuperada  |  Potência rel.  |  Perda (dB)
+-----------------------------------------------------------------
+     0.0°  |             1.00000  |       1.00000  |      0.00 dB
+    30.0°  |             0.86603  |       0.75000  |      1.25 dB
+    45.0°  |             0.70711  |       0.50000  |      3.01 dB
+    60.0°  |             0.50000  |       0.25000  |      6.02 dB
+    90.0°  |             0.00000  |       0.00000  |     inf dB</code></pre></div>
+
+<h3 id="exercício-2-am-com-envelope--variação-de-mu-e-espectro"><span class="heading-number">2.10.3</span> Exercício 2: AM com envelope — variação de $\mu$ e espectro</h3>
+<p>Varie o índice de modulação $\mu$ e observe o envelope e o espectro.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">200_000</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10_000</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">400</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">T</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.01</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fm</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t);</span> <span style="color: #F8F8F2">Ac</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+
+<span style="color: #F8F8F2">mu_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.3</span><span style="color: #F8F8F2">]</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">7</span><span style="color: #F8F8F2">))</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">ax,</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">zip(axes</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">flat,</span> <span style="color: #F8F8F2">mu_vals):</span>
+    <span style="color: #F8F8F2">s</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Ac</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">mu</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">m)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+    <span style="color: #F8F8F2">env</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Ac</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">mu</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">m)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">s,</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">env,</span> <span style="color: #E6DB74">&#39;r--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #F8F8F2">env,</span> <span style="color: #E6DB74">&#39;r--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">:</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fill_between(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #F8F8F2">Ac,</span> <span style="color: #F8F8F2">Ac,</span> <span style="color: #F8F8F2">where</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(env</span><span style="color: #FF4689">&lt;</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">)</span>
+    <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">f&#39;AM $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">mu$={</span><span style="color: #F8F8F2">mu</span><span style="color: #E6DB74">}&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">T</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;tempo (ms)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;tempo (ms)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout();</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/am_mu.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bbox_inches</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tight&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #959077"># Potências e eficiência</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">]:</span>
+    <span style="color: #F8F8F2">Pc</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Ac</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">Psb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">mu</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Pc</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">Pt</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Pc</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">Psb;</span> <span style="color: #F8F8F2">eta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Psb</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">Pt</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">mu$={</span><span style="color: #F8F8F2">mu</span><span style="color: #E6DB74">:.1f}: $P_c$={</span><span style="color: #F8F8F2">Pc</span><span style="color: #E6DB74">:.3f}, $P_</span><span style="color: #AE81FF">{{</span><span style="color: #E6DB74">SB</span><span style="color: #AE81FF">}}</span><span style="color: #E6DB74">$={</span><span style="color: #F8F8F2">Psb</span><span style="color: #E6DB74">:.3f}, $P_T$={</span><span style="color: #F8F8F2">Pt</span><span style="color: #E6DB74">:.3f}, $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">eta$={</span><span style="color: #F8F8F2">eta</span><span style="color: #E6DB74">:.1%}&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m fs = [32m200_000[39m; fc = [32m10_000[39m; fm = [32m400[39m; T = [32m0.01[39m; t = np.arange([32m0[39m, T, [32m1[39m/fs)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-3-geração-ssb-por-filtro-no-domínio-da-frequência"><span class="heading-number">2.10.4</span> Exercício 3: Geração SSB por filtro no domínio da frequência</h3>
+<p>Gere um sinal SSB aplicando um filtro ideal no domínio da frequência ao sinal DSB-SC.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100_000</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5_000</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">300</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">N</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4096</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(N)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">fs</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fm</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fm</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+
+<span style="color: #F8F8F2">s_dsb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+<span style="color: #F8F8F2">S_dsb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft(s_dsb)</span>
+<span style="color: #F8F8F2">f_full</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftfreq(N,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span>
+
+<span style="color: #959077"># Filtro USB ideal</span>
+<span style="color: #F8F8F2">H_usb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">zeros(N)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(N):</span>
+    <span style="color: #F8F8F2">fi</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">f_full[i]</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">fi</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span> <span style="color: #FF4689">and</span> <span style="color: #F8F8F2">fi</span> <span style="color: #FF4689">&gt;=</span> <span style="color: #F8F8F2">fc:</span> <span style="color: #F8F8F2">H_usb[i]</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span>
+    <span style="color: #66D9EF">elif</span> <span style="color: #F8F8F2">fi</span> <span style="color: #FF4689">&lt;</span> <span style="color: #AE81FF">0</span> <span style="color: #FF4689">and</span> <span style="color: #F8F8F2">fi</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #FF4689">-</span><span style="color: #F8F8F2">fc:</span> <span style="color: #F8F8F2">H_usb[i]</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span>
+
+<span style="color: #F8F8F2">S_usb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">S_dsb</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">H_usb</span>
+<span style="color: #F8F8F2">s_usb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ifft(S_usb)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real</span>
+
+<span style="color: #F8F8F2">f_shift</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftshift(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftfreq(N,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs))</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1000</span>
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(f_shift,</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftshift(S_dsb))</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(S_dsb))</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">),</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Espectro DSB-SC&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim([</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">60</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">step(f_shift,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftshift(H_usb),</span> <span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Filtro USB ideal&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(f_shift,</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftshift(S_usb))</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(S_usb))</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">),</span> <span style="color: #E6DB74">&#39;g&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;frequência (kHz)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Espectro SSB USB&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylim([</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">60</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/ssb_frequency_filter.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bbox_inches</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tight&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;DSB-SC: {</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fm</span><span style="color: #E6DB74">:.0f} kHz | SSB USB: {</span><span style="color: #F8F8F2">fm</span><span style="color: #E6DB74">:.0f} kHz — economia de 50%&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m fs = [32m100_000[39m; fc = [32m5_000[39m; fm = [32m300[39m; N = [32m4096[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-4-análise-de-snr-vs-índice-de-modulação"><span class="heading-number">2.10.5</span> Exercício 4: Análise de SNR vs índice de modulação</h3>
+<p>Compare o SNR de saída de AM para diferentes índices de modulação, assumindo ruído AWGN na banda de recepção.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #959077"># Parâmetros</span>
+<span style="color: #F8F8F2">mu_vals</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">100</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">N0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-12</span>          <span style="color: #959077"># densidade espectral de ruído</span>
+<span style="color: #F8F8F2">W</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5000</span>            <span style="color: #959077"># largura de banda da mensagem</span>
+<span style="color: #F8F8F2">Ac</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+<span style="color: #F8F8F2">P_mn</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.5</span>          <span style="color: #959077"># tom único</span>
+<span style="color: #F8F8F2">B_AM</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">W</span>          <span style="color: #959077"># banda do AM</span>
+
+<span style="color: #959077"># SNR na entrada (sinal com portadora, ruído na banda 2W)</span>
+<span style="color: #F8F8F2">P_T</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(Ac</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">mu_vals</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_mn)</span>
+<span style="color: #F8F8F2">N_in</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">B_AM</span>
+<span style="color: #F8F8F2">SNR_in</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">P_T</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">N_in</span>
+
+<span style="color: #959077"># SNR de saída (apenas bandas laterais)</span>
+<span style="color: #F8F8F2">P_sb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(mu_vals</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">Ac</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_mn</span>
+<span style="color: #F8F8F2">N_out</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">N0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">W</span>     <span style="color: #959077"># ruído na banda W após detecção coerente (ideal)</span>
+<span style="color: #F8F8F2">SNR_out</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">P_sb</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">N_out</span>
+<span style="color: #F8F8F2">ratio</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">SNR_out</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">SNR_in</span>
+
+<span style="color: #959077"># DSB-SC como referência</span>
+<span style="color: #F8F8F2">P_dsb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Ac</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_mn</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">2</span>
+<span style="color: #F8F8F2">SNR_in_dsb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">P_dsb</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">N_in</span>
+<span style="color: #F8F8F2">SNR_out_dsb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">P_dsb</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">N_out</span>
+<span style="color: #F8F8F2">ratio_dsb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">SNR_out_dsb</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">SNR_in_dsb</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">(ax1,</span> <span style="color: #F8F8F2">ax2)</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">4.5</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #959077"># Esquerda: SNR de saída</span>
+<span style="color: #F8F8F2">SNR_out_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(SNR_out</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1e-15</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">SNR_out_dsb_db</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(SNR_out_dsb</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1e-15</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(mu_vals,</span> <span style="color: #F8F8F2">SNR_out_db,</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;AM (saída)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(SNR_out_dsb_db,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span>
+            <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">f&#39;DSB-SC (ganho = {</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(ratio_dsb)</span><span style="color: #E6DB74">:.1f} dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">mu$&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;SNR de saída (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;SNR de saída: AM vs DSB-SC&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.25</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax1</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Direita: eficiência de potência</span>
+<span style="color: #F8F8F2">eta</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(mu_vals</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_mn)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">mu_vals</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">P_mn)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(mu_vals,</span> <span style="color: #F8F8F2">eta</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">100</span><span style="color: #F8F8F2">,</span> <span style="color: #E6DB74">&#39;g&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">33.33</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">linestyle</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;--&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;limite teórico (33,3%)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">mu$&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;eficiência de potência (%)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Eficiência de potência da AM&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.25</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax2</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/snr_vs_mu.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bbox_inches</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tight&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;SNR comparison (linear scale):&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">[</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">]:</span>
+    <span style="color: #F8F8F2">idx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">int(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">argmin(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(mu_vals</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">mu)))</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;  $</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">mu$={</span><span style="color: #F8F8F2">mu</span><span style="color: #E6DB74">:.1f}: SNR_out/SNR_in = {</span><span style="color: #F8F8F2">ratio[idx]</span><span style="color: #E6DB74">:.4f} &quot;</span>
+          <span style="color: #E6DB74">f&quot;({</span><span style="color: #AE81FF">10</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(ratio[idx]</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1e-15</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">:.2f} dB)&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m [38;5;66;03m# Parâmetros[39;00m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="exercício-5-transformada-de-hilbert-e-geração-ssb"><span class="heading-number">2.10.6</span> Exercício 5: Transformada de Hilbert e geração SSB</h3>
+<p>Ilustrar a transformada de Hilbert e o sinal Hilbert de uma mensagem.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.signal </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">hilbert</span>
+
+<span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10_000</span>
+<span style="color: #F8F8F2">T</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span>
+
+<span style="color: #959077"># Mensagem: soma de dois tons (espectro não-uniforme)</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">3</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">0.6</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">7</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+
+<span style="color: #959077"># Transformada de Hilbert via scipy</span>
+<span style="color: #F8F8F2">m_hilbert</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">imag(hilbert(m))</span>
+
+<span style="color: #959077"># Sinal analítico</span>
+<span style="color: #F8F8F2">s_analytic</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">m_hilbert</span>
+
+<span style="color: #959077"># SSB USB: s_USB(t) = m(t)*cos(2*pi*fc*t) - m_H(t)*sin(2*pi*fc*t)</span>
+<span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">50</span>
+<span style="color: #F8F8F2">carrier_cos</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+<span style="color: #F8F8F2">carrier_sin</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sin(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+<span style="color: #F8F8F2">s_usb</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">m</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">carrier_cos</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">m_hilbert</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">carrier_sin</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">axes</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #959077"># Mensagem e Hilbert</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t,</span> <span style="color: #F8F8F2">m,</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;m(t)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t,</span> <span style="color: #F8F8F2">m_hilbert,</span> <span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">hat{m}(t)$ (Hilbert)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Mensagem e sua transformada de Hilbert&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Sinal analítico (envelope)</span>
+<span style="color: #F8F8F2">envelope</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(s_analytic)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t,</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(s_analytic),</span> <span style="color: #E6DB74">&#39;b&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.8</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.7</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Re{analítico}&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t,</span> <span style="color: #F8F8F2">envelope,</span> <span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;envelope |analítico|&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Sinal analítico e envelope&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># SSB USB</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t,</span> <span style="color: #F8F8F2">s_usb,</span> <span style="color: #E6DB74">&#39;g&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.8</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;amplitude&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;tempo (s)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Sinal SSB USB gerado via Hilbert&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">axes[</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/hilbert_ssb.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bbox_inches</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tight&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #959077"># --- Verificação espectral ---</span>
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rfftfreq(len(t),</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span>
+<span style="color: #F8F8F2">S</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rfft(s_usb))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(f</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(S</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max(S)</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1e-12</span><span style="color: #F8F8F2">),</span> <span style="color: #E6DB74">&#39;g&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.5</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(xlabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;frequência (kHz)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ylabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;mag (dB rel.)&#39;</span><span style="color: #F8F8F2">,</span>
+       <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Espectro SSB USB — apenas banda lateral superior&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axvline((fc</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">fm_max)</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1000</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.5</span><span style="color: #F8F8F2">)</span> <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">(fm_max</span> <span style="color: #FF4689">:=</span> <span style="color: #F8F8F2">max(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">7</span><span style="color: #F8F8F2">))</span> <span style="color: #66D9EF">else</span> <span style="color: #66D9EF">None</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlim(</span><span style="color: #AE81FF">40</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">60</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.25</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/ssb_spectrum.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bbox_inches</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tight&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Hilbert de cos(2pi*3t) = -sin(2pi*3t): erro = {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean((m_hilbert[:</span><span style="color: #AE81FF">3000</span><span style="color: #F8F8F2">] </span><span style="color: #FF4689">+</span><span style="color: #F8F8F2"> </span>
+<span style="color: #F8F8F2">      np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">3</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t[:</span><span style="color: #AE81FF">3000</span><span style="color: #F8F8F2">]))</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span><span style="color: #E6DB74">:.2e}&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Hilbert desloca fase em -90° para f&gt;0, +90° para f&lt;0.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      3[39m [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01mscipy[39;00m[34;01m.[39;00m[34;01msignal[39;00m[38;5;250m [39m[38;5;28;01mimport[39;00m hilbert
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">2.11</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Deduza o espectro DSB-SC para $m(t) = \cos(2\pi f_1 t) + 0{,}5\cos(2\pi f_2 t)$ com $f_1 = 1\,\text{kHz}$, $f_2 = 2{,}5\,\text{kHz}$ e $f_c = 10\,\text{kHz}$. Liste todas as componentes espectrais (frequências e amplitudes).</p>
+<p><strong>E2.</strong> Para AM com $\mu = 0{,}6$ e $P_c = 50\,\text{W}$ (tom único), calcule: (a) a potência nas bandas laterais $P_{\text{SB}}$; (b) a potência total $P_T$; (c) a eficiência de potência $\eta_P$.</p>
+<p><strong>E3.</strong> Um detector coerente DSB-SC opera com erro de fase $\phi = 30°$. Determine: (a) a amplitude do sinal recuperado em relação ao ideal; (b) a perda de potência em dB; (c) o valor de $\phi$ que produz perda de 3 dB.</p>
+<p><strong>E4.</strong> Projete uma faixa aceitável de $RC$ para um detector de envelope AM com $f_c = 1\,\text{MHz}$ e $W = 5\,\text{kHz}$. Use $\mu = 0{,}8$ para verificar a condição anti-diagonal clipping. Escolha valores práticos de $R$ e $C$.</p>
+<p><strong>E5.</strong> Compare banda e potência de DSB-SC, SSB e AM convencional para uma mensagem de banda $W = 4\,\text{kHz}$ e $A_c = 1$. Calcule a eficiência energética de cada um (para tom único, $\mu = 1$ no caso AM).</p>
+<p><strong>E6.</strong> Explique o efeito de erro de frequência $\Delta f$ no detector coerente DSB-SC. Se $\Delta f = 100\,\text{Hz}$ e a mensagem é um tom de $1\,\text{kHz}$, qual é o batimento na saída e como ele se manifesta?</p>
+<p><strong>E7.</strong> Mostre, passo a passo, que a transformada de Hilbert de $\cos(2\pi f_0 t)$ é $-\sin(2\pi f_0 t)$ para $f_0 &gt; 0$.</p>
+<p><strong>E8.</strong> Para um sinal AM tonal com $\mu = 0{,}9$ e $f_c = 1\,\text{MHz}$, $f_m = 3\,\text{kHz}$, calcule: (a) as frequências das componentes do espectro; (b) a razão entre a potência da portadora e a das bandas laterais.</p>
+<p><strong>E9.</strong> (Desafio) Derive a expressão do SNR de saída para SSB sob ruído AWGN, mostrando que é igual ao do DSB-SC, apesar de ocupar metade da banda.</p>
+<p><strong>E10.</strong> (Desafio) Um sinal AM com $\mu = 1{,}2$ é recebido por um detector de envelope. Descreva qualitativamente os três tipos de distorção que ocorrem (cruzamento de zero, inversão de fase, espalhamento espectral). Escreva um trecho de código Python que simule e plote a distorção.</p>
+<p><strong>E11.</strong> Dê a expressão do espectro SSB-USB para uma mensagem $m(t)$ genérica (não apenas tom único), usando a transformada de Fourier de $m(t)$ e de $\hat{m}(t)$. Mostre que o espectro é nulo para $f &lt; f_c$ (exceto pela simétrica negativa).</p>
+<p><strong>E12.</strong> (Desafio) Derive a condição de Carson para a largura de banda FM e mostre que, para $\beta \gg 1$, $B_{\text{FM}} \approx 2\Delta f$. Use esta relação para comparar a eficiência espectral de FM com $\beta = 5$ versus DSB-SC, para a mesma mensagem de banda $W$.</p>
+<h2 id="gabarito"><span class="heading-number">2.12</span> Gabarito</h2>
+<h3 id="e1"><span class="heading-number">2.12.1</span> E1</h3>
+<p>Espectro DSB-SC para $m(t) = \cos(2\pi f_1 t) + 0{,}5\cos(2\pi f_2 t)$:</p>
+
+<div class="math-display">
+$$
+
+S_{\text{DSB-SC}}(f) = \frac{A_c}{2}\Bigl[M(f-f_c) + M(f+f_c)\Bigr]
+
+$$
+</div>
+
+<p>Com $A_c = 1$:</p>
+
+<div class="math-display">
+$$
+
+M(f) = \tfrac{1}{2}\bigl[\delta(f-f_1)+\delta(f+f_1)\bigr] + \tfrac{0{,}5}{2}\bigl[\delta(f-f_2)+\delta(f+f_2)\bigr]
+
+$$
+</div>
+
+<p>Deslocando para $\pm f_c$:</p>
+
+<div class="math-display">
+$$
+
+S(f) = \frac{1}{2}\cdot\frac{1}{2}\bigl[\delta(f-f_c-f_1)+\delta(f-f_c+f_1)+\delta(f+f_c-f_1)+\delta(f+f_c+f_1)\bigr]
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
++\;\frac{1}{2}\cdot\frac{0{,}5}{2}\bigl[\delta(f-f_c-f_2)+\delta(f-f_c+f_2)+\delta(f+f_c-f_2)+\delta(f+f_c+f_2)\bigr]
+
+$$
+</div>
+
+<p>Com $f_1 = 1\,\text{kHz}$, $f_2 = 2{,}5\,\text{kHz}$, $f_c = 10\,\text{kHz}$:</p>
+<table>
+<thead>
+<tr>
+<th>Frequência (kHz)</th>
+<th style="text-align:right">Amplitude</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$10-1 = 9$</td>
+<td style="text-align:right">$1/4 = 0{,}25$</td>
+</tr>
+<tr>
+<td>$10+1 = 11$</td>
+<td style="text-align:right">$1/4 = 0{,}25$</td>
+</tr>
+<tr>
+<td>$10-2{,}5 = 7{,}5$</td>
+<td style="text-align:right">$1/8 = 0{,}125$</td>
+</tr>
+<tr>
+<td>$10+2{,}5 = 12{,}5$</td>
+<td style="text-align:right">$1/8 = 0{,}125$</td>
+</tr>
+<tr>
+<td>e as simétricas negativas</td>
+<td style="text-align:right">mesmas</td>
+</tr>
+</tbody>
+</table>
+<p>Total: 8 linhas espectrais (4 positivas, 4 negativas).</p>
+<h3 id="e2"><span class="heading-number">2.12.2</span> E2</h3>
+<p>Dados: $\mu = 0{,}6$, $P_c = 50\,\text{W}$, tom único.</p>
+<p>(a) $P_{\text{SB}} = \dfrac{\mu^2 A_c^2}{2} P_{m_n}$. Como $P_c = A_c^2/2 = 50\,\text{W}$, então $A_c^2/2 = 50$:</p>
+
+<div class="math-display">
+$$
+
+P_{\text{SB}} = \mu^2 P_c \cdot P_{m_n} = 0{,}36 \cdot 50 \cdot 0{,}5 = \boxed{9\,\text{W}}
+
+$$
+</div>
+
+<p>(b) $P_T = P_c + P_{\text{SB}} = 50 + 9 = \boxed{59\,\text{W}}$</p>
+<p>(c) $\eta_P = \dfrac{P_{\text{SB}}}{P_T} = \dfrac{9}{59} \approx 0{,}1525 = \boxed{15{,}25\%}$</p>
+<h3 id="e3"><span class="heading-number">2.12.3</span> E3</h3>
+<p>(a) $y_\phi(t) = A_c m(t)\cos\phi$. Para $\phi = 30°$:</p>
+
+<div class="math-display">
+$$
+
+\cos 30° = \frac{\sqrt{3}}{2} \approx 0{,}866
+
+$$
+</div>
+
+<p>A amplitude recuperada é $0{,}866\,A_c$, ou seja, <strong>86,6% da amplitude ideal</strong>.</p>
+<p>(b) Perda de potência: $P_{\text{loss}} = \sin^2 30° = (1/2)^2 = 1/4 = 25\%$.<br />
+Em dB: $-10\log_{10}(0{,}75) \approx \boxed{1{,}25\,\text{dB}}$.</p>
+<p>(c) Para perda de 3 dB: $\sin^2\phi = 0{,}5$, logo $\sin\phi = 1/\sqrt{2}$, $\phi = \boxed{45° = \pi/4\,\text{rad}}$.</p>
+<h3 id="e4"><span class="heading-number">2.12.4</span> E4</h3>
+<p>Condição geral de RC:</p>
+
+<div class="math-display">
+$$
+
+\frac{1}{2\pi\cdot 10^6} \ll RC \ll \frac{1}{2\pi\cdot 5000}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+1{,}59\times 10^{-7}\,\text{s} \ll RC \ll 3{,}18\times 10^{-5}\,\text{s}
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{0{,}16\,\mu\text{s} \ll RC \ll 31{,}8\,\mu\text{s}}
+
+$$
+</div>
+
+<p>Condição anti-diagonal clipping ($\mu = 0{,}8$, $f_m = 5\,\text{kHz}$):</p>
+
+<div class="math-display">
+$$
+
+RC \leq \frac{\sqrt{1-0{,}8^2}}{0{,}8\cdot 2\pi\cdot 5000} = \frac{0{,}6}{25133} \approx 23{,}9\,\mu\text{s}
+
+$$
+</div>
+
+<p>Escolha prática: $R = 10\,\text{k}\Omega$, $C = 0{,}0022\,\mu\text{F}$, então $RC = 22\,\mu\text{s}$ — dentro da janela e abaixo do limite anti-clipping.</p>
+<h3 id="e5"><span class="heading-number">2.12.5</span> E5</h3>
+<table>
+<thead>
+<tr>
+<th>Esquema</th>
+<th style="text-align:right">Banda</th>
+<th>Potência (total)</th>
+<th>Eficiência</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DSB-SC</td>
+<td style="text-align:right">$2W = 8\,\text{kHz}$</td>
+<td>$P_s = A_c^2/2 \cdot P_m$</td>
+<td>$100\%$</td>
+</tr>
+<tr>
+<td>SSB</td>
+<td style="text-align:right">$W = 4\,\text{kHz}$</td>
+<td>$P_s/2 = A_c^2/4 \cdot P_m$</td>
+<td>$100\%$</td>
+</tr>
+<tr>
+<td>AM ($\mu=1$)</td>
+<td style="text-align:right">$2W = 8\,\text{kHz}$</td>
+<td>$3A_c^2/4$</td>
+<td>$33{,}3\%$</td>
+</tr>
+</tbody>
+</table>
+<p>A SSB ocupa metade da banda do DSB-SC com metade da potência e mesma eficiência. A AM ocupa o dobro da SSB com 4× mais potência e apenas 1/3 da eficiência.</p>
+<h3 id="e6"><span class="heading-number">2.12.6</span> E6</h3>
+<p>A saída do detector é $y_{\Delta f}(t) = A_c\,m(t)\,\cos(2\pi\Delta f\,t)$. Para $m(t) = \cos(2\pi\cdot 1000\,t)$ e $\Delta f = 100\,\text{Hz}$:</p>
+
+<div class="math-display">
+$$
+
+y(t) = A_c\,\cos(2000\pi t)\,\cos(200\pi t)
+
+$$
+</div>
+
+<p>O batimento de $100\,\text{Hz}$ modula a amplitude da mensagem — a mensagem é <strong>multiplicada</strong> por uma oscilação de $100\,\text{Hz}$. Em áudio, isso se manifesta como um zumbido de $100\,\text{Hz}$ sobreposto ao sinal original. Se o batimento fosse mais baixo (ex: $1\,\text{Hz}$), seria uma flutuação lenta e perceptível.</p>
+<h3 id="e7"><span class="heading-number">2.12.7</span> E7</h3>
+<p>No domínio da frequência, a transformada de Hilbert multiplica por $-j\,\text{sgn}(f)$:</p>
+
+<div class="math-display">
+$$
+
+\mathcal{F}\{\cos(2\pi f_0 t)\} = \tfrac{1}{2}\bigl[\delta(f-f_0) + \delta(f+f_0)\bigr]
+
+$$
+</div>
+
+<p>Para $f_0 &gt; 0$:</p>
+<ul>
+<li>Em $f = +f_0$: multiplicar por $-j$ → $-j\cdot\frac{1}{2}\delta(f-f_0)$</li>
+<li>Em $f = -f_0$: multiplicar por $+j$ → $+j\cdot\frac{1}{2}\delta(f+f_0)$</li>
+</ul>
+<p>Invertendo:</p>
+
+<div class="math-display">
+$$
+
+\hat{m}(t) = -j\cdot\frac{1}{2}e^{j2\pi f_0 t} + j\cdot\frac{1}{2}e^{-j2\pi f_0 t} = \frac{e^{-j2\pi f_0 t} - e^{j2\pi f_0 t}}{2j} = -\sin(2\pi f_0 t)
+
+$$
+</div>
+
+<p>$\blacksquare$ (Para $f_0 &lt; 0$, o sinal é $+\sin(2\pi|f_0|t)$ — o Hilbert inverte o sinal para frequências negativas, consistente com o deslocamento de fase de $+90°$.)</p>
+<h3 id="e8"><span class="heading-number">2.12.8</span> E8</h3>
+<p>(a) Componentes espectrais do AM com $\mu = 0{,}9$, $f_c = 1\,\text{MHz}$, $f_m = 3\,\text{kHz}$:</p>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Frequência</th>
+<th style="text-align:right">Amplitude</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Portadora</td>
+<td>$1{,}000\,\text{kHz}$</td>
+<td style="text-align:right">$A_c$</td>
+</tr>
+<tr>
+<td>LSB</td>
+<td>$0{,}997\,\text{kHz}$</td>
+<td style="text-align:right">$\mu A_c/2 = 0{,}45 A_c$</td>
+</tr>
+<tr>
+<td>USB</td>
+<td>$1{,}003\,\text{kHz}$</td>
+<td style="text-align:right">$\mu A_c/2 = 0{,}45 A_c$</td>
+</tr>
+</tbody>
+</table>
+<p>(b) Razão portadora/laterais:</p>
+
+<div class="math-display">
+$$
+
+\frac{P_c}{P_{\text{SB}}} = \frac{A_c^2/2}{\mu^2 A_c^2/4} = \frac{2}{\mu^2} = \frac{2}{0{,}81} \approx \boxed{2{,}47}
+
+$$
+</div>
+
+<p>A portadora carrega $2{,}47\times$ mais potência que as duas laterais juntas.</p>
+<h3 id="e9"><span class="heading-number">2.12.9</span> E9</h3>
+<p>SSB e DSB-SC têm a <strong>mesma potência de sinal</strong> para mesma mensagem e $A_c$, usam mixers coerentes idênticos, e o ruído de saída é $N_0 W$ em ambos (filtragem passa-baixas de banda $W$). Logo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{\text{SNR}_{\text{out}}^{\text{SSB}} = \text{SNR}_{\text{out}}^{\text{DSB}} = \frac{A_c^2 P_m}{N_0 W}}
+
+$$
+</div>
+
+<p>SSB obtém isso com metade da banda — preferida em HF.</p>
+<h3 id="e10"><span class="heading-number">2.12.10</span> E10</h3>
+<p>Com $\mu = 1{,}2 &gt; 1$, o envelope $1+\mu\,m_n(t)$ torna-se negativo quando $m_n(t) &lt; -1/\mu \approx -0{,}833$. Três distorções:</p>
+<ol>
+<li><strong>Cruzamento de zero</strong>: envelope passa por $0$, invertendo fase em $180°$.</li>
+<li><strong>Inversão de fase</strong>: sinal modulado inverte fase onde $1+\mu\,m_n(t) &lt; 0$.</li>
+<li><strong>Espalhamento espectral</strong>: distorção não-linear gera harmônicos além de $2W$.</li>
+</ol>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100_000</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">fc</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5_000</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">fm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">200</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">mu</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">;</span> <span style="color: #F8F8F2">T</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.01</span>
+<span style="color: #F8F8F2">m</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fm</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">T,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs))</span>
+<span style="color: #F8F8F2">s_over</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">mu</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">m)</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">cos(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">fc</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,T,</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs))</span>
+<span style="color: #F8F8F2">env_det</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">mu</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">m)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,T,</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">s_over,</span> <span style="color: #E6DB74">&#39;r&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.6</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">mu$=1,2&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fill_between(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,T,</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #FF4689">-</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">where</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">+</span><span style="color: #F8F8F2">mu</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">m)</span><span style="color: #FF4689">&lt;</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;red&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,T,</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">fs)</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">env_det,</span> <span style="color: #E6DB74">&#39;g&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;envelope detectado&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set(xlabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tempo (ms)&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">ylabel</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;amplitude&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">title</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;Sobremodulação ($</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">mu$=1,2)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend();</span> <span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">savefig(</span><span style="color: #E6DB74">&#39;/tmp/overmod.png&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">dpi</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">150</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">bbox_inches</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;tight&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">show()</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">&quot;Detector recupera |1+mu*m| — segmentos negativos são virados para cima.&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m fs = [32m100_000[39m; fc = [32m5_000[39m; fm = [32m200[39m; mu = [32m1.2[39m; T = [32m0.01[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<h3 id="e11"><span class="heading-number">2.12.11</span> E11</h3>
+<p>Sinal SSB-USB:</p>
+
+<div class="math-display">
+$$
+
+s_{\text{USB}}(t) = \frac{A_c}{2}\Bigl[m(t)\,\cos(2\pi f_c t) - \hat{m}(t)\,\sin(2\pi f_c t)\Bigr]
+
+$$
+</div>
+
+<p>Transformada usando $\hat{M}(f) = -j\,\text{sgn}(f)\,M(f)$:</p>
+<p>Para $f &gt; f_c$ (banda lateral superior): $S_{\text{USB}}(f) = \tfrac{A_c}{2}\,M(f-f_c)$.<br />
+Para $f &lt; -f_c$ (simétrica negativa): $S_{\text{USB}}(f) = \tfrac{A_c}{2}\,M^*(f+f_c)$.<br />
+Nas faixas intermediárias ($-f_c &lt; f &lt; f_c$): espectro nulo — <strong>apenas uma banda lateral</strong>.</p>
+<h3 id="e12"><span class="heading-number">2.12.12</span> E12</h3>
+<p><strong>Condição de Carson</strong>: $B_{\text{FM}} \approx 2(\Delta f + W) = 2W(\beta+1)$.</p>
+<p>Para $\beta \gg 1$, $\Delta f \gg W$, logo $\beta+1 \approx \beta$:</p>
+
+<div class="math-display">
+$$
+
+B_{\text{FM}} \approx 2\Delta f(1 + 1/\beta) \approx 2\Delta f \quad\text{(para }\beta \gg 1\text{)}
+
+$$
+</div>
+
+<p>Comparação de eficiência espectral ($\eta_f = \text{informação} / \text{banda}$):</p>
+<ul>
+<li>DSB-SC: $\eta_f \propto \tfrac{1}{2W}$</li>
+<li>FM ($\beta=5$): pela regra de Carson, $B_{\text{FM}}\approx2(5+1)W=12W$, então $\eta_f\propto1/(12W)$.</li>
+</ul>
+<p>O FM ocupa <strong>6× mais banda</strong> que o DSB-SC, mas, quando a SNR de entrada é referida à banda RF de Carson, obtém ganho de $3\beta^2(\beta+1)=450$ ($26{,}5$ dB). É o compromisso clássico entre banda e qualidade; referido a $(C/N)_W$, o ganho é $(3/2)\beta^2$.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="01_introducao_sistemas_comunicacoes.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">1. Introdução a Sistemas de Comunicações</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="03_modulacao_fm.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">3. Modulação em Frequência (FM)</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

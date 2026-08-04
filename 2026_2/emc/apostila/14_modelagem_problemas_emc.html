@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>14. Modelagem de problemas EMC — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>14. Modelagem de problemas EMC</h1>
+  <div class="print-book-title">Compatibilidade Eletromagnética</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>14. Modelagem de problemas EMC</h1>
+  <div class="subtitle">Compatibilidade Eletromagnética</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="13_simulacao_numerica_emc_fdtl_tlm.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">13. Simulação numérica de EMC: FDTD e TLM</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="15_minimizacao_interferencias.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">15. Minimização de interferências EMC</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>14. Modelagem de problemas EMC</h1>
+<blockquote>
+<p>Este capítulo não reapresenta a física dos capítulos 6–12. Seu papel é transformar uma hipótese EMC em um modelo calculável, escolher a fidelidade necessária e validar o resultado contra medição ou simulação.</p>
+</blockquote>
+<h2 id="objetivos-de-aprendizagem"><span class="heading-number">14.1</span> Objetivos de aprendizagem</h2>
+<p>Ao final, você deve ser capaz de:</p>
+<ol>
+<li>formular a pergunta que o modelo precisa responder;</li>
+<li>escolher entre modelo concentrado, distribuído, modal ou de campo;</li>
+<li>declarar entradas, saídas, condições de contorno e faixa de validade;</li>
+<li>incluir parasitas e não linearidades que alterem a conclusão;</li>
+<li>modelar ESD e surge sem misturar grandezas temporais e fasoriais;</li>
+<li>validar dimensões, casos-limite, sensibilidade e incerteza.</li>
+</ol>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#o-modelo-mais-simples-que-preserva-o-mecanismo">O modelo mais simples que preserva o mecanismo</a></li>
+<li><a href="#escolha-da-representa%C3%A7%C3%A3o">Escolha da representação</a></li>
+<li><a href="#modelo-unificado-por-fun%C3%A7%C3%B5es-de-transfer%C3%AAncia">Modelo unificado por funções de transferência</a></li>
+<li><a href="#modelagem-de-filtros-como-rede-de-duas-portas">Modelagem de filtros como rede de duas portas</a></li>
+<li><a href="#esd-fonte-caminho-e-v%C3%ADtima-no-dom%C3%ADnio-do-tempo">ESD: fonte, caminho e vítima no domínio do tempo</a></li>
+<li><a href="#surge-eft-e-outros-transientes">Surge, EFT e outros transientes</a></li>
+<li><a href="#valida%C3%A7%C3%A3o-e-incerteza">Validação e incerteza</a></li>
+<li><a href="#exemplo-integrado-buck-e-sensor">Exemplo integrado: buck e sensor</a></li>
+<li><a href="#exerc%C3%ADcios">Exercícios</a></li>
+<li><a href="#laborat%C3%B3rio-python--esd-e-caminho-de-acoplamento">Laboratório Python — ESD e caminho de acoplamento</a></li>
+<li><a href="#laborat%C3%B3rio-python--rede-abcd-de-filtro-lc">Laboratório Python — rede ABCD de filtro LC</a></li>
+<li><a href="#sensibilidade-e-monte-carlo">Sensibilidade e Monte Carlo</a></li>
+<li><a href="#laborat%C3%B3rio-spice--inje%C3%A7%C3%A3o-transit%C3%B3ria-e-prote%C3%A7%C3%A3o">Laboratório SPICE — injeção transitória e proteção</a></li>
+<li><a href="#entrega-recomendada">Entrega recomendada</a></li>
+</ol></nav>
+<h2 id="o-modelo-mais-simples-que-preserva-o-mecanismo"><span class="heading-number">14.2</span> O modelo mais simples que preserva o mecanismo</h2>
+<p>Um modelo EMC é uma representação orientada a uma decisão. Antes de escrever equações, complete:</p>
+<table>
+<thead>
+<tr>
+<th>Pergunta</th>
+<th>Registro mínimo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qual decisão será tomada?</td>
+<td>componente, geometria, mitigação ou margem</td>
+</tr>
+<tr>
+<td>Qual é a saída?</td>
+<td>tensão, corrente, campo, potência, erro ou probabilidade</td>
+</tr>
+<tr>
+<td>Qual é a excitação?</td>
+<td>forma de onda/espectro, impedância e estado operacional</td>
+</tr>
+<tr>
+<td>Qual é o caminho?</td>
+<td>retorno, parasitas, portas e condições de contorno</td>
+</tr>
+<tr>
+<td>Qual banda e escala temporal?</td>
+<td>$f_{min}$–$f_{max}$, $t_r$, duração, repetição</td>
+</tr>
+<tr>
+<td>Como será validado?</td>
+<td>medição, simulação de maior fidelidade ou caso analítico</td>
+</tr>
+</tbody>
+</table>
+<p>Um resultado numericamente preciso não compensa um mecanismo ausente. Comece com o diagrama fonte–caminho–vítima do <a href="02_caracterizacao_casos_emc.html">capítulo Caracterização e diagnóstico de casos EMC</a>.</p>
+<h2 id="escolha-da-representação"><span class="heading-number">14.3</span> Escolha da representação</h2>
+<h3 id="circuito-concentrado"><span class="heading-number">14.3.1</span> Circuito concentrado</h3>
+<p>Use R, L, C e fontes controladas quando as dimensões relevantes forem eletricamente pequenas e a distribuição espacial não alterar a resposta. Uma triagem comum é comparar o atraso $t_d$ da interconexão com o tempo de subida $t_r$. Se $t_d$ deixa de ser pequeno diante de $t_r$, consulte o <a href="07_linhas_transmissao_integridade_sinal.html">capítulo Linhas de transmissão e integridade de sinal</a>.</p>
+<p>Parasitas de terminais, encapsulamentos e montagem pertencem ao <a href="06_componentes_nao_ideais.html">capítulo Comportamento não ideal de componentes</a>. O modelo deve usar, quando relevante, ESR, ESL, capacitância paralela, perdas e dependência com frequência/temperatura — não apenas o valor nominal.</p>
+<h3 id="linha-de-transmissão"><span class="heading-number">14.3.2</span> Linha de transmissão</h3>
+<p>Use parâmetros distribuídos quando atraso, reflexão, terminação ou ondas acopladas determinarem a resposta. Declare $Z_0$, velocidade, perdas, comprimento, fonte e carga. Para linhas acopladas, matrizes por unidade de comprimento ou modos par/ímpar são preferíveis a uma única capacitância mútua; veja <a href="09_crosstalk.html">crosstalk</a>.</p>
+<h3 id="modelo-modal"><span class="heading-number">14.3.3</span> Modelo modal</h3>
+<p>Em pares e cabos, modele DM e CM separadamente e inclua a conversão causada por assimetrias. A convenção de corrente deve permanecer explícita. Modelos e medições de condução estão no <a href="10_emissoes_conduzidas_suscetibilidade.html">capítulo Emissões conduzidas e suscetibilidade</a>; a consequência radiada está no <a href="11_emissoes_radiadas_suscetibilidade.html">capítulo Emissões radiadas e suscetibilidade</a>.</p>
+<h3 id="modelo-de-antena-ou-de-campo"><span class="heading-number">14.3.4</span> Modelo de antena ou de campo</h3>
+<p>Use modelo de antena quando distribuição de corrente, polarização, ganho ou abertura efetiva importarem; veja o <a href="08_antenas.html">capítulo Antenas</a>. Use método de campo completo quando geometria tridimensional, materiais, cavidades, difração ou campo próximo não puderem ser reduzidos com segurança. A teoria de blindagem e aberturas pertence ao <a href="12_blindagem.html">capítulo Blindagem</a>.</p>
+<h2 id="modelo-unificado-por-funções-de-transferência"><span class="heading-number">14.4</span> Modelo unificado por funções de transferência</h2>
+<p>Para um caso aproximadamente linear,</p>
+
+<div class="math-display">
+$$
+
+Y(f)=S(f)\,H_c(f)\,H_v(f),
+
+$$
+</div>
+
+<p>onde $S$ é a fonte, $H_c$ o caminho e $H_v$ a resposta da vítima. O procedimento é:</p>
+<ol>
+<li>obter $S(f)$ na grandeza realmente injetada;</li>
+<li>calcular ou medir $H_c(f)$ entre portas bem definidas;</li>
+<li>caracterizar o limiar ou a resposta $H_v(f)$;</li>
+<li>reconstruir $y(t)$ se duração, pico ou janela temporal forem relevantes;</li>
+<li>comparar com o critério funcional e sua incerteza.</li>
+</ol>
+<h3 id="quando-o-produto-linear-falha"><span class="heading-number">14.4.1</span> Quando o produto linear falha</h3>
+<p>O modelo precisa ser ampliado em presença de diodos de proteção, saturação de ferrite, <em>clamping</em>, <em>slew-rate limiting</em>, comutação dependente de estado, recuperação de firmware ou aquecimento. Nesses casos, use simulação transitória ou modelo por estados e valide cada regime.</p>
+<h2 id="modelagem-de-filtros-como-rede-de-duas-portas"><span class="heading-number">14.5</span> Modelagem de filtros como rede de duas portas</h2>
+<p>Não existe “atenuação do filtro” independente do circuito. Modele fonte, filtro, carga e retornos como uma rede completa. Para uma matriz ABCD,</p>
+
+<div class="math-display">
+$$
+
+\begin{bmatrix}V_1\\I_1\end{bmatrix}=
+\begin{bmatrix}A&amp;B\\C&amp;D\end{bmatrix}
+\begin{bmatrix}V_2\\I_2\end{bmatrix}.
+
+$$
+</div>
+
+<p>Com $Z_S$ e $Z_L$ especificados, calcule a transferência e compare as condições com/sem filtro. Inclua ESR/ESL, capacitância parasita do indutor, acoplamento CM–DM, layout e impedância do retorno. Um filtro medido em 50 Ω pode ressoar ou atenuar menos na aplicação.</p>
+<p>O comportamento dos componentes está no <a href="06_componentes_nao_ideais.html">capítulo Comportamento não ideal de componentes</a>, a topologia e medição conduzida no <a href="10_emissoes_conduzidas_suscetibilidade.html">capítulo Emissões conduzidas e suscetibilidade</a>, e a escolha de mitigação no <a href="15_minimizacao_interferencias.html">capítulo Minimização de interferências EMC</a>.</p>
+<h3 id="validação-mínima-de-um-filtro"><span class="heading-number">14.5.1</span> Validação mínima de um filtro</h3>
+<ul>
+<li>confira resposta sem perdas e com perdas;</li>
+<li>varie $Z_S$ e $Z_L$ em faixas plausíveis;</li>
+<li>procure ressonância e ganho de tensão/corrente;</li>
+<li>avalie CM e DM separadamente;</li>
+<li>compare perda de inserção calculada e medida com o mesmo arranjo.</li>
+</ul>
+<h2 id="esd-fonte-caminho-e-vítima-no-domínio-do-tempo"><span class="heading-number">14.6</span> ESD: fonte, caminho e vítima no domínio do tempo</h2>
+<p>ESD é um transiente rápido e não deve ser reduzido ao produto entre pico temporal de corrente e uma impedância conhecida em uma única frequência.</p>
+<h3 id="forma-de-onda"><span class="heading-number">14.6.1</span> Forma de onda</h3>
+<p>Uma aproximação didática por dupla exponencial é</p>
+
+<div class="math-display">
+$$
+
+i(t)=I_0\left(e^{-\alpha t}-e^{-\beta t}\right)u(t),\qquad \beta&gt;\alpha.
+
+$$
+</div>
+
+<p>Os parâmetros devem ser ajustados ao nível, modo de descarga e edição normativa aplicáveis. Esse modelo simples pode não reproduzir simultaneamente frente, primeiro pico, vale e segundo pico; use uma forma multipulso ou dados medidos quando isso afetar a decisão.</p>
+<h3 id="caminho-de-acoplamento"><span class="heading-number">14.6.2</span> Caminho de acoplamento</h3>
+<p>No caso linear,</p>
+
+<div class="math-display">
+$$
+
+V(f)=I_{ESD}(f)Z_{acopl}(f),\qquad
+v(t)=\mathcal{F}^{-1}\{V(f)\}.
+
+$$
+</div>
+
+<p>$Z_{acopl}(f)$ inclui carcaça, juntas, planos, cabos, capacitâncias para chassi e referência local da vítima. A medição deve preservar a banda e evitar loops de ponta que dominem o resultado.</p>
+<h3 id="resposta-funcional"><span class="heading-number">14.6.3</span> Resposta funcional</h3>
+<p>Relacione o transiente interno a um mecanismo: cruzamento de limiar, queda da PDN, disparo de reset, corrupção de comunicação ou <em>latch-up</em>. Um pico interno menor após uma mudança é evidência útil; a aprovação depende do critério funcional e do ensaio do <a href="04_normas_padronizacoes_ensaios.html">capítulo Normas, Padronizações e Ensaios de EMC</a>.</p>
+<h2 id="surge-eft-e-outros-transientes"><span class="heading-number">14.7</span> Surge, EFT e outros transientes</h2>
+<p>Uma forma de tensão por dupla exponencial pode ser escrita como</p>
+
+<div class="math-display">
+$$
+
+v_s(t)=V_0\left(e^{-t/\tau_2}-e^{-t/\tau_1}\right)u(t),\qquad \tau_2&gt;\tau_1.
+
+$$
+</div>
+
+<p>Os rótulos de forma de onda não bastam para definir o circuito. Inclua impedância do gerador, rede de acoplamento/desacoplamento, terminação e estado do equipamento. Para elementos de proteção, modele curva $I$–$V$, resistência dinâmica, capacitância, indutância de conexão, energia e tolerâncias.</p>
+<p>Para EFT, a repetição dos pulsos e o acúmulo de estado podem ser tão importantes quanto um pulso isolado. Para surge, energia e coordenação entre estágios de proteção costumam dominar.</p>
+<h2 id="validação-e-incerteza"><span class="heading-number">14.8</span> Validação e incerteza</h2>
+<h3 id="verificações-obrigatórias"><span class="heading-number">14.8.1</span> Verificações obrigatórias</h3>
+<ol>
+<li><strong>Dimensões:</strong> cada equação fecha em unidades SI.</li>
+<li><strong>Casos-limite:</strong> a resposta tende ao comportamento físico esperado.</li>
+<li><strong>Conservação/passividade:</strong> uma rede passiva não cria energia.</li>
+<li><strong>Sensibilidade:</strong> varie parâmetros incertos e identifique os dominantes.</li>
+<li><strong>Convergência:</strong> reduza passo temporal/malha e compare.</li>
+<li><strong>Referência:</strong> confronte ao menos um ponto com medição ou solução conhecida.</li>
+</ol>
+<h3 id="orçamento-de-incerteza"><span class="heading-number">14.8.2</span> Orçamento de incerteza</h3>
+<p>Separe variabilidade física, tolerâncias, calibração, repetibilidade, posicionamento e erro de modelo. Quando uma distribuição probabilística não for justificável, apresente intervalos e cenários. Uma margem menor que a incerteza combinada não é uma conclusão robusta.</p>
+<h2 id="exemplo-integrado-buck-e-sensor"><span class="heading-number">14.9</span> Exemplo integrado: buck e sensor</h2>
+<p><strong>Pergunta:</strong> qual mudança reduz mais a perturbação na entrada do ADC: diminuir $dv/dt$, reduzir capacitância parasita ou filtrar a vítima?</p>
+<ol>
+<li>Modele a corrente injetada por $i_c(t)=C_p\,dv/dt$.</li>
+<li>Obtenha $Z_{ret}(f)$ do caminho até a referência do sensor.</li>
+<li>Inclua o filtro de entrada e o instante de amostragem do ADC.</li>
+<li>Varie $C_p$, tempo de subida, ESR/ESL e impedância de retorno.</li>
+<li>Compare a previsão com medida simultânea do nó de comutação e do erro.</li>
+</ol>
+<p>O resultado não deve ser apenas uma curva: apresente a faixa em que o modelo é válido, o parâmetro dominante e a intervenção que diferencia hipóteses concorrentes.</p>
+<h2 id="exercícios"><span class="heading-number">14.10</span> Exercícios</h2>
+<p><strong>E.1</strong> Um capacitor de 100 nF tem ESR de $30\,m\Omega$ e ESL de $1\,nH$. Escreva $Z(f)$, estime a autorressonância e indique o capítulo-dono da teoria física.</p>
+<p><strong>E.2</strong> Uma interconexão tem atraso de 2 ns e a borda varia entre 0,5 ns e 20 ns. Compare a adequação dos modelos concentrado e distribuído.</p>
+<p><strong>E.3</strong> Desenhe as portas de uma rede de duas portas para um filtro de alimentação e liste quatro parasitas de layout ausentes no esquema ideal.</p>
+<p><strong>E.4</strong> Explique por que $i_{pico}Z(100\,MHz)$ não é um modelo temporal de ESD.</p>
+<p><strong>E.5</strong> Monte um plano de validação para o caso do buck, incluindo caso-limite, varredura de sensibilidade e medição discriminante.</p>
+<p><strong>E.6</strong> Um modelo reduzido e uma simulação 3D discordam 8 dB. Liste testes para separar erro de parâmetro, condição de contorno, discretização e mecanismo ausente.</p>
+<h3 id="respostas-orientativas"><span class="heading-number">14.10.1</span> Respostas orientativas</h3>
+<p><strong>E.1</strong> $Z=ESR+j\omega ESL+1/(j\omega C)$ e $f_{SR}\approx1/(2\pi\sqrt{ESL\,C})\approx15{,}9\,MHz$. A teoria está no <a href="06_componentes_nao_ideais.html">capítulo Comportamento não ideal de componentes</a>.</p>
+<p><strong>E.2</strong> Com borda de 0,5 ns, $t_d/t_r=4$ e o modelo distribuído é indispensável. Com 20 ns, $t_d/t_r=0{,}1$ pode permitir aproximação concentrada, desde que a margem desejada e as descontinuidades sejam avaliadas.</p>
+<p><strong>E.4</strong> O pico pertence ao tempo e $Z(100\,MHz)$ é um ponto fasorial. É preciso multiplicar os espectros em toda a banda e transformar de volta, ou resolver o circuito transitório.</p>
+<h2 id="laboratório-python--esd-e-caminho-de-acoplamento"><span class="heading-number">14.11</span> Laboratório Python — ESD e caminho de acoplamento</h2>
+<p>O exemplo constrói uma corrente de dupla exponencial, calcula sua FFT, aplica uma impedância de acoplamento $R+j\omega L$ e retorna ao tempo. Ele demonstra por que um único valor de impedância não basta.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">dt,</span> <span style="color: #F8F8F2">tmax</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20e-12</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">200e-9</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">tmax,</span> <span style="color: #F8F8F2">dt)</span>
+<span style="color: #F8F8F2">alpha,</span> <span style="color: #F8F8F2">beta</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">35e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">0.8e-9</span>
+<span style="color: #F8F8F2">shape</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">beta</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span>
+<span style="color: #F8F8F2">i</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">30.0</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">shape</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">shape</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max()</span>              <span style="color: #959077"># 30 A de pico didático</span>
+
+<span style="color: #F8F8F2">freq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rfftfreq(t</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">size,</span> <span style="color: #F8F8F2">dt)</span>
+<span style="color: #F8F8F2">I</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">rfft(i)</span>
+<span style="color: #F8F8F2">Rpath,</span> <span style="color: #F8F8F2">Lpath</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">40e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">3e-9</span>
+<span style="color: #F8F8F2">Z</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Rpath</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">freq</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Lpath</span>
+<span style="color: #F8F8F2">v</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">irfft(I</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Z,</span> <span style="color: #F8F8F2">n</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">t</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">size)</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">6</span><span style="color: #F8F8F2">),</span> <span style="color: #F8F8F2">sharex</span><span style="color: #FF4689">=</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">i);</span> <span style="color: #F8F8F2">ax[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Corrente (A)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">plot(t</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e9</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">v);</span> <span style="color: #F8F8F2">ax[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Tensão (V)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;Tempo (ns)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">a</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">ax:</span> <span style="color: #F8F8F2">a</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m dt, tmax = [32m20e-12[39m, [32m200e-9[39m
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p><strong>Casos-limite:</strong> com $L=0$, confirme $v(t)=Ri(t)$; com $R=0$, compare $v(t)$ a $L\,di/dt$. O pico negativo após a frente não é necessariamente uma falha numérica: decorre da derivada durante a cauda.</p>
+<h2 id="laboratório-python--rede-abcd-de-filtro-lc"><span class="heading-number">14.12</span> Laboratório Python — rede ABCD de filtro LC</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+
+<span style="color: #F8F8F2">f</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">logspace(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1200</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">w</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">f</span>
+<span style="color: #F8F8F2">Zs,</span> <span style="color: #F8F8F2">Zl</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">5.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">20.0</span>
+<span style="color: #F8F8F2">L,</span> <span style="color: #F8F8F2">rL,</span> <span style="color: #F8F8F2">cp</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">4.7e-6</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">80e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">8e-12</span>
+<span style="color: #F8F8F2">C,</span> <span style="color: #F8F8F2">esr,</span> <span style="color: #F8F8F2">esl</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">220e-9</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">30e-3</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.2e-9</span>
+<span style="color: #F8F8F2">Zseries</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(rL</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">L)</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">cp)</span>
+<span style="color: #F8F8F2">Zcap</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">esr</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">esl</span> <span style="color: #FF4689">+</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">w</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">C)</span>
+<span style="color: #F8F8F2">Yshunt</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">Zcap</span>
+
+<span style="color: #959077"># Cascata: elemento série seguido de elemento shunt</span>
+<span style="color: #F8F8F2">A</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Zseries</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Yshunt</span>
+<span style="color: #F8F8F2">B</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Zseries</span>
+<span style="color: #F8F8F2">Cmat</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Yshunt</span>
+<span style="color: #F8F8F2">D</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ones_like(f)</span>
+<span style="color: #F8F8F2">H</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Zl</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(A</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Zl</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">B</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Zs</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">(Cmat</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Zl</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">D))</span>
+<span style="color: #F8F8F2">H0</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Zl</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(Zs</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">Zl)</span>
+<span style="color: #F8F8F2">IL</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">20</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">log10(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(H0</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">H))</span>
+
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogx(f,</span> <span style="color: #F8F8F2">IL)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">axhline(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">color</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;k&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">lw</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.8</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">xlabel(</span><span style="color: #E6DB74">&#39;Frequência (Hz)&#39;</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ylabel(</span><span style="color: #E6DB74">&#39;Perda de inserção (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">title(</span><span style="color: #E6DB74">&#39;Filtro LC real entre impedâncias não normalizadas&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">.3</span><span style="color: #F8F8F2">);</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> No module named 'numpy'</div>
+
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">[31m---------------------------------------------------------------------------[39m
+[31mModuleNotFoundError[39m                       Traceback (most recent call last)
+[36mCell[39m[36m [39m[32mIn[1][39m[32m, line 1[39m
+[32m----&gt; [39m[32m1[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mnumpy[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mnp[39;00m
+[32m      2[39m [38;5;28;01mimport[39;00m[38;5;250m [39m[34;01mmatplotlib[39;00m[34;01m.[39;00m[34;01mpyplot[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[34;01mplt[39;00m
+[32m      4[39m f = np.logspace([32m3[39m, [32m9[39m, [32m1200[39m)
+
+[31mModuleNotFoundError[39m: No module named 'numpy'</pre></div></div>
+
+<p>Varra $Z_S$ e $Z_L$. Regiões com perda de inserção negativa indicam amplificação por ressonância/mismatch, não criação de energia.</p>
+<h2 id="sensibilidade-e-monte-carlo"><span class="heading-number">14.13</span> Sensibilidade e Monte Carlo</h2>
+<p>Para uma saída $y=g(x_1,\ldots,x_n)$, a sensibilidade normalizada local é</p>
+
+<div class="math-display">
+$$
+
+S_{x_i}^{y}=\frac{x_i}{y}\frac{\partial y}{\partial x_i}.
+
+$$
+</div>
+
+<p>Use derivadas locais para triagem e Monte Carlo quando tolerâncias, não linearidades ou distribuições tornarem a propagação linear inadequada. Reporte percentis e número de amostras; não apresente apenas a melhor curva.</p>
+<h2 id="laboratório-spice--injeção-transitória-e-proteção"><span class="heading-number">14.14</span> Laboratório SPICE — injeção transitória e proteção</h2>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">SPICE</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">*</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Pulso</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">de</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">corrente</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">didatico</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">em</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">porta</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">protegida</span>
+<span style="color: #A6E22E">Iinj</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">port</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">PWL</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0.8</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">30</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">5</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">12</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">40</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">150</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span>
+<span style="color: #A6E22E">Ltrace</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">port</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">clamp</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">3</span><span style="color: #A6E22E">n</span>
+<span style="color: #A6E22E">Rtrace</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">port</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">clamp</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span><span style="color: #A6E22E">m</span>
+<span style="color: #A6E22E">Dprot</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">clamp</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">DTVS</span>
+<span style="color: #A6E22E">Cinput</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">clamp</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #66D9EF">p</span>
+<span style="color: #A6E22E">Rinput</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">clamp</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">100</span><span style="color: #A6E22E">k</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">model</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">DTVS</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">D</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">BV</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">6</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">IBV</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">1</span><span style="color: #A6E22E">m</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">RS</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">0.2</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">CJO</span><span style="color: #F8F8F2">=</span><span style="color: #AE81FF">200</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">20</span><span style="color: #66D9EF">p</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">200</span><span style="color: #A6E22E">n</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2"> </span><span style="color: #AE81FF">50</span><span style="color: #66D9EF">p</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">print</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">tran</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">port</span><span style="color: #F8F8F2">) </span><span style="color: #A6E22E">v</span><span style="color: #F8F8F2">(</span><span style="color: #A6E22E">clamp</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">.</span><span style="color: #A6E22E">end</span>
+</pre></div>
+<div class="output error"><strong>Erro:</strong> ngspice não encontrado no PATH.</div></div>
+
+<p>O modelo genérico não representa uma TVS comercial. Varra indutância da conexão e capacitância de junção; compare tensão na porta e no nó protegido. Verifique energia no dispositivo por integração de $v(t)i(t)$ quando o simulador oferecer medida adequada.</p>
+<h2 id="entrega-recomendada"><span class="heading-number">14.15</span> Entrega recomendada</h2>
+<p>Para cada modelo, entregue: pergunta, diagrama de portas, equações, parâmetros e fontes, faixa de validade, hipóteses, resultado, sensibilidade, validação e decisão. Código sem essa documentação não constitui um modelo auditável.</p>
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="13_simulacao_numerica_emc_fdtl_tlm.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">13. Simulação numérica de EMC: FDTD e TLM</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="15_minimizacao_interferencias.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">15. Minimização de interferências EMC</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
