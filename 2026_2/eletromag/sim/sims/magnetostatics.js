@@ -61,7 +61,7 @@ export class MagnetStaticSim extends Sim {
 		const r=max(.012,sqrt(dx*dx+dy*dy));
 		if (source.t === "wire") {
 			const b=MU0*source.I/(2*PI*r);
-			return new V((-dy/r)*b,(dx/r)*b);
+			return new V((dy/r)*b,(-dx/r)*b);
 		}
 		if (source.t === "loop") {
 			// Edge-on cross-section: the loop pierces the display plane as two
@@ -70,7 +70,7 @@ export class MagnetStaticSim extends Sim {
 			const a=source.r/PX_PER_METER;let bx=0,by=0;
 			for(const [off,sign] of [[-a,1],[a,-1]]){
 				const wx=dx-off,rw=max(.006,sqrt(wx*wx+dy*dy)),b=MU0*source.I*sign/(2*PI*rw);
-				bx+=(-dy/rw)*b;by+=(wx/rw)*b;
+				bx+=(dy/rw)*b;by+=(-wx/rw)*b;
 			}
 			return new V(bx,by);
 		}
