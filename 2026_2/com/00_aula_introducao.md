@@ -690,53 +690,81 @@ def rc_pulse(N_sym, os, alpha=0.25):
     return h / np.sum(h)
 
 rc = rc_pulse(64, 10, alpha=0.25)
-
-# ===== OOK =====
-bits_ook = bits[:N]
-sym_ook = bits_ook.astype(float)  # 0 ou 1
-tx_ook = oversample_signal(sym_ook, 10)
-tx_ook = np.convolve(tx_ook, rc[:64], mode='full')
-
-# ===== BPSK =====
-bits_bpsk = bits[N:2*N]
-sym_bpsk = 2 * bits_bpsk.astype(float) - 1  # -1 ou +1
-tx_bpsk = oversample_signal(sym_bpsk, 10)
-tx_bpsk = np.convolve(tx_bpsk, rc[:64], mode='full')
 fc = 50
-t = np.arange(len(tx_bpsk)) / fs
-tx_bpsk = tx_bpsk * np.cos(2 * np.pi * fc * t)
 
-# ===== QPSK =====
+# Função auxiliar: convolve + zero-pad para comprimento alvo
+def pad_to(signal, target_len):
+    """Zero-pad ou truncate um sinal para o comprimento alvo."""
+    if len(signal) < target_len:
+        return np.pad(signal, (0, target_len - len(signal)), mode='constant')
+    elif len(signal) > target_len:
+        return signal[:target_len]
+    return signal
+
+# ---- OOK ----
+bits_ook = bits[:N]
+sym_ook = bits_ook.astype(float)
+tx_ook_bb = np.convolve(oversample_signal(sym_ook, 10), rc[:64], mode='full')
+
+# ---- BPSK ----
+bits_bpsk = bits[N:2*N]
+sym_bpsk = 2 * bits_bpsk.astype(float) - 1
+tx_bpsk_bb = np.convolve(oversample_signal(sym_bpsk, 10), rc[:64], mode='full')
+
+# ---- QPSK (usa ½ dos símbolos por ramo I/Q) ----
 bits_qpsk = bits[2*N:3*N]
-i_bits = bits_qpsk[::2]
-q_bits = bits_qpsk[1::2]
-i_sym = 2 * i_bits.astype(float) - 1
-q_sym = 2 * q_bits.astype(float) - 1
-tx_i = oversample_signal(i_sym, 10)
-tx_q = oversample_signal(q_sym, 10)
-tx_i = np.convolve(tx_i, rc[:64], mode='full')
-tx_q = np.convolve(tx_q, rc[:64], mode='full')
-tx_qpsk = tx_i * np.cos(2 * np.pi * fc * t) - tx_q * np.sin(2 * np.pi * fc * t)
+i_sym = 2 * bits_qpsk[::2].astype(float) - 1
+q_sym = 2 * bits_qpsk[1::2].astype(float) - 1
+tx_i_bb = np.convolve(oversample_signal(i_sym, 10), rc[:64], mode='full')
+tx_q_bb = np.convolve(oversample_signal(q_sym, 10), rc[:64], mode='full')
 
-# ===== 16-QAM =====
+# ---- 16-QAM (usa ¼ dos símbolos por símbolo = 2 bits/símbolo, 2 ramos) ----
 bits_qam = bits[3*N:4*N]
 raw = bits_qam.reshape(-1, 4)
 i_raw = raw[:, [0, 1]]
 q_raw = raw[:, [2, 3]]
 i_qam = -1.5 + 2 * np.array([int(''.join(map(str, b)), 2) for b in i_raw])
 q_qam = -1.5 + 2 * np.array([int(''.join(map(str, b)), 2) for b in q_raw])
-tx_i = oversample_signal(i_qam.astype(float), 10)
-tx_q = oversample_signal(q_qam.astype(float), 10)
-tx_i = np.convolve(tx_i, rc[:64], mode='full')
-tx_q = np.convolve(tx_q, rc[:64], mode='full')
-tx_qam = tx_i * np.cos(2 * np.pi * fc * t) - tx_q * np.sin(2 * np.pi * fc * t)
+tx_i_qam_bb = np.convolve(oversample_signal(i_qam.astype(float), 10), rc[:64], mode='full')
+tx_q_qam_bb = np.convolve(oversample_signal(q_qam.astype(float), 10), rc[:64], mode='full')
 
-# ===== BFSK =====
+# ---- Padronizar comprimentos (usar o maior como alvo) ----
+target_len = max(len(tx_ook_bb), len(tx_bpsk_bb),
+                 len(tx_i_bb), len(tx_q_bb),
+                 len(tx_i_qam_bb), len(tx_q_qam_bb))
+
+tx_ook_bb = pad_to(tx_ook_bb, target_len)
+tx_bpsk_bb = pad_to(tx_bpsk_bb, target_len)
+tx_i_bb = pad_to(tx_i_bb, target_len)
+tx_q_bb = pad_to(tx_q_bb, target_len)
+tx_i_qam_bb = pad_to(tx_i_qam_bb, target_len)
+tx_q_qam_bb = pad_to(tx_q_qam_bb, target_len)
+
+# ---- BFSK (usa N símbolos, sem RC filter) ----
 bits_fsk = bits[4*N:5*N]
-sym_fsk = 2 * bits_fsk.astype(float) - 1
-freq_dev = 8  # desvio de frequência
-phase = np.cumsum(sym_fsk * freq_dev) * (2 * np.pi / fs)
-tx_fsk = np.cos(2 * np.pi * fc * t + phase)
+sym_fsk = bits_fsk.astype(float)
+freq_dev = 8
+t_bb = np.arange(target_len) / fs
+# FSK: fase acumulada proporcional aos símbolos
+tx_fsk_bb = np.zeros(target_len)
+for i in range(target_len):
+    sym_idx = i % len(sym_fsk)
+    phase_inc = 2 * np.pi * freq_dev * (2 * sym_fsk[sym_idx] - 1) / fs
+    if i == 0:
+        tx_fsk_bb[i] = 0
+    else:
+        tx_fsk_bb[i] = tx_fsk_bb[i-1] + phase_inc
+
+tx_fsk = np.cos(2 * np.pi * fc * t_bb + tx_fsk_bb)
+
+# ---- Vetor de tempo único ----
+t = np.arange(target_len) / fs
+
+# ---- Agora upconvert todos com o MESMO vetor t ----
+tx_ook = tx_ook_bb * np.cos(2 * np.pi * fc * t)
+tx_bpsk = tx_bpsk_bb * np.cos(2 * np.pi * fc * t)
+tx_qpsk = tx_i_bb * np.cos(2 * np.pi * fc * t) - tx_q_bb * np.sin(2 * np.pi * fc * t)
+tx_qam = tx_i_qam_bb * np.cos(2 * np.pi * fc * t) - tx_q_qam_bb * np.sin(2 * np.pi * fc * t)
 
 # ===== PLOT =====
 fig = plt.figure(figsize=(20, 14))
@@ -793,9 +821,9 @@ for i, (name, signal, _) in enumerate(modulations):
             ax.text(x, y*1.15, format(j, '02b'), ha='center', fontsize=9, weight='bold')
     elif name == '16-QAM':
         pts = []
-        for ii in range(-1.5, 1.6, 1):
-            for jj in range(-1.5, 1.6, 1):
-                pts.append((ii, jj))
+        for ii in range(-1, 2):
+            for jj in range(-1, 2):
+                pts.append((1.0*ii - 0.5, 1.0*jj - 0.5))
         pts = np.array(pts)
         ax.scatter(pts[:, 0], pts[:, 1], s=80, c=colors[i], edgecolors='white', linewidth=0.5, alpha=0.8)
         ax.set_title('16-QAM: ' + str(len(pts)) + ' pontos', fontsize=10, color=colors[i])
