@@ -195,6 +195,55 @@ A modulação é o processo de **codificar informação em uma portadora** alter
 
 ---
 
+
+```python
+"""
+Experimento AM — Envelope vs. DSB-SC
+====================================
+Compare AM convencional (portadora sempre presente) com DSB-SC (portadora suprimida).
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 44100
+t = np.linspace(0, 0.1, int(0.1 * fs), endpoint=False)
+f_msg = 440
+f_carrier = 5000
+mu = 0.7
+
+m = np.sin(2 * np.pi * f_msg * t)
+carrier = np.cos(2 * np.pi * f_carrier * t)
+
+am = (1 + mu * m) * carrier
+dsb = m * carrier
+
+fig, axes = plt.subplots(3, 1, figsize=(12, 6))
+
+axes[0].plot(t[:500], m[:500], '#2563eb', lw=1)
+axes[0].set_ylabel('Mensagem')
+axes[0].set_title(f'Mensagem — {f_msg} Hz')
+axes[0].grid(alpha=0.3)
+
+axes[1].plot(t[:500], am[:500], '#dc2626', lw=1)
+axes[1].fill_between(t[:500], -(1+mu)+1, (1+mu)+1, alpha=0.1, color='#dc2626')
+axes[1].set_ylabel('AM modulado')
+axes[1].set_title(f'AM Convencional (μ={mu})')
+axes[1].grid(alpha=0.3)
+
+axes[2].plot(t[:500], dsb[:500], '#047857', lw=1)
+axes[2].set_ylabel('DSB-SC')
+axes[2].set_xlabel('Tempo (s)')
+axes[2].set_title(f'DSB-SC — note os zero-crossings quando m(t) cruza zero')
+axes[2].grid(alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('am_vs_dsb.png', dpi=150, bbox_inches='tight')
+print("AM: portadora sempre presente → envelope segue m(t)")
+print(f"DSB-SC: {np.count_nonzero(dsb)} não-zero vs AM: {np.count_nonzero(am)}")
+```
+
+---
+
 ### 5.2 Modulações Analógicas — AM (Amplitude)
 
 #### (a) AM Convencional (AM com portadora)
@@ -294,6 +343,54 @@ Amplitude
 
 ---
 
+
+```python
+"""
+Experimento FM — Variação de Frequência
+=======================================
+Observe como a amplitude é constante mas a densidade das oscilações muda.
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 44100
+t = np.linspace(0, 0.05, int(0.05 * fs), endpoint=False)
+f_msg = 440
+f_carrier = 5000
+beta = 2.0
+
+m = np.sin(2 * np.pi * f_msg * t)
+phase = 2 * np.pi * f_carrier * t + beta * np.sin(2 * np.pi * f_msg * t)
+fm = np.cos(phase)
+am = (1 + 0.7 * m) * np.cos(2 * np.pi * f_carrier * t)
+
+fig, axes = plt.subplots(3, 1, figsize=(12, 6))
+
+axes[0].plot(t[:300], m[:300], '#2563eb', lw=1)
+axes[0].set_ylabel('Mensagem')
+axes[0].set_title('Mensagem — 440 Hz')
+axes[0].grid(alpha=0.3)
+
+axes[1].plot(t[:300], am[:300], '#dc2626', lw=1)
+axes[1].set_ylabel('AM')
+axes[1].set_title(f'AM (μ=0.7) — amplitude varia')
+axes[1].grid(alpha=0.3)
+
+axes[2].plot(t[:300], fm[:300], '#047857', lw=1)
+axes[2].set_ylabel('FM')
+axes[2].set_xlabel('Tempo (s)')
+axes[2].set_title(f'FM (β={beta}) — amplitude constante, frequência varia!')
+axes[2].grid(alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('fm_visualization.png', dpi=150, bbox_inches='tight')
+instant_freq = f_carrier + beta * f_msg * np.cos(2 * np.pi * f_msg * t)
+print(f"FM: freq. varia entre {instant_freq.min():.0f} e {instant_freq.max():.0f} Hz")
+print(f"FM: amplitude = {np.abs(fm).mean():.4f} (quase constante!)")
+```
+
+---
+
 ### 5.3 Modulações Analógicas — FM (Frequência)
 
 #### FM Convencional (Wideband FM)
@@ -332,6 +429,55 @@ Banda ≈ $2f_m$ (similar ao DSB-SC). Usado em rádios móveis.
 | **Banda** | $\approx 2f_m$ | $\gg 2f_m$ |
 | **Qualidade de áudio** | Voz (3 kHz) | Hi-Fi (15 kHz) |
 | **Imunidade** | Moderada | Excelente |
+
+---
+
+
+```python
+"""
+Experimento PSK — Constelações BPSK e QPSK
+==========================================
+Veja como BPSK e QPSK ocupam diferentes posições no plano I/Q.
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+ax = axes[0]
+ax.scatter([-1], [0], s=300, c='#dc2626', edgecolors='white', linewidth=3, zorder=3)
+ax.scatter([1], [0], s=300, c='#dc2626', edgecolors='white', linewidth=3, zorder=3)
+ax.text(-1, -0.2, '0 (π)', ha='center', fontsize=14, weight='bold', color='white')
+ax.text(1, -0.2, '1 (0)', ha='center', fontsize=14, weight='bold', color='white')
+ax.set_xlim(-1.5, 1.5)
+ax.set_ylim(-1, 1)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
+ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)')
+ax.set_ylabel('Quadrature (Q)')
+ax.set_title('Constelação BPSK\n2 pontos → 1 bit/símbolo', color='#dc2626')
+ax.grid(alpha=0.3)
+ax.set_aspect('equal')
+
+ax = axes[1]
+pts = np.array([[-1,-1], [-1,1], [1,1], [1,-1]])
+ax.scatter(pts[:, 0], pts[:, 1], s=300, c='#047857', edgecolors='white', linewidth=3, zorder=3)
+for (x, y), lbl in zip(pts, ['00', '01', '11', '10']):
+    ax.text(x, y*1.15, lbl, ha='center', fontsize=12, weight='bold', color='white')
+ax.set_xlim(-1.5, 1.5)
+ax.set_ylim(-1.5, 1.5)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
+ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)')
+ax.set_ylabel('Quadrature (Q)')
+ax.set_title('Constelação QPSK\n4 pontos → 2 bits/símbolo', color='#047857')
+ax.grid(alpha=0.3)
+ax.set_aspect('equal')
+
+plt.tight_layout()
+plt.savefig('psk_constellations.png', dpi=150, bbox_inches='tight')
+print("BPSK: 2 pontos → 1 bit/símbolo\nQPSK: 4 pontos → 2 bits/símbolo → 2× mais rápida!")
+```
 
 ---
 
@@ -403,6 +549,59 @@ Generalização: $M$ fases equidistantes ($2\pi/M$).
 
 ---
 
+
+```python
+"""
+Experimento BFSK — Modulação por Frequência
+===========================================
+Compare os dois símbolos BFSK: frequência alta e baixa.
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 44100
+t = np.linspace(0, 0.1, int(0.1 * fs), endpoint=False)
+f0 = 4000
+f1 = 6000
+
+np.random.seed(42)
+bits = np.random.randint(0, 2, 20)
+
+s0 = np.cos(2 * np.pi * f0 * t)
+s1 = np.cos(2 * np.pi * f1 * t)
+
+fsk = np.zeros_like(t)
+step = len(t) // len(bits)
+for i, bit in enumerate(bits):
+    start = i * step
+    end = min((i + 1) * step, len(t))
+    fsk[start:end] = s0[start:end] if bit == 0 else s1[start:end]
+
+fig, axes = plt.subplots(2, 1, figsize=(14, 6))
+
+ax = axes[0]
+ax.stem(range(len(bits)), bits, linefmt='#2563eb', markerfmt='o', basefmt='gray')
+ax.set_xlabel('Símbolo')
+ax.set_ylabel('Bit')
+ax.set_title('Bits enviados (sequência de 20 bits)')
+ax.set_ylim(-0.2, 1.2)
+ax.grid(alpha=0.3)
+
+ax = axes[1]
+t_short = np.linspace(0, 0.03, int(0.03 * fs), endpoint=False)
+ax.plot(t_short, fsk[:len(t_short)], '#ea580c', lw=1)
+ax.set_xlabel('Tempo (s)')
+ax.set_ylabel('Amplitude')
+ax.set_title(f'BFSK — {f0} Hz (bit 0) vs {f1} Hz (bit 1)')
+ax.grid(alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('bfsk_visualization.png', dpi=150, bbox_inches='tight')
+print(f"BFSK: bit 0 → {f0} Hz, bit 1 → {f1} Hz\nspacing: {abs(f1-f0)} Hz")
+```
+
+---
+
 ### 5.5 Modulações Digitais — FSK (Frequency Shift Keying)
 
 O que varia: **frequência**. Cada símbolo é uma frequência diferente.
@@ -427,6 +626,63 @@ O que varia: **frequência**. Cada símbolo é uma frequência diferente.
 
 ---
 
+
+```python
+"""
+Experimento OOK — On-Off Keying
+===============================
+O mais simples: liga/desliga a portadora.
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 44100
+t = np.linspace(0, 0.1, int(0.1 * fs), endpoint=False)
+fc = 5000
+carrier = np.cos(2 * np.pi * fc * t)
+
+np.random.seed(42)
+bits = np.random.randint(0, 2, 20)
+
+ook = np.zeros_like(t)
+step = len(t) // len(bits)
+for i, bit in enumerate(bits):
+    start = i * step
+    end = min((i + 1) * step, len(t))
+    ook[start:end] = bits[i] * carrier[start:end]
+
+fig, axes = plt.subplots(3, 1, figsize=(14, 7))
+
+ax = axes[0]
+ax.stem(range(len(bits)), bits, linefmt='#2563eb', markerfmt='o', basefmt='gray')
+ax.set_xlabel('Símbolo')
+ax.set_ylabel('Bit')
+ax.set_title('Bits enviados')
+ax.set_ylim(-0.2, 1.2)
+ax.grid(alpha=0.3)
+
+ax = axes[1]
+t_short = np.linspace(0, 0.02, int(0.02 * fs), endpoint=False)
+ax.plot(t_short, carrier[:len(t_short)], '#64748b', lw=0.8, alpha=0.7)
+ax.set_ylabel('Portadora')
+ax.set_title('Portadora — 5 kHz')
+ax.grid(alpha=0.3)
+
+ax = axes[2]
+t_short = np.linspace(0, 0.02, int(0.02 * fs), endpoint=False)
+ax.plot(t_short, ook[:len(t_short)], '#dc2626', lw=1)
+ax.set_xlabel('Tempo (s)')
+ax.set_ylabel('OOK')
+ax.set_title('OOK — ligar (1) / desligar (0)')
+ax.grid(alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('ook_visualization.png', dpi=150, bbox_inches='tight')
+print("OOK: bit 1 → portadora ON, bit 0 → OFF\nBER pior que BPSK por ~3 dB")
+```
+
+---
+
 ### 5.6 Modulações Digitais — ASK / OOK (Amplitude)
 
 O que varia: **amplitude**.
@@ -445,6 +701,57 @@ O que varia: **amplitude**.
 | **Simplicidade** | **Máxima** — basta ligar/desligar |
 
 **Aplicações**: Controle remoto infravermelho, fibra óptica simples, RFID passivo.
+
+---
+
+
+```python
+"""
+Experimento QAM — Constelações 16-QAM e 64-QAM
+==============================================
+Compare como o grid cresce e o BER piora.
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+
+ax = axes[0]
+levels_16 = np.array([-1.5, -0.5, 0.5, 1.5])
+ii, jj = np.meshgrid(levels_16, levels_16)
+pts_16 = np.column_stack([ii.ravel(), jj.ravel()])
+ax.scatter(pts_16[:, 0], pts_16[:, 1], s=200, c='#9333ea', edgecolors='white', linewidth=2, zorder=3)
+ax.set_xlim(-2, 2)
+ax.set_ylim(-2, 2)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
+ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)')
+ax.set_ylabel('Quadrature (Q)')
+ax.set_title('16-QAM — 4×4 grid\n4 bits/símbolo\nBER ~19.6 dB', color='#9333ea')
+ax.grid(alpha=0.3)
+ax.set_aspect('equal')
+
+ax = axes[1]
+levels_64 = np.array([-3, -2, -1, 0, 1, 2, 3, 4]) * 0.5
+ii, jj = np.meshgrid(levels_64, levels_64)
+pts_64 = np.column_stack([ii.ravel(), jj.ravel()])
+ax.scatter(pts_64[:, 0], pts_64[:, 1], s=100, c='#ea580c', edgecolors='white', linewidth=0.8, alpha=0.8, zorder=3)
+ax.set_xlim(-2, 2)
+ax.set_ylim(-2, 2)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
+ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)')
+ax.set_ylabel('Quadrature (Q)')
+ax.set_title('64-QAM — 8×8 grid\n6 bits/símbolo\nBER ~26 dB', color='#ea580c')
+ax.grid(alpha=0.3)
+ax.set_aspect('equal')
+
+plt.tight_layout()
+plt.savefig('qam_constellations.png', dpi=150, bbox_inches='tight')
+print(f"16-QAM: {len(pts_16)} pontos → 4 bits/símbolo → Eb/N₀ ~19.6 dB")
+print(f"64-QAM: {len(pts_64)} pontos → 6 bits/símbolo → Eb/N₀ ~26 dB")
+print("Quanto mais pontos, mais sensível a ruído!")
+```
 
 ---
 
