@@ -1333,108 +1333,97 @@ import matplotlib.pyplot as plt
 
 np.random.seed(42)
 fs = 100000
-N = 5000  # símbolos
+N = 5000  # símbolos para cada modulação
 
-# ===== GERAR SÍMBOLOS =====
-bits = np.random.randint(0, 2, N * 6)  # bits suficientes para todas as modulações
+# ===== GERAR BITS =====
+# OOK/BPSK: 1 bit/símbolo → N bits cada
+# QPSK: 2 bits/símbolo → 2N bits
+# 16-QAM: 4 bits/símbolo → 4N bits
+# BFSK: 1 bit/símbolo → N bits
+bits = np.random.randint(0, 2, N * 9)
 
-def oversample_signal(data, os_factor=10):
+os_factor = 10  # oversampling
+
+def oversample(data):
     &quot;&quot;&quot;Upsample com zero-order hold.&quot;&quot;&quot;
     return np.repeat(data, os_factor)
 
-def rc_pulse(N_sym, os, alpha=0.25):
-    &quot;&quot;&quot;Raised cosine filter.&quot;&quot;&quot;
-    N = N_sym * os
-    n = np.arange(-N//2, N//2 + 1)
-    h = np.zeros(len(n))
-    for i, val in enumerate(n):
-        if val == 0:
-            h[i] = 1 + alpha * (4 / np.pi - 1)
-        elif abs(val) == N // (2 * alpha):
-            h[i] = alpha / (2 * np.pi * val) * (np.sin(np.pi * (1 - alpha) * val / (N//2)) +
-                                                   4 * alpha * np.cos(np.pi * (1 + alpha) * val / (N//2)))
-        else:
-            numerator = np.sin(np.pi * val / os) * np.cos(np.pi * alpha * val / os)
-            denom = np.pi * val / os * (1 - (2 * alpha * val / (2 * N//os))**2)
-            h[i] = numerator / denom
+def rc_filter(N_sym, os, alpha=0.25):
+    &quot;&quot;&quot;Raised cosine filter — implementação vetorial correta.&quot;&quot;&quot;
+    n = np.arange(-N_sym * os // 2, N_sym * os // 2 + 1) / os  # tempo em períodos de símbolo
+    
+    h = np.zeros_like(n, dtype=float)
+    
+    # Casos singulares
+    t_zero = (n == 0)
+    t_extreme = np.abs(n) == 1.0 / (2.0 * alpha)
+    t_normal = ~t_zero &amp; ~t_extreme
+    
+    # Fórmula geral
+    h[t_normal] = (np.sin(np.pi * n[t_normal]) * np.cos(np.pi * alpha * n[t_normal]) /
+                   (np.pi * n[t_normal] * (1 - (2 * alpha * n[t_normal]) ** 2)))
+    
+    # Em t = 0
+    h[t_zero] = 1.0 + alpha * (4.0 / np.pi - 1.0)
+    
+    # Em t = ±T/(2α)
+    t_e = n[t_extreme]
+    h[t_extreme] = (alpha / (2.0 * np.pi * t_e)) * (
+        np.sin(np.pi * t_e * (1 - alpha)) +
+        4 * alpha * np.cos(np.pi * t_e * (1 + alpha))
+    )
+    
     return h / np.sum(h)
 
-rc = rc_pulse(64, 10, alpha=0.25)
+rc = rc_filter(64, 10, alpha=0.25)
 fc = 50
 
-# Função auxiliar: convolve + zero-pad para comprimento alvo
-def pad_to(signal, target_len):
-    &quot;&quot;&quot;Zero-pad ou truncate um sinal para o comprimento alvo.&quot;&quot;&quot;
-    if len(signal) &lt; target_len:
-        return np.pad(signal, (0, target_len - len(signal)), mode=&#x27;constant&#x27;)
-    elif len(signal) &gt; target_len:
-        return signal[:target_len]
-    return signal
+def upconvert(bb, fc, fs):
+    &quot;&quot;&quot;Modula em banda passante.&quot;&quot;&quot;
+    t = np.arange(len(bb)) / fs
+    return bb * np.cos(2 * np.pi * fc * t)
 
-# ---- OOK ----
+# ---- OOK (N símbolos, 1 bit/símbolo) ----
 bits_ook = bits[:N]
 sym_ook = bits_ook.astype(float)
-tx_ook_bb = np.convolve(oversample_signal(sym_ook, 10), rc[:64], mode=&#x27;full&#x27;)
+tx_ook = upconvert(np.convolve(oversample(sym_ook), rc, mode=&#x27;same&#x27;), fc, fs)
 
-# ---- BPSK ----
+# ---- BPSK (N símbolos, 1 bit/símbolo) ----
 bits_bpsk = bits[N:2*N]
 sym_bpsk = 2 * bits_bpsk.astype(float) - 1
-tx_bpsk_bb = np.convolve(oversample_signal(sym_bpsk, 10), rc[:64], mode=&#x27;full&#x27;)
+tx_bpsk = upconvert(np.convolve(oversample(sym_bpsk), rc, mode=&#x27;same&#x27;), fc, fs)
 
-# ---- QPSK (usa ½ dos símbolos por ramo I/Q) ----
-bits_qpsk = bits[2*N:3*N]
-i_sym = 2 * bits_qpsk[::2].astype(float) - 1
-q_sym = 2 * bits_qpsk[1::2].astype(float) - 1
-tx_i_bb = np.convolve(oversample_signal(i_sym, 10), rc[:64], mode=&#x27;full&#x27;)
-tx_q_bb = np.convolve(oversample_signal(q_sym, 10), rc[:64], mode=&#x27;full&#x27;)
+# ---- QPSK (N símbolos, 2 bits/símbolo) ----
+bits_qpsk = bits[2*N:4*N]
+i_bits = bits_qpsk[::2]
+q_bits = bits_qpsk[1::2]
+i_sym = 2 * i_bits.astype(float) - 1
+q_sym = 2 * q_bits.astype(float) - 1
+tx_i = np.convolve(oversample(i_sym), rc, mode=&#x27;same&#x27;)
+tx_q = np.convolve(oversample(q_sym), rc, mode=&#x27;same&#x27;)
+t = np.arange(len(tx_i)) / fs
+tx_qpsk = tx_i * np.cos(2 * np.pi * fc * t) - tx_q * np.sin(2 * np.pi * fc * t)
 
-# ---- 16-QAM (usa ¼ dos símbolos por símbolo = 2 bits/símbolo, 2 ramos) ----
-bits_qam = bits[3*N:4*N]
+# ---- 16-QAM (N símbolos, 4 bits/símbolo) ----
+bits_qam = bits[4*N:8*N]
 raw = bits_qam.reshape(-1, 4)
-i_raw = raw[:, [0, 1]]
-q_raw = raw[:, [2, 3]]
-i_qam = -1.5 + 2 * np.array([int(&#x27;&#x27;.join(map(str, b)), 2) for b in i_raw])
-q_qam = -1.5 + 2 * np.array([int(&#x27;&#x27;.join(map(str, b)), 2) for b in q_raw])
-tx_i_qam_bb = np.convolve(oversample_signal(i_qam.astype(float), 10), rc[:64], mode=&#x27;full&#x27;)
-tx_q_qam_bb = np.convolve(oversample_signal(q_qam.astype(float), 10), rc[:64], mode=&#x27;full&#x27;)
+i_bits_16 = raw[:, [0, 1]]
+q_bits_16 = raw[:, [2, 3]]
+i_16 = -1.5 + 2 * np.array([int(&#x27;&#x27;.join(map(str, b)), 2) for b in i_bits_16])
+q_16 = -1.5 + 2 * np.array([int(&#x27;&#x27;.join(map(str, b)), 2) for b in q_bits_16])
+tx_i16 = np.convolve(oversample(i_16.astype(float)), rc, mode=&#x27;same&#x27;)
+tx_q16 = np.convolve(oversample(q_16.astype(float)), rc, mode=&#x27;same&#x27;)
+t = np.arange(len(tx_i16)) / fs
+tx_qam = tx_i16 * np.cos(2 * np.pi * fc * t) - tx_q16 * np.sin(2 * np.pi * fc * t)
 
-# ---- Padronizar comprimentos (usar o maior como alvo) ----
-target_len = max(len(tx_ook_bb), len(tx_bpsk_bb),
-                 len(tx_i_bb), len(tx_q_bb),
-                 len(tx_i_qam_bb), len(tx_q_qam_bb))
-
-tx_ook_bb = pad_to(tx_ook_bb, target_len)
-tx_bpsk_bb = pad_to(tx_bpsk_bb, target_len)
-tx_i_bb = pad_to(tx_i_bb, target_len)
-tx_q_bb = pad_to(tx_q_bb, target_len)
-tx_i_qam_bb = pad_to(tx_i_qam_bb, target_len)
-tx_q_qam_bb = pad_to(tx_q_qam_bb, target_len)
-
-# ---- BFSK (usa N símbolos, sem RC filter) ----
-bits_fsk = bits[4*N:5*N]
-sym_fsk = bits_fsk.astype(float)
-freq_dev = 8
-t_bb = np.arange(target_len) / fs
-# FSK: fase acumulada proporcional aos símbolos
-tx_fsk_bb = np.zeros(target_len)
-for i in range(target_len):
-    sym_idx = i % len(sym_fsk)
-    phase_inc = 2 * np.pi * freq_dev * (2 * sym_fsk[sym_idx] - 1) / fs
-    if i == 0:
-        tx_fsk_bb[i] = 0
-    else:
-        tx_fsk_bb[i] = tx_fsk_bb[i-1] + phase_inc
-
-tx_fsk = np.cos(2 * np.pi * fc * t_bb + tx_fsk_bb)
-
-# ---- Vetor de tempo único ----
-t = np.arange(target_len) / fs
-
-# ---- Agora upconvert todos com o MESMO vetor t ----
-tx_ook = tx_ook_bb * np.cos(2 * np.pi * fc * t)
-tx_bpsk = tx_bpsk_bb * np.cos(2 * np.pi * fc * t)
-tx_qpsk = tx_i_bb * np.cos(2 * np.pi * fc * t) - tx_q_bb * np.sin(2 * np.pi * fc * t)
-tx_qam = tx_i_qam_bb * np.cos(2 * np.pi * fc * t) - tx_q_qam_bb * np.sin(2 * np.pi * fc * t)
+# ---- BFSK (N símbolos, 1 bit/símbolo, sem RC filter) ----
+bits_fsk = bits[8*N:9*N]
+sym_fsk = 2 * bits_fsk.astype(float) - 1
+# FSK: variação de frequência instantânea (oversamplear antes de acumular fase)
+sym_fsk_os = np.repeat(sym_fsk, os_factor)
+phase_fsk = 2 * np.pi * np.cumsum(sym_fsk_os * 8) / fs  # freq_dev = 8, acumulado a cada amostra
+t_fsk = np.arange(len(phase_fsk)) / fs
+tx_fsk = np.cos(2 * np.pi * fc * t_fsk + phase_fsk)
 
 # ===== PLOT =====
 fig = plt.figure(figsize=(20, 14))
@@ -1490,18 +1479,17 @@ for i, (name, signal, _) in enumerate(modulations):
         for j, (x, y) in enumerate([(-1,-1), (-1,1), (1,1), (1,-1)]):
             ax.text(x, y*1.15, format(j, &#x27;02b&#x27;), ha=&#x27;center&#x27;, fontsize=9, weight=&#x27;bold&#x27;)
     elif name == &#x27;16-QAM&#x27;:
-        pts = []
-        for ii in range(-1, 2):
-            for jj in range(-1, 2):
-                pts.append((1.0*ii - 0.5, 1.0*jj - 0.5))
-        pts = np.array(pts)
+        levels = np.array([-1.5, -0.5, 0.5, 1.5])
+        ii, jj = np.meshgrid(levels, levels)
+        pts = np.column_stack([ii.ravel(), jj.ravel()])
         ax.scatter(pts[:, 0], pts[:, 1], s=80, c=colors[i], edgecolors=&#x27;white&#x27;, linewidth=0.5, alpha=0.8)
-        ax.set_title(&#x27;16-QAM: &#x27; + str(len(pts)) + &#x27; pontos&#x27;, fontsize=10, color=colors[i])
+        ax.set_title(&#x27;16-QAM: 16 pontos&#x27;, fontsize=10, color=colors[i])
     elif name == &#x27;BFSK&#x27;:
-        ax.scatter([fc-8, fc+8], [0, 0], s=100, c=colors[i], edgecolors=&#x27;white&#x27;, linewidth=1)
-        ax.set_xlim(30, 70)
-        ax.text(fc-8, -0.15, &#x27;0&#x27;, ha=&#x27;center&#x27;, fontsize=10, weight=&#x27;bold&#x27;)
-        ax.text(fc+8, -0.15, &#x27;1&#x27;, ha=&#x27;center&#x27;, fontsize=10, weight=&#x27;bold&#x27;)
+        ax.scatter([0, 1], [0, 0], s=100, c=colors[i], edgecolors=&#x27;white&#x27;, linewidth=1)
+        ax.text(0, -0.15, &#x27;f₀&#x27;, ha=&#x27;center&#x27;, fontsize=10, weight=&#x27;bold&#x27;)
+        ax.text(1, -0.15, &#x27;f₁&#x27;, ha=&#x27;center&#x27;, fontsize=10, weight=&#x27;bold&#x27;)
+        ax.set_xlim(-0.3, 1.3)
+        ax.set_xlabel(&#x27;Frequência&#x27;)
 
     ax.axhline(0, color=&#x27;gray&#x27;, lw=0.3)
     ax.axvline(0, color=&#x27;gray&#x27;, lw=0.3)
