@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transmissão em Banda Base e Critério de Nyquist</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="../../slide_framework/framework.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+<div class="progress" id="progress" title="Jump">
+  <div class="bar" id="bar"></div>
+</div>
+
+<div class="deck-shell">
+  <main class="stage" id="stage">
+<section class="slide title-slide" data-sec="Title">
+  <svg class="title-figure" viewBox="0 0 420 340" aria-hidden="true"><defs><radialGradient id="ig" cx="50%" cy="55%" r="60%"><stop offset="0%" stop-color="var(--gold)" stop-opacity=".10"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></radialGradient></defs><circle cx="210" cy="180" r="160" fill="url(#ig)"/><g stroke="var(--line)" stroke-width=".7" opacity=".2"><line x1="50" y1="40" x2="50" y2="300"/><line x1="50" y1="300" x2="390" y2="300"/></g><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M70,200 L130,200 L130,140 L190,140" stroke="var(--blue)" opacity=".8"/><path d="M190,140 L190,80 L250,80 L250,140 L310,140 L310,200" stroke="var(--vio)" opacity=".75"/><path d="M70,240 L110,240 L110,200 L150,200 L150,280 L210,280 L210,240 L270,240 L270,300 L330,300 L330,240 L390,240" stroke="var(--gold)" opacity=".65"/></g><circle cx="130" cy="140" r="5" fill="var(--blue)"/><circle cx="190" cy="140" r="5" fill="var(--vio)"/><circle cx="250" cy="80" r="4" fill="var(--gold)"/><circle cx="150" cy="200" r="4" fill="var(--blue)"/><circle cx="110" cy="240" r="4" fill="var(--gold)"/><circle cx="210" cy="240" r="4" fill="var(--vio)"/><circle cx="270" cy="240" r="4" fill="var(--gold)"/><circle cx="330" cy="240" r="4" fill="var(--vio)"/><path d="M80,100 Q110,60 140,100 Q170,140 200,100 Q230,60 260,100 Q290,140 320,100 Q350,60 370,80"fill="none" stroke="var(--blue)" stroke-width="1.8" opacity=".5" stroke-linecap="round"/><circle cx="70" cy="200" r="3" fill="var(--text)" opacity=".5"/><circle cx="390" cy="240" r="3" fill="var(--text)" opacity=".5"/></svg>
+  <div class="title-content">
+    <div class="super">Apostila de Comunicações — Transmissão em Banda Base e Critério de Nyquist</div>
+    <h1>Transmissão em Banda Base e Critério de Nyquist</h1>
+    <div class="topics"><span class="chip">PAM</span><span class="chip">ISI</span><span class="chip">pulso sinc</span><span class="chip">critério de Nyquist I</span><span class="chip">raised cosine</span><span class="chip">root-raised cosine</span></div>
+  </div>
+</section>
+<section class="slide" data-sec="Antes de começar">
+<div class="eyebrow"><span class="sec">01</span> Antes de começar <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Antes de começar</h2>
+<p>Ao final, você deve explicar a origem da ISI, aplicar o primeiro critério de Nyquist e distinguir RC, RRC e filtro casado. <strong>Diagnóstico:</strong> zeros do pulso nos múltiplos de <span class="eqwrap">\(T_s\)</span> bastam quando há erro de timing? <strong>Evidência mínima:</strong> gerar um diagrama de olho e relacionar abertura vertical, abertura horizontal, ruído e jitter.</p>
+</div>
+</section>
+<section class="slide" data-sec="Representação do Sinal Digital em Banda Base">
+<div class="eyebrow"><span class="sec">02</span> Representação do Sinal Digital em Banda Base <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Representação do Sinal Digital em Banda Base</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Pulsos e Símbolos</h3>
+<p>Uma sequência discreta de símbolos <span class="eqwrap">\(\{a_k\}_{k\in\mathbb{Z}}\)</span>, onde <span class="eqwrap">\(a_k \in \mathcal{A}\)</span> é um alfabeto finito (por exemplo <span class="eqwrap">\(\mathcal{A} = \{\pm 1, \pm 3\}\)</span> para 4-PAM), é modulada em um pulso <span class="eqwrap">\(p(t)\)</span> de energia finita:</p>
+<div class="eqwrap eqbig eqcenter">\[s(t) = \sum_{k=-\infty}^{\infty} a_k\, p(t - kT_s). \tag{1.1}\]</div>
+<p><strong>Definição:</strong> <span class="eqwrap">\(T_s\)</span> é o período de símbolo (s/símbolo). A taxa de símbolos é <span class="eqwrap">\(R_s = 1/T_s\)</span> (baud ou símbolo/s). A taxa de bits é <span class="eqwrap">\(R_b = R_s/\log_2|\mathcal{A}|\)</span> bits/s, para constelação de tamanho <span class="eqwrap">\(|\mathcal{A}|\)</span>.</p>
+<p><strong>Definição:</strong> PAM (<em>Pulse Amplitude Modulation</em>) é a técnica em que cada símbolo <span class="eqwrap">\(a_k\)</span> escala a amplitude do pulso <span class="eqwrap">\(p(t)\)</span> deslocado no tempo.</p>
+</div>
+</section>
+<section class="slide" data-sec="Representação do Sinal Digital em Banda Base">
+<div class="eyebrow"><span class="sec">02</span> Representação do Sinal Digital em Banda Base <span class="rule"></span></div>
+<div class="body">
+<p><strong>Exemplo:</strong> Para 4-PAM com <span class="eqwrap">\(\mathcal A=\{-3,-1,1,3\}\)</span> e pulso retangular <span class="eqwrap">\(p(t)=1\)</span> em <span class="eqwrap">\(0\le t<T_s\)</span>, cada símbolo leva 2 bits. Como <span class="eqwrap">\(E_p=T_s\)</span> e <span class="eqwrap">\(\mathbb E[a_k^2]=5\)</span>, a potência média é <span class="eqwrap">\(P=\mathbb E[a_k^2]E_p/T_s=5\)</span> nas unidades compatíveis com a normalização — não <span class="eqwrap">\(5/T_s\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Representação do Sinal Digital em Banda Base">
+<div class="eyebrow"><span class="sec">02</span> Representação do Sinal Digital em Banda Base <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Representação Vetorial</h3>
+<p>A transmissão em banda base pode ser vista como um mapeamento de vetores discretos <span class="eqwrap">\(\mathbf{a} = (a_k)_k \mapsto s(t) \in L^2(\mathbb{R})\)</span>. A norma <span class="eqwrap">\(\|p\|^2 = \int_{-\infty}^{\infty} |p(t)|^2 dt = E_p\)</span> é a energia do pulso. A potência média do sinal é:</p>
+<div class="eqwrap eqbig eqcenter">\[P = \lim_{T\to\infty} \frac{1}{T} \int_{-T/2}^{T/2} |s(t)|^2 dt.\]</div>
+<p>Para sequência estacionária com média zero e auto-correlação <span class="eqwrap">\(R_{aa}[m] = \mathbb{E}[a_k a_{k-m}]\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[P=\frac1{T_s}\sum_{m=-\infty}^{\infty}R_{aa}[m]r_p(mT_s),\qquad r_p(\tau)=\int p(t)p^*(t-\tau)dt. \tag{1.2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Representação do Sinal Digital em Banda Base">
+<div class="eyebrow"><span class="sec">02</span> Representação do Sinal Digital em Banda Base <span class="rule"></span></div>
+<div class="body">
+<p>A média temporal sobre uma fase completa de símbolo é necessária porque a forma de onda PAM aleatória é, em geral, cicloestacionária.</p>
+<p><strong>Observação:</strong> Se os símbolos são não-correlacionados, <span class="eqwrap">\(\mathbb{E}[a_k a_{k-m}] = \sigma_a^2\delta[m]\)</span>, então <span class="eqwrap">\(P = \sigma_a^2 E_p / T_s\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Representação do Sinal Digital em Banda Base">
+<div class="eyebrow"><span class="sec">02</span> Representação do Sinal Digital em Banda Base <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">M-PAM e Constelações</h3>
+<p>A constelação M-PAM centrada na origem pode ser escrita, para <span class="eqwrap">\(M\)</span> par ou ímpar, como</p>
+<div class="eqwrap eqbig eqcenter">\[\mathcal A_M=\{(2i-M+1)A:\ i=0,\ldots,M-1\}.\]</div>
+<p>Os pontos adjacentes estão separados por <span class="eqwrap">\(d_{\min}=2A\)</span>. Como</p>
+<div class="eqwrap eqbig eqcenter">\[\frac1M\sum_{i=0}^{M-1}(2i-M+1)^2=\frac{M^2-1}{3},\]</div>
+<p>temos <span class="eqwrap">\(E_s=A^2(M^2-1)/3\)</span>. Para <span class="eqwrap">\(E_s=1\)</span>,</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{A=\sqrt{\frac{3}{M^2-1}},\qquad d_{\min}=\sqrt{\frac{12}{M^2-1}}.} \tag{1.3}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Representação do Sinal Digital em Banda Base">
+<div class="eyebrow"><span class="sec">02</span> Representação do Sinal Digital em Banda Base <span class="rule"></span></div>
+<div class="body">
+<p><strong>Exemplo:</strong> em 4-PAM, <span class="eqwrap">\(A=1/\sqrt5\)</span> e os níveis normalizados são <span class="eqwrap">\(\{-3,-1,1,3\}/\sqrt5\)</span>; a distância mínima é <span class="eqwrap">\(2/\sqrt5=\sqrt{12/15}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Espectro de Sequências PAM Aleatórias">
+<div class="eyebrow"><span class="sec">03</span> Espectro de Sequências PAM Aleatórias <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Espectro de Sequências PAM Aleatórias</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Espectro de Sequência Periódica</h3>
+<p>Se <span class="eqwrap">\(a_k\)</span> é periódica com período <span class="eqwrap">\(N\)</span>, então <span class="eqwrap">\(s(t)\)</span> é quase-periódica com período <span class="eqwrap">\(NT_s\)</span>. Expandindo <span class="eqwrap">\(a_k\)</span> em série de Fourier discreta:</p>
+<div class="eqwrap eqbig eqcenter">\[a_k = \sum_{n=-\infty}^{\infty} c_n\, e^{j2\pi n k/N},\]</div>
+<p>onde <span class="eqwrap">\(c_n = \frac{1}{N}\sum_{k=0}^{N-1} a_k\, e^{-j2\pi nk/N}\)</span>. Substituindo em (1.1):</p>
+<div class="eqwrap eqbig eqcenter">\[s(t) = \sum_{n} c_n \sum_{k} e^{j2\pi n k/N} p(t - kT_s).\]</div>
+<p>O espectro é discreto:</p>
+</div>
+</section>
+<section class="slide" data-sec="Espectro de Sequências PAM Aleatórias">
+<div class="eyebrow"><span class="sec">03</span> Espectro de Sequências PAM Aleatórias <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{S(f)=\frac{1}{T_s}P(f)\sum_{k=-\infty}^{\infty}c_{k\bmod N}\,
+\delta\!\left(f-\frac{k}{NT_s}\right).} \tag{2.1}\]</div>
+<p>Os coeficientes <span class="eqwrap">\(c_n\)</span> são periódicos em <span class="eqwrap">\(n\)</span> com período <span class="eqwrap">\(N\)</span>; por isso aparece <span class="eqwrap">\(c_{k\bmod N}\)</span>, e não um coeficiente com índice fracionário.</p>
+<p>Para sequência periódica com média <span class="eqwrap">\(\bar{a}\)</span>, o termo DC é:</p>
+<div class="eqwrap eqbig eqcenter">\[S(0) = \frac{\bar{a}}{T_s}P(0).\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Espectro de Sequências PAM Aleatórias">
+<div class="eyebrow"><span class="sec">03</span> Espectro de Sequências PAM Aleatórias <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Densidade Espectral de Potência — Sequência Aleatória</h3>
+<p><strong>Definição:</strong> A densidade espectral de potência (PSD) é a transformada de Fourier da autocorrelação. Como PAM é geralmente cicloestacionário, usa-se a autocorrelação também média sobre uma fase de símbolo.</p>
+<p><strong>Teorema 2.1 (PSD do sinal PAM).</strong> Para sequência <span class="eqwrap">\(\{a_k\}\)</span> estacionária com média <span class="eqwrap">\(\mu_a\)</span>, variância <span class="eqwrap">\(\sigma_a^2\)</span>, e função de auto-correlação <span class="eqwrap">\(R_{aa}[m] = \mathbb{E}[a_k a_{k-m}]\)</span>, a PSD do sinal PAM <span class="eqwrap">\(s(t) = \sum_k a_k p(t-kT_s)\)</span> é:</p>
+<p>Defina <span class="eqwrap">\(C_{aa}[m]=\mathbb E[(a_k-\mu_a)(a_{k-m}-\mu_a)]\)</span> e sua DTFT</p>
+<div class="eqwrap eqbig eqcenter">\[S_a(e^{j\Omega})=\sum_{m=-\infty}^{\infty}C_{aa}[m]e^{-j\Omega m}.\]</div>
+<p>Então</p>
+</div>
+</section>
+<section class="slide" data-sec="Espectro de Sequências PAM Aleatórias">
+<div class="eyebrow"><span class="sec">03</span> Espectro de Sequências PAM Aleatórias <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{S_s(f)=\frac{|P(f)|^2}{T_s}S_a(e^{j2\pi fT_s})
++\frac{\mu_a^2}{T_s^2}|P(f)|^2\sum_{\ell=-\infty}^{\infty}
+\delta\!\left(f-\frac{\ell}{T_s}\right).} \tag{2.2}\]</div>
+<p><strong>Leitura passo a passo:</strong> a sequência centrada determina <span class="eqwrap">\(S_a\)</span>; o formatador de pulso multiplica essa densidade por <span class="eqwrap">\(|P(f)|^2\)</span>; transmitir um símbolo a cada <span class="eqwrap">\(T_s\)</span> introduz o fator <span class="eqwrap">\(1/T_s\)</span>. A média não nula é uma sequência determinística constante e gera linhas em múltiplos de <span class="eqwrap">\(1/T_s\)</span>. Para símbolos i.i.d., <span class="eqwrap">\(C_{aa}[m]=\sigma_a^2\delta[m]\)</span>, portanto <span class="eqwrap">\(S_a=\sigma_a^2\)</span> e recupera-se (2.3). Não se deve somar <span class="eqwrap">\(\sigma_a^2\)</span> novamente à série de covariância, pois <span class="eqwrap">\(C_{aa}[0]\)</span> já é a variância.</p>
+</div>
+</section>
+<section class="slide" data-sec="Espectro de Sequências PAM Aleatórias">
+<div class="eyebrow"><span class="sec">03</span> Espectro de Sequências PAM Aleatórias <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">PSD para Símbolos Não-Correlacionados</h3>
+<p>Quando <span class="eqwrap">\(a_k\)</span> são não-correlacionados com variância <span class="eqwrap">\(\sigma_a^2\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{S_s(f) = \frac{\sigma_a^2}{T_s}\,|P(f)|^2.} \tag{2.3}\]</div>
+<p><strong>Exemplo:</strong> Para pulso retangular de duração <span class="eqwrap">\(T_s\)</span> e amplitude normalizada, <span class="eqwrap">\(P(f) = T_s\operatorname{sinc}(fT_s)e^{-j\pi f T_s}\)</span> e <span class="eqwrap">\(|P(f)|^2 = T_s^2\operatorname{sinc}^2(fT_s)\)</span>. Logo:</p>
+<div class="eqwrap eqbig eqcenter">\[S_s(f) = \sigma_a^2 T_s \operatorname{sinc}^2(fT_s).\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Espectro de Sequências PAM Aleatórias">
+<div class="eyebrow"><span class="sec">03</span> Espectro de Sequências PAM Aleatórias <span class="rule"></span></div>
+<div class="body">
+<p>A banda principal (primeiro zero) ocorre em <span class="eqwrap">\(f = 1/T_s = R_s\)</span>. A energia está concentrada em torno de <span class="eqwrap">\(R_s/2\)</span>, mas o espectro é infinito.</p>
+</div>
+</section>
+<section class="slide" data-sec="Definição e Modelagem de ISI">
+<div class="eyebrow"><span class="sec">04</span> Definição e Modelagem de ISI <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Definição e Modelagem de ISI</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Canais com Dispersão e ISI</h3>
+<p>Quando o sinal atravessa um canal com resposta impulso <span class="eqwrap">\(h_c(t)\)</span>, o pulso recebido é <span class="eqwrap">\(g(t) = (p * h_c)(t)\)</span>. Em receptores reais, há um filtro adicional <span class="eqwrap">\(h_r(t)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[y(t) = s(t) * h_c(t) * h_r(t) + n(t) = \sum_k a_k g(t - kT_s) + n(t),\]</div>
+<p>onde <span class="eqwrap">\(g(t) = (p * h_c * h_r)(t)\)</span> e <span class="eqwrap">\(n(t)\)</span> é o ruído aditivo.</p>
+<p><strong>Definição:</strong> ISI (<em>Inter-Symbol Interference</em>) é a interferência entre símbolos que ocorre quando a resposta do canal faz com que um símbolo se sobreponha aos instantes de decisão de símbolos vizinhos.</p>
+<p>Amostrando em <span class="eqwrap">\(t = nT_s\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Definição e Modelagem de ISI">
+<div class="eyebrow"><span class="sec">04</span> Definição e Modelagem de ISI <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[y[n] = y(nT_s) = \underbrace{a_n g(0)}_{\text{símbolo desejado}} + \underbrace{\sum_{k \ne n} a_k g((n-k)T_s)}_{\text{ISI}} + n[n]. \tag{3.1}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Definição e Modelagem de ISI">
+<div class="eyebrow"><span class="sec">04</span> Definição e Modelagem de ISI <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Condição de Ausência de ISI</h3>
+<p>Para eliminar ISI, exigimos:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{g(nT_s) = \begin{cases} 1, & n = 0, \\ 0, & n \ne 0. \end{cases}} \tag{3.2}\]</div>
+<p>Com essa condição, <span class="eqwrap">\(y[n] = a_n + n[n]\)</span>, e a decisão é direta.</p>
+<p><strong>Importante:</strong> A condição (3.2) é necessária e suficiente para ausência de ISI. Ela impõe restrições rigorosas sobre o espectro <span class="eqwrap">\(G(f)\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Definição e Modelagem de ISI">
+<div class="eyebrow"><span class="sec">04</span> Definição e Modelagem de ISI <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exemplo Numérico de ISI</h3>
+<p><strong>Exemplo 3.1.</strong> Considere <span class="eqwrap">\(g(t) = \operatorname{sinc}(t/T_s)\)</span> e sequência <span class="eqwrap">\(a_k = \{1, 1, 0, 0, 0\}\)</span>. Então:</p>
+<div class="eqwrap eqbig eqcenter">\[y[n] = \sum_k a_k \operatorname{sinc}((n-k)) = a_0 \operatorname{sinc}(n) + a_1 \operatorname{sinc}(n-1).\]</div>
+<p>Para <span class="eqwrap">\(n = 0\)</span>: <span class="eqwrap">\(y[0] = a_0\operatorname{sinc}(0) + a_1\operatorname{sinc}(-1) = 1 + 0 = 1\)</span>. ✓</p>
+<p>Para <span class="eqwrap">\(n = 1\)</span>: <span class="eqwrap">\(y[1] = a_0\operatorname{sinc}(1) + a_1\operatorname{sinc}(0) = 0 + 1 = 1\)</span>. ✓</p>
+<p>Para <span class="eqwrap">\(n = 2\)</span>: <span class="eqwrap">\(y[2] = a_0\operatorname{sinc}(2) + a_1\operatorname{sinc}(1) = 0\)</span>. ✓</p>
+<p>O pulso sinc satisfaz perfeitamente a condição de Nyquist.</p>
+</div>
+</section>
+<section class="slide" data-sec="Definição e Modelagem de ISI">
+<div class="eyebrow"><span class="sec">04</span> Definição e Modelagem de ISI <span class="rule"></span></div>
+<div class="body">
+<p><strong>Exemplo 3.2 (ISI com pulso exponencial).</strong> Seja <span class="eqwrap">\(g(t) = e^{-|t|/T}\)</span>. Então <span class="eqwrap">\(g(nT) = e^{-|n|}\)</span>, que é não-nulo para todo <span class="eqwrap">\(n\)</span>. Há ISI massiva. Este pulso <strong>não</strong> satisfaz Nyquist.</p>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Critério de Nyquist para Ausência de ISI</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Enunciado do Primeiro Critério de Nyquist</h3>
+<p><strong>Teorema 4.1 (Primeiro Critério de Nyquist).</strong> Para <span class="eqwrap">\(g(0)=1\)</span>, ausência de ISI nos instantes <span class="eqwrap">\(nT_s\)</span> equivale a <span class="eqwrap">\(g(nT_s)=\delta[n]\)</span>. No domínio da frequência, isso equivale a</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\frac{1}{T_s}\sum_{\ell=-\infty}^{\infty}G\!\left(f-\frac{\ell}{T_s}\right)=1.} \tag{4.1}\]</div>
+<p>Se <span class="eqwrap">\(g(0)=A\)</span> em outra normalização, o lado direito passa a ser <span class="eqwrap">\(A\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Prova no Domínio da Frequência</h3>
+<p><strong>Prova:</strong> amostrar <span class="eqwrap">\(g(t)\)</span> multiplica-o pelo trem de impulsos:</p>
+<div class="eqwrap eqbig eqcenter">\[g_s(t)=g(t)\sum_n\delta(t-nT_s)=\sum_ng(nT_s)\delta(t-nT_s).\]</div>
+<p>Se <span class="eqwrap">\(g(nT_s)=\delta[n]\)</span>, então <span class="eqwrap">\(g_s(t)=\delta(t)\)</span> e sua transformada é 1. Multiplicação no tempo corresponde a convolução na frequência:</p>
+<div class="eqwrap eqbig eqcenter">\[G_s(f)=G(f)*\frac1{T_s}\sum_\ell\delta\!\left(f-\frac{\ell}{T_s}\right)
+=\frac1{T_s}\sum_\ell G\!\left(f-\frac{\ell}{T_s}\right).\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<p>Igualando <span class="eqwrap">\(G_s(f)=1\)</span>, obtemos (4.1). O argumento é reversível. Observe que <span class="eqwrap">\(\sum_kg(t-kT_s)=\text{constante}\)</span> é uma propriedade de partição da unidade e <strong>não</strong> é, em geral, equivalente a amostras sem ISI. <span class="eqwrap">\(\blacksquare\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Interpretação Geométrica</h3>
+<p>A condição (4.1) pode ser interpretada geometricamente: se "enrolarmos" o espectro <span class="eqwrap">\(G(f)\)</span> ao longo de um período <span class="eqwrap">\(1/T_s\)</span>, o resultado deve ser a constante 1. Isso implica que qualquer excesso espectral em uma região deve ser compensado por déficit em outra, de modo que a soma seja uniforme.</p>
+<p><strong>Observação:</strong> A condição (4.1) é a forma espectral do critério e equivale à condição de amostras (3.2).</p>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Limite de taxa para canal passa-baixas ideal</h3>
+<p><strong>Teorema 4.2 (limite de Nyquist para canal sem ruído).</strong> Para um canal passa-baixas ideal limitado a <span class="eqwrap">\(B\)</span> Hz (largura unilateral), a taxa máxima de símbolos sem ISI é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{R_s^{\max} = 2B \quad \text{símbolos/s}.} \tag{4.4}\]</div>
+<p>Ou seja, a largura de banda de Nyquist é <span class="eqwrap">\(B_N = R_s/2\)</span>.</p>
+<p><strong>Prova:</strong></p>
+<p>Da condição (4.1), as réplicas de <span class="eqwrap">\(G(f)\)</span> são deslocadas por <span class="eqwrap">\(1/T_s\)</span>. Se <span class="eqwrap">\(G(f)=0\)</span> para <span class="eqwrap">\(|f|>B\)</span>, é preciso que essas réplicas cubram o eixo sem lacunas. A menor banda ocorre quando <span class="eqwrap">\(G(f)\)</span> ocupa exatamente <span class="eqwrap">\([-1/(2T_s),1/(2T_s)]\)</span>, logo <span class="eqwrap">\(B=1/(2T_s)=R_s/2\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<p>Respostas com suporte maior que <span class="eqwrap">\(R_s/2\)</span> <strong>podem</strong> satisfazer Nyquist quando as regiões de sobreposição são complementares; banda maior, isoladamente, não garante a condição. <span class="eqwrap">\(\blacksquare\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Condição de Simetria Hilbert</h3>
+<p><strong>Teorema 4.3 (condição complementar na transição).</strong> Para <span class="eqwrap">\(G(f)\)</span> real, par e limitado de modo que apenas duas réplicas se sobreponham, a condição (4.1) reduz-se à simetria complementar em torno de <span class="eqwrap">\(f=1/(2T_s)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[G\!\left(\frac{1}{2T_s} + \nu\right) + G\!\left(\frac{1}{2T_s} - \nu\right) = T_s, \quad |\nu| \le \frac{1}{2T_s}. \tag{4.5}\]</div>
+<p>Esta é a condição de "complementar simetria" ou "Hilbert-symmetry" em relação à frequência de Nyquist <span class="eqwrap">\(f_N = 1/(2T_s)\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Critério de Nyquist para Ausência de ISI">
+<div class="eyebrow"><span class="sec">05</span> Critério de Nyquist para Ausência de ISI <span class="rule"></span></div>
+<div class="body">
+<p><strong>Exemplo:</strong> O retânguo <span class="eqwrap">\(G(f) = T_s \operatorname{rect}(fT_s)\)</span> tem <span class="eqwrap">\(G(f) = T_s\)</span> para <span class="eqwrap">\(|f| < 1/(2T_s)\)</span> e zero fora. A simetria (4.5) é trivialmente satisfeita: <span class="eqwrap">\(T_s + 0 = T_s\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Pulso Sinc — Banda Mínima">
+<div class="eyebrow"><span class="sec">06</span> Pulso Sinc — Banda Mínima <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Pulso Sinc — Banda Mínima</h2>
+<div class="cols left"><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Pulso de Banda Mínima</h3>
+<p>O pulso que alcança a taxa máxima de Nyquist com a menor largura de banda possível é o pulso sinc:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{p(t) = \operatorname{sinc}\!\left(\frac{t}{T_s}\right) = \frac{\sin(\pi t/T_s)}{\pi t/T_s}.} \tag{5.1}\]</div>
+<p>Seu espectro é o retânguo:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P(f) = T_s \operatorname{rect}(fT_s) = \begin{cases} T_s, & |f| \le \frac{1}{2T_s}, \\ 0, & \text{caso contrário}. \end{cases}} \tag{5.2}\]</div>
+</div><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Verificação da Condição de Nyquist</h3>
+<p>Para <span class="eqwrap">\(p(t) = \operatorname{sinc}(t/T_s)\)</span>, temos <span class="eqwrap">\(p(nT_s) = \delta[n]\)</span>, logo a condição (3.2) é satisfeita.</p>
+<p>No domínio da frequência, as réplicas de <span class="eqwrap">\(P(f)\)</span> deslocadas por <span class="eqwrap">\(1/T_s\)</span> são retânguos de largura <span class="eqwrap">\(1/(2T_s)\)</span> centrados em <span class="eqwrap">\(\ell/T_s\)</span>. Como cada retânguo ocupa metade do intervalo entre réplicas adjacentes, a soma é exatamente 1 (pela complementar simetria (4.5)). <span class="eqwrap">\(\blacksquare\)</span></p>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Pulso Sinc — Banda Mínima">
+<div class="eyebrow"><span class="sec">06</span> Pulso Sinc — Banda Mínima <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Propriedades do Pulso Sinc</h3>
+<ul class="beats"><li><strong>Zeros:</strong> <span class="eqwrap">\(p(t) = 0\)</span> para <span class="eqwrap">\(t = kT_s\)</span>, <span class="eqwrap">\(k \in \mathbb{Z} \setminus \{0\}\)</span>. ✓ (Nyquist)</li><li><strong>Decaimento:</strong> <span class="eqwrap">\(p(t) \sim 1/t\)</span>. Decaimento muito lento.</li><li><strong>Ringing:</strong> Oscilações de longa duração — qualquer erro de temporização causa ISI significativa.</li><li><strong>Banda:</strong> <span class="eqwrap">\(B = 1/(2T_s) = R_s/2\)</span>. Banda de Nyquist mínima.</li></ul>
+<p><strong>Observação:</strong> O pulso sinc é <strong>impraticável</strong> em implementações reais:</p>
+<ol class="take"><li>É infinito no tempo → requer truncamento com perda.</li><li>Decaimento lento <span class="eqwrap">\(1/t\)</span> → sensível a erros de temporização.</li><li>Qualquer offset de amostragem <span class="eqwrap">\(\epsilon\)</span> causa ISI: <span class="eqwrap">\(p(\epsilon + kT_s) \ne 0\)</span> para <span class="eqwrap">\(k \ne 0\)</span>.</li></ol>
+</div>
+</section>
+<section class="slide" data-sec="Pulso Sinc — Banda Mínima">
+<div class="eyebrow"><span class="sec">06</span> Pulso Sinc — Banda Mínima <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Sensibilidade a Erro de Temporização</h3>
+<p><strong>Exemplo 5.1.</strong> Com pulso sinc e erro de temporização <span class="eqwrap">\(\epsilon\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[p(nT_s + \epsilon) = \operatorname{sinc}\!\left(n + \frac{\epsilon}{T_s}\right).\]</div>
+<p>Para <span class="eqwrap">\(n = 1\)</span>: interferência do símbolo vizinho é <span class="eqwrap">\(\operatorname{sinc}(1 + \epsilon/T_s) = \frac{\sin(\pi(1 + \epsilon/T_s))}{\pi(1 + \epsilon/T_s)} = \frac{-\sin(\pi\epsilon/T_s)}{\pi(1 + \epsilon/T_s)}\)</span>.</p>
+<p>Para <span class="eqwrap">\(\epsilon/T_s = 0{,}01\)</span>: interferência <span class="eqwrap">\(\approx -0{,}0318\)</span>, ou seja, ~3% do símbolo desejado. Isso é significativo em sistemas de alta ordem.</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Dedução do Pulso Raised Cosine</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Motivação</h3>
+<p>O pulso sinc é impraticável por decrescer lentamente (<span class="eqwrap">\(1/t\)</span>). O pulso raised cosine (RC) oferece:</p>
+<ol class="take"><li><strong>Zeros exatos</strong> em <span class="eqwrap">\(t = kT_s\)</span> (<span class="eqwrap">\(k \ne 0\)</span>).</li><li><strong>Decaimento rápido</strong> (<span class="eqwrap">\(1/t^3\)</span>), tornando-o robusto a erros de temporização.</li><li><strong>Banda controlada</strong> pelo parâmetro <span class="eqwrap">\(\alpha \in [0, 1]\)</span>.</li></ol>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição do Espectro RC</h3>
+<p><strong>Definição:</strong> O espectro raised cosine com fator de rolloff <span class="eqwrap">\(\alpha \in [0, 1]\)</span> é:</p>
+<div class="eqwrap eqbig eqcenter">\[P_{\text{RC}}(f) = \begin{cases} T_s, & 0 \le |f| \le \dfrac{1-\alpha}{2T_s}, \\[8pt] \dfrac{T_s}{2}\left[1 + \cos\left(\dfrac{\pi T_s}{\alpha}\left(|f| - \dfrac{1-\alpha}{2T_s}\right)\right)\right], & \dfrac{1-\alpha}{2T_s} < |f| \le \dfrac{1+\alpha}{2T_s}, \\[8pt] 0, & |f| > \dfrac{1+\alpha}{2T_s}. \end{cases} \tag{6.1}\]</div>
+<p>A banda unilateral é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{B_{\text{RC}} = \frac{1+\alpha}{2T_s}.} \tag{6.2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Verificação da Simetria de Nyquist</h3>
+<p><strong>Teorema 6.1.</strong> O espectro (6.1) satisfaz a condição de complementar simetria de Nyquist (4.5).</p>
+<p><strong>Prova:</strong></p>
+<p>Devemos verificar <span class="eqwrap">\(P_{\text{RC}}(f_N + \nu) + P_{\text{RC}}(f_N - \nu) = T_s\)</span> para <span class="eqwrap">\(f_N = 1/(2T_s)\)</span> e <span class="eqwrap">\(|\nu| \le 1/(2T_s)\)</span>.</p>
+<p>Para <span class="eqwrap">\(\nu \in [-\frac{\alpha}{2T_s}, \frac{\alpha}{2T_s}]\)</span> (zona do rolloff):</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_{\text{RC}}\!\left(\frac{1}{2T_s} + \nu\right) = \frac{T_s}{2}\left[1 + \cos\left(\frac{\pi T_s}{\alpha}\left(\frac{1}{2T_s} + \nu - \frac{1-\alpha}{2T_s}\right)\right)\right] = \frac{T_s}{2}\left[1 + \cos\left(\frac{\pi}{2} + \frac{\pi T_s \nu}{\alpha}\right)\right]\]</div>
+<div class="eqwrap eqbig eqcenter">\[= \frac{T_s}{2}\left[1 - \sin\left(\frac{\pi T_s \nu}{\alpha}\right)\right].\]</div>
+<p>Da mesma forma:</p>
+<div class="eqwrap eqbig eqcenter">\[P_{\text{RC}}\!\left(\frac{1}{2T_s} - \nu\right) = \frac{T_s}{2}\left[1 + \sin\left(\frac{\pi T_s \nu}{\alpha}\right)\right].\]</div>
+<p>Somando: <span class="eqwrap">\(\frac{T_s}{2}[1 - \sin] + \frac{T_s}{2}[1 + \sin] = T_s\)</span>. ✓</p>
+<p>Para <span class="eqwrap">\(\nu\)</span> fora da zona de rolloff, um dos termos é <span class="eqwrap">\(T_s\)</span> e outro é <span class="eqwrap">\(0\)</span>, somando <span class="eqwrap">\(T_s\)</span>. ✓</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<p>Para <span class="eqwrap">\(\nu\)</span> fora do suporte (<span class="eqwrap">\(|\nu| > (1+\alpha)/(2T_s)\)</span>), ambos são zero e a condição não se aplica. <span class="eqwrap">\(\blacksquare\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO do Formato no Tempo</h3>
+<p>A resposta temporal é obtida pela inversa de Fourier:</p>
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RC}}(t) = \int_{-\infty}^{\infty} P_{\text{RC}}(f)\, e^{j2\pi f t}\, df = 2\int_{0}^{\infty} P_{\text{RC}}(f)\cos(2\pi f t)\, df. \tag{6.3}\]</div>
+<p>Substituindo (6.1):</p>
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RC}}(t) = \frac{2}{T_s}\int_0^{\frac{1-\alpha}{2T_s}} T_s\cos(2\pi f t)\, df + \frac{2}{T_s}\int_{\frac{1-\alpha}{2T_s}}^{\frac{1+\alpha}{2T_s}} \frac{T_s}{2}\left[1 + \cos\!\left(\frac{\pi T_s}{\alpha}\left(f - \frac{1-\alpha}{2T_s}\right)\right)\right]\cos(2\pi f t)\, df. \tag{6.4}\]</div>
+<p><strong>Primeira integral</strong> (região plana):</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[I_1 = 2\int_0^{\frac{1-\alpha}{2T_s}} \cos(2\pi f t)\, df = 2\left[\frac{\sin(2\pi f t)}{2\pi t}\right]_0^{\frac{1-\alpha}{2T_s}} = \frac{\sin(\pi t(1-\alpha)/T_s)}{\pi t}.\]</div>
+<p><strong>Segunda integral</strong> (região de rolloff): Fazendo <span class="eqwrap">\(u = f - \frac{1-\alpha}{2T_s}\)</span>, de <span class="eqwrap">\(0\)</span> a <span class="eqwrap">\(\alpha/T_s\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[I_2 = \int_0^{\frac{\alpha}{T_s}} \left[1 + \cos\left(\frac{\pi T_s}{\alpha}u\right)\right]\cos\!\left(2\pi t\left(u + \frac{1-\alpha}{2T_s}\right)\right)\, du. \tag{6.5}\]</div>
+<p>Expandindo <span class="eqwrap">\(\cos(2\pi t(u + \frac{1-\alpha}{2T_s})) = \cos(2\pi tu)\cos\!\left(\frac{\pi t(1-\alpha)}{T_s}\right) - \sin(2\pi tu)\sin\!\left(\frac{\pi t(1-\alpha)}{T_s}\right)\)</span>.</p>
+<p>O termo constante 1 multiplicado pelo cosseno:</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\cos\!\left(\frac{\pi t(1-\alpha)}{T_s}\right)\int_0^{\alpha/T_s}\!\!\cos(2\pi tu)\, du - \sin\!\left(\frac{\pi t(1-\alpha)}{T_s}\right)\int_0^{\alpha/T_s}\!\!\sin(2\pi tu)\, du\]</div>
+<div class="eqwrap eqbig eqcenter">\[= \cos\!\left(\frac{\pi t(1-\alpha)}{T_s}\right)\frac{\sin(\pi\alpha t/T_s)}{\pi t} - \sin\!\left(\frac{\pi t(1-\alpha)}{T_s}\right)\frac{1-\cos(\pi\alpha t/T_s)}{\pi t}.\]</div>
+<p>O termo com <span class="eqwrap">\(\cos(\frac{\pi T_s}{\alpha}u)\cos(2\pi tu)\)</span>: usando <span class="eqwrap">\(\cos A\cos B = \frac{1}{2}[\cos(A-B)+\cos(A+B)]\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\frac{1}{2}\int_0^{\alpha/T_s}\left[\cos\!\left((2\pi t + \frac{\pi T_s}{\alpha})u\right) + \cos\!\left((2\pi t - \frac{\pi T_s}{\alpha})u\right)\right]\cos\!\left(\frac{\pi t(1-\alpha)}{T_s}\right)du\]</div>
+<div class="eqwrap eqbig eqcenter">\[-\frac{1}{2}\int_0^{\alpha/T_s}\left[\sin\!\left((2\pi t + \frac{\pi T_s}{\alpha})u\right) + \sin\!\left((2\pi t - \frac{\pi T_s}{\alpha})u\right)\right]\sin\!\left(\frac{\pi t(1-\alpha)}{T_s}\right)du.\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<p>Essas integrais produzem termos proporcionais a <span class="eqwrap">\(\frac{\sin(\frac{\pi\alpha t}{2T_s}\pm\pi t)}{\dots}\)</span>. Após simplificações trigonométricas extensas (detalhadas abaixo):</p>
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RC}}(t) = \operatorname{sinc}\!\left(\frac{t}{T_s}\right)\cdot \frac{\cos(\alpha\pi t/T_s)}{1 - (2\alpha t/T_s)^2}. \tag{6.6}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução Detalhada do Resultado Final</h3>
+<p>Vamos consolidar os cálculos. Para <span class="eqwrap">\(t \neq 0\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RC}}(t) = \frac{\sin(\pi t/T_s)}{\pi t/T_s} \cdot \frac{\cos(\alpha\pi t/T_s)}{1 - (2\alpha t/T_s)^2}. \tag{6.7}\]</div>
+<p><strong>Verificação para <span class="eqwrap">\(\alpha = 0\)</span>:</strong></p>
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RC}}(t)|_{\alpha=0} = \operatorname{sinc}(t/T_s) \cdot \frac{1}{1 - 0} = \operatorname{sinc}(t/T_s). \quad \blacksquare\]</div>
+<p><strong>Verificação para <span class="eqwrap">\(\alpha = 1\)</span>:</strong></p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RC}}(t)|_{\alpha=1} = \operatorname{sinc}(t/T_s) \cdot \frac{\cos(\pi t/T_s)}{1 - (2t/T_s)^2} = \frac{\sin(\pi t/T_s)\cos(\pi t/T_s)}{\pi t/T_s(1-4t^2/T_s^2)} = \frac{\frac{1}{2}\sin(2\pi t/T_s)}{\pi t/T_s(1-4t^2/T_s^2)}.\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Valores nas Singularidades</h3>
+<p>A expressão (6.6) é indeterminada para <span class="eqwrap">\(t = 0\)</span> e para <span class="eqwrap">\(t = \pm T_s/(2\alpha)\)</span> (quando <span class="eqwrap">\(\alpha > 0\)</span>).</p>
+<p><strong>Para <span class="eqwrap">\(t = 0\)</span>:</strong></p>
+<div class="eqwrap eqbig eqcenter">\[\lim_{t\to 0} p_{\text{RC}}(t) = \lim_{t\to 0}\frac{\sin(\pi t/T_s)}{\pi t/T_s} \cdot \lim_{t\to 0}\frac{\cos(\alpha\pi t/T_s)}{1 - (2\alpha t/T_s)^2} = 1 \cdot 1 = 1. \quad \blacksquare\]</div>
+<p><strong>Para <span class="eqwrap">\(t = \pm T_s/(2\alpha)\)</span>:</strong> (quando <span class="eqwrap">\(\alpha > 0\)</span>)</p>
+<p>Usando L'Hôpital ou expansão de Taylor:</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">07</span> Dedução do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\lim_{t\to \pm T_s/(2\alpha)} p_{\text{RC}}(t) = \frac{\pi}{4}\operatorname{sinc}\!\left(\frac{1}{2\alpha}\right)(1 \pm \frac{4\alpha}{\pi}). \tag{6.8}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Propriedades do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">08</span> Propriedades do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Propriedades do Pulso Raised Cosine</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Zeros em <span class="eqwrap">\(t = kT_s\)</span>, <span class="eqwrap">\(k \ne 0\)</span></h3>
+<p><strong>Teorema 7.1.</strong> O pulso RC satisfaz o critério de Nyquist: <span class="eqwrap">\(p_{\text{RC}}(kT_s) = 0\)</span> para <span class="eqwrap">\(k \in \mathbb{Z} \setminus \{0\}\)</span>.</p>
+<p><strong>Prova:</strong></p>
+<p>De (6.6), <span class="eqwrap">\(p_{\text{RC}}(kT_s) = \operatorname{sinc}(k) \cdot \frac{\cos(\alpha\pi k)}{1 - (2\alpha k)^2} = 0 \cdot (\dots) = 0\)</span>, pois <span class="eqwrap">\(\operatorname{sinc}(k) = 0\)</span> para inteiro não-nulo. <span class="eqwrap">\(\blacksquare\)</span></p>
+<p><strong>Observação:</strong> Os zeros são exatos e independentes de <span class="eqwrap">\(\alpha\)</span>. Isso garante ausência de ISI independente do fator de rolloff.</p>
+</div>
+</section>
+<section class="slide" data-sec="Propriedades do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">08</span> Propriedades do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Decaimento</h3>
+<p><strong>Resultado:</strong> Para <span class="eqwrap">\(\alpha > 0\)</span>, <span class="eqwrap">\(p_{\text{RC}}(t) = O(1/t^3)\)</span> quando <span class="eqwrap">\(t \to \infty\)</span>.</p>
+<p><strong>Prova:</strong> O fator <span class="eqwrap">\(\operatorname{sinc}(t/T_s) = O(1/t)\)</span> e o fator <span class="eqwrap">\(\frac{\cos(\alpha\pi t/T_s)}{1 - (2\alpha t/T_s)^2} = O(1/t^2)\)</span>, logo o produto é <span class="eqwrap">\(O(1/t^3)\)</span>.</p>
+<p>Para <span class="eqwrap">\(\alpha = 0\)</span>, o decaimento é <span class="eqwrap">\(O(1/t)\)</span> (pulso sinc puro).</p>
+<p><strong>Importante:</strong> O decaimento mais rápido <span class="eqwrap">\(O(1/t^3)\)</span> torna o pulso RC muito mais robusto a erros de temporização que o sinc puro. Um erro <span class="eqwrap">\(\epsilon\)</span> causa interferência de ordem <span class="eqwrap">\(\epsilon/t^2\)</span> por símbolo vizinho.</p>
+</div>
+</section>
+<section class="slide" data-sec="Propriedades do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">08</span> Propriedades do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Largura de Banda vs. Fator <span class="eqwrap">\(\alpha\)</span></h3>
+<p>A banda unilateral é <span class="eqwrap">\(B = \frac{1+\alpha}{2T_s}\)</span>:</p>
+<table class="cmp">
+<thead><tr>
+<th><span class="eqwrap">\(\alpha\)</span></th>
+<th>Banda <span class="eqwrap">\(B\)</span></th>
+<th>Eficiência espectral <span class="eqwrap">\(\eta = \log_2 M / B\)</span></th>
+</tr></thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><span class="eqwrap">\(1/(2T_s)\)</span></td>
+<td>Máxima (banda mínima)</td>
+</tr>
+<tr>
+<td>0,25</td>
+<td><span class="eqwrap">\(1,25/(2T_s)\)</span></td>
+<td>80% da máxima</td>
+</tr>
+<tr>
+<td>0,5</td>
+<td><span class="eqwrap">\(1,5/(2T_s)\)</span></td>
+<td>67% da máxima</td>
+</tr>
+<tr>
+<td>1</td>
+<td><span class="eqwrap">\(1/T_s\)</span></td>
+<td>50% da máxima</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="slide" data-sec="Propriedades do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">08</span> Propriedades do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<p><strong>Resultado:</strong> <span class="eqwrap">\(\alpha = 0\)</span> alcança a banda mínima de Nyquist, mas é impraticável. Valores típicos: <span class="eqwrap">\(\alpha = 0{,}2\)</span> a <span class="eqwrap">\(0{,}35\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Propriedades do Pulso Raised Cosine">
+<div class="eyebrow"><span class="sec">08</span> Propriedades do Pulso Raised Cosine <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Visualização dos Pulsos</h3>
+<p><strong>Exemplo 7.1.</strong> Comparação de decaimento temporal para diferentes <span class="eqwrap">\(\alpha\)</span>:</p>
+<ul class="beats"><li><span class="eqwrap">\(\alpha = 0\)</span>: decaimento <span class="eqwrap">\(1/t\)</span> — "ringing" longo.</li><li><span class="eqwrap">\(\alpha = 0{,}35\)</span>: decaimento <span class="eqwrap">\(1/t^3\)</span> — principal lóbulo + poucos side lobes.</li><li><span class="eqwrap">\(\alpha = 1\)</span>: decaimento <span class="eqwrap">\(1/t^3\)</span> — pulsos ainda mais localizados.</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Root-Raised Cosine e Filtros Casados</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Filtro Casado</h3>
+<p><strong>Definição:</strong> Um filtro casado (<em>matched filter</em>) para um pulso conhecido <span class="eqwrap">\(p(t)\)</span> em ruído branco Gaussiano (AWGN) é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{h_{\text{MF}}(t) = K\, p^*(T_0 - t),} \tag{8.1}\]</div>
+<p>onde <span class="eqwrap">\(K\)</span> é uma constante e <span class="eqwrap">\(T_0\)</span> é o tempo de amostragem.</p>
+<p><strong>Teorema 8.1 (Optimalidade do Filtro Casado).</strong> Para um pulso <span class="eqwrap">\(p(t)\)</span> observado em AWGN com PSD <span class="eqwrap">\(N_0/2\)</span>, o filtro <span class="eqwrap">\(h_{\text{MF}}(t)\)</span> maximiza a razão sinal/ruído no ponto de amostragem <span class="eqwrap">\(T_0\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\text{SNR}_{\max} = \frac{2E_p}{N_0}, \quad E_p = \int_{-\infty}^{\infty} |p(t)|^2 dt.\]</div>
+<p><strong>Prova (via desigualdade de Cauchy-Schwarz):</strong></p>
+<p>A saída do filtro em <span class="eqwrap">\(t = T_0\)</span> é:</p>
+<div class="eqwrap eqbig eqcenter">\[y(T_0) = \int_{-\infty}^{\infty} p(\tau)h(T_0 - \tau)\, d\tau = \int p(\tau)h^*(T_0-\tau)\, d\tau \quad (\text{para } p \text{ real}).\]</div>
+<p>Pela desigualdade de Cauchy-Schwarz:</p>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[|y(T_0)|^2 = \left|\int p(\tau)h^*(T_0-\tau)\, d\tau\right|^2 \le \int |p(\tau)|^2 d\tau \int |h(T_0-\tau)|^2 d\tau = E_p \cdot E_h.\]</div>
+<p>A potência do ruído na saída é:</p>
+<div class="eqwrap eqbig eqcenter">\[P_n = \frac{N_0}{2}\int_{-\infty}^{\infty} |H(f)|^2 df = \frac{N_0}{2}\int_{-\infty}^{\infty} |h(t)|^2 dt = \frac{N_0}{2}E_h.\]</div>
+<p>Logo, <span class="eqwrap">\(\text{SNR} = \frac{|y(T_0)|^2}{P_n} \le \frac{E_p E_h}{(N_0/2)E_h} = \frac{2E_p}{N_0}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<p>A igualdade ocorre quando <span class="eqwrap">\(h(T_0 - \tau) \propto p^*(\tau)\)</span>, ou seja, <span class="eqwrap">\(h(t) \propto p^*(T_0 - t)\)</span>. <span class="eqwrap">\(\blacksquare\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Root-Raised Cosine (RRC)</h3>
+<p><strong>Definição:</strong> O pulso root-raised cosine (RRC) é a raiz quadrada do espectro RC:</p>
+<div class="eqwrap eqbig eqcenter">\[P_{\text{RRC}}(f) = \sqrt{P_{\text{RC}}(f)} = \begin{cases} \sqrt{T_s}, & 0 \le |f| \le \dfrac{1-\alpha}{2T_s}, \\[8pt] \sqrt{\dfrac{T_s}{2}\left[1 + \cos\left(\dfrac{\pi T_s}{\alpha}\left(|f| - \dfrac{1-\alpha}{2T_s}\right)\right)\right]}, & \dfrac{1-\alpha}{2T_s} < |f| \le \dfrac{1+\alpha}{2T_s}, \\[8pt] 0, & \text{caso contrário}. \end{cases} \tag{8.2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Split RC: Transmissor e Receptor</h3>
+<p><strong>Definição:</strong> Filtro casado split RC: o transmissor usa <span class="eqwrap">\(H_T(f) = \sqrt{P_{\text{RC}}(f)}\)</span> e o receptor <span class="eqwrap">\(H_R(f) = \sqrt{P_{\text{RC}}(f)}\)</span>, de modo que:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{H_T(f) \cdot H_R(f) = P_{\text{RC}}(f).} \tag{8.3}\]</div>
+<p>A cascata <span class="eqwrap">\(H_T H_R=P_{\text{RC}}\)</span> satisfaz Nyquist. O RRC ideal é bilateral no tempo, de duração infinita e não causal; na prática ele é atrasado, truncado e implementado como FIR causal, o que introduz pequena ISI residual.</p>
+<p><strong>Importante:</strong> No caso ideal com canal sem distorção, a cascata <span class="eqwrap">\(P_{\text{RC}}\)</span> satisfaz Nyquist, e o filtro casado no receptor maximiza SNR. A divisão <span class="eqwrap">\(H_T = H_R = \sqrt{P_{\text{RC}}}\)</span> é a forma mais comum de implementar isso.</p>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Expressão Temporal do RRC</h3>
+<p>A forma temporal do RRC é mais complexa que a do RC. Para <span class="eqwrap">\(\alpha > 0\)</span> e <span class="eqwrap">\(t \neq 0, \pm T_s/(4\alpha)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RRC}}(t)=\frac1{\sqrt{T_s}}\,
+\frac{\sin\!\bigl(\pi(1-\alpha)t/T_s\bigr)+4\alpha(t/T_s)\cos\!\bigl(\pi(1+\alpha)t/T_s\bigr)}
+{\pi(t/T_s)\left[1-(4\alpha t/T_s)^2\right]}. \tag{8.4}\]</div>
+<p>Para <span class="eqwrap">\(t = 0\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RRC}}(0)=\frac1{\sqrt{T_s}}\left[1+\alpha\left(\frac4\pi-1\right)\right]. \tag{8.5}\]</div>
+<p>Para <span class="eqwrap">\(t = \pm T_s/(4\alpha)\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[p_{\text{RRC}}\!\left(\pm \frac{T_s}{4\alpha}\right) = \frac{\alpha}{\sqrt{2T_s}}\left[\left(1 + \frac{2}{\pi}\right)\sin\!\left(\frac{\pi}{4\alpha}\right) + \left(1 - \frac{2}{\pi}\right)\cos\!\left(\frac{\pi}{4\alpha}\right)\right]. \tag{8.6}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Root-Raised Cosine e Filtros Casados">
+<div class="eyebrow"><span class="sec">09</span> Root-Raised Cosine e Filtros Casados <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exemplo: Sistema Completo RRC</h3>
+<p><strong>Exemplo 8.1.</strong> Sistema de comunicação com RRC:</p>
+<ol class="take"><li>Transmissor: símbolos <span class="eqwrap">\(a_k\)</span> → pulso <span class="eqwrap">\(p_{\text{RRC}}(t-kT_s)\)</span>.</li><li>Canal: AWGN.</li><li>Receptor: filtro RRC, amostra em <span class="eqwrap">\(t = nT_s\)</span>.</li><li>Saída: <span class="eqwrap">\(y[n] = a_n(p_{\text{RRC}} * p_{\text{RRC}})(0) + \text{ISI} + n[n] = a_n + n[n]\)</span>.</li></ol>
+<p>No modelo ideal, <span class="eqwrap">\(p_{\text{RRC}}*p_{\text{RRC}}=p_{\text{RC}}\)</span>, que satisfaz Nyquist e maximiza a SNR no instante de decisão. Em uma realização FIR truncada, a igualdade é aproximada e deve-se medir a ISI residual nas amostras vizinhas.</p>
+</div>
+</section>
+<section class="slide" data-sec="Representação Complexa e I/Q">
+<div class="eyebrow"><span class="sec">10</span> Representação Complexa e I/Q <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Representação Complexa e I/Q</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Sinal Banda Base Complexo</h3>
+<p><strong>Definição:</strong> O sinal banda base complexo (analítico) é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\tilde{s}(t) = I(t) + jQ(t),} \tag{9.1}\]</div>
+<p>onde <span class="eqwrap">\(I(t)\)</span> é o componente em fase (in-phase) e <span class="eqwrap">\(Q(t)\)</span> é o componente quadratura (quadrature).</p>
+</div>
+</section>
+<section class="slide" data-sec="Representação Complexa e I/Q">
+<div class="eyebrow"><span class="sec">10</span> Representação Complexa e I/Q <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Relação com Banda Passante</h3>
+<p>O sinal banda passante correspondente é:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{BP}}(t) = \operatorname{Re}\left\{\tilde{s}(t)\,e^{j2\pi f_c t}\right\} = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t). \tag{9.2}\]</div>
+<p><strong>Prova:</strong> Expandindo <span class="eqwrap">\(\operatorname{Re}\{(I + jQ)(\cos + j\sin)\} = I\cos - Q\sin\)</span>. <span class="eqwrap">\(\blacksquare\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Representação Complexa e I/Q">
+<div class="eyebrow"><span class="sec">10</span> Representação Complexa e I/Q <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Representação de Envelope e Fase</h3>
+<p><strong>Definição:</strong> O envelope instantâneo <span class="eqwrap">\(\gamma(t)\)</span> e a fase instantânea <span class="eqwrap">\(\phi(t)\)</span> são:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\gamma(t) = \sqrt{I^2(t) + Q^2(t)}, \qquad \phi(t) = \arg(I(t) + jQ(t)).} \tag{9.3}\]</div>
+<p>O sinal banda passante pode ser escrito:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{BP}}(t) = \gamma(t)\cos(2\pi f_c t + \phi(t)). \tag{9.4}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Representação Complexa e I/Q">
+<div class="eyebrow"><span class="sec">10</span> Representação Complexa e I/Q <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Aplicações: QAM e PSK</h3>
+<p>Para QAM, <span class="eqwrap">\(I(t)\)</span> e <span class="eqwrap">\(Q(t)\)</span> são sinais PAM independentes, cada um modulado em uma portadora ortogonal.</p>
+<p>Para PSK, a informação está na fase: <span class="eqwrap">\(\tilde{s}(t) = A e^{j\phi_k}\)</span>, onde <span class="eqwrap">\(\phi_k\)</span> são fases discretas.</p>
+<p><strong>Observação:</strong> A representação I/Q é a base para todas as modulações digitais modernas: QPSK, 8-PSK, 16-QAM, 64-QAM, etc.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos de Linha e Eye Diagram">
+<div class="eyebrow"><span class="sec">11</span> Códigos de Linha e Eye Diagram <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Códigos de Linha e Eye Diagram</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Codificações Básicas</h3>
+<p><strong>Definição:</strong> Códigos de linha (line codes) são mapeamentos de bits em formas de onda de banda base.</p>
+<p><strong>NRZ (Non-Return-to-Zero):</strong></p>
+<ul class="beats"><li>Bit 0 → <span class="eqwrap">\(-A\)</span>, bit 1 → <span class="eqwrap">\(+A\)</span>.</li><li>PSD: <span class="eqwrap">\(\propto \operatorname{sinc}^2(fT_b)\)</span>.</li><li>Possui componente DC se <span class="eqwrap">\(P(0) \ne 0\)</span> e <span class="eqwrap">\(\mathbb{E}[a_k] \ne 0\)</span>.</li></ul>
+<p><strong>RZ (Return-to-Zero):</strong></p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos de Linha e Eye Diagram">
+<div class="eyebrow"><span class="sec">11</span> Códigos de Linha e Eye Diagram <span class="rule"></span></div>
+<div class="body">
+<ul class="beats"><li>Bit 1 → pulso de duração <span class="eqwrap">\(\tau < T_b\)</span>, retorna a zero.</li><li>Bit 0 → zero.</li><li>Mais fácil sincronismo de clock, mas mais banda.</li></ul>
+<p><strong>Manchester:</strong></p>
+<ul class="beats"><li>Bit 0 → transição baixa→alta no meio.</li><li>Bit 1 → transição alta→baixa no meio.</li><li>Sempre há transição → facilitação de clock, elimina DC.</li><li>Banda: primeiro zero em <span class="eqwrap">\(2R_b\)</span> (o dobro do NRZ).</li></ul>
+<p><strong>AMI (Alternate Mark Inversion):</strong></p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos de Linha e Eye Diagram">
+<div class="eyebrow"><span class="sec">11</span> Códigos de Linha e Eye Diagram <span class="rule"></span></div>
+<div class="body">
+<ul class="beats"><li>Bit 0 → zero.</li><li>Bit 1 → alternância <span class="eqwrap">\(+A, -A, +A, \dots\)</span></li><li>Balanceamento DC automático.</li><li>Problema: sequências longas de zeros perdem sincronismo.</li></ul>
+<p><strong>HDB3 (High-Density Bipolar 3):</strong></p>
+<ul class="beats"><li>Substitui sequências de 4+ zeros por padrões especiais.</li><li>Elimina o problema de zeros consecutivos do AMI.</li><li>Usado em enlaces E1; sistemas T1 tradicionalmente usam B8ZS, não HDB3.</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Códigos de Linha e Eye Diagram">
+<div class="eyebrow"><span class="sec">11</span> Códigos de Linha e Eye Diagram <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Códigos com Balanceamento DC</h3>
+<p><strong>Definição:</strong> Um código é dito com <em>DC balance</em> (equilíbrio de DC) se sua PSD é nula em <span class="eqwrap">\(f = 0\)</span>, ou seja, não há energia espectral na componente contínua.</p>
+<p><strong>Resultado:</strong> Manchester, AMI ideal e HDB3 têm nulo espectral em DC. NRZ polar i.i.d. de média zero não possui <strong>linha</strong> em DC, mas sua PSD contínua geralmente é máxima em <span class="eqwrap">\(f=0\)</span>; portanto, “média zero” não é o mesmo que “nulo espectral em DC”.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos de Linha e Eye Diagram">
+<div class="eyebrow"><span class="sec">11</span> Códigos de Linha e Eye Diagram <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Eye Diagram (Diagrama de Olho)</h3>
+<p><strong>Definição:</strong> O eye diagram é obtido sobrepondo trechos de duração <span class="eqwrap">\(2T_s\)</span> do sinal recebido, um para cada símbolo. O resultado é uma figura que se assemelha a "olhos".</p>
+<p>O eye diagram revela:</p>
+<ol class="take"><li><strong>ISI:</strong> "Fechamento" dos olhos. Quanto mais aberto, menor ISI.</li><li><strong>Jitter:</strong> Espessura horizontal dos cruzamentos.</li><li><strong>Ruído:</strong> Espessura vertical nas aberturas.</li><li><strong>Distorção de amplitude:</strong> Assimetria vertical.</li></ol>
+</div>
+</section>
+<section class="slide" data-sec="Códigos de Linha e Eye Diagram">
+<div class="eyebrow"><span class="sec">11</span> Códigos de Linha e Eye Diagram <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Abertura do Eye</h3>
+<p><strong>Definição:</strong> A abertura vertical do eye é a margem de ruído máxima:</p>
+<p>Para um sinal binário, se <span class="eqwrap">\(\mathcal Y_1(t)\)</span> e <span class="eqwrap">\(\mathcal Y_0(t)\)</span> são os conjuntos de traços condicionados ao símbolo central 1 e 0, a abertura vertical no instante <span class="eqwrap">\(t\)</span> é</p>
+<div class="eqwrap eqbig eqcenter">\[V_{\text{open}}(t)=\min_{y\in\mathcal Y_1(t)}y-\max_{y\in\mathcal Y_0(t)}y,\]</div>
+<p>e escolhe-se o instante de maior abertura:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{V_{\text{open}}=\max_tV_{\text{open}}(t).} \tag{10.1}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Códigos de Linha e Eye Diagram">
+<div class="eyebrow"><span class="sec">11</span> Códigos de Linha e Eye Diagram <span class="rule"></span></div>
+<div class="body">
+<p>Para sinais multinível há um olho entre cada par de níveis adjacentes; a margem do sistema é a menor dessas aberturas.</p>
+<p>A abertura horizontal é a janela temporal onde a amostragem pode ocorrer sem ISI significativa.</p>
+<p><strong>Observação:</strong> O eye diagram é uma ferramenta de diagnóstico essencial. Um "olho" amplamente aberto indica bom desempenho; fechamento ou distorção indica problemas de ISI, jitter ou ruído.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Exercícios Resolvidos em Python</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> validar PSD de PAM, pulsos RC/RRC, ausência de ISI e abertura do olho. <strong>Normalização:</strong> declare energia do pulso, amostras por símbolo e descarte de transientes. <strong>Validação:</strong> amostre a resposta conjunta em múltiplos de <span class="eqwrap">\(T_s\)</span> e reporte numericamente os resíduos de ISI.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 1: PSD de Sequência PAM Aleatória</h3>
+<p>Calcule e visualize a densidade espectral de potência (PSD) de um sinal PAM 4-aleatório com pulso retangular e pulso RC.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import welch
+
+np.random.seed(42)
+T_s = 1.0
+sps = 16          # samples per symbol
+N_sym = 4096
+
+# Sequência aleatória 4-PAM
+a = np.random.choice(np.array([-3, -1, 1, 3]), size=N_sym)
+
+# Pulso retangular
+rect = np.ones(sps)
+
+# Pulso RC (alpha=0.35)
+def rc_pulse(t, T_s, alpha):
+    scalar_input = np.ndim(t) == 0
+    t = np.atleast_1d(t)
+    if alpha == 0:
+        y = np.sinc(t / T_s)
+        return y.item() if scalar_input else y
+    den = 1 - (2 * alpha * t / T_s) ** 2
+    with np.errstate(divide=&#x27;ignore&#x27;, invalid=&#x27;ignore&#x27;):
+        y = np.sinc(t / T_s) * np.cos(np.pi * alpha * t / T_s) / den
+    # tratar singularidades
+    mask = np.isclose(np.abs(2 * alpha * t / T_s), 1, atol=1e-6)
+    y[mask] = np.pi / 4 * np.sinc(1 / (2 * alpha))
+    y[np.isclose(t / T_s, 0, atol=1e-6)] = 1.0
+    return y.item() if scalar_input else y
+
+alpha = 0.35
+rc = rc_pulse(np.arange(-5*sps, 5*sps+1) / sps, T_s, alpha)
+rc = rc / np.sqrt(np.mean(rc**2))  # normalizar
+
+# Transmitir
+u_rect = np.zeros(len(a) * sps)
+u_rect[::sps] = a
+u_rc = np.convolve(a, rc, mode=&#x27;full&#x27;)
+
+# PSD via Welch
+fs = sps / T_s
+f_rect, P_rect = welch(u_rect, fs=fs, nperseg=min(2**14, len(u_rect)))
+f_rc, P_rc = welch(u_rc, fs=fs, nperseg=min(2**14, len(u_rc)))
+
+fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+ax[0].plot(f_rect, 10*np.log10(P_rect), label=&#x27;4-PAM, pulso retangular&#x27;)
+ax[0].set(xlabel=&#x27;f (symb⁻¹)&#x27;, ylabel=&#x27;PSD (dB)&#x27;, title=&#x27;PSD: Pulso Retangular&#x27;)
+ax[0].grid(True)
+ax[0].legend()
+ax[1].plot(f_rc, 10*np.log10(P_rc), label=f&#x27;4-PAM, pulso RC (α={alpha})&#x27;)
+ax[1].set(xlabel=&#x27;f (symb⁻¹)&#x27;, ylabel=&#x27;PSD (dB)&#x27;, title=f&#x27;PSD: Pulso RC (α={alpha})&#x27;)
+ax[1].grid(True)
+ax[1].legend()
+plt.tight_layout()
+plt.show()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&quot;import numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy.signal import welch\n\nnp.random.seed(42)\nT_s = 1.0\nsps = 16          # samples per symbol\nN_sym = 4096\n\n# Sequência aleatória 4-PAM\na = np.random.choice(np.array([-3, -1, 1, 3]), size=N_sym)\n\n# Pulso retangular\nrect = np.ones(sps)\n\n# Pulso RC (alpha=0.35)\ndef rc_pulse(t, T_s, alpha):\n    scalar_input = np.ndim(t) == 0\n    t = np.atleast_1d(t)\n    if alpha == 0:\n        y = np.sinc(t / T_s)\n        return y.item() if scalar_input else y\n    den = 1 - (2 * alpha * t / T_s) ** 2\n    with np.errstate(divide=&#x27;ignore&#x27;, invalid=&#x27;ignore&#x27;):\n        y = np.sinc(t / T_s) * np.cos(np.pi * alpha * t / T_s) / den\n    # tratar singularidades\n    mask = np.isclose(np.abs(2 * alpha * t / T_s), 1, atol=1e-6)\n    y[mask] = np.pi / 4 * np.sinc(1 / (2 * alpha))\n    y[np.isclose(t / T_s, 0, atol=1e-6)] = 1.0\n    return y.item() if scalar_input else y\n\nalpha = 0.35\nrc = rc_pulse(np.arange(-5*sps, 5*sps+1) / sps, T_s, alpha)\nrc = rc / np.sqrt(np.mean(rc**2))  # normalizar\n\n# Transmitir\nu_rect = np.zeros(len(a) * sps)\nu_rect[::sps] = a\nu_rc = np.convolve(a, rc, mode=&#x27;full&#x27;)\n\n# PSD via Welch\nfs = sps / T_s\nf_rect, P_rect = welch(u_rect, fs=fs, nperseg=min(2**14, len(u_rect)))\nf_rc, P_rc = welch(u_rc, fs=fs, nperseg=min(2**14, len(u_rc)))\n\nfig, ax = plt.subplots(1, 2, figsize=(12, 4))\nax[0].plot(f_rect, 10*np.log10(P_rect), label=&#x27;4-PAM, pulso retangular&#x27;)\nax[0].set(xlabel=&#x27;f (symb⁻¹)&#x27;, ylabel=&#x27;PSD (dB)&#x27;, title=&#x27;PSD: Pulso Retangular&#x27;)\nax[0].grid(True)\nax[0].legend()\nax[1].plot(f_rc, 10*np.log10(P_rc), label=f&#x27;4-PAM, pulso RC (α={alpha})&#x27;)\nax[1].set(xlabel=&#x27;f (symb⁻¹)&#x27;, ylabel=&#x27;PSD (dB)&#x27;, title=f&#x27;PSD: Pulso RC (α={alpha})&#x27;)\nax[1].grid(True)\nax[1].legend()\nplt.tight_layout()\nplt.show()&quot;, &quot;&lt;markdown-python-1&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-1&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 2: Pulso RC — Cálculo no Tempo e Frequência</h3>
+<p>Plotar o pulso RC e seu espectro para diferentes valores de <span class="eqwrap">\(\alpha\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+def rc_time(t, T_s, alpha):
+    if alpha == 0:
+        return np.sinc(t / T_s)
+    den = 1 - (2 * alpha * t / T_s) ** 2
+    with np.errstate(divide=&#x27;ignore&#x27;, invalid=&#x27;ignore&#x27;):
+        y = np.sinc(t / T_s) * np.cos(np.pi * alpha * t / T_s) / den
+    singular = np.isclose(np.abs(2 * alpha * t / T_s), 1, atol=1e-6)
+    y[singular] = np.pi / 4 * np.sinc(1 / (2 * alpha))
+    y[np.isclose(t / T_s, 0, atol=1e-6)] = 1.0
+    return y
+
+def rc_spec(f, T_s, alpha):
+    if alpha == 0:
+        return T_s * (np.abs(f) &lt;= 1 / (2 * T_s))
+    B = (1 + alpha) / (2 * T_s)
+    G = np.zeros_like(f)
+    # região plana
+    flat = np.abs(f) &lt;= (1 - alpha) / (2 * T_s)
+    G[flat] = T_s
+    # região de rolloff
+    rolloff = (np.abs(f) &gt; (1 - alpha) / (2 * T_s)) &amp; (np.abs(f) &lt;= B)
+    arg = (np.pi * T_s / alpha) * (np.abs(f[rolloff]) - (1 - alpha) / (2 * T_s))
+    G[rolloff] = T_s / 2 * (1 + np.cos(arg))
+    return G
+
+T_s = 1.0
+t = np.linspace(-6, 6, 3001)
+f = np.linspace(-1.5, 1.5, 3001)
+
+fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+alphas = [0, 0.25, 0.5, 1.0]
+for alpha in alphas:
+    ax[0].plot(t, rc_time(t, T_s, alpha), label=f&#x27;α={alpha}&#x27;)
+ax[0].set(xlabel=&#x27;t/T_s&#x27;, ylabel=&#x27;p(t)&#x27;, title=&#x27;Pulso Raised Cosine (domínio do tempo)&#x27;,
+          xlim=(-6, 6))
+ax[0].grid(True)
+ax[0].legend()
+ax[0].axhline(0, color=&#x27;k&#x27;, linewidth=0.5)
+
+for alpha in alphas:
+    G = rc_spec(f, T_s, alpha)
+    ax[1].plot(f, G / T_s, label=f&#x27;α={alpha}&#x27;)
+    ax[1].axvline((1 + alpha) / (2 * T_s), color=&#x27;r&#x27;, linestyle=&#x27;--&#x27;, alpha=0.4,
+                  label=f&#x27;α={alpha}: B&#x27;)
+ax[1].set(xlabel=&#x27;f·T_s&#x27;, ylabel=&#x27;P(f)/T_s&#x27;, title=&#x27;Espectro RC (domínio da frequência)&#x27;)
+ax[1].grid(True)
+ax[1].legend()
+plt.tight_layout()
+plt.show()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&quot;import numpy as np\nimport matplotlib.pyplot as plt\n\ndef rc_time(t, T_s, alpha):\n    if alpha == 0:\n        return np.sinc(t / T_s)\n    den = 1 - (2 * alpha * t / T_s) ** 2\n    with np.errstate(divide=&#x27;ignore&#x27;, invalid=&#x27;ignore&#x27;):\n        y = np.sinc(t / T_s) * np.cos(np.pi * alpha * t / T_s) / den\n    singular = np.isclose(np.abs(2 * alpha * t / T_s), 1, atol=1e-6)\n    y[singular] = np.pi / 4 * np.sinc(1 / (2 * alpha))\n    y[np.isclose(t / T_s, 0, atol=1e-6)] = 1.0\n    return y\n\ndef rc_spec(f, T_s, alpha):\n    if alpha == 0:\n        return T_s * (np.abs(f) &lt;= 1 / (2 * T_s))\n    B = (1 + alpha) / (2 * T_s)\n    G = np.zeros_like(f)\n    # região plana\n    flat = np.abs(f) &lt;= (1 - alpha) / (2 * T_s)\n    G[flat] = T_s\n    # região de rolloff\n    rolloff = (np.abs(f) &gt; (1 - alpha) / (2 * T_s)) &amp; (np.abs(f) &lt;= B)\n    arg = (np.pi * T_s / alpha) * (np.abs(f[rolloff]) - (1 - alpha) / (2 * T_s))\n    G[rolloff] = T_s / 2 * (1 + np.cos(arg))\n    return G\n\nT_s = 1.0\nt = np.linspace(-6, 6, 3001)\nf = np.linspace(-1.5, 1.5, 3001)\n\nfig, ax = plt.subplots(1, 2, figsize=(14, 5))\nalphas = [0, 0.25, 0.5, 1.0]\nfor alpha in alphas:\n    ax[0].plot(t, rc_time(t, T_s, alpha), label=f&#x27;α={alpha}&#x27;)\nax[0].set(xlabel=&#x27;t/T_s&#x27;, ylabel=&#x27;p(t)&#x27;, title=&#x27;Pulso Raised Cosine (domínio do tempo)&#x27;,\n          xlim=(-6, 6))\nax[0].grid(True)\nax[0].legend()\nax[0].axhline(0, color=&#x27;k&#x27;, linewidth=0.5)\n\nfor alpha in alphas:\n    G = rc_spec(f, T_s, alpha)\n    ax[1].plot(f, G / T_s, label=f&#x27;α={alpha}&#x27;)\n    ax[1].axvline((1 + alpha) / (2 * T_s), color=&#x27;r&#x27;, linestyle=&#x27;--&#x27;, alpha=0.4,\n                  label=f&#x27;α={alpha}: B&#x27;)\nax[1].set(xlabel=&#x27;f·T_s&#x27;, ylabel=&#x27;P(f)/T_s&#x27;, title=&#x27;Espectro RC (domínio da frequência)&#x27;)\nax[1].grid(True)\nax[1].legend()\nplt.tight_layout()\nplt.show()&quot;, &quot;&lt;markdown-python-2&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-2&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 3: Eye Diagram para Diferentes Fatores <span class="eqwrap">\(\alpha\)</span></h3>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+def rrc_pulse(t, T_s, alpha):
+    if alpha == 0:
+        return np.sinc(t / T_s)
+    num = np.sin(np.pi * t / T_s * (1 - alpha)) + 4 * alpha * t / T_s * np.cos(np.pi * t / T_s * (1 + alpha))
+    den = np.pi * t / T_s * (1 - (4 * alpha * t / T_s) ** 2)
+    with np.errstate(divide=&#x27;ignore&#x27;, invalid=&#x27;ignore&#x27;):
+        h = num / den
+    # t = 0
+    mask0 = np.isclose(t, 0, atol=1e-12)
+    h[mask0] = 1 / T_s * (1 + alpha * (4/np.pi - 1))
+    # singularidades em t = ±T_s/(4α)
+    sing = np.isclose(np.abs(4 * alpha * t / T_s), 1, atol=1e-6)
+    if np.any(sing):
+        s = t[sing]
+        h[sing] = (alpha / np.sqrt(2 * T_s)) * ((1 + 2/np.pi) * np.sin(np.pi / (4*alpha)) +
+                                                  (1 - 2/np.pi) * np.cos(np.pi / (4*alpha)))
+    return h
+
+T_s = 1.0
+sps = 8
+N_sym = 500
+np.random.seed(0)
+a = 2 * np.random.randint(0, 2, N_sym) - 1  # BPSK
+
+alphas = [0, 0.25, 0.5, 0.75, 1.0]
+fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+axes = axes.ravel()
+
+for idx, alpha in enumerate(alphas):
+    h = rrc_pulse(np.arange(-5*sps, 5*sps+1) / sps, T_s, alpha)
+    h = h / np.sqrt(np.sum(h**2))  # normalizar energia
+
+    # transmit
+    u = np.zeros(len(a) * sps)
+    u[::sps] = a
+    tx = np.convolve(u, h, mode=&#x27;full&#x27;)
+
+    # eye diagram
+    eye_len = 2 * sps
+    start = N_sym * sps // 2
+    for k in range(start // sps, start // sps + 200):
+        segment = tx[k*sps: min(k*sps+eye_len, len(tx))]
+        if len(segment) == eye_len:
+            axes[idx].plot(np.arange(eye_len) / sps, segment,
+                       &#x27;b&#x27;, alpha=0.06)
+    axes[idx].set(xlabel=&#x27;tempo/T_s&#x27;, title=f&#x27;α = {alpha}&#x27;, ylim=(-3, 3))
+    axes[idx].grid(alpha=0.3)
+    if idx == 0:
+        axes[idx].set_ylabel(&#x27;amplitude&#x27;)
+
+# último subplot vazio ou com info
+axes[-1].axis(&#x27;off&#x27;)
+axes[-1].text(0.1, 0.5, &#x27;Diagrama de olho\napós cascata RRC+RRC\nPara cada α, 200 símbolos\nsobrepostos&#x27;,
+             fontsize=11, ha=&#x27;center&#x27;, va=&#x27;center&#x27;)
+for ax in axes[:-1]:
+    ax.axhline(0, color=&#x27;k&#x27;, linewidth=0.5)
+
+plt.tight_layout()
+plt.show()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&quot;import numpy as np\nimport matplotlib.pyplot as plt\n\ndef rrc_pulse(t, T_s, alpha):\n    if alpha == 0:\n        return np.sinc(t / T_s)\n    num = np.sin(np.pi * t / T_s * (1 - alpha)) + 4 * alpha * t / T_s * np.cos(np.pi * t / T_s * (1 + alpha))\n    den = np.pi * t / T_s * (1 - (4 * alpha * t / T_s) ** 2)\n    with np.errstate(divide=&#x27;ignore&#x27;, invalid=&#x27;ignore&#x27;):\n        h = num / den\n    # t = 0\n    mask0 = np.isclose(t, 0, atol=1e-12)\n    h[mask0] = 1 / T_s * (1 + alpha * (4/np.pi - 1))\n    # singularidades em t = ±T_s/(4α)\n    sing = np.isclose(np.abs(4 * alpha * t / T_s), 1, atol=1e-6)\n    if np.any(sing):\n        s = t[sing]\n        h[sing] = (alpha / np.sqrt(2 * T_s)) * ((1 + 2/np.pi) * np.sin(np.pi / (4*alpha)) +\n                                                  (1 - 2/np.pi) * np.cos(np.pi / (4*alpha)))\n    return h\n\nT_s = 1.0\nsps = 8\nN_sym = 500\nnp.random.seed(0)\na = 2 * np.random.randint(0, 2, N_sym) - 1  # BPSK\n\nalphas = [0, 0.25, 0.5, 0.75, 1.0]\nfig, axes = plt.subplots(2, 3, figsize=(15, 8))\naxes = axes.ravel()\n\nfor idx, alpha in enumerate(alphas):\n    h = rrc_pulse(np.arange(-5*sps, 5*sps+1) / sps, T_s, alpha)\n    h = h / np.sqrt(np.sum(h**2))  # normalizar energia\n\n    # transmit\n    u = np.zeros(len(a) * sps)\n    u[::sps] = a\n    tx = np.convolve(u, h, mode=&#x27;full&#x27;)\n\n    # eye diagram\n    eye_len = 2 * sps\n    start = N_sym * sps // 2\n    for k in range(start // sps, start // sps + 200):\n        segment = tx[k*sps: min(k*sps+eye_len, len(tx))]\n        if len(segment) == eye_len:\n            axes[idx].plot(np.arange(eye_len) / sps, segment,\n                       &#x27;b&#x27;, alpha=0.06)\n    axes[idx].set(xlabel=&#x27;tempo/T_s&#x27;, title=f&#x27;α = {alpha}&#x27;, ylim=(-3, 3))\n    axes[idx].grid(alpha=0.3)\n    if idx == 0:\n        axes[idx].set_ylabel(&#x27;amplitude&#x27;)\n\n# último subplot vazio ou com info\naxes[-1].axis(&#x27;off&#x27;)\naxes[-1].text(0.1, 0.5, &#x27;Diagrama de olho\\napós cascata RRC+RRC\\nPara cada α, 200 símbolos\\nsobrepostos&#x27;,\n             fontsize=11, ha=&#x27;center&#x27;, va=&#x27;center&#x27;)\nfor ax in axes[:-1]:\n    ax.axhline(0, color=&#x27;k&#x27;, linewidth=0.5)\n\nplt.tight_layout()\nplt.show()&quot;, &quot;&lt;markdown-python-3&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-3&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 4: ISI com Pulso Não-Ideal</h3>
+<p>Demonstrar numericamente como um pulso com rolloff alto causa ISI quando há erro de temporização.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">12</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+def rc_pulse(t, T_s, alpha):
+    scalar_input = np.ndim(t) == 0
+    t = np.atleast_1d(t)
+    if alpha == 0:
+        y = np.sinc(t / T_s)
+        return y.item() if scalar_input else y
+    den = 1 - (2 * alpha * t / T_s) ** 2
+    with np.errstate(divide=&#x27;ignore&#x27;, invalid=&#x27;ignore&#x27;):
+        y = np.sinc(t / T_s) * np.cos(np.pi * alpha * t / T_s) / den
+    singular = np.isclose(np.abs(2 * alpha * t / T_s), 1, atol=1e-6)
+    y[singular] = np.pi / 4 * np.sinc(1 / (2 * alpha))
+    y[np.isclose(t / T_s, 0, atol=1e-6)] = 1.0
+    return y.item() if scalar_input else y
+
+T_s = 1.0
+t = np.linspace(-5, 5, 2001)
+
+# Sequência: símbolo principal em k=0, interferentes em k=-2..-1, 1..2
+a = {0: 1.0, 1: 0.5, -1: -0.3, 2: 0.2, -2: -0.1}
+
+alphas = [0.0, 0.25, 0.5, 1.0]
+errors = [0.0, 0.05, 0.1, 0.15]  # erro de temporização em unidades de T_s
+
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+for idx, eps in enumerate(errors):
+    ax = axes[idx // 2, idx % 2]
+    for alpha in alphas:
+        g = np.array([rc_pulse((n + eps) * T_s, T_s, alpha) * a.get(n, 0)
+                       for n in range(-2, 3)])
+        ISI = sum(g[n] for n in range(-2, 3) if n != 0)
+        desired = g[0]
+        ax.plot(alpha, abs(ISI) / abs(desired) if abs(desired) &gt; 1e-12 else 0,
+                &#x27;o-&#x27;, label=f&#x27;α={alpha}&#x27;, alpha=0.7)
+    ax.set(xlabel=&#x27;α&#x27;, ylabel=&#x27;ISI / símbolo_desejado&#x27;,
+           title=f&#x27;Erro de timing ε = {eps} T_s&#x27;, ylim=(0, 1))
+    ax.grid(True)
+    ax.legend(fontsize=8)
+
+plt.tight_layout()
+plt.show()
+
+# Tabela numérica
+print(&quot;ISI relativa para diferentes α e ε:&quot;)
+print(f&quot;{&#x27;α&#x27;:&gt;6} | {&#x27;ε=0&#x27;:&gt;10} | {&#x27;ε=0.05&#x27;:&gt;10} | {&#x27;ε=0.1&#x27;:&gt;10} | {&#x27;ε=0.15&#x27;:&gt;10}&quot;)
+print(&quot;-&quot; * 60)
+for alpha in alphas:
+    vals = []
+    for eps in errors:
+        g = np.array([rc_pulse((n + eps) * T_s, T_s, alpha) * a.get(n, 0)
+                       for n in range(-2, 3)])
+        ISI = sum(g[n] for n in range(-2, 3) if n != 0)
+        desired = g[0]
+        vals.append(f&quot;{abs(ISI)/abs(desired):.6f}&quot; if abs(desired) &gt; 1e-12 else &quot;N/A&quot;)
+    print(f&quot;{alpha:&gt;6.2f} | {vals[0]:&gt;10} | {vals[1]:&gt;10} | {vals[2]:&gt;10} | {vals[3]:&gt;10}&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\n\ndef rc_pulse(t, T_s, alpha):\n    scalar_input = np.ndim(t) == 0\n    t = np.atleast_1d(t)\n    if alpha == 0:\n        y = np.sinc(t / T_s)\n        return y.item() if scalar_input else y\n    den = 1 - (2 * alpha * t / T_s) ** 2\n    with np.errstate(divide=\&#x27;ignore\&#x27;, invalid=\&#x27;ignore\&#x27;):\n        y = np.sinc(t / T_s) * np.cos(np.pi * alpha * t / T_s) / den\n    singular = np.isclose(np.abs(2 * alpha * t / T_s), 1, atol=1e-6)\n    y[singular] = np.pi / 4 * np.sinc(1 / (2 * alpha))\n    y[np.isclose(t / T_s, 0, atol=1e-6)] = 1.0\n    return y.item() if scalar_input else y\n\nT_s = 1.0\nt = np.linspace(-5, 5, 2001)\n\n# Sequência: símbolo principal em k=0, interferentes em k=-2..-1, 1..2\na = {0: 1.0, 1: 0.5, -1: -0.3, 2: 0.2, -2: -0.1}\n\nalphas = [0.0, 0.25, 0.5, 1.0]\nerrors = [0.0, 0.05, 0.1, 0.15]  # erro de temporização em unidades de T_s\n\nfig, axes = plt.subplots(2, 2, figsize=(14, 10))\nfor idx, eps in enumerate(errors):\n    ax = axes[idx // 2, idx % 2]\n    for alpha in alphas:\n        g = np.array([rc_pulse((n + eps) * T_s, T_s, alpha) * a.get(n, 0)\n                       for n in range(-2, 3)])\n        ISI = sum(g[n] for n in range(-2, 3) if n != 0)\n        desired = g[0]\n        ax.plot(alpha, abs(ISI) / abs(desired) if abs(desired) &gt; 1e-12 else 0,\n                \&#x27;o-\&#x27;, label=f\&#x27;α={alpha}\&#x27;, alpha=0.7)\n    ax.set(xlabel=\&#x27;α\&#x27;, ylabel=\&#x27;ISI / símbolo_desejado\&#x27;,\n           title=f\&#x27;Erro de timing ε = {eps} T_s\&#x27;, ylim=(0, 1))\n    ax.grid(True)\n    ax.legend(fontsize=8)\n\nplt.tight_layout()\nplt.show()\n\n# Tabela numérica\nprint(&quot;ISI relativa para diferentes α e ε:&quot;)\nprint(f&quot;{\&#x27;α\&#x27;:&gt;6} | {\&#x27;ε=0\&#x27;:&gt;10} | {\&#x27;ε=0.05\&#x27;:&gt;10} | {\&#x27;ε=0.1\&#x27;:&gt;10} | {\&#x27;ε=0.15\&#x27;:&gt;10}&quot;)\nprint(&quot;-&quot; * 60)\nfor alpha in alphas:\n    vals = []\n    for eps in errors:\n        g = np.array([rc_pulse((n + eps) * T_s, T_s, alpha) * a.get(n, 0)\n                       for n in range(-2, 3)])\n        ISI = sum(g[n] for n in range(-2, 3) if n != 0)\n        desired = g[0]\n        vals.append(f&quot;{abs(ISI)/abs(desired):.6f}&quot; if abs(desired) &gt; 1e-12 else &quot;N/A&quot;)\n    print(f&quot;{alpha:&gt;6.2f} | {vals[0]:&gt;10} | {vals[1]:&gt;10} | {vals[2]:&gt;10} | {vals[3]:&gt;10}&quot;)&#x27;, &quot;&lt;markdown-python-4&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-4&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">13</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Dê a expressão da potência média <span class="eqwrap">\(P\)</span> de um sinal PAM 8-PAM com <span class="eqwrap">\(\sigma_a^2 = 7\)</span> e pulso de energia <span class="eqwrap">\(E_p = 2\)</span>, para <span class="eqwrap">\(T_s = 10^{-6}\)</span> s.</p>
+<p><strong>E2.</strong> Mostre que para sequência não correlacionada com <span class="eqwrap">\(\mu_a = 0\)</span>, a PSD é <span class="eqwrap">\(S_s(f) = \frac{\sigma_a^2}{T_s}|P(f)|^2\)</span>.</p>
+<p><strong>E3.</strong> Para <span class="eqwrap">\(R_s = 10\)</span> Mbaud, calcule a banda de Nyquist mínima e a banda RC com <span class="eqwrap">\(\alpha = 0{,}35\)</span>.</p>
+<p><strong>E4.</strong> Verifique analiticamente que o pulso <span class="eqwrap">\(p(t) = \operatorname{sinc}(2Wt)\)</span> satisfaz o critério de Nyquist para <span class="eqwrap">\(T_s = 1/(2W)\)</span>.</p>
+<p><strong>E5.</strong> Mostre que para <span class="eqwrap">\(\alpha = 0\)</span>, a expressão (6.6) se reduz ao pulso sinc.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">13</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E6.</strong> Calcule o valor de <span class="eqwrap">\(p_{\text{RC}}(t)\)</span> em <span class="eqwrap">\(t = T_s/(2\alpha)\)</span> para <span class="eqwrap">\(\alpha = 0{,}5\)</span> e <span class="eqwrap">\(T_s = 1\)</span>.</p>
+<p><strong>E7.</strong> Prove que o decaimento do pulso RC para <span class="eqwrap">\(\alpha > 0\)</span> é <span class="eqwrap">\(O(1/t^3)\)</span>.</p>
+<p><strong>E8.</strong> Calcule a SNR máxima de um filtro casado para pulso retangular de amplitude <span class="eqwrap">\(A\)</span> e duração <span class="eqwrap">\(T_s\)</span> em AWGN com PSD <span class="eqwrap">\(N_0/2\)</span>.</p>
+<p><strong>E9.</strong> Para um sistema RRC com <span class="eqwrap">\(\alpha = 0{,}25\)</span> e <span class="eqwrap">\(T_s = 2 \times 10^{-6}\)</span> s, calcule a banda unilateral.</p>
+<p><strong>E10.</strong> Trace o eye diagram conceitual para um canal com ISI severa e compare com um canal sem ISI. Descreva as diferenças.</p>
+<p><strong>E11.</strong> Justifique por que Manchester tem banda duas vezes maior que NRZ polar.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">13</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E12.</strong> Para o pulso <span class="eqwrap">\(g(t) = e^{-|t|/T}\)</span>, calcule a ISI no instante de decisão causada por símbolos adjacentes.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">14</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Gabarito</h2>
+<p><strong>E1.</strong> <span class="eqwrap">\(P = \sigma_a^2 E_p / T_s = 7 \times 2 / 10^{-6} = 14 \times 10^6\)</span> W = 14 MW.</p>
+<p><strong>E2.</strong> <span class="eqwrap">\(R_{aa}[m] = \sigma_a^2\delta[m]\)</span>, então <span class="eqwrap">\(\sum_m R_{aa}[m] e^{-j2\pi f m T_s} = \sigma_a^2\)</span>. Logo <span class="eqwrap">\(S_s(f) = \frac{\sigma_a^2}{T_s}|P(f)|^2\)</span>.</p>
+<p><strong>E3.</strong> Nyquist: <span class="eqwrap">\(B_N = R_s/2 = 5\)</span> MHz. RC (<span class="eqwrap">\(\alpha=0{,}35\)</span>): <span class="eqwrap">\(B = (1{,}35)R_s/2 = 6{,}75\)</span> MHz.</p>
+<p><strong>E4.</strong> <span class="eqwrap">\(p(nT_s) = \operatorname{sinc}(2W \cdot n/(2W)) = \operatorname{sinc}(n) = \delta[n]\)</span>. ✓</p>
+<p><strong>E5.</strong> Para <span class="eqwrap">\(\alpha = 0\)</span>: <span class="eqwrap">\(\cos(0) = 1\)</span> e <span class="eqwrap">\(1 - (0)^2 = 1\)</span>, logo <span class="eqwrap">\(p(t) = \operatorname{sinc}(t/T_s) \cdot 1/1 = \operatorname{sinc}(t/T_s)\)</span>. ✓</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">14</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p><strong>E6.</strong> <span class="eqwrap">\(p_{\text{RC}}(T_s/2) = \operatorname{sinc}(1/2) \cdot \frac{\cos(\pi/4)}{1 - 1}\)</span>. Usando limite: <span class="eqwrap">\(= \frac{\pi}{4}\operatorname{sinc}(2) = \frac{\pi}{4}\cdot \frac{\sin(\pi/2)}{\pi/2} = \frac{1}{2}\)</span>.</p>
+<p><strong>E7.</strong> <span class="eqwrap">\(\operatorname{sinc}(t) = O(1/t)\)</span> e <span class="eqwrap">\(\frac{\cos(\alpha\pi t/T_s)}{1-(2\alpha t/T_s)^2} = O(1/t^2)\)</span>, então o produto é <span class="eqwrap">\(O(1/t^3)\)</span>. ✓</p>
+<p><strong>E8.</strong> <span class="eqwrap">\(E_p = A^2 T_s\)</span>. <span class="eqwrap">\(\text{SNR}_{\max} = 2A^2 T_s / N_0\)</span>.</p>
+<p><strong>E9.</strong> <span class="eqwrap">\(B = (1{,}25) / (2 \times 2 \times 10^{-6}) = 312{,}500\)</span> Hz = 312,5 kHz.</p>
+<p><strong>E10.</strong> ISI severa: olhos fechados, cruzamentos dispersos, pouca abertura vertical/horizontal. Sem ISI: olhos amplamente abertos, cruzamentos precisos.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">14</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p><strong>E11.</strong> Manchester tem transição em cada meio-bit, dobrando a frequência fundamental. Primeiro zero em <span class="eqwrap">\(2/T_b\)</span> vs <span class="eqwrap">\(1/T_b\)</span> do NRZ.</p>
+<p><strong>E12.</strong> ISI = <span class="eqwrap">\(\sum_{k \ne 0} a_k e^{-|k|T/T} = e^{-1}(a_{-1}+a_1) + e^{-2}(a_{-2}+a_2) + \dots\)</span>. Para <span class="eqwrap">\(a_k\)</span> aleatórios com energia <span class="eqwrap">\(\sigma_a^2\)</span>, a variância da ISI é <span class="eqwrap">\(\sigma_a^2 \sum_{k \ne 0} e^{-2|k|} = \sigma_a^2 \frac{2e^{-2}}{1-e^{-2}}\)</span>.</p>
+</div>
+</section>
+    <div class="nav-arrows">
+      <button class="nav-btn prev" id="nav-prev-btn" aria-label="Previous slide">‹</button>
+      <button class="nav-btn next" id="nav-next-btn" aria-label="Next slide">›</button>
+    </div>
+    <div class="foot"><span>Slide Framework</span><span class="dots" data-dots></span><span data-num></span></div>
+  </main>
+</div>
+
+<div class="brand">Transmissão em Banda Base e Critério de Nyquist</div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">00</span></div>
+<button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" class="sun-icon"/><line x1="12" y1="1" x2="12" y2="3" class="sun-icon"/><line x1="12" y1="21" x2="12" y2="23" class="sun-icon"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="sun-icon"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="sun-icon"/><line x1="1" y1="12" x2="3" y2="12" class="sun-icon"/><line x1="21" y1="12" x2="23" y2="12" class="sun-icon"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="sun-icon"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="sun-icon"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-icon"/></svg>
+</button>
+<div class="hint" id="hint"><kbd>←</kbd><kbd>→</kbd> to move · <kbd>F</kbd> full screen · <kbd>Ctrl+K</kbd> search · <kbd>S</kbd> notes</div>
+
+<div class="search-overlay" id="search-overlay"></div>
+
+<div class="notes-overlay" id="notes-overlay">
+	<div class="notes-card">
+		<div class="notes-header">
+			<span class="title">Speaker Notes</span>
+			<button class="close-btn">Close (S)</button>
+		</div>
+		<div class="notes-body"></div>
+		<div class="notes-current"></div>
+	</div>
+</div>
+
+<script defer src="../../slide_framework/deck.js"></script>
+</body>
+</html>

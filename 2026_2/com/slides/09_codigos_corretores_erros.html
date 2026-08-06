@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Códigos Corretores de Erros</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="../../slide_framework/framework.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+<div class="progress" id="progress" title="Jump">
+  <div class="bar" id="bar"></div>
+</div>
+
+<div class="deck-shell">
+  <main class="stage" id="stage">
+<section class="slide title-slide" data-sec="Title">
+  <svg class="title-figure" viewBox="0 0 420 340" aria-hidden="true"><defs><radialGradient id="ig" cx="50%" cy="55%" r="60%"><stop offset="0%" stop-color="var(--gold)" stop-opacity=".10"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></radialGradient></defs><circle cx="210" cy="180" r="160" fill="url(#ig)"/><g stroke="var(--line)" stroke-width=".7" opacity=".2"><line x1="50" y1="40" x2="50" y2="300"/><line x1="50" y1="300" x2="390" y2="300"/></g><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M70,200 L130,200 L130,140 L190,140" stroke="var(--blue)" opacity=".8"/><path d="M190,140 L190,80 L250,80 L250,140 L310,140 L310,200" stroke="var(--vio)" opacity=".75"/><path d="M70,240 L110,240 L110,200 L150,200 L150,280 L210,280 L210,240 L270,240 L270,300 L330,300 L330,240 L390,240" stroke="var(--gold)" opacity=".65"/></g><circle cx="130" cy="140" r="5" fill="var(--blue)"/><circle cx="190" cy="140" r="5" fill="var(--vio)"/><circle cx="250" cy="80" r="4" fill="var(--gold)"/><circle cx="150" cy="200" r="4" fill="var(--blue)"/><circle cx="110" cy="240" r="4" fill="var(--gold)"/><circle cx="210" cy="240" r="4" fill="var(--vio)"/><circle cx="270" cy="240" r="4" fill="var(--gold)"/><circle cx="330" cy="240" r="4" fill="var(--vio)"/><path d="M80,100 Q110,60 140,100 Q170,140 200,100 Q230,60 260,100 Q290,140 320,100 Q350,60 370,80"fill="none" stroke="var(--blue)" stroke-width="1.8" opacity=".5" stroke-linecap="round"/><circle cx="70" cy="200" r="3" fill="var(--text)" opacity=".5"/><circle cx="390" cy="240" r="3" fill="var(--text)" opacity=".5"/></svg>
+  <div class="title-content">
+    <div class="super">Sistemas de Comunicações — Apostila de Curso</div>
+    <h1>Códigos Corretores de Erros</h1>
+    <div class="topics"><span class="chip">Codificação de Canal</span><span class="chip">Distância de Hamming</span><span class="chip">Códigos Lineares</span><span class="chip">Hamming</span><span class="chip">CRC</span><span class="chip">Códigos Convolucionais</span></div>
+  </div>
+</section>
+<section class="slide" data-sec="Antes de começar">
+<div class="eyebrow"><span class="sec">01</span> Antes de começar <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Antes de começar</h2>
+<p>Ao final, você deve quantificar redundância, detectar e corrigir erros com distância de Hamming, construir códigos lineares simples e relacionar codificação, BER e capacidade de Shannon. <strong>Diagnóstico:</strong> acrescentar redundância sempre reduz a taxa útil do enlace? <strong>Evidência mínima:</strong> codificar e decodificar um bloco Hamming, injetar erros e comparar BER antes e depois da codificação.</p>
+</div>
+</section>
+<section class="slide" data-sec="Por que codificar?">
+<div class="eyebrow"><span class="sec">02</span> Por que codificar? <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Por que codificar?</h2>
+<p>Um código corretor de erros adiciona redundância controlada à mensagem para que o receptor detecte ou corrija erros introduzidos pelo canal. Para <span class="eqwrap">\(k\)</span> bits de informação transformados em uma palavra de código de <span class="eqwrap">\(n\)</span> bits,</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{R_c=\frac{k}{n}}\]</div>
+<p>é a taxa de código. A taxa útil do enlace diminui por um fator <span class="eqwrap">\(R_c\)</span>, mas a confiabilidade pode melhorar tanto que a taxa líquida alcançável aumenta em canais ruidosos.</p>
+</div>
+</section>
+<section class="slide" data-sec="Por que codificar?">
+<div class="eyebrow"><span class="sec">02</span> Por que codificar? <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">O lugar da codificação na cadeia</h3>
+<p>Não confunda três operações. A <strong>codificação de fonte</strong> remove redundância (compressão); a <strong>codificação de canal</strong> acrescenta redundância estruturada para combater erros; a <strong>modulação</strong> converte bits em formas de onda. Um arquivo pode ser comprimido, protegido e só então mapeado em QPSK.</p>
+<p><strong>Exemplo:</strong> Hamming <span class="eqwrap">\((7,4)\)</span> produz 7 bits para cada 4 bits úteis. Se a saída do codificador opera a <span class="eqwrap">\(7\,\mathrm{Mbit/s}\)</span>, a taxa de informação é</p>
+<div class="eqwrap eqbig eqcenter">\[R_{\mathrm{info}}=R_cR_b=\frac47\,7=4\,\mathrm{Mbit/s}.\]</div>
+<p>O custo imediato são 3 bits de redundância por bloco. O benefício possível é menor BER ou menor potência necessária. Comparações justas mantêm iguais a taxa útil, a largura de banda e a BER-alvo.</p>
+</div>
+</section>
+<section class="slide" data-sec="Distância de Hamming e capacidade de correção">
+<div class="eyebrow"><span class="sec">03</span> Distância de Hamming e capacidade de correção <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Distância de Hamming e capacidade de correção</h2>
+<p>A distância de Hamming <span class="eqwrap">\(d_H(\mathbf c_1,\mathbf c_2)\)</span> é o número de posições diferentes entre duas palavras binárias:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{d_H(\mathbf c_1,\mathbf c_2) = w_H(\mathbf c_1 \oplus \mathbf c_2)}\]</div>
+<p>onde <span class="eqwrap">\(w_H(\mathbf x)\)</span> é o peso de Hamming (número de 1s em <span class="eqwrap">\(\mathbf x\)</span>). A distância mínima do código, <span class="eqwrap">\(d_{min}\)</span>, determina sua capacidade:</p>
+</div>
+</section>
+<section class="slide" data-sec="Distância de Hamming e capacidade de correção">
+<div class="eyebrow"><span class="sec">03</span> Distância de Hamming e capacidade de correção <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{t=\left\lfloor\frac{d_{min}-1}{2}\right\rfloor}\quad\text{erros corrigíveis},
+\qquad
+\boxed{d_{min}-1}\quad\text{erros detectáveis}.\]</div>
+<p>Por exemplo, <span class="eqwrap">\(d_{min}=3\)</span> permite corrigir um erro ou detectar até dois erros, mas não garante ambas as operações simultaneamente para dois erros.</p>
+</div>
+</section>
+<section class="slide" data-sec="Distância de Hamming e capacidade de correção">
+<div class="eyebrow"><span class="sec">03</span> Distância de Hamming e capacidade de correção <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Por que dividir a distância por dois?</h3>
+<p>Imagine cada palavra válida no centro de uma esfera com todos os vetores a até <span class="eqwrap">\(t\)</span> erros. Para a decisão pelo vizinho mais próximo ser inequívoca, duas esferas não podem se sobrepor. Como seus centros distam pelo menos <span class="eqwrap">\(d_{min}\)</span>, precisamos de <span class="eqwrap">\(2t < d_{min}\)</span>.</p>
+<p><strong>Exemplo passo a passo:</strong> em <span class="eqwrap">\(C=\{000,111\}\)</span>, <span class="eqwrap">\(d_{min}=3\)</span>. Se <span class="eqwrap">\(000\)</span> chega como <span class="eqwrap">\(010\)</span>, então</p>
+<div class="eqwrap eqbig eqcenter">\[d_H(010,000)=1,\qquad d_H(010,111)=2,\]</div>
+<p>e o receptor recupera <span class="eqwrap">\(000\)</span>. Se dois bits mudarem e chegar <span class="eqwrap">\(110\)</span>, o vizinho mais próximo será <span class="eqwrap">\(111\)</span>: detectar dois erros não significa corrigi-los.</p>
+<p>Para um código linear, a diferença módulo 2 de duas palavras também é uma palavra. Logo,</p>
+</div>
+</section>
+<section class="slide" data-sec="Distância de Hamming e capacidade de correção">
+<div class="eyebrow"><span class="sec">03</span> Distância de Hamming e capacidade de correção <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{d_{min}=\min_{\mathbf c\ne\mathbf0}w_H(\mathbf c)},\]</div>
+<p>isto é, basta procurar o menor peso entre as palavras não nulas.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos lineares de bloco">
+<div class="eyebrow"><span class="sec">04</span> Códigos lineares de bloco <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Códigos lineares de bloco</h2>
+<p>Em um código linear binário <span class="eqwrap">\((n,k)\)</span>, as palavras de código formam um subespaço de dimensão <span class="eqwrap">\(k\)</span>. A codificação pode ser escrita como</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\mathbf c=\mathbf uG\pmod 2},\]</div>
+<p>onde <span class="eqwrap">\(\mathbf u\)</span> é a palavra de informação (vetor-linha de dimensão <span class="eqwrap">\(k\)</span>) e <span class="eqwrap">\(G\)</span> é a matriz geradora de dimensão <span class="eqwrap">\(k\times n\)</span>. A matriz de paridade <span class="eqwrap">\(H\)</span> satisfaz</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{H\mathbf c^T=\mathbf0\pmod2}.\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Códigos lineares de bloco">
+<div class="eyebrow"><span class="sec">04</span> Códigos lineares de bloco <span class="rule"></span></div>
+<div class="body">
+<p>No receptor, a síndrome <span class="eqwrap">\(\mathbf s=H\mathbf r^T\)</span> vale zero para uma palavra válida. Em códigos de Hamming, cada síndrome não nula aponta diretamente a posição de um único erro.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos lineares de bloco">
+<div class="eyebrow"><span class="sec">04</span> Códigos lineares de bloco <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO: Por que a síndrome localiza o erro?</h3>
+<p>Aqui <span class="eqwrap">\(\mathbf u\)</span> e <span class="eqwrap">\(\mathbf c\)</span> são vetores-linha; <span class="eqwrap">\(G\)</span> mede <span class="eqwrap">\(k\times n\)</span>, <span class="eqwrap">\(H\)</span> mede <span class="eqwrap">\((n-k)\times n\)</span> e <span class="eqwrap">\(GH^T=0\)</span> em <span class="eqwrap">\(GF(2)\)</span>. Nesse corpo, somar é fazer XOR.</p>
+<p>Se <span class="eqwrap">\(\mathbf r=\mathbf c+\mathbf e\)</span>, então</p>
+<div class="eqwrap eqbig eqcenter">\[\mathbf s=H\mathbf r^T=H\mathbf c^T+H\mathbf e^T=H\mathbf e^T.\]</div>
+<p>A síndrome depende do padrão de erro, não da mensagem. Para um erro único na posição <span class="eqwrap">\(i\)</span>, <span class="eqwrap">\(\mathbf e\)</span> contém um único 1 e a síndrome é a coluna <span class="eqwrap">\(i\)</span> de <span class="eqwrap">\(H\)</span>. Projetar <span class="eqwrap">\(H\)</span> com colunas binárias distintas permite identificar todas as posições.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos lineares de bloco">
+<div class="eyebrow"><span class="sec">04</span> Códigos lineares de bloco <span class="rule"></span></div>
+<div class="body">
+<p><strong>Teorema da síndrome única:</strong> para um código de Hamming <span class="eqwrap">\((n,k)\)</span> com <span class="eqwrap">\(n=2^r-1\)</span>, <span class="eqwrap">\(k=2^r-1-r\)</span>, a matriz <span class="eqwrap">\(H\)</span> tem todas as colunas não nulas de comprimento <span class="eqwrap">\(r\)</span> distintas. A síndrome <span class="eqwrap">\(\mathbf s\)</span> (vetor de <span class="eqwrap">\(r\)</span> bits) é exatamente o índice binário da posição do erro.</p>
+</div>
+</section>
+<section class="slide" data-sec="Código de Hamming">
+<div class="eyebrow"><span class="sec">05</span> Código de Hamming <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Código de Hamming</h2>
+<p>O código Hamming <span class="eqwrap">\((7,4)\)</span> transforma quatro bits em sete e possui <span class="eqwrap">\(d_{min}=3\)</span>, logo corrige um erro por palavra. As posições <span class="eqwrap">\(1\)</span>, <span class="eqwrap">\(2\)</span> e <span class="eqwrap">\(4\)</span> são bits de paridade; as posições <span class="eqwrap">\(3\)</span>, <span class="eqwrap">\(5\)</span>, <span class="eqwrap">\(6\)</span> e <span class="eqwrap">\(7\)</span> transportam dados. Uma escolha de paridades pares é:</p>
+<div class="eqwrap eqbig eqcenter">\[p_1=d_1\oplus d_2\oplus d_4,\quad
+p_2=d_1\oplus d_3\oplus d_4,\quad
+p_4=d_2\oplus d_3\oplus d_4.\]</div>
+<p>Se a síndrome em binário é <span class="eqwrap">\(s_4s_2s_1\)</span>, ela fornece o índice do bit errado.</p>
+</div>
+</section>
+<section class="slide" data-sec="Código de Hamming">
+<div class="eyebrow"><span class="sec">05</span> Código de Hamming <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Codificação e correção passo a passo</h3>
+<p>Para <span class="eqwrap">\(\mathbf d=(1,0,1,1)\)</span>, reserve as potências de dois para paridade:</p>
+<table class="cmp">
+<thead><tr>
+<th>Posição</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Função</td>
+<td><span class="eqwrap">\(p_1\)</span></td>
+<td><span class="eqwrap">\(p_2\)</span></td>
+<td><span class="eqwrap">\(d_1\)</span></td>
+<td><span class="eqwrap">\(p_4\)</span></td>
+<td><span class="eqwrap">\(d_2\)</span></td>
+<td><span class="eqwrap">\(d_3\)</span></td>
+<td><span class="eqwrap">\(d_4\)</span></td>
+</tr>
+<tr>
+<td>Valor</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>Por exemplo, <span class="eqwrap">\(p_1=1\oplus0\oplus1=0\)</span>; calculando as demais paridades, obtemos <span class="eqwrap">\(\mathbf c=(0,1,1,0,0,1,1)\)</span>.</p>
+<p>Se o quinto bit for invertido, chega <span class="eqwrap">\(\mathbf r=(0,1,1,0,1,1,1)\)</span>. Recalculando:</p>
+</div>
+</section>
+<section class="slide" data-sec="Código de Hamming">
+<div class="eyebrow"><span class="sec">05</span> Código de Hamming <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[s_1=r_1\oplus r_3\oplus r_5\oplus r_7=1,\]</div>
+<div class="eqwrap eqbig eqcenter">\[s_2=r_2\oplus r_3\oplus r_6\oplus r_7=0,\]</div>
+<div class="eqwrap eqbig eqcenter">\[s_4=r_4\oplus r_5\oplus r_6\oplus r_7=1.\]</div>
+<p>Assim, <span class="eqwrap">\(s_4s_2s_1=101_2=5\)</span>: inverta a posição 5 e extraia os dados das posições 3, 5, 6 e 7.</p>
+<p><strong>Limitação:</strong> dois erros podem produzir uma síndrome que aponta uma terceira posição e causar correção indevida. Uma paridade global adicional forma um código SECDED, capaz de corrigir um erro e detectar dois.</p>
+</div>
+</section>
+<section class="slide" data-sec="Código de Hamming">
+<div class="eyebrow"><span class="sec">05</span> Código de Hamming <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Códigos SECDED (Single Error Correction, Double Error Detection)</h3>
+<p>Um código SECDED adiciona um bit de paridade global ao Hamming <span class="eqwrap">\((7,4)\)</span>, produzindo um código <span class="eqwrap">\((8,4)\)</span> com <span class="eqwrap">\(d_{min}=4\)</span>. A paridade global verifica se o número total de 1s é par.</p>
+<p>Com <span class="eqwrap">\(d_{min}=4\)</span>:</p>
+<ul class="beats"><li>Corrige 1 erro (<span class="eqwrap">\(t=\lfloor(4-1)/2\rfloor=1\)</span>)</li><li>Detecta 2 erros (mas não corrige)</li></ul>
+<p>O receptor calcula a síndrome local <span class="eqwrap">\(s_4s_2s_1\)</span> e a paridade global <span class="eqwrap">\(p_g\)</span>. Se <span class="eqwrap">\(p_g\)</span> falha mas a síndrome é zero, há 2 erros. Se <span class="eqwrap">\(p_g\)</span> falha e a síndrome é não nula, há 1 erro na posição indicada pela síndrome.</p>
+</div>
+</section>
+<section class="slide" data-sec="CRC: detecção de erros">
+<div class="eyebrow"><span class="sec">06</span> CRC: detecção de erros <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">CRC: detecção de erros</h2>
+<p>O CRC representa uma sequência de bits como polinômio sobre <span class="eqwrap">\(GF(2)\)</span>. O transmissor divide <span class="eqwrap">\(x^rM(x)\)</span> pelo polinômio gerador <span class="eqwrap">\(g(x)\)</span> e transmite a mensagem acrescida do resto. O receptor divide a palavra recebida por <span class="eqwrap">\(g(x)\)</span>; resto não nulo indica erro.</p>
+<p>CRC é excelente para <strong>detecção</strong>, especialmente de rajadas, mas normalmente não corrige o bit errado. Em sistemas práticos, CRC é frequentemente combinado com ARQ ou com FEC.</p>
+</div>
+</section>
+<section class="slide" data-sec="CRC: detecção de erros">
+<div class="eyebrow"><span class="sec">06</span> CRC: detecção de erros <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO: Divisão polinomial sem mistério</h3>
+<p>Considere <span class="eqwrap">\(M=1101\)</span> e <span class="eqwrap">\(g=1011\)</span>, de grau 3. Acrescente três zeros a <span class="eqwrap">\(M\)</span> e divida <span class="eqwrap">\(1101000\)</span> por <span class="eqwrap">\(1011\)</span>, usando XOR no lugar da subtração:</p>
+</div>
+</section>
+<section class="slide" data-sec="CRC: detecção de erros">
+<div class="eyebrow"><span class="sec">06</span> CRC: detecção de erros <span class="rule"></span></div>
+<div class="body">
+<pre class="codeblock"><code>  1101000
+⊕ 1011    (g × x^3)
+-------
+  110000
+⊕ 1011    (g × x^2)
+-------
+  11100
+⊕ 1011    (g × x^1)
+-------
+  1010
+⊕ 1011    (g × x^0)
+-------
+   001</code></pre>
+</div>
+</section>
+<section class="slide" data-sec="CRC: detecção de erros">
+<div class="eyebrow"><span class="sec">06</span> CRC: detecção de erros <span class="rule"></span></div>
+<div class="body">
+<p>O resto é <span class="eqwrap">\(001\)</span>, portanto transmite-se <span class="eqwrap">\(1101001\)</span>. Ao dividir essa palavra por <span class="eqwrap">\(1011\)</span>, o receptor obtém resto zero.</p>
+</div>
+</section>
+<section class="slide" data-sec="CRC: detecção de erros">
+<div class="eyebrow"><span class="sec">06</span> CRC: detecção de erros <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Garantias de detecção do CRC</h3>
+<p>Um resto não nulo revela erro, mas resto zero não é garantia absoluta: padrões que são múltiplos de <span class="eqwrap">\(g(x)\)</span> passam despercebidos. Todo CRC de grau <span class="eqwrap">\(r\)</span> detecta:</p>
+<ul class="beats"><li><strong>Todas as rajadas de comprimento <span class="eqwrap">\(\leq r\)</span></strong></li><li><strong>Todas as rajadas de comprimento <span class="eqwrap">\(r+1\)</span> com probabilidade <span class="eqwrap">\(1-2^{-(r-1)}\)</span></strong></li><li><strong>Todas as rajadas de comprimento <span class="eqwrap">\(> r+1\)</span> com probabilidade <span class="eqwrap">\(1-2^{-r}\)</span></strong></li></ul>
+<p>Isso ocorre porque uma rajada de comprimento <span class="eqwrap">\(L\)</span> corresponde a um polinômio da forma <span class="eqwrap">\(x^i(x^{L-1}+x^{L-2}+\dots+1)\)</span>. Se <span class="eqwrap">\(L \leq r\)</span>, este polinômio não pode ser múltiplo de <span class="eqwrap">\(g(x)\)</span> (grau <span class="eqwrap">\(r\)</span>).</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos convolucionais e Viterbi">
+<div class="eyebrow"><span class="sec">07</span> Códigos convolucionais e Viterbi <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Códigos convolucionais e Viterbi</h2>
+<p>Um codificador convolucional possui memória: cada saída depende do bit atual e de bits anteriores. Sua taxa é dada por <span class="eqwrap">\(R_c=k/n\)</span>; por exemplo, um codificador de taxa <span class="eqwrap">\(1/2\)</span> gera dois bits para cada bit de entrada.</p>
+<p>O algoritmo de Viterbi busca a sequência mais provável no trellis. Para canal AWGN, a versão <em>soft decision</em> usa distâncias euclidianas e normalmente obtém ganho maior que a decisão dura.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos convolucionais e Viterbi">
+<div class="eyebrow"><span class="sec">07</span> Códigos convolucionais e Viterbi <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Registrador, trellis e sobreviventes</h3>
+<p>Para um codificador de taxa <span class="eqwrap">\(1/2\)</span>, memória 2 e geradores <span class="eqwrap">\((7,5)_8\)</span>,</p>
+<div class="eqwrap eqbig eqcenter">\[v_1[k]=u[k]\oplus u[k-1]\oplus u[k-2],\qquad v_2[k]=u[k]\oplus u[k-2].\]</div>
+<p>O estado é <span class="eqwrap">\((u[k-1],u[k-2])\)</span>; existem quatro estados e duas transições saindo de cada um. O <strong>trellis</strong> apenas desenha essas transições ao longo do tempo.</p>
+<p>Em cada instante, Viterbi (1) calcula a métrica de cada ramo, (2) soma-a ao custo acumulado, (3) mantém, para cada estado, somente o caminho de menor custo e (4) após uma profundidade de decisão, percorre os sobreviventes para trás. Decisão dura usa distância de Hamming; decisão suave usa amostras e distância euclidiana, preservando quão confiável era cada observação.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos convolucionais e Viterbi">
+<div class="eyebrow"><span class="sec">07</span> Códigos convolucionais e Viterbi <span class="rule"></span></div>
+<div class="body">
+<p>Mensagens finitas costumam receber bits de cauda para terminar no estado zero. Sem um estado final conhecido, os últimos bits têm decisão menos confiável.</p>
+</div>
+</section>
+<section class="slide" data-sec="Códigos convolucionais e Viterbi">
+<div class="eyebrow"><span class="sec">07</span> Códigos convolucionais e Viterbi <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO: Métrica de decisão suave vs. dura</h3>
+<p>Para canal AWGN com amostras <span class="eqwrap">\(y_k\)</span>, a versão <em>soft decision</em> calcula a distância euclidiana:</p>
+<div class="eqwrap eqbig eqcenter">\[d_E^2 = \sum_k (y_k - \hat{y}_k)^2\]</div>
+<p>onde <span class="eqwrap">\(\hat{y}_k \in \{-1,+1\}\)</span> é o símbolo esperado mapeado de <span class="eqwrap">\(\{0,1\}\)</span>. Para decisão dura, cada <span class="eqwrap">\(y_k\)</span> é primeiro convertido para <span class="eqwrap">\(\hat{y}_k \in \{0,1\}\)</span> por limiar em 0, e a métrica é a distância de Hamming:</p>
+<div class="eqwrap eqbig eqcenter">\[d_H = \sum_k \mathbb{I}(y_k^{\text{dura}} \neq \hat{y}_k^{\text{esperado}})\]</div>
+<p><strong>Teorema do ganho suave:</strong> para AWGN, a decisão suave de Viterbi oferece ganho de <span class="eqwrap">\(\approx 2\)</span> dB em relação à decisão dura em BER <span class="eqwrap">\(10^{-5}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Limite de Shannon">
+<div class="eyebrow"><span class="sec">08</span> Limite de Shannon <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Limite de Shannon</h2>
+<p>Para canal AWGN com largura de banda <span class="eqwrap">\(B\)</span>, a capacidade é</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{C=B\log_2(1+S/N)}.\]</div>
+<p>Shannon afirma que existem códigos com probabilidade de erro arbitrariamente pequena para taxas <span class="eqwrap">\(R<C\)</span>, usando blocos suficientemente longos; para <span class="eqwrap">\(R>C\)</span>, comunicação confiável é impossível. O teorema não fornece um código específico nem torna a complexidade de decodificação gratuita.</p>
+<p>Compare com <span class="eqwrap">\(C\)</span> a <strong>taxa de informação</strong>, e use a SNR referente à mesma largura de banda <span class="eqwrap">\(B\)</span>. Se <span class="eqwrap">\(R_{\mathrm{info}}>C\)</span>, trocar Hamming por um código moderno não basta: é necessário aumentar potência ou banda, ou reduzir a taxa útil. LDPC, turbo e códigos polares podem operar perto do limite em diferentes cenários, com custos finitos de bloco, latência e processamento.</p>
+</div>
+</section>
+<section class="slide" data-sec="Limite de Shannon">
+<div class="eyebrow"><span class="sec">08</span> Limite de Shannon <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO: Relação entre taxa, SNR e BER</h3>
+<p>Para codificação com taxa <span class="eqwrap">\(R_c\)</span>, a energia por bit de informação é <span class="eqwrap">\(E_b = E_s/R_c\)</span>, onde <span class="eqwrap">\(E_s\)</span> é a energia por símbolo transmitido. A capacidade em termos de <span class="eqwrap">\(E_b/N_0\)</span> é:</p>
+<div class="eqwrap eqbig eqcenter">\[\frac{C}{R_b} = \log_2(1 + \frac{E_b}{N_0}R_c)\]</div>
+<p>O <strong>limite de Shannon</strong> para <span class="eqwrap">\(E_b/N_0\)</span> mínimo (com <span class="eqwrap">\(C/R_b \to 0\)</span>) é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\left(\frac{E_b}{N_0}\right)_{\min} = \ln 2 \approx -1{,}59\,\mathrm{dB}}\]</div>
+<p>Para BER alvo <span class="eqwrap">\(10^{-5}\)</span> em BPSK sem codificação, <span class="eqwrap">\(E_b/N_0 \approx 9{,}6\)</span> dB. Com codificação próxima de Shannon, esse valor pode ser reduzido para <span class="eqwrap">\(\approx 4\)</span> dB — um <strong>ganho de codificação</strong> de <span class="eqwrap">\(\approx 5{,}6\)</span> dB.</p>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Experimentos Resolvidos em Python</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> medir ganho de codificação, taxas de erro e capacidade de correção. <strong>Controle experimental:</strong> declare SNR, padrões de erro, polinômios CRC e parâmetros Viterbi. <strong>Validação:</strong> reporte BER antes/depois da codificação, posição de erro corrigida, resto CRC e métricas Viterbi.</p>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 1: Codificação e Decodificação Hamming (7,4)</h3>
+<p>Implementar codificação, injeção de erro, decodificação com correção e verificação.</p>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+
+def hamming74_encode(d):
+    d1, d2, d3, d4 = map(int, d)
+    p1 = d1 ^ d2 ^ d4
+    p2 = d1 ^ d3 ^ d4
+    p4 = d2 ^ d3 ^ d4
+    return np.array([p1, p2, d1, p4, d2, d3, d4], dtype=int)
+
+def hamming74_decode(r):
+    r = r.copy()
+    s1 = r[0] ^ r[2] ^ r[4] ^ r[6]
+    s2 = r[1] ^ r[2] ^ r[5] ^ r[6]
+    s4 = r[3] ^ r[4] ^ r[5] ^ r[6]
+    pos = s1 + 2*s2 + 4*s4
+    if pos:
+        r[pos-1] ^= 1
+    return r[[2, 4, 5, 6]], pos
+
+# Teste 1: sem erro
+data = np.array([1, 0, 1, 1])
+codeword = hamming74_encode(data)
+decoded, position = hamming74_decode(codeword)
+print(f&#x27;Dados originais: {data}&#x27;)
+print(f&#x27;Código Hamming: {codeword}&#x27;)
+print(f&#x27;Decodificado (sem erro): {decoded}, posição corrigida: {position}&#x27;)
+assert np.array_equal(data, decoded) and position == 0
+
+# Teste 2: erro no 5º bit
+received = codeword.copy(); received[4] ^= 1
+decoded, position = hamming74_decode(received)
+print(f&#x27;Recebido com erro: {received}&#x27;)
+print(f&#x27;Decodificado (com erro): {decoded}, posição corrigida: {position}&#x27;)
+assert np.array_equal(data, decoded) and position == 5
+
+# Teste 3: dois erros (correção indevida possível)
+received2 = codeword.copy()
+received2[0] ^= 1; received2[1] ^= 1
+decoded2, position2 = hamming74_decode(received2)
+print(f&#x27;Recebido com 2 erros: {received2}&#x27;)
+print(f&#x27;Decodificado: {decoded2}, posição corrigida: {position2}&#x27;)
+# Nota: dois erros podem causar correção indevida
+
+print(&quot;✓ Hamming (7,4) simulation complete.&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\n\ndef hamming74_encode(d):\n    d1, d2, d3, d4 = map(int, d)\n    p1 = d1 ^ d2 ^ d4\n    p2 = d1 ^ d3 ^ d4\n    p4 = d2 ^ d3 ^ d4\n    return np.array([p1, p2, d1, p4, d2, d3, d4], dtype=int)\n\ndef hamming74_decode(r):\n    r = r.copy()\n    s1 = r[0] ^ r[2] ^ r[4] ^ r[6]\n    s2 = r[1] ^ r[2] ^ r[5] ^ r[6]\n    s4 = r[3] ^ r[4] ^ r[5] ^ r[6]\n    pos = s1 + 2*s2 + 4*s4\n    if pos:\n        r[pos-1] ^= 1\n    return r[[2, 4, 5, 6]], pos\n\n# Teste 1: sem erro\ndata = np.array([1, 0, 1, 1])\ncodeword = hamming74_encode(data)\ndecoded, position = hamming74_decode(codeword)\nprint(f\&#x27;Dados originais: {data}\&#x27;)\nprint(f\&#x27;Código Hamming: {codeword}\&#x27;)\nprint(f\&#x27;Decodificado (sem erro): {decoded}, posição corrigida: {position}\&#x27;)\nassert np.array_equal(data, decoded) and position == 0\n\n# Teste 2: erro no 5º bit\nreceived = codeword.copy(); received[4] ^= 1\ndecoded, position = hamming74_decode(received)\nprint(f\&#x27;Recebido com erro: {received}\&#x27;)\nprint(f\&#x27;Decodificado (com erro): {decoded}, posição corrigida: {position}\&#x27;)\nassert np.array_equal(data, decoded) and position == 5\n\n# Teste 3: dois erros (correção indevida possível)\nreceived2 = codeword.copy()\nreceived2[0] ^= 1; received2[1] ^= 1\ndecoded2, position2 = hamming74_decode(received2)\nprint(f\&#x27;Recebido com 2 erros: {received2}\&#x27;)\nprint(f\&#x27;Decodificado: {decoded2}, posição corrigida: {position2}\&#x27;)\n# Nota: dois erros podem causar correção indevida\n\nprint(&quot;✓ Hamming (7,4) simulation complete.&quot;)&#x27;, &quot;&lt;markdown-python-1&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-1&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 2: Cálculo CRC</h3>
+<p>Implementar divisão polinomial CRC e verificar detecção de rajadas de erro.</p>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">def crc_compute(message_bits, poly_bits):
+    &quot;&quot;&quot;Compute CRC remainder for message and generator polynomial.&quot;&quot;&quot;
+    msg = list(message_bits)
+    poly = list(poly_bits)
+    poly_len = len(poly)
+    
+    # Pad message with zeros
+    for _ in range(poly_len - 1):
+        msg.append(0)
+        
+    # Polynomial division
+    for i in range(len(message_bits)):
+        if msg[i] == 1:
+            for j in range(poly_len):
+                msg[i+j] ^= poly[j]
+                
+    return msg[-(poly_len-1):]
+
+# Teste CRC
+message = [1, 1, 0, 1]
+poly = [1, 0, 1, 1]  # x^3 + x + 1
+remainder = crc_compute(message, poly)
+print(f&#x27;Mensagem: {message}&#x27;)
+print(f&#x27;Polinômio: {poly}&#x27;)
+print(f&#x27;Resto CRC: {remainder}&#x27;)
+
+# Transmitted codeword
+codeword_crc = message + remainder
+print(f&#x27;Codeword transmitido: {codeword_crc}&#x27;)
+
+# Verify with no error
+verify_remainder = crc_compute(codeword_crc, poly)
+print(f&#x27;Resto na verificação (sem erro): {verify_remainder}&#x27;)
+assert verify_remainder == [0, 0, 0]
+
+# Verify with error
+codeword_error = codeword_crc.copy()
+codeword_error[3] ^= 1
+error_remainder = crc_compute(codeword_error, poly)
+print(f&#x27;Resto na verificação (com erro): {error_remainder}&#x27;)
+assert error_remainder != [0, 0, 0]
+
+print(&quot;✓ CRC simulation complete.&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Mensagem: [1, 1, 0, 1]
+Polinômio: [1, 0, 1, 1]
+Resto CRC: [0, 0, 1]
+Codeword transmitido: [1, 1, 0, 1, 0, 0, 1]
+Resto na verificação (sem erro): [0, 0, 0]
+Resto na verificação (com erro): [1, 0, 1]
+✓ CRC simulation complete.</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 3: Simulação de Decodificação Viterbi (Decisão Dura)</h3>
+<p>Implementar Viterbi simplificado para codificador convolucional taxa 1/2, memória 2.</p>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+
+class ViterbiDecoder:
+    def __init__(self, k=1, n=2, memory=2, generators=[7, 5]):
+        self.k = k
+        self.n = n
+        self.memory = memory
+        self.generators = generators
+        self.num_states = 2**memory
+        
+    def encode_state(self, state, input_bit):
+        &quot;&quot;&quot;Encode a state and input bit to output bits.&quot;&quot;&quot;
+        # State is (u[k-1], u[k-2])
+        u_k2, u_k1 = state
+        u_k = input_bit
+        
+        # Generator 7 (111): v1 = u[k] ^ u[k-1] ^ u[k-2]
+        v1 = u_k ^ u_k1 ^ u_k2
+        
+        # Generator 5 (101): v2 = u[k] ^ u[k-2]
+        v2 = u_k ^ u_k2
+        
+        return (v1, v2), (u_k1, u_k)
+    
+    def decode(self, received_bits):
+        &quot;&quot;&quot;Viterbi decoding with hard decision.&quot;&quot;&quot;
+        num_states = self.num_states
+        # Trellis: metrics[step][state] = accumulated metric
+        metrics = {state: 0 for state in range(num_states)}
+        path_history = [{state: [] for state in range(num_states)}]
+        
+        # Process each received pair
+        for step in range(len(received_bits) // 2):
+            r_pair = received_bits[2*step:2*step+2]
+            new_metrics = {state: float(&#x27;inf&#x27;) for state in range(num_states)}
+            new_path_history = {state: [] for state in range(num_states)}
+            
+            for state in range(num_states):
+                # Two possible transitions: input 0 or 1
+                for input_bit in [0, 1]:
+                    (v1, v2), next_state = self.encode_state(state, input_bit)
+                    
+                    # Calculate branch metric (Hamming distance)
+                    expected_bits = [v1, v2]
+                    branch_metric = sum(1 for e, r in zip(expected_bits, r_pair) if e != r)
+                    
+                    new_metric = metrics[state] + branch_metric
+                    
+                    if new_metric &lt; new_metrics[next_state]:
+                        new_metrics[next_state] = new_metric
+                        new_path_history[next_state] = path_history[-1][state] + [input_bit]
+            
+            metrics = new_metrics
+            path_history.append(new_path_history)
+            
+        # Traceback
+        final_state = min(metrics.keys(), key=lambda s: metrics[s])
+        decoded_bits = path_history[-1][final_state]
+        
+        return decoded_bits
+
+# Test Viterbi
+decoder = ViterbiDecoder(k=1, n=2, memory=2, generators=[7, 5])
+original_bits = [1, 0, 1, 1, 0]
+
+# Encode
+encoded_bits = []
+state = (0, 0)
+for bit in original_bits:
+    (v1, v2), state = decoder.encode_state(state, bit)
+    encoded_bits.extend([v1, v2])
+
+# Simulate channel with 1 error
+received_bits = encoded_bits.copy()
+received_bits[3] ^= 1  # Flip one bit
+
+decoded_bits = decoder.decode(received_bits)
+print(f&#x27;Bits originais: {original_bits}&#x27;)
+print(f&#x27;Bits codificados: {encoded_bits}&#x27;)
+print(f&#x27;Bits recebidos (com erro): {received_bits}&#x27;)
+print(f&#x27;Bits decodificados: {decoded_bits}&#x27;)
+
+print(&quot;✓ Viterbi simulation complete.&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\n\nclass ViterbiDecoder:\n    def __init__(self, k=1, n=2, memory=2, generators=[7, 5]):\n        self.k = k\n        self.n = n\n        self.memory = memory\n        self.generators = generators\n        self.num_states = 2**memory\n        \n    def encode_state(self, state, input_bit):\n        &quot;&quot;&quot;Encode a state and input bit to output bits.&quot;&quot;&quot;\n        # State is (u[k-1], u[k-2])\n        u_k2, u_k1 = state\n        u_k = input_bit\n        \n        # Generator 7 (111): v1 = u[k] ^ u[k-1] ^ u[k-2]\n        v1 = u_k ^ u_k1 ^ u_k2\n        \n        # Generator 5 (101): v2 = u[k] ^ u[k-2]\n        v2 = u_k ^ u_k2\n        \n        return (v1, v2), (u_k1, u_k)\n    \n    def decode(self, received_bits):\n        &quot;&quot;&quot;Viterbi decoding with hard decision.&quot;&quot;&quot;\n        num_states = self.num_states\n        # Trellis: metrics[step][state] = accumulated metric\n        metrics = {state: 0 for state in range(num_states)}\n        path_history = [{state: [] for state in range(num_states)}]\n        \n        # Process each received pair\n        for step in range(len(received_bits) // 2):\n            r_pair = received_bits[2*step:2*step+2]\n            new_metrics = {state: float(\&#x27;inf\&#x27;) for state in range(num_states)}\n            new_path_history = {state: [] for state in range(num_states)}\n            \n            for state in range(num_states):\n                # Two possible transitions: input 0 or 1\n                for input_bit in [0, 1]:\n                    (v1, v2), next_state = self.encode_state(state, input_bit)\n                    \n                    # Calculate branch metric (Hamming distance)\n                    expected_bits = [v1, v2]\n                    branch_metric = sum(1 for e, r in zip(expected_bits, r_pair) if e != r)\n                    \n                    new_metric = metrics[state] + branch_metric\n                    \n                    if new_metric &lt; new_metrics[next_state]:\n                        new_metrics[next_state] = new_metric\n                        new_path_history[next_state] = path_history[-1][state] + [input_bit]\n            \n            metrics = new_metrics\n            path_history.append(new_path_history)\n            \n        # Traceback\n        final_state = min(metrics.keys(), key=lambda s: metrics[s])\n        decoded_bits = path_history[-1][final_state]\n        \n        return decoded_bits\n\n# Test Viterbi\ndecoder = ViterbiDecoder(k=1, n=2, memory=2, generators=[7, 5])\noriginal_bits = [1, 0, 1, 1, 0]\n\n# Encode\nencoded_bits = []\nstate = (0, 0)\nfor bit in original_bits:\n    (v1, v2), state = decoder.encode_state(state, bit)\n    encoded_bits.extend([v1, v2])\n\n# Simulate channel with 1 error\nreceived_bits = encoded_bits.copy()\nreceived_bits[3] ^= 1  # Flip one bit\n\ndecoded_bits = decoder.decode(received_bits)\nprint(f\&#x27;Bits originais: {original_bits}\&#x27;)\nprint(f\&#x27;Bits codificados: {encoded_bits}\&#x27;)\nprint(f\&#x27;Bits recebidos (com erro): {received_bits}\&#x27;)\nprint(f\&#x27;Bits decodificados: {decoded_bits}\&#x27;)\n\nprint(&quot;✓ Viterbi simulation complete.&quot;)&#x27;, &quot;&lt;markdown-python-3&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-3&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 4: Comparação BER com e sem FEC</h3>
+<p>Simular BER para BPSK em AWGN com e sem codificação Hamming (7,4).</p>
+</div>
+</section>
+<section class="slide" data-sec="Experimentos Resolvidos em Python">
+<div class="eyebrow"><span class="sec">09</span> Experimentos Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+from scipy.special import erfc
+
+def ber_without_fec(EbN0_db, N_bits=100000):
+    &quot;&quot;&quot;BER for BPSK without FEC.&quot;&quot;&quot;
+    EbN0_lin = 10**(EbN0_db/10)
+    sigma = 1/np.sqrt(2*EbN0_lin)
+    
+    bits = np.random.randint(0, 2, N_bits)
+    symbols = 2*bits - 1
+    noise = sigma * np.random.randn(N_bits)
+    received = symbols + noise
+    
+    decisions = (received &gt; 0).astype(int)
+    errors = np.sum(bits != decisions)
+    return errors / N_bits
+
+def ber_with_hamming74(EbN0_db, N_blocks=10000):
+    &quot;&quot;&quot;BER for BPSK with Hamming (7,4) FEC.&quot;&quot;&quot;
+    EbN0_lin = 10**(EbN0_db/10)
+    # Energy per coded bit
+    EbN0_coded = EbN0_lin * (4/7)  # Rate 4/7
+    sigma = 1/np.sqrt(2*EbN0_coded)
+    
+    blocks_errors = 0
+    for _ in range(N_blocks):
+        # Generate 4 data bits
+        data = np.random.randint(0, 2, 4)
+        codeword = hamming74_encode(data)
+        
+        # BPSK modulation
+        symbols = 2*codeword - 1
+        noise = sigma * np.random.randn(7)
+        received_analog = symbols + noise
+        
+        # Hard decision
+        received_bits = (received_analog &gt; 0).astype(int)
+        
+        # Decode
+        decoded_data, pos = hamming74_decode(received_bits)
+        
+        # Check for block error
+        if not np.array_equal(data, decoded_data):
+            blocks_errors += 1
+            
+    return blocks_errors / N_blocks
+
+# Simulate BER curves
+EbN0_dbs = np.linspace(0, 10, 11)
+ber_no_fec = [ber_without_fec(db, N_bits=50000) for db in EbN0_dbs]
+ber_with_fec = [ber_with_hamming74(db, N_blocks=5000) for db in EbN0_dbs]
+
+print(&quot;BER Comparison (BPSK vs BPSK+Hamming(7,4)):&quot;)
+for db, b_no, b_fec in zip(EbN0_dbs, ber_no_fec, ber_with_fec):
+    print(f&quot;EbN0={db:2.0f} dB: BER sem FEC={b_no:.2e}, BER com FEC={b_fec:.2e}&quot;)
+
+print(&quot;✓ BER comparison simulation complete.&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nfrom scipy.special import erfc\n\ndef ber_without_fec(EbN0_db, N_bits=100000):\n    &quot;&quot;&quot;BER for BPSK without FEC.&quot;&quot;&quot;\n    EbN0_lin = 10**(EbN0_db/10)\n    sigma = 1/np.sqrt(2*EbN0_lin)\n    \n    bits = np.random.randint(0, 2, N_bits)\n    symbols = 2*bits - 1\n    noise = sigma * np.random.randn(N_bits)\n    received = symbols + noise\n    \n    decisions = (received &gt; 0).astype(int)\n    errors = np.sum(bits != decisions)\n    return errors / N_bits\n\ndef ber_with_hamming74(EbN0_db, N_blocks=10000):\n    &quot;&quot;&quot;BER for BPSK with Hamming (7,4) FEC.&quot;&quot;&quot;\n    EbN0_lin = 10**(EbN0_db/10)\n    # Energy per coded bit\n    EbN0_coded = EbN0_lin * (4/7)  # Rate 4/7\n    sigma = 1/np.sqrt(2*EbN0_coded)\n    \n    blocks_errors = 0\n    for _ in range(N_blocks):\n        # Generate 4 data bits\n        data = np.random.randint(0, 2, 4)\n        codeword = hamming74_encode(data)\n        \n        # BPSK modulation\n        symbols = 2*codeword - 1\n        noise = sigma * np.random.randn(7)\n        received_analog = symbols + noise\n        \n        # Hard decision\n        received_bits = (received_analog &gt; 0).astype(int)\n        \n        # Decode\n        decoded_data, pos = hamming74_decode(received_bits)\n        \n        # Check for block error\n        if not np.array_equal(data, decoded_data):\n            blocks_errors += 1\n            \n    return blocks_errors / N_blocks\n\n# Simulate BER curves\nEbN0_dbs = np.linspace(0, 10, 11)\nber_no_fec = [ber_without_fec(db, N_bits=50000) for db in EbN0_dbs]\nber_with_fec = [ber_with_hamming74(db, N_blocks=5000) for db in EbN0_dbs]\n\nprint(&quot;BER Comparison (BPSK vs BPSK+Hamming(7,4)):&quot;)\nfor db, b_no, b_fec in zip(EbN0_dbs, ber_no_fec, ber_with_fec):\n    print(f&quot;EbN0={db:2.0f} dB: BER sem FEC={b_no:.2e}, BER com FEC={b_fec:.2e}&quot;)\n\nprint(&quot;✓ BER comparison simulation complete.&quot;)&#x27;, &quot;&lt;markdown-python-4&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-4&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">10</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Um código <span class="eqwrap">\((15,11)\)</span> possui qual taxa <span class="eqwrap">\(R_c\)</span>? Qual a redundância em porcentagem?</p>
+<p><strong>E2.</strong> Um código tem <span class="eqwrap">\(d_{min}=5\)</span>. Quantos erros ele corrige e quantos detecta? E se <span class="eqwrap">\(d_{min}=6\)</span>?</p>
+<p><strong>E3.</strong> Codifique a palavra <span class="eqwrap">\(\mathbf u=(1,0,1,1)\)</span> pelo Hamming <span class="eqwrap">\((7,4)\)</span> usado neste capítulo. Verifique que a palavra codificada satisfaz <span class="eqwrap">\(H\mathbf c^T=\mathbf0\)</span>.</p>
+<p><strong>E4.</strong> A palavra Hamming recebida é <span class="eqwrap">\((0,1,1,0,0,1,1)\)</span>. Calcule a síndrome e corrija, se necessário. E se a palavra for <span class="eqwrap">\((0,0,1,0,0,1,1)\)</span>?</p>
+<p><strong>E5.</strong> Explique por que CRC e Hamming têm finalidades diferentes em uma cadeia de comunicação. Dê um exemplo de sistema que usa ambos.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">10</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E6.</strong> Para <span class="eqwrap">\(B=200\,\mathrm{kHz}\)</span> e <span class="eqwrap">\(S/N=15\,\mathrm{dB}\)</span>, calcule a capacidade de Shannon aproximada. Se a taxa de informação é <span class="eqwrap">\(1\,\mathrm{Mbit/s}\)</span>, é possível comunicação confiável?</p>
+<p><strong>E7.</strong> Um enlace transmite bits codificados a <span class="eqwrap">\(12\,\mathrm{Mbit/s}\)</span> com um código de taxa <span class="eqwrap">\(2/3\)</span>. Qual é a taxa de informação? Se a capacidade do canal é <span class="eqwrap">\(9\,\mathrm{Mbit/s}\)</span>, o teorema de Shannon impede comunicação confiável nessa taxa? Justifique.</p>
+<p><strong>E8.</strong> Para o código <span class="eqwrap">\(C=\{00000,11100,00111,11011\}\)</span>, verifique que ele é linear, encontre <span class="eqwrap">\(d_{min}\)</span> e determine quantos erros podem ser corrigidos.</p>
+<p><strong>E9.</strong> No Hamming <span class="eqwrap">\((7,4)\)</span> deste capítulo, receba <span class="eqwrap">\(\mathbf r=(0,0,1,0,0,1,1)\)</span>. Calcule <span class="eqwrap">\(s_1\)</span>, <span class="eqwrap">\(s_2\)</span> e <span class="eqwrap">\(s_4\)</span>, corrija a palavra e recupere os quatro dados.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">10</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E10.</strong> Explique por que um decodificador Viterbi de decisão suave não deve primeiro transformar cada amostra em 0 ou 1. Qual o ganho típico em dB sobre decisão dura para AWGN?</p>
+<p><strong>E11.</strong> Implemente um codificador CRC com polinômio <span class="eqwrap">\(g(x)=x^4+x+1\)</span> e verifique a detecção de uma rajada de 4 bits de erro.</p>
+<p><strong>E12.</strong> Para um código SECDED <span class="eqwrap">\((8,4)\)</span>, receba <span class="eqwrap">\(\mathbf r=(1,1,0,1,0,1,1,0)\)</span> (último bit é paridade global). Calcule a síndrome local e a paridade global, e determine se há 0, 1 ou 2 erros.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">11</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Gabarito</h2>
+<p><strong>E1.</strong> <span class="eqwrap">\(R_c=11/15\approx\boxed{0{,}733}\)</span>. Redundância: <span class="eqwrap">\(\boxed{26{,}7\%}\)</span>.</p>
+<p><strong>E2.</strong> Para <span class="eqwrap">\(d_{min}=5\)</span>: <span class="eqwrap">\(t=\lfloor(5-1)/2\rfloor=\boxed{2}\)</span> erros corrigíveis; detecta até <span class="eqwrap">\(\boxed{4}\)</span> erros. Para <span class="eqwrap">\(d_{min}=6\)</span>: <span class="eqwrap">\(t=\lfloor(6-1)/2\rfloor=\boxed{2}\)</span> erros corrigíveis; detecta até <span class="eqwrap">\(\boxed{5}\)</span> erros.</p>
+<p><strong>E3.</strong> <span class="eqwrap">\(p_1=0\)</span>, <span class="eqwrap">\(p_2=1\)</span> e <span class="eqwrap">\(p_4=0\)</span>, portanto <span class="eqwrap">\(\boxed{(0,1,1,0,0,1,1)}\)</span>. A síndrome <span class="eqwrap">\(H\mathbf c^T=\mathbf0\)</span> é verificada calculando <span class="eqwrap">\(s_1=0\)</span>, <span class="eqwrap">\(s_2=0\)</span>, <span class="eqwrap">\(s_4=0\)</span>.</p>
+<p><strong>E4.</strong> Para <span class="eqwrap">\((0,1,1,0,0,1,1)\)</span>: <span class="eqwrap">\(s_1=0\)</span>, <span class="eqwrap">\(s_2=0\)</span>, <span class="eqwrap">\(s_4=0\)</span>. Síndrome zero: palavra válida, não requer correção. Para <span class="eqwrap">\((0,0,1,0,0,1,1)\)</span>: <span class="eqwrap">\(s_1=1\)</span>, <span class="eqwrap">\(s_2=0\)</span>, <span class="eqwrap">\(s_4=0\)</span>, síndrome <span class="eqwrap">\(001_2=1\)</span>. Corrigindo posição 1: <span class="eqwrap">\((1,0,1,0,0,1,1)\)</span>, dados: <span class="eqwrap">\(\boxed{(1,0,1,1)}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">11</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p><strong>E5.</strong> Hamming é FEC e corrige um erro por palavra; CRC detecta erros, sobretudo rajadas, e costuma acionar retransmissão ou complementar outro código. Exemplo: Ethernet usa CRC-32 para detecção; Wi-Fi usa CRC-32 + codificação convolucional/Turbo.</p>
+<p><strong>E6.</strong> <span class="eqwrap">\(S/N=10^{1{,}5}\approx31{,}62\)</span>; <span class="eqwrap">\(C=200\times10^3\log_2(32{,}62)\approx\boxed{1{,}01\,\mathrm{Mbit/s}}\)</span>. Sim, <span class="eqwrap">\(1\,\mathrm{Mbit/s} < 1{,}01\,\mathrm{Mbit/s}\)</span>, portanto comunicação confiável é teoricamente possível com código adequado.</p>
+<p><strong>E7.</strong> <span class="eqwrap">\(R_{\mathrm{info}}=(2/3)12=\boxed{8\,\mathrm{Mbit/s}}\)</span>. Como <span class="eqwrap">\(8<9\,\mathrm{Mbit/s}\)</span>, Shannon não impede comunicação confiável; afirma apenas que códigos adequados podem existir. Não garante que o código escolhido atinja a BER desejada.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">11</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p><strong>E8.</strong> O XOR de quaisquer duas palavras listadas também pertence a <span class="eqwrap">\(C\)</span>, e <span class="eqwrap">\(00000\)</span> está no conjunto; portanto, o código é linear. Os pesos não nulos são 3, 3 e 4, logo <span class="eqwrap">\(d_{min}=3\)</span> e <span class="eqwrap">\(t=\lfloor(3-1)/2\rfloor=\boxed{1}\)</span>.</p>
+<p><strong>E9.</strong> <span class="eqwrap">\(s_1=0\)</span>, <span class="eqwrap">\(s_2=1\)</span> e <span class="eqwrap">\(s_4=0\)</span>, portanto <span class="eqwrap">\(s_4s_2s_1=010_2=2\)</span>. Corrigindo a posição 2, obtém-se <span class="eqwrap">\((0,1,1,0,0,1,1)\)</span> e os dados das posições 3, 5, 6 e 7 são <span class="eqwrap">\(\boxed{(1,0,1,1)}\)</span>.</p>
+<p><strong>E10.</strong> A decisão binária antecipada descarta a magnitude da amostra, isto é, a confiança da observação. O Viterbi suave compara diretamente as distâncias entre amostras e níveis esperados e pode distinguir evidência fraca de evidência forte. Ganho típico: <span class="eqwrap">\(\boxed{\approx 2\,\mathrm{dB}}\)</span>.</p>
+<p><strong>E11.</strong> Polinômio <span class="eqwrap">\(g(x)=x^4+x+1\)</span> (binário <span class="eqwrap">\(10011\)</span>). Rajada de 4 bits <span class="eqwrap">\(1111\)</span> na posição correta não é múltipla de <span class="eqwrap">\(g(x)\)</span>, portanto detectada. CRC de grau 4 detecta todas as rajadas de comprimento <span class="eqwrap">\(\leq 4\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">11</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p><strong>E12.</strong> Dados: posições 3,5,6,7 são <span class="eqwrap">\(0,1,1,0\)</span>. Paridades locais: <span class="eqwrap">\(p_1=0\oplus1\oplus0=1\)</span>, <span class="eqwrap">\(p_2=0\oplus1\oplus0=1\)</span>, <span class="eqwrap">\(p_4=1\oplus1\oplus0=0\)</span>. Síndrome local: <span class="eqwrap">\(s_4s_2s_1=011_2=3\)</span>. Paridade global: soma de todos os bits = <span class="eqwrap">\(1+1+0+1+0+1+1+0=4\)</span> (par). Paridade global OK, mas síndrome não zero → erro único na posição 3. Correção: inverter posição 3.</p>
+</div>
+</section>
+<section class="slide" data-sec="Síntese e roteiro de decisão">
+<div class="eyebrow"><span class="sec">12</span> Síntese e roteiro de decisão <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Síntese e roteiro de decisão</h2>
+<p>Ao analisar um esquema de proteção de canal, siga esta ordem:</p>
+<ol class="take"><li><strong>Identifique a finalidade:</strong> detectar, corrigir sem retransmissão, ou solicitar retransmissão?</li><li><strong>Calcule o custo:</strong> determine <span class="eqwrap">\(n\)</span>, <span class="eqwrap">\(k\)</span>, <span class="eqwrap">\(R_c=k/n\)</span> e a taxa útil.</li><li><strong>Modele o erro:</strong> erros independentes, rajadas, apagamentos ou amostras suaves?</li><li><strong>Associe a ferramenta:</strong> distância e síndrome para códigos de bloco; divisão polinomial para CRC; trellis e métricas para códigos convolucionais.</li><li><strong>Cheque o limite físico:</strong> compare a taxa de informação com a capacidade usando unidades e largura de banda consistentes.</li><li><strong>Valide:</strong> injete padrões de erro controlados antes de medir BER em um canal aleatório.</li></ol>
+<p><strong>Erros comuns a evitar:</strong></p>
+</div>
+</section>
+<section class="slide" data-sec="Síntese e roteiro de decisão">
+<div class="eyebrow"><span class="sec">12</span> Síntese e roteiro de decisão <span class="rule"></span></div>
+<div class="body">
+<ul class="beats"><li>interpretar <span class="eqwrap">\(R_c\)</span> como taxa em bit/s, embora seja uma razão adimensional;</li><li>afirmar que <span class="eqwrap">\(d_{min}=3\)</span> corrige três erros;</li><li>somar matrizes binárias sem reduzir módulo 2;</li><li>tratar síndrome zero como prova de ausência de qualquer erro;</li><li>dizer que CRC corrige automaticamente o pacote;</li><li>comparar taxa codificada, em vez de taxa de informação, com a capacidade;</li><li>comparar BER codificada e não codificada em condições diferentes de energia por bit útil.</li></ul>
+<p><strong>Teste de domínio:</strong> sem consultar o texto, explique por que uma síndrome não nula localiza um erro único no Hamming <span class="eqwrap">\((7,4)\)</span> e por que a mesma regra pode falhar diante de dois erros. Se a explicação não mencionar as colunas de <span class="eqwrap">\(H\)</span> e <span class="eqwrap">\(d_{min}\)</span>, revise as Seções 2–4.</p>
+</div>
+</section>
+    <div class="nav-arrows">
+      <button class="nav-btn prev" id="nav-prev-btn" aria-label="Previous slide">‹</button>
+      <button class="nav-btn next" id="nav-next-btn" aria-label="Next slide">›</button>
+    </div>
+    <div class="foot"><span>Slide Framework</span><span class="dots" data-dots></span><span data-num></span></div>
+  </main>
+</div>
+
+<div class="brand">Códigos Corretores de Erros</div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">00</span></div>
+<button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" class="sun-icon"/><line x1="12" y1="1" x2="12" y2="3" class="sun-icon"/><line x1="12" y1="21" x2="12" y2="23" class="sun-icon"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="sun-icon"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="sun-icon"/><line x1="1" y1="12" x2="3" y2="12" class="sun-icon"/><line x1="21" y1="12" x2="23" y2="12" class="sun-icon"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="sun-icon"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="sun-icon"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-icon"/></svg>
+</button>
+<div class="hint" id="hint"><kbd>←</kbd><kbd>→</kbd> to move · <kbd>F</kbd> full screen · <kbd>Ctrl+K</kbd> search · <kbd>S</kbd> notes</div>
+
+<div class="search-overlay" id="search-overlay"></div>
+
+<div class="notes-overlay" id="notes-overlay">
+	<div class="notes-card">
+		<div class="notes-header">
+			<span class="title">Speaker Notes</span>
+			<button class="close-btn">Close (S)</button>
+		</div>
+		<div class="notes-body"></div>
+		<div class="notes-current"></div>
+	</div>
+</div>
+
+<script defer src="../../slide_framework/deck.js"></script>
+</body>
+</html>

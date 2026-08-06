@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modulação em Amplitude — Teoria Completa</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="../../slide_framework/framework.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+<div class="progress" id="progress" title="Jump">
+  <div class="bar" id="bar"></div>
+</div>
+
+<div class="deck-shell">
+  <main class="stage" id="stage">
+<section class="slide title-slide" data-sec="Title">
+  <svg class="title-figure" viewBox="0 0 420 340" aria-hidden="true"><defs><radialGradient id="ig" cx="50%" cy="55%" r="60%"><stop offset="0%" stop-color="var(--gold)" stop-opacity=".10"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></radialGradient></defs><circle cx="210" cy="180" r="160" fill="url(#ig)"/><g stroke="var(--line)" stroke-width=".7" opacity=".2"><line x1="50" y1="40" x2="50" y2="300"/><line x1="50" y1="300" x2="390" y2="300"/></g><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M70,200 L130,200 L130,140 L190,140" stroke="var(--blue)" opacity=".8"/><path d="M190,140 L190,80 L250,80 L250,140 L310,140 L310,200" stroke="var(--vio)" opacity=".75"/><path d="M70,240 L110,240 L110,200 L150,200 L150,280 L210,280 L210,240 L270,240 L270,300 L330,300 L330,240 L390,240" stroke="var(--gold)" opacity=".65"/></g><circle cx="130" cy="140" r="5" fill="var(--blue)"/><circle cx="190" cy="140" r="5" fill="var(--vio)"/><circle cx="250" cy="80" r="4" fill="var(--gold)"/><circle cx="150" cy="200" r="4" fill="var(--blue)"/><circle cx="110" cy="240" r="4" fill="var(--gold)"/><circle cx="210" cy="240" r="4" fill="var(--vio)"/><circle cx="270" cy="240" r="4" fill="var(--gold)"/><circle cx="330" cy="240" r="4" fill="var(--vio)"/><path d="M80,100 Q110,60 140,100 Q170,140 200,100 Q230,60 260,100 Q290,140 320,100 Q350,60 370,80"fill="none" stroke="var(--blue)" stroke-width="1.8" opacity=".5" stroke-linecap="round"/><circle cx="70" cy="200" r="3" fill="var(--text)" opacity=".5"/><circle cx="390" cy="240" r="3" fill="var(--text)" opacity=".5"/></svg>
+  <div class="title-content">
+    <div class="super">Comunicações Eletrônicas — Apostila de Curso</div>
+    <h1>Modulação em Amplitude — Teoria Completa</h1>
+    <div class="topics"><span class="chip">Modulação AM</span><span class="chip">DSB-SC</span><span class="chip">detecção coerente e de envelope</span><span class="chip">SSB</span><span class="chip">VSB</span><span class="chip">análise de ruído</span></div>
+  </div>
+</section>
+<section class="slide" data-sec="Antes de começar">
+<div class="eyebrow"><span class="sec">01</span> Antes de começar <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Antes de começar</h2>
+<p>Ao final, você deve conseguir derivar os espectros de DSB-SC, AM, SSB e VSB; calcular banda e potência; e escolher um detector coerente ou de envelope. <strong>Diagnóstico:</strong> qual parte da potência da AM convencional transporta informação? <strong>Evidência mínima:</strong> prever e depois simular sobremodulação, erro de fase e escolha da constante <span class="eqwrap">\(RC\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Por que modular? Fundamentos da Modulação Analógica</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">A necessidade fundamental da modulação</h3>
+<p>A modulação é o processo de variar um ou mais parâmetros de uma onda portadora (senoidal de alta frequência) em função de um sinal de mensagem (banda base, de frequência mais baixa). Este é o pilar de <strong>todas</strong> as comunicações sem fio — de rádio AM/FM a enlaces de micro-ondas, satélites e sistemas celulares.</p>
+<p>Existem <strong>três razões físicas e práticas</strong> fundamentais:</p>
+<ol class="take"><li><strong>Antenas de tamanho prático</strong>: O comprimento de onda <span class="eqwrap">\(\lambda = c/f\)</span> deve ser comparável às dimensões da antena (tipicamente <span class="eqwrap">\(\lambda/4\)</span> ou <span class="eqwrap">\(\lambda/2\)</span>). Para um sinal de áudio com <span class="eqwrap">\(f_{\text{áudio}} = 1\,\text{kHz}\)</span>, teríamos <span class="eqwrap">\(\lambda \approx 300\,\text{km}\)</span> — uma antena de <span class="eqwrap">\(75\,\text{km}\)</span> é impraticável. Modulado para <span class="eqwrap">\(f_c = 100\,\text{MHz}\)</span> (banda FM), <span class="eqwrap">\(\lambda = 3\,\text{m}\)</span> e a antena cabe na palma da mão.</li></ol>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<ol class="take"><li><strong>Multiplexação por divisão em frequência (FDM)</strong>: Vários sinais podem coexistir no mesmo meio físico (espaço livre, cabo coaxial, fibra) se cada um for modulado em uma faixa de frequência diferente. Sem modulação, todos os sinais ocupariam a mesma banda base e se sobreporiam destrutivamente.</li></ol>
+<ol class="take"><li><strong>Adaptação ao canal</strong>: Diferentes canais têm diferentes características de transmissão (atenuação seletiva, interferências, largura de banda disponível). Modular permite "encaixar" o sinal na janela de frequência onde o canal tem melhor resposta.</li></ol>
+<div class="thm blue"><div class="lbl">Definição</div><p>um sinal de mensagem <span class="eqwrap">\(m(t)\)</span> é dito <strong>banda base</strong> se seu espectro <span class="eqwrap">\(M(f)\)</span> é nulo para <span class="eqwrap">\(|f| > W\)</span>, onde <span class="eqwrap">\(W\)</span> é a <strong>largura de banda</strong> do sinal. Assumimos sempre <span class="eqwrap">\(f_c \gg W\)</span> para que não haja sobreposição espectral.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Representação analítica</h3>
+<p>Para qualquer sinal real <span class="eqwrap">\(s(t)\)</span> de banda estreita, definimos o <strong>sinal analítico</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\tilde{s}(t) = s(t) + j\,\hat{s}(t)}\]</div>
+<p>onde <span class="eqwrap">\(\hat{s}(t)\)</span> é a <strong>transformada de Hilbert</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\hat{s}(t) = s(t) * \frac{1}{\pi t}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<p>No domínio da frequência, <span class="eqwrap">\(\hat{S}(f) = -j\,\text{sgn}(f)\,S(f)\)</span>, e <span class="eqwrap">\(\tilde{S}(f) = 2\,U(f)\,S(f)\)</span> (apenas frequências positivas, duplicadas).</p>
+<p>O <strong>sinal complexo envolvente</strong> (<em>baseband</em> equivalente):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\tilde{s}_L(t) = \tilde{s}(t)\,e^{-j2\pi f_c t}}\]</div>
+<p>Recupera-se <span class="eqwrap">\(s(t)\)</span> por:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s(t) = \Re\{\tilde{s}_L(t)\,e^{j2\pi f_c t}\}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Representação quadratura (I/Q)</h3>
+<p>Escrevendo <span class="eqwrap">\(\tilde{s}_L(t) = I(t) + j\,Q(t)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s(t) = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t)}\]</div>
+<ul class="beats"><li><span class="eqwrap">\(I(t)\)</span>: componente em fase (<em>in-phase</em>);</li><li><span class="eqwrap">\(Q(t)\)</span>: componente em quadratura (<em>quadrature</em>);</li><li><span class="eqwrap">\(A(t) = \sqrt{I^2(t) + Q^2(t)}\)</span>: envelope instantâneo;</li><li><span class="eqwrap">\(\phi(t) = \arctan(Q/I)\)</span>: fase instantânea.</li></ul>
+<p>Toda modulação em amplitude usa <span class="eqwrap">\(Q(t) = 0\)</span>; modulações de fase/frequência manipulam <span class="eqwrap">\(Q\)</span> e <span class="eqwrap">\(\phi\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Espectro de modulação e bandas laterais</h3>
+<p>Para um sinal de mensagem <span class="eqwrap">\(m(t)\)</span>, real, limitado a <span class="eqwrap">\(|f| \leq W\)</span>, com transformada de Fourier <span class="eqwrap">\(M(f)\)</span>, a modulação em amplitude traduz o espectro <span class="eqwrap">\(M(f)\)</span> para as vizinhanças de <span class="eqwrap">\(\pm f_c\)</span>. Este é o efeito da <strong>modulação por multiplicação</strong>:</p>
+<p><strong>Resultado</strong>: multiplicar no tempo por <span class="eqwrap">\(\cos(2\pi f_c t)\)</span> corresponde a convolucionar o espectro com <span class="eqwrap">\(\tfrac{1}{2}[\delta(f-f_c)+\delta(f+f_c)]\)</span>, o que produz <strong>duas cópias</strong> de <span class="eqwrap">\(M(f)\)</span>, centradas em <span class="eqwrap">\(+f_c\)</span> e <span class="eqwrap">\(-f_c\)</span>.</p>
+<p>Para <span class="eqwrap">\(m(t)\)</span> <strong>real</strong>, <span class="eqwrap">\(M(f)\)</span> possui simetria conjugada: <span class="eqwrap">\(M(-f) = M^*(f)\)</span>. As duas bandas laterais (BSL) são, portanto, <strong>espelhos complexos conjugados</strong> e contêm <strong>informação redundante</strong> — esta redundância é o que permite a simplificação SSB.</p>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<div class="pane gold"><div class="ptitle">Observação</div><p>a largura de banda do sinal modulado é sempre o dobro da largura de banda da mensagem, no caso de dupla banda lateral (DSB): <span class="eqwrap">\(B_{\text{mod}} = 2W\)</span>. SSB reduz para <span class="eqwrap">\(B_{\text{mod}} = W\)</span>.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Eficiência espectral e energética como critérios de escolha</h3>
+<p>Ao comparar esquemas de modulação, dois critérios são essenciais:</p>
+<ul class="beats"><li><strong>Eficiência espectral</strong> (<span class="eqwrap">\(\eta_f\)</span>): quantos bits/s (ou quanta informação) por hertz de banda ocupada. Quanto menor a banda, melhor.</li><li><strong>Eficiência energética</strong> (<span class="eqwrap">\(\eta_P\)</span>): fração da potência total do sinal modulado que transporta informação (não é desperdiçada em portadora ou bandas redundantes).</li></ul>
+<p><strong>Resultado</strong>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Por que modular? Fundamentos da Modulação Analógica">
+<div class="eyebrow"><span class="sec">02</span> Por que modular? Fundamentos da Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<table class="cmp">
+<thead><tr>
+<th>Esquema</th>
+<th>Banda</th>
+<th>Ef. espectral</th>
+<th>Ef. energética</th>
+<th>Complexidade</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>AM (DSB-LC)</td>
+<td><span class="eqwrap">\(2W\)</span></td>
+<td>baixa</td>
+<td><span class="eqwrap">\(\leq 33\%\)</span> (tom único)</td>
+<td>baixa (detector envelope)</td>
+</tr>
+<tr>
+<td>DSB-SC</td>
+<td><span class="eqwrap">\(2W\)</span></td>
+<td>média</td>
+<td><span class="eqwrap">\(100\%\)</span> (sem portadora)</td>
+<td>média (detector coerente)</td>
+</tr>
+<tr>
+<td>SSB</td>
+<td><span class="eqwrap">\(W\)</span></td>
+<td>alta</td>
+<td><span class="eqwrap">\(100\%\)</span></td>
+<td>alta (filtro/Hilbert)</td>
+</tr>
+<tr>
+<td>VSB</td>
+<td><span class="eqwrap">\(\approx W\)</span></td>
+<td>intermediária</td>
+<td>intermediária</td>
+<td>intermediária</td>
+</tr>
+</tbody>
+</table>
+<p>Esta tabela orienta a escolha do esquema: AM para emissão <em>broadcasting</em> (simplicidade do receptor), DSB-SC para enlace ponto-a-ponto eficiente, SSB para comunicações de longa distância (HF), VSB para vídeo (compromisso prático).</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Modulação DSB-SC — Teoria Completa</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição e modelo</h3>
+<p>Na <strong>modulação DSB-SC</strong> (<em>Double Sideband — Suppressed Carrier</em>, ou "bandas laterais duplas com portadora suprimida"), o sinal modulado é simplesmente o produto do sinal de mensagem pela portadora:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)}\]</div>
+<p>onde:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<ul class="beats"><li><span class="eqwrap">\(A_c\)</span> é a amplitude da portadora (parâmetro de ganho do modulador);</li><li><span class="eqwrap">\(m(t)\)</span> é o sinal de mensagem, com <span class="eqwrap">\(\max|m(t)| \leq 1\)</span> (normalizado);</li><li><span class="eqwrap">\(f_c \gg W\)</span> é a frequência da portadora.</li></ul>
+<div class="thm blue"><div class="lbl">Definição</div><p>o prefixo "SC" (<em>suppressed carrier</em>) indica que <strong>nenhuma portadora discreta</strong> aparece no espectro — toda a potência do sinal modulado está contida nas bandas laterais, que carregam informação.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução completa do espectro</h3>
+<p>Aplicamos a transformada de Fourier a <span class="eqwrap">\(s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)\)</span>. Usamos a propriedade da multiplicação:</p>
+<div class="eqwrap eqbig eqcenter">\[\mathcal{F}\{x(t)\,y(t)\} = X(f) * Y(f)\]</div>
+<p>Sabemos que <span class="eqwrap">\(\cos(2\pi f_c t) \;\xrightarrow{\mathcal{F}}\; \dfrac{1}{2}\bigl[\delta(f-f_c)+\delta(f+f_c)\bigr]\)</span>. Logo:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[S_{\text{DSB-SC}}(f) = A_c\,M(f) * \frac{1}{2}\bigl[\delta(f-f_c)+\delta(f+f_c)\bigr]\]</div>
+<div class="eqwrap eqbig eqcenter">\[\boxed{S_{\text{DSB-SC}}(f) = \frac{A_c}{2}\Bigl[M(f-f_c) + M(f+f_c)\Bigr]}\]</div>
+<p><strong>Interpretação física</strong>: o espectro de <span class="eqwrap">\(m(t)\)</span> é "copiado" duas vezes: uma cópia deslocada para <span class="eqwrap">\(+f_c\)</span> (banda lateral superior) e outra para <span class="eqwrap">\(-f_c\)</span> (banda lateral inferior). Como <span class="eqwrap">\(M(f)\)</span> é zero para <span class="eqwrap">\(|f| > W\)</span>, o espectro modulado ocupa a faixa <span class="eqwrap">\([f_c-W,\;f_c+W]\)</span> e <span class="eqwrap">\([-f_c-W,\;-f_c+W]\)</span>.</p>
+<p><strong>Largura de banda</strong>: a banda ocupada em cada lado é <span class="eqwrap">\(W\)</span>, mas a banda total (do mínimo ao máximo frequência positiva) é:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{B_{\text{DSB-SC}} = 2W}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Potência do sinal DSB-SC</h3>
+<p>A potência média de um sinal real <span class="eqwrap">\(s(t)\)</span> com carga de referência <span class="eqwrap">\(1\,\Omega\)</span> é:</p>
+<div class="eqwrap eqbig eqcenter">\[P_s = \lim_{T\to\infty}\frac{1}{T}\int_{-T/2}^{T/2}|s(t)|^2\,dt = \langle s^2(t)\rangle\]</div>
+<p>Para <span class="eqwrap">\(s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[s^2(t) = A_c^2\,m^2(t)\,\cos^2(2\pi f_c t) = A_c^2\,m^2(t)\cdot\frac{1+\cos(4\pi f_c t)}{2}\]</div>
+<div class="eqwrap eqbig eqcenter">\[P_s = \frac{A_c^2}{2}\,\langle m^2(t)\rangle + \frac{A_c^2}{2}\,\bigl\langle m^2(t)\,\cos(4\pi f_c t)\bigr\rangle\]</div>
+<p>O segundo termo se anula por média temporal (o termo em <span class="eqwrap">\(2f_c\)</span> oscila muito mais rápido que <span class="eqwrap">\(m^2(t)\)</span>, e sua média tende a zero para <span class="eqwrap">\(f_c \gg W\)</span>). Definindo <span class="eqwrap">\(P_m = \langle m^2(t)\rangle\)</span> como a potência do sinal de mensagem:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_s = \frac{A_c^2}{2}\,P_m}\]</div>
+<div class="pane gold"><div class="ptitle">Observação</div><p>em DSB-SC, <strong>100% da potência</strong> transporta informação (não há componente de portadora separada). Esta é a vantagem fundamental sobre AM convencional.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Representação no plano I/Q</h3>
+<p>Para DSB-SC, comparando com a forma quadratura <span class="eqwrap">\(s(t) = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t)\)</span>:</p>
+<ul class="beats"><li>Componente I: <span class="eqwrap">\(\boxed{I(t) = A_c\,m(t)}\)</span></li><li>Componente Q: <span class="eqwrap">\(\boxed{Q(t) = 0}\)</span></li></ul>
+<p>O sinal complexo envolvente é puramente real:</p>
+<div class="eqwrap eqbig eqcenter">\[\tilde{s}_L(t) = A_c\,m(t)\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<p>e o envelope instantâneo é <span class="eqwrap">\(|\tilde{s}_L(t)| = A_c|m(t)|\)</span>. Em DSB-SC, o envelope <strong>cruza zero</strong> sempre que <span class="eqwrap">\(m(t)\)</span> cruza zero — isso significa que o sinal <strong>inverte de fase</strong> a cada zero, e um detector de envelope simples não funciona (explicado na Seção “Detecção de Envelope de AM”).</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Transformada de Hilbert de um sinal DSB-SC</h3>
+<p>No domínio da frequência: <span class="eqwrap">\(\hat{S}(f) = -j\,\text{sgn}(f)\,S(f)\)</span>. Para DSB-SC concentrado em <span class="eqwrap">\(\pm f_c\)</span>:</p>
+<ul class="beats"><li><span class="eqwrap">\(f > 0\)</span>: <span class="eqwrap">\(\hat{S}(f) = -j\,S(f)\)</span></li><li><span class="eqwrap">\(f < 0\)</span>: <span class="eqwrap">\(\hat{S}(f) = +j\,S(f)\)</span></li></ul>
+<p>Invertendo:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\hat{s}_{\text{DSB-SC}}(t) = A_c\,m(t)\,\sin(2\pi f_c t)}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<p>Sinal analítico: <span class="eqwrap">\(\tilde{s}(t) = A_c\,m(t)\,e^{j2\pi f_c t}\)</span>, envelope complexo <span class="eqwrap">\(\tilde{s}_L(t) = A_c\,m(t)\)</span> — confirmando Seção “Representação no plano I/Q”.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exemplo numérico</h3>
+<p><strong>Exemplo</strong>: mensagem <span class="eqwrap">\(m(t) = \cos(2\pi\cdot 1000\,t)\)</span>, <span class="eqwrap">\(f_c = 100\,\text{kHz}\)</span>, <span class="eqwrap">\(A_c = 1\)</span>.</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{DSB-SC}}(t) = \cos(2\pi\cdot 10^3\,t)\,\cos(2\pi\cdot 10^5\,t)\]</div>
+<p>Usando a identidade trigonométrica <span class="eqwrap">\(\cos A\cos B = \tfrac{1}{2}[\cos(A-B)+\cos(A+B)]\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{DSB-SC}}(t) = \frac{1}{2}\cos(2\pi\cdot 99\,000\,t) + \frac{1}{2}\cos(2\pi\cdot 101\,000\,t)\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação DSB-SC — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> Modulação DSB-SC — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<p>Espectro: duas linhas em <span class="eqwrap">\(\pm 99\,\text{kHz}\)</span> e <span class="eqwrap">\(\pm 101\,\text{kHz}\)</span>, cada uma com amplitude <span class="eqwrap">\(1/2\)</span>.</p>
+<p>Potência: <span class="eqwrap">\(P_m = \langle\cos^2(2\pi\cdot 10^3\,t)\rangle = 1/2\)</span>, logo <span class="eqwrap">\(P_s = \tfrac{1}{2}\cdot\tfrac{1}{2} = \tfrac{1}{4}\)</span>. Cada banda lateral contribui com <span class="eqwrap">\(1/8\)</span>.</p>
+<div class="pane gold"><div class="ptitle">Observação</div><p>note que não há nenhuma linha espectral em <span class="eqwrap">\(f_c = 100\,\text{kHz}\)</span> — a portadora está completamente suprimida. Esta é a assinatura espectral do DSB-SC.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Detecção Coerente de DSB-SC</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Princípio da detecção coerente (síncrona)</h3>
+<p>Para recuperar <span class="eqwrap">\(m(t)\)</span> de <span class="eqwrap">\(s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)\)</span>, o método mais direto é <strong>multiplicar pelo mesmo coseno</strong> que foi usado na modulação e filtrar:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{r(t) = 2\,s_{\text{DSB-SC}}(t)\,\cos(2\pi f_c t)}\]</div>
+<p>O fator <span class="eqwrap">\(2\)</span> é introduzido para simplificar a recuperação (compensar o fator <span class="eqwrap">\(1/2\)</span> da multiplicação trigonométrica).</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução completa da recuperação</h3>
+<p>Desenvolvendo:</p>
+<div class="eqwrap eqbig eqcenter">\[r(t) = 2\,A_c\,m(t)\,\cos(2\pi f_c t)\,\cos(2\pi f_c t) = 2\,A_c\,m(t)\,\cos^2(2\pi f_c t)\]</div>
+<p>Usando <span class="eqwrap">\(\cos^2\theta = \frac{1}{2}\bigl[1+\cos(2\theta)\bigr]\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[r(t) = 2\,A_c\,m(t)\cdot\frac{1+\cos(4\pi f_c t)}{2} = A_c\,m(t) + A_c\,m(t)\,\cos(4\pi f_c t)\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<p>O segundo termo é um sinal centrado em <span class="eqwrap">\(2f_c\)</span>. Passando por um <strong>filtro passa-baixas</strong> <span class="eqwrap">\(H_{\text{LP}}(f)\)</span> com largura de corte <span class="eqwrap">\(B_{\text{LP}} \geq W\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{y(t) = A_c\,m(t)}\]</div>
+<p>A mensagem é recuperada com ganho <span class="eqwrap">\(A_c\)</span>. Um amplificador com ganho <span class="eqwrap">\(1/A_c\)</span> a seguir fornece a saída final <span class="eqwrap">\(m(t)\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Efeito do erro de fase <span class="eqwrap">\(\phi\)</span></h3>
+<p>Na prática, o oscilador local do receptor pode não estar perfeitamente sincronizado em fase com a portadora. Suponha que o oscilador local seja <span class="eqwrap">\(\cos(2\pi f_c t + \phi)\)</span>, com erro de fase <span class="eqwrap">\(\phi\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[r_\phi(t) = 2\,s_{\text{DSB-SC}}(t)\,\cos(2\pi f_c t + \phi) = 2\,A_c\,m(t)\,\cos(2\pi f_c t)\,\cos(2\pi f_c t + \phi)\]</div>
+<p>Usando <span class="eqwrap">\(2\cos A\cos B = \cos(A-B) + \cos(A+B)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[r_\phi(t) = A_c\,m(t)\bigl[\cos(-\phi) + \cos(4\pi f_c t + \phi)\bigr]\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[r_\phi(t) = A_c\,m(t)\,\cos\phi + A_c\,m(t)\,\cos(4\pi f_c t + \phi)\]</div>
+<p>Após o filtro passa-baixas:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{y_\phi(t) = A_c\,m(t)\,\cos\phi}\]</div>
+<p><strong>Análise de perda</strong>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<ul class="beats"><li><span class="eqwrap">\(\phi = 0\)</span>: recuperação perfeita <span class="eqwrap">\(y(t) = A_c\,m(t)\)</span>.</li><li><span class="eqwrap">\(\phi = 90° = \pi/2\)</span>: <span class="eqwrap">\(y(t) = 0\)</span> — <strong>perda total</strong> do sinal.</li><li><span class="eqwrap">\(\phi = 180° = \pi\)</span>: <span class="eqwrap">\(y(t) = -A_c\,m(t)\)</span> — recuperação com inversão de polaridade (geralmente tolerável).</li></ul>
+<p>A <strong>perda de potência</strong> devido ao erro de fase é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_{\text{loss}} = 1 - \cos^2\phi = \sin^2\phi}\]</div>
+<p>Ou seja, a potência do sinal recuperado é <span class="eqwrap">\(\cos^2\phi\)</span> vezes a potência original. Para <span class="eqwrap">\(\phi = 30°\)</span>, por exemplo: <span class="eqwrap">\(\cos^2 30° = 3/4 = 75\%\)</span> da potência é mantida.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<p><strong>Importante</strong>: este é o principal problema da detecção coerente — exige que o receptor gere uma portadora local <strong>sincronizada em fase</strong> com a portadora original. Qualquer erro de fase causa atenuação proporcional a <span class="eqwrap">\(\cos\phi\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Efeito do erro de frequência <span class="eqwrap">\(\Delta f\)</span></h3>
+<p>Suponha agora que o oscilador local tenha frequência <span class="eqwrap">\(f_c + \Delta f\)</span>, com <span class="eqwrap">\(\Delta f \neq 0\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[r_{\Delta f}(t) = 2\,A_c\,m(t)\,\cos(2\pi f_c t)\,\cos\bigl(2\pi(f_c+\Delta f)t\bigr)\]</div>
+<div class="eqwrap eqbig eqcenter">\[= A_c\,m(t)\Bigl[\cos\bigl(2\pi\Delta f\,t\bigr) + \cos\bigl(2\pi(2f_c+\Delta f)t\bigr)\Bigr]\]</div>
+<p>Após o filtro passa-baixas:</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{y_{\Delta f}(t) = A_c\,m(t)\,\cos(2\pi\Delta f\,t)}\]</div>
+<p><strong>Análise</strong>: o sinal recuperado é multiplicado por um <strong>batimento</strong> <span class="eqwrap">\(\cos(2\pi\Delta f\,t)\)</span>. Se <span class="eqwrap">\(\Delta f\)</span> é pequeno (da ordem de <span class="eqwrap">\(W\)</span>), o batimento se manifesta como uma flutuação audível na voz (em áudio) ou como cintilação na imagem (em vídeo). Se <span class="eqwrap">\(\Delta f\)</span> é grande, o batimento está fora da banda de interesse e pode ser filtrado.</p>
+<p><strong>Exemplo</strong>: para áudio (<span class="eqwrap">\(W = 4\,\text{kHz}\)</span>), um erro de <span class="eqwrap">\(\Delta f = 50\,\text{Hz}\)</span> produz um batimento de <span class="eqwrap">\(50\,\text{Hz}\)</span> na saída — perceptível como zumbido. Erros de <span class="eqwrap">\(f_c\)</span> devem ser mantidos abaixo de <span class="eqwrap">\(\sim 10\%\)</span> de <span class="eqwrap">\(W\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Prova da perda de potência por erro de fase</h3>
+<div class="proof"><div class="ptitle">Prova</div><p>seja <span class="eqwrap">\(m(t)\)</span> um processo estacionário com potência <span class="eqwrap">\(P_m\)</span>. A potência do sinal recuperado com erro de fase <span class="eqwrap">\(\phi\)</span> é:</p></div>
+<div class="eqwrap eqbig eqcenter">\[P_y = \langle y_\phi^2(t)\rangle = \langle A_c^2\,m^2(t)\,\cos^2\phi\rangle = A_c^2\,\cos^2\phi\,\langle m^2(t)\rangle = A_c^2\,\cos^2\phi\,P_m\]</div>
+<p>Sem erro de fase (<span class="eqwrap">\(\phi = 0\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[P_{y,0} = A_c^2\,P_m\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<p>A fração de potência mantida é:</p>
+<div class="eqwrap eqbig eqcenter">\[\frac{P_y}{P_{y,0}} = \cos^2\phi\]</div>
+<p>A fração de potência perdida é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_{\text{loss}} = 1 - \cos^2\phi = \sin^2\phi}\]</div>
+<p><span class="eqwrap">\(\blacksquare\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Recuperação da portadora: Costas Loop</h3>
+<p>Em sistemas reais, a portadora não é transmitida (é suprimida), mas o receptor precisa de uma referência de fase. Uma solução é o <strong>Costas Loop</strong> (ou <em>Costas PLL</em>), que é um Phase-Locked Loop (PLL) especializado para sinais DSB-SC:</p>
+<p>O Costas Loop usa um multiplicador (detector de fase) que compara o sinal recebido com um VCO (<em>Voltage-Controlled Oscillator</em>) local. O erro de fase é filtrado e realimentado para controlar o VCO, forçando <span class="eqwrap">\(\phi \to 0\)</span>. A topologia do Costas Loop é particularmente eficiente para DSB-SC porque o sinal de erro é proporcional a <span class="eqwrap">\(\sin(2\phi)\)</span>, proporcionando forte ação corretiva.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção Coerente de DSB-SC">
+<div class="eyebrow"><span class="sec">04</span> Detecção Coerente de DSB-SC <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Limitações práticas</h3>
+<p>A detecção coerente de DSB-SC apresenta duas desvantagens fundamentais:</p>
+<ol class="take"><li><strong>Complexidade do oscilador local</strong>: requer um VCO estável, com PLL ou Costas Loop para rastrear a fase da portadora. Isso aumenta o custo e a complexidade do receptor.</li><li><strong>Sensibilidade a desvanecimento seletivo</strong>: se o canal introduz desvanecimento seletivo em frequência, a recuperação da portadora pode falhar em certas condições.</li></ol>
+<p>Estas desvantagens motivam o uso de AM convencional (DSB-LC), onde a portadora é transmitida em alta potência e pode ser usada diretamente como referência de fase pelo detector de envelope — sem necessidade de PLL.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Modulação AM Convencional (DSB-LC)</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição e modelo</h3>
+<p>Na <strong>modulação AM convencional</strong> (<em>Double Sideband — Large Carrier</em>, ou "bandas laterais duplas com portadora forte"), adicionamos uma componente DC à mensagem antes de modular:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_{\text{AM}}(t) = A_c\bigl[1 + \mu\,m_n(t)\bigr]\,\cos(2\pi f_c t)}\]</div>
+<p>onde:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<ul class="beats"><li><span class="eqwrap">\(A_c\)</span> é a amplitude da portadora;</li><li><span class="eqwrap">\(\mu\)</span> é o <strong>índice de modulação</strong> (ou profundidade de modulação);</li><li><span class="eqwrap">\(m_n(t)\)</span> é o sinal de mensagem <strong>normalizado</strong>: <span class="eqwrap">\(\max|m_n(t)| = 1\)</span>.</li></ul>
+<div class="thm blue"><div class="lbl">Definição</div><p>o sinal normalizado é <span class="eqwrap">\(m_n(t) = \dfrac{m(t)}{\max|m(t)|}\)</span>. Para um tom único <span class="eqwrap">\(m(t) = A_m\cos(2\pi f_m t)\)</span>, temos <span class="eqwrap">\(m_n(t) = \cos(2\pi f_m t)\)</span>.</p></div>
+<p>O termo <span class="eqwrap">\(1 + \mu\,m_n(t)\)</span> deve ser <strong>sempre não-negativo</strong> para que o envelope seja não-negativo. Isso implica:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{0 \leq \mu \leq 1 \qquad\text{(condição de modulação sem sobremodulação)}}\]</div>
+<p>Quando <span class="eqwrap">\(\mu > 1\)</span>, ocorre <strong>sobremodulação</strong>: <span class="eqwrap">\(1 + \mu\,m_n(t)\)</span> cruza zero, o envelope se inverte e o detector de envelope produz distorção severa.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Espectro da AM</h3>
+<p>Expandindo <span class="eqwrap">\(s_{\text{AM}}(t)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{AM}}(t) = A_c\,\cos(2\pi f_c t) + \mu\,A_c\,m_n(t)\,\cos(2\pi f_c t)\]</div>
+<p>O primeiro termo é a <strong>portadora pura</strong>; o segundo termo é um sinal DSB-SC modulando a portadora com amplitude <span class="eqwrap">\(\mu A_c\)</span>.</p>
+<p>Aplicando a transformada de Fourier:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{S_{\text{AM}}(f) = \frac{A_c}{2}\bigl[\delta(f-f_c) + \delta(f+f_c)\bigr] + \frac{\mu A_c}{2}\bigl[M_n(f-f_c) + M_n(f+f_c)\bigr]}\]</div>
+<p>O espectro AM contém <strong>três componentes</strong>:</p>
+<ol class="take"><li><strong>Portadora</strong>: duas deltas em <span class="eqwrap">\(\pm f_c\)</span>, cada uma com peso <span class="eqwrap">\(A_c/2\)</span>.</li><li><strong>BSL superior (USB)</strong>: <span class="eqwrap">\(M_n(f)\)</span> copiada para <span class="eqwrap">\(+f_c\)</span>, com peso <span class="eqwrap">\(\mu A_c/2\)</span>.</li><li><strong>BSL inferior (LSB)</strong>: <span class="eqwrap">\(M_n(f)\)</span> copiada para <span class="eqwrap">\(-f_c\)</span>, com peso <span class="eqwrap">\(\mu A_c/2\)</span>.</li></ol>
+<p>A banda total ocupada é <span class="eqwrap">\(B_{\text{AM}} = 2W\)</span> (mesma do DSB-SC).</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Análise de potências</h3>
+<p>Considere carga de <span class="eqwrap">\(1\,\Omega\)</span>. A potência de cada componente:</p>
+<p><strong>Portadora</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[P_c = \biggl\langle\bigl[A_c\,\cos(2\pi f_c t)\bigr]^2\biggr\rangle = \frac{A_c^2}{2}\]</div>
+<p><strong>Bandas laterais</strong> (DSB-SC com amplitude <span class="eqwrap">\(\mu A_c\)</span>):</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_{\text{SB}} = \frac{(\mu A_c)^2}{2}\,P_{m_n} = \frac{\mu^2 A_c^2}{2}\,P_{m_n}\]</div>
+<p>onde <span class="eqwrap">\(P_{m_n} = \langle m_n^2(t)\rangle\)</span> é a potência do sinal normalizado. Para <span class="eqwrap">\(m_n(t) = \cos(2\pi f_m t)\)</span>, <span class="eqwrap">\(P_{m_n} = 1/2\)</span>.</p>
+<p><strong>Potência total</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_T = P_c + P_{\text{SB}} = \frac{A_c^2}{2}\Bigl(1 + \mu^2\,P_{m_n}\Bigr)}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Eficiência de potência</h3>
+<p>A <strong>eficiência de potência</strong> é a fração da potência total que está nas bandas laterais (portando informação):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\eta_P = \frac{P_{\text{SB}}}{P_T} = \frac{\mu^2\,P_{m_n}}{1 + \mu^2\,P_{m_n}}}\]</div>
+<p>Para o caso de <strong>tom único</strong> (<span class="eqwrap">\(m_n(t) = \cos(2\pi f_m t)\)</span>), <span class="eqwrap">\(P_{m_n} = 1/2\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\eta_P = \frac{\mu^2/2}{1+\mu^2/2} = \frac{\mu^2}{2+\mu^2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<p><strong>Teorema</strong> da eficiência máxima da AM: para tom único com <span class="eqwrap">\(\mu = 1\)</span> (máxima modulação sem sobremodulação):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\eta_{\max} = \frac{1^2}{2+1^2} = \frac{1}{3} \approx 33{,}3\%}\]</div>
+<div class="pane gold"><div class="ptitle">Observação</div><p>isto significa que <strong>mesmo no caso melhor</strong>, <span class="eqwrap">\(2/3\)</span> da potência é desperdiçada na portadora — uma enorme ineficiência. Esta é a principal crítica à modulação AM convencional e a motivação para DSB-SC e SSB.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Análise de potências por componente (tom único)</h3>
+<p>Para <span class="eqwrap">\(m_n(t) = \cos(2\pi f_m t)\)</span>, <span class="eqwrap">\(\mu = 1\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{AM}}(t) = A_c\bigl[1+\cos(2\pi f_m t)\bigr]\,\cos(2\pi f_c t)\]</div>
+<p>Usando <span class="eqwrap">\(\cos A\cos B = \tfrac{1}{2}[\cos(A-B)+\cos(A+B)]\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{AM}}(t) = A_c\cos(2\pi f_c t) + \frac{A_c}{2}\cos\bigl(2\pi(f_c-f_m)t\bigr) + \frac{A_c}{2}\cos\bigl(2\pi(f_c+f_m)t\bigr)\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<p>Potências (carga <span class="eqwrap">\(1\,\Omega\)</span>):</p>
+<ul class="beats"><li>Portadora: <span class="eqwrap">\(P_c = A_c^2/2\)</span></li><li>BSL inferior (LSB): <span class="eqwrap">\(P_{\text{LSB}} = \bigl(\tfrac{A_c}{2}\bigr)^2\cdot\tfrac{1}{2} = \tfrac{A_c^2}{8}\)</span></li><li>BSL superior (USB): <span class="eqwrap">\(P_{\text{USB}} = \tfrac{A_c^2}{8}\)</span></li></ul>
+<p>Total: <span class="eqwrap">\(P_T = \dfrac{A_c^2}{2} + \dfrac{A_c^2}{8} + \dfrac{A_c^2}{8} = \dfrac{3A_c^2}{4}\)</span></p>
+<p>Eficiência: <span class="eqwrap">\(\eta_P = \dfrac{A_c^2/4}{3A_c^2/4} = \dfrac{1}{3}\)</span> — confirmado.</p>
+<p><strong>Importante</strong>: a portadora carrega <span class="eqwrap">\(66{,}7\%\)</span> da potência total e <strong>zero informação</strong>. As duas laterais, juntas com <span class="eqwrap">\(33{,}3\%\)</span>, carregam toda a informação — e são redundantes (para <span class="eqwrap">\(m(t)\)</span> real).</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação AM Convencional (DSB-LC)">
+<div class="eyebrow"><span class="sec">05</span> Modulação AM Convencional (DSB-LC) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Sobremodulação: distorção e problemas</h3>
+<p>Quando <span class="eqwrap">\(\mu > 1\)</span>, o envelope <span class="eqwrap">\(1+\mu\,m_n(t)\)</span> torna-se negativo em alguns pontos. Como o detector de envelope (diodo+RC) não pode seguir valores negativos, o envelope detectado é o módulo <span class="eqwrap">\(|1+\mu\,m_n(t)|\)</span>, produzindo distorção severa:</p>
+<ul class="beats"><li><strong>Cruzamento de zero</strong>: o envelope passa por zero, invertendo a fase do sinal modulado em <span class="eqwrap">\(180°\)</span>.</li><li><strong>Distorção não-linear</strong>: o detector recupera <span class="eqwrap">\(|1+\mu\,m_n(t)| \neq 1+\mu\,m_n(t)\)</span>, introduzindo harmônicos que não estavam na mensagem original.</li><li><strong>Interferência entre canais</strong>: a distorção gera conteúdo espectral que se espalha além da banda <span class="eqwrap">\(2W\)</span>, interferindo em canais adjacentes.</li></ul>
+<div class="thm blue"><div class="lbl">Definição</div><p>a <strong>sobremodulação</strong> ocorre quando <span class="eqwrap">\(\mu > 1\)</span>, isto é, quando a amplitude da mensagem excede a amplitude da portadora: <span class="eqwrap">\(\mu\,A_c > A_c\)</span>.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Detecção de Envelope de AM</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Princípio do detector de envelope</h3>
+<p>O <strong>detector de envelope</strong> (ou detector de pico) é o receptor mais simples para modulação AM. Consiste basicamente de:</p>
+<ol class="take"><li>Um <strong>diodo</strong> (retificador de meia onda ou onda completa);</li><li>Um circuito <strong>RC passa-baixas</strong> (filtro de descarga).</li></ol>
+<p>O diodo retifica o sinal (remove a metade negativa), e o capacitor C carrega até o pico do envelope e descarrega através de R com constante de tempo <span class="eqwrap">\(\tau = RC\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução da condição de RC</h3>
+<p>Para que o detector funcione corretamente, a constante de tempo <span class="eqwrap">\(RC\)</span> deve satisfazer duas condições opostas:</p>
+<p><strong>Condição 1 — Filtrar a portadora</strong> (R grande o suficiente para não "ver" a oscilação em <span class="eqwrap">\(f_c\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{RC\gg\frac{1}{2\pi f_c}}\]</div>
+<p>Isto garante que o capacitor não descarregue significativamente durante um ciclo da portadora.</p>
+<p><strong>Condição 2 — Rastrear a mensagem</strong> (R pequeno o suficiente para acompanhar variações rápidas de <span class="eqwrap">\(m(t)\)</span>):</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{RC\ll\frac{1}{2\pi W}}\]</div>
+<p>Isto garante que o capacitor descarregue o suficiente entre picos consecutivos do envelope para seguir as variações da mensagem.</p>
+<p><strong>Condição combinada</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\frac{1}{2\pi f_c} \ll RC \ll \frac{1}{2\pi W}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<p>Esta janela de projeto é mais ampla quanto maior for a relação <span class="eqwrap">\(f_c/W\)</span> (quanto mais alta for a portadora em relação à largura de banda da mensagem).</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Teorema da condição anti-diagonal clipping</h3>
+<div class="thm vio"><div class="lbl">Teorema</div><p>para sinal AM tonal <span class="eqwrap">\(s_{\text{AM}}(t) = A_c[1+\mu\cos(2\pi f_m t)]\cos(2\pi f_c t)\)</span>, a condição para evitar <strong>diagonal clipping</strong> é:</p></div>
+<div class="eqwrap eqbig eqcenter">\[\boxed{RC \leq \frac{\sqrt{1-\mu^2}}{\mu\,\omega_m}}\]</div>
+<p>onde <span class="eqwrap">\(\omega_m = 2\pi f_m\)</span>.</p>
+<div class="proof"><div class="ptitle">Prova</div><p>o envelope <span class="eqwrap">\(E(t) = A_c[1+\mu\cos(\omega_m t)]\)</span> desce com taxa <span class="eqwrap">\(|dE/dt| = A_c\,\mu\,\omega_m\,|\sin(\omega_m t)|\)</span>. A descarga do capacitor tem taxa <span class="eqwrap">\(E(t)/RC\)</span>. No pior caso (<span class="eqwrap">\(\cos(\omega_m t) = -\mu\)</span>, <span class="eqwrap">\(|\sin| = \sqrt{1-\mu^2}\)</span>):</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\frac{E}{|dE/dt|} = \frac{A_c(1-\mu^2)}{A_c\,\mu\,\omega_m\,\sqrt{1-\mu^2}} = \frac{\sqrt{1-\mu^2}}{\mu\,\omega_m} \quad\Rightarrow\quad RC \leq \frac{\sqrt{1-\mu^2}}{\mu\,\omega_m}\]</div>
+<p><span class="eqwrap">\(\blacksquare\)</span></p>
+<div class="pane gold"><div class="ptitle">Observação</div><p>para <span class="eqwrap">\(\mu \to 1\)</span>, limite <span class="eqwrap">\(\to 0\)</span> — qualquer RC causa clipping. Na prática, <span class="eqwrap">\(\mu \leq 0{,}8\)</span>.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Distorção por <em>negative peak clipping</em></h3>
+<p>Outro tipo de distorção ocorre quando o resistor de carga <span class="eqwrap">\(R_L\)</span> é conectado ao detector (por exemplo, através de um capacitor acoplador). A descarga do capacitor através do circuito de carga pode causar o <strong>negative peak clipping</strong>: quando o envelope sobe rapidamente (carga rápida via diodo), mas desce lentamente (descarga através de <span class="eqwrap">\(R_L\)</span>), os picos negativos do sinal são cortados.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">SNR de saída do detector de envelope</h3>
+<p>Para um detector de envelope em AM operando acima do limiar, isto é, com razão portadora-ruído suficientemente alta para linearizar o módulo, a SNR de saída é aproximadamente:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{SNR}_{\text{out}} \approx \frac{\mu^2\,P_{m_n}}{1+\mu^2\,P_{m_n}}\cdot\text{SNR}_{\text{in}}}\]</div>
+<p>onde <span class="eqwrap">\(\text{SNR}_{\text{in}}\)</span> é a razão sinal-ruído na entrada do detector (banda <span class="eqwrap">\(2W\)</span> centrada em <span class="eqwrap">\(f_c\)</span>).</p>
+<p>Para tom único com <span class="eqwrap">\(\mu = 1\)</span>: <span class="eqwrap">\(\text{SNR}_{\text{out}} \approx \tfrac{1}{3}\,\text{SNR}_{\text{in}}\)</span> — pior que a entrada (ganho de SNR <span class="eqwrap">\(< 1\)</span>).</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<p><strong>Comparação</strong>: o DSB-SC coerente tem <span class="eqwrap">\(\text{SNR}_{\text{out}} = 2\,\text{SNR}_{\text{in}}\)</span> (ganho de 3 dB), superior ao AM. Porém, o AM não precisa de oscilador local sincronizado — é uma troca entre desempenho e complexidade.</p>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exemplo: projeto de detector de envelope para AM broadcast</h3>
+<p><strong>Exemplo</strong>: estação de AM broadcast, <span class="eqwrap">\(f_c = 1000\,\text{kHz}\)</span>, largura de áudio <span class="eqwrap">\(W = 5\,\text{kHz}\)</span>, <span class="eqwrap">\(\mu = 0{,}8\)</span>.</p>
+<p>Condição de RC:</p>
+<div class="eqwrap eqbig eqcenter">\[\frac{1}{2\pi\cdot 10^6} \ll RC \ll \frac{1}{2\pi\cdot 5\times 10^3}\]</div>
+<div class="eqwrap eqbig eqcenter">\[1{,}59\times 10^{-7}\,\text{s} \ll RC \ll 3{,}18\times 10^{-5}\,\text{s}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Detecção de Envelope de AM">
+<div class="eyebrow"><span class="sec">06</span> Detecção de Envelope de AM <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{0{,}16\,\mu\text{s} \ll RC \ll 31{,}8\,\mu\text{s}}\]</div>
+<p>Condição anti-diagonal clipping (<span class="eqwrap">\(\mu = 0{,}8\)</span>, <span class="eqwrap">\(f_m = 5\,\text{kHz}\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[RC \leq \frac{\sqrt{1-0{,}8^2}}{0{,}8\cdot 2\pi\cdot 5000} = \frac{0{,}6}{25133} \approx 23{,}9\,\mu\text{s}\]</div>
+<p>Escolha prática: <span class="eqwrap">\(R = 5\,\text{k}\Omega\)</span>, <span class="eqwrap">\(C = 0{,}0047\,\mu\text{F}\)</span>, então <span class="eqwrap">\(RC = 23{,}5\,\mu\text{s}\)</span> — dentro da janela e próximo do limite anti-clipping.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Modulação SSB — Teoria e Implementação</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Redundância das bandas laterais em DSB</h3>
+<p>Em DSB-SC, as duas bandas laterais são <strong>espelhos conjugados</strong>: <span class="eqwrap">\(S(f_c+f) = S^*(f_c-f)\)</span> para <span class="eqwrap">\(m(t)\)</span> real. Cada banda lateral contém informação completa sobre <span class="eqwrap">\(m(t)\)</span>. Transmitir ambas é redundante — podemos eliminar uma delas sem perda de informação.</p>
+<div class="thm blue"><div class="lbl">Definição</div><p>a <strong>modulação SSB</strong> (<em>Single Sideband</em>) transmite apenas <strong>uma</strong> das bandas laterais, economizando metade da banda e metade da potência em relação ao DSB-SC.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Transformada de Hilbert e seu espectro</h3>
+<p>A <strong>transformada de Hilbert</strong> de um sinal <span class="eqwrap">\(m(t)\)</span> é definida como:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\hat{m}(t) = m(t) * \frac{1}{\pi t} = \frac{1}{\pi}\,\text{PV}\!\int_{-\infty}^{\infty}\frac{m(\tau)}{t-\tau}\,d\tau}\]</div>
+<p>No domínio da frequência:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{\hat{M}(f) = -j\,\text{sgn}(f)\,M(f) = \begin{cases}-j\,M(f), & f > 0\\
++j\,M(f), & f < 0\\
+0, & f = 0\\
+\end{cases}}\]</div>
+<p>O filtro da transformada de Hilbert tem resposta em frequência:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{H_{\text{Hilbert}}(f) = -j\,\text{sgn}(f) = \begin{cases}-j, & f > 0\\
++j, & f < 0\\
+\end{cases}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<p>Este filtro desloca todas as componentes de frequência positiva por <span class="eqwrap">\(-90°\)</span> e todas as de frequência negativa por <span class="eqwrap">\(+90°\)</span>.</p>
+<p>Propriedades importantes da transformada de Hilbert:</p>
+<ul class="beats"><li><span class="eqwrap">\(\hat{\hat{m}}(t) = -m(t)\)</span> (aplicar duas vezes inverte o sinal);</li><li><span class="eqwrap">\(\hat{m}(t)\)</span> e <span class="eqwrap">\(m(t)\)</span> têm a <strong>mesma energia</strong>: <span class="eqwrap">\(\int|\hat{m}(t)|^2\,dt = \int|m(t)|^2\,dt\)</span>;</li><li><span class="eqwrap">\(\langle m(t)\,\hat{m}(t)\rangle = 0\)</span> para sinais ergódicos (são ortogonais).</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução do sinal SSB</h3>
+<p>A partir do sinal analítico <span class="eqwrap">\(\tilde{m}(t) = m(t) + j\,\hat{m}(t)\)</span> (espectro nulo para <span class="eqwrap">\(f < 0\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[\Re\{\tilde{m}(t)\,e^{j2\pi f_c t}\} = m(t)\,\cos(2\pi f_c t) - \hat{m}(t)\,\sin(2\pi f_c t)\]</div>
+<p>Este sinal tem espectro concentrado apenas em <span class="eqwrap">\(f > f_c\)</span> — <strong>banda lateral superior (USB)</strong>.</p>
+<p>De modo análogo (parte imaginária):</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\Im\{\tilde{m}(t)\,e^{j2\pi f_c t}\} = m(t)\,\sin(2\pi f_c t) + \hat{m}(t)\,\cos(2\pi f_c t)\]</div>
+<p>contém apenas <strong>banda lateral inferior (LSB)</strong>.</p>
+<p>Portanto:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_{\text{SSB}}(t) = \frac{A_c}{2}\Bigl[m(t)\,\cos(2\pi f_c t) \mp \hat{m}(t)\,\sin(2\pi f_c t)\Bigr]}\]</div>
+<p>Sinal <strong>menos</strong> = USB, <strong>mais</strong> = LSB. USB = "transmitir frequências acima de <span class="eqwrap">\(f_c\)</span>".</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Espectro SSB</h3>
+<p>Para USB:</p>
+<div class="eqwrap eqbig eqcenter">\[S_{\text{USB}}(f) = \frac{A_c}{2}\,M(f-f_c)\,U(f-f_c) + \frac{A_c}{2}\,M^*(f+f_c)\,U(-f-f_c)\]</div>
+<p>Simplificando: para <span class="eqwrap">\(f > 0\)</span>, apenas a cópia de <span class="eqwrap">\(M(f)\)</span> deslocada para <span class="eqwrap">\(f_c\)</span> (para <span class="eqwrap">\(f \in [f_c,\,f_c+W]\)</span>). Para <span class="eqwrap">\(f < 0\)</span>, apenas a cópia conjugada deslocada para <span class="eqwrap">\(-f_c\)</span>.</p>
+<p><strong>Largura de banda</strong>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{B_{\text{SSB}} = W}\]</div>
+<p>Metade do DSB-SC! Esta é a principal vantagem da SSB.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Potência e eficiência da SSB</h3>
+<p>A potência do sinal SSB (tomando <span class="eqwrap">\(\hat{m}(t)\)</span> como ortogonal a <span class="eqwrap">\(m(t)\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[P_{\text{SSB}} = \frac{A_c^2}{4}\,\bigl[\langle m^2(t)\rangle + \langle\hat{m}^2(t)\rangle\bigr] = \frac{A_c^2}{4}\,(P_m + P_m) = \frac{A_c^2}{2}\,P_m\]</div>
+<p>Comparando com DSB-SC: <span class="eqwrap">\(P_{\text{DSB}} = \dfrac{A_c^2}{2}\,P_m\)</span>. Logo:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_{\text{SSB}} = \frac{1}{2}\,P_{\text{DSB}}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<p>A SSB usa <strong>metade da potência</strong> do DSB-SC (transmite apenas uma banda lateral).</p>
+<p><strong>Teorema</strong> da eficiência de SSB: como não há portadora e não há redundância, toda a potência transporta informação:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\eta_{\text{SSB}} = 100\%}\]</div>
+<p>Esta é a máxima eficiência possível em modulação em amplitude.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Método do filtro (projeto do filtro passa-banda)</h3>
+<p>O método mais direto de gerar SSB é:</p>
+<ol class="take"><li>Gerar DSB-SC: <span class="eqwrap">\(s_{\text{DSB}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)\)</span>.</li><li>Filtrar por um <strong>filtro passa-banda</strong> seletivo que rejeita uma das bandas laterais.</li></ol>
+<p>O filtro deve ter resposta ideal:</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[H_{\text{SSB}}(f) = \begin{cases}1, & f_c \leq |f| \leq f_c+W \quad\text{(USB)}\\
+0, & caso contrário\\
+\end{cases}\]</div>
+<p><strong>Desafio de projeto</strong>: o filtro deve ter uma transição extremamente íngreme entre a banda lateral transmitida e a rejeitada. Para <span class="eqwrap">\(f_c = 1\,\text{MHz}\)</span> e <span class="eqwrap">\(W = 5\,\text{kHz}\)</span>, a transição ocorre em apenas <span class="eqwrap">\(10\,\text{kHz}\)</span> (de <span class="eqwrap">\(f_c\)</span> a <span class="eqwrap">\(f_c+W\)</span> para a outra lateral). Isto exige filtros de alta ordem (centenas de elementos para RF).</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<p><strong>Importante</strong>: este método funciona bem quando <span class="eqwrap">\(W\)</span> é pequena em relação a <span class="eqwrap">\(f_c\)</span> (alta relação <span class="eqwrap">\(f_c/W\)</span>). Para mensagens de banda base ampla (como áudio telefônico ou vídeo), o filtro se torna impraticável.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Método de Weaver para geração de SSB</h3>
+<p>O <strong>método de Weaver</strong> (1956) evita o filtro íngreme usando duas etapas de mixagem em frequências intermediárias:</p>
+<p><strong>Passo 1</strong>: Modular <span class="eqwrap">\(m(t)\)</span> em uma frequência intermediária <span class="eqwrap">\(f_1\)</span> (baixa, tipicamente alguns kHz):</p>
+<div class="eqwrap eqbig eqcenter">\[s_1(t) = m(t)\,\cos(2\pi f_1 t)\]</div>
+<p><strong>Passo 2</strong>: Modular novamente, esta vez em <span class="eqwrap">\(f_2\)</span> (também baixa, mas diferente de <span class="eqwrap">\(f_1\)</span>):</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação SSB — Teoria e Implementação">
+<div class="eyebrow"><span class="sec">07</span> Modulação SSB — Teoria e Implementação <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[s_2(t) = s_1(t)\,\cos(2\pi f_2 t) = m(t)\,\cos(2\pi f_1 t)\,\cos(2\pi f_2 t)\]</div>
+<p><strong>Passo 3</strong>: Filtrar por um filtro passa-baixa simples (a banda lateral é bem separada em <span class="eqwrap">\(f_2 \pm f_1\)</span>).</p>
+<p><strong>Passo 4</strong>: Modular o resultado final para a frequência de transmissão <span class="eqwrap">\(f_c\)</span>.</p>
+<p>Este método é amplamente usado em receptores de rádio amador porque os filtros operam em frequências baixas, onde são mais fáceis de implementar.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação VSB — Compromisso Prático">
+<div class="eyebrow"><span class="sec">08</span> Modulação VSB — Compromisso Prático <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Modulação VSB — Compromisso Prático</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Por que VSB?</h3>
+<p>A SSB requer um filtro de transição extremamente íngreme. Para sinais com conteúdo de baixa frequência significativo (como vídeo, onde o espectro vai até DC), cortar abruptamente a banda lateral próxima a <span class="eqwrap">\(f_c\)</span> é <strong>praticamente impossível</strong> com filtros realizáveis.</p>
+<p>A <strong>modulação VSB</strong> (<em>Vestigial Sideband</em>) resolve este problema transmitindo <strong>uma banda lateral completa</strong> e um <strong>"vestígio" (<em>vestige</em>)</strong> da outra banda lateral.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação VSB — Compromisso Prático">
+<div class="eyebrow"><span class="sec">08</span> Modulação VSB — Compromisso Prático <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução da condição de simetria VSB</h3>
+<p>Seja <span class="eqwrap">\(H(f)\)</span> a resposta em frequência do filtro de banda lateral usado na geração VSB. O sinal modulado é:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{VSB}}(t) = A_c\,m(t)\,\cos(2\pi f_c t) * h(t)\]</div>
+<p>onde <span class="eqwrap">\(h(t)\)</span> é a resposta ao impulso do filtro. No domínio da frequência:</p>
+<div class="eqwrap eqbig eqcenter">\[S_{\text{VSB}}(f) = \frac{A_c}{2}\,M(f)*\bigl[H(f-f_c)+H(f+f_c)\bigr]\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação VSB — Compromisso Prático">
+<div class="eyebrow"><span class="sec">08</span> Modulação VSB — Compromisso Prático <span class="rule"></span></div>
+<div class="body">
+<p>Para recuperação sem distorção (detecção coerente), a soma das respostas do filtro nas frequências simétricas em torno de <span class="eqwrap">\(f_c\)</span> deve ser <strong>constante</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{H(f-f_c) + H(f+f_c) = \text{constante}, \qquad |f| \leq W}\]</div>
+<p>Esta é a <strong>condição de vestígio simétrico</strong>. Ela garante que, ao multiplicar por <span class="eqwrap">\(\cos(2\pi f_c t)\)</span> e filtrar por passa-baixas, o sinal original seja recuperado sem distorção.</p>
+<p><strong>Interpretação</strong>: o vestígio da banda lateral rejeitada compensa a atenuação da banda lateral transmitida próxima a <span class="eqwrap">\(f_c\)</span>. A simetria do vestígio assegura que a resposta total seja plana na banda de interesse.</p>
+</div>
+</section>
+<section class="slide" data-sec="Modulação VSB — Compromisso Prático">
+<div class="eyebrow"><span class="sec">08</span> Modulação VSB — Compromisso Prático <span class="rule"></span></div>
+<div class="body">
+<div class="cols left"><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Aplicação: TV analógica</h3>
+<p>A aplicação mais famosa de VSB é a <strong>transmissão de vídeo em TV analógica</strong> (NTSC, PAL, SECAM):</p>
+<ul class="beats"><li>O sinal de vídeo (luminância) tem espectro de DC até <span class="eqwrap">\(\sim 4{,}2\,\text{MHz}\)</span> (NTSC) ou <span class="eqwrap">\(\sim 5\,\text{MHz}\)</span> (PAL).</li><li>Transmitir SSB seria impraticável (filtro íngreme para conteúdo de baixa frequência).</li><li>VSB transmite a USB completa e um vestígio de <span class="eqwrap">\(\sim 1{,}25\,\text{MHz}\)</span> da LSB.</li><li>Largura de banda total: <span class="eqwrap">\(\sim 6\,\text{MHz}\)</span> por canal (NTSC).</li></ul>
+</div><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Largura de banda VSB</h3>
+<div class="eqwrap eqbig eqcenter">\[\boxed{B_{\text{VSB}} = W + f_{\text{vestígio}}}\]</div>
+<p>onde <span class="eqwrap">\(f_{\text{vestígio}}\)</span> é a largura da faixa de transição (tipicamente <span class="eqwrap">\(0{,}5W\)</span> a <span class="eqwrap">\(1{,}25W\)</span>). Para vídeo NTSC: <span class="eqwrap">\(W = 4{,}2\,\text{MHz}\)</span>, <span class="eqwrap">\(f_{\text{vestígio}} \approx 1{,}25\,\text{MHz}\)</span>, <span class="eqwrap">\(B_{\text{VSB}} \approx 6\,\text{MHz}\)</span>.</p>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Modulação VSB — Compromisso Prático">
+<div class="eyebrow"><span class="sec">08</span> Modulação VSB — Compromisso Prático <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Detecção VSB</h3>
+<p>A recuperação VSB pode ser feita por:</p>
+<ul class="beats"><li><strong>Detecção coerente</strong> (mesmo método DSB-SC, multiplicar por <span class="eqwrap">\(\cos(2\pi f_c t)\)</span> e filtrar).</li><li><strong>Detecção de envelope</strong> (apenas se a portadora for transmitida em nível suficiente, como na TV analógica, onde a portadora de vídeo é transmitida com <span class="eqwrap">\(\mu \approx 0{,}7\)</span>).</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Modulação VSB — Compromisso Prático">
+<div class="eyebrow"><span class="sec">08</span> Modulação VSB — Compromisso Prático <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Comparação completa: DSB vs SSB vs VSB vs AM</h3>
+<table class="cmp">
+<thead><tr>
+<th>Propriedade</th>
+<th>AM (DSB-LC)</th>
+<th>DSB-SC</th>
+<th>SSB</th>
+<th>VSB</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Largura de banda</td>
+<td><span class="eqwrap">\(2W\)</span></td>
+<td><span class="eqwrap">\(2W\)</span></td>
+<td><span class="eqwrap">\(W\)</span></td>
+<td><span class="eqwrap">\(W+f_v\)</span></td>
+</tr>
+<tr>
+<td>Potência de portadora</td>
+<td><span class="eqwrap">\(A_c^2/2\)</span></td>
+<td><span class="eqwrap">\(0\)</span></td>
+<td><span class="eqwrap">\(0\)</span> (ou pequena)</td>
+<td><span class="eqwrap">\(A_c^2/2\)</span> (ou suprimida)</td>
+</tr>
+<tr>
+<td>Eficiência energética</td>
+<td><span class="eqwrap">\(\leq 33{,}3\%\)</span></td>
+<td><span class="eqwrap">\(100\%\)</span></td>
+<td><span class="eqwrap">\(100\%\)</span></td>
+<td><span class="eqwrap">\(\approx 60\text{--}75\%\)</span></td>
+</tr>
+<tr>
+<td>Complexidade do TX</td>
+<td>baixa</td>
+<td>média</td>
+<td>alta</td>
+<td>intermediária</td>
+</tr>
+<tr>
+<td>Complexidade do RX</td>
+<td>muito baixa</td>
+<td>alta (coerente)</td>
+<td>alta (coerente)</td>
+<td>baixa/média</td>
+</tr>
+<tr>
+<td>Aplicação típica</td>
+<td>Rádio broadcasting</td>
+<td>Enlace ponto-a-ponto</td>
+<td>HF, telecom</td>
+<td>Vídeo/TV</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Análise de Ruído em Modulação Analógica</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Modelo de ruído aditivo branco gaussiano (AWGN)</h3>
+<p>Considere um canal com <strong>ruído aditivo branco gaussiano</strong> (AWGN): <span class="eqwrap">\(n(t)\)</span> é um processo estacionário com espectro de potência constante:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{G_n(f) = \frac{N_0}{2}, \qquad -\infty < f < \infty}\]</div>
+<p>onde <span class="eqwrap">\(N_0\)</span> é a densidade espectral unilateral de potência (W/Hz). A potência de ruído na banda de recepção de largura <span class="eqwrap">\(B\)</span> é:</p>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_n = \frac{N_0}{2}\cdot 2B = N_0\,B\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">SNR na entrada do receptor</h3>
+<p>A potência do sinal recebido (assumindo atenuação de canal unitária para simplificar) é <span class="eqwrap">\(P_R\)</span>. O ruído na banda de recepção (banda do sinal modulado) é <span class="eqwrap">\(N_0\,B\)</span>. Logo:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{SNR}_{\text{in}} = \frac{P_R}{N_0\,B}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DSB-SC: SNR de saída</h3>
+<p>Para DSB-SC, o receptor coerente tem largura de banda de base <span class="eqwrap">\(W\)</span>. O ruído na banda de recepção (passa-banda <span class="eqwrap">\(2W\)</span>) tem potência <span class="eqwrap">\(N_0\cdot 2W\)</span>. Após a mixagem e o filtro passa-baixas de banda <span class="eqwrap">\(W\)</span>, o ruído de saída é <span class="eqwrap">\(N_0\cdot W\)</span>.</p>
+<p>O sinal de saída tem potência <span class="eqwrap">\(A_c^2 P_m\)</span> (com ganho do oscilador local <span class="eqwrap">\(= 2\)</span>, conforme Seção “Detecção Coerente de DSB-SC”).</p>
+<p><strong>Resultado</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{SNR}_{\text{out}}^{\text{DSB}} = \frac{A_c^2 P_m}{N_0\,W} = 2\cdot\frac{A_c^2 P_m}{2N_0 W} = 2\,\text{SNR}_{\text{in}}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<div class="pane gold"><div class="ptitle">Observação</div><p>o ganho de SNR é <span class="eqwrap">\(2\)</span> (3 dB) — o detector coerente de DSB-SC <strong>melhora</strong> a razão sinal-ruído em 3 dB.</p></div>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">AM: SNR de saída</h3>
+<p>Para AM com índice de modulação <span class="eqwrap">\(\mu\)</span> e sinal normalizado <span class="eqwrap">\(m_n(t)\)</span>, a potência do sinal é <span class="eqwrap">\(P_T = \tfrac{A_c^2}{2}(1+\mu^2 P_{m_n})\)</span>. Na banda de recepção <span class="eqwrap">\(2W\)</span>, o ruído é <span class="eqwrap">\(N_0\cdot 2W\)</span>.</p>
+<p>O sinal de informação (bandas laterais) tem potência <span class="eqwrap">\(P_{\text{SB}} = \tfrac{\mu^2 A_c^2}{2}P_{m_n}\)</span>.</p>
+<p><strong>Resultado</strong>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{SNR}_{\text{out}}^{\text{AM}} = \frac{\mu^2 P_{m_n}}{1+\mu^2 P_{m_n}}\cdot\text{SNR}_{\text{in}}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<p>Para tom único (<span class="eqwrap">\(P_{m_n} = 1/2\)</span>) com <span class="eqwrap">\(\mu = 1\)</span>: <span class="eqwrap">\(\text{SNR}_{\text{out}} = \tfrac{1}{3}\,\text{SNR}_{\text{in}}\)</span> — <strong>piora</strong> de 4,77 dB em relação à entrada.</p>
+<p><strong>Comparação</strong>: usando as definições desta seção, para tom único e <span class="eqwrap">\(\mu=1\)</span> o fator é 2 para DSB-SC e <span class="eqwrap">\(1/3\)</span> para AM, uma razão 6 ou <span class="eqwrap">\(7{,}78\)</span> dB — não “aproximadamente 10 dB”. A vantagem do AM é a simplicidade do detector de envelope.</p>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">SSB: SNR de saída</h3>
+<p>Para SSB, a banda de recepção é <span class="eqwrap">\(W\)</span> (metade do DSB). O ruído na entrada é <span class="eqwrap">\(N_0\cdot W\)</span> (metade do DSB). Após a detecção coerente, o ruído de saída é <span class="eqwrap">\(N_0\cdot W/2\)</span> (filtro passa-baixas de banda <span class="eqwrap">\(W/2\)</span> na <em>baseband</em> equivalente).</p>
+<p><strong>Resultado</strong>: o SNR de saída da SSB é <strong>idêntico</strong> ao do DSB-SC:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{SNR}_{\text{out}}^{\text{SSB}} = \text{SNR}_{\text{out}}^{\text{DSB}} = 2\,\text{SNR}_{\text{in}}}\]</div>
+<p>A SSB obtém a mesma qualidade em ruído com <strong>metade da banda</strong> do DSB-SC — a razão pela qual é preferida em enlaces de longa distância HF.</p>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">FM: Ganho de processamento e limiar</h3>
+<p>A <strong>modulação FM</strong> troca largura de banda por SNR. O ganho de processamento:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\frac{\text{SNR}_{\text{out}}^{\text{FM}}}{\text{SNR}_{\text{in}}} = 3\,\beta^2(\beta+1) \qquad\text{para }\beta \gg 1}\]</div>
+<p>onde <span class="eqwrap">\(\beta = \Delta f/W\)</span> é o <strong>índice de modulação FM</strong>.</p>
+<p>Para <span class="eqwrap">\(\beta = 5\)</span>: ganho <span class="eqwrap">\(= 450\)</span> (<span class="eqwrap">\(26{,}5\,\text{dB}\)</span>).</p>
+<p><strong>Limiar FM</strong> (degradação abrupta abaixo de):</p>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{SNR}_{\text{in}} \approx 10\,\text{dB}}\]</div>
+<p><strong>Trade-off FM</strong>: <span class="eqwrap">\(B_{\text{FM}} \approx 2(\beta+1)W\)</span> (Carson). Maior <span class="eqwrap">\(\beta\)</span> = mais banda, mais SNR. WBFM (<span class="eqwrap">\(\beta \gg 1\)</span>): SNR excelente, banda larga. NBFM (<span class="eqwrap">\(\beta \ll 1\)</span>): banda estreita, SNR modesto.</p>
+</div>
+</section>
+<section class="slide" data-sec="Análise de Ruído em Modulação Analógica">
+<div class="eyebrow"><span class="sec">09</span> Análise de Ruído em Modulação Analógica <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Tabela comparativa de ruído</h3>
+<table class="cmp">
+<thead><tr>
+<th>Modulação</th>
+<th>SNR<span class="eqwrap">\(_{\text{out}}\)</span>/SNR<span class="eqwrap">\(_{\text{in}}\)</span></th>
+<th>Banda</th>
+<th>Complexidade de RX</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>AM (DSB-LC)</td>
+<td><span class="eqwrap">\(\tfrac{\mu^2 P_{m_n}}{1+\mu^2 P_{m_n}}\)</span></td>
+<td><span class="eqwrap">\(2W\)</span></td>
+<td>muito baixa</td>
+</tr>
+<tr>
+<td>DSB-SC</td>
+<td><span class="eqwrap">\(2\)</span></td>
+<td><span class="eqwrap">\(2W\)</span></td>
+<td>alta (coerente)</td>
+</tr>
+<tr>
+<td>SSB</td>
+<td><span class="eqwrap">\(2\)</span></td>
+<td><span class="eqwrap">\(W\)</span></td>
+<td>alta (coerente)</td>
+</tr>
+<tr>
+<td>FM (<span class="eqwrap">\(\beta \gg 1\)</span>)</td>
+<td><span class="eqwrap">\(3\beta^2(\beta+1)\)</span></td>
+<td><span class="eqwrap">\(2(\beta+1)W\)</span></td>
+<td>média/alta</td>
+</tr>
+<tr>
+<td>VSB</td>
+<td><span class="eqwrap">\(\approx 2\)</span> (coerente)</td>
+<td><span class="eqwrap">\(W+f_v\)</span></td>
+<td>intermediária</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Exercícios Resolvidos em Python</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> confrontar espectro, potência e recuperação de DSB-SC, AM e SSB. <strong>Amostragem:</strong> use <span class="eqwrap">\(f_s\)</span> suficientemente maior que <span class="eqwrap">\(2(f_c+W)\)</span> e declare a normalização da FFT. <strong>Validação:</strong> meça potência no tempo, confira a eficiência teórica e quantifique erro de fase, sobremodulação e rejeição da banda lateral.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 1: Simulação DSB-SC com detecção coerente e erro de fase</h3>
+<p>Simule a modulação DSB-SC e a detecção coerente com diferentes erros de fase <span class="eqwrap">\(\phi\)</span>, mostrando o efeito da atenuação por <span class="eqwrap">\(\cos\phi\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 100_000            # taxa de amostragem
+fc = 5_000              # frequência da portadora
+fm = 200                # frequência da mensagem
+T = 0.02                # duração total
+t = np.arange(0, T, 1/fs)
+
+m = np.cos(2*np.pi*fm*t)        # mensagem (tom único)
+Ac = 1.0
+
+# --- DSB-SC ---
+s_dsb = Ac * m * np.cos(2*np.pi*fc*t)
+
+# --- Detecção coerente com erro de fase phi ---
+phis = [0, np.pi/6, np.pi/4, np.pi/3, np.pi/2]
+fig, axes = plt.subplots(len(phis), 1, figsize=(10, 12), sharex=True)
+
+for ax, phi in zip(axes, phis):
+    # Misturador: multiplicar por 2*cos(2*pi*fc*t + phi)
+    mixer = 2 * np.cos(2*np.pi*fc*t + phi)
+    r = s_dsb * mixer
+
+    # Filtro passa-baixas: média móvel com janela de 200 amostras
+    h_lp = np.ones(200) / 200
+    y = np.convolve(r, h_lp, mode=&#x27;full&#x27;)[:len(t)]
+
+    # Teórico: y = Ac * m * cos(phi)
+    y_theory = Ac * m * np.cos(phi)
+
+    ax.plot(t*1e3, m, &#x27;b&#x27;, lw=0.7, alpha=0.6, label=&#x27;m(t)&#x27;)
+    # Não normalize cada curva separadamente: isso esconderia a perda cos(phi)
+    # e causaria divisão por zero em phi=90°. Ac=1 já fornece escala comum.
+    ax.plot(t*1e3, y, &#x27;r&#x27;, lw=0.9,
+            label=fr&#x27;saída ($\phi$={np.rad2deg(phi):.0f}°)&#x27;)
+    ax.plot(t*1e3, y_theory, &#x27;k--&#x27;, lw=0.7,
+            label=fr&#x27;teórico ($\cos\phi$={np.cos(phi):.3f})&#x27;)
+    ax.set_ylabel(&#x27;amplitude&#x27;)
+    ax.legend(fontsize=7, loc=&#x27;upper right&#x27;)
+    ax.grid(alpha=0.2)
+    ax.set_title(fr&#x27;Detecção coerente DSB-SC com erro de fase $\phi$ = {np.rad2deg(phi):.0f}°&#x27;)
+
+axes[-1].set_xlabel(&#x27;tempo (ms)&#x27;)
+plt.tight_layout()
+plt.savefig(&#x27;/tmp/dsb_phase_error.png&#x27;, dpi=150, bbox_inches=&#x27;tight&#x27;)
+plt.show()
+
+# --- Medição quantitativa ---
+print(&quot;Erro de fase  |  Amplitude recuperada  |  Potência rel.  |  Perda (dB)&quot;)
+print(&quot;-&quot; * 65)
+for phi in phis:
+    amp = np.cos(phi)
+    pwr = amp**2
+    loss_db = -10*np.log10(pwr+1e-12)
+    print(f&quot;  {np.rad2deg(phi):6.1f}°  |  {amp:18.5f}  |  {pwr:15.5f}  |  {loss_db:10.2f} dB&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\n\nfs = 100_000            # taxa de amostragem\nfc = 5_000              # frequência da portadora\nfm = 200                # frequência da mensagem\nT = 0.02                # duração total\nt = np.arange(0, T, 1/fs)\n\nm = np.cos(2*np.pi*fm*t)        # mensagem (tom único)\nAc = 1.0\n\n# --- DSB-SC ---\ns_dsb = Ac * m * np.cos(2*np.pi*fc*t)\n\n# --- Detecção coerente com erro de fase phi ---\nphis = [0, np.pi/6, np.pi/4, np.pi/3, np.pi/2]\nfig, axes = plt.subplots(len(phis), 1, figsize=(10, 12), sharex=True)\n\nfor ax, phi in zip(axes, phis):\n    # Misturador: multiplicar por 2*cos(2*pi*fc*t + phi)\n    mixer = 2 * np.cos(2*np.pi*fc*t + phi)\n    r = s_dsb * mixer\n\n    # Filtro passa-baixas: média móvel com janela de 200 amostras\n    h_lp = np.ones(200) / 200\n    y = np.convolve(r, h_lp, mode=\&#x27;full\&#x27;)[:len(t)]\n\n    # Teórico: y = Ac * m * cos(phi)\n    y_theory = Ac * m * np.cos(phi)\n\n    ax.plot(t*1e3, m, \&#x27;b\&#x27;, lw=0.7, alpha=0.6, label=\&#x27;m(t)\&#x27;)\n    # Não normalize cada curva separadamente: isso esconderia a perda cos(phi)\n    # e causaria divisão por zero em phi=90°. Ac=1 já fornece escala comum.\n    ax.plot(t*1e3, y, \&#x27;r\&#x27;, lw=0.9,\n            label=fr\&#x27;saída ($\\phi$={np.rad2deg(phi):.0f}°)\&#x27;)\n    ax.plot(t*1e3, y_theory, \&#x27;k--\&#x27;, lw=0.7,\n            label=fr\&#x27;teórico ($\\cos\\phi$={np.cos(phi):.3f})\&#x27;)\n    ax.set_ylabel(\&#x27;amplitude\&#x27;)\n    ax.legend(fontsize=7, loc=\&#x27;upper right\&#x27;)\n    ax.grid(alpha=0.2)\n    ax.set_title(fr\&#x27;Detecção coerente DSB-SC com erro de fase $\\phi$ = {np.rad2deg(phi):.0f}°\&#x27;)\n\naxes[-1].set_xlabel(\&#x27;tempo (ms)\&#x27;)\nplt.tight_layout()\nplt.savefig(\&#x27;/tmp/dsb_phase_error.png\&#x27;, dpi=150, bbox_inches=\&#x27;tight\&#x27;)\nplt.show()\n\n# --- Medição quantitativa ---\nprint(&quot;Erro de fase  |  Amplitude recuperada  |  Potência rel.  |  Perda (dB)&quot;)\nprint(&quot;-&quot; * 65)\nfor phi in phis:\n    amp = np.cos(phi)\n    pwr = amp**2\n    loss_db = -10*np.log10(pwr+1e-12)\n    print(f&quot;  {np.rad2deg(phi):6.1f}°  |  {amp:18.5f}  |  {pwr:15.5f}  |  {loss_db:10.2f} dB&quot;)&#x27;, &quot;&lt;markdown-python-1&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-1&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<p><strong>Saída esperada</strong>:</p>
+<pre class="codeblock"><code>Erro de fase  |  Amplitude recuperada  |  Potência rel.  |  Perda (dB)
+-----------------------------------------------------------------
+     0.0°  |             1.00000  |       1.00000  |      0.00 dB
+    30.0°  |             0.86603  |       0.75000  |      1.25 dB
+    45.0°  |             0.70711  |       0.50000  |      3.01 dB
+    60.0°  |             0.50000  |       0.25000  |      6.02 dB
+    90.0°  |             0.00000  |       0.00000  |     inf dB</code></pre>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 2: AM com envelope — variação de <span class="eqwrap">\(\mu\)</span> e espectro</h3>
+<p>Varie o índice de modulação <span class="eqwrap">\(\mu\)</span> e observe o envelope e o espectro.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 200_000; fc = 10_000; fm = 400; T = 0.01; t = np.arange(0, T, 1/fs)
+m = np.cos(2*np.pi*fm*t); Ac = 1.0
+
+mu_vals = [0.3, 0.7, 1.0, 1.3]
+fig, axes = plt.subplots(2, 2, figsize=(10, 7))
+for ax, mu in zip(axes.flat, mu_vals):
+    s = Ac * (1 + mu*m) * np.cos(2*np.pi*fc*t)
+    env = Ac * (1 + mu*m)
+    ax.plot(t*1e3, s, &#x27;b&#x27;, lw=0.6)
+    ax.plot(t*1e3, env, &#x27;r--&#x27;, lw=1); ax.plot(t*1e3, -env, &#x27;r--&#x27;, lw=1)
+    if mu &gt; 1: ax.fill_between(t*1e3, -Ac, Ac, where=(env&lt;0), alpha=0.1, color=&#x27;red&#x27;)
+    ax.set_title(f&#x27;AM $\\mu$={mu}&#x27;); ax.set_xlim(0, T*1e3); ax.grid(alpha=0.2)
+axes[1,0].set_xlabel(&#x27;tempo (ms)&#x27;); axes[1,1].set_xlabel(&#x27;tempo (ms)&#x27;)
+plt.tight_layout(); plt.savefig(&#x27;/tmp/am_mu.png&#x27;, dpi=150, bbox_inches=&#x27;tight&#x27;); plt.show()
+
+# Potências e eficiência
+for mu in [0.3, 0.7, 1.0]:
+    Pc = Ac**2/2; Psb = mu**2*Pc*0.5; Pt = Pc+Psb; eta = Psb/Pt
+    print(f&quot;$\\mu$={mu:.1f}: $P_c$={Pc:.3f}, $P_{{SB}}$={Psb:.3f}, $P_T$={Pt:.3f}, $\\eta$={eta:.1%}&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\n\nfs = 200_000; fc = 10_000; fm = 400; T = 0.01; t = np.arange(0, T, 1/fs)\nm = np.cos(2*np.pi*fm*t); Ac = 1.0\n\nmu_vals = [0.3, 0.7, 1.0, 1.3]\nfig, axes = plt.subplots(2, 2, figsize=(10, 7))\nfor ax, mu in zip(axes.flat, mu_vals):\n    s = Ac * (1 + mu*m) * np.cos(2*np.pi*fc*t)\n    env = Ac * (1 + mu*m)\n    ax.plot(t*1e3, s, \&#x27;b\&#x27;, lw=0.6)\n    ax.plot(t*1e3, env, \&#x27;r--\&#x27;, lw=1); ax.plot(t*1e3, -env, \&#x27;r--\&#x27;, lw=1)\n    if mu &gt; 1: ax.fill_between(t*1e3, -Ac, Ac, where=(env&lt;0), alpha=0.1, color=\&#x27;red\&#x27;)\n    ax.set_title(f\&#x27;AM $\\\\mu$={mu}\&#x27;); ax.set_xlim(0, T*1e3); ax.grid(alpha=0.2)\naxes[1,0].set_xlabel(\&#x27;tempo (ms)\&#x27;); axes[1,1].set_xlabel(\&#x27;tempo (ms)\&#x27;)\nplt.tight_layout(); plt.savefig(\&#x27;/tmp/am_mu.png\&#x27;, dpi=150, bbox_inches=\&#x27;tight\&#x27;); plt.show()\n\n# Potências e eficiência\nfor mu in [0.3, 0.7, 1.0]:\n    Pc = Ac**2/2; Psb = mu**2*Pc*0.5; Pt = Pc+Psb; eta = Psb/Pt\n    print(f&quot;$\\\\mu$={mu:.1f}: $P_c$={Pc:.3f}, $P_{{SB}}$={Psb:.3f}, $P_T$={Pt:.3f}, $\\\\eta$={eta:.1%}&quot;)&#x27;, &quot;&lt;markdown-python-2&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-2&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 3: Geração SSB por filtro no domínio da frequência</h3>
+<p>Gere um sinal SSB aplicando um filtro ideal no domínio da frequência ao sinal DSB-SC.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 100_000; fc = 5_000; fm = 300; N = 4096
+t = np.arange(N) / fs
+m = np.cos(2*np.pi*fm*t) + 0.5*np.cos(2*np.pi*fm/2*t)
+
+s_dsb = m * np.cos(2*np.pi*fc*t)
+S_dsb = np.fft.fft(s_dsb)
+f_full = np.fft.fftfreq(N, 1/fs)
+
+# Filtro USB ideal
+H_usb = np.zeros(N)
+for i in range(N):
+    fi = f_full[i]
+    if fi &gt; 0 and fi &gt;= fc: H_usb[i] = 1
+    elif fi &lt; 0 and fi &lt;= -fc: H_usb[i] = 1
+
+S_usb = S_dsb * H_usb
+s_usb = np.fft.ifft(S_usb).real
+
+f_shift = np.fft.fftshift(np.fft.fftfreq(N, 1/fs)) / 1000
+fig, axes = plt.subplots(3, 1, figsize=(12, 8))
+
+axes[0].plot(f_shift, 20*np.log10(np.abs(np.fft.fftshift(S_dsb))/np.max(np.abs(S_dsb))+1e-12), &#x27;b&#x27;, lw=1)
+axes[0].set_title(&#x27;Espectro DSB-SC&#x27;); axes[0].set_ylim([-60, 3])
+axes[0].grid(alpha=0.2)
+axes[1].step(f_shift, np.fft.fftshift(H_usb), &#x27;r&#x27;, lw=1.5)
+axes[1].set_title(&#x27;Filtro USB ideal&#x27;); axes[1].grid(alpha=0.2)
+axes[2].plot(f_shift, 20*np.log10(np.abs(np.fft.fftshift(S_usb))/np.max(np.abs(S_usb))+1e-12), &#x27;g&#x27;, lw=1)
+axes[2].set_xlabel(&#x27;frequência (kHz)&#x27;); axes[2].set_title(&#x27;Espectro SSB USB&#x27;); axes[2].set_ylim([-60, 3])
+axes[2].grid(alpha=0.2)
+
+plt.tight_layout()
+plt.savefig(&#x27;/tmp/ssb_frequency_filter.png&#x27;, dpi=150, bbox_inches=&#x27;tight&#x27;)
+plt.show()
+print(f&quot;DSB-SC: {2*fm:.0f} kHz | SSB USB: {fm:.0f} kHz — economia de 50%&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\n\nfs = 100_000; fc = 5_000; fm = 300; N = 4096\nt = np.arange(N) / fs\nm = np.cos(2*np.pi*fm*t) + 0.5*np.cos(2*np.pi*fm/2*t)\n\ns_dsb = m * np.cos(2*np.pi*fc*t)\nS_dsb = np.fft.fft(s_dsb)\nf_full = np.fft.fftfreq(N, 1/fs)\n\n# Filtro USB ideal\nH_usb = np.zeros(N)\nfor i in range(N):\n    fi = f_full[i]\n    if fi &gt; 0 and fi &gt;= fc: H_usb[i] = 1\n    elif fi &lt; 0 and fi &lt;= -fc: H_usb[i] = 1\n\nS_usb = S_dsb * H_usb\ns_usb = np.fft.ifft(S_usb).real\n\nf_shift = np.fft.fftshift(np.fft.fftfreq(N, 1/fs)) / 1000\nfig, axes = plt.subplots(3, 1, figsize=(12, 8))\n\naxes[0].plot(f_shift, 20*np.log10(np.abs(np.fft.fftshift(S_dsb))/np.max(np.abs(S_dsb))+1e-12), \&#x27;b\&#x27;, lw=1)\naxes[0].set_title(\&#x27;Espectro DSB-SC\&#x27;); axes[0].set_ylim([-60, 3])\naxes[0].grid(alpha=0.2)\naxes[1].step(f_shift, np.fft.fftshift(H_usb), \&#x27;r\&#x27;, lw=1.5)\naxes[1].set_title(\&#x27;Filtro USB ideal\&#x27;); axes[1].grid(alpha=0.2)\naxes[2].plot(f_shift, 20*np.log10(np.abs(np.fft.fftshift(S_usb))/np.max(np.abs(S_usb))+1e-12), \&#x27;g\&#x27;, lw=1)\naxes[2].set_xlabel(\&#x27;frequência (kHz)\&#x27;); axes[2].set_title(\&#x27;Espectro SSB USB\&#x27;); axes[2].set_ylim([-60, 3])\naxes[2].grid(alpha=0.2)\n\nplt.tight_layout()\nplt.savefig(\&#x27;/tmp/ssb_frequency_filter.png\&#x27;, dpi=150, bbox_inches=\&#x27;tight\&#x27;)\nplt.show()\nprint(f&quot;DSB-SC: {2*fm:.0f} kHz | SSB USB: {fm:.0f} kHz — economia de 50%&quot;)&#x27;, &quot;&lt;markdown-python-3&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-3&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 4: Análise de SNR vs índice de modulação</h3>
+<p>Compare o SNR de saída de AM para diferentes índices de modulação, assumindo ruído AWGN na banda de recepção.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+# Parâmetros
+mu_vals = np.linspace(0.1, 1.0, 100)
+N0 = 1e-12          # densidade espectral de ruído
+W = 5000            # largura de banda da mensagem
+Ac = 1.0
+P_mn = 0.5          # tom único
+B_AM = 2*W          # banda do AM
+
+# SNR na entrada (sinal com portadora, ruído na banda 2W)
+P_T = (Ac**2/2) * (1 + mu_vals**2 * P_mn)
+N_in = N0 * B_AM
+SNR_in = P_T / N_in
+
+# SNR de saída (apenas bandas laterais)
+P_sb = (mu_vals**2 * Ac**2 / 2) * P_mn
+N_out = N0 * W     # ruído na banda W após detecção coerente (ideal)
+SNR_out = P_sb / N_out
+ratio = SNR_out / SNR_in
+
+# DSB-SC como referência
+P_dsb = Ac**2 * P_mn / 2
+SNR_in_dsb = P_dsb / N_in
+SNR_out_dsb = P_dsb / N_out
+ratio_dsb = SNR_out_dsb / SNR_in_dsb
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
+
+# Esquerda: SNR de saída
+SNR_out_db = 10*np.log10(SNR_out+1e-15)
+SNR_out_dsb_db = 10*np.log10(SNR_out_dsb+1e-15)
+ax1.plot(mu_vals, SNR_out_db, &#x27;b&#x27;, lw=2, label=&#x27;AM (saída)&#x27;)
+ax1.axhline(SNR_out_dsb_db, color=&#x27;r&#x27;, linestyle=&#x27;--&#x27;, lw=1.5,
+            label=f&#x27;DSB-SC (ganho = {10*np.log10(ratio_dsb):.1f} dB)&#x27;)
+ax1.set_xlabel(&#x27;$\\mu$&#x27;)
+ax1.set_ylabel(&#x27;SNR de saída (dB)&#x27;)
+ax1.set_title(&#x27;SNR de saída: AM vs DSB-SC&#x27;)
+ax1.legend(); ax1.grid(alpha=0.25)
+ax1.set_xlim(0.1, 1.0)
+
+# Direita: eficiência de potência
+eta = (mu_vals**2 * P_mn) / (1 + mu_vals**2 * P_mn)
+ax2.plot(mu_vals, eta*100, &#x27;g&#x27;, lw=2)
+ax2.axhline(33.33, color=&#x27;r&#x27;, linestyle=&#x27;--&#x27;, lw=1.5, label=&#x27;limite teórico (33,3%)&#x27;)
+ax2.set_xlabel(&#x27;$\\mu$&#x27;)
+ax2.set_ylabel(&#x27;eficiência de potência (%)&#x27;)
+ax2.set_title(&#x27;Eficiência de potência da AM&#x27;)
+ax2.legend(); ax2.grid(alpha=0.25)
+ax2.set_xlim(0.1, 1.0)
+
+plt.tight_layout()
+plt.savefig(&#x27;/tmp/snr_vs_mu.png&#x27;, dpi=150, bbox_inches=&#x27;tight&#x27;)
+plt.show()
+
+print(&quot;SNR comparison (linear scale):&quot;)
+for mu in [0.3, 0.6, 0.8, 1.0]:
+    idx = int(np.argmin(np.abs(mu_vals - mu)))
+    print(f&quot;  $\\mu$={mu:.1f}: SNR_out/SNR_in = {ratio[idx]:.4f} &quot;
+          f&quot;({10*np.log10(ratio[idx]+1e-15):.2f} dB)&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\n\n# Parâmetros\nmu_vals = np.linspace(0.1, 1.0, 100)\nN0 = 1e-12          # densidade espectral de ruído\nW = 5000            # largura de banda da mensagem\nAc = 1.0\nP_mn = 0.5          # tom único\nB_AM = 2*W          # banda do AM\n\n# SNR na entrada (sinal com portadora, ruído na banda 2W)\nP_T = (Ac**2/2) * (1 + mu_vals**2 * P_mn)\nN_in = N0 * B_AM\nSNR_in = P_T / N_in\n\n# SNR de saída (apenas bandas laterais)\nP_sb = (mu_vals**2 * Ac**2 / 2) * P_mn\nN_out = N0 * W     # ruído na banda W após detecção coerente (ideal)\nSNR_out = P_sb / N_out\nratio = SNR_out / SNR_in\n\n# DSB-SC como referência\nP_dsb = Ac**2 * P_mn / 2\nSNR_in_dsb = P_dsb / N_in\nSNR_out_dsb = P_dsb / N_out\nratio_dsb = SNR_out_dsb / SNR_in_dsb\n\nfig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))\n\n# Esquerda: SNR de saída\nSNR_out_db = 10*np.log10(SNR_out+1e-15)\nSNR_out_dsb_db = 10*np.log10(SNR_out_dsb+1e-15)\nax1.plot(mu_vals, SNR_out_db, \&#x27;b\&#x27;, lw=2, label=\&#x27;AM (saída)\&#x27;)\nax1.axhline(SNR_out_dsb_db, color=\&#x27;r\&#x27;, linestyle=\&#x27;--\&#x27;, lw=1.5,\n            label=f\&#x27;DSB-SC (ganho = {10*np.log10(ratio_dsb):.1f} dB)\&#x27;)\nax1.set_xlabel(\&#x27;$\\\\mu$\&#x27;)\nax1.set_ylabel(\&#x27;SNR de saída (dB)\&#x27;)\nax1.set_title(\&#x27;SNR de saída: AM vs DSB-SC\&#x27;)\nax1.legend(); ax1.grid(alpha=0.25)\nax1.set_xlim(0.1, 1.0)\n\n# Direita: eficiência de potência\neta = (mu_vals**2 * P_mn) / (1 + mu_vals**2 * P_mn)\nax2.plot(mu_vals, eta*100, \&#x27;g\&#x27;, lw=2)\nax2.axhline(33.33, color=\&#x27;r\&#x27;, linestyle=\&#x27;--\&#x27;, lw=1.5, label=\&#x27;limite teórico (33,3%)\&#x27;)\nax2.set_xlabel(\&#x27;$\\\\mu$\&#x27;)\nax2.set_ylabel(\&#x27;eficiência de potência (%)\&#x27;)\nax2.set_title(\&#x27;Eficiência de potência da AM\&#x27;)\nax2.legend(); ax2.grid(alpha=0.25)\nax2.set_xlim(0.1, 1.0)\n\nplt.tight_layout()\nplt.savefig(\&#x27;/tmp/snr_vs_mu.png\&#x27;, dpi=150, bbox_inches=\&#x27;tight\&#x27;)\nplt.show()\n\nprint(&quot;SNR comparison (linear scale):&quot;)\nfor mu in [0.3, 0.6, 0.8, 1.0]:\n    idx = int(np.argmin(np.abs(mu_vals - mu)))\n    print(f&quot;  $\\\\mu$={mu:.1f}: SNR_out/SNR_in = {ratio[idx]:.4f} &quot;\n          f&quot;({10*np.log10(ratio[idx]+1e-15):.2f} dB)&quot;)&#x27;, &quot;&lt;markdown-python-4&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-4&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 5: Transformada de Hilbert e geração SSB</h3>
+<p>Ilustrar a transformada de Hilbert e o sinal Hilbert de uma mensagem.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">10</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import hilbert
+
+fs = 10_000
+T = 1.0
+t = np.arange(0, T, 1/fs)
+
+# Mensagem: soma de dois tons (espectro não-uniforme)
+m = np.cos(2*np.pi*3*t) + 0.6*np.cos(2*np.pi*7*t)
+
+# Transformada de Hilbert via scipy
+m_hilbert = np.imag(hilbert(m))
+
+# Sinal analítico
+s_analytic = m + 1j * m_hilbert
+
+# SSB USB: s_USB(t) = m(t)*cos(2*pi*fc*t) - m_H(t)*sin(2*pi*fc*t)
+fc = 50
+carrier_cos = np.cos(2*np.pi*fc*t)
+carrier_sin = np.sin(2*np.pi*fc*t)
+s_usb = m * carrier_cos - m_hilbert * carrier_sin
+
+fig, axes = plt.subplots(3, 1, figsize=(12, 8))
+
+# Mensagem e Hilbert
+axes[0].plot(t, m, &#x27;b&#x27;, lw=1.2, label=&#x27;m(t)&#x27;)
+axes[0].plot(t, m_hilbert, &#x27;r&#x27;, lw=1, alpha=0.7, label=&#x27;$\\hat{m}(t)$ (Hilbert)&#x27;)
+axes[0].set_ylabel(&#x27;amplitude&#x27;)
+axes[0].set_title(&#x27;Mensagem e sua transformada de Hilbert&#x27;)
+axes[0].legend(); axes[0].grid(alpha=0.2)
+
+# Sinal analítico (envelope)
+envelope = np.abs(s_analytic)
+axes[1].plot(t, np.real(s_analytic), &#x27;b&#x27;, lw=0.8, alpha=0.7, label=&#x27;Re{analítico}&#x27;)
+axes[1].plot(t, envelope, &#x27;r&#x27;, lw=1.5, label=&#x27;envelope |analítico|&#x27;)
+axes[1].set_ylabel(&#x27;amplitude&#x27;)
+axes[1].set_title(&#x27;Sinal analítico e envelope&#x27;)
+axes[1].legend(); axes[1].grid(alpha=0.2)
+
+# SSB USB
+axes[2].plot(t, s_usb, &#x27;g&#x27;, lw=0.8)
+axes[2].set_ylabel(&#x27;amplitude&#x27;)
+axes[2].set_xlabel(&#x27;tempo (s)&#x27;)
+axes[2].set_title(&#x27;Sinal SSB USB gerado via Hilbert&#x27;)
+axes[2].grid(alpha=0.2)
+
+plt.tight_layout()
+plt.savefig(&#x27;/tmp/hilbert_ssb.png&#x27;, dpi=150, bbox_inches=&#x27;tight&#x27;)
+plt.show()
+
+# --- Verificação espectral ---
+f = np.fft.rfftfreq(len(t), 1/fs)
+S = np.abs(np.fft.rfft(s_usb))
+
+fig, ax = plt.subplots(figsize=(8, 3))
+ax.plot(f/1000, 20*np.log10(S/np.max(S)+1e-12), &#x27;g&#x27;, lw=1.5)
+ax.set(xlabel=&#x27;frequência (kHz)&#x27;, ylabel=&#x27;mag (dB rel.)&#x27;,
+       title=&#x27;Espectro SSB USB — apenas banda lateral superior&#x27;)
+ax.axvline((fc-fm_max)/1000, color=&#x27;k&#x27;, lw=0.5) if (fm_max := max(3,7)) else None
+ax.set_xlim(40, 60); ax.grid(alpha=0.25)
+plt.tight_layout()
+plt.savefig(&#x27;/tmp/ssb_spectrum.png&#x27;, dpi=150, bbox_inches=&#x27;tight&#x27;)
+plt.show()
+
+print(f&quot;Hilbert de cos(2pi*3t) = -sin(2pi*3t): erro = {np.mean((m_hilbert[:3000] + 
+      np.cos(2*np.pi*3*t[:3000]))**2):.2e}&quot;)
+print(&quot;Hilbert desloca fase em -90° para f&gt;0, +90° para f&lt;0.&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy.signal import hilbert\n\nfs = 10_000\nT = 1.0\nt = np.arange(0, T, 1/fs)\n\n# Mensagem: soma de dois tons (espectro não-uniforme)\nm = np.cos(2*np.pi*3*t) + 0.6*np.cos(2*np.pi*7*t)\n\n# Transformada de Hilbert via scipy\nm_hilbert = np.imag(hilbert(m))\n\n# Sinal analítico\ns_analytic = m + 1j * m_hilbert\n\n# SSB USB: s_USB(t) = m(t)*cos(2*pi*fc*t) - m_H(t)*sin(2*pi*fc*t)\nfc = 50\ncarrier_cos = np.cos(2*np.pi*fc*t)\ncarrier_sin = np.sin(2*np.pi*fc*t)\ns_usb = m * carrier_cos - m_hilbert * carrier_sin\n\nfig, axes = plt.subplots(3, 1, figsize=(12, 8))\n\n# Mensagem e Hilbert\naxes[0].plot(t, m, \&#x27;b\&#x27;, lw=1.2, label=\&#x27;m(t)\&#x27;)\naxes[0].plot(t, m_hilbert, \&#x27;r\&#x27;, lw=1, alpha=0.7, label=\&#x27;$\\\\hat{m}(t)$ (Hilbert)\&#x27;)\naxes[0].set_ylabel(\&#x27;amplitude\&#x27;)\naxes[0].set_title(\&#x27;Mensagem e sua transformada de Hilbert\&#x27;)\naxes[0].legend(); axes[0].grid(alpha=0.2)\n\n# Sinal analítico (envelope)\nenvelope = np.abs(s_analytic)\naxes[1].plot(t, np.real(s_analytic), \&#x27;b\&#x27;, lw=0.8, alpha=0.7, label=\&#x27;Re{analítico}\&#x27;)\naxes[1].plot(t, envelope, \&#x27;r\&#x27;, lw=1.5, label=\&#x27;envelope |analítico|\&#x27;)\naxes[1].set_ylabel(\&#x27;amplitude\&#x27;)\naxes[1].set_title(\&#x27;Sinal analítico e envelope\&#x27;)\naxes[1].legend(); axes[1].grid(alpha=0.2)\n\n# SSB USB\naxes[2].plot(t, s_usb, \&#x27;g\&#x27;, lw=0.8)\naxes[2].set_ylabel(\&#x27;amplitude\&#x27;)\naxes[2].set_xlabel(\&#x27;tempo (s)\&#x27;)\naxes[2].set_title(\&#x27;Sinal SSB USB gerado via Hilbert\&#x27;)\naxes[2].grid(alpha=0.2)\n\nplt.tight_layout()\nplt.savefig(\&#x27;/tmp/hilbert_ssb.png\&#x27;, dpi=150, bbox_inches=\&#x27;tight\&#x27;)\nplt.show()\n\n# --- Verificação espectral ---\nf = np.fft.rfftfreq(len(t), 1/fs)\nS = np.abs(np.fft.rfft(s_usb))\n\nfig, ax = plt.subplots(figsize=(8, 3))\nax.plot(f/1000, 20*np.log10(S/np.max(S)+1e-12), \&#x27;g\&#x27;, lw=1.5)\nax.set(xlabel=\&#x27;frequência (kHz)\&#x27;, ylabel=\&#x27;mag (dB rel.)\&#x27;,\n       title=\&#x27;Espectro SSB USB — apenas banda lateral superior\&#x27;)\nax.axvline((fc-fm_max)/1000, color=\&#x27;k\&#x27;, lw=0.5) if (fm_max := max(3,7)) else None\nax.set_xlim(40, 60); ax.grid(alpha=0.25)\nplt.tight_layout()\nplt.savefig(\&#x27;/tmp/ssb_spectrum.png\&#x27;, dpi=150, bbox_inches=\&#x27;tight\&#x27;)\nplt.show()\n\nprint(f&quot;Hilbert de cos(2pi*3t) = -sin(2pi*3t): erro = {np.mean((m_hilbert[:3000] + \n      np.cos(2*np.pi*3*t[:3000]))**2):.2e}&quot;)\nprint(&quot;Hilbert desloca fase em -90° para f&gt;0, +90° para f&lt;0.&quot;)&#x27;, &quot;&lt;markdown-python-5&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-5&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">11</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Deduza o espectro DSB-SC para <span class="eqwrap">\(m(t) = \cos(2\pi f_1 t) + 0{,}5\cos(2\pi f_2 t)\)</span> com <span class="eqwrap">\(f_1 = 1\,\text{kHz}\)</span>, <span class="eqwrap">\(f_2 = 2{,}5\,\text{kHz}\)</span> e <span class="eqwrap">\(f_c = 10\,\text{kHz}\)</span>. Liste todas as componentes espectrais (frequências e amplitudes).</p>
+<p><strong>E2.</strong> Para AM com <span class="eqwrap">\(\mu = 0{,}6\)</span> e <span class="eqwrap">\(P_c = 50\,\text{W}\)</span> (tom único), calcule: (a) a potência nas bandas laterais <span class="eqwrap">\(P_{\text{SB}}\)</span>; (b) a potência total <span class="eqwrap">\(P_T\)</span>; (c) a eficiência de potência <span class="eqwrap">\(\eta_P\)</span>.</p>
+<p><strong>E3.</strong> Um detector coerente DSB-SC opera com erro de fase <span class="eqwrap">\(\phi = 30°\)</span>. Determine: (a) a amplitude do sinal recuperado em relação ao ideal; (b) a perda de potência em dB; (c) o valor de <span class="eqwrap">\(\phi\)</span> que produz perda de 3 dB.</p>
+<p><strong>E4.</strong> Projete uma faixa aceitável de <span class="eqwrap">\(RC\)</span> para um detector de envelope AM com <span class="eqwrap">\(f_c = 1\,\text{MHz}\)</span> e <span class="eqwrap">\(W = 5\,\text{kHz}\)</span>. Use <span class="eqwrap">\(\mu = 0{,}8\)</span> para verificar a condição anti-diagonal clipping. Escolha valores práticos de <span class="eqwrap">\(R\)</span> e <span class="eqwrap">\(C\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">11</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E5.</strong> Compare banda e potência de DSB-SC, SSB e AM convencional para uma mensagem de banda <span class="eqwrap">\(W = 4\,\text{kHz}\)</span> e <span class="eqwrap">\(A_c = 1\)</span>. Calcule a eficiência energética de cada um (para tom único, <span class="eqwrap">\(\mu = 1\)</span> no caso AM).</p>
+<p><strong>E6.</strong> Explique o efeito de erro de frequência <span class="eqwrap">\(\Delta f\)</span> no detector coerente DSB-SC. Se <span class="eqwrap">\(\Delta f = 100\,\text{Hz}\)</span> e a mensagem é um tom de <span class="eqwrap">\(1\,\text{kHz}\)</span>, qual é o batimento na saída e como ele se manifesta?</p>
+<p><strong>E7.</strong> Mostre, passo a passo, que a transformada de Hilbert de <span class="eqwrap">\(\cos(2\pi f_0 t)\)</span> é <span class="eqwrap">\(-\sin(2\pi f_0 t)\)</span> para <span class="eqwrap">\(f_0 > 0\)</span>.</p>
+<p><strong>E8.</strong> Para um sinal AM tonal com <span class="eqwrap">\(\mu = 0{,}9\)</span> e <span class="eqwrap">\(f_c = 1\,\text{MHz}\)</span>, <span class="eqwrap">\(f_m = 3\,\text{kHz}\)</span>, calcule: (a) as frequências das componentes do espectro; (b) a razão entre a potência da portadora e a das bandas laterais.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">11</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E9.</strong> (Desafio) Derive a expressão do SNR de saída para SSB sob ruído AWGN, mostrando que é igual ao do DSB-SC, apesar de ocupar metade da banda.</p>
+<p><strong>E10.</strong> (Desafio) Um sinal AM com <span class="eqwrap">\(\mu = 1{,}2\)</span> é recebido por um detector de envelope. Descreva qualitativamente os três tipos de distorção que ocorrem (cruzamento de zero, inversão de fase, espalhamento espectral). Escreva um trecho de código Python que simule e plote a distorção.</p>
+<p><strong>E11.</strong> Dê a expressão do espectro SSB-USB para uma mensagem <span class="eqwrap">\(m(t)\)</span> genérica (não apenas tom único), usando a transformada de Fourier de <span class="eqwrap">\(m(t)\)</span> e de <span class="eqwrap">\(\hat{m}(t)\)</span>. Mostre que o espectro é nulo para <span class="eqwrap">\(f < f_c\)</span> (exceto pela simétrica negativa).</p>
+<p><strong>E12.</strong> (Desafio) Derive a condição de Carson para a largura de banda FM e mostre que, para <span class="eqwrap">\(\beta \gg 1\)</span>, <span class="eqwrap">\(B_{\text{FM}} \approx 2\Delta f\)</span>. Use esta relação para comparar a eficiência espectral de FM com <span class="eqwrap">\(\beta = 5\)</span> versus DSB-SC, para a mesma mensagem de banda <span class="eqwrap">\(W\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Gabarito</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E1</h3>
+<p>Espectro DSB-SC para <span class="eqwrap">\(m(t) = \cos(2\pi f_1 t) + 0{,}5\cos(2\pi f_2 t)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[S_{\text{DSB-SC}}(f) = \frac{A_c}{2}\Bigl[M(f-f_c) + M(f+f_c)\Bigr]\]</div>
+<p>Com <span class="eqwrap">\(A_c = 1\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[M(f) = \tfrac{1}{2}\bigl[\delta(f-f_1)+\delta(f+f_1)\bigr] + \tfrac{0{,}5}{2}\bigl[\delta(f-f_2)+\delta(f+f_2)\bigr]\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p>Deslocando para <span class="eqwrap">\(\pm f_c\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[S(f) = \frac{1}{2}\cdot\frac{1}{2}\bigl[\delta(f-f_c-f_1)+\delta(f-f_c+f_1)+\delta(f+f_c-f_1)+\delta(f+f_c+f_1)\bigr]\]</div>
+<div class="eqwrap eqbig eqcenter">\[+\;\frac{1}{2}\cdot\frac{0{,}5}{2}\bigl[\delta(f-f_c-f_2)+\delta(f-f_c+f_2)+\delta(f+f_c-f_2)+\delta(f+f_c+f_2)\bigr]\]</div>
+<p>Com <span class="eqwrap">\(f_1 = 1\,\text{kHz}\)</span>, <span class="eqwrap">\(f_2 = 2{,}5\,\text{kHz}\)</span>, <span class="eqwrap">\(f_c = 10\,\text{kHz}\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<table class="cmp">
+<thead><tr>
+<th>Frequência (kHz)</th>
+<th>Amplitude</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><span class="eqwrap">\(10-1 = 9\)</span></td>
+<td><span class="eqwrap">\(1/4 = 0{,}25\)</span></td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(10+1 = 11\)</span></td>
+<td><span class="eqwrap">\(1/4 = 0{,}25\)</span></td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(10-2{,}5 = 7{,}5\)</span></td>
+<td><span class="eqwrap">\(1/8 = 0{,}125\)</span></td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(10+2{,}5 = 12{,}5\)</span></td>
+<td><span class="eqwrap">\(1/8 = 0{,}125\)</span></td>
+</tr>
+<tr>
+<td>e as simétricas negativas</td>
+<td>mesmas</td>
+</tr>
+</tbody>
+</table>
+<p>Total: 8 linhas espectrais (4 positivas, 4 negativas).</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E2</h3>
+<p>Dados: <span class="eqwrap">\(\mu = 0{,}6\)</span>, <span class="eqwrap">\(P_c = 50\,\text{W}\)</span>, tom único.</p>
+<p>(a) <span class="eqwrap">\(P_{\text{SB}} = \dfrac{\mu^2 A_c^2}{2} P_{m_n}\)</span>. Como <span class="eqwrap">\(P_c = A_c^2/2 = 50\,\text{W}\)</span>, então <span class="eqwrap">\(A_c^2/2 = 50\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[P_{\text{SB}} = \mu^2 P_c \cdot P_{m_n} = 0{,}36 \cdot 50 \cdot 0{,}5 = \boxed{9\,\text{W}}\]</div>
+<p>(b) <span class="eqwrap">\(P_T = P_c + P_{\text{SB}} = 50 + 9 = \boxed{59\,\text{W}}\)</span></p>
+<p>(c) <span class="eqwrap">\(\eta_P = \dfrac{P_{\text{SB}}}{P_T} = \dfrac{9}{59} \approx 0{,}1525 = \boxed{15{,}25\%}\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E3</h3>
+<p>(a) <span class="eqwrap">\(y_\phi(t) = A_c m(t)\cos\phi\)</span>. Para <span class="eqwrap">\(\phi = 30°\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\cos 30° = \frac{\sqrt{3}}{2} \approx 0{,}866\]</div>
+<p>A amplitude recuperada é <span class="eqwrap">\(0{,}866\,A_c\)</span>, ou seja, <strong>86,6% da amplitude ideal</strong>.</p>
+<p>(b) Perda de potência: <span class="eqwrap">\(P_{\text{loss}} = \sin^2 30° = (1/2)^2 = 1/4 = 25\%\)</span>.</p>
+<p>Em dB: <span class="eqwrap">\(-10\log_{10}(0{,}75) \approx \boxed{1{,}25\,\text{dB}}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p>(c) Para perda de 3 dB: <span class="eqwrap">\(\sin^2\phi = 0{,}5\)</span>, logo <span class="eqwrap">\(\sin\phi = 1/\sqrt{2}\)</span>, <span class="eqwrap">\(\phi = \boxed{45° = \pi/4\,\text{rad}}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E4</h3>
+<p>Condição geral de RC:</p>
+<div class="eqwrap eqbig eqcenter">\[\frac{1}{2\pi\cdot 10^6} \ll RC \ll \frac{1}{2\pi\cdot 5000}\]</div>
+<div class="eqwrap eqbig eqcenter">\[1{,}59\times 10^{-7}\,\text{s} \ll RC \ll 3{,}18\times 10^{-5}\,\text{s}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{0{,}16\,\mu\text{s} \ll RC \ll 31{,}8\,\mu\text{s}}\]</div>
+<p>Condição anti-diagonal clipping (<span class="eqwrap">\(\mu = 0{,}8\)</span>, <span class="eqwrap">\(f_m = 5\,\text{kHz}\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[RC \leq \frac{\sqrt{1-0{,}8^2}}{0{,}8\cdot 2\pi\cdot 5000} = \frac{0{,}6}{25133} \approx 23{,}9\,\mu\text{s}\]</div>
+<p>Escolha prática: <span class="eqwrap">\(R = 10\,\text{k}\Omega\)</span>, <span class="eqwrap">\(C = 0{,}0022\,\mu\text{F}\)</span>, então <span class="eqwrap">\(RC = 22\,\mu\text{s}\)</span> — dentro da janela e abaixo do limite anti-clipping.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E5</h3>
+<table class="cmp">
+<thead><tr>
+<th>Esquema</th>
+<th>Banda</th>
+<th>Potência (total)</th>
+<th>Eficiência</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>DSB-SC</td>
+<td><span class="eqwrap">\(2W = 8\,\text{kHz}\)</span></td>
+<td><span class="eqwrap">\(P_s = A_c^2/2 \cdot P_m\)</span></td>
+<td><span class="eqwrap">\(100\%\)</span></td>
+</tr>
+<tr>
+<td>SSB</td>
+<td><span class="eqwrap">\(W = 4\,\text{kHz}\)</span></td>
+<td><span class="eqwrap">\(P_s/2 = A_c^2/4 \cdot P_m\)</span></td>
+<td><span class="eqwrap">\(100\%\)</span></td>
+</tr>
+<tr>
+<td>AM (<span class="eqwrap">\(\mu=1\)</span>)</td>
+<td><span class="eqwrap">\(2W = 8\,\text{kHz}\)</span></td>
+<td><span class="eqwrap">\(3A_c^2/4\)</span></td>
+<td><span class="eqwrap">\(33{,}3\%\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>A SSB ocupa metade da banda do DSB-SC com metade da potência e mesma eficiência. A AM ocupa o dobro da SSB com 4× mais potência e apenas 1/3 da eficiência.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E6</h3>
+<p>A saída do detector é <span class="eqwrap">\(y_{\Delta f}(t) = A_c\,m(t)\,\cos(2\pi\Delta f\,t)\)</span>. Para <span class="eqwrap">\(m(t) = \cos(2\pi\cdot 1000\,t)\)</span> e <span class="eqwrap">\(\Delta f = 100\,\text{Hz}\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[y(t) = A_c\,\cos(2000\pi t)\,\cos(200\pi t)\]</div>
+<p>O batimento de <span class="eqwrap">\(100\,\text{Hz}\)</span> modula a amplitude da mensagem — a mensagem é <strong>multiplicada</strong> por uma oscilação de <span class="eqwrap">\(100\,\text{Hz}\)</span>. Em áudio, isso se manifesta como um zumbido de <span class="eqwrap">\(100\,\text{Hz}\)</span> sobreposto ao sinal original. Se o batimento fosse mais baixo (ex: <span class="eqwrap">\(1\,\text{Hz}\)</span>), seria uma flutuação lenta e perceptível.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E7</h3>
+<p>No domínio da frequência, a transformada de Hilbert multiplica por <span class="eqwrap">\(-j\,\text{sgn}(f)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\mathcal{F}\{\cos(2\pi f_0 t)\} = \tfrac{1}{2}\bigl[\delta(f-f_0) + \delta(f+f_0)\bigr]\]</div>
+<p>Para <span class="eqwrap">\(f_0 > 0\)</span>:</p>
+<ul class="beats"><li>Em <span class="eqwrap">\(f = +f_0\)</span>: multiplicar por <span class="eqwrap">\(-j\)</span> → <span class="eqwrap">\(-j\cdot\frac{1}{2}\delta(f-f_0)\)</span></li><li>Em <span class="eqwrap">\(f = -f_0\)</span>: multiplicar por <span class="eqwrap">\(+j\)</span> → <span class="eqwrap">\(+j\cdot\frac{1}{2}\delta(f+f_0)\)</span></li></ul>
+<p>Invertendo:</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\hat{m}(t) = -j\cdot\frac{1}{2}e^{j2\pi f_0 t} + j\cdot\frac{1}{2}e^{-j2\pi f_0 t} = \frac{e^{-j2\pi f_0 t} - e^{j2\pi f_0 t}}{2j} = -\sin(2\pi f_0 t)\]</div>
+<p><span class="eqwrap">\(\blacksquare\)</span> (Para <span class="eqwrap">\(f_0 < 0\)</span>, o sinal é <span class="eqwrap">\(+\sin(2\pi|f_0|t)\)</span> — o Hilbert inverte o sinal para frequências negativas, consistente com o deslocamento de fase de <span class="eqwrap">\(+90°\)</span>.)</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E8</h3>
+<p>(a) Componentes espectrais do AM com <span class="eqwrap">\(\mu = 0{,}9\)</span>, <span class="eqwrap">\(f_c = 1\,\text{MHz}\)</span>, <span class="eqwrap">\(f_m = 3\,\text{kHz}\)</span>:</p>
+<table class="cmp">
+<thead><tr>
+<th>Componente</th>
+<th>Frequência</th>
+<th>Amplitude</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Portadora</td>
+<td><span class="eqwrap">\(1{,}000\,\text{kHz}\)</span></td>
+<td><span class="eqwrap">\(A_c\)</span></td>
+</tr>
+<tr>
+<td>LSB</td>
+<td><span class="eqwrap">\(0{,}997\,\text{kHz}\)</span></td>
+<td><span class="eqwrap">\(\mu A_c/2 = 0{,}45 A_c\)</span></td>
+</tr>
+<tr>
+<td>USB</td>
+<td><span class="eqwrap">\(1{,}003\,\text{kHz}\)</span></td>
+<td><span class="eqwrap">\(\mu A_c/2 = 0{,}45 A_c\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>(b) Razão portadora/laterais:</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\frac{P_c}{P_{\text{SB}}} = \frac{A_c^2/2}{\mu^2 A_c^2/4} = \frac{2}{\mu^2} = \frac{2}{0{,}81} \approx \boxed{2{,}47}\]</div>
+<p>A portadora carrega <span class="eqwrap">\(2{,}47\times\)</span> mais potência que as duas laterais juntas.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E9</h3>
+<p>SSB e DSB-SC têm a <strong>mesma potência de sinal</strong> para mesma mensagem e <span class="eqwrap">\(A_c\)</span>, usam mixers coerentes idênticos, e o ruído de saída é <span class="eqwrap">\(N_0 W\)</span> em ambos (filtragem passa-baixas de banda <span class="eqwrap">\(W\)</span>). Logo:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{SNR}_{\text{out}}^{\text{SSB}} = \text{SNR}_{\text{out}}^{\text{DSB}} = \frac{A_c^2 P_m}{N_0 W}}\]</div>
+<p>SSB obtém isso com metade da banda — preferida em HF.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E10</h3>
+<p>Com <span class="eqwrap">\(\mu = 1{,}2 > 1\)</span>, o envelope <span class="eqwrap">\(1+\mu\,m_n(t)\)</span> torna-se negativo quando <span class="eqwrap">\(m_n(t) < -1/\mu \approx -0{,}833\)</span>. Três distorções:</p>
+<ol class="take"><li><strong>Cruzamento de zero</strong>: envelope passa por <span class="eqwrap">\(0\)</span>, invertendo fase em <span class="eqwrap">\(180°\)</span>.</li><li><strong>Inversão de fase</strong>: sinal modulado inverte fase onde <span class="eqwrap">\(1+\mu\,m_n(t) < 0\)</span>.</li><li><strong>Espalhamento espectral</strong>: distorção não-linear gera harmônicos além de <span class="eqwrap">\(2W\)</span>.</li></ol>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+fs = 100_000; fc = 5_000; fm = 200; mu = 1.2; T = 0.01
+m = np.cos(2*np.pi*fm*np.arange(0, T, 1/fs))
+s_over = (1+mu*m)*np.cos(2*np.pi*fc*np.arange(0,T,1/fs))
+env_det = np.abs(1+mu*m)
+
+fig, ax = plt.subplots(figsize=(9,3))
+ax.plot(np.arange(0,T,1/fs)*1e3, s_over, &#x27;r&#x27;, lw=0.6, label=&#x27;$\\mu$=1,2&#x27;)
+ax.fill_between(np.arange(0,T,1/fs)*1e3, -1.2, 1.2, where=(1+mu*m)&lt;0, alpha=0.1, color=&#x27;red&#x27;)
+ax.plot(np.arange(0,T,1/fs)*1e3, env_det, &#x27;g&#x27;, lw=1.2, label=&#x27;envelope detectado&#x27;)
+ax.set(xlabel=&#x27;tempo (ms)&#x27;, ylabel=&#x27;amplitude&#x27;, title=&#x27;Sobremodulação ($\\mu$=1,2)&#x27;)
+ax.legend(); ax.grid(alpha=0.2)
+plt.tight_layout()
+plt.savefig(&#x27;/tmp/overmod.png&#x27;, dpi=150, bbox_inches=&#x27;tight&#x27;)
+plt.show()
+print(&quot;Detector recupera |1+mu*m| — segmentos negativos são virados para cima.&quot;)</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\n\nfs = 100_000; fc = 5_000; fm = 200; mu = 1.2; T = 0.01\nm = np.cos(2*np.pi*fm*np.arange(0, T, 1/fs))\ns_over = (1+mu*m)*np.cos(2*np.pi*fc*np.arange(0,T,1/fs))\nenv_det = np.abs(1+mu*m)\n\nfig, ax = plt.subplots(figsize=(9,3))\nax.plot(np.arange(0,T,1/fs)*1e3, s_over, \&#x27;r\&#x27;, lw=0.6, label=\&#x27;$\\\\mu$=1,2\&#x27;)\nax.fill_between(np.arange(0,T,1/fs)*1e3, -1.2, 1.2, where=(1+mu*m)&lt;0, alpha=0.1, color=\&#x27;red\&#x27;)\nax.plot(np.arange(0,T,1/fs)*1e3, env_det, \&#x27;g\&#x27;, lw=1.2, label=\&#x27;envelope detectado\&#x27;)\nax.set(xlabel=\&#x27;tempo (ms)\&#x27;, ylabel=\&#x27;amplitude\&#x27;, title=\&#x27;Sobremodulação ($\\\\mu$=1,2)\&#x27;)\nax.legend(); ax.grid(alpha=0.2)\nplt.tight_layout()\nplt.savefig(\&#x27;/tmp/overmod.png\&#x27;, dpi=150, bbox_inches=\&#x27;tight\&#x27;)\nplt.show()\nprint(&quot;Detector recupera |1+mu*m| — segmentos negativos são virados para cima.&quot;)&#x27;, &quot;&lt;markdown-python-6&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-6&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E11</h3>
+<p>Sinal SSB-USB:</p>
+<div class="eqwrap eqbig eqcenter">\[s_{\text{USB}}(t) = \frac{A_c}{2}\Bigl[m(t)\,\cos(2\pi f_c t) - \hat{m}(t)\,\sin(2\pi f_c t)\Bigr]\]</div>
+<p>Transformada usando <span class="eqwrap">\(\hat{M}(f) = -j\,\text{sgn}(f)\,M(f)\)</span>:</p>
+<p>Para <span class="eqwrap">\(f > f_c\)</span> (banda lateral superior): <span class="eqwrap">\(S_{\text{USB}}(f) = \tfrac{A_c}{2}\,M(f-f_c)\)</span>.</p>
+<p>Para <span class="eqwrap">\(f < -f_c\)</span> (simétrica negativa): <span class="eqwrap">\(S_{\text{USB}}(f) = \tfrac{A_c}{2}\,M^*(f+f_c)\)</span>.</p>
+<p>Nas faixas intermediárias (<span class="eqwrap">\(-f_c < f < f_c\)</span>): espectro nulo — <strong>apenas uma banda lateral</strong>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">E12</h3>
+<p><strong>Condição de Carson</strong>: <span class="eqwrap">\(B_{\text{FM}} \approx 2(\Delta f + W) = 2W(\beta+1)\)</span>.</p>
+<p>Para <span class="eqwrap">\(\beta \gg 1\)</span>, <span class="eqwrap">\(\Delta f \gg W\)</span>, logo <span class="eqwrap">\(\beta+1 \approx \beta\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[B_{\text{FM}} \approx 2\Delta f(1 + 1/\beta) \approx 2\Delta f \quad\text{(para }\beta \gg 1\text{)}\]</div>
+<p>Comparação de eficiência espectral (<span class="eqwrap">\(\eta_f = \text{informação} / \text{banda}\)</span>):</p>
+<ul class="beats"><li>DSB-SC: <span class="eqwrap">\(\eta_f \propto \tfrac{1}{2W}\)</span></li><li>FM (<span class="eqwrap">\(\beta=5\)</span>): pela regra de Carson, <span class="eqwrap">\(B_{\text{FM}}\approx2(5+1)W=12W\)</span>, então <span class="eqwrap">\(\eta_f\propto1/(12W)\)</span>.</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">12</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p>O FM ocupa <strong>6× mais banda</strong> que o DSB-SC, mas, quando a SNR de entrada é referida à banda RF de Carson, obtém ganho de <span class="eqwrap">\(3\beta^2(\beta+1)=450\)</span> (<span class="eqwrap">\(26{,}5\)</span> dB). É o compromisso clássico entre banda e qualidade; referido a <span class="eqwrap">\((C/N)_W\)</span>, o ganho é <span class="eqwrap">\((3/2)\beta^2\)</span>.</p>
+</div>
+</section>
+    <div class="nav-arrows">
+      <button class="nav-btn prev" id="nav-prev-btn" aria-label="Previous slide">‹</button>
+      <button class="nav-btn next" id="nav-next-btn" aria-label="Next slide">›</button>
+    </div>
+    <div class="foot"><span>Slide Framework</span><span class="dots" data-dots></span><span data-num></span></div>
+  </main>
+</div>
+
+<div class="brand">Modulação em Amplitude — Teoria Completa</div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">00</span></div>
+<button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" class="sun-icon"/><line x1="12" y1="1" x2="12" y2="3" class="sun-icon"/><line x1="12" y1="21" x2="12" y2="23" class="sun-icon"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="sun-icon"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="sun-icon"/><line x1="1" y1="12" x2="3" y2="12" class="sun-icon"/><line x1="21" y1="12" x2="23" y2="12" class="sun-icon"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="sun-icon"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="sun-icon"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-icon"/></svg>
+</button>
+<div class="hint" id="hint"><kbd>←</kbd><kbd>→</kbd> to move · <kbd>F</kbd> full screen · <kbd>Ctrl+K</kbd> search · <kbd>S</kbd> notes</div>
+
+<div class="search-overlay" id="search-overlay"></div>
+
+<div class="notes-overlay" id="notes-overlay">
+	<div class="notes-card">
+		<div class="notes-header">
+			<span class="title">Speaker Notes</span>
+			<button class="close-btn">Close (S)</button>
+		</div>
+		<div class="notes-body"></div>
+		<div class="notes-current"></div>
+	</div>
+</div>
+
+<script defer src="../../slide_framework/deck.js"></script>
+</body>
+</html>

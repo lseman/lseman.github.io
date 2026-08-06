@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transmissão Digital em Banda Passante: ASK, PSK e FSK</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="../../slide_framework/framework.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+<div class="progress" id="progress" title="Jump">
+  <div class="bar" id="bar"></div>
+</div>
+
+<div class="deck-shell">
+  <main class="stage" id="stage">
+<section class="slide title-slide" data-sec="Title">
+  <svg class="title-figure" viewBox="0 0 420 340" aria-hidden="true"><defs><radialGradient id="ig" cx="50%" cy="55%" r="60%"><stop offset="0%" stop-color="var(--gold)" stop-opacity=".10"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></radialGradient></defs><circle cx="210" cy="180" r="160" fill="url(#ig)"/><g stroke="var(--line)" stroke-width=".7" opacity=".2"><line x1="50" y1="40" x2="50" y2="300"/><line x1="50" y1="300" x2="390" y2="300"/></g><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M70,200 L130,200 L130,140 L190,140" stroke="var(--blue)" opacity=".8"/><path d="M190,140 L190,80 L250,80 L250,140 L310,140 L310,200" stroke="var(--vio)" opacity=".75"/><path d="M70,240 L110,240 L110,200 L150,200 L150,280 L210,280 L210,240 L270,240 L270,300 L330,300 L330,240 L390,240" stroke="var(--gold)" opacity=".65"/></g><circle cx="130" cy="140" r="5" fill="var(--blue)"/><circle cx="190" cy="140" r="5" fill="var(--vio)"/><circle cx="250" cy="80" r="4" fill="var(--gold)"/><circle cx="150" cy="200" r="4" fill="var(--blue)"/><circle cx="110" cy="240" r="4" fill="var(--gold)"/><circle cx="210" cy="240" r="4" fill="var(--vio)"/><circle cx="270" cy="240" r="4" fill="var(--gold)"/><circle cx="330" cy="240" r="4" fill="var(--vio)"/><path d="M80,100 Q110,60 140,100 Q170,140 200,100 Q230,60 260,100 Q290,140 320,100 Q350,60 370,80"fill="none" stroke="var(--blue)" stroke-width="1.8" opacity=".5" stroke-linecap="round"/><circle cx="70" cy="200" r="3" fill="var(--text)" opacity=".5"/><circle cx="390" cy="240" r="3" fill="var(--text)" opacity=".5"/></svg>
+  <div class="title-content">
+    <div class="super">Apostila de Comunicações — Transmissão Digital em Banda Passante: ASK, PSK e FSK</div>
+    <h1>Transmissão Digital em Banda Passante: ASK, PSK e FSK</h1>
+    <div class="topics"><span class="chip">espaço de sinais</span><span class="chip">decisão máxima-verossimilhança</span><span class="chip">M-ASK</span><span class="chip">BPSK</span><span class="chip">QPSK</span><span class="chip">M-PSK</span></div>
+  </div>
+</section>
+<section class="slide" data-sec="Antes de começar">
+<div class="eyebrow"><span class="sec">01</span> Antes de começar <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Antes de começar</h2>
+<p>Ao final, você deve representar modulações em espaço de sinais, construir regiões ML e comparar ASK, PSK e FSK por distância, BER, banda e complexidade. <strong>Diagnóstico:</strong> dois esquemas com a mesma energia média necessariamente têm a mesma BER? <strong>Evidência mínima:</strong> obter ao menos uma curva simulada com barras ou intervalos de incerteza e confrontá-la com a teoria.</p>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Espaço de Sinais e Decisão Máxima-Verossimilhança</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Representação de Karhunen-Loève</h3>
+<p><strong>Teorema 1.1 (Representação de sinais em espaço de dimensão finita).</strong> Dado um conjunto de <span class="eqwrap">\(M\)</span> sinais <span class="eqwrap">\(\{s_i(t)\}_{i=0}^{M-1}\)</span> de duração <span class="eqwrap">\(T_s\)</span> e energia finita, existe uma base ortonormal <span class="eqwrap">\(\{\phi_k(t)\}_{k=1}^{N}\)</span> com <span class="eqwrap">\(N \le M\)</span> tal que:</p>
+<div class="eqwrap eqbig eqcenter">\[s_i(t) = \sum_{k=1}^{N} s_{ik}\, \phi_k(t), \quad 0 \le t \le T_s. \tag{1.1}\]</div>
+<p>Os coeficientes <span class="eqwrap">\(s_{ik} = \int_0^{T_s} s_i(t)\phi_k(t)\,dt\)</span> formam o vetor de sinal <span class="eqwrap">\(\mathbf{s}_i = (s_{i1}, \dots, s_{iN}) \in \mathbb{R}^N\)</span>.</p>
+<p><strong>Definição:</strong> O espaço de sinais é o espaço euclidiano <span class="eqwrap">\(\mathbb{R}^N\)</span> cujos pontos são as constelações (vetores de símbolos). A distância euclidiana entre dois pontos <span class="eqwrap">\(\mathbf{s}_i\)</span> e <span class="eqwrap">\(\mathbf{s}_j\)</span> é:</p>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\|\mathbf{s}_i - \mathbf{s}_j\|^2 = \int_0^{T_s} |s_i(t) - s_j(t)|^2 dt. \tag{1.2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Receptor Ótimo em AWGN</h3>
+<p><strong>Teorema 1.2 (Decisão máxima-verossimilhança em AWGN).</strong> Seja o sinal recebido <span class="eqwrap">\(r(t) = s_i(t) + n(t)\)</span>, onde <span class="eqwrap">\(n(t)\)</span> é AWGN com PSD bilateral <span class="eqwrap">\(N_0/2\)</span>. O receptor que minimiza a probabilidade de erro (para símbolos equiprováveis) é:</p>
+<div class="eqwrap eqbig eqcenter">\[\hat{i} = \arg\min_i \|\mathbf{r} - \mathbf{s}_i\|^2 = \arg\max_i \left(\mathbf{r} \cdot \mathbf{s}_i - \frac{1}{2}\|\mathbf{s}_i\|^2\right). \tag{1.3}\]</div>
+<p><strong>Prova:</strong></p>
+<p>A densidade de probabilidade condicional do vetor recebido <span class="eqwrap">\(\mathbf{r}\)</span> dado que <span class="eqwrap">\(\mathbf{s}_i\)</span> foi transmitido é Gaussiana multivariada:</p>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[p(\mathbf{r}|\mathbf{s}_i) = \left(\frac{1}{\pi N_0}\right)^{N/2} \exp\left(-\frac{\|\mathbf{r} - \mathbf{s}_i\|^2}{N_0}\right).\]</div>
+<p>Para símbolos equiprováveis <span class="eqwrap">\(P(i) = 1/M\)</span>, a regra de máxima-verossimilhança é <span class="eqwrap">\(\arg\max_i p(\mathbf{r}|\mathbf{s}_i)\)</span>, equivalente a <span class="eqwrap">\(\arg\min_i \|\mathbf{r} - \mathbf{s}_i\|^2\)</span>. Expandindo:</p>
+<div class="eqwrap eqbig eqcenter">\[\|\mathbf{r} - \mathbf{s}_i\|^2 = \|\mathbf{r}\|^2 - 2\mathbf{r} \cdot \mathbf{s}_i + \|\mathbf{s}_i\|^2.\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<p>O termo <span class="eqwrap">\(\|\mathbf{r}\|^2\)</span> é comum a todos os <span class="eqwrap">\(i\)</span>, então a decisão é <span class="eqwrap">\(\arg\max_i (\mathbf{r} \cdot \mathbf{s}_i - \frac{1}{2}\|\mathbf{s}_i\|^2)\)</span>. <span class="eqwrap">\(\blacksquare\)</span></p>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Implementação: Correlator ou Filtro Casado</h3>
+<p><strong>Definição:</strong> O receptor correlaciona <span class="eqwrap">\(r(t)\)</span> com cada forma de onda candidata:</p>
+<div class="eqwrap eqbig eqcenter">\[r_k = \int_0^{T_s} r(t)\phi_k(t)\,dt = s_{ik} + n_k, \quad n_k \sim \mathcal{N}(0, N_0/2).\]</div>
+<p>Equivalente: filtro casado <span class="eqwrap">\(h_k(t) = \phi_k(T_s - t)\)</span> para cada <span class="eqwrap">\(\phi_k\)</span>, amostra em <span class="eqwrap">\(t = T_s\)</span>.</p>
+<p><strong>Importante:</strong> A distância mínima da constelação <span class="eqwrap">\(d_{\min} = \min_{i \ne j}\|\mathbf{s}_i - \mathbf{s}_j\|\)</span> governa a probabilidade de erro. Quanto maior <span class="eqwrap">\(d_{\min}\)</span> para uma dada energia média, menor a BER.</p>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Probabilidade de Erro em Função da Distância</h3>
+<p>Para dois sinais antipodais <span class="eqwrap">\(\pm\mathbf{s}\)</span> (<span class="eqwrap">\(\|\mathbf{s}\|^2 = E\)</span>), em AWGN:</p>
+<div class="eqwrap eqbig eqcenter">\[P_e = Q\left(\frac{\|\mathbf{s} - (-\mathbf{s})\|}{2\sqrt{N_0/2}}\right)
+=Q\left(\frac{2\sqrt E}{\sqrt{2N_0}}\right)
+= Q\left(\sqrt{\frac{2E}{N_0}}\right).\]</div>
+<p>O denominador contém metade da distância entre os sinais e o desvio padrão <span class="eqwrap">\(\sqrt{N_0/2}\)</span> do ruído projetado. Para BPSK, <span class="eqwrap">\(E=E_b\)</span>, recuperando <span class="eqwrap">\(P_b=Q(\sqrt{2E_b/N_0})\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Espaço de Sinais e Decisão Máxima-Verossimilhança">
+<div class="eyebrow"><span class="sec">02</span> Espaço de Sinais e Decisão Máxima-Verossimilhança <span class="rule"></span></div>
+<div class="body">
+<p>Para <span class="eqwrap">\(M\)</span> sinais hipercúbicos (M-PAM):</p>
+<div class="eqwrap eqbig eqcenter">\[P_e \approx \frac{2(M-1)}{M} Q\left(\sqrt{\frac{6E_b\log_2 M}{(M^2-1)N_0}}\right). \tag{1.4}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="M-ASK — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> M-ASK — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">M-ASK — Teoria Completa</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição do Sinal M-ASK</h3>
+<p><strong>Definição:</strong> M-ASK (<em>M-Amplitude Shift Keying</em>) transmite <span class="eqwrap">\(M\)</span> símbolos por meio de <span class="eqwrap">\(M\)</span> amplitudes distintas da portadora:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_m(t) = A_m\cos(2\pi f_c t), \quad m \in \{0, 1, \dots, M-1\}, \quad 0 \le t \le T_s.} \tag{2.1}\]</div>
+<p><strong>Definição:</strong> A base ortonormal para M-ASK é <span class="eqwrap">\(\phi(t) = \sqrt{2/T_s}\cos(2\pi f_c t)\)</span>, de modo que:</p>
+<div class="eqwrap eqbig eqcenter">\[s_m(t) = s_m\,\phi(t), \quad \text{onde } s_m = A_m\sqrt{T_s/2}. \tag{2.2}\]</div>
+<p>Os pontos da constelação estão em uma linha (dimensão <span class="eqwrap">\(N = 1\)</span>).</p>
+</div>
+</section>
+<section class="slide" data-sec="M-ASK — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> M-ASK — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Mapeamento de Amplitudes</h3>
+<p>Para energia normalizada (energia média por símbolo unitária), as amplitudes são igualmente espaçadas e simétricas em torno de zero:</p>
+<div class="eqwrap eqbig eqcenter">\[A_m = (2m - M + 1)d, \quad m = 0, 1, \dots, M-1. \tag{2.3}\]</div>
+<p>O espaçamento é <span class="eqwrap">\(2d\)</span>. A energia média do símbolo é:</p>
+<div class="eqwrap eqbig eqcenter">\[E_s = \frac{1}{M}\sum_{m=0}^{M-1} s_m^2 = \frac{T_s}{2}\cdot\frac{1}{M}\sum_{m=0}^{M-1} A_m^2. \tag{2.4}\]</div>
+<p>Com <span class="eqwrap">\(A_m = (2m - M + 1)d\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="M-ASK — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> M-ASK — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\sum_{m=0}^{M-1} A_m^2 = d^2\sum_{m=0}^{M-1} (2m - M + 1)^2 = d^2 \cdot \frac{M(M^2-1)}{3}. \tag{2.5}\]</div>
+<p>Logo:</p>
+<div class="eqwrap eqbig eqcenter">\[E_s = \frac{T_s}{2M} \cdot d^2 \cdot \frac{M(M^2-1)}{3} = \frac{T_s d^2(M^2-1)}{6}. \tag{2.6}\]</div>
+<p><strong>Teorema 2.1 (Espaçamento normalizado M-ASK).</strong> Para energia média por símbolo <span class="eqwrap">\(E_s\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{d = \sqrt{\frac{6E_s}{T_s(M^2-1)}} = \sqrt{\frac{6E_b\log_2 M}{T_s(M^2-1)}}.} \tag{2.7}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="M-ASK — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> M-ASK — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Potência e Eficiência</h3>
+<p>A potência média transmitida é <span class="eqwrap">\(P = E_s/T_s\)</span>. A eficiência espectral é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\eta=\frac{R_b}{B}=\frac{\log_2M}{BT_s}.} \tag{2.8}\]</div>
+<p>onde <span class="eqwrap">\(B\)</span> é a largura de banda do sinal modulado. Para ASK com pulso de Nyquist RC, <span class="eqwrap">\(B = (1+\alpha)/(2T_s)\)</span> em banda base, ou <span class="eqwrap">\(B = (1+\alpha)/T_s\)</span> em banda passante (duplicada).</p>
+<p><strong>Observação:</strong> no espaço de sinais, a distância entre vizinhos é <span class="eqwrap">\(D_{\min}=2d\sqrt{T_s/2}\)</span>; portanto, <span class="eqwrap">\(D_{\min}^2=12E_s/(M^2-1)\)</span>. É essa distância — não o espaçamento de amplitude isolado — que entra na probabilidade de erro.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-ASK — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> M-ASK — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Casos Particulares</h3>
+<p><strong>OOK:</strong> é assimétrica, <span class="eqwrap">\(\{0,s_1\}\)</span>, e não coincide com a M-ASK simétrica da Seção “Mapeamento de Amplitudes”. Se <span class="eqwrap">\(E_1\)</span> é a energia do símbolo ligado, <span class="eqwrap">\(P_b=Q(\sqrt{E_1/(2N_0)})\)</span>. Para bits equiprováveis, a energia média é <span class="eqwrap">\(\bar E_b=E_1/2\)</span>, logo:</p>
+<div class="eqwrap eqbig eqcenter">\[P_b^{\text{OOK}}=Q\left(\sqrt{\frac{\bar E_b}{N_0}}\right). \tag{2.9}\]</div>
+<p><strong>4-ASK:</strong> Constelação <span class="eqwrap">\(\{-3d, -d, d, 3d}\)</span> normalizada. Transporta 2 bits/símbolo. BER aproximada:</p>
+<div class="eqwrap eqbig eqcenter">\[P_b \approx \frac{3}{4}Q\left(\sqrt{\frac{4E_b}{5N_0}}\right).\]</div>
+<p><strong>16-ASK:</strong> 4 bits/símbolo. BER aproximada:</p>
+</div>
+</section>
+<section class="slide" data-sec="M-ASK — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> M-ASK — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_b \approx \frac{15}{32}Q\left(\sqrt{\frac{8E_b}{85N_0}}\right).\]</div>
+</div>
+</section>
+<section class="slide" data-sec="M-ASK — Teoria Completa">
+<div class="eyebrow"><span class="sec">03</span> M-ASK — Teoria Completa <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Desvantagem do M-ASK</h3>
+<p><strong>Resultado 2.1 (Desvantagem energética do M-ASK).</strong> A distância mínima normalizada é <span class="eqwrap">\(d_{\min}^2 = \frac{12E_b\log_2 M}{(M^2-1)}\)</span>, que para <span class="eqwrap">\(M\)</span> grande se comporta como <span class="eqwrap">\(\frac{12E_b\log_2 M}{M^2}\)</span>. Para cada dobro da ordem, a distância cai quadráticamente, exigindo <span class="eqwrap">\(4\times\)</span> mais energia por bit para manter a mesma BER.</p>
+<p><strong>Comparação:</strong> BPSK (<span class="eqwrap">\(M=2\)</span> PSK) tem <span class="eqwrap">\(d_{\min}^2 = 4E_b\)</span>. 16-ASK tem <span class="eqwrap">\(d_{\min}^2 \approx \frac{12E_b\cdot 4}{255} \approx 0{,}188E_b\)</span>. BPSK é ~21× melhor em distância mínima.</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-ASK">
+<div class="eyebrow"><span class="sec">04</span> Dedução da Probabilidade de Erro M-ASK <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Dedução da Probabilidade de Erro M-ASK</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Densidade de Probabilidade Condicionada</h3>
+<p><strong>Prova da BER M-ASK:</strong></p>
+<p>Considere a M-ASK simétrica e denote por <span class="eqwrap">\(D=2d\sqrt{T_s/2}\)</span> a distância entre pontos adjacentes <strong>no espaço de sinais</strong>. A fronteira fica no ponto médio, a <span class="eqwrap">\(D/2\)</span> de cada vizinho. Como a projeção do ruído tem desvio <span class="eqwrap">\(\sigma=\sqrt{N_0/2}\)</span>, um ponto interno possui duas caudas de erro:</p>
+<div class="eqwrap eqbig eqcenter">\[P(e|m)=2Q\left(\frac{D}{2\sigma}\right)
+=2Q\left(\frac{D}{\sqrt{2N_0}}\right),\quad1\le m\le M-2. \tag{3.1}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-ASK">
+<div class="eyebrow"><span class="sec">04</span> Dedução da Probabilidade de Erro M-ASK <span class="rule"></span></div>
+<div class="body">
+<p>Cada ponto de borda possui apenas uma cauda. Fazendo a média dos dois pontos de borda e dos <span class="eqwrap">\(M-2\)</span> internos:</p>
+<div class="eqwrap eqbig eqcenter">\[P_s=\frac{2(M-1)}{M}Q\left(\frac{D}{\sqrt{2N_0}}\right). \tag{3.2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-ASK">
+<div class="eyebrow"><span class="sec">04</span> Dedução da Probabilidade de Erro M-ASK <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Conversão para BER</h3>
+<p>Usando Gray coding (aproximação boa para M grande), cada erro de símbolo troca tipicamente 1 bit:</p>
+<div class="eqwrap eqbig eqcenter">\[P_b\approx\frac{P_s}{\log_2M}
+=\frac{2(M-1)}{M\log_2M}Q\left(\frac{D}{\sqrt{2N_0}}\right). \tag{3.3}\]</div>
+<p>Como <span class="eqwrap">\(D^2=12E_s/(M^2-1)=12E_b\log_2M/(M^2-1)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_b^{\text{M-ASK}}\approx\frac{2(M-1)}{M\log_2M}
+Q\left(\sqrt{\frac{6E_b\log_2M}{(M^2-1)N_0}}\right).} \tag{3.4}\]</div>
+<p><strong>Verificação para M = 2:</strong></p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-ASK">
+<div class="eyebrow"><span class="sec">04</span> Dedução da Probabilidade de Erro M-ASK <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_b=Q\left(\sqrt{\frac{6E_b}{3N_0}}\right)
+=Q\left(\sqrt{\frac{2E_b}{N_0}}\right).\]</div>
+<p>Isso é BPSK, pois a M-ASK simétrica com <span class="eqwrap">\(M=2\)</span> tem pontos antipodais. OOK é tratado separadamente na Seção “Casos Particulares”.</p>
+<p>Se a energia do símbolo ligado for denotada por <span class="eqwrap">\(E_1\)</span>, OOK possui <span class="eqwrap">\(P_b=Q(\sqrt{E_1/(2N_0)})\)</span>; com bits equiprováveis, <span class="eqwrap">\(E_1=2\bar E_b\)</span> e resulta <span class="eqwrap">\(Q(\sqrt{\bar E_b/N_0})\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-ASK">
+<div class="eyebrow"><span class="sec">04</span> Dedução da Probabilidade de Erro M-ASK <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Interpretação</h3>
+<p><strong>Resultado 3.1.</strong> Para M-ASK, o argumento da Q-função contém o fator <span class="eqwrap">\(\sqrt{6\log_2M/(M^2-1)}\)</span>. Para <span class="eqwrap">\(M=2^k\)</span> grande, ele decai aproximadamente como <span class="eqwrap">\(\sqrt{6k}/2^k\)</span>, explicando a baixa eficiência energética de ASK de alta ordem.</p>
+</div>
+</section>
+<section class="slide" data-sec="BPSK — Teoria e Optimalidade">
+<div class="eyebrow"><span class="sec">05</span> BPSK — Teoria e Optimalidade <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">BPSK — Teoria e Optimalidade</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição BPSK</h3>
+<p><strong>Definição:</strong> BPSK (<em>Binary Phase Shift Keying</em>) usa duas fases opostas (antipodais) para representar bits:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_0(t) = \sqrt{\frac{2E_b}{T_b}}\cos(2\pi f_c t), \quad s_1(t) = -\sqrt{\frac{2E_b}{T_b}}\cos(2\pi f_c t).} \tag{4.1}\]</div>
+<p>No espaço de sinais, os dois pontos são <span class="eqwrap">\(\pm\sqrt{E_b}\)</span> em <span class="eqwrap">\(\mathbb{R}^1\)</span>. A distância entre eles é <span class="eqwrap">\(2\sqrt{E_b}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="BPSK — Teoria e Optimalidade">
+<div class="eyebrow"><span class="sec">05</span> BPSK — Teoria e Optimalidade <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO da BER BPSK</h3>
+<p><strong>Prova:</strong></p>
+<p>O receptor correlaciona <span class="eqwrap">\(r(t)\)</span> com <span class="eqwrap">\(\phi(t) = \sqrt{2/T_b}\cos(2\pi f_c t)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[r = \int_0^{T_b} r(t)\phi(t)\,dt = \pm\sqrt{E_b} + n,\]</div>
+<p>onde <span class="eqwrap">\(n \sim \mathcal{N}(0, N_0/2)\)</span>. O limiar ótimo (equiprovável) é <span class="eqwrap">\(0\)</span>.</p>
+<p>Erro ocorre se <span class="eqwrap">\(n > 0\)</span> quando <span class="eqwrap">\(-\sqrt{E_b}\)</span> foi transmitido, ou se <span class="eqwrap">\(n < 0\)</span> quando <span class="eqwrap">\(+\sqrt{E_b}\)</span> foi transmitido. Por simetria:</p>
+</div>
+</section>
+<section class="slide" data-sec="BPSK — Teoria e Optimalidade">
+<div class="eyebrow"><span class="sec">05</span> BPSK — Teoria e Optimalidade <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_b = P(n > 0 | -\sqrt{E_b}) = P(n > \sqrt{E_b}) = Q\left(\frac{\sqrt{E_b}}{\sqrt{N_0/2}}\right) = Q\left(\sqrt{\frac{2E_b}{N_0}}\right). \quad \blacksquare\]</div>
+</div>
+</section>
+<section class="slide" data-sec="BPSK — Teoria e Optimalidade">
+<div class="eyebrow"><span class="sec">05</span> BPSK — Teoria e Optimalidade <span class="rule"></span></div>
+<div class="body">
+<div class="cols left"><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Teorema da Optimalidade BPSK</h3>
+<p><strong>Teorema 4.1 (BPSK é ótima em AWGN).</strong> Entre todas as modulações com 2 símbolos de energia <span class="eqwrap">\(E_b\)</span>, BPSK (sinais antipodais) minimiza a probabilidade de erro em AWGN.</p>
+<p><strong>Prova:</strong> A probabilidade de erro para 2 símbolos é <span class="eqwrap">\(P_e = Q(d_{\min}/(2\sqrt{N_0/2}))\)</span>. Para energia fixa <span class="eqwrap">\(E\)</span>, o máximo de <span class="eqwrap">\(d_{\min}\)</span> é <span class="eqwrap">\(2\sqrt{E}\)</span> (antipodal), dado por <span class="eqwrap">\(d_{\min}^2 = \|\mathbf{s}_1 - \mathbf{s}_0\|^2 = 4E\)</span> quando <span class="eqwrap">\(\mathbf{s}_1 = -\mathbf{s}_0\)</span>. <span class="eqwrap">\(\blacksquare\)</span></p>
+</div><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Detecção Coerente</h3>
+<p>O detector coerente BPSK usa:</p>
+<ol class="take"><li><strong>Recuperação de portadora:</strong> PLL ou Costas loop para estimar a fase da portadora.</li><li><strong>Correlador:</strong> <span class="eqwrap">\(r = \int r(t)\sqrt{2/T_b}\cos(2\pi f_c t + \hat{\phi}) dt\)</span>.</li><li><strong>Decisão:</strong> <span class="eqwrap">\(\hat{b} = 1\)</span> se <span class="eqwrap">\(r > 0\)</span>, <span class="eqwrap">\(\hat{b} = 0\)</span> se <span class="eqwrap">\(r < 0\)</span>.</li></ol>
+<p><strong>Observação:</strong> A ambiguidade de fase de <span class="eqwrap">\(\pi\)</span> (flip) é resolvida com codificação diferencial (DBPSK) ou preâmbulo de sincronismo.</p>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="BPSK — Teoria e Optimalidade">
+<div class="eyebrow"><span class="sec">05</span> BPSK — Teoria e Optimalidade <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">BER BPSK em Tabela</h3>
+<table class="cmp">
+<thead><tr>
+<th><span class="eqwrap">\(E_b/N_0\)</span> (dB)</th>
+<th><span class="eqwrap">\(E_b/N_0\)</span> (linear)</th>
+<th>BER</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+<td><span class="eqwrap">\(Q(\sqrt{2}) \approx 0{,}0787\)</span></td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td><span class="eqwrap">\(Q(2) \approx 0{,}0228\)</span></td>
+</tr>
+<tr>
+<td>6</td>
+<td>4</td>
+<td><span class="eqwrap">\(Q(\sqrt{8}) \approx 0{,}000317\)</span></td>
+</tr>
+<tr>
+<td>9,6</td>
+<td>9</td>
+<td><span class="eqwrap">\(Q(3) \approx 0{,}00135\)</span></td>
+</tr>
+<tr>
+<td>10</td>
+<td><span class="eqwrap">\(\sim\)</span>10</td>
+<td><span class="eqwrap">\(Q(\sqrt{20}) \approx 2{,}87\times 10^{-5}\)</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">QPSK — Teoria, Eficiência e Variação π/4</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição QPSK</h3>
+<p><strong>Definição:</strong> QPSK (<em>Quadrature Phase Shift Keying</em>) transporta 2 bits por símbolo usando 4 fases:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\phi_k \in \left\{\frac{\pi}{4}, \frac{3\pi}{4}, \frac{5\pi}{4}, \frac{7\pi}{4}\right\}.} \tag{5.1}\]</div>
+<p>Os sinais são:</p>
+<div class="eqwrap eqbig eqcenter">\[s_k(t) = \sqrt{\frac{2E_s}{T_s}}\cos(2\pi f_c t + \phi_k), \quad k = 0, 1, 2, 3. \tag{5.2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Representação I/Q</h3>
+<p>QPSK é equivalente a dois BPSK ortogonais:</p>
+<div class="eqwrap eqbig eqcenter">\[I(t) = \sqrt{\frac{2E_s}{T_s}}\cos\phi_k, \quad Q(t) = -\sqrt{\frac{2E_s}{T_s}}\sin\phi_k. \tag{5.3}\]</div>
+<p>Para <span class="eqwrap">\(\{\pi/4, 3\pi/4, 5\pi/4, 7\pi/4\}\)</span>: <span class="eqwrap">\(I, Q \in \{\pm\sqrt{E_s/T_s}\} = \{\pm\sqrt{E_b/T_b}\}\)</span>.</p>
+<p>Cada eixo é independente BPSK com energia <span class="eqwrap">\(E_b\)</span>. Portanto:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_b^{\text{QPSK}} \approx P_b^{\text{BPSK}} = Q\left(\sqrt{\frac{2E_b}{N_0}}\right).} \tag{5.4}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO da BER QPSK</h3>
+<p><strong>Prova:</strong></p>
+<p>O receptor QPSK decompõe <span class="eqwrap">\(r(t)\)</span> em componentes I e Q ortogonais. Cada componente sofre decisão BPSK independente com energia <span class="eqwrap">\(E_b\)</span> e ruído <span class="eqwrap">\(n_I, n_Q \sim \mathcal{N}(0, N_0/2)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[P_b = P(\text{erro em um eixo}) = Q\left(\frac{\sqrt{E_b}}{\sqrt{N_0/2}}\right) = Q\left(\sqrt{\frac{2E_b}{N_0}}\right). \quad \blacksquare\]</div>
+<p>A probabilidade de erro de símbolo é:</p>
+<div class="eqwrap eqbig eqcenter">\[P_s = 1 - (1 - P_b)^2 = 2P_b - P_b^2. \tag{5.5}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<p>Para <span class="eqwrap">\(P_b \ll 1\)</span>: <span class="eqwrap">\(P_s \approx 2P_b\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Eficiência Espectral QPSK</h3>
+<p>QPSK transmite dois bits por símbolo. Com pulsos de Nyquist de roll-off <span class="eqwrap">\(\alpha\)</span>, a largura de banda passante é aproximadamente <span class="eqwrap">\(B=(1+\alpha)R_s\)</span>; portanto:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\eta_{\text{QPSK}}=\frac{R_b}{B}=\frac{2R_s}{(1+\alpha)R_s}=\frac{2}{1+\alpha}\ \text{bit/s/Hz}.} \tag{5.6}\]</div>
+<p>Para <span class="eqwrap">\(\alpha=0\)</span>, o limite ideal é <span class="eqwrap">\(2\)</span> bit/s/Hz; roll-off positivo reduz esse valor.</p>
+<p><strong>Observação:</strong> A eficiência de 2 bit/s/Hz é o dobro do BPSK. QPSK é amplamente usado em GPS, DVB-S, Wi-Fi (módulos iniciais), e satélites.</p>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Gray Coding</h3>
+<p><strong>Definição:</strong> Gray coding mapeia símbolos adjacentes na constelação para códigos binários com distância de Hamming 1.</p>
+<p>Para QPSK com fases <span class="eqwrap">\(\{\pi/4, 3\pi/4, 5\pi/4, 7\pi/4\}\)</span>, o mapeamento Gray é:</p>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<table class="cmp">
+<thead><tr>
+<th>Fase</th>
+<th>Bits (Gray)</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><span class="eqwrap">\(\pi/4\)</span></td>
+<td>00</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(3\pi/4\)</span></td>
+<td>01</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(5\pi/4\)</span></td>
+<td>11</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(7\pi/4\)</span></td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Importante:</strong> Gray coding garante que, na BER baixa, o erro de símbolo cause em média ~1 erro de bit. Sem Gray, erros adjacentes podem causar 2 erros de bit.</p>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">QPSK π/4</h3>
+<p><strong>Definição:</strong> QPSK π/4 é uma variação onde os constel points alternam entre dois conjuntos rotacionados de <span class="eqwrap">\(\pi/4\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\mathcal{C}_0 = \{\pm\sqrt{E_b} \pm j\sqrt{E_b}\}, \quad \mathcal{C}_1 = \{\pm\sqrt{E_b}(1+j) \cdot e^{j\pi/4}\} = \{\pm\sqrt{2E_b}, \pm j\sqrt{2E_b}\}.\]</div>
+<p><strong>Motivação:</strong> Evita que a trajetória de fase cruze a origem (onde o envelope tende a zero), importante para amplificadores de potência não-lineares (eficiência energética).</p>
+<p><strong>Resultado:</strong> BER de <span class="eqwrap">\(\pi/4\)</span>-QPSK é idêntica à do QPSK convencional. A diferença é na representação em fase relativa (diferencial) ou absoluta.</p>
+</div>
+</section>
+<section class="slide" data-sec="QPSK — Teoria, Eficiência e Variação π/4">
+<div class="eyebrow"><span class="sec">06</span> QPSK — Teoria, Eficiência e Variação π/4 <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DQPSK</h3>
+<p><strong>Definição:</strong> DQPSK (<em>Differential QPSK</em>) codifica informação na mudança de fase relativa entre símbolos consecutivos, eliminando a necessidade de recuperação de portadora coerente.</p>
+<div class="eqwrap eqbig eqcenter">\[\Delta\phi_k = \phi_k - \phi_{k-1} \in \{\pm\pi/4, \pm 3\pi/4\}.\]</div>
+<p>BER DQPSK (não-coerente): aproximadamente 2–3 dB pior que QPSK coerente na BER baixa.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-PSK Geral e DPSK">
+<div class="eyebrow"><span class="sec">07</span> M-PSK Geral e DPSK <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">M-PSK Geral e DPSK</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Sinais M-PSK</h3>
+<p><strong>Definição:</strong> M-PSK para <span class="eqwrap">\(M = 2^k\)</span> usa <span class="eqwrap">\(M\)</span> fases igualmente espaçadas:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_m(t) = \sqrt{\frac{2E_s}{T_s}}\cos\left(2\pi f_c t + \frac{2\pi m}{M}\right), \quad m = 0, 1, \dots, M-1.} \tag{6.1}\]</div>
+<p>A constelação é um polígono regular inscrito em círculo de raio <span class="eqwrap">\(\sqrt{E_s}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-PSK Geral e DPSK">
+<div class="eyebrow"><span class="sec">07</span> M-PSK Geral e DPSK <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO da BER M-PSK</h3>
+<p><strong>Prova:</strong></p>
+<p>A probabilidade de erro de símbolo M-PSK é a probabilidade de sair do setor angular de meia-largura <span class="eqwrap">\(\pi/M\)</span>. Para <span class="eqwrap">\(M\ge4\)</span> e SNR moderada/alta, os dois vizinhos dominam:</p>
+<div class="eqwrap eqbig eqcenter">\[P_s \approx 2Q\left(\sqrt{2\frac{E_s}{N_0}}\sin\frac{\pi}{M}\right). \tag{6.2}\]</div>
+<p>Convertendo para BER com Gray coding (<span class="eqwrap">\(P_b \approx P_s/\log_2 M\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_b^{\text{M-PSK}} \approx \frac{2}{\log_2 M}Q\left(\sqrt{2\frac{E_b}{N_0}\log_2 M}\sin\frac{\pi}{M}\right).} \tag{6.3}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="M-PSK Geral e DPSK">
+<div class="eyebrow"><span class="sec">07</span> M-PSK Geral e DPSK <span class="rule"></span></div>
+<div class="body">
+<p>Para <span class="eqwrap">\(M=4\)</span>, a expressão recupera exatamente <span class="eqwrap">\(Q(\sqrt{2E_b/N_0})\)</span>. Para <span class="eqwrap">\(M=2\)</span>, há apenas um vizinho, não dois, e deve-se usar diretamente a fórmula BPSK <span class="eqwrap">\(Q(\sqrt{2E_b/N_0})\)</span>; portanto, (6.2)–(6.3) não devem ser extrapoladas para <span class="eqwrap">\(M=2\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-PSK Geral e DPSK">
+<div class="eyebrow"><span class="sec">07</span> M-PSK Geral e DPSK <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DEDUÇÃO do Limite Assintótico</h3>
+<p><strong>Resultado 6.1 (Limite assintótico M-PSK).</strong> Para <span class="eqwrap">\(M\)</span> grande, <span class="eqwrap">\(\sin(\pi/M) \approx \pi/M\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[P_b \approx \frac{2}{\log_2 M}Q\left(\sqrt{2\frac{E_b}{N_0}\log_2 M}\cdot\frac{\pi}{M}\right).\]</div>
+<p>Para <span class="eqwrap">\(M = 2^k\)</span>, <span class="eqwrap">\(\log_2 M = k\)</span>, <span class="eqwrap">\(\pi/M = \pi/2^k\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\sqrt{2\frac{E_b}{N_0}\cdot k}\cdot\frac{\pi}{2^k} = \frac{\pi\sqrt{2k E_b/N_0}}{2^k}.\]</div>
+<p>Para <span class="eqwrap">\(k\)</span> grande, o argumento decai exponencialmente:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_b \approx \frac{2}{\log_2 M}Q\left(\frac{\pi}{M}\sqrt{2\log_2M\frac{E_b}{N_0}}\right),\qquad M\gg1.} \tag{6.4}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="M-PSK Geral e DPSK">
+<div class="eyebrow"><span class="sec">07</span> M-PSK Geral e DPSK <span class="rule"></span></div>
+<div class="body">
+<p><strong>Observação:</strong> M-PSK cresce em eficiência espectral (<span class="eqwrap">\(\log_2 M\)</span> bits/s/Hz), mas exige energia exponencialmente maior para manter BER fixa.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-PSK Geral e DPSK">
+<div class="eyebrow"><span class="sec">07</span> M-PSK Geral e DPSK <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">DPSK (Differential PSK)</h3>
+<p><strong>Definição:</strong> DPSK codifica informação na mudança de fase entre símbolos consecutivos.</p>
+<p><strong>BDPSK (<em>Binary DPSK</em>):</strong> <span class="eqwrap">\(\Delta\phi \in \{0, \pi\}\)</span>. Decodificação: <span class="eqwrap">\(\hat{b}_k = 1\)</span> se <span class="eqwrap">\(\cos(\phi_k - \phi_{k-1}) > 0\)</span>.</p>
+<p><strong>BER BDPSK:</strong></p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_b^{\text{BDPSK}} = \frac{1}{2}e^{-E_b/N_0}.} \tag{6.5}\]</div>
+<p><strong>Comparação BDPSK vs BPSK:</strong> para <span class="eqwrap">\(P_b=10^{-3}\)</span>, BPSK coerente requer aproximadamente <span class="eqwrap">\(6{,}79\)</span> dB e BDPSK aproximadamente <span class="eqwrap">\(7{,}93\)</span> dB: penalidade de <span class="eqwrap">\(1{,}14\)</span> dB nesse ponto. A penalidade tende a cerca de 3 dB apenas no limite de BER muito baixa.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-PSK Geral e DPSK">
+<div class="eyebrow"><span class="sec">07</span> M-PSK Geral e DPSK <span class="rule"></span></div>
+<div class="body">
+<p><strong>DQPSK:</strong> usa quatro mudanças de fase, normalmente com mapeamento Gray. Sua BER depende do detector diferencial e não é obtida dividindo diretamente a expressão de BDPSK por dois; deve ser calculada a partir das regiões de decisão diferenciais ou avaliada numericamente.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-FSK — Teoria">
+<div class="eyebrow"><span class="sec">08</span> M-FSK — Teoria <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">M-FSK — Teoria</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição M-FSK Ortogonal</h3>
+<p><strong>Definição:</strong> M-FSK (<em>M-Frequency Shift Keying</em>) transmite <span class="eqwrap">\(M\)</span> símbolos por meio de <span class="eqwrap">\(M\)</span> frequências distintas:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_m(t) = \sqrt{\frac{2E_s}{T_s}}\cos(2\pi f_m t), \quad f_m = f_c + m\Delta f, \quad m = 0, \dots, M-1.} \tag{7.1}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="M-FSK — Teoria">
+<div class="eyebrow"><span class="sec">08</span> M-FSK — Teoria <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Ortogonalidade</h3>
+<p>Os sinais são ortogonais se:</p>
+<div class="eqwrap eqbig eqcenter">\[\int_0^{T_s} s_i(t)s_j(t)\,dt = 0, \quad i \ne j. \tag{7.2}\]</div>
+<p>Para portadoras coerentes cujas fases são conhecidas e escolhidas de modo compatível com a janela, a separação mínima usual é:</p>
+<div class="eqwrap eqbig eqcenter">\[\Delta f = f_j - f_i = \frac{k}{2T_s}, \quad k \in \mathbb{Z}^+.\]</div>
+<p>A menor separação é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\Delta f = \frac{1}{2T_s}.} \tag{7.3}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="M-FSK — Teoria">
+<div class="eyebrow"><span class="sec">08</span> M-FSK — Teoria <span class="rule"></span></div>
+<div class="body">
+<p><strong>Cuidado:</strong> anular apenas o termo de diferença não basta para provar ortogonalidade exata; o termo de soma também deve integrar a zero. Isso ocorre quando as frequências estão na grade apropriada. Em detecção não coerente, a separação mínima usual é <span class="eqwrap">\(1/T_s\)</span>, pois seno e cosseno de fase desconhecida precisam ser ortogonais. Pulsos suavizados alteram a banda ocupada e a interferência entre tons.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-FSK — Teoria">
+<div class="eyebrow"><span class="sec">08</span> M-FSK — Teoria <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Recepção M-FSK</h3>
+<p>O receptor possui <span class="eqwrap">\(M\)</span> correlatores (ou filtros casados), cada um sintonizado em uma frequência. A decisão é <span class="eqwrap">\(\hat{m} = \arg\max_k r_k\)</span>, onde <span class="eqwrap">\(r_k\)</span> é a saída do correlator <span class="eqwrap">\(k\)</span>.</p>
+<p><strong>Definição:</strong> FSK coerente: o receptor usa fase conhecida. FSK não-coerente: o receptor usa envelope (detector de energia).</p>
+</div>
+</section>
+<section class="slide" data-sec="M-FSK — Teoria">
+<div class="eyebrow"><span class="sec">08</span> M-FSK — Teoria <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Largura de Banda</h3>
+<p>A banda total ocupada é:</p>
+<div class="eqwrap eqbig eqcenter">\[B_{\text{FSK}}\approx(M-1)\Delta f+B_p, \tag{7.4}\]</div>
+<p>onde <span class="eqwrap">\(B_p\)</span> é a largura efetiva de um único tom após a conformação de pulso. Usar <span class="eqwrap">\(M\Delta f\)</span> é apenas uma estimativa de ordem de grandeza quando <span class="eqwrap">\(B_p\approx\Delta f\)</span>.</p>
+<p>Ou, pela regra de Carson (modulação de frequência contínua):</p>
+<div class="eqwrap eqbig eqcenter">\[B \approx 2(\Delta f + f_m) \quad \text{para FSK analógica.}\]</div>
+<p>Para FSK digital: <span class="eqwrap">\(B \approx M/(2T_s)\)</span> com separação mínima.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-FSK — Teoria">
+<div class="eyebrow"><span class="sec">08</span> M-FSK — Teoria <span class="rule"></span></div>
+<div class="body">
+<p><strong>Resultado:</strong> FSK é menos eficiente espectralmente que PSK/ASK. Cada bit extra exige duplicação de frequência (ou mais), mas é mais robusto energeticamente.</p>
+</div>
+</section>
+<section class="slide" data-sec="M-FSK — Teoria">
+<div class="eyebrow"><span class="sec">08</span> M-FSK — Teoria <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Eficiência Energética do FSK</h3>
+<p><strong>Resultado 7.1.</strong> M-FSK é energeticamente eficiente (baixa BER para mesma <span class="eqwrap">\(E_b/N_0\)</span>), mas espectralmente ineficiente. BFSK coerente ortogonal tem BER <span class="eqwrap">\(Q(\sqrt{E_b/N_0})\)</span>, que é 3 dB pior que BPSK, mas BFSK não-coerente tem <span class="eqwrap">\(P_b = \frac{1}{2}e^{-E_b/(2N_0)}\)</span>, com vantagem de simplicidade (sem carrier recovery).</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-FSK">
+<div class="eyebrow"><span class="sec">09</span> Dedução da Probabilidade de Erro M-FSK <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Dedução da Probabilidade de Erro M-FSK</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">M-FSK Coerente</h3>
+<p><strong>Prova:</strong></p>
+<p>Para M-FSK coerente ortogonal, cada correlator real produz uma variável Gaussiana. Se <span class="eqwrap">\(m\)</span> foi transmitido, <span class="eqwrap">\(r_m\)</span> tem média <span class="eqwrap">\(\sqrt{E_s}\)</span>; os demais têm média zero; todos têm variância <span class="eqwrap">\(N_0/2\)</span>.</p>
+<p>A probabilidade de erro de símbolo é a probabilidade de algum correlator errado exceder o correto:</p>
+<div class="eqwrap eqbig eqcenter">\[P_s = P\left(\bigcup_{j \ne m}\{r_j > r_m\}\right). \tag{8.1}\]</div>
+<p>Para M grande e BER baixa, a união é dominada pelos eventos individuais:</p>
+<div class="eqwrap eqbig eqcenter">\[P_s \approx (M-1)P(r_j > r_m) = (M-1)Q\left(\frac{\sqrt{E_s}}{\sqrt{N_0}}\right). \tag{8.2}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-FSK">
+<div class="eyebrow"><span class="sec">09</span> Dedução da Probabilidade de Erro M-FSK <span class="rule"></span></div>
+<div class="body">
+<p>Convertendo para BER:</p>
+<p>Todos os tons errados estão à mesma distância do tom correto. Logo, não existe rotulagem Gray que torne todos os erros vizinhos erros de um bit. Por simetria, condicionado a um erro, o tom decidido é uniforme entre os <span class="eqwrap">\(M-1\)</span> incorretos; a distância de Hamming média é <span class="eqwrap">\(kM/[2(M-1)]\)</span>, com <span class="eqwrap">\(k=\log_2M\)</span>. Assim,</p>
+<div class="eqwrap eqbig eqcenter">\[P_b=\frac{M}{2(M-1)}P_s
+\ \lesssim\ \frac{M}{2}Q\left(\sqrt{\frac{E_s}{N_0}}\right), \tag{8.3}\]</div>
+<p>onde a última expressão é a aproximação/limitante de união em alta SNR. Para <span class="eqwrap">\(M=2\)</span>, ela fornece exatamente <span class="eqwrap">\(Q(\sqrt{E_b/N_0})\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-FSK">
+<div class="eyebrow"><span class="sec">09</span> Dedução da Probabilidade de Erro M-FSK <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">M-FSK Não-Coerente</h3>
+<p><strong>Prova:</strong></p>
+<p>No detector não-coerente, cada correlator é substituído por um detector de envelope (retificador + filtro). A saída é uma variável de Rician (símbolo correto) ou Rayleigh (símbolos errados).</p>
+<p>Para M-FSK não-coerente:</p>
+<p>Uma expressão exata útil é</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_s=\sum_{n=1}^{M-1}(-1)^{n+1}\binom{M-1}{n}
+\frac{1}{n+1}\exp\left[-\frac{n}{n+1}\frac{E_s}{N_0}\right].} \tag{8.4}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-FSK">
+<div class="eyebrow"><span class="sec">09</span> Dedução da Probabilidade de Erro M-FSK <span class="rule"></span></div>
+<div class="body">
+<p>Em alta SNR, o primeiro termo domina: <span class="eqwrap">\(P_s\approx(M-1)e^{-E_s/(2N_0)}/2\)</span>. A BER volta a ser <span class="eqwrap">\(M P_s/[2(M-1)]\)</span> para qualquer rotulagem binária balanceada.</p>
+<p>Para BFSK não-coerente (<span class="eqwrap">\(M=2\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_b^{\text{BFSK, não-coer}} = \frac{1}{2}e^{-E_b/(2N_0)}.} \tag{8.5}\]</div>
+<p><strong>Comparação BFSK:</strong></p>
+<ul class="beats"><li>Coerente ortogonal: <span class="eqwrap">\(P_b = Q(\sqrt{E_b/N_0})\)</span>.</li><li>Não-coerente: <span class="eqwrap">\(P_b = \frac{1}{2}e^{-E_b/(2N_0)}\)</span>.</li><li>BPSK: <span class="eqwrap">\(P_b = Q(\sqrt{2E_b/N_0})\)</span>.</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Dedução da Probabilidade de Erro M-FSK">
+<div class="eyebrow"><span class="sec">09</span> Dedução da Probabilidade de Erro M-FSK <span class="rule"></span></div>
+<div class="body">
+<p>Para BER <span class="eqwrap">\(= 10^{-5}\)</span>: BPSK <sub>9,6 dB, BFSK coerente </sub>12,6 dB (3 dB penalidade), BFSK não-coerente ~13,8 dB (4,2 dB penalidade).</p>
+</div>
+</section>
+<section class="slide" data-sec="Comparação Rigorosa de Modulações Digitais">
+<div class="eyebrow"><span class="sec">10</span> Comparação Rigorosa de Modulações Digitais <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Comparação Rigorosa de Modulações Digitais</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Tabela Comparativa</h3>
+<table class="cmp">
+<thead><tr>
+<th>Modulação</th>
+<th>BER (aprox.)</th>
+<th>Eficiência (bit/s/Hz)</th>
+<th>Complexidade</th>
+<th>Notas</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>BPSK</td>
+<td><span class="eqwrap">\(Q(\sqrt{2\gamma})\)</span></td>
+<td>1</td>
+<td>Baixa</td>
+<td>Ótimo BER, simples</td>
+</tr>
+<tr>
+<td>QPSK</td>
+<td><span class="eqwrap">\(Q(\sqrt{2\gamma})\)</span></td>
+<td>2</td>
+<td>Média</td>
+<td>Mesmo BER; 2× mais bits por símbolo</td>
+</tr>
+<tr>
+<td>8-PSK</td>
+<td><span class="eqwrap">\(\frac{2}{3}Q(\sqrt{6\gamma}\sin\frac{\pi}{8})\)</span></td>
+<td>3</td>
+<td>Média-Alta</td>
+<td><span class="eqwrap">\(\sin(\pi/8) \approx 0{,}383\)</span></td>
+</tr>
+<tr>
+<td>16-PSK</td>
+<td><span class="eqwrap">\(\frac{1}{2}Q(\sqrt{8\gamma}\sin\frac{\pi}{16})\)</span></td>
+<td>4</td>
+<td>Alta</td>
+<td><span class="eqwrap">\(\sin(\pi/16) \approx 0{,}195\)</span></td>
+</tr>
+<tr>
+<td>BFSK coer.</td>
+<td><span class="eqwrap">\(Q(\sqrt{\gamma})\)</span></td>
+<td>0,5</td>
+<td>Baixa</td>
+<td>3 dB pior que BPSK</td>
+</tr>
+<tr>
+<td>BFSK não-coer.</td>
+<td><span class="eqwrap">\(\frac{1}{2}e^{-\gamma/2}\)</span></td>
+<td>0,5</td>
+<td>Muito baixa</td>
+<td>4,2 dB pior que BPSK</td>
+</tr>
+<tr>
+<td>4-ASK</td>
+<td><span class="eqwrap">\(\frac{3}{4}Q(\sqrt{\frac{4\gamma}{5}})\)</span></td>
+<td>2</td>
+<td>Baixa</td>
+<td>Sensível a ruído</td>
+</tr>
+<tr>
+<td>16-QAM</td>
+<td><span class="eqwrap">\(\frac{3}{4}Q(\sqrt{\frac{4\gamma}{5}})\)</span></td>
+<td>4</td>
+<td>Alta</td>
+<td>Eficiente, sensível a fase</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="slide" data-sec="Comparação Rigorosa de Modulações Digitais">
+<div class="eyebrow"><span class="sec">10</span> Comparação Rigorosa de Modulações Digitais <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Curvas de BER</h3>
+<p><strong>Resultado 9.1 (fronteira de compromisso).</strong> Dentro de famílias de constelações limitadas em banda, elevar a ordem geralmente aumenta a eficiência espectral e reduz a distância normalizada, exigindo mais <span class="eqwrap">\(E_b/N_0\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{Eficiência espectral ↑} \implies \text{Eficiência energética ↓}} \tag{9.1}\]</div>
+<p>Isso não é uma implicação válida para “qualquer modulação” isoladamente: M-FSK, por exemplo, pode melhorar a eficiência energética ao gastar muito mais banda. O limite de Shannon descreve a fronteira global entre potência e banda; FEC aproxima o sistema dessa fronteira.</p>
+</div>
+</section>
+<section class="slide" data-sec="Comparação Rigorosa de Modulações Digitais">
+<div class="eyebrow"><span class="sec">10</span> Comparação Rigorosa de Modulações Digitais <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Observação sobre M-QAM</h3>
+<p><strong>Observação 9.1:</strong> M-QAM (<em>M-Quadrature Amplitude Modulation</em>) combina amplitude e fase, formando uma constelação 2D. 16-QAM, 64-QAM e 256-QAM são padrão em Wi-Fi, LTE e 5G. QAM é mais eficiente que PSK para mesma ordem (maior <span class="eqwrap">\(d_{\min}\)</span> para mesma energia), mas mais sensível a ruído de fase e não-linearidades.</p>
+<p>A BER 16-QAM é aproximada por:</p>
+<div class="eqwrap eqbig eqcenter">\[P_b\approx\frac34Q\left(\sqrt{\frac{4E_b}{5N_0}}\right).\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Exercícios Resolvidos em Python</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> comparar constelações, distância mínima, eficiência e BER de ASK, PSK e FSK. <strong>Normalização:</strong> fixe <span class="eqwrap">\(E_b\)</span> ou <span class="eqwrap">\(E_s\)</span> explicitamente e converta <span class="eqwrap">\(E_s/N_0=\log_2(M)E_b/N_0\)</span>. <strong>Monte Carlo:</strong> use semente fixa e ao menos 100 erros por ponto, ou reporte intervalo de confiança/limite superior.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 1: BER de BPSK vs QPSK vs 8-PSK — Plot Comparativo</h3>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import erfc
+
+Q = lambda x: 0.5 * erfc(x / np.sqrt(2))
+
+ebn0_db = np.linspace(0, 12, 200)
+gamma = 10**(ebn0_db / 10)
+
+# BER teórica
+ber_bpsk = Q(np.sqrt(2 * gamma))
+ber_qpsk = Q(np.sqrt(2 * gamma))  # mesmo BER que BPSK
+ber_8psk = (2 / np.log2(8)) * Q(np.sqrt(2 * gamma * np.log2(8)) * np.sin(np.pi / 8))
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.semilogy(ebn0_db, ber_bpsk, &#x27;b-&#x27;, linewidth=2, label=&#x27;BPSK teoria&#x27;)
+ax.semilogy(ebn0_db, ber_qpsk, &#x27;r--&#x27;, linewidth=2, label=&#x27;QPSK teoria (mesmo BPSK)&#x27;)
+ax.semilogy(ebn0_db, ber_8psk, &#x27;g-&#x27;, linewidth=2, label=&#x27;8-PSK teoria&#x27;)
+ax.set(xlabel=&#x27;$E_b/N_0$ (dB)&#x27;, ylabel=&#x27;BER&#x27;,
+       title=&#x27;BER Teórica: BPSK vs QPSK vs 8-PSK&#x27;)
+ax.grid(True, which=&#x27;both&#x27;)
+ax.legend(fontsize=11)
+ax.set_ylim(1e-7, 1)
+plt.tight_layout()
+plt.show()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&quot;import numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy.special import erfc\n\nQ = lambda x: 0.5 * erfc(x / np.sqrt(2))\n\nebn0_db = np.linspace(0, 12, 200)\ngamma = 10**(ebn0_db / 10)\n\n# BER teórica\nber_bpsk = Q(np.sqrt(2 * gamma))\nber_qpsk = Q(np.sqrt(2 * gamma))  # mesmo BER que BPSK\nber_8psk = (2 / np.log2(8)) * Q(np.sqrt(2 * gamma * np.log2(8)) * np.sin(np.pi / 8))\n\nfig, ax = plt.subplots(figsize=(10, 6))\nax.semilogy(ebn0_db, ber_bpsk, &#x27;b-&#x27;, linewidth=2, label=&#x27;BPSK teoria&#x27;)\nax.semilogy(ebn0_db, ber_qpsk, &#x27;r--&#x27;, linewidth=2, label=&#x27;QPSK teoria (mesmo BPSK)&#x27;)\nax.semilogy(ebn0_db, ber_8psk, &#x27;g-&#x27;, linewidth=2, label=&#x27;8-PSK teoria&#x27;)\nax.set(xlabel=&#x27;$E_b/N_0$ (dB)&#x27;, ylabel=&#x27;BER&#x27;,\n       title=&#x27;BER Teórica: BPSK vs QPSK vs 8-PSK&#x27;)\nax.grid(True, which=&#x27;both&#x27;)\nax.legend(fontsize=11)\nax.set_ylim(1e-7, 1)\nplt.tight_layout()\nplt.show()&quot;, &quot;&lt;markdown-python-1&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-1&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 2: Constelações M-PSK para M = 4, 8, 16</h3>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_constellation(M, title=&quot;&quot;, marker=&#x27;o&#x27;, color=&#x27;b&#x27;):
+    angles = 2 * np.pi * np.arange(M) / M
+    # normalizar a energia média a 1
+    points = np.exp(1j * angles)
+    points = points / np.sqrt(np.mean(np.abs(points)**2))
+    plt.plot(points.real, points.imag, marker, markersize=10,
+             markerfacecolor=&#x27;none&#x27;, markeredgecolor=color, markeredgewidth=1.5)
+    for i, angle in enumerate(angles):
+        plt.annotate(f&#x27;{i:0{int(np.ceil(np.log2(M)))}b}&#x27;,
+                     (points.real[i]*1.15, points.imag[i]*1.15),
+                     fontsize=8, ha=&#x27;center&#x27;, va=&#x27;center&#x27;)
+    plt.plot(0, 0, &#x27;k.&#x27;, markersize=8)
+    plt.xlabel(&#x27;I (in-phase)&#x27;)
+    plt.ylabel(&#x27;Q (quadrature)&#x27;)
+    plt.title(title)
+    plt.grid(True, alpha=0.3)
+    plt.axis(&#x27;equal&#x27;)
+    plt.xlim(-1.5, 1.5)
+    plt.ylim(-1.5, 1.5)
+
+fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+for ax, M in zip(axes, [4, 8, 16]):
+    angles = 2 * np.pi * np.arange(M) / M
+    points = np.exp(1j * angles)
+    points = points / np.sqrt(np.mean(np.abs(points)**2))
+    ax.plot(points.real, points.imag, &#x27;o&#x27;, markersize=10,
+            markerfacecolor=&#x27;none&#x27;, markeredgecolor=&#x27;b&#x27;, markeredgewidth=1.5)
+    for i, angle in enumerate(angles):
+        ax.annotate(f&#x27;{i:0{int(np.ceil(np.log2(M)))}b}&#x27;,
+                     (points.real[i]*1.15, points.imag[i]*1.15),
+                     fontsize=9, ha=&#x27;center&#x27;, va=&#x27;center&#x27;)
+    ax.plot(0, 0, &#x27;k.&#x27;, markersize=8)
+    ax.set(xlabel=&#x27;I&#x27;, ylabel=&#x27;Q&#x27;, title=f&#x27;{M}-PSK (M={M})&#x27;,
+           xlim=(-1.5, 1.5), ylim=(-1.5, 1.5), aspect=&#x27;equal&#x27;)
+    ax.grid(True)
+
+plt.tight_layout()
+plt.show()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\n\ndef plot_constellation(M, title=&quot;&quot;, marker=\&#x27;o\&#x27;, color=\&#x27;b\&#x27;):\n    angles = 2 * np.pi * np.arange(M) / M\n    # normalizar a energia média a 1\n    points = np.exp(1j * angles)\n    points = points / np.sqrt(np.mean(np.abs(points)**2))\n    plt.plot(points.real, points.imag, marker, markersize=10,\n             markerfacecolor=\&#x27;none\&#x27;, markeredgecolor=color, markeredgewidth=1.5)\n    for i, angle in enumerate(angles):\n        plt.annotate(f\&#x27;{i:0{int(np.ceil(np.log2(M)))}b}\&#x27;,\n                     (points.real[i]*1.15, points.imag[i]*1.15),\n                     fontsize=8, ha=\&#x27;center\&#x27;, va=\&#x27;center\&#x27;)\n    plt.plot(0, 0, \&#x27;k.\&#x27;, markersize=8)\n    plt.xlabel(\&#x27;I (in-phase)\&#x27;)\n    plt.ylabel(\&#x27;Q (quadrature)\&#x27;)\n    plt.title(title)\n    plt.grid(True, alpha=0.3)\n    plt.axis(\&#x27;equal\&#x27;)\n    plt.xlim(-1.5, 1.5)\n    plt.ylim(-1.5, 1.5)\n\nfig, axes = plt.subplots(1, 3, figsize=(15, 5))\nfor ax, M in zip(axes, [4, 8, 16]):\n    angles = 2 * np.pi * np.arange(M) / M\n    points = np.exp(1j * angles)\n    points = points / np.sqrt(np.mean(np.abs(points)**2))\n    ax.plot(points.real, points.imag, \&#x27;o\&#x27;, markersize=10,\n            markerfacecolor=\&#x27;none\&#x27;, markeredgecolor=\&#x27;b\&#x27;, markeredgewidth=1.5)\n    for i, angle in enumerate(angles):\n        ax.annotate(f\&#x27;{i:0{int(np.ceil(np.log2(M)))}b}\&#x27;,\n                     (points.real[i]*1.15, points.imag[i]*1.15),\n                     fontsize=9, ha=\&#x27;center\&#x27;, va=\&#x27;center\&#x27;)\n    ax.plot(0, 0, \&#x27;k.\&#x27;, markersize=8)\n    ax.set(xlabel=\&#x27;I\&#x27;, ylabel=\&#x27;Q\&#x27;, title=f\&#x27;{M}-PSK (M={M})\&#x27;,\n           xlim=(-1.5, 1.5), ylim=(-1.5, 1.5), aspect=\&#x27;equal\&#x27;)\n    ax.grid(True)\n\nplt.tight_layout()\nplt.show()&#x27;, &quot;&lt;markdown-python-2&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-2&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 3: BER de BFSK vs BPSK</h3>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import erfc
+
+Q = lambda x: 0.5 * erfc(x / np.sqrt(2))
+
+ebn0_db = np.linspace(0, 14, 300)
+gamma = 10**(ebn0_db / 10)
+
+ber_bpsk = Q(np.sqrt(2 * gamma))
+ber_bfsk_coh = Q(np.sqrt(gamma))
+ber_bfsk_ncoh = 0.5 * np.exp(-gamma / 2)
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.semilogy(ebn0_db, ber_bpsk, &#x27;b-&#x27;, linewidth=2, label=&#x27;BPSK&#x27;)
+ax.semilogy(ebn0_db, ber_bfsk_coh, &#x27;r--&#x27;, linewidth=2, label=&#x27;BFSK coerente&#x27;)
+ax.semilogy(ebn0_db, ber_bfsk_ncoh, &#x27;g-.&#x27;, linewidth=2, label=&#x27;BFSK não-coerente&#x27;)
+ax.set(xlabel=&#x27;$E_b/N_0$ (dB)&#x27;, ylabel=&#x27;BER&#x27;,
+       title=&#x27;BFSK vs BPSK: Coerente e Não-Coerente&#x27;)
+ax.grid(True, which=&#x27;both&#x27;)
+ax.legend(fontsize=11)
+ax.set_ylim(1e-7, 1)
+plt.tight_layout()
+plt.show()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&quot;import numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy.special import erfc\n\nQ = lambda x: 0.5 * erfc(x / np.sqrt(2))\n\nebn0_db = np.linspace(0, 14, 300)\ngamma = 10**(ebn0_db / 10)\n\nber_bpsk = Q(np.sqrt(2 * gamma))\nber_bfsk_coh = Q(np.sqrt(gamma))\nber_bfsk_ncoh = 0.5 * np.exp(-gamma / 2)\n\nfig, ax = plt.subplots(figsize=(10, 6))\nax.semilogy(ebn0_db, ber_bpsk, &#x27;b-&#x27;, linewidth=2, label=&#x27;BPSK&#x27;)\nax.semilogy(ebn0_db, ber_bfsk_coh, &#x27;r--&#x27;, linewidth=2, label=&#x27;BFSK coerente&#x27;)\nax.semilogy(ebn0_db, ber_bfsk_ncoh, &#x27;g-.&#x27;, linewidth=2, label=&#x27;BFSK não-coerente&#x27;)\nax.set(xlabel=&#x27;$E_b/N_0$ (dB)&#x27;, ylabel=&#x27;BER&#x27;,\n       title=&#x27;BFSK vs BPSK: Coerente e Não-Coerente&#x27;)\nax.grid(True, which=&#x27;both&#x27;)\nax.legend(fontsize=11)\nax.set_ylim(1e-7, 1)\nplt.tight_layout()\nplt.show()&quot;, &quot;&lt;markdown-python-3&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-3&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Exercício 4: Eficiência Espectral vs Ordem de Modulação</h3>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+# Eficiência espectral e BER necessária para 1e-5
+from scipy.special import erfc
+
+Qinv = lambda p: np.sqrt(2) * erfc(2 * p)
+
+modulations = {
+    &#x27;BPSK&#x27;: {&#x27;M&#x27;: 2, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 1.0},
+    &#x27;QPSK&#x27;: {&#x27;M&#x27;: 4, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 2.0},
+    &#x27;8-PSK&#x27;: {&#x27;M&#x27;: 8, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 3.0},
+    &#x27;16-PSK&#x27;: {&#x27;M&#x27;: 16, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 4.0},
+    &#x27;BFSK&#x27;: {&#x27;M&#x27;: 2, &#x27;type&#x27;: &#x27;fsk_coh&#x27;, &#x27;eta&#x27;: 0.5},
+    &#x27;4-FSK&#x27;: {&#x27;M&#x27;: 4, &#x27;type&#x27;: &#x27;fsk_coh&#x27;, &#x27;eta&#x27;: 1.0},
+    &#x27;4-ASK&#x27;: {&#x27;M&#x27;: 4, &#x27;type&#x27;: &#x27;ask&#x27;, &#x27;eta&#x27;: 2.0},
+}
+
+target_ber = 1e-5
+results = []
+
+for name, info in modulations.items():
+    M = info[&#x27;M&#x27;]
+    eta = info[&#x27;eta&#x27;]
+    if info[&#x27;type&#x27;] == &#x27;psk&#x27;:
+        # Inverter BER para encontrar Eb/N0
+        # P_b = (2/log2(M)) * Q(sqrt(2*Eb/N0 * log2(M)) * sin(pi/M))
+        sin_pi_M = np.sin(np.pi / M)
+        if M == 2:
+            arg = Qinv(target_ber)
+            ebn0 = arg**2 / 2
+        else:
+            # resolver numericamente
+            from scipy.optimize import brentq
+            def eq(g):
+                return (2/np.log2(M)) * 0.5*erfc(np.sqrt(2*g*np.log2(M))*sin_pi_M/np.sqrt(2)) - target_ber
+            try:
+                ebn0 = brentq(eq, 0.1, 30)
+            except:
+                ebn0 = np.nan
+    elif info[&#x27;type&#x27;] == &#x27;fsk_coh&#x27;:
+        # P_b ≈ (M-1)/(M*log2(M)) * Q(sqrt(Eb*log2(M)/N0))
+        if M == 2:
+            arg = Qinv(target_ber * 2)  # (M-1)/M = 0.5 for M=2
+            ebn0 = arg**2
+        else:
+            from scipy.optimize import brentq
+            def eq(g):
+                return (M-1)/(M*np.log2(M)) * 0.5*erfc(np.sqrt(g*np.log2(M)/2)) - target_ber
+            try:
+                ebn0 = brentq(eq, 0.1, 30)
+            except:
+                ebn0 = np.nan
+    elif info[&#x27;type&#x27;] == &#x27;ask&#x27;:
+        # P_b ≈ 2(M-1)/(M*k) * Q(sqrt(6*k*Eb/((M^2-1)N0)))
+        coeff = 2*(M-1)/(M*np.log2(M))
+        inner = 6*np.log2(M)/(M**2-1)
+        arg = Qinv(target_ber / coeff)
+        ebn0 = arg**2 / inner
+
+    results.append((name, eta, 10*np.log10(ebn0) if not np.isinf(ebn0) else 999))
+
+results.sort(key=lambda x: x[1])
+
+names = [r[0] for r in results]
+etas = [r[1] for r in results]
+db_vals = [r[2] for r in results]
+
+fig, ax = plt.subplots(figsize=(12, 6))
+bars = ax.barh(names, etas, color=[&#x27;blue&#x27;,&#x27;teal&#x27;,&#x27;green&#x27;,&#x27;orange&#x27;,&#x27;red&#x27;,&#x27;purple&#x27;,&#x27;brown&#x27;])
+for i, (bar, db) in enumerate(zip(bars, db_vals)):
+    ax.text(bar.get_width() + 0.05, bar.get_y() + bar.get_height()/2,
+            f&#x27;{db:.1f} dB&#x27;, va=&#x27;center&#x27;, fontsize=9)
+ax.set(xlabel=&#x27;Eficiência Espectral (bit/s/Hz)&#x27;,
+       ylabel=&#x27;Modulação&#x27;,
+       title=&#x27;Eficiência Espectral vs Eb/N0 para BER=1e-5&#x27;,
+       xlim=(0, max(etas)+0.5))
+ax.grid(axis=&#x27;x&#x27;, alpha=0.3)
+plt.tight_layout()
+plt.show()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&quot;import numpy as np\nimport matplotlib.pyplot as plt\n\n# Eficiência espectral e BER necessária para 1e-5\nfrom scipy.special import erfc\n\nQinv = lambda p: np.sqrt(2) * erfc(2 * p)\n\nmodulations = {\n    &#x27;BPSK&#x27;: {&#x27;M&#x27;: 2, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 1.0},\n    &#x27;QPSK&#x27;: {&#x27;M&#x27;: 4, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 2.0},\n    &#x27;8-PSK&#x27;: {&#x27;M&#x27;: 8, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 3.0},\n    &#x27;16-PSK&#x27;: {&#x27;M&#x27;: 16, &#x27;type&#x27;: &#x27;psk&#x27;, &#x27;eta&#x27;: 4.0},\n    &#x27;BFSK&#x27;: {&#x27;M&#x27;: 2, &#x27;type&#x27;: &#x27;fsk_coh&#x27;, &#x27;eta&#x27;: 0.5},\n    &#x27;4-FSK&#x27;: {&#x27;M&#x27;: 4, &#x27;type&#x27;: &#x27;fsk_coh&#x27;, &#x27;eta&#x27;: 1.0},\n    &#x27;4-ASK&#x27;: {&#x27;M&#x27;: 4, &#x27;type&#x27;: &#x27;ask&#x27;, &#x27;eta&#x27;: 2.0},\n}\n\ntarget_ber = 1e-5\nresults = []\n\nfor name, info in modulations.items():\n    M = info[&#x27;M&#x27;]\n    eta = info[&#x27;eta&#x27;]\n    if info[&#x27;type&#x27;] == &#x27;psk&#x27;:\n        # Inverter BER para encontrar Eb/N0\n        # P_b = (2/log2(M)) * Q(sqrt(2*Eb/N0 * log2(M)) * sin(pi/M))\n        sin_pi_M = np.sin(np.pi / M)\n        if M == 2:\n            arg = Qinv(target_ber)\n            ebn0 = arg**2 / 2\n        else:\n            # resolver numericamente\n            from scipy.optimize import brentq\n            def eq(g):\n                return (2/np.log2(M)) * 0.5*erfc(np.sqrt(2*g*np.log2(M))*sin_pi_M/np.sqrt(2)) - target_ber\n            try:\n                ebn0 = brentq(eq, 0.1, 30)\n            except:\n                ebn0 = np.nan\n    elif info[&#x27;type&#x27;] == &#x27;fsk_coh&#x27;:\n        # P_b ≈ (M-1)/(M*log2(M)) * Q(sqrt(Eb*log2(M)/N0))\n        if M == 2:\n            arg = Qinv(target_ber * 2)  # (M-1)/M = 0.5 for M=2\n            ebn0 = arg**2\n        else:\n            from scipy.optimize import brentq\n            def eq(g):\n                return (M-1)/(M*np.log2(M)) * 0.5*erfc(np.sqrt(g*np.log2(M)/2)) - target_ber\n            try:\n                ebn0 = brentq(eq, 0.1, 30)\n            except:\n                ebn0 = np.nan\n    elif info[&#x27;type&#x27;] == &#x27;ask&#x27;:\n        # P_b ≈ 2(M-1)/(M*k) * Q(sqrt(6*k*Eb/((M^2-1)N0)))\n        coeff = 2*(M-1)/(M*np.log2(M))\n        inner = 6*np.log2(M)/(M**2-1)\n        arg = Qinv(target_ber / coeff)\n        ebn0 = arg**2 / inner\n\n    results.append((name, eta, 10*np.log10(ebn0) if not np.isinf(ebn0) else 999))\n\nresults.sort(key=lambda x: x[1])\n\nnames = [r[0] for r in results]\netas = [r[1] for r in results]\ndb_vals = [r[2] for r in results]\n\nfig, ax = plt.subplots(figsize=(12, 6))\nbars = ax.barh(names, etas, color=[&#x27;blue&#x27;,&#x27;teal&#x27;,&#x27;green&#x27;,&#x27;orange&#x27;,&#x27;red&#x27;,&#x27;purple&#x27;,&#x27;brown&#x27;])\nfor i, (bar, db) in enumerate(zip(bars, db_vals)):\n    ax.text(bar.get_width() + 0.05, bar.get_y() + bar.get_height()/2,\n            f&#x27;{db:.1f} dB&#x27;, va=&#x27;center&#x27;, fontsize=9)\nax.set(xlabel=&#x27;Eficiência Espectral (bit/s/Hz)&#x27;,\n       ylabel=&#x27;Modulação&#x27;,\n       title=&#x27;Eficiência Espectral vs Eb/N0 para BER=1e-5&#x27;,\n       xlim=(0, max(etas)+0.5))\nax.grid(axis=&#x27;x&#x27;, alpha=0.3)\nplt.tight_layout()\nplt.show()&quot;, &quot;&lt;markdown-python-4&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-4&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">12</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Para M-ASK, distinga o espaçamento entre amplitudes físicas, <span class="eqwrap">\(2d\)</span>, da distância <span class="eqwrap">\(D_{\min}\)</span> após projeção na base ortonormal. Derive ambos em função de <span class="eqwrap">\(E_b\)</span>, <span class="eqwrap">\(M\)</span> e <span class="eqwrap">\(T_s\)</span>.</p>
+<p><strong>E2.</strong> Calcule a BER aproximada de 16-ASK a <span class="eqwrap">\(E_b/N_0 = 12\)</span> dB.</p>
+<p><strong>E3.</strong> Prove que a BER do BPSK é <span class="eqwrap">\(Q(\sqrt{2E_b/N_0})\)</span> a partir da densidade Gaussiana.</p>
+<p><strong>E4.</strong> Mostre que QPSK com Gray coding tem o mesmo BER de BPSK para o mesmo <span class="eqwrap">\(E_b/N_0\)</span>.</p>
+<p><strong>E5.</strong> Para QPSK, calcule a probabilidade de erro de símbolo <span class="eqwrap">\(P_s\)</span> e demonstre que <span class="eqwrap">\(P_s \approx 2P_b\)</span> para <span class="eqwrap">\(P_b \ll 1\)</span>.</p>
+<p><strong>E6.</strong> Derive a BER de M-PSK para <span class="eqwrap">\(M = 8\)</span> e compare numericamente com <span class="eqwrap">\(M = 4\)</span> (QPSK) a <span class="eqwrap">\(E_b/N_0 = 8\)</span> dB.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">12</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E7.</strong> Mostre que para M-FSK coerente, a probabilidade de erro de símbolo é <span class="eqwrap">\(P_s \approx (M-1)Q(\sqrt{E_s/N_0})\)</span>.</p>
+<p><strong>E8.</strong> Para BDPSK, calcule o <span class="eqwrap">\(E_b/N_0\)</span> necessário para BER <span class="eqwrap">\(= 10^{-3}\)</span> e compare com BPSK.</p>
+<p><strong>E9.</strong> Para BFSK e 4-FSK coerentes com <span class="eqwrap">\(T_s=1\,\mu\)</span>s, calcule a separação mínima entre tons. Depois estime a extensão entre o primeiro e o último tom e explique por que a banda ocupada total ainda depende da conformação de pulso.</p>
+<p><strong>E10.</strong> Trace o espaço de sinais para 8-PSK e identifique a distância mínima entre pontos adjacentes.</p>
+<p><strong>E11.</strong> Demonstre que a eficiência espectral do 16-QAM é 4 bit/s/Hz e calcule sua BER aproximada a <span class="eqwrap">\(E_b/N_0 = 14\)</span> dB.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">12</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E12.</strong> Explique por que o FSK é preferível em canais com amplificadores de potência não-lineais (efeito <em>amplitude-to-phase</em>).</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Gabarito</h2>
+<p><strong>E1.</strong> Da Seção “M-ASK — Teoria Completa”, <span class="eqwrap">\(d=\sqrt{6E_b\log_2M/[T_s(M^2-1)]}\)</span>; portanto, o espaçamento de amplitude é <span class="eqwrap">\(2d\)</span>. Após projeção, cada amplitude é multiplicada por <span class="eqwrap">\(\sqrt{T_s/2}\)</span>, logo <span class="eqwrap">\(D_{\min}=2d\sqrt{T_s/2}=\sqrt{12E_b\log_2M/(M^2-1)}\)</span>. A dependência em <span class="eqwrap">\(T_s\)</span> desaparece da distância energética.</p>
+<p><strong>E2.</strong> Para <span class="eqwrap">\(M=16\)</span> e <span class="eqwrap">\(\gamma_b=10^{1{,}2}\approx15{,}85\)</span>, <span class="eqwrap">\(x=\sqrt{6(4)\gamma_b/255}\approx1{,}221\)</span>. Assim, <span class="eqwrap">\(P_b\approx(15/32)Q(x)\approx(0{,}46875)(0{,}111)\approx\boxed{5{,}2\times10^{-2}}\)</span>. A aproximação de vizinho mais próximo já é menos precisa nessa BER alta, mas evidencia a fragilidade da 16-ASK.</p>
+<p><strong>E3.</strong> <span class="eqwrap">\(P_b = \int_{\sqrt{E_b}}^{\infty} \frac{1}{\sqrt{\pi N_0}}e^{-x^2/N_0}dx = Q(\sqrt{E_b/(N_0/2)}) = Q(\sqrt{2E_b/N_0})\)</span>. ✓</p>
+<p><strong>E4.</strong> QPSK: dois eixos ortogonais, cada um BPSK com energia <span class="eqwrap">\(E_b\)</span>. <span class="eqwrap">\(P_b = Q(\sqrt{2E_b/N_0})\)</span>. ✓</p>
+<p><strong>E5.</strong> <span class="eqwrap">\(P_s = 1-(1-P_b)^2 = 2P_b-P_b^2 \approx 2P_b\)</span> para <span class="eqwrap">\(P_b \ll 1\)</span>. ✓</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p><strong>E6.</strong> Para 8-PSK, <span class="eqwrap">\(k=3\)</span>, <span class="eqwrap">\(\gamma_b=6{,}31\)</span> e <span class="eqwrap">\(x=\sqrt{2k\gamma_b}\sin(\pi/8)\approx2{,}355\)</span>. Logo, <span class="eqwrap">\(P_b\approx(2/3)Q(x)\approx(2/3)(0{,}0093)\approx6{,}2\times10^{-3}\)</span>. Para QPSK, <span class="eqwrap">\(Q(\sqrt{2\gamma_b})\approx1{,}9\times10^{-4}\)</span>. A 8-PSK é cerca de 32 vezes pior nesse ponto.</p>
+<p><strong>E7.</strong> <span class="eqwrap">\(P_s = P(\exists j \ne m: r_j > r_m) \approx (M-1)P(r_j > r_m) = (M-1)Q(\sqrt{E_s/N_0})\)</span>. ✓</p>
+<p><strong>E8.</strong> DBPSK: <span class="eqwrap">\(10^{-3} = \frac{1}{2}e^{-\gamma} \Rightarrow \gamma = -\ln(2\times 10^{-3}) \approx 6{,}215\)</span>, ou <span class="eqwrap">\(7{,}93\)</span> dB. BPSK coerente: <span class="eqwrap">\(Q(\sqrt{2\gamma}) = 10^{-3} \Rightarrow \gamma \approx 4{,}775\)</span>, ou <span class="eqwrap">\(6{,}79\)</span> dB. Portanto, nesse ponto, a penalidade da detecção diferencial é <span class="eqwrap">\(\boxed{1{,}14\text{ dB}}\)</span>.</p>
+<p><strong>E9.</strong> A separação coerente mínima é <span class="eqwrap">\(\Delta f=1/(2T_s)=500\)</span> kHz. A extensão entre tons extremos é <span class="eqwrap">\((M-1)\Delta f\)</span>: 500 kHz para BFSK e 1,5 MHz para 4-FSK. A banda total é essa extensão mais a largura <span class="eqwrap">\(B_p\)</span> de um tom conformado; sem especificar o pulso e o critério de ocupação, não há um único valor de banda.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p><strong>E10.</strong> 8-PSK: constelação em círculo raio <span class="eqwrap">\(\sqrt{E_s}\)</span>. <span class="eqwrap">\(d_{\min} = 2\sqrt{E_s}\sin(\pi/8) \approx 0{,}765\sqrt{E_s}\)</span>.</p>
+<p><strong>E11.</strong> 16-QAM transporta 4 bits/símbolo. Com pulso Nyquist ideal e a convenção de banda passante nula-a-nula, <span class="eqwrap">\(B\approx R_s\)</span>, logo <span class="eqwrap">\(\eta\approx4\)</span> bit/s/Hz. Para mapeamento Gray em AWGN,</p>
+<p><span class="eqwrap">\(P_b\approx\frac{4}{\log_2M}(1-1/\sqrt M)Q\!\left(\sqrt{\frac{3\log_2M}{M-1}\gamma_b}\right)\)</span>. Para <span class="eqwrap">\(M=16\)</span> e <span class="eqwrap">\(\gamma_b=10^{14/10}=25{,}12\)</span>: <span class="eqwrap">\(P_b\approx0{,}75Q(\sqrt{0{,}8\gamma_b})=0{,}75Q(4{,}48)\approx\boxed{2{,}8\times10^{-6}}\)</span>.</p>
+<p><strong>E12.</strong> Amplificadores não-lineares (classe C) convertem variações de amplitude em variações de fase (AM-PM). FSK tem envelope constante, evitando este efeito.</p>
+</div>
+</section>
+    <div class="nav-arrows">
+      <button class="nav-btn prev" id="nav-prev-btn" aria-label="Previous slide">‹</button>
+      <button class="nav-btn next" id="nav-next-btn" aria-label="Next slide">›</button>
+    </div>
+    <div class="foot"><span>Slide Framework</span><span class="dots" data-dots></span><span data-num></span></div>
+  </main>
+</div>
+
+<div class="brand">Transmissão Digital em Banda Passante: ASK, PSK e FSK</div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">00</span></div>
+<button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" class="sun-icon"/><line x1="12" y1="1" x2="12" y2="3" class="sun-icon"/><line x1="12" y1="21" x2="12" y2="23" class="sun-icon"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="sun-icon"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="sun-icon"/><line x1="1" y1="12" x2="3" y2="12" class="sun-icon"/><line x1="21" y1="12" x2="23" y2="12" class="sun-icon"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="sun-icon"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="sun-icon"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-icon"/></svg>
+</button>
+<div class="hint" id="hint"><kbd>←</kbd><kbd>→</kbd> to move · <kbd>F</kbd> full screen · <kbd>Ctrl+K</kbd> search · <kbd>S</kbd> notes</div>
+
+<div class="search-overlay" id="search-overlay"></div>
+
+<div class="notes-overlay" id="notes-overlay">
+	<div class="notes-card">
+		<div class="notes-header">
+			<span class="title">Speaker Notes</span>
+			<button class="close-btn">Close (S)</button>
+		</div>
+		<div class="notes-body"></div>
+		<div class="notes-current"></div>
+	</div>
+</div>
+
+<script defer src="../../slide_framework/deck.js"></script>
+</body>
+</html>

@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sinais, Transformada de Fourier, Processos Aleatórios e Ruído</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="../../slide_framework/framework.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+<div class="progress" id="progress" title="Jump">
+  <div class="bar" id="bar"></div>
+</div>
+
+<div class="deck-shell">
+  <main class="stage" id="stage">
+<section class="slide title-slide" data-sec="Title">
+  <svg class="title-figure" viewBox="0 0 420 340" aria-hidden="true"><defs><radialGradient id="ig" cx="50%" cy="55%" r="60%"><stop offset="0%" stop-color="var(--gold)" stop-opacity=".10"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></radialGradient></defs><circle cx="210" cy="180" r="160" fill="url(#ig)"/><g stroke="var(--line)" stroke-width=".7" opacity=".2"><line x1="50" y1="40" x2="50" y2="300"/><line x1="50" y1="300" x2="390" y2="300"/></g><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M70,200 L130,200 L130,140 L190,140" stroke="var(--blue)" opacity=".8"/><path d="M190,140 L190,80 L250,80 L250,140 L310,140 L310,200" stroke="var(--vio)" opacity=".75"/><path d="M70,240 L110,240 L110,200 L150,200 L150,280 L210,280 L210,240 L270,240 L270,300 L330,300 L330,240 L390,240" stroke="var(--gold)" opacity=".65"/></g><circle cx="130" cy="140" r="5" fill="var(--blue)"/><circle cx="190" cy="140" r="5" fill="var(--vio)"/><circle cx="250" cy="80" r="4" fill="var(--gold)"/><circle cx="150" cy="200" r="4" fill="var(--blue)"/><circle cx="110" cy="240" r="4" fill="var(--gold)"/><circle cx="210" cy="240" r="4" fill="var(--vio)"/><circle cx="270" cy="240" r="4" fill="var(--gold)"/><circle cx="330" cy="240" r="4" fill="var(--vio)"/><path d="M80,100 Q110,60 140,100 Q170,140 200,100 Q230,60 260,100 Q290,140 320,100 Q350,60 370,80"fill="none" stroke="var(--blue)" stroke-width="1.8" opacity=".5" stroke-linecap="round"/><circle cx="70" cy="200" r="3" fill="var(--text)" opacity=".5"/><circle cx="390" cy="240" r="3" fill="var(--text)" opacity=".5"/></svg>
+  <div class="title-content">
+    <div class="super">Sistemas de Comunicações — Apostila de Curso · UFSC · Prof. Laio Oriel Seman · Carga horária: 80h</div>
+    <h1>Sinais, Transformada de Fourier, Processos Aleatórios e Ruído</h1>
+    <div class="topics"><span class="chip">Sinais Determinísticos e Aleatórios</span><span class="chip">Série e Transformada de Fourier</span><span class="chip">Densidade Espectral de Potência</span><span class="chip">Convolução e Filtragem</span><span class="chip">Processos Estocásticos</span><span class="chip">Ruído Térmico e AWGN</span></div>
+  </div>
+</section>
+<section class="slide" data-sec="Antes de começar">
+<div class="eyebrow"><span class="sec">01</span> Antes de começar <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Antes de começar</h2>
+<p>Ao final, você deve conseguir escolher entre espectro de energia e PSD, prever o efeito de um filtro LIT e relacionar variância de ruído a uma probabilidade de erro. <strong>Diagnóstico:</strong> você sabe explicar por que uma senoide tem energia infinita, mas potência finita? <strong>Evidência mínima:</strong> reproduzir o laboratório e justificar, sem olhar o código, os gráficos de Fourier, Parseval, AWGN e BER.</p>
+</div>
+</section>
+<section class="slide" data-sec="Sinais e Energia/Potência">
+<div class="eyebrow"><span class="sec">02</span> Sinais e Energia/Potência <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Sinais e Energia/Potência</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Classificação</h3>
+<p>Um sinal <span class="eqwrap">\(x(t)\)</span> é dito de <strong>energia</strong> se <span class="eqwrap">\(0<E_x<\infty\)</span>, com:</p>
+<div class="eqwrap eqbig eqcenter">\[E_x \equiv \int_{-\infty}^{\infty}|x(t)|^2\,dt\]</div>
+<p>e de <strong>potência</strong> se <span class="eqwrap">\(0<P_x<\infty\)</span> (tipicamente sinais periódicos ou aleatórios estacionários, que têm energia infinita):</p>
+</div>
+</section>
+<section class="slide" data-sec="Sinais e Energia/Potência">
+<div class="eyebrow"><span class="sec">02</span> Sinais e Energia/Potência <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_x \equiv \lim_{T\to\infty}\frac{1}{T}\int_{-T/2}^{T/2}|x(t)|^2\,dt\]</div>
+<p>Um sinal de energia finita tem necessariamente potência média nula (a energia se "dilui" ao longo do tempo infinito); um sinal de potência finita e não nula tem energia infinita. Essa dicotomia motiva duas ferramentas espectrais distintas: a <strong>Transformada de Fourier</strong> (sinais de energia) e a <strong>Densidade Espectral de Potência via autocorrelação</strong> (sinais de potência, Seção “Densidade Espectral de Potência de Processos Aleatórios”).</p>
+</div>
+</section>
+<section class="slide" data-sec="Sinais e Energia/Potência">
+<div class="eyebrow"><span class="sec">02</span> Sinais e Energia/Potência <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Sinais em comunicações</h3>
+<p>Em sistemas de comunicações, praticamente todo sinal de interesse é de <strong>potência</strong> (portadoras, ruído, sinais moduladas continuamente) — a Transformada de Fourier ainda é aplicada, mas de forma generalizada (via funções generalizadas/deltas de Dirac no domínio da frequência para sinais periódicos, Seção “Transformada de sinais periódicos (via trem de deltas espectrais)”) ou substituída pela densidade espectral de potência para processos aleatórios.</p>
+</div>
+</section>
+<section class="slide" data-sec="Série de Fourier">
+<div class="eyebrow"><span class="sec">03</span> Série de Fourier <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Série de Fourier</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução via ortogonalidade das exponenciais complexas</h3>
+<p>Um sinal periódico <span class="eqwrap">\(x(t)=x(t+T_0)\)</span>, com <span class="eqwrap">\(f_0=1/T_0\)</span>, pode ser expandido em uma base ortogonal de exponenciais complexas <span class="eqwrap">\(\{e^{j2\pi nf_0t}\}_{n=-\infty}^{\infty}\)</span>. A ortogonalidade decorre de:</p>
+<div class="eqwrap eqbig eqcenter">\[\int_{T_0}e^{j2\pi nf_0t}e^{-j2\pi mf_0t}\,dt = \int_{T_0}e^{j2\pi(n-m)f_0t}\,dt = \begin{cases}T_0 & n=m\\0 & n\neq m\end{cases}\]</div>
+<p>(para <span class="eqwrap">\(n\neq m\)</span>, a integral de uma exponencial complexa completa sobre um número inteiro de períodos se anula — soma vetorial de fasores uniformemente distribuídos no círculo unitário). Postulando <span class="eqwrap">\(x(t)=\sum_{n=-\infty}^{\infty}c_ne^{j2\pi nf_0t}\)</span> e multiplicando ambos os lados por <span class="eqwrap">\(e^{-j2\pi mf_0t}\)</span>, integrando sobre um período e usando a ortogonalidade:</p>
+</div>
+</section>
+<section class="slide" data-sec="Série de Fourier">
+<div class="eyebrow"><span class="sec">03</span> Série de Fourier <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{c_n = \frac{1}{T_0}\int_{T_0}x(t)\,e^{-j2\pi nf_0t}\,dt}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Série de Fourier">
+<div class="eyebrow"><span class="sec">03</span> Série de Fourier <span class="rule"></span></div>
+<div class="body">
+<div class="cols left"><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Espectro de linhas e simetria hermitiana</h3>
+<p>Os coeficientes <span class="eqwrap">\(c_n\)</span> formam um <strong>espectro de linhas</strong> discreto em múltiplos de <span class="eqwrap">\(f_0\)</span>. Para <span class="eqwrap">\(x(t)\)</span> real, <span class="eqwrap">\(c_{-n}=c_n^*\)</span> (<strong>simetria hermitiana</strong>) — consequência direta de <span class="eqwrap">\(x(t)=x^*(t)\)</span> aplicado à definição de <span class="eqwrap">\(c_n\)</span>. Isso garante que a soma de pares <span class="eqwrap">\(c_ne^{j2\pi nf_0t}+c_{-n}e^{-j2\pi nf_0t}=2|c_n|\cos(2\pi nf_0t+\angle c_n)\)</span> seja sempre real.</p>
+</div><div class="stack">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Potência média e Teorema de Parseval para séries</h3>
+<div class="eqwrap eqbig eqcenter">\[P_x = \frac{1}{T_0}\int_{T_0}|x(t)|^2\,dt = \sum_{n=-\infty}^{\infty}|c_n|^2\]</div>
+<p><strong>Dedução</strong>: substitua <span class="eqwrap">\(x(t)=\sum_nc_ne^{j2\pi nf_0t}\)</span> em <span class="eqwrap">\(|x(t)|^2=x(t)x^*(t)\)</span>, integre termo a termo sobre <span class="eqwrap">\(T_0\)</span>; pela ortogonalidade (Seção “Dedução via ortogonalidade das exponenciais complexas”), só sobrevivem os termos com índices iguais, resultando em <span class="eqwrap">\(\sum_n|c_n|^2\)</span>. Este resultado — a potência total é a soma das potências de cada harmônica — é a base para calcular a potência de sinais modulados AM/FM compostos por múltiplas componentes espectrais (arquivos 2 e 3).</p>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Transformada de Fourier</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição e transformada inversa</h3>
+<p>Para um sinal de energia <span class="eqwrap">\(x(t)\)</span> (não necessariamente periódico):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{X(f) \equiv \int_{-\infty}^{\infty}x(t)\,e^{-j2\pi ft}\,dt}\ ,\qquad \boxed{x(t) = \int_{-\infty}^{\infty}X(f)\,e^{j2\pi ft}\,df}\]</div>
+<p>A Transformada de Fourier pode ser vista como o limite da Série de Fourier quando <span class="eqwrap">\(T_0\to\infty\)</span>: o espaçamento entre linhas espectrais <span class="eqwrap">\(f_0=1/T_0\to0\)</span>, o espectro discreto vira contínuo, e <span class="eqwrap">\(c_n\cdot T_0 \to X(f)\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Propriedades fundamentais (com dedução breve)</h3>
+<p><strong>Linearidade</strong>: <span class="eqwrap">\(ax_1(t)+bx_2(t) \leftrightarrow aX_1(f)+bX_2(f)\)</span> — direto da linearidade da integral.</p>
+<p><strong>Deslocamento no tempo</strong>: <span class="eqwrap">\(x(t-t_0)\leftrightarrow X(f)e^{-j2\pi ft_0}\)</span>. Prova: substituição <span class="eqwrap">\(u=t-t_0\)</span> na integral de definição.</p>
+<p><strong>Deslocamento em frequência (modulação)</strong>: <span class="eqwrap">\(x(t)e^{j2\pi f_0t}\leftrightarrow X(f-f_0)\)</span>. Prova: substitua diretamente na definição, agrupe os expoentes. Esta propriedade é o <strong>coração matemático de toda a modulação</strong> (arquivos 2, 3, 5, 6): multiplicar um sinal por uma portadora <span class="eqwrap">\(\cos(2\pi f_ct)\)</span> desloca seu espectro para <span class="eqwrap">\(\pm f_c\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{x(t)\cos(2\pi f_ct) \leftrightarrow \frac{1}{2}\left[X(f-f_c)+X(f+f_c)\right]}\]</div>
+<p>(decorrência direta de <span class="eqwrap">\(\cos(2\pi f_ct)=\tfrac12(e^{j2\pi f_ct}+e^{-j2\pi f_ct})\)</span> e da propriedade de deslocamento em frequência aplicada a cada termo).</p>
+<p><strong>Escalamento no tempo</strong>: <span class="eqwrap">\(x(at)\leftrightarrow \dfrac{1}{|a|}X(f/a)\)</span> — comprimir no tempo expande no espectro (relação de incerteza tempo-frequência).</p>
+<p><strong>Dualidade</strong>: se <span class="eqwrap">\(x(t)\leftrightarrow X(f)\)</span>, então <span class="eqwrap">\(X(t)\leftrightarrow x(-f)\)</span> — consequência da simetria quase perfeita entre as fórmulas direta e inversa.</p>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<p><strong>Derivação</strong>: <span class="eqwrap">\(\dfrac{dx}{dt}\leftrightarrow j2\pi f\,X(f)\)</span> — prova por integração por partes.</p>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Pares de transformadas fundamentais</h3>
+<table class="cmp">
+<thead><tr>
+<th><span class="eqwrap">\(x(t)\)</span></th>
+<th><span class="eqwrap">\(X(f)\)</span></th>
+<th>Uso</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><span class="eqwrap">\(\text{rect}(t/T)\)</span> (pulso retangular)</td>
+<td><span class="eqwrap">\(T\,\text{sinc}(fT)\)</span></td>
+<td>Formatação de pulso banda base (arquivo 4)</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(\text{sinc}(2Wt)\)</span></td>
+<td><span class="eqwrap">\(\dfrac{1}{2W}\text{rect}(f/2W)\)</span></td>
+<td>Filtro ideal passa-baixas (dual do anterior)</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(\delta(t)\)</span></td>
+<td><span class="eqwrap">\(1\)</span></td>
+<td>Resposta ao impulso</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(1\)</span></td>
+<td><span class="eqwrap">\(\delta(f)\)</span></td>
+<td>Nível DC</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(e^{-at}u(t)\)</span>, <span class="eqwrap">\(a>0\)</span></td>
+<td><span class="eqwrap">\(\dfrac{1}{a+j2\pi f}\)</span></td>
+<td>Filtros RC</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(e^{-\pi t^2}\)</span> (gaussiana)</td>
+<td><span class="eqwrap">\(e^{-\pi f^2}\)</span> (autotransformada)</td>
+<td>Pulsos gaussianos</td>
+</tr>
+<tr>
+<td><span class="eqwrap">\(\cos(2\pi f_ct)\)</span></td>
+<td><span class="eqwrap">\(\tfrac12[\delta(f-f_c)+\delta(f+f_c)]\)</span></td>
+<td>Portadora</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<p>onde <span class="eqwrap">\(\text{sinc}(x)\equiv\dfrac{\sin(\pi x)}{\pi x}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução do par retangular ↔ sinc</h3>
+<div class="eqwrap eqbig eqcenter">\[X(f) = \int_{-T/2}^{T/2}e^{-j2\pi ft}\,dt = \left[\frac{e^{-j2\pi ft}}{-j2\pi f}\right]_{-T/2}^{T/2} = \frac{e^{-j\pi fT}-e^{j\pi fT}}{-j2\pi f} = \frac{2\sin(\pi fT)}{2\pi f} = T\,\frac{\sin(\pi fT)}{\pi fT} = T\,\text{sinc}(fT)\]</div>
+<p>Este resultado é central para o arquivo 4 (banda base): todo pulso retangular no tempo (bit digital "cru") tem espectro <strong>infinito</strong> em largura de banda (o sinc decai apenas como <span class="eqwrap">\(1/f\)</span>), motivando a necessidade de pulsos formatados (raised cosine) para limitar a banda ocupada.</p>
+</div>
+</section>
+<section class="slide" data-sec="Transformada de Fourier">
+<div class="eyebrow"><span class="sec">04</span> Transformada de Fourier <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Transformada de sinais periódicos (via trem de deltas espectrais)</h3>
+<p>Um sinal periódico não é de energia finita, mas admite Transformada de Fourier generalizada como um trem de impulsos espectrais, ponderados pelos coeficientes de Fourier:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{x(t)=\sum_nc_ne^{j2\pi nf_0t} \quad\longleftrightarrow\quad X(f)=\sum_nc_n\,\delta(f-nf_0)}\]</div>
+<p>Esta identidade unifica o tratamento espectral de sinais periódicos e não periódicos sob o mesmo formalismo de Fourier, essencial para tratar portadoras (sinais periódicos) moduladas por sinais de informação (tipicamente de banda finita, mas não necessariamente periódicos).</p>
+</div>
+</section>
+<section class="slide" data-sec="Convolução, Filtragem e o Teorema de Parseval">
+<div class="eyebrow"><span class="sec">05</span> Convolução, Filtragem e o Teorema de Parseval <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Convolução, Filtragem e o Teorema de Parseval</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Convolução no tempo ↔ Produto em frequência</h3>
+<div class="eqwrap eqbig eqcenter">\[y(t) = x(t)*h(t) \equiv \int_{-\infty}^{\infty}x(\tau)h(t-\tau)\,d\tau \quad\longleftrightarrow\quad Y(f)=X(f)H(f)\]</div>
+<p><strong>Dedução</strong>: aplique a Transformada de Fourier à definição de convolução, troque a ordem de integração (justificável para sinais absolutamente integráveis), e reconheça a integral interna como uma Transformada de Fourier deslocada:</p>
+<div class="eqwrap eqbig eqcenter">\[Y(f) = \int\!\!\int x(\tau)h(t-\tau)e^{-j2\pi ft}\,d\tau\,dt = \int x(\tau)\left[\int h(t-\tau)e^{-j2\pi ft}\,dt\right]d\tau = \int x(\tau)H(f)e^{-j2\pi f\tau}\,d\tau = X(f)H(f)\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Convolução, Filtragem e o Teorema de Parseval">
+<div class="eyebrow"><span class="sec">05</span> Convolução, Filtragem e o Teorema de Parseval <span class="rule"></span></div>
+<div class="body">
+<p>Este resultado é a base de <strong>toda a teoria de filtragem linear</strong> em comunicações: um sistema LIT (linear invariante no tempo) com resposta ao impulso <span class="eqwrap">\(h(t)\)</span> processa um sinal de entrada multiplicando seu espectro por <span class="eqwrap">\(H(f)\)</span> — a <strong>resposta em frequência</strong> do sistema. Filtros passa-baixas, passa-faixa, e o próprio canal de comunicação são modelados dessa forma.</p>
+</div>
+</section>
+<section class="slide" data-sec="Convolução, Filtragem e o Teorema de Parseval">
+<div class="eyebrow"><span class="sec">05</span> Convolução, Filtragem e o Teorema de Parseval <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Produto no tempo ↔ Convolução em frequência (dual)</h3>
+<div class="eqwrap eqbig eqcenter">\[x(t)y(t) \longleftrightarrow X(f)*Y(f)\]</div>
+<p>Por dualidade da Seção “Propriedades fundamentais (com dedução breve)”. Esta é a propriedade usada para derivar o espectro de um sinal modulado como convolução do espectro da informação com o espectro (impulsivo) da portadora — resultando no deslocamento espectral já visto na Seção “Propriedades fundamentais (com dedução breve)” aplicado agora de forma geral a portadoras moduladas em amplitude por um sinal arbitrário <span class="eqwrap">\(m(t)\)</span> (arquivo 2).</p>
+</div>
+</section>
+<section class="slide" data-sec="Convolução, Filtragem e o Teorema de Parseval">
+<div class="eyebrow"><span class="sec">05</span> Convolução, Filtragem e o Teorema de Parseval <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Teorema de Parseval/Rayleigh (energia no tempo = energia na frequência)</h3>
+<div class="eqwrap eqbig eqcenter">\[\boxed{E_x = \int_{-\infty}^{\infty}|x(t)|^2\,dt = \int_{-\infty}^{\infty}|X(f)|^2\,df}\]</div>
+<p><strong>Dedução</strong>: escreva <span class="eqwrap">\(E_x=\int x(t)x^*(t)\,dt\)</span> e substitua <span class="eqwrap">\(x^*(t)=\int X^*(f)e^{-j2\pi ft}\,df\)</span> (conjugado da transformada inversa); troque a ordem de integração:</p>
+</div>
+</section>
+<section class="slide" data-sec="Convolução, Filtragem e o Teorema de Parseval">
+<div class="eyebrow"><span class="sec">05</span> Convolução, Filtragem e o Teorema de Parseval <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[E_x = \int X^*(f)\left[\int x(t)e^{-j2\pi ft}\,dt\right]df = \int X^*(f)X(f)\,df = \int|X(f)|^2\,df\]</div>
+<p><span class="eqwrap">\(|X(f)|^2\)</span> é a <strong>densidade espectral de energia</strong> — mede como a energia do sinal se distribui em frequência, conceito que se generaliza para a densidade espectral de potência de processos aleatórios (Seção “Densidade Espectral de Potência de Processos Aleatórios”), central para calcular a potência de ruído que passa por um filtro receptor.</p>
+</div>
+</section>
+<section class="slide" data-sec="Sinais Passa-Faixa e Envelope Complexo">
+<div class="eyebrow"><span class="sec">06</span> Sinais Passa-Faixa e Envelope Complexo <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Sinais Passa-Faixa e Envelope Complexo</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Motivação</h3>
+<p>Sinais de comunicação (moduladas AM/FM/PSK etc.) são tipicamente <strong>sinais passa-faixa</strong>: seu espectro está concentrado em torno de uma frequência de portadora <span class="eqwrap">\(f_c\)</span> alta, com largura de banda <span class="eqwrap">\(B\ll f_c\)</span>. Simular tais sinais diretamente exigiria amostrar a <span class="eqwrap">\(f_c\)</span> (GHz em rádio), desperdiçando recursos computacionais. A representação de <strong>envelope complexo</strong> (ou banda base equivalente) resolve isso.</p>
+</div>
+</section>
+<section class="slide" data-sec="Sinais Passa-Faixa e Envelope Complexo">
+<div class="eyebrow"><span class="sec">06</span> Sinais Passa-Faixa e Envelope Complexo <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução da representação em envelope complexo</h3>
+<p>Todo sinal passa-faixa real <span class="eqwrap">\(s(t)\)</span> pode ser escrito como:</p>
+<div class="eqwrap eqbig eqcenter">\[s(t) = A(t)\cos\big(2\pi f_ct+\phi(t)\big) = \text{Re}\left\{\underbrace{A(t)e^{j\phi(t)}}_{\tilde{s}(t)}\,e^{j2\pi f_ct}\right\} = \text{Re}\{\tilde{s}(t)e^{j2\pi f_ct}\}\]</div>
+<p>onde <span class="eqwrap">\(\tilde s(t)=A(t)e^{j\phi(t)}\)</span> é o <strong>envelope complexo</strong> (ou sinal banda base equivalente), variando lentamente. Se o sinal RF real ocupa uma banda positiva de largura <span class="eqwrap">\(B\)</span> centrada em <span class="eqwrap">\(f_c\)</span>, o envelope pode ser escolhido com suporte em <span class="eqwrap">\([-B/2,B/2]\)</span>. Assim, ele pode ser amostrado como sinal complexo a <span class="eqwrap">\(F_s\ge B\)</span>, em vez de amostrar a portadora em GHz. Escrevendo <span class="eqwrap">\(\tilde s(t)=s_I(t)+js_Q(t)\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Sinais Passa-Faixa e Envelope Complexo">
+<div class="eyebrow"><span class="sec">06</span> Sinais Passa-Faixa e Envelope Complexo <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{s(t) = s_I(t)\cos(2\pi f_ct) - s_Q(t)\sin(2\pi f_ct)}\]</div>
+<p><strong>Dedução da forma I/Q</strong>: expandindo <span class="eqwrap">\(\cos(2\pi f_ct+\phi)=\cos\phi\cos(2\pi f_ct)-\sin\phi\sin(2\pi f_ct)\)</span> e identificando <span class="eqwrap">\(s_I=A\cos\phi\)</span>, <span class="eqwrap">\(s_Q=A\sin\phi\)</span>.</p>
+<p>Esta decomposição é a base de <strong>todos</strong> os moduladores/demoduladores digitais em quadratura (QAM, PSK — arquivo 6): a informação é codificada em <span class="eqwrap">\((s_I,s_Q)\)</span>, e a portadora serve apenas de "veículo" de transporte para a faixa de RF.</p>
+</div>
+</section>
+<section class="slide" data-sec="Sinais Passa-Faixa e Envelope Complexo">
+<div class="eyebrow"><span class="sec">06</span> Sinais Passa-Faixa e Envelope Complexo <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Relação espectral entre passa-faixa e banda base</h3>
+<p>Se <span class="eqwrap">\(\tilde S(f)\)</span> é a transformada de <span class="eqwrap">\(\tilde s(t)\)</span>, então (usando <span class="eqwrap">\(s(t)=\tfrac12[\tilde s(t)e^{j2\pi f_ct}+\tilde s^*(t)e^{-j2\pi f_ct}]\)</span>, decorrente de <span class="eqwrap">\(\text{Re}\{z\}=\tfrac12(z+z^*)\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[S(f) = \frac{1}{2}\left[\tilde S(f-f_c) + \tilde S^*(-f-f_c)\right]\]</div>
+<p>O espectro do sinal passa-faixa é o espectro banda base deslocado para <span class="eqwrap">\(\pm f_c\)</span> — simulações numéricas trabalham com <span class="eqwrap">\(\tilde s(t)\)</span> a uma taxa complexa determinada por sua largura de banda, reconstruindo <span class="eqwrap">\(s(t)\)</span> apenas quando necessário.</p>
+</div>
+</section>
+<section class="slide" data-sec="Processos Aleatórios">
+<div class="eyebrow"><span class="sec">07</span> Processos Aleatórios <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Processos Aleatórios</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição</h3>
+<p>Um <strong>processo aleatório</strong> (ou estocástico) <span class="eqwrap">\(X(t)\)</span> é uma função cujo valor em cada instante <span class="eqwrap">\(t\)</span> é uma variável aleatória. Uma <strong>realização</strong> (ou amostra) <span class="eqwrap">\(x(t)\)</span> é uma função determinística específica, obtida de um experimento. Em comunicações, o ruído térmico, a informação transmitida (antes de ser conhecida) e o próprio canal (desvanecimento) são modelados como processos aleatórios.</p>
+</div>
+</section>
+<section class="slide" data-sec="Processos Aleatórios">
+<div class="eyebrow"><span class="sec">07</span> Processos Aleatórios <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Estacionariedade em sentido amplo (WSS)</h3>
+<p>Um processo é <strong>WSS</strong> (<em>wide-sense stationary</em>) se:</p>
+<ol class="take"><li>A média é constante no tempo: <span class="eqwrap">\(E[X(t)]=\mu_X\)</span> (não depende de <span class="eqwrap">\(t\)</span>).</li><li>A autocorrelação depende apenas da diferença de tempos: <span class="eqwrap">\(R_X(t_1,t_2) = E[X(t_1)X(t_2)] = R_X(t_1-t_2) \equiv R_X(\tau)\)</span>.</li></ol>
+<p>A maioria dos sinais de comunicação (ruído térmico, sinais digitais aleatórios de longo prazo) são modelados como WSS — hipótese que simplifica drasticamente a análise espectral (Seção “Densidade Espectral de Potência de Processos Aleatórios”).</p>
+</div>
+</section>
+<section class="slide" data-sec="Processos Aleatórios">
+<div class="eyebrow"><span class="sec">07</span> Processos Aleatórios <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Autocorrelação: propriedades e interpretação</h3>
+<div class="eqwrap eqbig eqcenter">\[R_X(\tau) = E[X(t)X(t+\tau)]\]</div>
+<p>Propriedades fundamentais (demonstráveis diretamente da definição):</p>
+<ul class="beats"><li><span class="eqwrap">\(R_X(0) = E[X^2(t)] = \)</span> potência média do processo (sempre real e não-negativa).</li><li><span class="eqwrap">\(R_X(\tau) = R_X(-\tau)\)</span> (simetria par, para processos reais — troque <span class="eqwrap">\(t\to t-\tau\)</span> na definição).</li><li><span class="eqwrap">\(|R_X(\tau)| \le R_X(0)\)</span> (consequência da desigualdade de Cauchy-Schwarz aplicada a <span class="eqwrap">\(X(t)\)</span> e <span class="eqwrap">\(X(t+\tau)\)</span>).</li><li><span class="eqwrap">\(R_X(\tau)\to \mu_X^2\)</span> quando <span class="eqwrap">\(\tau\to\infty\)</span>, se o processo "esquece" sua correlação com o passado distante (ergodicidade em correlação).</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Densidade Espectral de Potência de Processos Aleatórios">
+<div class="eyebrow"><span class="sec">08</span> Densidade Espectral de Potência de Processos Aleatórios <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Densidade Espectral de Potência de Processos Aleatórios</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Teorema de Wiener-Khinchin</h3>
+<div class="thm vio"><div class="lbl">Teorema</div><p>para um processo WSS <span class="eqwrap">\(X(t)\)</span>, a <strong>densidade espectral de potência</strong> (PSD) é a Transformada de Fourier da função de autocorrelação:</p></div>
+<div class="eqwrap eqbig eqcenter">\[\boxed{S_X(f) \equiv \int_{-\infty}^{\infty}R_X(\tau)\,e^{-j2\pi f\tau}\,d\tau}\]</div>
+<p><strong>Ideia da prova</strong>: considere uma janela truncada <span class="eqwrap">\(X_T(t)=X(t)\)</span> para <span class="eqwrap">\(|t|<T/2\)</span> e zero fora. Sua Transformada de Fourier é <span class="eqwrap">\(X_T(f)\)</span>, e pelo Teorema de Parseval (Seção “Teorema de Parseval/Rayleigh (energia no tempo = energia na frequência)”), <span class="eqwrap">\(\int|X_T(t)|^2dt=\int|X_T(f)|^2df\)</span>. Dividindo por <span class="eqwrap">\(T\)</span> e tomando <span class="eqwrap">\(T\to\infty\)</span> (com valor esperado), o lado esquerdo tende à potência média <span class="eqwrap">\(P_X=R_X(0)\)</span>; mostra-se (via manipulação envolvendo a definição de <span class="eqwrap">\(R_X\)</span> e mudança de variáveis) que o lado direito, no limite, é exatamente <span class="eqwrap">\(\int S_X(f)\,df\)</span> com <span class="eqwrap">\(S_X(f)\)</span> definida como acima — a PSD é, portanto, "quanta potência por unidade de frequência" o processo carrega, generalizando <span class="eqwrap">\(|X(f)|^2\)</span> (válida só para sinais de energia) para sinais de potência.</p>
+</div>
+</section>
+<section class="slide" data-sec="Densidade Espectral de Potência de Processos Aleatórios">
+<div class="eyebrow"><span class="sec">08</span> Densidade Espectral de Potência de Processos Aleatórios <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Propriedades da PSD</h3>
+<ul class="beats"><li><span class="eqwrap">\(S_X(f)\ge0\)</span> para todo <span class="eqwrap">\(f\)</span> (é uma densidade de potência, não pode ser negativa).</li><li><span class="eqwrap">\(S_X(f)=S_X(-f)\)</span> para processos reais (pois <span class="eqwrap">\(R_X(\tau)\)</span> é real e par).</li><li><span class="eqwrap">\(P_X = R_X(0) = \displaystyle\int_{-\infty}^{\infty}S_X(f)\,df\)</span> (potência total = área sob a PSD).</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Densidade Espectral de Potência de Processos Aleatórios">
+<div class="eyebrow"><span class="sec">08</span> Densidade Espectral de Potência de Processos Aleatórios <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">PSD na saída de um filtro LIT</h3>
+<p>Se <span class="eqwrap">\(X(t)\)</span> (WSS, PSD <span class="eqwrap">\(S_X(f)\)</span>) passa por um filtro LIT com resposta em frequência <span class="eqwrap">\(H(f)\)</span>, a PSD da saída <span class="eqwrap">\(Y(t)=X(t)*h(t)\)</span> é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{S_Y(f) = |H(f)|^2\,S_X(f)}\]</div>
+<p><strong>Dedução (esboço)</strong>: a autocorrelação da saída se relaciona com a de entrada por <span class="eqwrap">\(R_Y(\tau)=R_X(\tau)*h(\tau)*h^*(-\tau)\)</span> (resultado da definição <span class="eqwrap">\(Y(t)=\int h(\alpha)X(t-\alpha)d\alpha\)</span> substituída em <span class="eqwrap">\(E[Y(t)Y(t+\tau)]\)</span>); aplicando Fourier a ambos os lados e usando a propriedade de convolução (Seção “Convolução no tempo ↔ Produto em frequência”) mais o fato de que a transformada de <span class="eqwrap">\(h^*(-\tau)\)</span> é <span class="eqwrap">\(H^*(f)\)</span>: <span class="eqwrap">\(S_Y(f)=S_X(f)H(f)H^*(f)=|H(f)|^2S_X(f)\)</span>. Este resultado é usado extensivamente para calcular a potência de ruído na saída de filtros receptores (Seção “Ruído Térmico e Ruído Branco Gaussiano (AWGN)”, e ao longo de toda a apostila).</p>
+</div>
+</section>
+<section class="slide" data-sec="Ruído Térmico e Ruído Branco Gaussiano (AWGN)">
+<div class="eyebrow"><span class="sec">09</span> Ruído Térmico e Ruído Branco Gaussiano (AWGN) <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Ruído Térmico e Ruído Branco Gaussiano (AWGN)</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Origem física do ruído térmico</h3>
+<p>O movimento térmico aleatório dos elétrons em qualquer condutor com resistência <span class="eqwrap">\(R\)</span> a temperatura <span class="eqwrap">\(T\)</span> (Kelvin) produz uma tensão de ruído — o <strong>ruído de Johnson-Nyquist</strong>. A potência máxima disponível em uma carga casada, numa banda positiva de largura <span class="eqwrap">\(B\)</span>, é <span class="eqwrap">\(k_BTB\)</span>. Assim, sua densidade disponível <strong>unilateral</strong> é <span class="eqwrap">\(k_BT\)</span>; na representação bilateral de um processo real, essa potência é dividida entre frequências positivas e negativas. Para frequências até a região de micro-ondas (aproximação clássica de Rayleigh-Jeans, válida quando <span class="eqwrap">\(hf\ll k_BT\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[S_N(f) = \frac{k_BT}{2}\qquad\text{(W/Hz, bilateral)}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Ruído Térmico e Ruído Branco Gaussiano (AWGN)">
+<div class="eyebrow"><span class="sec">09</span> Ruído Térmico e Ruído Branco Gaussiano (AWGN) <span class="rule"></span></div>
+<div class="body">
+<p>onde <span class="eqwrap">\(k_B=1{,}380649\times10^{-23}\,\text{J/K}\)</span> é a constante de Boltzmann. A PSD é <strong>constante em frequência</strong> até frequências extremamente altas (ordem de THz à temperatura ambiente) — daí o nome <strong>ruído branco</strong> (por analogia com a luz branca, que contém todas as frequências visíveis com intensidade comparável).</p>
+</div>
+</section>
+<section class="slide" data-sec="Ruído Térmico e Ruído Branco Gaussiano (AWGN)">
+<div class="eyebrow"><span class="sec">09</span> Ruído Térmico e Ruído Branco Gaussiano (AWGN) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Modelo AWGN (Additive White Gaussian Noise)</h3>
+<p>O modelo padrão de canal em comunicações digitais é:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{r(t) = s(t) + n(t)}\]</div>
+<p>onde <span class="eqwrap">\(s(t)\)</span> é o sinal transmitido e <span class="eqwrap">\(n(t)\)</span> é <strong>ruído branco Gaussiano aditivo</strong>, com:</p>
+</div>
+</section>
+<section class="slide" data-sec="Ruído Térmico e Ruído Branco Gaussiano (AWGN)">
+<div class="eyebrow"><span class="sec">09</span> Ruído Térmico e Ruído Branco Gaussiano (AWGN) <span class="rule"></span></div>
+<div class="body">
+<ol class="take"><li><strong>Branco</strong>: <span class="eqwrap">\(S_N(f) = N_0/2\)</span> (constante em toda frequência de interesse). Aqui, <span class="eqwrap">\(N_0\)</span> é o <strong>parâmetro unilateral</strong> de densidade de ruído; portanto, a PSD bilateral do processo real é <span class="eqwrap">\(N_0/2\)</span>. Para uma fonte térmica equivalente, <span class="eqwrap">\(N_0=k_BT_{eq}\)</span>. A temperatura <span class="eqwrap">\(T_{eq}\)</span> representa o ruído acrescentado pelo receptor e não deve ser confundida, sem justificativa, com sua temperatura física.</li><li><strong>Gaussiano</strong>: em cada instante <span class="eqwrap">\(t\)</span>, <span class="eqwrap">\(N(t)\)</span> é uma variável aleatória Gaussiana de média zero (justificado pelo <strong>Teorema Central do Limite</strong>: o ruído é a soma de contribuições de um número enorme de elétrons e fontes microscópicas independentes).</li><li><strong>Aditivo</strong>: soma-se ao sinal, não o multiplica nem distorce.</li></ol>
+</div>
+</section>
+<section class="slide" data-sec="Ruído Térmico e Ruído Branco Gaussiano (AWGN)">
+<div class="eyebrow"><span class="sec">09</span> Ruído Térmico e Ruído Branco Gaussiano (AWGN) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Potência de ruído após filtragem de banda <span class="eqwrap">\(B\)</span></h3>
+<p>Um filtro receptor ideal de largura de banda <span class="eqwrap">\(B\)</span> (passa-baixas ou passa-faixa) limita o ruído branco (infinito em potência total) a uma potência finita. Pela Seção “PSD na saída de um filtro LIT”, com <span class="eqwrap">\(|H(f)|^2=1\)</span> dentro da banda e <span class="eqwrap">\(0\)</span> fora:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_N = \int_{-B}^{B}\frac{N_0}{2}\,df = N_0B}\]</div>
+<p>(para um passa-baixas cujo corte positivo é <span class="eqwrap">\(B\)</span>, isto é, que ocupa <span class="eqwrap">\(-B\le f\le B\)</span>). Em um passa-faixa real, se <span class="eqwrap">\(B\)</span> denota a largura da banda em frequências positivas, existe também sua imagem simétrica em frequências negativas; a integral bilateral volta a fornecer <span class="eqwrap">\(P_N=N_0B\)</span>. Esta convenção de <span class="eqwrap">\(B\)</span> é usada em <strong>todo</strong> o restante da apostila para calcular a relação sinal-ruído (SNR) na entrada do demodulador.</p>
+</div>
+</section>
+<section class="slide" data-sec="Ruído Térmico e Ruído Branco Gaussiano (AWGN)">
+<div class="eyebrow"><span class="sec">09</span> Ruído Térmico e Ruído Branco Gaussiano (AWGN) <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Densidade de probabilidade Gaussiana</h3>
+<div class="eqwrap eqbig eqcenter">\[f_N(n) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{n^2}{2\sigma^2}\right),\qquad \sigma^2 = P_N = N_0B\]</div>
+<p><span class="eqwrap">\(\sigma^2\)</span> é a variância (= potência média do ruído filtrado). Após um passa-baixas retangular, o ruído Gaussiano já não é independente em instantes arbitrários: sua autocorrelação tem forma sinc. Amostras Gaussianas são independentes quando sua correlação é nula; no filtro ideal acima, isso ocorre em separações inteiras de <span class="eqwrap">\(1/(2B)\)</span>. No receptor digital, o filtro casado e a amostragem nos instantes de símbolo produzem as variáveis de decisão modeladas como i.i.d. quando os pulsos são ortogonais e o canal não introduz memória. Essa é a base do <strong>canal AWGN discreto</strong> usado nas simulações de BER (arquivos 5 e 6): cada símbolo recebido é o símbolo transmitido mais uma amostra de <span class="eqwrap">\(\mathcal{N}(0,\sigma^2)\)</span>, independente das demais sob essas hipóteses.</p>
+</div>
+</section>
+<section class="slide" data-sec="Função Q e Probabilidade de Erro">
+<div class="eyebrow"><span class="sec">10</span> Função Q e Probabilidade de Erro <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Função Q e Probabilidade de Erro</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Definição da função Q</h3>
+<p>A <strong>função Q</strong> é a probabilidade de cauda de uma Gaussiana padrão <span class="eqwrap">\(\mathcal N(0,1)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{Q(x) \equiv \int_x^\infty \frac{1}{\sqrt{2\pi}}e^{-u^2/2}\,du = P(Z>x),\quad Z\sim\mathcal N(0,1)}\]</div>
+<p>Propriedades: <span class="eqwrap">\(Q(0)=1/2\)</span>; <span class="eqwrap">\(Q(-x)=1-Q(x)\)</span>; <span class="eqwrap">\(Q(x)\)</span> é monotonicamente decrescente; não tem forma fechada elementar (relacionada à função erro complementar, <span class="eqwrap">\(Q(x)=\tfrac12\text{erfc}(x/\sqrt2)\)</span>).</p>
+</div>
+</section>
+<section class="slide" data-sec="Função Q e Probabilidade de Erro">
+<div class="eyebrow"><span class="sec">10</span> Função Q e Probabilidade de Erro <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Dedução da probabilidade de erro para detecção binária em AWGN</h3>
+<p>Considere a detecção de um bit binário: transmite-se <span class="eqwrap">\(+A\)</span> (bit 1) ou <span class="eqwrap">\(-A\)</span> (bit 0), o receptor observa <span class="eqwrap">\(r=s+n\)</span> com <span class="eqwrap">\(n\sim\mathcal N(0,\sigma^2)\)</span>, e decide "1" se <span class="eqwrap">\(r>0\)</span>, "0" caso contrário (<strong>detector de limiar ótimo</strong> para sinais antipodais equiprováveis, resultado que será justificado formalmente no arquivo 5 via detecção de máxima verossimilhança). Dado que "0" foi transmitido (<span class="eqwrap">\(s=-A\)</span>), o erro ocorre se <span class="eqwrap">\(r>0\)</span>, isto é, se <span class="eqwrap">\(n>A\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[P(\text{erro}\,|\,s=-A) = P(n>A) = \int_A^\infty\frac{1}{\sqrt{2\pi}\sigma}e^{-n^2/(2\sigma^2)}\,dn\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Função Q e Probabilidade de Erro">
+<div class="eyebrow"><span class="sec">10</span> Função Q e Probabilidade de Erro <span class="rule"></span></div>
+<div class="body">
+<p>Substituindo <span class="eqwrap">\(u=n/\sigma\)</span> (<span class="eqwrap">\(du=dn/\sigma\)</span>), os limites tornam-se <span class="eqwrap">\(A/\sigma\)</span> a <span class="eqwrap">\(\infty\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[P(\text{erro}\,|\,s=-A) = \int_{A/\sigma}^\infty\frac{1}{\sqrt{2\pi}}e^{-u^2/2}\,du = Q\!\left(\frac{A}{\sigma}\right)\]</div>
+<p>Por simetria (mesmo argumento para <span class="eqwrap">\(s=+A\)</span>, erro se <span class="eqwrap">\(n<-A\)</span>), a probabilidade de erro é a mesma condicionada a cada símbolo, logo:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_e = Q\!\left(\frac{A}{\sigma}\right)}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Função Q e Probabilidade de Erro">
+<div class="eyebrow"><span class="sec">10</span> Função Q e Probabilidade de Erro <span class="rule"></span></div>
+<div class="body">
+<p>Esta é a fórmula-mãe de onde <strong>todas</strong> as expressões de BER (Bit Error Rate) do restante da apostila são derivadas (ASK, PSK, FSK, QAM — arquivos 5 e 6), trocando <span class="eqwrap">\(A/\sigma\)</span> pela distância euclidiana relevante entre símbolos da constelação, normalizada pelo desvio padrão do ruído.</p>
+</div>
+</section>
+<section class="slide" data-sec="Função Q e Probabilidade de Erro">
+<div class="eyebrow"><span class="sec">10</span> Função Q e Probabilidade de Erro <span class="rule"></span></div>
+<div class="body">
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Relação com <span class="eqwrap">\(E_b/N_0\)</span></h3>
+<p>Definindo a energia por bit <span class="eqwrap">\(E_b = A^2T_b\)</span> (para um pulso retangular de amplitude <span class="eqwrap">\(A\)</span> e duração <span class="eqwrap">\(T_b\)</span>) e usando <span class="eqwrap">\(\sigma^2=N_0B\)</span> com <span class="eqwrap">\(B\approx1/(2T_b)\)</span> (banda de um filtro casado, resultado justificado no arquivo 5):</p>
+<div class="eqwrap eqbig eqcenter">\[\frac{A}{\sigma} = \sqrt{\frac{2E_b}{N_0}} \quad\Rightarrow\quad \boxed{P_e = Q\!\left(\sqrt{\frac{2E_b}{N_0}}\right)}\]</div>
+<p>Esta é a forma em que a probabilidade de erro é universalmente reportada na literatura de comunicações digitais — em função da razão <strong>energia por bit sobre densidade espectral de ruído</strong>, <span class="eqwrap">\(E_b/N_0\)</span>, permitindo comparar esquemas de modulação diferentes em bases equivalentes (mesma energia gasta por bit de informação).</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Exercícios Resolvidos em Python</h2>
+<h3 class="title" style="font-size:clamp(20px,2.5vw,30px)">Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> verificar Fourier, Parseval, PSD de AWGN e a função <span class="eqwrap">\(Q\)</span>. <strong>Reprodutibilidade:</strong> use <code>np.random.default_rng(42)</code>, declare frequência de amostragem e convenção de FFT/PSD. <strong>Validação:</strong> compare energia nos dois domínios e BER simulada com a expressão analítica, informando a contagem de erros.</p>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<div class="cols left wide-left"><div class="stack">
+<pre class="codeblock" data-lang="python"><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+from scipy import signal
+from scipy.special import erfc
+
+# === Série de Fourier de uma onda quadrada ===
+def coef_fourier_onda_quadrada(n, A=1.0):
+    &quot;&quot;&quot;Coeficientes c_n de uma onda quadrada ímpar de amplitude A (só harmônicos ímpares).&quot;&quot;&quot;
+    if n == 0:
+        return 0.0
+    if n % 2 == 0:
+        return 0.0
+    return (2*A)/(1j*np.pi*n)
+
+N_harm = 15
+ns = np.arange(-N_harm, N_harm+1)
+cs = np.array([coef_fourier_onda_quadrada(n) for n in ns])
+t = np.linspace(-1, 1, 2000)
+f0 = 1.0
+x_reconstruida = np.real(sum(cs[i]*np.exp(1j*2*np.pi*ns[i]*f0*t) for i in range(len(ns))))
+print(f&quot;Reconstrução com {N_harm} harmônicos ímpares: max={x_reconstruida.max():.3f} (ideal=1.0, fenômeno de Gibbs)&quot;)
+
+# === Transformada de Fourier numérica: pulso retangular -&gt; sinc ===
+def pulso_retangular(t, T):
+    return np.where(np.abs(t) &lt;= T/2, 1.0, 0.0)
+
+Fs = 1000
+t_vec = np.arange(-5, 5, 1/Fs)
+T_pulso = 1.0
+x = pulso_retangular(t_vec, T_pulso)
+X = np.fft.fftshift(np.fft.fft(x)) / Fs
+f_vec = np.fft.fftshift(np.fft.fftfreq(len(t_vec), 1/Fs))
+
+X_teorico = T_pulso * np.sinc(f_vec*T_pulso)
+erro_max = np.max(np.abs(np.abs(X) - np.abs(X_teorico)))
+print(f&quot;\nErro máximo FFT numérica vs. T*sinc(fT) teórico: {erro_max:.4f}&quot;)
+
+# === Verificação de Parseval ===
+E_tempo = np.sum(np.abs(x)**2) / Fs
+E_freq = np.sum(np.abs(X)**2) * (f_vec[1]-f_vec[0])
+print(f&quot;\nEnergia no tempo:      {E_tempo:.4f}&quot;)
+print(f&quot;Energia na frequência: {E_freq:.4f}  (Parseval)&quot;)
+
+# === Ruído AWGN: geração e verificação de PSD ===
+def gerar_awgn(N, N0_sobre_2, Fs):
+    &quot;&quot;&quot;Gera N amostras de ruído branco com PSD bilateral N0/2 (variância = N0/2 * Fs).&quot;&quot;&quot;
+    sigma = np.sqrt(N0_sobre_2 * Fs)
+    return np.random.normal(0, sigma, N)
+
+N0_2 = 1e-3
+Fs_ruido = 10000
+n_amostras = 100000
+ruido = gerar_awgn(n_amostras, N0_2, Fs_ruido)
+print(f&quot;\nRuído AWGN gerado: variância medida={np.var(ruido):.6e}, esperada={N0_2*Fs_ruido:.6e}&quot;)
+
+f_psd, Pxx = signal.welch(ruido, Fs_ruido, nperseg=1024)
+print(f&quot;PSD média medida: {np.mean(Pxx):.6e} (esperado ~{N0_2:.6e}, unilateral = 2x bilateral)&quot;)
+
+# === Função Q e probabilidade de erro binária ===
+def Q(x):
+    return 0.5*erfc(x/np.sqrt(2))
+
+A, sigma_ruido = 1.0, 0.3
+Pe = Q(A/sigma_ruido)
+print(f&quot;\nP_e (detecção binária, A/sigma={A/sigma_ruido:.2f}): {Pe:.6e}&quot;)
+
+# Verificação por simulação Monte Carlo
+n_bits = 200000
+bits = np.random.randint(0, 2, n_bits)
+s = np.where(bits==1, A, -A)
+r = s + np.random.normal(0, sigma_ruido, n_bits)
+bits_detectados = (r &gt; 0).astype(int)
+Pe_simulado = np.mean(bits_detectados != bits)
+print(f&quot;P_e simulado (Monte Carlo, {n_bits} bits): {Pe_simulado:.6e}&quot;)
+
+# === Curva de P_e vs Eb/N0 ===
+EbN0_dB = np.arange(0, 13, 1)
+EbN0_lin = 10**(EbN0_dB/10)
+Pe_teorico = Q(np.sqrt(2*EbN0_lin))
+
+fig, ax = plt.subplots(figsize=(8,5))
+ax.semilogy(EbN0_dB, Pe_teorico, &#x27;b-o&#x27;, label=&#x27;$P_e=Q(\\sqrt{2E_b/N_0})$&#x27;)
+ax.set_xlabel(&#x27;$E_b/N_0$ (dB)&#x27;)
+ax.set_ylabel(&#x27;Probabilidade de erro de bit&#x27;)
+ax.set_title(&#x27;Curva de BER teórica — detecção binária antipodal em AWGN&#x27;)
+ax.grid(True, which=&#x27;both&#x27;, alpha=0.3)
+ax.legend()
+plt.tight_layout()</code></pre>
+</div><div class="stack">
+<pre class="codeblock" data-lang="text"><code class="language-text">Python error:
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 7, in &lt;module&gt;
+    exec(compile(&#x27;import numpy as np\nimport matplotlib.pyplot as plt\nfrom scipy import signal\nfrom scipy.special import erfc\n\n# === Série de Fourier de uma onda quadrada ===\ndef coef_fourier_onda_quadrada(n, A=1.0):\n    &quot;&quot;&quot;Coeficientes c_n de uma onda quadrada ímpar de amplitude A (só harmônicos ímpares).&quot;&quot;&quot;\n    if n == 0:\n        return 0.0\n    if n % 2 == 0:\n        return 0.0\n    return (2*A)/(1j*np.pi*n)\n\nN_harm = 15\nns = np.arange(-N_harm, N_harm+1)\ncs = np.array([coef_fourier_onda_quadrada(n) for n in ns])\nt = np.linspace(-1, 1, 2000)\nf0 = 1.0\nx_reconstruida = np.real(sum(cs[i]*np.exp(1j*2*np.pi*ns[i]*f0*t) for i in range(len(ns))))\nprint(f&quot;Reconstrução com {N_harm} harmônicos ímpares: max={x_reconstruida.max():.3f} (ideal=1.0, fenômeno de Gibbs)&quot;)\n\n# === Transformada de Fourier numérica: pulso retangular -&gt; sinc ===\ndef pulso_retangular(t, T):\n    return np.where(np.abs(t) &lt;= T/2, 1.0, 0.0)\n\nFs = 1000\nt_vec = np.arange(-5, 5, 1/Fs)\nT_pulso = 1.0\nx = pulso_retangular(t_vec, T_pulso)\nX = np.fft.fftshift(np.fft.fft(x)) / Fs\nf_vec = np.fft.fftshift(np.fft.fftfreq(len(t_vec), 1/Fs))\n\nX_teorico = T_pulso * np.sinc(f_vec*T_pulso)\nerro_max = np.max(np.abs(np.abs(X) - np.abs(X_teorico)))\nprint(f&quot;\\nErro máximo FFT numérica vs. T*sinc(fT) teórico: {erro_max:.4f}&quot;)\n\n# === Verificação de Parseval ===\nE_tempo = np.sum(np.abs(x)**2) / Fs\nE_freq = np.sum(np.abs(X)**2) * (f_vec[1]-f_vec[0])\nprint(f&quot;\\nEnergia no tempo:      {E_tempo:.4f}&quot;)\nprint(f&quot;Energia na frequência: {E_freq:.4f}  (Parseval)&quot;)\n\n# === Ruído AWGN: geração e verificação de PSD ===\ndef gerar_awgn(N, N0_sobre_2, Fs):\n    &quot;&quot;&quot;Gera N amostras de ruído branco com PSD bilateral N0/2 (variância = N0/2 * Fs).&quot;&quot;&quot;\n    sigma = np.sqrt(N0_sobre_2 * Fs)\n    return np.random.normal(0, sigma, N)\n\nN0_2 = 1e-3\nFs_ruido = 10000\nn_amostras = 100000\nruido = gerar_awgn(n_amostras, N0_2, Fs_ruido)\nprint(f&quot;\\nRuído AWGN gerado: variância medida={np.var(ruido):.6e}, esperada={N0_2*Fs_ruido:.6e}&quot;)\n\nf_psd, Pxx = signal.welch(ruido, Fs_ruido, nperseg=1024)\nprint(f&quot;PSD média medida: {np.mean(Pxx):.6e} (esperado ~{N0_2:.6e}, unilateral = 2x bilateral)&quot;)\n\n# === Função Q e probabilidade de erro binária ===\ndef Q(x):\n    return 0.5*erfc(x/np.sqrt(2))\n\nA, sigma_ruido = 1.0, 0.3\nPe = Q(A/sigma_ruido)\nprint(f&quot;\\nP_e (detecção binária, A/sigma={A/sigma_ruido:.2f}): {Pe:.6e}&quot;)\n\n# Verificação por simulação Monte Carlo\nn_bits = 200000\nbits = np.random.randint(0, 2, n_bits)\ns = np.where(bits==1, A, -A)\nr = s + np.random.normal(0, sigma_ruido, n_bits)\nbits_detectados = (r &gt; 0).astype(int)\nPe_simulado = np.mean(bits_detectados != bits)\nprint(f&quot;P_e simulado (Monte Carlo, {n_bits} bits): {Pe_simulado:.6e}&quot;)\n\n# === Curva de P_e vs Eb/N0 ===\nEbN0_dB = np.arange(0, 13, 1)\nEbN0_lin = 10**(EbN0_dB/10)\nPe_teorico = Q(np.sqrt(2*EbN0_lin))\n\nfig, ax = plt.subplots(figsize=(8,5))\nax.semilogy(EbN0_dB, Pe_teorico, \&#x27;b-o\&#x27;, label=\&#x27;$P_e=Q(\\\\sqrt{2E_b/N_0})$\&#x27;)\nax.set_xlabel(\&#x27;$E_b/N_0$ (dB)\&#x27;)\nax.set_ylabel(\&#x27;Probabilidade de erro de bit\&#x27;)\nax.set_title(\&#x27;Curva de BER teórica — detecção binária antipodal em AWGN\&#x27;)\nax.grid(True, which=\&#x27;both\&#x27;, alpha=0.3)\nax.legend()\nplt.tight_layout()&#x27;, &quot;&lt;markdown-python-1&gt;&quot;, &quot;exec&quot;), globals())
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;markdown-python-1&gt;&quot;, line 1, in &lt;module&gt;
+ModuleNotFoundError: No module named &#x27;numpy&#x27;</code></pre>
+</div></div>
+</div>
+</section>
+<section class="slide" data-sec="Exercícios Resolvidos em Python">
+<div class="eyebrow"><span class="sec">11</span> Exercícios Resolvidos em Python <span class="rule"></span></div>
+<div class="body">
+<p><strong>Saída esperada</strong>:</p>
+<ul class="beats"><li>Reconstrução de Fourier: overshoot de ~9% acima da amplitude ideal (fenômeno de Gibbs), típico de truncar uma série de Fourier de um sinal descontínuo.</li><li>FFT numérica vs. sinc teórico: erro pequeno (efeitos de janelamento/discretização).</li><li>Parseval: energia no tempo e na frequência coincidem.</li><li>Ruído AWGN: variância medida ≈ variância teórica.</li><li><span class="eqwrap">\(P_e\)</span> teórico (fórmula Q) e <span class="eqwrap">\(P_e\)</span> simulado (Monte Carlo) devem coincidir dentro da incerteza estatística de <span class="eqwrap">\(\sqrt{P_e(1-P_e)/n_{bits}}\)</span>.</li><li>Curva BER: decaimento exponencial característico, <sub>1 década a cada </sub>2 dB de <span class="eqwrap">\(E_b/N_0\)</span> adicional nessa região.</li></ul>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">12</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Calcule a Série de Fourier (coeficientes <span class="eqwrap">\(c_n\)</span>) de um trem de pulsos retangulares periódico, com período <span class="eqwrap">\(T_0=1\,\text{ms}\)</span>, largura de pulso <span class="eqwrap">\(\tau=0{,}2\,\text{ms}\)</span> e amplitude <span class="eqwrap">\(A=5\,\text{V}\)</span>.</p>
+<p><strong>E2.</strong> Usando a propriedade de deslocamento em frequência, determine o espectro <span class="eqwrap">\(X(f)\)</span> de <span class="eqwrap">\(x(t)=\text{sinc}(2Wt)\cos(2\pi f_ct)\)</span>, com <span class="eqwrap">\(f_c\gg W\)</span>. Esboce o resultado.</p>
+<p><strong>E3.</strong> Demonstre a propriedade de escalamento no tempo <span class="eqwrap">\(x(at)\leftrightarrow\frac{1}{|a|}X(f/a)\)</span> a partir da definição da Transformada de Fourier (faça a substituição de variável explicitamente, tratando os casos <span class="eqwrap">\(a>0\)</span> e <span class="eqwrap">\(a<0\)</span>).</p>
+<p><strong>E4.</strong> Um filtro passa-baixas ideal tem <span class="eqwrap">\(H(f)=\text{rect}(f/2B)\)</span>. Um sinal de entrada tem PSD <span class="eqwrap">\(S_X(f)=S_0\)</span> (constante, ruído branco) para todo <span class="eqwrap">\(f\)</span>. Calcule a potência do sinal na saída do filtro.</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">12</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E5.</strong> Mostre que a autocorrelação de um processo WSS satisfaz <span class="eqwrap">\(R_X(\tau)=R_X(-\tau)\)</span> partindo da definição <span class="eqwrap">\(R_X(\tau)=E[X(t)X(t+\tau)]\)</span> e da propriedade de estacionariedade.</p>
+<p><strong>E6.</strong> Um resistor de <span class="eqwrap">\(R=50\,\Omega\)</span> está a temperatura ambiente <span class="eqwrap">\(T=290\,\text{K}\)</span>. Calcule a potência de ruído térmico disponível em uma banda <span class="eqwrap">\(B=10\,\text{MHz}\)</span> (use <span class="eqwrap">\(P_N=k_BTB\)</span>, forma equivalente à da Seção “Potência de ruído após filtragem de banda <span class="eqwrap">\(B\)</span>” para ruído unilateral).</p>
+<p><strong>E7.</strong> Calcule <span class="eqwrap">\(Q(0)\)</span>, <span class="eqwrap">\(Q(1)\)</span>, <span class="eqwrap">\(Q(2)\)</span>, <span class="eqwrap">\(Q(3)\)</span> numericamente (ou usando tabela) e verifique a relação <span class="eqwrap">\(Q(-x)=1-Q(x)\)</span> calculando também <span class="eqwrap">\(Q(-1)\)</span>.</p>
+<p><strong>E8.</strong> Para um sistema de detecção binária antipodal com <span class="eqwrap">\(A=2\,\text{V}\)</span> e ruído com <span class="eqwrap">\(\sigma=0{,}5\,\text{V}\)</span>, calcule <span class="eqwrap">\(P_e\)</span>. Se a amplitude for dobrada para <span class="eqwrap">\(A=4\,\text{V}\)</span> (mantendo <span class="eqwrap">\(\sigma\)</span>), por qual fator aproximado <span class="eqwrap">\(P_e\)</span> diminui (expresse em ordens de grandeza, usando a natureza exponencial da cauda de <span class="eqwrap">\(Q(x)\)</span> para <span class="eqwrap">\(x\)</span> grande)?</p>
+</div>
+</section>
+<section class="slide" data-sec="Lista de Exercícios Propostos">
+<div class="eyebrow"><span class="sec">12</span> Lista de Exercícios Propostos <span class="rule"></span></div>
+<div class="body">
+<p><strong>E9.</strong> Escreva o sinal passa-faixa <span class="eqwrap">\(s(t)=3\cos(2\pi f_ct)-4\sin(2\pi f_ct)\)</span> na forma envelope-fase <span class="eqwrap">\(A(t)\cos(2\pi f_ct+\phi(t))\)</span>, determinando <span class="eqwrap">\(A\)</span> e <span class="eqwrap">\(\phi\)</span> (constantes, neste caso).</p>
+<p><strong>E10 (desafio).</strong> Um sinal aleatório binário NRZ (Não-Retorno-a-Zero) transmite <span class="eqwrap">\(+A\)</span> ou <span class="eqwrap">\(-A\)</span> com igual probabilidade a cada intervalo de bit <span class="eqwrap">\(T_b\)</span>, de forma independente entre intervalos. Mostre que sua autocorrelação é <span class="eqwrap">\(R_X(\tau) = A^2\left(1-\dfrac{|\tau|}{T_b}\right)\)</span> para <span class="eqwrap">\(|\tau|<T_b\)</span> e <span class="eqwrap">\(R_X(\tau)=0\)</span> para <span class="eqwrap">\(|\tau|\ge T_b\)</span> (dica: para <span class="eqwrap">\(|\tau|<T_b\)</span>, considere a probabilidade de que <span class="eqwrap">\(\tau\)</span> "caia" dentro do mesmo intervalo de bit vs. em um intervalo adjacente). Em seguida, aplique o Teorema de Wiener-Khinchin para obter <span class="eqwrap">\(S_X(f)=A^2T_b\,\text{sinc}^2(fT_b)\)</span>.</p>
+<p><strong>E11 (desafio).</strong> Um sinal passa-faixa real ocupa a faixa positiva de <span class="eqwrap">\(f_c-B/2\)</span> a <span class="eqwrap">\(f_c+B/2\)</span>, com <span class="eqwrap">\(f_c=1\,\text{GHz}\)</span> e <span class="eqwrap">\(B=1\,\text{MHz}\)</span>. Compare a taxa mínima para amostrar diretamente o sinal real RF e para amostrar o envelope complexo cujo suporte é <span class="eqwrap">\([-B/2,B/2]\)</span>. Quantas amostras complexas por segundo são poupadas?</p>
+<p><strong>E12.</strong> Verifique a identidade <span class="eqwrap">\(\cos(2\pi f_ct+\phi) = \cos\phi\cos(2\pi f_ct)-\sin\phi\sin(2\pi f_ct)\)</span> usando a fórmula de adição de ângulos, e identifique <span class="eqwrap">\(s_I\)</span> e <span class="eqwrap">\(s_Q\)</span> para <span class="eqwrap">\(A=5\)</span>, <span class="eqwrap">\(\phi=60°\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<h2 class="title">Gabarito</h2>
+<p><strong>E1.</strong> <span class="eqwrap">\(c_n = \dfrac{1}{T_0}\displaystyle\int_{-\tau/2}^{\tau/2}A\,e^{-j2\pi nf_0t}\,dt = \dfrac{A}{T_0}\left[\dfrac{e^{-j2\pi nf_0t}}{-j2\pi nf_0}\right]_{-\tau/2}^{\tau/2} = \dfrac{A}{n\pi}\sin(\pi nf_0\tau)\)</span> para <span class="eqwrap">\(n\neq0\)</span>, e <span class="eqwrap">\(c_0=A\tau/T_0\)</span> (valor médio, = duty cycle × amplitude). Reescrevendo com a função sinc: <span class="eqwrap">\(c_n = \dfrac{A\tau}{T_0}\,\text{sinc}(nf_0\tau)\)</span>. Numericamente, <span class="eqwrap">\(f_0=1/T_0=1000\,\text{Hz}\)</span>, <span class="eqwrap">\(f_0\tau=0{,}2\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{c_n = \frac{(5)(0{,}2\times10^{-3})}{10^{-3}}\,\text{sinc}(0{,}2n) = 1{,}0\cdot\text{sinc}(0{,}2n)\,\text{V},\qquad c_0=1{,}0\,\text{V}}\]</div>
+<p><strong>E2.</strong> <span class="eqwrap">\(\text{sinc}(2Wt)\leftrightarrow\frac{1}{2W}\text{rect}(f/2W)\)</span> (par da Seção “Pares de transformadas fundamentais”). Pela propriedade de modulação (Seção “Propriedades fundamentais (com dedução breve)”), multiplicar por <span class="eqwrap">\(\cos(2\pi f_ct)\)</span> desloca o espectro para <span class="eqwrap">\(\pm f_c\)</span> com fator <span class="eqwrap">\(1/2\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{X(f) = \frac{1}{4W}\left[\text{rect}\!\left(\frac{f-f_c}{2W}\right)+\text{rect}\!\left(\frac{f+f_c}{2W}\right)\right]}\]</div>
+<p>Esboço: dois retângulos de largura <span class="eqwrap">\(2W\)</span> e altura <span class="eqwrap">\(1/(4W)\)</span>, centrados em <span class="eqwrap">\(f=\pm f_c\)</span> — não se sobrepõem pois <span class="eqwrap">\(f_c\gg W\)</span>.</p>
+<p><strong>E3.</strong> Caso <span class="eqwrap">\(a>0\)</span>: substituindo <span class="eqwrap">\(u=at\)</span> (<span class="eqwrap">\(du=a\,dt\)</span>) em <span class="eqwrap">\(X_a(f)=\int x(at)e^{-j2\pi ft}dt\)</span>: <span class="eqwrap">\(X_a(f)=\int x(u)e^{-j2\pi f(u/a)}\frac{du}{a} = \frac{1}{a}\int x(u)e^{-j2\pi(f/a)u}du = \frac{1}{a}X(f/a)\)</span>. Caso <span class="eqwrap">\(a<0\)</span>: com <span class="eqwrap">\(a=-|a|\)</span>, a substituição <span class="eqwrap">\(u=at\)</span> inverte os limites de integração (<span class="eqwrap">\(t:-\infty\to\infty\)</span> corresponde a <span class="eqwrap">\(u:\infty\to-\infty\)</span>), introduzindo um sinal negativo extra que cancela com o <span class="eqwrap">\(1/a\)</span> negativo, resultando em <span class="eqwrap">\(\frac{1}{|a|}X(f/a)\)</span>. Combinando os dois casos: <span class="eqwrap">\(\boxed{x(at)\leftrightarrow\frac{1}{|a|}X(f/a)}\)</span>.</p>
+<p><strong>E4.</strong> Pela Seção “PSD na saída de um filtro LIT”, <span class="eqwrap">\(S_Y(f)=|H(f)|^2S_X(f) = S_0\)</span> para <span class="eqwrap">\(|f|<B\)</span> e <span class="eqwrap">\(0\)</span> fora. Potência de saída:</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[P_Y = \int_{-B}^{B}S_0\,df = \boxed{2S_0B}\]</div>
+<p><strong>E5.</strong> Por definição, <span class="eqwrap">\(R_X(-\tau)=E[X(t)X(t-\tau)]\)</span>. Fazendo a mudança de variável <span class="eqwrap">\(t'=t-\tau\)</span> (ou seja, <span class="eqwrap">\(t=t'+\tau\)</span>): <span class="eqwrap">\(R_X(-\tau)=E[X(t'+\tau)X(t')]=E[X(t')X(t'+\tau)]\)</span>. Como o processo é WSS, esta expectativa não depende de qual instante <span class="eqwrap">\(t'\)</span> se escolhe, e por definição é exatamente <span class="eqwrap">\(R_X(\tau)\)</span>. Logo <span class="eqwrap">\(\boxed{R_X(-\tau)=R_X(\tau)}\)</span> — simetria par.</p>
+<p><strong>E6.</strong> <span class="eqwrap">\(P_N = k_BTB = (1{,}380649\times10^{-23})(290)(10\times10^6)\)</span>:</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_N \approx 4{,}00\times10^{-14}\,\text{W} = 40{,}0\,\text{fW}}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p>(Nota: esta é a forma unilateral <span class="eqwrap">\(k_BTB\)</span>, equivalente a integrar a PSD bilateral <span class="eqwrap">\(N_0/2=k_BT/2\)</span> de <span class="eqwrap">\(-B\)</span> a <span class="eqwrap">\(B\)</span>, que dá exatamente <span class="eqwrap">\(k_BTB\)</span> — consistente com a Seção “Potência de ruído após filtragem de banda <span class="eqwrap">\(B\)</span>”.)</p>
+<p><strong>E7.</strong> Valores numéricos (via tabela ou <code>scipy.special.erfc</code>): <span class="eqwrap">\(Q(0)=0{,}5\)</span>; <span class="eqwrap">\(Q(1)\approx0{,}1587\)</span>; <span class="eqwrap">\(Q(2)\approx0{,}0228\)</span>; <span class="eqwrap">\(Q(3)\approx0{,}00135\)</span>. Verificação: <span class="eqwrap">\(Q(-1) = 1-Q(1) = 1-0{,}1587 = 0{,}8413\)</span> — consistente com a definição, pois <span class="eqwrap">\(Q(-1)=P(Z>-1)=P(Z<1)=1-P(Z>1)=1-Q(1)\)</span>.</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{Q(0)=0{,}5;\ Q(1)\approx0{,}1587;\ Q(2)\approx0{,}0228;\ Q(3)\approx0{,}00135;\ Q(-1)\approx0{,}8413}\]</div>
+<p><strong>E8.</strong> <span class="eqwrap">\(P_e = Q(A/\sigma) = Q(2/0{,}5) = Q(4) \approx 3{,}17\times10^{-5}\)</span>. Dobrando <span class="eqwrap">\(A\)</span>: <span class="eqwrap">\(P_e' = Q(4/0{,}5)=Q(8)\approx6{,}22\times10^{-16}\)</span>.</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{P_e\approx3{,}17\times10^{-5}\ \to\ P_e'\approx6{,}22\times10^{-16}\qquad\text{(redução de aproximadamente 11 ordens de grandeza)}}\]</div>
+<p>Isso ilustra a natureza extremamente não-linear (decaimento tipo <span class="eqwrap">\(e^{-x^2/2}\)</span>) da função <span class="eqwrap">\(Q\)</span>: dobrar a distância entre símbolos (ou, equivalentemente, quadruplicar a energia) reduz <span class="eqwrap">\(P_e\)</span> de forma dramática — motivo pelo qual pequenos aumentos de <span class="eqwrap">\(E_b/N_0\)</span> produzem grandes ganhos de confiabilidade (visível no "joelho" das curvas de BER, arquivos 5 e 6).</p>
+<p><strong>E9.</strong> Comparando com <span class="eqwrap">\(s(t)=s_I\cos(2\pi f_ct)-s_Q\sin(2\pi f_ct)\)</span>: <span class="eqwrap">\(s_I=3\)</span>, <span class="eqwrap">\(s_Q=4\)</span>. Logo:</p>
+<div class="eqwrap eqbig eqcenter">\[A = \sqrt{s_I^2+s_Q^2} = \sqrt{9+16}=5,\qquad \phi = \arctan\!\left(\frac{s_Q}{s_I}\right) = \arctan(4/3)\approx53{,}13°\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{s(t) = 5\cos(2\pi f_ct+53{,}13°)}\]</div>
+<p>Verificação: <span class="eqwrap">\(5\cos(53{,}13°)\approx3{,}0=s_I\)</span> ✓, <span class="eqwrap">\(5\sin(53{,}13°)\approx4{,}0=s_Q\)</span> ✓.</p>
+<p><strong>E10 (desafio).</strong> Para <span class="eqwrap">\(|\tau|<T_b\)</span>: com probabilidade <span class="eqwrap">\(1-|\tau|/T_b\)</span>, os instantes <span class="eqwrap">\(t\)</span> e <span class="eqwrap">\(t+\tau\)</span> caem no <strong>mesmo</strong> intervalo de bit (mesmo valor <span class="eqwrap">\(\pm A\)</span>, produto <span class="eqwrap">\(=A^2\)</span>); com probabilidade <span class="eqwrap">\(|\tau|/T_b\)</span>, caem em intervalos <strong>adjacentes distintos</strong> e independentes (valores independentes <span class="eqwrap">\(\pm A\)</span> cada, produto médio <span class="eqwrap">\(=E[\pm A]\cdot E[\pm A]=0\cdot0=0\)</span>, pois cada bit tem média zero). Logo:</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[R_X(\tau) = \left(1-\frac{|\tau|}{T_b}\right)A^2 + \frac{|\tau|}{T_b}\cdot0 = A^2\left(1-\frac{|\tau|}{T_b}\right),\qquad |\tau|<T_b\]</div>
+<p>Para <span class="eqwrap">\(|\tau|\ge T_b\)</span>, os dois instantes estão sempre em intervalos de bit diferentes (e, assumindo bits i.i.d., não-correlacionados), logo <span class="eqwrap">\(R_X(\tau)=0\)</span>. Isso confirma a forma triangular enunciada. Aplicando Wiener-Khinchin (Seção “Teorema de Wiener-Khinchin”), a transformada de uma função triangular de base <span class="eqwrap">\(2T_b\)</span> e altura <span class="eqwrap">\(A^2\)</span> é (resultado padrão, obtido por integração direta ou reconhecendo o triângulo como a autoconvolução de um retângulo de largura <span class="eqwrap">\(T_b\)</span>):</p>
+<div class="eqwrap eqbig eqcenter">\[\boxed{S_X(f) = A^2T_b\,\text{sinc}^2(fT_b)}\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<p>Este é o espectro padrão de um sinal digital NRZ aleatório — um lóbulo principal de largura <span class="eqwrap">\(2/T_b\)</span> com lóbulos laterais decaindo como <span class="eqwrap">\(1/f^2\)</span>, resultado usado extensivamente no arquivo 4 (banda base).</p>
+<p><strong>E11 (desafio).</strong> Amostragem direta do sinal real: a maior frequência é <span class="eqwrap">\(f_{\max}=f_c+B/2=1{,}0005\)</span> GHz, logo a taxa mínima uniforme é</p>
+<div class="eqwrap eqbig eqcenter">\[F_{s,\rm RF}\ge2f_{\max}=2{,}001\ \text{GHz}.\]</div>
+<p>O envelope complexo ocupa <span class="eqwrap">\([-B/2,B/2]\)</span>; como suas amostras são complexas, a taxa mínima é</p>
+<div class="eqwrap eqbig eqcenter">\[F_{s,\rm bb}\ge B=1\ \text{MHz}.\]</div>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[\boxed{\text{Razão}=\frac{2(f_c+B/2)}{B}=2001.}\]</div>
+<p>A simulação via envelope complexo exige cerca de <strong>2000 vezes menos amostras</strong>. Técnicas especializadas de subamostragem passa-faixa podem reduzir a taxa de uma representação RF sob condições estritas de filtragem e sincronismo, mas o envelope complexo é a representação robusta e usual em simulações de comunicação.</p>
+<p><strong>E12.</strong> Pela fórmula de adição, <span class="eqwrap">\(\cos(2\pi f_ct+\phi)=\cos(2\pi f_ct)\cos\phi-\sin(2\pi f_ct)\sin\phi\)</span>, que reescrita na forma-padrão <span class="eqwrap">\(s_I\cos(2\pi f_ct)-s_Q\sin(2\pi f_ct)\)</span> identifica <span class="eqwrap">\(s_I=A\cos\phi\)</span> e <span class="eqwrap">\(s_Q=A\sin\phi\)</span> (com <span class="eqwrap">\(A\)</span> a amplitude, aqui implicitamente <span class="eqwrap">\(1\)</span> na identidade trigonométrica pura). Para <span class="eqwrap">\(A=5\)</span>, <span class="eqwrap">\(\phi=60°\)</span>:</p>
+</div>
+</section>
+<section class="slide" data-sec="Gabarito">
+<div class="eyebrow"><span class="sec">13</span> Gabarito <span class="rule"></span></div>
+<div class="body">
+<div class="eqwrap eqbig eqcenter">\[s_I = 5\cos(60°) = 5(0{,}5) = 2{,}5,\qquad s_Q = 5\sin(60°) = 5(0{,}8660) \approx4{,}33\]</div>
+<div class="eqwrap eqbig eqcenter">\[\boxed{s_I=2{,}5,\quad s_Q\approx4{,}33}\]</div>
+<p>Verificação: <span class="eqwrap">\(\sqrt{s_I^2+s_Q^2}=\sqrt{6{,}25+18{,}75}=\sqrt{25}=5=A\)</span> ✓.</p>
+</div>
+</section>
+    <div class="nav-arrows">
+      <button class="nav-btn prev" id="nav-prev-btn" aria-label="Previous slide">‹</button>
+      <button class="nav-btn next" id="nav-next-btn" aria-label="Next slide">›</button>
+    </div>
+    <div class="foot"><span>Slide Framework</span><span class="dots" data-dots></span><span data-num></span></div>
+  </main>
+</div>
+
+<div class="brand">Sinais, Transformada de Fourier, Processos Aleatórios e Ruído</div>
+<div class="counter"><b id="cur">01</b> / <span id="tot">00</span></div>
+<button class="theme-toggle" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" class="sun-icon"/><line x1="12" y1="1" x2="12" y2="3" class="sun-icon"/><line x1="12" y1="21" x2="12" y2="23" class="sun-icon"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" class="sun-icon"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" class="sun-icon"/><line x1="1" y1="12" x2="3" y2="12" class="sun-icon"/><line x1="21" y1="12" x2="23" y2="12" class="sun-icon"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" class="sun-icon"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" class="sun-icon"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-icon"/></svg>
+</button>
+<div class="hint" id="hint"><kbd>←</kbd><kbd>→</kbd> to move · <kbd>F</kbd> full screen · <kbd>Ctrl+K</kbd> search · <kbd>S</kbd> notes</div>
+
+<div class="search-overlay" id="search-overlay"></div>
+
+<div class="notes-overlay" id="notes-overlay">
+	<div class="notes-card">
+		<div class="notes-header">
+			<span class="title">Speaker Notes</span>
+			<button class="close-btn">Close (S)</button>
+		</div>
+		<div class="notes-body"></div>
+		<div class="notes-current"></div>
+	</div>
+</div>
+
+<script defer src="../../slide_framework/deck.js"></script>
+</body>
+</html>
