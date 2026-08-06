@@ -104,25 +104,26 @@ A engenharia de comunicações é a arte de **extrair informação máxima de si
 
 Todo sistema de comunicação pode ser representado por esta cadeia:
 
-```
-┌──────────┐    ┌────────────┐    ┌────────────┐    ┌───────────┐
-│  Fonte   │───►│ Codif. Fonte│───►│ Codif. Canal│───►│ Modulador │
-│ (voz,    │    │ (compressão)│    │ (proteção) │    │ (adapta   │
-│  vídeo,  │    └────────────┘    └────────────┘    │ ao canal) │
-│  dados)  │                                        └─────┬─────┘
-└──────────┘                                              │
-                                                          ▼
-                                                          ╔═══════════╗
-                                                          ║  CANAL    ║
-                                                          ║ + RUÍDO   ║
-                                                          ║ + INTER.  ║
-                                                          ╚═══════════╝
-                                                          │
-┌──────────┐    ┌────────────┐    ┌────────────┐    ┌─────┴─────┐
-│  Destino │◄───│ Decodif.   │◄───│ Decodif.   │◄───│ Demodulador│
-│ (reconstr│    │ Canal      │    │ Fonte      │    │ (recupera │
-│  uir msg)│    │ (correção) │    │ (descompress)│   │ o sinal)  │
-└──────────┘    └────────────┘    └────────────┘    └───────────┘
+```mermaid
+flowchart LR
+    F["📡 **Fonte**\n(voz, vídeo, dados)"] --> CF["📦 **Codif. Fonte**\n(compressão, Huffman)"]
+    CF --> CC["🛡️ **Codif. Canal**\n(proteção, correção)"]
+    CC --> M["📻 **Modulador**\n(adapta ao canal)"]
+    M -->|sinal transmitido| Ch["🌊 **CANAL**\n+ ruído AWGN\n+ interferência"]
+    Ch --> Dm["📻 **Demodulador**\n(recupera sinal)"]
+    Dm --> DC["🔍 **Decodif. Canal**\n(correção de erros)"]
+    DC --> DF["📥 **Decodif. Fonte**\n(descompressão)"]
+    DF --> D["🎧 **Destino**\n(reconstruir mensagem)"]
+
+    style F fill:#ffeaa7,stroke:#fdcb6e,color:#2d3436
+    style Ch fill:#fd79a8,stroke:#e84393,color:#ffffff
+    style D fill:#dfe6e9,stroke:#b2bec3,color:#2d3436
+    style CF fill:#74b9ff,stroke:#0984e3,color:#ffffff
+    style CC fill:#a29bfe,stroke:#6c5ce7,color:#ffffff
+    style M fill:#55efc4,stroke:#00b894,color:#2d3436
+    style Dm fill:#55efc4,stroke:#00b894,color:#2d3436
+    style DC fill:#a29bfe,stroke:#6c5ce7,color:#ffffff
+    style DF fill:#74b9ff,stroke:#0984e3,color:#ffffff
 ```
 
 ### Explicando cada bloco
@@ -533,22 +534,35 @@ Toda modulação enfrenta este triângulo:
 
 ### Resumo Visual — Mapa das Modulações
 
+```mermaid
+mindmap
+  root((<b>Modulações</b>))
+    Analógica
+      AM
+        Convencional
+        DSB-SC
+        SSB
+        VSB
+      FM
+        NBFM
+        WBFM
+    Digital
+      PSK
+        BPSK<br/>2 fases
+        QPSK<br/>4 fases
+        M-PSK
+      QAM
+        16-QAM
+        64-QAM
+        256-QAM
+      FSK
+        BFSK
+        M-FSK
+    Outras
+      ASK / OOK
+      OFDM
+        QAM + FDM
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    MAPA DAS MODULAÇÕES                          │
-│                                                                 │
-│  ANALÓGICA                          DIGITAL                     │
-│  ┌──────────┐  ┌───────────┐       ┌──────────┐  ┌──────────┐  │
-│  │  AM      │  │  FM       │       │  PSK     │  │  QAM     │  │
-│  │          │  │           │       │          │  │          │  │
-│  │• Conv.   │  │• NBFM     │       │• BPSK    │  │• 16-QAM  │  │
-│  │• DSB-SC  │  │• WBFM     │       │• QPSK    │  │• 64-QAM  │  │
-│  │• SSB     │  │           │       │• M-PSK   │  │• 256-QAM │  │
-│  │• VSB     │  │           │       │          │  │          │  │
-│  └──────────┘  └───────────┘       └──────────┘  └──────────┘  │
-│                                                                 │
-│  OUTRAS:  ASK/OOK │ BFSK │ OFDM (combina QAM + FDM)            │
-└─────────────────────────────────────────────────────────────────┘
 ```
 
 
