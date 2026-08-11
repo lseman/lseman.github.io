@@ -77,55 +77,144 @@ Todo o eletromagnetismo desta apostila é escrito em termos de **três operadore
 
 ## Álgebra Vetorial Básica
 
+Por que o eletromagnetismo precisa de vetores, e não apenas de números? Porque toda grandeza física relevante aqui — força sobre uma carga, campo elétrico, densidade de corrente — tem uma **direção** que importa fisicamente: uma carga sente uma força elétrica em uma direção específica, não apenas com uma "intensidade". Esta seção constrói, a partir de propriedades físicas simples (projeção e área), as duas operações que usaremos o tempo todo: o produto escalar e o produto vetorial.
+
 ### Vetores e Escalares
 
-Um **escalar** é uma grandeza que possui apenas magnitude (ex.: massa, temperatura, potencial elétrico). Um **vetor** possui magnitude, direção e sentido (ex.: deslocamento, velocidade, campo elétrico).
+Um **escalar** é uma grandeza que possui apenas magnitude (ex.: massa, temperatura, potencial elétrico). Um **vetor** possui magnitude, direção e sentido (ex.: deslocamento, velocidade, campo elétrico). Em coordenadas cartesianas, $\vec A = A_x\hat x+A_y\hat y+A_z\hat z$, onde $A_x,A_y,A_z$ são as **componentes** (escalares) e $\hat x,\hat y,\hat z$ carregam a informação de direção.
 
 ### Vetor Unitário
 
-Um **vetor unitário** (ou versor) é um vetor de magnitude igual a 1. Os versores cartesianos padrão são $\hat{x}, \hat{y}, \hat{z}$ (ou $\hat{u}_x, \hat{u}_y, \hat{u}_z$), que apontam nas direções positivas dos eixos coordenados.
+Um **vetor unitário** (ou versor) é um vetor de magnitude igual a 1 — ele carrega **pura informação de direção**, sem escala. Os versores cartesianos padrão são $\hat{x}, \hat{y}, \hat{z}$ (ou $\hat{u}_x, \hat{u}_y, \hat{u}_z$), que apontam nas direções positivas dos eixos coordenados.
 
-Para qualquer vetor $\vec A \neq \vec 0$, o vetor unitário na direção de $\vec A$ é:
+Para qualquer vetor $\vec A \neq \vec 0$, o vetor unitário na direção de $\vec A$ é obtido "descartando" o comprimento e mantendo só a direção:
 
 $$
-\hat{a}_A = \frac{\vec A}{|\vec A|}
+\hat{a}_A = \frac{\vec A}{|\vec A|},\qquad |\vec A| = \sqrt{A_x^2+A_y^2+A_z^2}
 $$
+
+Essa operação — normalizar um vetor — aparecerá repetidamente: campos como $\vec E=\frac{kq}{r^2}\hat r$ separam explicitamente "quanto" ($kq/r^2$, escalar) de "em que direção" ($\hat r$, versor).
 
 ### Adição e Subtração de Vetores
 
-A soma de dois vetores $\vec A$ e $\vec B$ é dada por:
+A soma de dois vetores $\vec A$ e $\vec B$ é dada, componente a componente, por:
 
 $$
-\vec C = \vec A + \vec B
+\vec C = \vec A + \vec B = (A_x+B_x)\hat x+(A_y+B_y)\hat y+(A_z+B_z)\hat z
 $$
 
-Geometricamente, isso corresponde à regra do paralelogramo ou da poligonal.
+Geometricamente, isso corresponde à regra do paralelogramo ou da poligonal (colocar a cauda de $\vec B$ na ponta de $\vec A$). Fisicamente, esta é a operação por trás do **Princípio da Superposição**: o campo elétrico total de várias cargas é a soma vetorial dos campos individuais — cada carga "não sabe" da presença das outras, e os efeitos se somam vetorialmente.
 
-### Produto Vetorial
+### Produto Escalar (Dot Product) — dedução a partir da projeção
 
-**Produto escalar (dot product):**
+**A pergunta física:** quanto de um vetor $\vec B$ "aponta na mesma direção" de outro vetor $\vec A$? Essa pergunta aparece toda vez que calculamos trabalho ($\vec F\cdot d\vec\ell$) ou fluxo ($\vec F\cdot d\vec A$) — só a componente de um vetor **paralela** ao outro contribui.
 
-$$
-\vec A \cdot \vec B = |\vec A||\vec B|\cos\theta = A_xB_x + A_yB_y + A_zB_z
-$$
-
-Resultado: um **escalar**.
-
-**Produto vetorial (cross product):**
+**Passo 1 — projeção geométrica.** A projeção escalar de $\vec B$ sobre a direção de $\vec A$ é, por definição de cosseno em um triângulo retângulo, $|\vec B|\cos\theta$, onde $\theta$ é o ângulo entre os vetores. Definimos o **produto escalar** como essa projeção multiplicada pela magnitude de $\vec A$:
 
 $$
-\vec A \times \vec B = |\vec A||\vec B|\sin\theta\,\hat{n}
+\vec A\cdot\vec B \equiv |\vec A||\vec B|\cos\theta
 $$
 
-onde $\hat{n}$ é o versor perpendicular ao plano formado por $\vec A$ e $\vec B$, dado pela regra da mão direita.
+**Passo 2 — forma em componentes.** Usando a lei dos cossenos no triângulo formado por $\vec A$, $\vec B$ e $\vec A-\vec B$: $|\vec A-\vec B|^2 = |\vec A|^2+|\vec B|^2-2|\vec A||\vec B|\cos\theta$. Expandindo o lado esquerdo em componentes cartesianas, $|\vec A-\vec B|^2=(A_x-B_x)^2+(A_y-B_y)^2+(A_z-B_z)^2 = |\vec A|^2+|\vec B|^2-2(A_xB_x+A_yB_y+A_zB_z)$. Comparando os dois termos que multiplicam $-2$:
 
-Resultado: um **vetor**.
+$$
+\boxed{\vec A \cdot \vec B = |\vec A||\vec B|\cos\theta = A_xB_x + A_yB_y + A_zB_z}
+$$
+
+Resultado: um **escalar**. Casos-limite que ajudam a fixar a intuição: $\vec A\cdot\vec B=0$ quando $\theta=90°$ (vetores perpendiculares — nenhuma "sobreposição" de direção); $\vec A\cdot\vec B=|\vec A||\vec B|$ quando $\theta=0°$ (vetores paralelos — sobreposição total); $\vec A\cdot\vec A=|\vec A|^2$ (a "projeção de um vetor sobre si mesmo" é seu próprio comprimento ao quadrado).
+
+::: exemplo
+**Exemplo 0a.** O trabalho realizado por uma força constante $\vec F=(3,4,0)$ N ao longo de um deslocamento $\vec d=(2,0,0)$ m é $W=\vec F\cdot\vec d = 3(2)+4(0)+0(0)=6$ J — apenas a componente de $\vec F$ **ao longo** de $\vec d$ (aqui, $F_x=3$ N) realiza trabalho; a componente perpendicular ($F_y=4$ N) não contribui, pois não desloca a partícula em sua própria direção.
+:::
+
+### Produto Vetorial (Cross Product) — dedução a partir da área e do torque
+
+**A pergunta física:** dado um plano definido por $\vec A$ e $\vec B$, existe uma direção **naturalmente perpendicular** a ambos, com magnitude ligada à área "varrida" pelos dois vetores? Essa construção aparece no torque ($\vec\tau=\vec r\times\vec F$), na força magnética ($\vec F=q\vec v\times\vec B$) e na definição do rotacional (via a regra da mão direita).
+
+**Passo 1 — a magnitude é uma área.** A área do paralelogramo formado por $\vec A$ e $\vec B$ é base $\times$ altura $=|\vec A|\,(|\vec B|\sin\theta)$, onde $|\vec B|\sin\theta$ é a componente de $\vec B$ **perpendicular** a $\vec A$ (a "altura" do paralelogramo). Definimos essa área como a magnitude do produto vetorial:
+
+$$
+|\vec A\times\vec B| \equiv |\vec A||\vec B|\sin\theta
+$$
+
+**Passo 2 — a direção é normal ao plano.** Como um plano tem duas normais possíveis ($+\hat n$ e $-\hat n$), a convenção física (consistente com torque e força magnética observados no laboratório) escolhe o sentido pela **regra da mão direita**: aponte os dedos na direção de $\vec A$, curve-os até $\vec B$; o polegar aponta na direção de $\vec A\times\vec B$.
+
+$$
+\boxed{\vec A \times \vec B = |\vec A||\vec B|\sin\theta\,\hat{n}}
+$$
+
+Resultado: um **vetor**, perpendicular tanto a $\vec A$ quanto a $\vec B$. Casos-limite: $|\vec A\times\vec B|=0$ quando $\theta=0°$ ou $180°$ (vetores paralelos/antiparalelos não definem um plano, logo não há normal única); $|\vec A\times\vec B|=|\vec A||\vec B|$ quando $\theta=90°$ (área máxima).
+
+**Passo 3 — forma em componentes** (via o determinante mnemônico, útil para cálculo direto):
+
+$$
+\vec A\times\vec B = \begin{vmatrix}\hat x&\hat y&\hat z\\A_x&A_y&A_z\\B_x&B_y&B_z\end{vmatrix} = (A_yB_z-A_zB_y)\hat x+(A_zB_x-A_xB_z)\hat y+(A_xB_y-A_yB_x)\hat z
+$$
+
+Consequência imediata: $\vec A\times\vec B=-\vec B\times\vec A$ (trocar as duas primeiras linhas do determinante inverte o sinal) — o produto vetorial **não comuta**, ao contrário do produto escalar.
+
+### Visualização Python — projeção, área e regra da mão direita
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+A = np.array([3.0, 1.0])
+B = np.array([1.0, 2.0])
+theta = np.arccos(A@B / (np.linalg.norm(A)*np.linalg.norm(B)))
+
+# Produto escalar: projeção de B sobre A
+proj_comprimento = (A@B) / np.linalg.norm(A)
+proj_vetor = proj_comprimento * (A/np.linalg.norm(A))
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4.2))
+ax = axes[0]
+ax.quiver(0, 0, *A, angles="xy", scale_units="xy", scale=1, color="#dc2626", label="A")
+ax.quiver(0, 0, *B, angles="xy", scale_units="xy", scale=1, color="#2563eb", label="B")
+ax.quiver(0, 0, *proj_vetor, angles="xy", scale_units="xy", scale=1,
+          color="#047857", label="proj de B sobre A")
+ax.plot([B[0], proj_vetor[0]], [B[1], proj_vetor[1]], "k--", lw=0.8)
+ax.set_xlim(-0.5, 4); ax.set_ylim(-0.5, 3); ax.set_aspect("equal"); ax.legend()
+ax.set_title(f"A·B = {A@B:.2f} = |A||B|cos(theta), theta={np.degrees(theta):.1f}°")
+
+# Produto vetorial em 3D: A x B é perpendicular ao plano de A e B
+A3, B3 = np.array([3, 1, 0]), np.array([1, 2, 0])
+cross = np.cross(A3, B3)
+ax2 = fig.add_subplot(1, 2, 2, projection="3d")
+for v, c, lbl in [(A3, "#dc2626", "A"), (B3, "#2563eb", "B"), (cross, "#7c3aed", "AxB")]:
+    ax2.quiver(0, 0, 0, *v, color=c, label=lbl)
+ax2.set_title(f"|AxB| = {np.linalg.norm(cross):.2f} = área do paralelogramo")
+ax2.legend()
+plt.tight_layout()
+print("A.B =", A@B, " |AxB| =", np.linalg.norm(cross), " AxB =", cross)
+```
+
+::: verificacao
+**Verificação Rápida (Concept Check):**
+1. Se $\vec A\cdot\vec B=0$ com $\vec A,\vec B\neq\vec0$, o que isso significa geometricamente? **São perpendiculares.**
+2. Se $\vec A\times\vec B=\vec 0$ com $\vec A,\vec B\neq\vec0$, o que isso significa? **São paralelos (ou antiparalelos) — não definem um plano com área.**
+3. $\vec A\times\vec B$ e $\vec B\times\vec A$ têm a mesma magnitude. Apontam na mesma direção? **Não — sentidos opostos** ($\vec A\times\vec B=-\vec B\times\vec A$).
+:::
 
 ---
 
 ## O Operador Nabla e o Gradiente
 
-### Definição do gradiente
+### O sentimento físico: "para onde eu deveria andar?"
+
+Imagine-se em pé sobre uma colina cuja altitude é dada por um campo escalar $f(x,y)$ (poderia ser temperatura, potencial elétrico, concentração — qualquer número que muda de ponto a ponto). Uma pergunta natural: **em que direção devo dar um passo para subir o mais rápido possível?** E, uma vez escolhida essa direção, **quão íngreme é a subida?**
+
+O gradiente é a resposta matemática precisa a essas duas perguntas simultaneamente: ele é um vetor que aponta na direção de subida mais rápida, e seu módulo é a inclinação nessa direção. Antes de definir a fórmula, vamos construir essa ideia a partir de algo mais simples — a **derivada direcional**.
+
+### Passo 1: taxa de variação em uma direção arbitrária
+
+Suponha que você dá um pequeno passo $d\vec\ell$ a partir do ponto $(x,y,z)$. Quanto $f$ varia? Pela regra da cadeia (derivada total de uma função de várias variáveis):
+
+$$
+df = \frac{\partial f}{\partial x}dx+\frac{\partial f}{\partial y}dy+\frac{\partial f}{\partial z}dz
+$$
+
+Repare que essa expressão tem a **forma de um produto escalar** (Seção "Produto Escalar (Dot Product) — dedução a partir da projeção"): é a soma de produtos componente a componente entre o vetor $\left(\frac{\partial f}{\partial x},\frac{\partial f}{\partial y},\frac{\partial f}{\partial z}\right)$ e o deslocamento $d\vec\ell=(dx,dy,dz)$. Isso motiva **definir** esse vetor de derivadas parciais como um objeto único:
 
 ::: definição
 **Definição 1.** Para um campo escalar $f(x,y,z)$, o **gradiente** é o campo vetorial:
@@ -135,43 +224,72 @@ $$
 $$
 :::
 
-### Dedução da interpretação geométrica
-
-A variação de $f$ ao longo de um deslocamento infinitesimal arbitrário $d\vec\ell = dx\,\hat x+dy\,\hat y+dz\,\hat z$ é, pela regra da cadeia:
+de modo que a variação de $f$ ao longo de **qualquer** deslocamento infinitesimal $d\vec\ell = dx\,\hat x+dy\,\hat y+dz\,\hat z$ se escreve, de forma compacta e independente de coordenadas, como:
 
 $$
-df = \frac{\partial f}{\partial x}dx+\frac{\partial f}{\partial y}dy+\frac{\partial f}{\partial z}dz = \nabla f\cdot d\vec\ell
+df = \nabla f\cdot d\vec\ell
 $$
 
-Escrevendo $d\vec\ell = d\ell\,\hat u$ com $\hat u$ um versor de direção arbitrária:
+### Passo 2: em que direção a subida é mais rápida?
+
+Agora respondemos à pergunta da colina. Escreva $d\vec\ell = d\ell\,\hat u$, onde $\hat u$ é um versor (a **direção do passo**, escolhida por você) e $d\ell>0$ o tamanho do passo. A **taxa de variação de $f$ por unidade de comprimento percorrido**, nessa direção, é a derivada direcional:
 
 $$
-\frac{df}{d\ell} = \nabla f\cdot\hat u = |\nabla f|\cos\theta
+\frac{df}{d\ell} = \nabla f\cdot\hat u = |\nabla f|\,|\hat u|\cos\theta = |\nabla f|\cos\theta
 $$
 
-onde $\theta$ é o ângulo entre $\nabla f$ e $\hat u$. Esta taxa de variação (a **derivada direcional**) é **máxima** quando $\theta=0$, isto é, quando $\hat u$ aponta na direção de $\nabla f$. Conclusão:
+onde $\theta$ é o ângulo entre $\nabla f$ (fixo no ponto considerado) e $\hat u$ (a direção que você escolhe). Como $|\nabla f|$ não depende de $\hat u$, a única coisa que você controla é $\cos\theta$ — e $\cos\theta$ é **máximo** (igual a 1) quando $\theta=0$, isto é, quando você escolhe caminhar exatamente na direção de $\nabla f$. Conclusão:
 
 $$
 \boxed{\nabla f \text{ aponta na direção de máximo crescimento de } f\text{, com módulo igual a essa taxa máxima.}}
 $$
 
+Note também o caso $\theta=180°$: caminhar na direção $-\nabla f$ dá a descida mais rápida (o "caminho de menor esforço para descer a colina"); e $\theta=90°$: caminhar perpendicular a $\nabla f$ **não muda $f$** — você está andando ao longo de uma curva de nível.
+
 ::: corolário
 **Corolário 1.** $\nabla f$ é sempre perpendicular às superfícies de nível $f=\text{const}$ (pois ao longo dessas superfícies $df=0$, logo $\nabla f\cdot d\vec\ell=0$ para todo $d\vec\ell$ tangente à superfície — só é possível se $\nabla f$ for normal a ela). Esta é exatamente a razão pela qual as linhas de campo $\vec E=-\nabla V$ são perpendiculares às superfícies equipotenciais (arquivo 2, Seção “Vetor Unitário”.2).
 :::
 
-### Visualização Python — gradiente e curvas de nível
+### Visualização Python — a colina, a bússola do gradiente e a subida mais rápida
+
+O código a seguir simula literalmente a "colina": para um conjunto de direções $\hat u(\theta)$, calcula a derivada direcional $\nabla f\cdot\hat u$ e mostra que ela é máxima exatamente quando $\hat u$ aponta junto com $\nabla f$ — verificando numericamente o Passo 2.
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
+
 x = y = np.linspace(-2, 2, 25)
 X, Y = np.meshgrid(x, y)
 f, gx, gy = X**2 + 2*Y**2, 2*X, 4*Y
-plt.contour(X, Y, f, levels=10)
-plt.quiver(X[::2, ::2], Y[::2, ::2],
-           gx[::2, ::2], gy[::2, ::2])
-plt.axis("equal")
-print("grad f(1,1) =", (2, 4))
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.3))
+
+# Painel 1: colina (curvas de nível) e bússola do gradiente
+axes[0].contour(X, Y, f, levels=10, cmap="Blues")
+axes[0].quiver(X[::2, ::2], Y[::2, ::2], gx[::2, ::2], gy[::2, ::2],
+               color="#dc2626", alpha=.8)
+axes[0].set_title("Curvas de nível de f e direção de subida (grad f)")
+axes[0].set_aspect("equal")
+
+# Painel 2: derivada direcional em (1,1) para todas as direções possíveis
+p = np.array([1.0, 1.0])
+grad_p = np.array([2*p[0], 4*p[1]])           # grad f em (1,1) = (2,4)
+thetas = np.linspace(0, 2*np.pi, 200)
+u = np.array([np.cos(thetas), np.sin(thetas)])
+df_dl = grad_p @ u                              # derivada direcional df/dl = grad(f).u_hat
+axes[1].plot(np.degrees(thetas), df_dl, color="#7c3aed")
+theta_grad = np.degrees(np.arctan2(grad_p[1], grad_p[0]))
+axes[1].axvline(theta_grad, color="#dc2626", ls="--", label="direção de grad f")
+axes[1].axhline(np.linalg.norm(grad_p), color="gray", ls=":", label="|grad f|")
+axes[1].set_xlabel("ângulo da direção escolhida (graus)")
+axes[1].set_ylabel("df/dl (derivada direcional)")
+axes[1].set_title("Máximo exatamente na direção do gradiente")
+axes[1].legend()
+plt.tight_layout()
+
+print("grad f(1,1) =", tuple(grad_p), " |grad f| =", np.linalg.norm(grad_p))
+print("theta que maximiza df/dl:", np.degrees(thetas[np.argmax(df_dl)]),
+      " (esperado:", theta_grad, ")")
 ```
 
 ::: verificacao
@@ -191,7 +309,9 @@ $$
 No ponto $(1,1,1)$: $\nabla f(1,1,1) = \hat x + \hat y + \hat z$.
 :::
 
-### Operador nabla
+### Passo 3: por que empacotar tudo em um único símbolo $\nabla$?
+
+Reparar na Definição 1: o gradiente é construído aplicando o **mesmo padrão** — "derivada parcial na direção $i$, multiplicada pelo versor $\hat u_i$" — três vezes e somando. Esse padrão se repete tantas vezes no eletromagnetismo (a seguir, no divergente e no rotacional) que vale a pena dar-lhe um nome e tratá-lo como um objeto algébrico à parte:
 
 ::: definição
 **Definição 2.** É conveniente definir o **operador vetorial diferencial nabla**:
@@ -201,7 +321,13 @@ $$
 $$
 :::
 
-que se comporta simultaneamente como vetor e como operador diferencial. O gradiente é $\nabla$ atuando sobre um escalar por "multiplicação"; o divergente e o rotacional (a seguir) são $\nabla$ atuando sobre um vetor por produto escalar e produto vetorial, respectivamente.
+$\nabla$ não é um vetor no sentido usual (suas "componentes" são instruções de derivação, não números) — é um **operador**: sozinho, não significa nada; só produz um resultado quando aplicado a um campo. Mas ele se comporta *como se fosse* um vetor sob as operações de álgebra vetorial já deduzidas nesta seção, o que é extremamente útil:
+
+- **Gradiente** $\nabla f$: $\nabla$ "multiplicando" um escalar $f$ (analogia com $\vec A$ escalado por um número) $\to$ produz um **vetor**.
+- **Divergente** $\nabla\cdot\vec F$: $\nabla$ em **produto escalar** com um campo vetorial $\to$ produz um **escalar** (mede projeção/expansão — Seção "Divergente").
+- **Rotacional** $\nabla\times\vec F$: $\nabla$ em **produto vetorial** com um campo vetorial $\to$ produz um **vetor** perpendicular ao "plano de circulação" (Seção "Rotacional").
+
+Ou seja: as três operações fundamentais do cálculo vetorial em eletromagnetismo não são três ideias independentes — são as **três formas de combinar $\nabla$ com um campo**, herdadas diretamente das três operações vetoriais já vistas (escalar × vetor, produto escalar, produto vetorial).
 
 ::: exemplo
 **Exemplo 1.** Seja $f(x,y,z) = x^2y + z^3$. O gradiente é:
@@ -217,39 +343,130 @@ Em $(1,2,1)$: $\nabla f(1,2,1) = (4)\hat{x} + (1)\hat{y} + (3)\hat{z}$.
 
 ## Elementos Diferenciais e Integrais
 
+As três integrais desta seção — de linha, de superfície e de volume — não são fórmulas isoladas para decorar: são todas a **mesma ideia** (dividir, aproximar, somar, refinar) aplicada a três geometrias diferentes: um caminho 1D, uma superfície 2D e uma região 3D. Cada uma responde a uma pergunta física concreta: quanto trabalho uma força realiza ao longo de um percurso? Quanto fluido atravessa uma tela? Quanta carga há dentro de uma região? Esta seção deduz as três a partir do mesmo processo de soma de Riemann, com um exemplo numérico para cada uma.
+
 ### Elementos Diferenciais de Comprimento, Área e Volume
 
 Em coordenadas cartesianas, os elementos diferenciais são:
 
 - **Comprimento infinitesimal**: $d\vec\ell = dx\,\hat x + dy\,\hat y + dz\,\hat z$
-- **Elemento de área**: $d\vec A = dy\,dz\,\hat x + dx\,dz\,\hat y + dx\,dy\,\hat z$
+- **Elemento de área**: $d\vec A = dy\,dz\,\hat x + dx\,dz\,\hat y + dx\,dy\,\hat z$ (vetor: magnitude = área, direção = normal à face)
 - **Elemento de volume**: $dV = dx\,dy\,dz$
 
-### Integrais de Linha, Superfície e Volume
+### Integral de Linha — dedução a partir do trabalho
 
-**Integral de linha:**
+**A pergunta física:** uma partícula percorre uma trajetória $C$ sob a ação de uma força $\vec F(\vec r)$, que pode variar de ponto a ponto e nem sempre aponta na direção do movimento. Qual o trabalho total realizado?
 
-$$
-\int_C \vec F \cdot d\vec\ell
-$$
+**Passo 1 — discretizar o caminho.** Divida $C$ em $N$ segmentos pequenos, cada um aproximadamente reto, com vetor deslocamento $\Delta\vec\ell_i$ (ligando o início ao fim do segmento $i$). Se $N$ é grande, $\vec F$ é aproximadamente constante dentro de cada segmento — avalie-a em um ponto $\vec r_i$ do segmento.
 
-mede a circulação do campo ao longo de uma curva $C$.
+**Passo 2 — trabalho em cada segmento.** Pela definição de produto escalar (Seção "Produto Escalar"), o trabalho no segmento $i$ é $\Delta W_i \approx \vec F(\vec r_i)\cdot\Delta\vec\ell_i$ — só a componente de $\vec F$ **ao longo** do deslocamento contribui.
 
-**Integral de superfície:**
+**Passo 3 — somar e refinar.** O trabalho total é a soma sobre todos os segmentos; tomando o limite $N\to\infty$ (cada $\Delta\vec\ell_i\to d\vec\ell$), a soma vira uma integral:
 
 $$
-\int_S \vec F \cdot d\vec A
+W = \lim_{N\to\infty}\sum_{i=1}^N \vec F(\vec r_i)\cdot\Delta\vec\ell_i \;\equiv\; \boxed{\int_C \vec F \cdot d\vec\ell}
 $$
 
-mede o fluxo do campo através de uma superfície $S$.
+Esta é a **integral de linha**, e mede a **circulação** do campo ao longo de $C$ (soma acumulada da componente tangencial de $\vec F$). Se $\vec F$ é sempre perpendicular a $C$, a integral se anula — nenhum trabalho é realizado, exatamente como no Exemplo 0a.
 
-**Integral de volume:**
+### Integral de Superfície — dedução a partir do fluxo
+
+**A pergunta física:** quanto de um campo vetorial $\vec F(\vec r)$ (pense em velocidade de um fluido, ou densidade de linhas de campo elétrico) "atravessa" uma superfície $S$ por unidade de tempo?
+
+**Passo 1 — discretizar a superfície.** Divida $S$ em $N$ pequenos retalhos, cada um aproximadamente plano, com vetor de área $\Delta\vec A_i = \Delta A_i\,\hat n_i$ (magnitude = área do retalho, direção = normal local, escolhida por convenção — para superfícies fechadas, apontando para fora).
+
+**Passo 2 — fluxo por retalho.** Apenas a componente de $\vec F$ **perpendicular** ao retalho ("atravessando" a tela) contribui ao fluxo; a componente tangencial desliza ao longo da superfície sem atravessá-la. Pela mesma lógica do produto escalar: $\Delta\Phi_i \approx \vec F(\vec r_i)\cdot\Delta\vec A_i$.
+
+**Passo 3 — somar e refinar:**
 
 $$
-\int_V f\,dV
+\Phi = \lim_{N\to\infty}\sum_{i=1}^N \vec F(\vec r_i)\cdot\Delta\vec A_i \;\equiv\; \boxed{\int_S \vec F \cdot d\vec A}
 $$
 
-soma uma grandeza escalar sobre um volume $V$.
+Esta é a **integral de superfície** (ou **fluxo**) de $\vec F$ através de $S$. É exatamente esta grandeza que aparece na Lei de Gauss ($\oint_S\vec E\cdot d\vec A=Q_{env}/\varepsilon_0$) e no Teorema do Divergente (Seção "Divergente").
+
+### Integral de Volume — dedução a partir da acumulação
+
+**A pergunta física:** dada uma densidade $f(\vec r)$ (ex.: densidade de carga $\rho$), qual a quantidade total contida em uma região $V$?
+
+**Passo 1 — discretizar o volume.** Divida $V$ em $N$ pequenas células, cada uma com volume $\Delta V_i$. Se $N$ é grande, $f$ é aproximadamente constante em cada célula.
+
+**Passo 2 — quantidade por célula.** A contribuição da célula $i$ é (densidade) × (volume): $\Delta Q_i \approx f(\vec r_i)\,\Delta V_i$.
+
+**Passo 3 — somar e refinar:**
+
+$$
+Q = \lim_{N\to\infty}\sum_{i=1}^N f(\vec r_i)\,\Delta V_i \;\equiv\; \boxed{\int_V f\,dV}
+$$
+
+Esta é a **integral de volume**: soma uma grandeza escalar sobre uma região $V$ — por exemplo, $Q=\int_V\rho\,dV$ é a carga total contida em $V$ dada sua densidade volumétrica $\rho(\vec r)$.
+
+### Visualização Python — as três integrais como somas de Riemann que convergem
+
+O código refina progressivamente $N$ (número de segmentos/retalhos/células) para as três integrais e mostra a soma discreta convergindo para o valor exato conhecido — a mesma lógica de "dividir, aproximar, somar, refinar" dos três Passos acima, mas agora executada numericamente.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- Integral de linha: trabalho de F=(-y,x) ao longo do círculo unitário (0 a pi) ---
+def integral_linha(N):
+    t = np.linspace(0, np.pi, N+1)
+    pontos = np.stack([np.cos(t), np.sin(t)], axis=1)
+    F = np.stack([-pontos[:,1], pontos[:,0]], axis=1)      # F=(-y,x) nos pontos médios
+    dl = np.diff(pontos, axis=0)                            # Delta l_i (vetor)
+    F_meio = (F[:-1] + F[1:]) / 2                           # F no ponto médio do segmento
+    return np.sum(np.einsum('ij,ij->i', F_meio, dl))
+
+# --- Integral de superfície: fluxo de F=(x,y,z) através da esfera unitária (F.n = 1 sempre) ---
+def integral_superficie(n):
+    theta = np.linspace(0, np.pi, n)
+    phi = np.linspace(0, 2*np.pi, 2*n)
+    dtheta, dphi = theta[1]-theta[0], phi[1]-phi[0]
+    fluxo = 0.0
+    for th in theta:
+        dA = np.sin(th) * dtheta * dphi          # elemento de área na esfera unitária
+        fluxo += dA * len(phi)                    # F.n_hat = R = 1 em toda a esfera
+    return fluxo
+
+# --- Integral de volume: carga total com rho=3 (constante) numa esfera de raio 1 ---
+def integral_volume(n):
+    r = np.linspace(0, 1, n)
+    dr = r[1] - r[0]
+    return np.sum(3 * 4*np.pi*r**2 * dr)          # soma de cascas esféricas 4*pi*r^2*dr
+
+Ns = [4, 8, 16, 32, 64, 128, 256]
+linha_vals = [integral_linha(N) for N in Ns]
+sup_vals = [integral_superficie(N) for N in Ns]
+vol_vals = [integral_volume(N) for N in Ns]
+
+fig, axes = plt.subplots(1, 3, figsize=(13, 3.8))
+axes[0].plot(Ns, linha_vals, "o-", color="#dc2626")
+axes[0].axhline(np.pi, color="gray", ls="--", label="valor exato = pi")
+axes[0].set_title("Integral de linha (trabalho)"); axes[0].set_xlabel("N segmentos"); axes[0].legend()
+
+axes[1].plot(Ns, sup_vals, "o-", color="#2563eb")
+axes[1].axhline(4*np.pi, color="gray", ls="--", label="valor exato = 4*pi")
+axes[1].set_title("Integral de superfície (fluxo)"); axes[1].set_xlabel("N retalhos"); axes[1].legend()
+
+axes[2].plot(Ns, vol_vals, "o-", color="#047857")
+axes[2].axhline(4*np.pi, color="gray", ls="--", label="valor exato = 4*pi")
+axes[2].set_title("Integral de volume (carga total)"); axes[2].set_xlabel("N cascas"); axes[2].legend()
+for ax in axes:
+    ax.set_xscale("log")
+plt.tight_layout()
+
+print(f"Linha:      N={Ns[-1]:4d} -> {linha_vals[-1]:.6f}  (exato: {np.pi:.6f})")
+print(f"Superfície: N={Ns[-1]:4d} -> {sup_vals[-1]:.6f}  (exato: {4*np.pi:.6f})")
+print(f"Volume:     N={Ns[-1]:4d} -> {vol_vals[-1]:.6f}  (exato: {4*np.pi:.6f})")
+```
+
+::: verificacao
+**Verificação Rápida (Concept Check):**
+1. Na integral de linha, qual componente de $\vec F$ contribui: a **tangencial** ou a **normal** ao caminho? **Tangencial** (é um produto escalar com $d\vec\ell$, que aponta ao longo da curva).
+2. Na integral de superfície, qual componente de $\vec F$ contribui: a **tangencial** ou a **normal** à superfície? **Normal** (produto escalar com $d\vec A$, que aponta perpendicular à superfície).
+3. Se $f>0$ em todo ponto de $V$, o sinal de $\int_V f\,dV$ pode ser negativo? **Não** — soma de termos positivos.
+:::
 
 ---
 
@@ -298,6 +515,14 @@ $$
 $$
 
 O divergente mede a **densidade volumétrica de fontes** do campo: positivo onde o campo "emana" (fonte), negativo onde "converge" (sorvedouro), nulo onde o que entra é igual ao que sai.
+
+::: observação
+**Observação (por que o cubo e não outra forma?).** Usamos um cubo por conveniência algébrica — as três direções se separam e a série de Taylor fica simples —, mas o resultado $\nabla\cdot\vec F=\lim_{\Delta V\to0}\frac1{\Delta V}\oint\vec F\cdot d\vec A$ vale para **qualquer** forma de volume infinitesimal (esfera, tetraedro, etc.). A razão: qualquer sólido pequeno pode ser aproximado por uma malha fina de cubos (Seção "Teorema do Divergente", mesmo argumento de cancelamento nas faces internas); no limite $\Delta V\to0$, a razão fluxo/volume converge para o mesmo número $\nabla\cdot\vec F$ no ponto, **independente da forma escolhida** — é essa independência de forma que torna o divergente uma propriedade *local* do campo, e não um artefato da geometria do cubo.
+:::
+
+::: insight
+**Insight para lembrar.** Pense no divergente como um **balanço contábil de fluxo**: "o que sai menos o que entra, por unidade de volume". Um voxel de fluido com $\nabla\cdot\vec F>0$ está perdendo massa (há uma fonte ali — como um pequeno chuveiro injetando fluido); $\nabla\cdot\vec F<0$, ganhando massa (sorvedouro — um ralo); $\nabla\cdot\vec F=0$, o que entra sai. Em eletrostática, este balanço **é literalmente** a Lei de Gauss na forma local: $\nabla\cdot\vec E=\rho/\varepsilon_0$ diz que as únicas "fontes" ou "sorvedouros" de linhas de campo elétrico são as cargas — o campo elétrico só diverge onde há carga.
+:::
 
 ### Visualização Python — fontes e sorvedouros
 
@@ -396,6 +621,14 @@ $$
 
 O rotacional mede a **densidade de circulação** (tendência do campo a "girar") ao redor de um ponto, no plano perpendicular a $\hat n$. Um campo com $\nabla\times\vec F=0$ em toda parte é dito **irrotacional** ou **conservativo**.
 
+::: observação
+**Observação (por que o laço retangular e não outro formato?).** Assim como no divergente, o retângulo é só conveniência algébrica. Qualquer laço pequeno e plano (círculo, triângulo) pode ser aproximado por uma malha fina de retângulos coplanares — a circulação total é a soma das circulações individuais, pois as arestas internas compartilhadas se cancelam (mesmo argumento usado na prova do Teorema de Stokes, a seguir). O limite $\lim_{\Delta A\to0}\frac1{\Delta A}\oint\vec F\cdot d\vec\ell$ converge para o mesmo valor $(\nabla\times\vec F)\cdot\hat n$ **qualquer que seja a forma** do laço, desde que sua normal seja $\hat n$ — de novo, uma propriedade local do campo no ponto, não da forma escolhida.
+:::
+
+::: insight
+**Insight para lembrar.** Imagine uma pequena roda de pás (um "medidor de rotação") flutuando no campo, livre para girar em torno de um eixo $\hat n$. O rotacional $(\nabla\times\vec F)\cdot\hat n$ mede **o quanto e em que sentido essa roda giraria** — não porque o fluido "vai" para algum lugar (isso é o divergente), mas porque o campo empurra mais forte de um lado do laço que do outro, criando um torque líquido. É por isso que $\nabla\times\vec E=0$ em eletrostática (Seção "Identidades Vetoriais Fundamentais") tem um significado físico direto: uma carga de teste levada em qualquer laço fechado no campo elétrico estático não ganha nem perde energia líquida — não há "moinho de energia grátis" em um campo conservativo.
+:::
+
 ::: exemplo
 **Exemplo 3.** Seja $\vec F = (-y,\,x,\,0)$. O rotacional é:
 
@@ -481,15 +714,64 @@ Se $\nabla\times\vec F=0$ em uma região simplesmente conexa, então, para quais
 
 ## Laplaciano
 
+### A pergunta física: este ponto é "igual" à sua vizinhança?
+
+Já vimos que o gradiente responde "para onde $f$ cresce mais rápido" e o divergente responde "há fontes de $\vec F$ aqui". O laplaciano responde a uma terceira pergunta, também muito natural: **o valor de $f$ neste ponto é maior, menor, ou igual à média de seus vizinhos imediatos?** Essa pergunta aparece o tempo todo em física de equilíbrio — temperatura em regime estacionário, potencial eletrostático no vácuo — porque a resposta "igual à média" caracteriza exatamente os estados de equilíbrio (sem fontes locais, cada ponto "se acomoda" no valor médio ao redor).
+
+### Passo 1: dedução em 1D via série de Taylor
+
+Comece com o caso mais simples: $f(x)$, uma função de uma variável. Expanda $f$ em Taylor ao redor de um ponto $x$, para um passo pequeno $h$, para a frente e para trás:
+
+$$
+f(x+h) = f(x) + f'(x)h + \tfrac12 f''(x)h^2 + O(h^3),\qquad
+f(x-h) = f(x) - f'(x)h + \tfrac12 f''(x)h^2 + O(h^3)
+$$
+
+**Some as duas expansões** — os termos ímpares em $h$ (incluindo $f'(x)h$) se cancelam:
+
+$$
+f(x+h)+f(x-h) = 2f(x) + f''(x)h^2 + O(h^4)
+$$
+
+Isolando $f''(x)$:
+
+$$
+f''(x) = \frac{f(x+h)+f(x-h) - 2f(x)}{h^2} + O(h^2) = \frac{2}{h^2}\left[\underbrace{\frac{f(x+h)+f(x-h)}{2}}_{\text{média dos vizinhos}} - f(x)\right] + O(h^2)
+$$
+
+::: corolário
+**Corolário 5.** Em 1D, a segunda derivada é (a menos de um fator $2/h^2$) exatamente a diferença entre **a média dos dois vizinhos** e **o valor no próprio ponto**. Se $f''(x)>0$, o ponto vale **menos** que a média dos vizinhos (função "afunda" localmente — um mínimo local, côncava para cima); se $f''(x)<0$, vale **mais** (côncava para baixo, um máximo local); se $f''(x)=0$, o ponto **é** a média dos vizinhos.
+:::
+
+### Passo 2: generalização para 3D — de onde vem a soma de segundas derivadas
+
+O mesmo argumento, repetido independentemente em cada uma das três direções cartesianas (some Taylor em $\pm h\hat x$, depois $\pm h\hat y$, depois $\pm h\hat z$, cada par cancelando os termos ímpares), dá:
+
+$$
+\frac{\partial^2f}{\partial x^2}+\frac{\partial^2f}{\partial y^2}+\frac{\partial^2f}{\partial z^2} = \frac{2}{h^2}\Big[\underbrace{\tfrac16\big(f(x{+}h,y,z)+f(x{-}h,y,z)+f(x,y{+}h,z)+f(x,y{-}h,z)+f(x,y,z{+}h)+f(x,y,z{-}h)\big)}_{\text{média dos 6 vizinhos numa grade cúbica}} - f(x,y,z)\Big]\cdot 3+O(h^2)
+$$
+
+Definindo o operador que soma as três segundas derivadas parciais como o **laplaciano**:
+
 ::: definição
-**Definição 5.** O **laplaciano** de um campo escalar é o divergente do seu gradiente:
+**Definição 5.** O **laplaciano** de um campo escalar é o divergente do seu gradiente (aplicando a Definição 3 ao campo $\vec F=\nabla f$ da Definição 1):
 
 $$
 \boxed{\nabla^2 f \equiv \nabla\cdot(\nabla f) = \frac{\partial^2f}{\partial x^2}+\frac{\partial^2f}{\partial y^2}+\frac{\partial^2f}{\partial z^2}}
 $$
 :::
 
-Mede a diferença entre o valor de $f$ em um ponto e a média de $f$ em uma vizinhança infinitesimal (com sinal tal que $\nabla^2f>0$ onde $f$ é "côncavo para cima" localmente — um mínimo local relativo à vizinhança). Esta é a origem da **regra da média** usada na solução numérica de Laplace (arquivo 2, Seção “Adição e Subtração de Vetores”.4): se $\nabla^2f=0$, o valor em cada ponto é exatamente a média de seus vizinhos.
+O resultado do Passo 2 mostra precisamente que:
+
+$$
+\boxed{\nabla^2f(\vec r) \;\propto\; \Big[\langle f\rangle_{\text{vizinhança}} - f(\vec r)\Big]\qquad\text{(regra da média)}}
+$$
+
+Ou seja: $\nabla^2f$ mede — com sinal e escala — a **diferença entre o valor de $f$ no ponto e a média de $f$ em sua vizinhança infinitesimal**. $\nabla^2f>0$: o ponto está "abaixo" da média (concavidade positiva, um "vale" local); $\nabla^2f<0$: o ponto está "acima" da média (um "pico" local); $\nabla^2f=0$: o valor no ponto **é** a média de seus vizinhos — nem pico, nem vale, um equilíbrio local.
+
+::: insight
+**Insight para lembrar.** Pense no laplaciano como um **"detector de desequilíbrio local"**. Em um problema de difusão de calor, se $\nabla^2T>0$ em um ponto (ele está "mais frio" que a média ao redor), o calor flui **para dentro** desse ponto, aquecendo-o com o tempo — daí a equação de difusão $\partial T/\partial t = \alpha\nabla^2T$: a temperatura aumenta onde há um "déficit" em relação à vizinhança. No equilíbrio estacionário sem fontes ($\partial T/\partial t=0$), obtemos exatamente $\nabla^2T=0$ (equação de Laplace): todo ponto já é a média de seus vizinhos, não há mais fluxo líquido de calor para lugar nenhum. O mesmo raciocínio, aplicado ao potencial elétrico no vácuo ($\nabla^2V=0$), é o motivo pelo qual **não existe um ponto de equilíbrio estável para uma carga livre no vácuo** (Teorema de Earnshaw) — um mínimo ou máximo local de $V$ exigiria $\nabla^2V\neq0$ ali, o que só ocorre onde há carga.
+:::
 
 ::: exemplo
 **Exemplo 7.** Seja $f(x,y,z) = x^2 + y^2 + z^2$. O laplaciano é:
@@ -498,95 +780,341 @@ $$
 \nabla^2 f = \frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y^2} + \frac{\partial^2 f}{\partial z^2} = 2 + 2 + 2 = 6
 $$
 
+$f$ cresce em **todas** as direções a partir da origem (um "vale" tridimensional) — consistente com $\nabla^2f>0$ em todo ponto: o valor local está sempre abaixo da média da vizinhança.
+
 Seja $g(x,y,z) = x^2 - y^2$. O laplaciano é:
 
 $$
 \nabla^2 g = 2 - 2 + 0 = 0
 $$
 
-Logo $g$ é uma função harmônica.
+Logo $g$ é uma função **harmônica**: apesar de $g$ ter curvatura para cima em $x$ (côncava para cima, "vale") e para baixo em $y$ (côncava para baixo, "pico") — a **ponto de sela** —, as duas curvaturas se cancelam exatamente, e o valor em cada ponto é sempre a média de sua vizinhança.
 :::
 
 ::: observação
 **Observação 1.** O laplaciano de um campo **vetorial** é definido componente a componente em coordenadas cartesianas: $\nabla^2\vec F = (\nabla^2F_x)\hat x+(\nabla^2F_y)\hat y+(\nabla^2F_z)\hat z$ (usado na dedução do potencial vetor magnético, arquivo 4).
 :::
 
-### Visualização Python — curvatura local e harmonicidade
+### Visualização Python — curvatura local, harmonicidade e verificação numérica da regra da média
+
+O código plota as duas superfícies do Exemplo 7 e, adicionalmente, **verifica numericamente a regra da média** do Passo 2: calcula a diferença entre o valor em um ponto e a média de seus 4 vizinhos em uma grade 2D, e compara com $\nabla^2f\cdot h^2/4$ previsto pela fórmula.
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
+
 x = y = np.linspace(-2, 2, 120)
 X, Y = np.meshgrid(x, y)
-f1 = X**2 + Y**2       # laplaciano = 4
-f2 = X**2 - Y**2       # laplaciano = 0
-fig = plt.figure()
-for i, f in enumerate((f1, f2), 1):
+f1 = X**2 + Y**2       # laplaciano = 4  (bacia: sempre abaixo da média local)
+f2 = X**2 - Y**2       # laplaciano = 0  (sela harmônica: sempre igual à média local)
+
+fig = plt.figure(figsize=(11, 4.2))
+for i, (f, titulo) in enumerate(((f1, "laplaciano = 4"), (f2, "laplaciano = 0 (harmônica)")), 1):
     ax = fig.add_subplot(1, 2, i, projection="3d")
-    ax.plot_surface(X, Y, f)
-print("laplacianos:", 4, 0)
+    ax.plot_surface(X, Y, f, cmap="viridis", alpha=.85)
+    ax.set_title(titulo)
+plt.tight_layout()
+print("laplacianos (analítico):", 4, 0)
+
+# --- Verificação numérica da regra da média em uma grade 2D ---
+def laplaciano_numerico(func, x0, y0, h=1e-3):
+    """(f(x+h,y)+f(x-h,y)+f(x,y+h)+f(x,y-h)-4f(x,y)) / h^2  ~=  laplaciano de f."""
+    vizinhos = (func(x0+h, y0) + func(x0-h, y0) + func(x0, y0+h) + func(x0, y0-h))
+    return (vizinhos - 4*func(x0, y0)) / h**2
+
+f1_func = lambda x, y: x**2 + y**2
+f2_func = lambda x, y: x**2 - y**2
+p = (1.3, -0.7)
+print(f"\nEm {p}:")
+print(f"  laplaciano numérico de f1 = {laplaciano_numerico(f1_func, *p):.4f}  (analítico: 4)")
+print(f"  laplaciano numérico de f2 = {laplaciano_numerico(f2_func, *p):.4f}  (analítico: 0)")
+
+# Regra da média propriamente dita: valor no ponto vs média dos 4 vizinhos
+h = 0.5
+media_vizinhos_f2 = (f2_func(p[0]+h,p[1])+f2_func(p[0]-h,p[1])+f2_func(p[0],p[1]+h)+f2_func(p[0],p[1]-h))/4
+print(f"  f2 no ponto = {f2_func(*p):.4f}, média dos 4 vizinhos = {media_vizinhos_f2:.4f} "
+      f"(iguais, pois f2 é harmônica)")
 ```
+
+**Saída esperada**: o laplaciano numérico (diferenças finitas) coincide com o valor analítico dentro do erro de discretização; para $f_2$ (harmônica), o valor no ponto **é exatamente** a média dos 4 vizinhos — confirmação direta da regra da média deduzida no Passo 2.
 
 ---
 
 ## Sistemas de Coordenadas Curvilíneas
 
-A simetria de um problema (esférica, cilíndrica) frequentemente torna cartesianas inconvenientes. As fórmulas abaixo são apresentadas sem prova (a dedução segue o mesmo método de "cubos infinitesimais", mas com arestas curvas — ver Seção “Rotacional”.4 para a ideia geral).
+A simetria de um problema (esférica, cilíndrica) frequentemente torna cartesianas inconvenientes: um campo que depende de $x,y,z$ de forma acoplada pode depender de uma única coordenada curvilínea (ex.: $V(r)=k/r$). Esta seção **deduz**, passo a passo, a conversão entre sistemas de coordenadas, os versores locais, os fatores de escala e — a partir deles — as fórmulas de $\nabla f$, $\nabla\cdot\vec F$, $\nabla\times\vec F$ e $\nabla^2f$ em cilíndricas e esféricas.
 
-### Coordenadas cilíndricas $(s,\phi,z)$
+### Passo 1: de cartesianas para curvilíneas — a ideia
 
-$$
-x=s\cos\phi,\quad y=s\sin\phi,\quad z=z
-$$
+Um sistema de coordenadas curvilíneas ortogonais $(u_1,u_2,u_3)$ é definido por uma transformação invertível
 
 $$
-\nabla f = \frac{\partial f}{\partial s}\hat s+\frac{1}{s}\frac{\partial f}{\partial\phi}\hat\phi+\frac{\partial f}{\partial z}\hat z
+x=x(u_1,u_2,u_3),\quad y=y(u_1,u_2,u_3),\quad z=z(u_1,u_2,u_3)
+$$
+
+O vetor posição $\vec r=x\hat x+y\hat y+z\hat z$ torna-se, portanto, uma função $\vec r(u_1,u_2,u_3)$. A ideia central: **os versores locais $\hat u_i$ não são fixos como $\hat x,\hat y,\hat z$** — eles mudam de direção de ponto a ponto, e são definidos a partir de como $\vec r$ varia quando apenas $u_i$ varia.
+
+::: definição
+**Definição 6.** O versor da coordenada $u_i$ no ponto $(u_1,u_2,u_3)$ é a direção de variação de $\vec r$ com $u_i$, normalizada:
+
+$$
+\hat u_i \equiv \frac{\partial\vec r/\partial u_i}{\left|\partial\vec r/\partial u_i\right|},\qquad h_i\equiv\left|\frac{\partial\vec r}{\partial u_i}\right|
+$$
+
+$h_i$ é o **fator de escala**: um deslocamento infinitesimal $du_i$ (mantendo as outras coordenadas fixas) corresponde a um comprimento físico $h_i\,du_i$, pois $d\vec r = \frac{\partial \vec r}{\partial u_i}du_i = h_i\,du_i\,\hat u_i$.
+:::
+
+Um sistema é **ortogonal** quando $\hat u_1,\hat u_2,\hat u_3$ são mutuamente perpendiculares em todo ponto — cilíndricas e esféricas são ambas ortogonais, o que simplifica enormemente as fórmulas seguintes (deslocamentos nas três direções não se misturam).
+
+### Passo 2: coordenadas cilíndricas $(s,\phi,z)$ — dedução completa
+
+**2.1 — Relação com cartesianas.** Um ponto é descrito pela distância radial ao eixo $z$, pelo ângulo azimutal e pela altura:
+
+$$
+\boxed{x=s\cos\phi,\quad y=s\sin\phi,\quad z=z}\qquad (s\ge0,\ 0\le\phi<2\pi)
+$$
+
+Geometricamente: projete o ponto no plano $xy$; $s$ é a distância desse projeção à origem e $\phi$ o ângulo que ela faz com o eixo $x$ (regra usual da trigonometria: cateto adjacente $x=s\cos\phi$, cateto oposto $y=s\sin\phi$).
+
+**Conversão inversa** (necessária para expressar $s,\phi,z$ dado um ponto cartesiano):
+
+$$
+s=\sqrt{x^2+y^2},\qquad \phi=\operatorname{atan2}(y,x),\qquad z=z
+$$
+
+(usa-se $\operatorname{atan2}$, e não $\arctan(y/x)$, para resolver corretamente o quadrante de $\phi$ a partir dos sinais de $x$ e $y$.)
+
+**2.2 — Vetor posição e derivadas parciais.** Escrevendo $\vec r = s\cos\phi\,\hat x+s\sin\phi\,\hat y+z\,\hat z$:
+
+$$
+\frac{\partial\vec r}{\partial s}=\cos\phi\,\hat x+\sin\phi\,\hat y,\qquad
+\frac{\partial\vec r}{\partial\phi}=-s\sin\phi\,\hat x+s\cos\phi\,\hat y,\qquad
+\frac{\partial\vec r}{\partial z}=\hat z
+$$
+
+**2.3 — Fatores de escala** (módulo de cada derivada parcial):
+
+$$
+h_s=\left|\frac{\partial\vec r}{\partial s}\right|=\sqrt{\cos^2\phi+\sin^2\phi}=1,\quad
+h_\phi=\left|\frac{\partial\vec r}{\partial\phi}\right|=\sqrt{s^2\sin^2\phi+s^2\cos^2\phi}=s,\quad
+h_z=\left|\frac{\partial\vec r}{\partial z}\right|=1
+$$
+
+::: corolário
+**Corolário 3.** $\boxed{h_s=1,\quad h_\phi=s,\quad h_z=1}$. O fator $h_\phi=s$ tem sentido físico direto: girar $d\phi$ radianos a uma distância $s$ do eixo percorre um arco de comprimento $s\,d\phi$ — quanto maior $s$, maior o deslocamento físico para o mesmo $d\phi$.
+:::
+
+**2.4 — Versores** (dividindo cada derivada parcial pelo seu módulo):
+
+$$
+\hat s=\cos\phi\,\hat x+\sin\phi\,\hat y,\qquad
+\hat\phi=-\sin\phi\,\hat x+\cos\phi\,\hat y,\qquad
+\hat z=\hat z
+$$
+
+Verificação de ortogonalidade: $\hat s\cdot\hat\phi=-\cos\phi\sin\phi+\sin\phi\cos\phi=0$ ✓; e $\hat s\times\hat\phi=\hat z$ (verifique por componentes), confirmando a orientação destra $(\hat s,\hat\phi,\hat z)$.
+
+**2.5 — Elementos diferenciais.** Como o sistema é ortogonal, um deslocamento infinitesimal geral é a soma direta dos três deslocamentos ao longo de cada eixo local:
+
+$$
+\boxed{d\vec\ell = h_s\,ds\,\hat s+h_\phi\,d\phi\,\hat\phi+h_z\,dz\,\hat z = ds\,\hat s+s\,d\phi\,\hat\phi+dz\,\hat z}
 $$
 
 $$
-\nabla\cdot\vec F = \frac{1}{s}\frac{\partial(sF_s)}{\partial s}+\frac{1}{s}\frac{\partial F_\phi}{\partial\phi}+\frac{\partial F_z}{\partial z}
+dV = h_sh_\phi h_z\,ds\,d\phi\,dz = s\,ds\,d\phi\,dz
+$$
+
+($dV$ é o volume da caixa curvilínea de arestas $h_s\,ds,\ h_\phi\,d\phi,\ h_z\,dz$ — ortogonais entre si, logo o volume é simplesmente o produto das três arestas.)
+
+**2.6 — Gradiente, divergente, rotacional e laplaciano.** Para coordenadas ortogonais com fatores de escala $h_1,h_2,h_3$, os operadores tomam a **forma geral** (justificada no Passo 4 abaixo):
+
+$$
+\nabla f = \frac{1}{h_1}\frac{\partial f}{\partial u_1}\hat u_1+\frac{1}{h_2}\frac{\partial f}{\partial u_2}\hat u_2+\frac{1}{h_3}\frac{\partial f}{\partial u_3}\hat u_3
 $$
 
 $$
-\nabla\times\vec F = \left(\frac{1}{s}\frac{\partial F_z}{\partial\phi}-\frac{\partial F_\phi}{\partial z}\right)\hat s+\left(\frac{\partial F_s}{\partial z}-\frac{\partial F_z}{\partial s}\right)\hat\phi+\frac{1}{s}\left(\frac{\partial(sF_\phi)}{\partial s}-\frac{\partial F_s}{\partial\phi}\right)\hat z
+\nabla\cdot\vec F = \frac{1}{h_1h_2h_3}\left[\frac{\partial(h_2h_3F_1)}{\partial u_1}+\frac{\partial(h_1h_3F_2)}{\partial u_2}+\frac{\partial(h_1h_2F_3)}{\partial u_3}\right]
 $$
 
 $$
-\nabla^2f = \frac{1}{s}\frac{\partial}{\partial s}\left(s\frac{\partial f}{\partial s}\right)+\frac{1}{s^2}\frac{\partial^2f}{\partial\phi^2}+\frac{\partial^2f}{\partial z^2}
+\nabla^2f = \frac{1}{h_1h_2h_3}\left[\frac{\partial}{\partial u_1}\!\left(\frac{h_2h_3}{h_1}\frac{\partial f}{\partial u_1}\right)+\frac{\partial}{\partial u_2}\!\left(\frac{h_1h_3}{h_2}\frac{\partial f}{\partial u_2}\right)+\frac{\partial}{\partial u_3}\!\left(\frac{h_1h_2}{h_3}\frac{\partial f}{\partial u_3}\right)\right]
 $$
 
-### Coordenadas esféricas $(r,\theta,\phi)$
+Substituindo $u_1,u_2,u_3=s,\phi,z$ e $h_s=1,\ h_\phi=s,\ h_z=1$ diretamente nessas fórmulas gerais:
 
 $$
-x=r\sin\theta\cos\phi,\quad y=r\sin\theta\sin\phi,\quad z=r\cos\theta
+\boxed{\nabla f = \frac{\partial f}{\partial s}\hat s+\frac{1}{s}\frac{\partial f}{\partial\phi}\hat\phi+\frac{\partial f}{\partial z}\hat z}
+$$
+
+Por exemplo, o termo em $\hat\phi$ é $\frac{1}{h_\phi}\frac{\partial f}{\partial\phi}=\frac{1}{s}\frac{\partial f}{\partial\phi}$ — o fator $1/s$ aparece **porque** um mesmo $d\phi$ corresponde a um deslocamento físico $s\,d\phi$ (Passo 2.3): dividir por $h_\phi=s$ converte a taxa de variação "por radiano" em taxa de variação "por unidade de comprimento", que é o que o gradiente exige.
+
+$$
+\boxed{\nabla\cdot\vec F = \frac{1}{s}\frac{\partial(sF_s)}{\partial s}+\frac{1}{s}\frac{\partial F_\phi}{\partial\phi}+\frac{\partial F_z}{\partial z}}
+$$
+
+(aqui $h_2h_3=h_\phi h_z=s$ no termo $\partial_s$; $h_1h_3=h_sh_z=1$ no termo $\partial_\phi$; $h_1h_2=h_sh_\phi=s$ no termo $\partial_z$; e o prefator global é $1/(h_sh_\phi h_z)=1/s$.)
+
+$$
+\boxed{\nabla\times\vec F = \left(\frac{1}{s}\frac{\partial F_z}{\partial\phi}-\frac{\partial F_\phi}{\partial z}\right)\hat s+\left(\frac{\partial F_s}{\partial z}-\frac{\partial F_z}{\partial s}\right)\hat\phi+\frac{1}{s}\left(\frac{\partial(sF_\phi)}{\partial s}-\frac{\partial F_s}{\partial\phi}\right)\hat z}
 $$
 
 $$
-\nabla f = \frac{\partial f}{\partial r}\hat r+\frac{1}{r}\frac{\partial f}{\partial\theta}\hat\theta+\frac{1}{r\sin\theta}\frac{\partial f}{\partial\phi}\hat\phi
+\boxed{\nabla^2f = \frac{1}{s}\frac{\partial}{\partial s}\left(s\frac{\partial f}{\partial s}\right)+\frac{1}{s^2}\frac{\partial^2f}{\partial\phi^2}+\frac{\partial^2f}{\partial z^2}}
+$$
+
+(o laplaciano segue de $\nabla^2f=\nabla\cdot(\nabla f)$: aplique a fórmula do divergente acima ao campo $\vec F=\nabla f=(\partial_sf,\ \tfrac1s\partial_\phi f,\ \partial_zf)$ e simplifique.)
+
+### Passo 3: coordenadas esféricas $(r,\theta,\phi)$ — dedução completa
+
+**3.1 — Relação com cartesianas.** Um ponto é descrito pela distância à origem, pelo ângulo polar (a partir de $+\hat z$) e pelo ângulo azimutal:
+
+$$
+\boxed{x=r\sin\theta\cos\phi,\quad y=r\sin\theta\sin\phi,\quad z=r\cos\theta}\qquad(r\ge0,\ 0\le\theta\le\pi,\ 0\le\phi<2\pi)
+$$
+
+Dedução geométrica: a projeção de $\vec r$ no eixo $z$ tem comprimento $r\cos\theta$ (definição de $\theta$ como ângulo com $+\hat z$); a projeção no plano $xy$ tem comprimento $r\sin\theta$, e dentro desse plano os componentes $x,y$ seguem a mesma relação de $\phi$ das cilíndricas — daí $x=(r\sin\theta)\cos\phi$ e $y=(r\sin\theta)\sin\phi$. Em outras palavras, esféricas e cilíndricas se relacionam por $s=r\sin\theta$ (raio cilíndrico igual à projeção de $r$).
+
+**Conversão inversa:**
+
+$$
+r=\sqrt{x^2+y^2+z^2},\qquad \theta=\arccos\!\left(\frac{z}{r}\right),\qquad \phi=\operatorname{atan2}(y,x)
+$$
+
+**3.2 — Vetor posição e derivadas parciais.** Com $\vec r = r\sin\theta\cos\phi\,\hat x+r\sin\theta\sin\phi\,\hat y+r\cos\theta\,\hat z$:
+
+$$
+\frac{\partial\vec r}{\partial r}=\sin\theta\cos\phi\,\hat x+\sin\theta\sin\phi\,\hat y+\cos\theta\,\hat z
 $$
 
 $$
-\nabla\cdot\vec F = \frac{1}{r^2}\frac{\partial(r^2F_r)}{\partial r}+\frac{1}{r\sin\theta}\frac{\partial(\sin\theta\,F_\theta)}{\partial\theta}+\frac{1}{r\sin\theta}\frac{\partial F_\phi}{\partial\phi}
+\frac{\partial\vec r}{\partial\theta}=r\cos\theta\cos\phi\,\hat x+r\cos\theta\sin\phi\,\hat y-r\sin\theta\,\hat z
 $$
 
 $$
-\nabla^2f = \frac{1}{r^2}\frac{\partial}{\partial r}\left(r^2\frac{\partial f}{\partial r}\right)+\frac{1}{r^2\sin\theta}\frac{\partial}{\partial\theta}\left(\sin\theta\frac{\partial f}{\partial\theta}\right)+\frac{1}{r^2\sin^2\theta}\frac{\partial^2f}{\partial\phi^2}
+\frac{\partial\vec r}{\partial\phi}=-r\sin\theta\sin\phi\,\hat x+r\sin\theta\cos\phi\,\hat y
 $$
 
-### Visualização Python — bases cilíndrica e esférica
+**3.3 — Fatores de escala:**
+
+$$
+h_r=\left|\frac{\partial\vec r}{\partial r}\right|=\sqrt{\sin^2\theta\cos^2\phi+\sin^2\theta\sin^2\phi+\cos^2\theta}=\sqrt{\sin^2\theta+\cos^2\theta}=1
+$$
+
+$$
+h_\theta=\left|\frac{\partial\vec r}{\partial\theta}\right|=\sqrt{r^2\cos^2\theta\cos^2\phi+r^2\cos^2\theta\sin^2\phi+r^2\sin^2\theta}=\sqrt{r^2\cos^2\theta+r^2\sin^2\theta}=r
+$$
+
+$$
+h_\phi=\left|\frac{\partial\vec r}{\partial\phi}\right|=\sqrt{r^2\sin^2\theta\sin^2\phi+r^2\sin^2\theta\cos^2\phi}=\sqrt{r^2\sin^2\theta}=r\sin\theta
+$$
+
+::: corolário
+**Corolário 4.** $\boxed{h_r=1,\quad h_\theta=r,\quad h_\phi=r\sin\theta}$. Interpretação física: girar $d\theta$ a uma distância $r$ da origem percorre um arco de comprimento $r\,d\theta$ (meridiano); girar $d\phi$ a uma distância **do eixo $z$** igual a $r\sin\theta$ (Passo 3.1) percorre um arco $r\sin\theta\,d\phi$ (paralelo). Note que $h_\phi\to0$ quando $\theta\to0$ ou $\pi$ — nos polos, variar $\phi$ não desloca o ponto fisicamente, consistente com a singularidade coordenada ali.
+:::
+
+**3.4 — Versores** (dividindo cada derivada parcial por seu módulo):
+
+$$
+\hat r=\sin\theta\cos\phi\,\hat x+\sin\theta\sin\phi\,\hat y+\cos\theta\,\hat z
+$$
+
+$$
+\hat\theta=\cos\theta\cos\phi\,\hat x+\cos\theta\sin\phi\,\hat y-\sin\theta\,\hat z
+$$
+
+$$
+\hat\phi=-\sin\phi\,\hat x+\cos\phi\,\hat y
+$$
+
+(ortogonalidade $\hat r\cdot\hat\theta=\hat r\cdot\hat\phi=\hat\theta\cdot\hat\phi=0$ e orientação destra $\hat r\times\hat\theta=\hat\phi$ podem ser verificadas por substituição direta.)
+
+**3.5 — Elementos diferenciais:**
+
+$$
+\boxed{d\vec\ell = dr\,\hat r+r\,d\theta\,\hat\theta+r\sin\theta\,d\phi\,\hat\phi}
+$$
+
+$$
+dV = h_rh_\theta h_\phi\,dr\,d\theta\,d\phi = r^2\sin\theta\,dr\,d\theta\,d\phi
+$$
+
+**3.6 — Gradiente, divergente e laplaciano.** Substituindo $u_1,u_2,u_3=r,\theta,\phi$ e $h_r=1,\ h_\theta=r,\ h_\phi=r\sin\theta$ nas fórmulas gerais do Passo 2.6:
+
+$$
+\boxed{\nabla f = \frac{\partial f}{\partial r}\hat r+\frac{1}{r}\frac{\partial f}{\partial\theta}\hat\theta+\frac{1}{r\sin\theta}\frac{\partial f}{\partial\phi}\hat\phi}
+$$
+
+$$
+\boxed{\nabla\cdot\vec F = \frac{1}{r^2}\frac{\partial(r^2F_r)}{\partial r}+\frac{1}{r\sin\theta}\frac{\partial(\sin\theta\,F_\theta)}{\partial\theta}+\frac{1}{r\sin\theta}\frac{\partial F_\phi}{\partial\phi}}
+$$
+
+Confira o termo radial: $h_\theta h_\phi = r\cdot r\sin\theta=r^2\sin\theta$; dividido pelo prefator global $1/(h_rh_\theta h_\phi)=1/(r^2\sin\theta)$, sobra exatamente $\frac{1}{r^2}\frac{\partial(r^2F_r)}{\partial r}$.
+
+$$
+\boxed{\nabla^2f = \frac{1}{r^2}\frac{\partial}{\partial r}\left(r^2\frac{\partial f}{\partial r}\right)+\frac{1}{r^2\sin\theta}\frac{\partial}{\partial\theta}\left(\sin\theta\frac{\partial f}{\partial\theta}\right)+\frac{1}{r^2\sin^2\theta}\frac{\partial^2f}{\partial\phi^2}}
+$$
+
+(a fórmula do rotacional em esféricas segue o mesmo padrão do determinante generalizado do Passo 4 e é usada raramente nesta apostila; quando necessária, use a forma geral com $h_r=1,h_\theta=r,h_\phi=r\sin\theta$.)
+
+### Visualização e verificação numérica — versores e fatores de escala
+
+O código abaixo **reproduz o Passo 2 e o Passo 3 numericamente**: calcula $\partial\vec r/\partial u_i$ por diferenças finitas em um ponto arbitrário, extrai $h_i=|\partial\vec r/\partial u_i|$ e $\hat u_i$, e compara com as fórmulas fechadas deduzidas acima.
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
+
+def r_cil(s, phi, z):
+    return np.array([s*np.cos(phi), s*np.sin(phi), z])
+
+def r_esf(r, theta, phi):
+    return np.array([r*np.sin(theta)*np.cos(phi),
+                      r*np.sin(theta)*np.sin(phi),
+                      r*np.cos(theta)])
+
+def versores_e_h(r_func, u0, h=1e-6):
+    """dr/du_i por diferença central -> h_i (módulo) e u_hat_i (normalizado)."""
+    hs, u_hats = [], []
+    for i in range(3):
+        du = np.zeros(3); du[i] = h
+        drdu = (r_func(*(u0+du)) - r_func(*(u0-du))) / (2*h)
+        hi = np.linalg.norm(drdu)
+        hs.append(hi)
+        u_hats.append(drdu/hi)
+    return np.array(hs), np.array(u_hats)
+
+# --- Cilíndricas em (s, phi, z) = (2, pi/4, 1) ---
+u0 = np.array([2.0, np.pi/4, 1.0])
+h_num, uhat_num = versores_e_h(r_cil, u0)
+h_analitico = np.array([1.0, u0[0], 1.0])           # h_s=1, h_phi=s, h_z=1
+print("Cilíndricas: h numérico  =", np.round(h_num, 4))
+print("Cilíndricas: h analítico =", h_analitico)
+print("Ortogonalidade (produtos escalares s.phi, s.z, phi.z):",
+      np.round([uhat_num[0]@uhat_num[1], uhat_num[0]@uhat_num[2],
+                uhat_num[1]@uhat_num[2]], 8))
+
+# --- Esféricas em (r, theta, phi) = (2, pi/3, pi/4) ---
+u0 = np.array([2.0, np.pi/3, np.pi/4])
+h_num, uhat_num = versores_e_h(r_esf, u0)
+h_analitico = np.array([1.0, u0[0], u0[0]*np.sin(u0[1])])  # h_r=1, h_theta=r, h_phi=r sin(theta)
+print("\nEsféricas: h numérico  =", np.round(h_num, 4))
+print("Esféricas: h analítico =", np.round(h_analitico, 4))
+print("Ortogonalidade (produtos escalares r.theta, r.phi, theta.phi):",
+      np.round([uhat_num[0]@uhat_num[1], uhat_num[0]@uhat_num[2],
+                uhat_num[1]@uhat_num[2]], 8))
+
+# --- Visualização: círculos de raio constante (s) e raios de phi constante ---
 phi = np.linspace(0, 2*np.pi, 200)
+fig, ax = plt.subplots()
 for s in (0.6, 1.2, 1.8):
-    plt.plot(s*np.cos(phi), s*np.sin(phi))
-for p in np.linspace(0, 2*np.pi, 12):
-    plt.plot([0, 2*np.cos(p)],
-             [0, 2*np.sin(p)])
-plt.axis("equal")
-print("h_s, h_phi, h_z =", (1, "s", 1))
+    ax.plot(s*np.cos(phi), s*np.sin(phi), label=f"s={s}")
+for p in np.linspace(0, 2*np.pi, 12, endpoint=False):
+    ax.plot([0, 2*np.cos(p)], [0, 2*np.sin(p)], color="gray", lw=0.7)
+ax.set_aspect("equal"); ax.legend()
+ax.set_title("Curvas de $s$ constante e $\\phi$ constante (plano $xy$)")
 ```
+
+**Saída esperada**: o $h$ numérico (diferenças finitas) coincide com o $h$ analítico dentro do erro de truncamento ($<10^{-4}$), e todos os produtos escalares cruzados são $\approx0$ — confirmando numericamente a ortogonalidade estabelecida nos Passos 2.4 e 3.4.
 
 ::: exemplo
 **Exemplo 8.** Em coordenadas cilíndricas, seja $f(s,\phi,z) = s^2 z$. O gradiente é:
@@ -614,15 +1142,55 @@ confirmando que o campo de uma carga puntiforme tem divergente nulo em todo pont
 **Observação 2.** O campo $\vec F = r\,\hat r$ (não $1/r^2$) tem $\nabla\cdot\vec F=3$ em todo ponto — consistente com $\vec F=\vec r$ em cartesianas, cujo divergente cartesiano é trivialmente $3$.
 :::
 
-### Ideia geral da dedução em coordenadas curvilíneas
+### Passo 4: de onde vêm as fórmulas gerais (fatores de Lamé)
 
-Para um sistema de coordenadas ortogonais $(u_1,u_2,u_3)$ com fatores de escala $h_i$ (tais que um deslocamento infinitesimal na direção $i$ tem comprimento $h_i\,du_i$), o mesmo argumento de "cubo infinitesimal" da Seção “Dedução da interpretação geométrica” se aplica a uma **caixa curvilínea** de arestas $h_1du_1, h_2du_2, h_3du_3$ — a diferença é que os próprios $h_i$ podem depender de $u_1,u_2,u_3$, contribuindo termos extras quando se deriva a área das faces opostas. Esse procedimento sistemático (fórmulas de Lamé) gera exatamente as expressões acima; cilíndricas e esféricas são casos particulares com $h_s=1,h_\phi=s,h_z=1$ e $h_r=1,h_\theta=r,h_\phi=r\sin\theta$, respectivamente.
+As caixas do Passo 2.6 não são um "truque de substituição" — elas seguem do **mesmo argumento físico** já usado para o divergente e o rotacional cartesianos (Seções "Dedução da interpretação física (fluxo por unidade de volume)" e "Dedução da interpretação física (circulação por unidade de área)"), aplicado a uma caixa cujas arestas têm comprimento físico $h_1du_1,\ h_2du_2,\ h_3du_3$ em vez de $dx,dy,dz$.
+
+**Gradiente.** Por definição, $df=\nabla f\cdot d\vec\ell$ para qualquer deslocamento (Seção "Dedução da interpretação geométrica"). Por outro lado, pela regra da cadeia,
+
+$$
+df = \frac{\partial f}{\partial u_1}du_1+\frac{\partial f}{\partial u_2}du_2+\frac{\partial f}{\partial u_3}du_3
+$$
+
+Escrevendo $\nabla f = A_1\hat u_1+A_2\hat u_2+A_3\hat u_3$ e usando $d\vec\ell=h_1du_1\hat u_1+h_2du_2\hat u_2+h_3du_3\hat u_3$ (ortogonalidade elimina os produtos cruzados $\hat u_i\cdot\hat u_j$, $i\neq j$):
+
+$$
+\nabla f\cdot d\vec\ell = A_1h_1\,du_1+A_2h_2\,du_2+A_3h_3\,du_3
+$$
+
+Comparando termo a termo com a expansão da regra da cadeia, $A_ih_i=\partial f/\partial u_i$, ou seja $A_i=\frac{1}{h_i}\frac{\partial f}{\partial u_i}$ — exatamente a fórmula geral do gradiente usada acima.
+
+**Divergente.** Repita o argumento da caixa infinitesimal cartesiana (cubo $dx\,dy\,dz$), mas agora com uma caixa curvilínea de arestas $h_1du_1,h_2du_2,h_3du_3$. O fluxo líquido saindo pelas duas faces perpendiculares a $\hat u_1$ (áreas $h_2h_3\,du_2du_3$, uma vez que **$h_2,h_3$ também variam com $u_1$**, ao contrário do caso cartesiano) é:
+
+$$
+d\Phi_1 = \left[(F_1h_2h_3)\Big|_{u_1+du_1/2}-(F_1h_2h_3)\Big|_{u_1-du_1/2}\right]du_2\,du_3 \approx \frac{\partial(F_1h_2h_3)}{\partial u_1}\,du_1\,du_2\,du_3
+$$
+
+(o produto $F_1h_2h_3$ — e não apenas $F_1$ — é o que se expande em Taylor, pois é essa combinação que dá a vazão através da face de área $h_2h_3\,du_2du_3$). Somando as três direções e dividindo pelo volume da caixa $dV=h_1h_2h_3\,du_1du_2du_3$:
+
+$$
+\nabla\cdot\vec F = \lim_{\Delta V\to0}\frac{d\Phi_1+d\Phi_2+d\Phi_3}{dV} = \frac{1}{h_1h_2h_3}\left[\frac{\partial(h_2h_3F_1)}{\partial u_1}+\frac{\partial(h_1h_3F_2)}{\partial u_2}+\frac{\partial(h_1h_2F_3)}{\partial u_3}\right]
+$$
+
+que é a fórmula geral usada acima. O termo cartesiano ($h_1=h_2=h_3=1$) é o caso particular em que os $h_i$ saem da derivada, recuperando $\partial_xF_x+\partial_yF_y+\partial_zF_z$.
+
+**Rotacional.** O mesmo argumento aplicado à circulação em torno de um laço retangular curvilíneo (arestas $h_idu_i$) — análogo ao laço cartesiano da Seção "Dedução da interpretação física (circulação por unidade de área)", mas com os comprimentos físicos das arestas dependendo de onde elas estão — produz o determinante generalizado:
+
+$$
+\nabla\times\vec F = \frac{1}{h_1h_2h_3}\begin{vmatrix}h_1\hat u_1 & h_2\hat u_2 & h_3\hat u_3\\[2pt]\partial_{u_1} & \partial_{u_2} & \partial_{u_3}\\[2pt]h_1F_1 & h_2F_2 & h_3F_3\end{vmatrix}
+$$
+
+Expandir esse determinante com $h_s=1,h_\phi=s,h_z=1$ (cilíndricas) reproduz exatamente a fórmula do rotacional cilíndrico do Passo 2.6.
+
+**Laplaciano.** Não precisa de nova dedução: por definição $\nabla^2f=\nabla\cdot(\nabla f)$ (Definição 5), então basta substituir $F_i=A_i=\frac{1}{h_i}\partial f/\partial u_i$ (fórmula do gradiente) na fórmula geral do divergente — o que gera diretamente a fórmula geral do laplaciano usada no Passo 2.6.
+
+Cilíndricas e esféricas são casos particulares dessas quatro fórmulas gerais com $h_s=1,h_\phi=s,h_z=1$ e $h_r=1,h_\theta=r,h_\phi=r\sin\theta$, respectivamente (Passos 2 e 3).
 
 ---
 
 ## Identidades Vetoriais Fundamentais
 
-As identidades abaixo são usadas repetidamente ao longo da apostila (seção onde cada uma é empregada, indicada entre parênteses):
+Por que memorizar (ou melhor, saber deduzir) estas identidades? Porque, no resto da apostila, $\nabla$ vai aparecer aplicado a produtos e composições de campos ($f\vec F$, $\vec F\times\vec G$, $\nabla\times(\nabla\times\vec F)$) — e sem estas "regras de álgebra" seríamos forçados a expandir tudo em componentes cartesianas toda vez. Cada identidade abaixo é usada repetidamente ao longo da apostila (seção onde é empregada, indicada entre parênteses); as duas primeiras dizem algo estrutural (certas composições são **sempre** zero, um fato puramente geométrico e não uma coincidência do campo); as demais são regras do produto, adaptadas de cálculo escalar para o caso vetorial.
 
 $$
 \nabla\times(\nabla f) \equiv 0 \qquad\text{(arquivo 2, Seção “Vetor Unitário”.2 — consistência } \vec E=-\nabla V \text{ com } \nabla\times\vec E=0\text{)}
@@ -630,27 +1198,122 @@ $$
 
 **Prova**: componente $z$: $\left[\nabla\times(\nabla f)\right]_z = \partial_x(\partial_y f)-\partial_y(\partial_x f) = 0$ pela igualdade das derivadas parciais mistas (teorema de Schwarz, válido para $f$ suave). As demais componentes seguem por permutação cíclica. $\blacksquare$
 
+::: observação
+**Por que isso é estrutural, e não uma coincidência.** O rotacional mede circulação (Seção "Rotacional"); o gradiente é a taxa de máxima subida (Seção "O Operador Nabla e o Gradiente"). Fisicamente: um campo $\nabla f$ empurra sempre "morro acima"; percorrer qualquer laço fechado retorna ao ponto de partida, logo a variação líquida de $f$ (e portanto o trabalho de $\nabla f$) em um laço fechado é sempre zero — não porque o campo específico seja especial, mas porque **todo** campo gradiente tem essa propriedade, por construção. Isso é exatamente o Corolário 2 aplicado ao caso $\vec F=\nabla f$.
+:::
+
 $$
 \nabla\cdot(\nabla\times\vec F) \equiv 0 \qquad\text{(arquivo 4, Seção “Elementos Diferenciais e Integrais”.7.1 — existência de } \vec A \text{, pois } \nabla\cdot\vec B=0\text{)}
 $$
 
 **Prova**: $\nabla\cdot(\nabla\times\vec F) = \partial_x(\partial_yF_z-\partial_zF_y)+\partial_y(\partial_zF_x-\partial_xF_z)+\partial_z(\partial_xF_y-\partial_yF_x)$. Cada termo cancela com outro por igualdade das derivadas mistas (ex.: $\partial_x\partial_yF_z$ cancela com $-\partial_y\partial_xF_z$). $\blacksquare$
 
-$$
-\nabla\times(\nabla\times\vec F) = \nabla(\nabla\cdot\vec F)-\nabla^2\vec F \qquad\text{(arquivo 4, Seção “Elementos Diferenciais e Integrais”.7.3; arquivo 6, Seção “Rotacional”.7.3)}
-$$
+::: observação
+**Interpretação física.** O divergente mede fluxo líquido saindo de um volume (Seção "Divergente"); o rotacional, circulação em torno de um laço (Seção "Rotacional"). Um campo $\nabla\times\vec F$ é composto inteiramente de "linhas que giram" — e linhas que giram, por construção, não têm início nem fim: elas se fecham sobre si mesmas ou vão ao infinito, nunca "brotam" de um ponto. Um campo sem fontes nem sorvedouros tem divergente nulo — daí $\nabla\cdot(\nabla\times\vec F)=0$ sempre. Esta é a razão profunda pela qual $\vec B=\nabla\times\vec A$ é uma escolha **consistente**: como $\nabla\cdot\vec B=0$ sempre (Lei de Gauss magnética, ausência de monopolos), $\vec B$ **precisa** ser o rotacional de algo — e a identidade garante que essa construção nunca viola $\nabla\cdot\vec B=0$, qualquer que seja $\vec A$.
+:::
+
+### Prova da regra do produto: $\nabla\cdot(f\vec F)$
 
 $$
-\nabla\cdot(f\vec F) = f(\nabla\cdot\vec F)+\vec F\cdot\nabla f \qquad\text{(arquivo 2, Seção “Produto Vetorial”.2 — energia do campo elétrico)}
+\boxed{\nabla\cdot(f\vec F) = f(\nabla\cdot\vec F)+\vec F\cdot\nabla f} \qquad\text{(arquivo 2, Seção “Produto Vetorial”.2 — energia do campo elétrico)}
 $$
 
+**Prova**: expanda a componente $x$ de $f\vec F$, que é $fF_x$, e aplique a regra do produto usual de derivadas parciais (válida termo a termo, pois $\partial_x$ trata $y,z$ como constantes):
+
 $$
-\nabla\cdot(\vec F\times\vec G) = \vec G\cdot(\nabla\times\vec F)-\vec F\cdot(\nabla\times\vec G)\qquad\text{(arquivo 6, Seção “Rotacional”.8.1 — Teorema de Poynting)}
+\frac{\partial(fF_x)}{\partial x} = f\frac{\partial F_x}{\partial x}+F_x\frac{\partial f}{\partial x}
+$$
+
+Somando as três componentes análogas ($y$ e $z$):
+
+$$
+\nabla\cdot(f\vec F) = \underbrace{f\left(\frac{\partial F_x}{\partial x}+\frac{\partial F_y}{\partial y}+\frac{\partial F_z}{\partial z}\right)}_{f(\nabla\cdot\vec F)} + \underbrace{\left(F_x\frac{\partial f}{\partial x}+F_y\frac{\partial f}{\partial y}+F_z\frac{\partial f}{\partial z}\right)}_{\vec F\cdot\nabla f}
+$$
+
+que é exatamente a fórmula acima. $\blacksquare$ Note a analogia direta com a regra do produto escalar, $\frac{d}{dx}(fg)=fg'+f'g$ — aqui um dos "fatores" é vetorial, e o segundo termo vira um produto escalar porque $\nabla f$ precisa ser "contraído" com $\vec F$ para dar um escalar (compatível com o lado esquerdo, que também é escalar).
+
+$$
+\nabla\cdot(\vec F\times\vec G) = \vec G\cdot(\nabla\times\vec F)-\vec F\cdot(\nabla\times\vec G)\qquad\text{(arquivo 6, Seção “Rotacional”.8.1 — Teorema de Poynting; prova completa no Gabarito, E15)}
 $$
 
 $$
 \nabla\times(f\vec F) = f(\nabla\times\vec F)+(\nabla f)\times\vec F \qquad\text{(arquivo 4, Seção “Elementos Diferenciais e Integrais”.7.4 — Biot-Savart a partir de }\vec A\text{)}
 $$
+
+### Prova da identidade BAC-CAB: $\nabla\times(\nabla\times\vec F)$
+
+$$
+\boxed{\nabla\times(\nabla\times\vec F) = \nabla(\nabla\cdot\vec F)-\nabla^2\vec F} \qquad\text{(arquivo 4, Seção “Elementos Diferenciais e Integrais”.7.3; arquivo 6, Seção “Rotacional”.7.3 — dedução da equação de onda)}
+$$
+
+**Prova** (componente $x$; as demais seguem por permutação cíclica $x\to y\to z\to x$). Da Definição 4, a componente $x$ de $\nabla\times\vec F$ é $(\partial_yF_z-\partial_zF_y)$. Aplicando o rotacional de novo:
+
+$$
+\left[\nabla\times(\nabla\times\vec F)\right]_x = \partial_y\big[(\nabla\times\vec F)_z\big]-\partial_z\big[(\nabla\times\vec F)_y\big] = \partial_y(\partial_xF_y-\partial_yF_x) - \partial_z(\partial_zF_x-\partial_xF_z)
+$$
+
+$$
+= \partial_x\partial_yF_y - \partial_y^2F_x - \partial_z^2F_x + \partial_x\partial_zF_z
+$$
+
+**Some e subtraia** $\partial_x^2F_x$ (o termo que "falta" para completar um laplaciano em $F_x$) — o truque central desta prova:
+
+$$
+= \underbrace{\partial_x\big(\partial_xF_x+\partial_yF_y+\partial_zF_z\big)}_{\partial_x(\nabla\cdot\vec F)} \;-\; \underbrace{\big(\partial_x^2F_x+\partial_y^2F_x+\partial_z^2F_x\big)}_{\nabla^2F_x}
+$$
+
+que é exatamente a componente $x$ de $\nabla(\nabla\cdot\vec F)-\nabla^2\vec F$. $\blacksquare$
+
+::: observação
+**Por que "BAC-CAB"?** O nome vem da identidade algébrica de vetores comuns $\vec A\times(\vec B\times\vec C)=\vec B(\vec A\cdot\vec C)-\vec C(\vec A\cdot\vec B)$ ("BAC menos CAB"). Aplicando-a formalmente com $\vec A=\vec B=\nabla$ e $\vec C=\vec F$ dá $\nabla\times(\nabla\times\vec F)=\nabla(\nabla\cdot\vec F)-(\nabla\cdot\nabla)\vec F=\nabla(\nabla\cdot\vec F)-\nabla^2\vec F$ — a mesma resposta obtida acima por componentes, mas em uma linha. É um atalho mnemônico útil, **desde que se lembre** que $\nabla$ não comuta como um vetor genérico (ele é um operador — a ordem entre $\nabla$ e o campo sobre o qual atua importa), então o atalho só é seguro para os casos já demonstrados por componentes. Esta identidade é o passo-chave que transforma as equações de Maxwell acopladas em uma **equação de onda** desacoplada para $\vec E$ e $\vec B$ (arquivo 8).
+:::
+
+### Verificação simbólica com SymPy — todas as identidades de uma vez
+
+```python
+import sympy as sp
+
+x, y, z = sp.symbols('x y z')
+f = sp.Function('f')(x, y, z)
+g = sp.Function('g')(x, y, z)
+Fx, Fy, Fz = [sp.Function(n)(x, y, z) for n in ('Fx', 'Fy', 'Fz')]
+Gx, Gy, Gz = [sp.Function(n)(x, y, z) for n in ('Gx', 'Gy', 'Gz')]
+F = sp.Matrix([Fx, Fy, Fz])
+G = sp.Matrix([Gx, Gy, Gz])
+
+def grad(h):
+    return sp.Matrix([sp.diff(h, x), sp.diff(h, y), sp.diff(h, z)])
+def div(V):
+    return sp.diff(V[0], x) + sp.diff(V[1], y) + sp.diff(V[2], z)
+def curl(V):
+    return sp.Matrix([sp.diff(V[2], y) - sp.diff(V[1], z),
+                       sp.diff(V[0], z) - sp.diff(V[2], x),
+                       sp.diff(V[1], x) - sp.diff(V[0], y)])
+def lap(h):
+    return sp.diff(h, x, 2) + sp.diff(h, y, 2) + sp.diff(h, z, 2)
+
+checks = {
+    "rot(grad f) = 0": sp.simplify(curl(grad(f))),
+    "div(rot F) = 0": sp.simplify(div(curl(F))),
+    "div(fF) - [f div(F) + F.grad(f)]": sp.simplify(
+        div(f*F) - (f*div(F) + F.dot(grad(f)))),
+    "rot(fF) - [f rot(F) + grad(f) x F]": sp.simplify(
+        curl(f*F) - (f*curl(F) + grad(f).cross(F))),
+    "rot(rot F) - [grad(div F) - lap(F)]": sp.simplify(
+        curl(curl(F)) - (grad(div(F)) - sp.Matrix([lap(Fx), lap(Fy), lap(Fz)]))),
+    "div(FxG) - [G.rot(F) - F.rot(G)]": sp.simplify(
+        div(F.cross(G)) - (G.dot(curl(F)) - F.dot(curl(G)))),
+}
+for nome, resultado in checks.items():
+    esperado = "0 (ou vetor nulo)" if "=" in nome else "0 (ou vetor nulo) confirma a identidade"
+    print(f"{nome}: {resultado}  ->  {esperado}")
+```
+
+**Saída esperada**: todas as seis verificações retornam identicamente `0` (escalar) ou `Matrix([[0],[0],[0]])` (vetor) — confirmando simbolicamente, para campos $f,\vec F,\vec G$ **genéricos** (não casos particulares), todas as identidades provadas ou apresentadas nesta seção.
+
+::: aplicacao
+**Aplicação Prática — de onde vem a equação de onda.** No arquivo 8, aplicar $\nabla\times$ à Lei de Faraday $\nabla\times\vec E=-\partial\vec B/\partial t$ produz $\nabla\times(\nabla\times\vec E)$ no lado esquerdo. A identidade BAC-CAB comprovada acima converte isso em $\nabla(\nabla\cdot\vec E)-\nabla^2\vec E$; no vácuo, $\nabla\cdot\vec E=0$, sobrando $-\nabla^2\vec E$. Substituindo a Lei de Ampère-Maxwell no lado direito, chega-se à equação de onda $\nabla^2\vec E = \mu_0\varepsilon_0\,\partial^2\vec E/\partial t^2$ — a existência de ondas eletromagnéticas propagando à velocidade da luz é uma **consequência direta** desta identidade puramente algébrica.
+:::
 
 ---
 
@@ -1007,6 +1670,24 @@ O **Teorema de Helmholtz** garante que qualquer campo vetorial bem comportado po
 3. **Rotacional nulo**: Campo conservativo/integral de linha independe do caminho.
 4. **Divergente nulo**: Campo solenoidal/linhas de campo formam laços fechados ou vão ao infinito.
 5. **Teorema da Unicidade**: Solução de $\nabla^2\phi=0$ é única com condições de contorno Dirichlet ou Neumann.
+
+::: insight
+**Insights-Chave do Capítulo — as metáforas físicas para lembrar de cor**
+
+| Operador | Metáfora física | O que ela captura |
+|---|---|---|
+| **Produto escalar** $\vec A\cdot\vec B$ | "Quanto de $B$ empurra na direção de $A$?" | Só a componente **paralela** contribui — daí trabalho $=\vec F\cdot d\vec\ell$ |
+| **Produto vetorial** $\vec A\times\vec B$ | "Área varrida, com sinal dado pela mão direita" | Só a componente **perpendicular** contribui — daí torque, força magnética |
+| **Gradiente** $\nabla f$ | Bússola no topo de uma colina: aponta morro acima | Direção e taxa de **máxima subida**; sempre $\perp$ às curvas de nível |
+| **Divergente** $\nabla\cdot\vec F$ | Balanço contábil de um voxel: saídas menos entradas | Densidade de **fontes/sorvedouros** — base da Lei de Gauss local |
+| **Rotacional** $\nabla\times\vec F$ | Roda de pás flutuando no campo: gira ou não? | Densidade de **circulação/torque local** — base da Lei de Ampère/Faraday locais |
+| **Laplaciano** $\nabla^2f$ | Detector de desequilíbrio: eu sou a média dos meus vizinhos? | Diferença entre valor local e **média da vizinhança** — base da equação de Laplace/difusão |
+| **Teorema do Divergente** | Somar balanços de todos os voxels de um volume | As faces internas se cancelam; só a **casca externa** sobra |
+| **Teorema de Stokes** | Somar circulações de todas as células de uma superfície | As arestas internas se cancelam; só o **contorno externo** sobra |
+| **Teorema de Helmholtz** | "Fontes + redemoinhos determinam o campo por completo" | Um campo é só sua parte irrotacional (gradiente) mais sua parte solenoidal (rotacional) |
+
+O fio condutor: **gradiente, divergente e rotacional são todos limites de razões entre uma integral (em uma fronteira) e uma medida geométrica (comprimento, volume, área) que encolhe a zero** — e os Teoremas do Divergente e de Stokes são, cada um, a versão "somada sobre muitas células pequenas, com cancelamento nas fronteiras internas" exatamente dessas mesmas definições locais.
+:::
 
 ---
 

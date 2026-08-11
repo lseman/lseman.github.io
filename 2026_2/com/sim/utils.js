@@ -312,5 +312,6 @@ export function analyticSignal(signal) {
 }
 
 export function convolveSignal(signal, taps) {
-    return { ...signal, data: convolveFull(signal, taps).slice(0, arr(signal).length) };
+    const data = arr(signal).map(complex);
+    return { ...signal, data: convolveFull(data, taps).slice(0, data.length) };
 }

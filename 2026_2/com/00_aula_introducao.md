@@ -1,92 +1,167 @@
-# Aula Inaugural — Sistemas de Comunicações
+---
+title: Aula Inaugural — Sistemas de Comunicações
+author: Prof. Laio Oriel Seman · UFSC · 2026/2
+subtitle: Como enviamos informação de um ponto a outro?
+topics: introdução, modulação, cadeia de comunicação, Shannon
+---
 
-> **Sistemas de Comunicações** · UFSC · Prof. Laio Oriel Seman · 2026/2  
-> **Duração:** 3 horas (180 minutos) · **Idioma:** Português
+
+# Sistemas de Comunicações
+
+> **Prof. Laio Oriel Seman** · UFSC · 2026/2 · 180 horas
 
 ---
 
-## Sumário
 
-1. [Apresentação da Disciplina](#1-apresentação-da-disciplina)
-2. [Ementa e Objetivos](#2-ementa-e-objetivos)
-3. [O que é Comunicar?](#3-o-que-é-comunicar)
-4. [A Cadeia de Comunicação — Modelo Completo](#4-a-cadeia-de-comunicação--modelo-completo)
-5. [Modulação — Guia Visual Completo](#5-modulação--guia-visual-completo)
-6. [Experiências Python ao Vivo](#6-experiências-python-ao-vivo)
-7. [Métricas Fundamentais](#7-métricas-fundamentais)
-8. [Roteiro do Semestre](#8-roteiro-do-semestre)
-9. [Metodologia e Avaliação](#9-metodologia-e-avaliação)
-10. [Exercício de Fixação](#10-exercício-de-fixação)
+## Sumário da Aula
+
+1. Apresentação da disciplina
+2. O que é comunicar?
+3. A cadeia de comunicação — modelo completo
+4. Modulação — guia visual
+5. Experiências Python ao vivo
+6. Métricas fundamentais
+7. Roteiro do semestre
+8. Metodologia e avaliação
 
 ---
 
-## 1. Apresentação da Disciplina
 
-Bem-vindo a **Sistemas de Comunicações**! Esta é a disciplina que responde a uma pergunta aparentemente simples — **"como enviamos informação de um ponto a outro?"** — mas que esconde uma das mais ricas e fundamentais áreas da engenharia.
+## Apresentação da Disciplina
+
+### Bem-vindo a Sistemas de Comunicações!
+
+Esta disciplina responde a uma pergunta aparentemente simples:
+
+> **Como enviamos informação de um ponto a outro?**
+
+A resposta esconde uma das mais ricas áreas da engenharia.
+
+---
 
 ### Por que esta disciplina importa?
 
-- Cada vez que você faz uma chamada VoIP, assiste a um vídeo no YouTube, usa GPS, ou envia um e-mail, você está usando **sistemas de comunicação**.
-- O 5G, o Starlink, o WiFi 7, os satélites de órbita baixa — tudo isso se baseia nos conceitos que estudaremos aqui.
-- A teoria das comunicações é uma das poucas áreas da engenharia onde **matemática pura** (Fourier, probabilidade, álgebra linear) se traduz em **tecnologia tangível** que bilhões de pessoas usam diariamente.
-
-### Pré-requisitos
-
-Para acompanhar esta disciplina, você deve estar cursando ou ter concluído:
-
-| Pré-requisito | Por que importa |
-|---|---|
-| Cálculo (integrais, séries de Fourier) | Transformada de Fourier é a linguagem dos sinais |
-| Álgebra Linear (vetores, matrizes) | Constelações QAM/PSK são vetores em espaços multidimensionais |
-| Probabilidade e Estatística (Gaussiana, esperança) | Ruído é modelado como processo aleatório |
-| Circuitos Elétricos (filtros, resposta em frequência) | Moduladores/demoduladores são filtros e misturadores |
+- Cada chamada VoIP, vídeo no YouTube, GPS, e-mail — tudo usa **sistemas de comunicação**
+- 5G, Starlink, WiFi 7, satélites LEO — baseiam-se nos conceitos daqui
+- A teoria das comunicações é onde **matemática pura** se traduz em **tecnologia tangível** que bilhões usam diariamente
 
 ---
 
-## 2. Ementa e Objetivos
+### A comunicação move o mundo moderno
+
+Praticamente todo valor econômico digital depende de bits atravessando algum canal físico — e alguém precisou **projetar** esse trecho da jornada.
+
+```mermaid
+mindmap
+  root(("Sistemas de<br/>Comunicação"))
+    Conectividade
+      Internet móvel 4G/5G
+      WiFi doméstico e corporativo
+      Fibra óptica submarina
+    Posicionamento
+      GPS / GNSS
+      Navegação aérea e marítima
+    Espaço
+      Satélites LEO (Starlink)
+      Sondas interplanetárias
+    Infraestrutura crítica
+      Redes elétricas inteligentes
+      IoT industrial
+      Telemedicina
+    Entretenimento
+      Streaming de vídeo/áudio
+      Jogos online
+```
+
+> Sem engenharia de comunicações, não há Internet, não há satélites, não há telefone celular. É uma das disciplinas de engenharia com **maior impacto direto per capita** no planeta.
+
+---
+
+### O problema central: recursos são escassos
+
+Todo sistema de comunicação disputa **três recursos fundamentais**, sempre limitados:
+
+| Recurso | Limitação | Exemplo |
+|---|---|---|
+| **Espectro (Hz)** | Regulado, finito, caro | Leilão de espectro 5G: bilhões de dólares |
+| **Potência (W)** | Bateria, regulação, saúde | Celular: poucos watts; sonda espacial: miliwatts |
+| **Tempo (s)** | Latência tolerável | Cirurgia remota: < 10 ms; e-mail: segundos |
+
+>! O trabalho do engenheiro de comunicações é **extrair o máximo de informação confiável** desses três recursos escassos — e a teoria de Shannon nos diz exatamente qual é o limite teórico desse jogo.
+
+---
+
+### Pré-requisitos
+
+| Pré-requisito | Por que importa |
+|---|---|
+| Cálculo (integrais, Fourier) | Fourier é a linguagem dos sinais |
+| Álgebra Linear (vetores, matrizes) | Constelações QAM/PSK são vetores |
+| Probabilidade e Estatística | Ruído = processo aleatório |
+| Circuitos Elétricos (filtros) | Moduladores = filtros e misturadores |
+
+---
+
+
+## Ementa e Objetivos
 
 ### Ementa
 
 > **Introdução a sistemas de comunicações; Modulação analógica; Formatação e transmissão de sinais em banda base; Transmissão digital em banda passante; Equalização; Sincronismo.**
+
+---
 
 ### Objetivos Gerais
 
 Ao final do semestre, você será capaz de:
 
 1. **Compreender** a cadeia completa de comunicação — da fonte ao destino
-2. **Projetar** moduladores e demoduladores para sinais analógicos (AM, FM) e digitais (BPSK, QPSK, QAM)
-3. **Analisar** o desempenho de sistemas em presença de ruído (SNR, $E_b/N_0$, BER)
-4. **Calcular** a capacidade máxima de um canal (limite de Shannon)
+2. **Projetar** moduladores e demoduladores (AM, FM, BPSK, QPSK, QAM)
+3. **Analisar** o desempenho com ruído (SNR, $E_b/N_0$, BER)
+4. **Calcular** a capacidade máxima de um canal (Shannon)
 5. **Implementar** receptores digitais completos em Python
-6. **Projetar** equalizadores para combater a distorção do canal
+6. **Projetar** equalizadores para combater distorção do canal
 7. **Implementar** mecanismos de sincronismo (fase, timing, quadro)
-
-### Estrutura do Semestre (80 horas)
-
-| Módulo | Tópico | Aulas Aprox. |
-|---|---|---|
-| **I** | Introdução a sistemas de comunicações | ~10h |
-| **II** | Modulação analógica (AM, FM) | ~16h |
-| **III** | Formatação e transmissão em banda base (Nyquist, ISI) | ~10h |
-| **IV** | Transmissão digital em banda passante (ASK, PSK, FSK, QAM) | ~16h |
-| **V** | Equalização (ZF, MMSE, LMS) | ~10h |
-| **VI** | Sincronismo (Costas, Gardner, M&M) | ~10h |
-| **VII** | Códigos corretores de erros (Hamming, Viterbi, Shannon) | ~8h |
 
 ---
 
-## 3. O que é Comunicar?
+### Estrutura do Semestre (80 horas)
+
+| Módulo | Tópico | Aprox. |
+|---|---|---|
+| **I** | Introdução a sistemas | ~10h |
+| **II** | Modulação analógica (AM, FM) | ~16h |
+| **III** | Banda base — Nyquist, ISI | ~10h |
+| **IV** | Digital banda passante | ~16h |
+| **V** | Equalização (ZF, MMSE, LMS) | ~10h |
+| **VI** | Sincronismo (Costas, Gardner) | ~10h |
+| **VII** | Códigos corretores de erros | ~8h |
+
+---
+
+
+## O que é Comunicar?
+
+### Definição fundamental
 
 Comunicar é **transferir informação de um emissor a um receptor por um meio imperfeito**.
 
-O "meio imperfeito" é a chave: nenhum canal é perfeito. Sempre há:
+>! O "meio imperfeito" é a chave!
+
+Nenhum canal é perfeito. Sempre há:
 
 - **Ruído** (térmico, interferência, multipercursos)
 - **Atenuação** (o sinal perde força com a distância)
-- **Distorção** (diferentes frequências viajam de forma diferente)
-- **Interferência** (outos transmissores ocupando o mesmo espectro)
+- **Distorção** (diferentes frequências viajam diferente)
+- **Interferência** (outros transmissores no mesmo espectro)
 
-A engenharia de comunicações é a arte de **extrair informação máxima de sinais mínimos, através de canais ruins**.
+---
+
+### A arte das comunicações
+
+> A engenharia de comunicações é a arte de **extrair informação máxima de sinais mínimos, através de canais ruins**.
+
+---
 
 ### Exemplos do mundo real
 
@@ -100,113 +175,304 @@ A engenharia de comunicações é a arte de **extrair informação máxima de si
 
 ---
 
-## 4. A Cadeia de Comunicação — Modelo Completo
 
-Todo sistema de comunicação pode ser representado por esta cadeia:
+## A Cadeia de Comunicação
 
 ```mermaid
 flowchart LR
-    F["📡 **Fonte**\n(voz, vídeo, dados)"] --> CF["📦 **Codif. Fonte**\n(compressão, Huffman)"]
-    CF --> CC["🛡️ **Codif. Canal**\n(proteção, correção)"]
-    CC --> M["📻 **Modulador**\n(adapta ao canal)"]
-    M -->|sinal transmitido| Ch["🌊 **CANAL**\n+ ruído AWGN\n+ interferência"]
-    Ch --> Dm["📻 **Demodulador**\n(recupera sinal)"]
-    Dm --> DC["🔍 **Decodif. Canal**\n(correção de erros)"]
-    DC --> DF["📥 **Decodif. Fonte**\n(descompressão)"]
-    DF --> D["🎧 **Destino**\n(reconstruir mensagem)"]
+    F(["📡 <b>Fonte</b><br/>voz, vídeo, dados"]) --> CF["📦 <b>Codif. Fonte</b><br/>compressão"]
 
-    style F fill:#ffeaa7,stroke:#fdcb6e,color:#2d3436
-    style Ch fill:#fd79a8,stroke:#e84393,color:#ffffff
-    style D fill:#dfe6e9,stroke:#b2bec3,color:#2d3436
-    style CF fill:#74b9ff,stroke:#0984e3,color:#ffffff
-    style CC fill:#a29bfe,stroke:#6c5ce7,color:#ffffff
-    style M fill:#55efc4,stroke:#00b894,color:#2d3436
-    style Dm fill:#55efc4,stroke:#00b894,color:#2d3436
-    style DC fill:#a29bfe,stroke:#6c5ce7,color:#ffffff
-    style DF fill:#74b9ff,stroke:#0984e3,color:#ffffff
+    subgraph TX["🚀 Transmissor"]
+        CF --> CC["🛡️ <b>Codif. Canal</b><br/>proteção"]
+        CC --> M["📻 <b>Modulador</b><br/>adapta ao canal"]
+    end
+
+    M -->|sinal transmitido| Ch["🌊 <b>CANAL</b><br/>ruído + interferência"]
+
+    Ch --> Dm["📻 <b>Demodulador</b><br/>recupera sinal"]
+
+    subgraph RX["📥 Receptor"]
+        Dm --> DC["🔍 <b>Decodif. Canal</b><br/>correção"]
+        DC --> DF["📤 <b>Decodif. Fonte</b><br/>descompressão"]
+    end
+
+    DF --> D(["🎧 <b>Destino</b><br/>reconstrói a mensagem"])
+
+    classDef endpoint fill:#dfe6e9,stroke:#636e72,color:#2d3436,font-weight:bold
+    classDef sourceCoder fill:#74b9ff,stroke:#0984e3,color:#ffffff,font-weight:bold
+    classDef channelCoder fill:#a29bfe,stroke:#6c5ce7,color:#ffffff,font-weight:bold
+    classDef modem fill:#55efc4,stroke:#00b894,color:#2d3436,font-weight:bold
+    classDef channel fill:#fd79a8,stroke:#e84393,color:#ffffff,font-weight:bold
+
+    class F,D endpoint
+    class CF,DF sourceCoder
+    class CC,DC channelCoder
+    class M,Dm modem
+    class Ch channel
+
+    style TX fill:#dfe6ff20,stroke:#74b9ff,stroke-dasharray: 4 3
+    style RX fill:#dfe6ff20,stroke:#74b9ff,stroke-dasharray: 4 3
 ```
 
-### Explicando cada bloco
+---
 
-#### Fonte
-Gera a informação original: voz, vídeo, dados. A **entropia de Shannon** mede a informação contida:
+### Fonte — Entropia de Shannon
 
+::: definição
+A **entropia de Shannon** mede a informação contida em uma fonte:
 $$H(X) = -\sum_{i} p_i \log_2(p_i) \quad \text{(bits/símbolo)}$$
+:::
 
-Para uma moeda justa ($p=0.5$): $H = 1$ bit/símbolo.  
-Para uma moeda viciada ($p=0.99$): $H \approx 0.08$ bits/símbolo — quase toda informação é previsível.
+- Moeda justa ($p=0.5$): $H = 1$ bit/símbolo
+- Moeda viciada ($p=0.99$): $H \approx 0.08$ bits/símbolo — quase tudo previsível
 
-#### Codificação de Fonte
-Remove redundância. Exemplo: código Huffman, compressão ZIP, MP3.  
-**Objetivo:** transmitir a mesma informação com **menos bits**.
+---
 
-#### Codificação de Canal
-Adiciona redundância **controlada** para proteção contra erros. Exemplo: código Hamming $(7,4)$ — 4 bits de informação viram 7 bits transmitidos.  
-**Objetivo:** detectar e corrigir erros sem retransmissão.
+### Codificação de Fonte
 
-#### Modulador
-Adapta o sinal à banda do canal. Um sinal de voz (300 Hz – 3.4 kHz) não pode viajar diretamente por uma antena de 1 m — precisamos "carregá-lo" em uma portadora de MHz ou GHz.
+Remove redundância.
+
+- Exemplos: Huffman, ZIP, MP3, JPEG
+- **Objetivo:** transmitir a mesma informação com **menos bits**
+
+---
+
+### Codificação de Canal
+
+Adiciona redundância **controlada** para proteção.
+
+- Exemplo: código Hamming $(7,4)$ — 4 bits viram 7
+- **Objetivo:** detectar e corrigir erros sem retransmissão
+
+---
+
+### Modulador
+
+Adapta o sinal à banda do canal.
 
 $$s(t) = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t)$$
 
-#### Canal
-O meio físico: fio, fibra, espaço livre. Sempre adiciona:
-- Atenuação (perda de potência)
-- Ruído (aleatório, modelado como Gaussiano)
-- Distorção (multipercursos, ISI)
+Um sinal de voz (3.4 kHz) não viaja por uma antena de 1 m. Precisamos "carregá-lo" em uma portadora de MHz ou GHz.
+
+---
+
+### Canal
+
+O meio físico: fio, fibra, espaço livre.
 
 $$r(t) = s(t) * h(t) + n(t)$$
 
-#### Demodulador, Decodificação
-O processo inverso: recupera o sinal, corrige erros, reconstrói a mensagem.
+Sempre adiciona:
+- **Atenuação** (perda de potência)
+- **Ruído** (aleatório, modelado como Gaussiano)
+- **Distorção** (multipercursos, ISI)
 
 ---
 
-## 5. Modulação — Guia Visual Completo
+
+## Modulação — Guia Visual Completo
 
 ### Por que modular?
 
-Existem 4 razões fundamentais:
+Modulação é o processo de **transladar** um sinal de informação (banda base, baixa frequência) para uma faixa de frequências mais alta, centrada em uma **portadora** $f_c$. Sem isso, a comunicação moderna simplesmente não existiria.
 
-1. **Antenas práticas**: Para irradiar eficientemente, o tamanho da antena deve ser comparável ao comprimento de onda ($\lambda = c/f$). Sinais de áudio (1 kHz, $\lambda = 300$ km) exigiriam antenas de 75 km! Com portadora de 100 MHz ($\lambda = 3$ m), antenas de 0.75 m bastam.
-
-2. **Multiplexação por divisão de frequência (FDM)**: Diferentes transmissores ocupam faixas diferentes do espectro. Rádio FM 98.1 MHz, 101.7 MHz, etc.
-
-3. **Imunidade a ruído**: Algumas modulações (FM, PSK) trocam banda por melhor relação sinal-ruído.
-
-4. **Eficiência espectral**: Modulações digitais (QAM, OFDM) carregam muitos bits por Hertz.
-
----
-
-A modulação é o processo de **codificar informação em uma portadora** alterando um ou mais de seus parâmetros: **amplitude**, **frequência** ou **fase**. Vamos explorar cada família em detalhe.
-
-### 5.1 Classificação Geral
-
-```
-                         MODULAÇÃO
-                        /         \
-                  Analógica      Digital
-                 /      \        /     \
-              AM      FM        PSK     QAM
-            / | \     / \\       / | \
-          AM DSB SSB  NBF  WBF BQ   BQ16  256
-          conv SC    (1)(2) Freq Freq PSK QAM QAM QAM
-```
+1. **Antenas práticas**: $\lambda = c/f$ — áudio 1 kHz → antena de 75 km! Portadora 100 MHz → antena de 0.75 m
+2. **FDM**: diferentes transmissores em faixas diferentes (FM 98.1, 101.7 MHz)
+3. **Imunidade a ruído**: FM e PSK trocam banda por qualidade
+4. **Eficiência espectral**: QAM e OFDM carregam muitos bits por Hertz
+5. **Multiplexação do meio**: várias fontes compartilham o mesmo canal físico sem colidir
+6. **Propagação**: baixas frequências não atravessam a ionosfera nem viajam bem no espaço livre; altas frequências sim
 
 ---
 
+### Antenas: o argumento mais visceral
+
+A antena eficiente tem dimensão da ordem de $\lambda/4$ a $\lambda/2$, onde $\lambda = c/f$.
+
+```mermaid
+flowchart LR
+    subgraph SB["Sem modular — banda base"]
+        direction TB
+        A1["Voz humana: 1 kHz"] --> A2["λ = c/f ≈ 300 km"]
+        A2 --> A3["Antena ideal: ~75 km 🤯"]
+    end
+
+    subgraph CB["Com modulação — RF"]
+        direction TB
+        B1["Portadora: 100 MHz"] --> B2["λ = c/f = 3 m"]
+        B2 --> B3["Antena ideal: ~0.75 m 📻"]
+    end
+
+    style A3 fill:#fd79a8,stroke:#e84393,color:#ffffff
+    style B3 fill:#55efc4,stroke:#00b894,color:#2d3436
+```
+
+>! Sem modulação, seu rádio de bolso precisaria de uma antena do tamanho de uma cidade. A portadora de RF resolve isso ao "empacotar" a informação em uma frequência com comprimento de onda prático.
+
+---
+
+### Modulação também organiza o espectro
+
+Além de viabilizar antenas pequenas, modular permite que **múltiplos sinais compartilhem o mesmo meio físico** (ar, cabo, fibra) sem se sobrepor — cada estação de rádio, canal de TV ou operadora de celular ocupa sua própria fatia de frequência.
+
+```mermaid
+flowchart TD
+    ESP["🌈 Espectro Eletromagnético Compartilhado"]
+    ESP --> F1["FM 98.1 MHz<br/>Rádio A"]
+    ESP --> F2["FM 101.7 MHz<br/>Rádio B"]
+    ESP --> F3["Banda 5G n78<br/>3.5 GHz"]
+    ESP --> F4["WiFi<br/>2.4 / 5 GHz"]
+
+    style ESP fill:#2d3436,stroke:#636e72,color:#ffffff
+    style F1 fill:#ffeaa7,stroke:#fdcb6e,color:#2d3436
+    style F2 fill:#ffeaa7,stroke:#fdcb6e,color:#2d3436
+    style F3 fill:#74b9ff,stroke:#0984e3,color:#ffffff
+    style F4 fill:#55efc4,stroke:#00b894,color:#2d3436
+```
+
+Isso é **FDM** (Frequency Division Multiplexing): cada sinal modulado numa portadora diferente, todos coexistindo sem interferir — desde que respeitem sua faixa alocada.
+
+---
+
+### O que varia?
+
+Modular é **codificar informação em uma portadora** alterando:
+
+- **Amplitude** → AM, ASK, QAM
+- **Frequência** → FM, FSK
+- **Fase** → PSK, QAM
+
+---
+
+```mermaid
+flowchart TD
+    MOD["MODULAÇÃO"]
+    MOD --> ANA["Analógica"]
+    MOD --> DIG["Digital"]
+
+    ANA --> AM["AM"]
+    ANA --> FM["FM"]
+
+    AM --> AMc["AM convencional"]
+    AM --> DSB["DSB-SC"]
+    AM --> SSB["SSB / VSB"]
+
+    FM --> NBF["NBFM"]
+    FM --> WBF["WBFM"]
+
+    DIG --> PSK["PSK"]
+    DIG --> FSK["FSK"]
+    DIG --> QAMg["QAM"]
+
+    PSK --> BPSK["BPSK"]
+    PSK --> QPSK["QPSK"]
+    PSK --> MPSK["M-PSK"]
+
+    QAMg --> Q16["16-QAM"]
+    QAMg --> Q64["64-QAM"]
+    QAMg --> Q256["256-QAM"]
+
+    style MOD fill:#2d3436,stroke:#636e72,color:#ffffff
+    style ANA fill:#ffeaa7,stroke:#fdcb6e,color:#2d3436
+    style DIG fill:#74b9ff,stroke:#0984e3,color:#ffffff
+    style AM fill:#fab1a0,stroke:#e17055,color:#2d3436
+    style FM fill:#fab1a0,stroke:#e17055,color:#2d3436
+    style PSK fill:#81ecec,stroke:#00cec9,color:#2d3436
+    style FSK fill:#81ecec,stroke:#00cec9,color:#2d3436
+    style QAMg fill:#81ecec,stroke:#00cec9,color:#2d3436
+```
+
+---
+
+
+## Modulações Analógicas — AM
+
+### AM Convencional (com portadora)
+
+O que varia: **amplitude** proporcional à mensagem.
+
+$$s_{\text{AM}}(t) = A_c\,[1 + \mu\,m(t)]\,\cos(2\pi f_c t)$$
+
+$\mu$ = índice de modulação ($0 \le \mu \le 1$ para evitar sobremodulação)
+
+---
+
+| Propriedade | Valor |
+|---|---|
+| **Banda** | $B = 2f_m$ |
+| **Potência total** | $P_T = P_c\,(1 + \mu^2/2)$ |
+| **Eficiência** | Máx. 33% (quando $\mu=1$) |
+| **Demodulação** | Envelope simples — sem portadora local |
+| **Imunidade a ruído** | Baixa |
+| **Aplicações** | Rádio AM comercial (530–1700 kHz) |
+
+---
+
+### DSB-SC (Carrier Suppressed)
+
+Mesma fórmula, **sem portadora** — economiza potência.
+
+$$s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)$$
+
+| Propriedade | Valor |
+|---|---|
+| **Banda** | $B = 2f_m$ |
+| **Potência** | 100% nas bandas laterais |
+| **Demodulação** | **Coerente** — precisa de portadora local síncrona |
+| **Problema** | Ambiguidade de fase de 180° |
+
+---
+
+### SSB e VSB
+
+::: definição
+**SSB** (Single Sideband): envia apenas uma banda lateral.
+$$s_{\text{SSB}}(t) = \frac{A_c}{2}\,m(t)\cos(2\pi f_c t) \mp \frac{A_c}{2}\,\hat{m}(t)\sin(2\pi f_c t)$$
+onde $\hat{m}(t)$ é a transformada de Hilbert.
+
+**VSB** (Vestigial Sideband): uma banda lateral completa + parte da outra.
+$$B = f_m + f_{\text{vestígio}}$$
+:::
+
+| Tipo | Banda | Demodulação | Aplicações |
+|---|---|---|---|
+| **SSB** | $f_m$ (metade!) | Coerente | Rádio amador, HF |
+| **VSB** | $\approx f_m$ | Coerente (menos crítica) | TV analógica (NTSC, PAL) |
+
+---
+
+### Comparação Visual AM
+
+<!-- slides: columns -->
+
+### AM Convencional
+
+- Envelope segue $m(t)$
+- Portadora sempre presente
+- Demodulação simples (diodo)
+- Pouco eficiente em potência
+
+<!-- slides: column -->
+
+### DSB-SC
+
+- Zero crossing quando $m(t)$ cruza zero
+- 100% potência nas laterais
+- Precisa demodulação coerente
+- Mais eficiente em potência
+
+<!-- slides: end-columns -->
+
+---
+
+### Visualize AM em Python
 
 ```python
-"""
-Experimento AM — Envelope vs. DSB-SC
-====================================
-Compare AM convencional (portadora sempre presente) com DSB-SC (portadora suprimida).
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 
 fs = 44100
-t = np.linspace(0, 0.1, int(0.1 * fs), endpoint=False)
+t = np.linspace(0, 0.01, int(0.01 * fs), endpoint=False)
 f_msg = 440
 f_carrier = 5000
 mu = 0.7
@@ -217,211 +483,56 @@ carrier = np.cos(2 * np.pi * f_carrier * t)
 am = (1 + mu * m) * carrier
 dsb = m * carrier
 
-fig, axes = plt.subplots(3, 1, figsize=(12, 6))
+fig, axes = plt.subplots(3, 1, figsize=(14, 5))
 
-axes[0].plot(t[:500], m[:500], '#2563eb', lw=1)
-axes[0].set_ylabel('Mensagem')
-axes[0].set_title(f'Mensagem — {f_msg} Hz')
-axes[0].grid(alpha=0.3)
+axes[0].plot(t[:200], m[:200], '#2563eb', lw=1.5)
+axes[0].set_ylabel('Mensagem'); axes[0].set_title('Mensagem — 440 Hz'); axes[0].grid(alpha=0.3)
 
-axes[1].plot(t[:500], am[:500], '#dc2626', lw=1)
-axes[1].fill_between(t[:500], -(1+mu)+1, (1+mu)+1, alpha=0.1, color='#dc2626')
-axes[1].set_ylabel('AM modulado')
-axes[1].set_title(f'AM Convencional (μ={mu})')
-axes[1].grid(alpha=0.3)
+axes[1].plot(t[:200], am[:200], '#dc2626', lw=1.5)
+axes[1].set_ylabel('AM'); axes[1].set_title(f'AM Convencional (μ={mu}) — envelope segue m(t)'); axes[1].grid(alpha=0.3)
 
-axes[2].plot(t[:500], dsb[:500], '#047857', lw=1)
-axes[2].set_ylabel('DSB-SC')
-axes[2].set_xlabel('Tempo (s)')
-axes[2].set_title(f'DSB-SC — note os zero-crossings quando m(t) cruza zero')
-axes[2].grid(alpha=0.3)
+axes[2].plot(t[:200], dsb[:200], '#047857', lw=1.5)
+axes[2].set_xlabel('Tempo (s)'); axes[2].set_ylabel('DSB-SC')
+axes[2].set_title('DSB-SC — note os zero-crossings quando m(t) cruza zero'); axes[2].grid(alpha=0.3)
 
-plt.tight_layout()
-plt.savefig('am_vs_dsb.png', dpi=150, bbox_inches='tight')
-print("AM: portadora sempre presente → envelope segue m(t)")
-print(f"DSB-SC: {np.count_nonzero(dsb)} não-zero vs AM: {np.count_nonzero(am)}")
+plt.tight_layout(); plt.savefig('am_visual.png', dpi=150, bbox_inches='tight')
+print("AM: envelope segue m(t)" )
+print("DSB-SC: 100% potência nas laterais (sem portadora)")
 ```
 
----
-
-### 5.2 Modulações Analógicas — AM (Amplitude)
-
-#### (a) AM Convencional (AM com portadora)
-
-O que varia: **amplitude** da portadora proporcional à mensagem.
-
-$$s_{\text{AM}}(t) = A_c\,[1 + \mu\,m(t)]\,\cos(2\pi f_c t)$$
-
-onde $\mu$ é o **índice de modulação** ($0 \le \mu \le 1$ para evitar sobremodulação).
-
-| Propriedade | Valor |
-|---|---|
-| **Banda** | $B = 2f_m$ |
-| **Potência total** | $P_T = P_c\,(1 + \mu^2/2)$ |
-| **Eficiência** | Máx. 33% (quando $\mu=1$, toda potência extra nas laterais) |
-| **Demodulação** | Envelope simples (detector de diodo) — sem necessidade de portadora local |
-| **Imunidade a ruído** | Baixa |
-
-**Aplicações**: Rádio AM comercial (530–1700 kHz), áudio em vídeo (NTSC/PAL).
-
-**Como funciona visualmente**: O envelope do sinal modulado segue exatamente a forma de $m(t)$. Se $m(t)$ é um seno de 440 Hz, o envelope pulsa 440 vezes por segundo.
-
-#### (b) DSB-SC (Double Sideband Suppressed Carrier)
-
-Mesma fórmula, mas **sem o termo DC**: removemos a portadora para economizar potência.
-
-$$s_{\text{DSB-SC}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)$$
-
-| Propriedade | Valor |
-|---|---|
-| **Banda** | $B = 2f_m$ |
-| **Potência** | 100% nas bandas laterais (eficiente!) |
-| **Demodulação** | **Coerente** — precisa de portadora local síncrona |
-| **Problema** | Ambiguidade de fase de 180° (inversão de polaridade) |
-
-**Aplicações**: Estações de TV (vídeo VSB), multiplexação PCM.
-
-#### (c) SSB (Single Sideband)
-
-Envia **apenas uma banda lateral** (superior ou inferior). Economiza 50% de banda e toda potência da portadora.
-
-$$s_{\text{SSB}}(t) = \frac{A_c}{2}\,m(t)\cos(2\pi f_c t) \mp \frac{A_c}{2}\,\hat{m}(t)\sin(2\pi f_c t)$$
-
-onde $\hat{m}(t)$ é a **transformada de Hilbert** de $m(t)$.
-
-| Propriedade | Valor |
-|---|---|
-| **Banda** | $B = f_m$ (metade do AM!) |
-| **Potência** | 100% na única lateral |
-| **Demodulação** | Coerente |
-| **Complexidade** | Filtro de Hilbert ou filtro de banda lateral |
-
-**Aplicações**: Rádio amador (HF), comunicação marítima, VoIP sobre rádio.
-
-#### (d) VSB (Vestigial Sideband)
-
-Envia **uma banda lateral completa + parte da outra** (um "vestígio"). Compromisso prático entre SSB e DSB.
-
-$$B = f_m + f_{\text{vestígio}}$$
-
-| Propriedade | Valor |
-|---|---|
-| **Banda** | $B \approx f_m$ (ligeiramente mais que SSB) |
-| **Demodulação** | Coerente, mas menos crítica que SSB |
-| **Vantagem** | Menos exigente com filtros que SSB |
-
-**Aplicações**: **TV analógica** (NTSC, PAL, SECAM) — padrão que muitos de nós crescemos vendo!
-
-#### Resumo AM — Comparação Visual
-
-```
-Amplitude
-  │
-  │  AM conv:  Envelope segue m(t), portadora sempre presente
-  │  ╔══════╗        ╔══════╗
-  │  ║      ║  ╔════╝      ╔╩════
-  │  ║  ╔═══╩══╡ m(t)    ═╡      ║
-  │  ║  ║      ║          ║      ║
-  │──╫──╫──────╫──────────╫──────╫──→ tempo
-  │  ║  ║      ║          ║      ║
-  │  ║  ╚══════╝          ╚══════╝
-  │  ╚══════╝
-  │
-  │  DSB-SC:   Zero cruzamento quando m(t) cruza zero
-  │  ╔════════╩════════╦════════╗
-  │  ║    ╔════════╣   ║    ╔═══╣
-  │──╫────╫────────╫───╫────╫──╫──→
-  │  │    ╚════════╝   │    ╚═══╝
-  │  ╚════════════════╩═════════╝
-  │
-  │  SSB:   Uma única banda lateral
-  │  (apenas USB ou LSB)
-  │
-  │  VSB:   Lateral completa + meio
-  │  (usado em TV)
-```
+>! **AM**: envelope segue a mensagem (demodulação simples).
+> **DSB-SC**: sem portadora — 100% eficiente em potência.
 
 ---
 
 
-```python
-"""
-Experimento FM — Variação de Frequência
-=======================================
-Observe como a amplitude é constante mas a densidade das oscilações muda.
-"""
-import numpy as np
-import matplotlib.pyplot as plt
+## Modulações Analógicas — FM
 
-fs = 44100
-t = np.linspace(0, 0.05, int(0.05 * fs), endpoint=False)
-f_msg = 440
-f_carrier = 5000
-beta = 2.0
-
-m = np.sin(2 * np.pi * f_msg * t)
-phase = 2 * np.pi * f_carrier * t + beta * np.sin(2 * np.pi * f_msg * t)
-fm = np.cos(phase)
-am = (1 + 0.7 * m) * np.cos(2 * np.pi * f_carrier * t)
-
-fig, axes = plt.subplots(3, 1, figsize=(12, 6))
-
-axes[0].plot(t[:300], m[:300], '#2563eb', lw=1)
-axes[0].set_ylabel('Mensagem')
-axes[0].set_title('Mensagem — 440 Hz')
-axes[0].grid(alpha=0.3)
-
-axes[1].plot(t[:300], am[:300], '#dc2626', lw=1)
-axes[1].set_ylabel('AM')
-axes[1].set_title(f'AM (μ=0.7) — amplitude varia')
-axes[1].grid(alpha=0.3)
-
-axes[2].plot(t[:300], fm[:300], '#047857', lw=1)
-axes[2].set_ylabel('FM')
-axes[2].set_xlabel('Tempo (s)')
-axes[2].set_title(f'FM (β={beta}) — amplitude constante, frequência varia!')
-axes[2].grid(alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('fm_visualization.png', dpi=150, bbox_inches='tight')
-instant_freq = f_carrier + beta * f_msg * np.cos(2 * np.pi * f_msg * t)
-print(f"FM: freq. varia entre {instant_freq.min():.0f} e {instant_freq.max():.0f} Hz")
-print(f"FM: amplitude = {np.abs(fm).mean():.4f} (quase constante!)")
-```
-
----
-
-### 5.3 Modulações Analógicas — FM (Frequência)
-
-#### FM Convencional (Wideband FM)
+### FM Convencional (Wideband FM)
 
 O que varia: **frequência instantânea** proporcional à mensagem.
 
-$$s_{\text{FM}}(t) = A_c\,\cos\!\left(2\pi f_c t + 2\pi k_f \!\int_0^t m(\tau)\,d\tau\right) = A_c\,\cos\!\left(2\pi f_c t + \phi(t)\right)$$
+$$s_{\text{FM}}(t) = A_c\,\cos\!\left(2\pi f_c t + 2\pi k_f \!\int_0^t m(\tau)\,d\tau\right)$$
 
-O **índice de modulação FM** é $\beta = \Delta f / f_m$, onde $\Delta f = k_f A_m$ é o desvio máximo de frequência.
+Índice de modulação FM: $\beta = \Delta f / f_m$
 
-A banda é dada pela **regra de Carson**:
+---
+
+### Regra de Carson
 
 $$\boxed{B_{\text{FM}} \approx 2\,f_m\,(1 + \beta)}$$
 
 | Propriedade | Valor |
 |---|---|
 | **Banda** | $2f_m(1+\beta)$ — pode ser muito maior que AM |
-| **Imunidade a ruído** | **Excelente** — o receptor FM rejeita amplitude (ruído é principalmente amplitude) |
+| **Imunidade a ruído** | **Excelente** — receptor rejeita amplitude |
 | **Ganho de processamento** | $\text{SNR}_{\text{out}} = \frac{3}{2}\beta^2 \cdot \text{SNR}_{\text{in}}$ |
-| **Demodulação** | Discriminador de FM, PLL, ou detector coerente |
-| **Efeito limiar** | Abaixo de ~10 dB, colapso catastrófico na demodulação |
+| **Efeito limiar** | ~10 dB — abaixo disso, colapso catastrófico |
+| **Aplicações** | Rádio FM (88–108 MHz, $\beta \approx 5$) |
 
-**Aplicações**: Rádio FM comercial (88–108 MHz, $\beta \approx 5$, banda 200 kHz), áudio de TV analógica, talkie-walkies.
+---
 
-#### NBFM (Narrowband FM)
-
-Quando $\beta \ll 1$ (geralmente $\beta < 0.2$):
-
-$$s_{\text{NBFM}}(t) \approx A_c\cos(2\pi f_c t) - \beta A_c\,m(t)\sin(2\pi f_c t)$$
-
-Banda ≈ $2f_m$ (similar ao DSB-SC). Usado em rádios móveis.
+### NBFM vs WBFM
 
 | Propriedade | NBFM | WBFM |
 |---|---|---|
@@ -430,62 +541,54 @@ Banda ≈ $2f_m$ (similar ao DSB-SC). Usado em rádios móveis.
 | **Qualidade de áudio** | Voz (3 kHz) | Hi-Fi (15 kHz) |
 | **Imunidade** | Moderada | Excelente |
 
+> NBFM ≈ DSB-SC em banda. WBFM troca banda por imunidade a ruído.
+
 ---
 
+### Visualize FM em Python
 
 ```python
-"""
-Experimento PSK — Constelações BPSK e QPSK
-==========================================
-Veja como BPSK e QPSK ocupam diferentes posições no plano I/Q.
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+fs = 44100
+t = np.linspace(0, 0.005, int(0.005 * fs), endpoint=False)
+f_msg = 440
+f_carrier = 5000
+beta = 2.0
 
-ax = axes[0]
-ax.scatter([-1], [0], s=300, c='#dc2626', edgecolors='white', linewidth=3, zorder=3)
-ax.scatter([1], [0], s=300, c='#dc2626', edgecolors='white', linewidth=3, zorder=3)
-ax.text(-1, -0.2, '0 (π)', ha='center', fontsize=14, weight='bold', color='white')
-ax.text(1, -0.2, '1 (0)', ha='center', fontsize=14, weight='bold', color='white')
-ax.set_xlim(-1.5, 1.5)
-ax.set_ylim(-1, 1)
-ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
-ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
-ax.set_xlabel('In-Fase (I)')
-ax.set_ylabel('Quadrature (Q)')
-ax.set_title('Constelação BPSK\n2 pontos → 1 bit/símbolo', color='#dc2626')
-ax.grid(alpha=0.3)
-ax.set_aspect('equal')
+m = np.sin(2 * np.pi * f_msg * t)
+carrier = np.cos(2 * np.pi * f_carrier * t)
 
-ax = axes[1]
-pts = np.array([[-1,-1], [-1,1], [1,1], [1,-1]])
-ax.scatter(pts[:, 0], pts[:, 1], s=300, c='#047857', edgecolors='white', linewidth=3, zorder=3)
-for (x, y), lbl in zip(pts, ['00', '01', '11', '10']):
-    ax.text(x, y*1.15, lbl, ha='center', fontsize=12, weight='bold', color='white')
-ax.set_xlim(-1.5, 1.5)
-ax.set_ylim(-1.5, 1.5)
-ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
-ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
-ax.set_xlabel('In-Fase (I)')
-ax.set_ylabel('Quadrature (Q)')
-ax.set_title('Constelação QPSK\n4 pontos → 2 bits/símbolo', color='#047857')
-ax.grid(alpha=0.3)
-ax.set_aspect('equal')
+am = (1 + 0.7 * m) * carrier
+fm = np.cos(2 * np.pi * f_carrier * t + beta * np.sin(2 * np.pi * f_msg * t))
 
-plt.tight_layout()
-plt.savefig('psk_constellations.png', dpi=150, bbox_inches='tight')
-print("BPSK: 2 pontos → 1 bit/símbolo\nQPSK: 4 pontos → 2 bits/símbolo → 2× mais rápida!")
+fig, axes = plt.subplots(3, 1, figsize=(14, 5))
+
+axes[0].plot(t[:150], m[:150], '#2563eb', lw=1.5)
+axes[0].set_ylabel('Mensagem'); axes[0].set_title('Mensagem — 440 Hz'); axes[0].grid(alpha=0.3)
+
+axes[1].plot(t[:150], am[:150], '#dc2626', lw=1.5)
+axes[1].set_ylabel('AM'); axes[1].set_title(f'AM (μ=0.7) — amplitude varia'); axes[1].grid(alpha=0.3)
+
+axes[2].plot(t[:150], fm[:150], '#047857', lw=1.5)
+axes[2].set_xlabel('Tempo (s)'); axes[2].set_ylabel('FM')
+axes[2].set_title(f'FM (β={beta}) — amplitude constante, frequência varia!'); axes[2].grid(alpha=0.3)
+
+plt.tight_layout(); plt.savefig('fm_visual.png', dpi=150, bbox_inches='tight')
+print(f"FM: freq. varia entre {f_carrier-beta*f_msg:.0f} e {f_carrier+beta*f_msg:.0f} Hz")
+print(f"FM: amplitude = {np.abs(fm).mean():.4f} (quase constante!)")
 ```
+
+>! **FM**: amplitude constante — densidade das oscilações muda.
+> **AM**: amplitude varia — fácil de demodular.
 
 ---
 
-### 5.4 Modulações Digitais — PSK (Phase Shift Keying)
 
-O que varia: **fase** da portadora. Cada valor de fase representa um símbolo.
+## Modulações Digitais — PSK
 
-#### BPSK (Binary PSK)
+### BPSK (Binary PSK)
 
 2 fases possíveis: $0$ e $\pi$.
 
@@ -498,69 +601,133 @@ $$s_0(t) = \sqrt{\frac{2E_b}{T_b}}\cos(2\pi f_c t), \qquad s_1(t) = -\sqrt{\frac
 
 | Propriedade | Valor |
 |---|---|
-| **Bits/símbolo** | $k = \log_2 2 = 1$ |
-| **Eficiência espectral** | $\eta = 0.5$ bit/s/Hz (RC, $\alpha=0$) |
+| **Bits/símbolo** | $k = 1$ |
 | **BER** | $P_b = Q\!\left(\sqrt{\dfrac{2E_b}{N_0}}\right)$ |
 | **Eb/N₀ para BER=10⁻⁵** | ≈ 9.6 dB |
-| **Robustez** | **Máxima** — a modulação digital mais simples |
+| **Robustez** | **Máxima** |
 
-**Aplicações**: GPS, profundidade espacial (Voyager), RFID, Bluetooth (GFSK derivado).
+---
 
-#### QPSK (Quadrature PSK)
+### QPSK (Quadrature PSK)
 
 4 fases: $\pi/4,\, 3\pi/4,\, 5\pi/4,\, 7\pi/4$ (Gray coding).
 
-| Bits | Fase | Ponto constelação |
+| Bits | Fase | Ponto |
 |---|---|---|
 | 00 | $\pi/4$ | $(+1, +1)$ |
 | 01 | $3\pi/4$ | $(-1, +1)$ |
 | 11 | $5\pi/4$ | $(-1, -1)$ |
 | 10 | $7\pi/4$ | $(+1, -1)$ |
 
-$$s(t) = \sqrt{\frac{2E_s}{T_s}}\cos(2\pi f_c t + \theta_i), \quad \theta_i \in \left\{\frac{\pi}{4}, \frac{3\pi}{4}, \frac{5\pi}{4}, \frac{7\pi}{4}\right\}$$
-
 | Propriedade | Valor |
 |---|---|
-| **Bits/símbolo** | $k = \log_2 4 = 2$ |
+| **Bits/símbolo** | $k = 2$ |
 | **Eficiência espectral** | $\eta = 1.0$ bit/s/Hz |
-| **BER** | $P_b \approx Q\!\left(\sqrt{\dfrac{2E_b}{N_0}}\right)$ (≈ BPSK!) |
-| **Eb/N₀ para BER=10⁻⁵** | ≈ 12.6 dB (com Gray) |
+| **BER** | $P_b \approx Q\!\left(\sqrt{\dfrac{2E_b}{N_0}}\right)$ |
+| **Eb/N₀ para BER=10⁻⁵** | ≈ 12.6 dB |
 
-**Aplicações**: WiFi (802.11), DVB-S (satélite), 3G, GPS L1 C/A.
+> QPSK dobra a eficiência do BPSK com BER similar!
 
-#### M-PSK (M-ary PSK)
+---
+
+### M-PSK
 
 Generalização: $M$ fases equidistantes ($2\pi/M$).
 
-| Propriedade | Fórmula |
-|---|---|
-| **Bits/símbolo** | $k = \log_2 M$ |
-| **Distância mínima** | $d_{\min} = 2\sqrt{E_s}\,\sin(\pi/M)$ |
-| **BER** | $P_b \approx \dfrac{2}{\log_2 M}\,Q\!\left(\sqrt{2\log_2 M \cdot \dfrac{E_b}{N_0}}\,\sin\!\frac{\pi}{M}\right)$ |
+$$P_b \approx \frac{2}{\log_2 M}\,Q\!\left(\sqrt{2\log_2 M \cdot \dfrac{E_b}{N_0}}\,\sin\!\frac{\pi}{M}\right)$$
 
-| M | $k$ | Eb/N₀ para BER=10⁻⁵ | Comentar |
-|---|---|---|---|
-| 2 (BPSK) | 1 | 9.6 dB | Ideal |
-| 4 (QPSK) | 2 | 12.6 dB | Prático |
-| 8 | 3 | 16.3 dB | Complexo |
-| 16 | 4 | 19.6 dB | Raro |
+| M | $k$ | Eb/N₀ para BER=10⁻⁵ |
+|---|---|---|
+| 2 (BPSK) | 1 | **9.6 dB** |
+| 4 (QPSK) | 2 | 12.6 dB |
+| 8 | 3 | 16.3 dB |
+| 16 | 4 | 19.6 dB |
 
-> **Regra prática**: Cada dobra de M custa ~3 dB adicionais. Depois de QPSK, PSK torna-se impraticável — entra a QAM.
+>! **Regra prática**: Cada dobra de M custa ~3 dB. Depois de QPSK, PSK torna-se impraticável — entra a QAM.
+
+---
+
+### Visualize PSK em Python
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 3, figsize=(16, 4))
+
+# BPSK constelação
+ax = axes[0]
+ax.scatter([-1], [0], s=300, c='#dc2626', edgecolors='white', linewidth=3, zorder=3)
+ax.scatter([1], [0], s=300, c='#dc2626', edgecolors='white', linewidth=3, zorder=3)
+ax.text(-1, -0.2, '0 (π)', ha='center', fontsize=14, weight='bold', color='white')
+ax.text(1, -0.2, '1 (0)', ha='center', fontsize=14, weight='bold', color='white')
+ax.set_xlim(-1.5, 1.5); ax.set_ylim(-1, 1)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5); ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)'); ax.set_ylabel('Quadrature (Q)')
+ax.set_title('BPSK — 2 pontos → 1 bit/símbolo', color='#dc2626'); ax.grid(alpha=0.3); ax.set_aspect('equal')
+
+# QPSK constelação
+ax = axes[1]
+pts = np.array([[-1,-1], [-1,1], [1,1], [1,-1]])
+ax.scatter(pts[:, 0], pts[:, 1], s=300, c='#047857', edgecolors='white', linewidth=3, zorder=3)
+for (x, y), lbl in zip(pts, ['00', '01', '11', '10']):
+    ax.text(x, y*1.15, lbl, ha='center', fontsize=12, weight='bold', color='white')
+ax.set_xlim(-1.5, 1.5); ax.set_ylim(-1.5, 1.5)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5); ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)'); ax.set_ylabel('Quadrature (Q)')
+ax.set_title('QPSK — 4 pontos → 2 bits/símbolo', color='#047857'); ax.grid(alpha=0.3); ax.set_aspect('equal')
+
+# BER comparison
+ax = axes[2]
+from scipy.special import erfc
+EbN0_lin = np.logspace(-1, 2, 500)
+EbN0_dB = 10 * np.log10(EbN0_lin)
+ax.semilogy(EbN0_dB, 0.5*erfc(np.sqrt(EbN0_lin)), lw=3, label='BPSK', color='#dc2626')
+ax.semilogy(EbN0_dB, 0.5*erfc(np.sqrt(EbN0_lin)), lw=3, ls='--', label='QPSK', color='#047857')
+ax.axhline(1e-5, color='red', ls='--', alpha=0.3)
+ax.set_xlabel('Eb/N₀ (dB)'); ax.set_ylabel('BER')
+ax.set_title('BER Teórico — BPSK ≈ QPSK'); ax.legend(); ax.grid(True, alpha=0.3, which='both')
+
+plt.tight_layout(); plt.savefig('psk_visual.png', dpi=150, bbox_inches='tight')
+print("BPSK: 2 pontos → robusto")
+print("QPSK: 4 pontos → 2x mais bits/símbolo")
+```
+
+>! **BPSK**: 2 fases (0, π) — mais robusto.
+> **QPSK**: 4 fases — dobra eficiência com BER similar.
 
 ---
 
 
+## Modulações Digitais — FSK
+
+### BFSK (Binary FSK)
+
+| Bit | Frequência |
+|---|---|
+| 0 | $f_0 = f_c - \Delta f$ |
+| 1 | $f_1 = f_c + \Delta f$ |
+
+| Propriedade | Valor |
+|---|---|
+| **Banda** | $B \approx 2\Delta f + 2/T_b$ |
+| **Coerente** | $P_b = Q\!\left(\sqrt{\dfrac{E_b}{N_0}}\right)$ |
+| **Não-coerente** | $P_b = \tfrac{1}{2}\exp\!\left(-\dfrac{E_b}{2N_0}\right)$ |
+| **Custo vs BPSK** | ~3 dB pior (coerente) |
+
+> **Vantagem**: Não requer sincronismo de fase! Mais simples de implementar.
+> **Aplicações**: Modems V.22, pager, IoT (LoRa), RFID UHF
+
+---
+
+### Visualize FSK em Python
+
 ```python
-"""
-Experimento BFSK — Modulação por Frequência
-===========================================
-Compare os dois símbolos BFSK: frequência alta e baixa.
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 
 fs = 44100
-t = np.linspace(0, 0.1, int(0.1 * fs), endpoint=False)
+t = np.linspace(0, 0.02, int(0.02 * fs), endpoint=False)
 f0 = 4000
 f1 = 6000
 
@@ -581,63 +748,49 @@ fig, axes = plt.subplots(2, 1, figsize=(14, 6))
 
 ax = axes[0]
 ax.stem(range(len(bits)), bits, linefmt='#2563eb', markerfmt='o', basefmt='gray')
-ax.set_xlabel('Símbolo')
-ax.set_ylabel('Bit')
+ax.set_xlabel('Símbolo'); ax.set_ylabel('Bit')
 ax.set_title('Bits enviados (sequência de 20 bits)')
-ax.set_ylim(-0.2, 1.2)
-ax.grid(alpha=0.3)
+ax.set_ylim(-0.2, 1.2); ax.grid(alpha=0.3)
 
 ax = axes[1]
-t_short = np.linspace(0, 0.03, int(0.03 * fs), endpoint=False)
+t_short = np.linspace(0, 0.01, int(0.01 * fs), endpoint=False)
 ax.plot(t_short, fsk[:len(t_short)], '#ea580c', lw=1)
-ax.set_xlabel('Tempo (s)')
-ax.set_ylabel('Amplitude')
+ax.set_xlabel('Tempo (s)'); ax.set_ylabel('Amplitude')
 ax.set_title(f'BFSK — {f0} Hz (bit 0) vs {f1} Hz (bit 1)')
 ax.grid(alpha=0.3)
 
-plt.tight_layout()
-plt.savefig('bfsk_visualization.png', dpi=150, bbox_inches='tight')
-print(f"BFSK: bit 0 → {f0} Hz, bit 1 → {f1} Hz\nspacing: {abs(f1-f0)} Hz")
+plt.tight_layout(); plt.savefig('bfsk_visual.png', dpi=150, bbox_inches='tight')
+print(f"BFSK: bit 0 → {f0} Hz, bit 1 → {f1} Hz")
+print("spacing:", abs(f1-f0), "Hz")
 ```
 
----
+## Modulações Digitais — ASK / OOK
 
-### 5.5 Modulações Digitais — FSK (Frequency Shift Keying)
+### OOK (On-Off Keying)
 
-O que varia: **frequência**. Cada símbolo é uma frequência diferente.
-
-#### BFSK (Binary FSK)
-
-| Bit | Frequência |
+| Bit | Sinal |
 |---|---|
-| 0 | $f_0 = f_c - \Delta f$ |
-| 1 | $f_1 = f_c + \Delta f$ |
+| 0 | $0$ (sem transmissão) |
+| 1 | $A_c\cos(2\pi f_c t)$ |
+
+$$P_b = Q\!\left(\sqrt{\dfrac{E_b}{2N_0}}\right)$$
 
 | Propriedade | Valor |
 |---|---|
-| **Banda** | $B \approx 2\Delta f + 2/T_b$ |
-| **Coerente** | $P_b = Q\!\left(\sqrt{\dfrac{E_b}{N_0}}\right)$ |
-| **Não-coerente** | $P_b = \tfrac{1}{2}\exp\!\left(-\dfrac{E_b}{2N_0}\right)$ |
-| **Custo vs BPSK** | ~3 dB pior (coerente) |
-
-**Vantagem**: Não requer sincronismo de fase! Mais simples de implementar.
-
-**Aplicações**: Modems V.22 (1200 baud), pager, IoT (LoRa usa Chirp Spread Spectrum derivado), RFID UHF.
+| **Custo vs BPSK** | ~3 dB pior |
+| **Simplicidade** | **Máxima** — basta ligar/desligar |
+| **Aplicações** | Controle remoto IR, fibra óptica, RFID passivo |
 
 ---
 
+### Visualize OOK em Python
 
 ```python
-"""
-Experimento OOK — On-Off Keying
-===============================
-O mais simples: liga/desliga a portadora.
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 
 fs = 44100
-t = np.linspace(0, 0.1, int(0.1 * fs), endpoint=False)
+t = np.linspace(0, 0.02, int(0.02 * fs), endpoint=False)
 fc = 5000
 carrier = np.cos(2 * np.pi * fc * t)
 
@@ -655,62 +808,59 @@ fig, axes = plt.subplots(3, 1, figsize=(14, 7))
 
 ax = axes[0]
 ax.stem(range(len(bits)), bits, linefmt='#2563eb', markerfmt='o', basefmt='gray')
-ax.set_xlabel('Símbolo')
-ax.set_ylabel('Bit')
+ax.set_xlabel('Símbolo'); ax.set_ylabel('Bit')
 ax.set_title('Bits enviados')
-ax.set_ylim(-0.2, 1.2)
-ax.grid(alpha=0.3)
+ax.set_ylim(-0.2, 1.2); ax.grid(alpha=0.3)
 
 ax = axes[1]
-t_short = np.linspace(0, 0.02, int(0.02 * fs), endpoint=False)
+t_short = np.linspace(0, 0.01, int(0.01 * fs), endpoint=False)
 ax.plot(t_short, carrier[:len(t_short)], '#64748b', lw=0.8, alpha=0.7)
 ax.set_ylabel('Portadora')
-ax.set_title('Portadora — 5 kHz')
-ax.grid(alpha=0.3)
+ax.set_title('Portadora — 5 kHz'); ax.grid(alpha=0.3)
 
 ax = axes[2]
-t_short = np.linspace(0, 0.02, int(0.02 * fs), endpoint=False)
+t_short = np.linspace(0, 0.01, int(0.01 * fs), endpoint=False)
 ax.plot(t_short, ook[:len(t_short)], '#dc2626', lw=1)
-ax.set_xlabel('Tempo (s)')
-ax.set_ylabel('OOK')
-ax.set_title('OOK — ligar (1) / desligar (0)')
-ax.grid(alpha=0.3)
+ax.set_xlabel('Tempo (s)'); ax.set_ylabel('OOK')
+ax.set_title('OOK — ligar (1) / desligar (0)'); ax.grid(alpha=0.3)
 
-plt.tight_layout()
-plt.savefig('ook_visualization.png', dpi=150, bbox_inches='tight')
-print("OOK: bit 1 → portadora ON, bit 0 → OFF\nBER pior que BPSK por ~3 dB")
+plt.tight_layout(); plt.savefig('ook_visual.png', dpi=150, bbox_inches='tight')
+print("OOK: bit 1 → portadora ON, bit 0 → OFF")
+print("BER pior que BPSK por ~3 dB")
 ```
 
----
-
-### 5.6 Modulações Digitais — ASK / OOK (Amplitude)
-
-O que varia: **amplitude**.
-
-#### OOK (On-Off Keying)
-
-| Bit | Sinal |
-|---|---|
-| 0 | $0$ (sem transmissão) |
-| 1 | $A_c\cos(2\pi f_c t)$ |
-
-| Propriedade | Valor |
-|---|---|
-| **BER** | $P_b = Q\!\left(\sqrt{\dfrac{E_b}{2N_0}}\right)$ |
-| **Custo vs BPSK** | ~3 dB pior |
-| **Simplicidade** | **Máxima** — basta ligar/desligar |
-
-**Aplicações**: Controle remoto infravermelho, fibra óptica simples, RFID passivo.
+>! **OOK**: o mais simples — basta ligar/desligar a portadora.
+> **Desvantagem**: ~3 dB pior que BPSK.
 
 ---
 
+
+## Modulações Digitais — QAM
+
+### M-QAM Quadrada
+
+Grid $\sqrt{M} \times \sqrt{M}$ no plano I/Q.
+
+$$s(t) = I\cos(2\pi f_c t) - Q\sin(2\pi f_c t)$$
+
+| M | Nome | Grid | Bits/símbolo | Eb/N₀ BER=10⁻⁵ |
+|---|---|---|---|---|
+| 4 | 4-QAM (= QPSK) | 2×2 | 2 | ~12.6 dB |
+| 16 | 16-QAM | 4×4 | 4 | ~19.6 dB |
+| 64 | 64-QAM | 8×8 | 6 | ~26 dB |
+| 256 | 256-QAM | 16×16 | 8 | ~32 dB |
+| 1024 | 1024-QAM | 32×32 | 10 | ~38 dB |
+
+**BER aproximada**:
+$$P_b \approx \frac{4}{\log_2 M}\left(1 - \frac{1}{\sqrt{M}}\right) Q\!\left(\sqrt{\frac{3\log_2 M}{M-1}\cdot\frac{E_b}{N_0}}\right)$$
+
+> **Regra prática**: ~6 dB por dobro de M.
+
+---
+
+### Visualize QAM em Python
 
 ```python
-"""
-Experimento QAM — Constelações 16-QAM e 64-QAM
-==============================================
-Compare como o grid cresce e o BER piora.
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -720,484 +870,83 @@ ax = axes[0]
 levels_16 = np.array([-1.5, -0.5, 0.5, 1.5])
 ii, jj = np.meshgrid(levels_16, levels_16)
 pts_16 = np.column_stack([ii.ravel(), jj.ravel()])
-ax.scatter(pts_16[:, 0], pts_16[:, 1], s=200, c='#9333ea', edgecolors='white', linewidth=2, zorder=3)
-ax.set_xlim(-2, 2)
-ax.set_ylim(-2, 2)
-ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
-ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
-ax.set_xlabel('In-Fase (I)')
-ax.set_ylabel('Quadrature (Q)')
+ax.scatter(pts_16[:, 0], pts_16[:, 1], s=200, c='#9333ea', edgecolors='white', lw=2, zorder=3)
+ax.set_xlim(-2, 2); ax.set_ylim(-2, 2)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5); ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)'); ax.set_ylabel('Quadrature (Q)')
 ax.set_title('16-QAM — 4×4 grid\n4 bits/símbolo\nBER ~19.6 dB', color='#9333ea')
-ax.grid(alpha=0.3)
-ax.set_aspect('equal')
+ax.grid(alpha=0.3); ax.set_aspect('equal')
 
 ax = axes[1]
 levels_64 = np.array([-3, -2, -1, 0, 1, 2, 3, 4]) * 0.5
 ii, jj = np.meshgrid(levels_64, levels_64)
 pts_64 = np.column_stack([ii.ravel(), jj.ravel()])
-ax.scatter(pts_64[:, 0], pts_64[:, 1], s=100, c='#ea580c', edgecolors='white', linewidth=0.8, alpha=0.8, zorder=3)
-ax.set_xlim(-2, 2)
-ax.set_ylim(-2, 2)
-ax.axhline(0, color='gray', lw=0.5, alpha=0.5)
-ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
-ax.set_xlabel('In-Fase (I)')
-ax.set_ylabel('Quadrature (Q)')
+ax.scatter(pts_64[:, 0], pts_64[:, 1], s=100, c='#ea580c', edgecolors='white', lw=0.8, alpha=0.8, zorder=3)
+ax.set_xlim(-2, 2); ax.set_ylim(-2, 2)
+ax.axhline(0, color='gray', lw=0.5, alpha=0.5); ax.axvline(0, color='gray', lw=0.5, alpha=0.5)
+ax.set_xlabel('In-Fase (I)'); ax.set_ylabel('Quadrature (Q)')
 ax.set_title('64-QAM — 8×8 grid\n6 bits/símbolo\nBER ~26 dB', color='#ea580c')
-ax.grid(alpha=0.3)
-ax.set_aspect('equal')
+ax.grid(alpha=0.3); ax.set_aspect('equal')
 
-plt.tight_layout()
-plt.savefig('qam_constellations.png', dpi=150, bbox_inches='tight')
+plt.tight_layout(); plt.savefig('qam_constellations.png', dpi=150, bbox_inches='tight')
 print(f"16-QAM: {len(pts_16)} pontos → 4 bits/símbolo → Eb/N₀ ~19.6 dB")
 print(f"64-QAM: {len(pts_64)} pontos → 6 bits/símbolo → Eb/N₀ ~26 dB")
 print("Quanto mais pontos, mais sensível a ruído!")
 ```
 
+>! **QAM**: combina amplitude E fase — mais eficiente, mas mais sensível a ruído.
+> **Regra**: ~6 dB por dobro de M.
+
 ---
 
-### 5.7 Modulações Digitais — QAM (Quadrature Amplitude Modulation)
 
-O que varia: **amplitude E fase simultaneamente** — combina amplitude das portadoras em quadratura.
+## Tabela Comparativa
 
-#### M-QAM Quadrada
-
-Grid $\sqrt{M} \times \sqrt{M}$ no plano I/Q. Gray coding minimiza erros de bits.
-
-$$s(t) = I\cos(2\pi f_c t) - Q\sin(2\pi f_c t)$$
-
-| M | Nome | Grid | Bits/símbolo | Eb/N₀ para BER=10⁻⁵ |
+| Modulação | Tipo | O que varia | Eb/N₀ BER=10⁻⁵ | Eficiência |
 |---|---|---|---|---|
-| 4 | 4-QAM (= QPSK) | 2×2 | 2 | ~12.6 dB |
-| 16 | 16-QAM | 4×4 | 4 | ~19.6 dB |
-| 64 | 64-QAM | 8×8 | 6 | ~26 dB |
-| 256 | 256-QAM | 16×16 | 8 | ~32 dB |
-| 1024 | 1024-QAM | 32×32 | 10 | ~38 dB |
-
-**Aproximação BER para M-QAM**:
-$$P_b \approx \frac{4}{\log_2 M}\left(1 - \frac{1}{\sqrt{M}}\right) Q\!\left(\sqrt{\frac{3\log_2 M}{M-1}\cdot\frac{E_b}{N_0}}\right)$$
-
-| Propriedade | Valor |
-|---|---|
-| **Eficiência espectral máxima** | $\eta = \log_2 M$ bit/s/Hz |
-| **Vantagem** | Alta eficiência espectral |
-| **Desvantagem** | Muito sensível a ruído e não-linearidades |
-| **Demanda SNR** | ~6 dB por dobro de M |
-
-**Aplicações**:
-- **16-QAM**: WiFi 802.11n, 4G LTE
-- **64-QAM**: WiFi 802.11ac/ax, 4G LTE, 5G NR
-- **256-QAM**: WiFi 6 (802.11ax), DOCSIS 3.1
-- **1024-QAM**: Experimental / pesquisa
+| **AM conv** | Analógica | Amplitude | — | 33% pot. |
+| **SSB** | Analógica | Amplitude | — | 100% pot. |
+| **WBFM** | Analógica | Frequência | — | Excelente ruído |
+| **OOK** | Digital | Amplitude | ~12.6 dB | 0.5 b/s/Hz |
+| **BPSK** | Digital | Fase | **9.6 dB** | 0.5 b/s/Hz |
+| **QPSK** | Digital | Fase+Ampl. | **12.6 dB** | **1.0 b/s/Hz** |
+| **16-QAM** | Digital | Fase+Ampl. | ~19.6 dB | **4.0 b/s/Hz** |
+| **64-QAM** | Digital | Fase+Ampl. | ~26 dB | **6.0 b/s/Hz** |
+| **256-QAM** | Digital | Fase+Ampl. | ~32 dB | **8.0 b/s/Hz** |
 
 ---
 
-### 5.8 Tabela Comparativa Definitiva
 
-| Modulação | Tipo | O que varia | Banda rel. | Eb/N₀ (BER=10⁻⁵) | Eficiência | Imunidade | Aplicações |
-|---|---|---|---|---|---|---|---|
-| **AM conv** | Analógica | Amplitude | $2f_m$ | — | 33% pot. | Baixa | Rádio AM |
-| **DSB-SC** | Analógica | Amplitude | $2f_m$ | — | 100% pot. | Baixa | TV vídeo |
-| **SSB** | Analógica | Amplitude | $f_m$ | — | 100% pot. | Média | Rádio amador |
-| **VSB** | Analógica | Amplitude | $\sim f_m$ | — | 100% pot. | Média | TV analógica |
-| **NBFM** | Analógica | Frequência | $\sim 2f_m$ | — | — | Moderada | Rádios móveis |
-| **WBFM** | Analógica | Frequência | $\gg 2f_m$ | — | — | **Alta** | Rádio FM |
-| **OOK** | Digital | Amplitude | $\sim 2/T$ | ~12.6 dB | 0.5 b/s/Hz | Baixa | IR, fibra |
-| **BPSK** | Digital | Fase | $0.5/T$ | **9.6 dB** | 0.5 b/s/Hz | Média | GPS, espaço |
-| **BFSK** | Digital | Freq. | $> 2/T$ | ~12.6 dB | 0.5 b/s/Hz | Média | Modems, IoT |
-| **QPSK** | Digital | Fase+Ampl. | $1/T$ | **12.6 dB** | **1.0 b/s/Hz** | Média | WiFi, satél. |
-| **16-QAM** | Digital | Fase+Ampl. | $4/T$ | ~19.6 dB | **4.0 b/s/Hz** | Baixa | 4G LTE |
-| **64-QAM** | Digital | Fase+Ampl. | $6/T$ | ~26 dB | **6.0 b/s/Hz** | Baixa | WiFi ac/ax |
-| **256-QAM** | Digital | Fase+Ampl. | $8/T$ | ~32 dB | **8.0 b/s/Hz** | Muito baixa | WiFi 6 |
+## O Grande Trade-off
 
-### 5.9 O Grande Trade-off
+```mermaid
+flowchart LR
+    Ef["📶 Eficiência Espectral<br/>(bits/s/Hz)"]
+    Ro["🛡️ Robustez<br/>(imunidade a ruído)"]
+    Si["🔧 Simplicidade<br/>(custo de implementação)"]
 
-Toda modulação enfrenta este triângulo:
+    Ro <-->|"trade-off"| Ef
+    Ef <-->|"trade-off"| Si
+    Ro <-->|"trade-off"| Si
 
-```
-                Eficiência
-               Espectral
-                   ╱  ╲
-                  ╱    ╲
-                 ╱      ╲
-              Robustez ←──→ Simplicidade
-              (Imunidade)    (Custo)
+    style Ef fill:#74b9ff,stroke:#0984e3,color:#ffffff
+    style Ro fill:#55efc4,stroke:#00b894,color:#2d3436
+    style Si fill:#ffeaa7,stroke:#fdcb6e,color:#2d3436
 ```
 
 - **BPSK**: máximo em robustez, mínimo em eficiência
 - **256-QAM**: máximo em eficiência, mínimo em robustez
 - **QPSK**: o "ponto doce" — bom equilíbrio
 
-> **Regra de ouro**: Sistemas espaciais (Voyager) usam BPSK — sinal chega a bilhões de km com potência de watts. Sistemas de banda larga (WiFi 6) usam 256-QAM — precisamos de velocidade, não de distância.
-
-### 5.10 Onde entram AM, FM, PSK, QAM no nosso semestre?
-
-| Módulo | Semanas | O que você vai aprender |
-|---|---|---|
-| **II — AM** | 4–5 | AM conv, DSB-SC, SSB, VSB — detector de envelope, demodulação coerente |
-| **II — FM** | 6 | NBFM/WBFM, funções de Bessel, regra de Carson, PLL |
-| **IV — Digital** | 9–11 | ASK, FSK, BPSK, QPSK, M-PSK, QAM — constelações, BER, Gray coding |
-
----
-
-### Resumo Visual — Mapa das Modulações
-
-```mermaid
-mindmap
-  root((<b>Modulações</b>))
-    Analógica
-      AM
-        Convencional
-        DSB-SC
-        SSB
-        VSB
-      FM
-        NBFM
-        WBFM
-    Digital
-      PSK
-        BPSK<br/>2 fases
-        QPSK<br/>4 fases
-        M-PSK
-      QAM
-        16-QAM
-        64-QAM
-        256-QAM
-      FSK
-        BFSK
-        M-FSK
-    Outras
-      ASK / OOK
-      OFDM
-        QAM + FDM
-```
-```
-
-
-
-## 6. Experiências Python ao Vivo
-
-### Experimento 1: O que é modulação?
-
-Vamos visualizar como uma mensagem de áudio é "carregada" em uma portadora:
-
-```python
-"""
-Experimento 1 — AM vs. FM: Visualização da Modulação
-=====================================================
-Compare como o sinal modulante (voz simulada) altera a amplitude (AM)
-e a frequência (FM) da portadora.
-"""
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Parâmetros
-fs = 44100          # Taxa de amostragem (Hz)
-t = np.linspace(0, 0.05, int(0.05 * fs), endpoint=False)  # 50 ms
-f_msg = 440          # Frequência da mensagem (Tom A4 = 440 Hz)
-f_carrier = 5000     # Portadora 5 kHz
-mu = 0.7             # Índice de modulação AM
-beta = 2.0           # Índice de modulação FM
-
-# Mensagem (sinal modulante)
-m = np.sin(2 * np.pi * f_msg * t)
-
-# Portadora
-carrier = np.cos(2 * np.pi * f_carrier * t)
-
-# AM (DSB com portadora)
-am = (1 + mu * m) * carrier
-
-# FM
-phase_deviation = beta * f_msg / (2 * np.pi)  # deslocamento de fase
-phi = 2 * np.pi * f_carrier * t + beta * np.sin(2 * np.pi * f_msg * t)
-fm = np.cos(phi)
-
-# Visualização
-fig, axes = plt.subplots(4, 1, figsize=(14, 10))
-
-# Sinal modulante
-axes[0].plot(t[:500], m[:500], color='#2563eb', lw=1.5)
-axes[0].set_ylabel('Amplitude')
-axes[0].set_title('Sinal Modulante (mensagem) — 440 Hz')
-axes[0].grid(alpha=0.3)
-
-# Portadora
-axes[1].plot(t[:500], carrier[:500], color='#64748b', lw=0.8, alpha=0.7)
-axes[1].set_ylabel('Portadora')
-axes[1].set_title('Portadora — 5000 Hz')
-axes[1].grid(alpha=0.3)
-
-# AM
-axes[2].plot(t[:500], am[:500], color='#dc2626', lw=1.2)
-axes[2].fill_between(t[:500], -(1+mu)*np.abs(m)[:500] + 1, (1+mu)*np.abs(m)[:500] + 1,
-                     alpha=0.1, color='#dc2626')
-axes[2].set_ylabel('AM modulado')
-axes[2].set_title('Modulação AM (DSB com portadora, μ=0.7)')
-axes[2].grid(alpha=0.3)
-
-# FM
-axes[3].plot(t[:500], fm[:500], color='#047857', lw=1.2)
-axes[3].set_xlabel('Tempo (s)')
-axes[3].set_ylabel('FM modulado')
-axes[3].set_title('Modulação FM (β=2.0) — note a variação de frequência')
-axes[3].grid(alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('experimento1_am_fm.png', dpi=150, bbox_inches='tight')
-print("Experimento 1 salvo: experimento1_am_fm.png")
-print(f"  AM: portadora + envelope seguindo {f_msg} Hz")
-print(f"  FM: frequência instantânea varia entre {f_carrier-beta*f_msg:.0f} e {f_carrier+beta*f_msg:.0f} Hz")
-```
-
-#### O que observar:
-- **AM**: O envelope do sinal segue exatamente a forma da mensagem
-- **FM**: A amplitude é constante, mas a **densidade** das oscilações muda — mais apertada quando a mensagem é positiva, mais espaçada quando negativa
-
----
-
-### Experimento 1b: Todas as Modulações Digitais — Visualização Completa
-
-Agora vamos comparar **todas** as modulações digitais lado a lado — no tempo, na frequência e na constelação:
-
-```python
-"""
-Experimento 1b — Panorama Completo das Modulações Digitais
-===========================================================
-Visualize OOK, BPSK, QPSK, 16-QAM, BFSK no tempo, espectro e constelação.
-"""
-import numpy as np
-import matplotlib.pyplot as plt
-
-np.random.seed(42)
-fs = 100000
-N = 5000  # símbolos para cada modulação
-
-# ===== GERAR BITS =====
-# OOK/BPSK: 1 bit/símbolo → N bits cada
-# QPSK: 2 bits/símbolo → 2N bits
-# 16-QAM: 4 bits/símbolo → 4N bits
-# BFSK: 1 bit/símbolo → N bits
-bits = np.random.randint(0, 2, N * 9)
-
-os_factor = 10  # oversampling
-
-def oversample(data):
-    """Upsample com zero-order hold."""
-    return np.repeat(data, os_factor)
-
-def rc_filter(N_sym, os, alpha=0.25):
-    """Raised cosine filter — implementação vetorial correta."""
-    n = np.arange(-N_sym * os // 2, N_sym * os // 2 + 1) / os  # tempo em períodos de símbolo
-    
-    h = np.zeros_like(n, dtype=float)
-    
-    # Casos singulares
-    t_zero = (n == 0)
-    t_extreme = np.abs(n) == 1.0 / (2.0 * alpha)
-    t_normal = ~t_zero & ~t_extreme
-    
-    # Fórmula geral
-    h[t_normal] = (np.sin(np.pi * n[t_normal]) * np.cos(np.pi * alpha * n[t_normal]) /
-                   (np.pi * n[t_normal] * (1 - (2 * alpha * n[t_normal]) ** 2)))
-    
-    # Em t = 0
-    h[t_zero] = 1.0 + alpha * (4.0 / np.pi - 1.0)
-    
-    # Em t = ±T/(2α)
-    t_e = n[t_extreme]
-    h[t_extreme] = (alpha / (2.0 * np.pi * t_e)) * (
-        np.sin(np.pi * t_e * (1 - alpha)) +
-        4 * alpha * np.cos(np.pi * t_e * (1 + alpha))
-    )
-    
-    return h / np.sum(h)
-
-rc = rc_filter(64, 10, alpha=0.25)
-fc = 50
-
-def upconvert(bb, fc, fs):
-    """Modula em banda passante."""
-    t = np.arange(len(bb)) / fs
-    return bb * np.cos(2 * np.pi * fc * t)
-
-# ---- OOK (N símbolos, 1 bit/símbolo) ----
-bits_ook = bits[:N]
-sym_ook = bits_ook.astype(float)
-tx_ook = upconvert(np.convolve(oversample(sym_ook), rc, mode='same'), fc, fs)
-
-# ---- BPSK (N símbolos, 1 bit/símbolo) ----
-bits_bpsk = bits[N:2*N]
-sym_bpsk = 2 * bits_bpsk.astype(float) - 1
-tx_bpsk = upconvert(np.convolve(oversample(sym_bpsk), rc, mode='same'), fc, fs)
-
-# ---- QPSK (N símbolos, 2 bits/símbolo) ----
-bits_qpsk = bits[2*N:4*N]
-i_bits = bits_qpsk[::2]
-q_bits = bits_qpsk[1::2]
-i_sym = 2 * i_bits.astype(float) - 1
-q_sym = 2 * q_bits.astype(float) - 1
-tx_i = np.convolve(oversample(i_sym), rc, mode='same')
-tx_q = np.convolve(oversample(q_sym), rc, mode='same')
-t = np.arange(len(tx_i)) / fs
-tx_qpsk = tx_i * np.cos(2 * np.pi * fc * t) - tx_q * np.sin(2 * np.pi * fc * t)
-
-# ---- 16-QAM (N símbolos, 4 bits/símbolo) ----
-bits_qam = bits[4*N:8*N]
-raw = bits_qam.reshape(-1, 4)
-i_bits_16 = raw[:, [0, 1]]
-q_bits_16 = raw[:, [2, 3]]
-i_16 = -1.5 + 2 * np.array([int(''.join(map(str, b)), 2) for b in i_bits_16])
-q_16 = -1.5 + 2 * np.array([int(''.join(map(str, b)), 2) for b in q_bits_16])
-tx_i16 = np.convolve(oversample(i_16.astype(float)), rc, mode='same')
-tx_q16 = np.convolve(oversample(q_16.astype(float)), rc, mode='same')
-t = np.arange(len(tx_i16)) / fs
-tx_qam = tx_i16 * np.cos(2 * np.pi * fc * t) - tx_q16 * np.sin(2 * np.pi * fc * t)
-
-# ---- BFSK (N símbolos, 1 bit/símbolo, sem RC filter) ----
-bits_fsk = bits[8*N:9*N]
-sym_fsk = 2 * bits_fsk.astype(float) - 1
-# FSK: variação de frequência instantânea (oversamplear antes de acumular fase)
-sym_fsk_os = np.repeat(sym_fsk, os_factor)
-phase_fsk = 2 * np.pi * np.cumsum(sym_fsk_os * 8) / fs  # freq_dev = 8, acumulado a cada amostra
-t_fsk = np.arange(len(phase_fsk)) / fs
-tx_fsk = np.cos(2 * np.pi * fc * t_fsk + phase_fsk)
-
-# ===== PLOT =====
-fig = plt.figure(figsize=(20, 14))
-gs = fig.add_gridspec(4, 5, hspace=0.4, wspace=0.3)
-
-modulations = [
-    ('OOK', tx_ook, None),
-    ('BPSK', tx_bpsk, None),
-    ('QPSK', tx_qpsk, None),
-    ('16-QAM', tx_qam, None),
-    ('BFSK', tx_fsk, None),
-]
-
-labels = ['OOK', 'BPSK', 'QPSK', '16-QAM', 'BFSK']
-colors = ['#dc2626', '#2563eb', '#047857', '#9333ea', '#ea580c']
-
-# Linha 1: Sinais no tempo
-for i, (name, signal, _) in enumerate(modulations):
-    ax = fig.add_subplot(gs[0, i])
-    ax.plot(t[:2000], signal[:2000], color=colors[i], lw=0.6, alpha=0.8)
-    ax.set_title(name, fontsize=11, weight='bold', color=colors[i])
-    ax.set_ylabel('Amplitude')
-    ax.set_xlim(0, 0.02)
-    ax.grid(alpha=0.2)
-    ax.tick_params(labelsize=7)
-
-# Linha 2: Espectro
-for i, (name, signal, _) in enumerate(modulations):
-    ax = fig.add_subplot(gs[1, i])
-    fft = np.abs(np.fft.fft(signal[:2048]))
-    freqs = np.fft.fftfreq(len(signal), 1/fs) * fs
-    ax.plot(freqs[:512], 20*np.log10(fft[:512] + 1e-10), color=colors[i], lw=1)
-    ax.set_title('Espectro ' + name, fontsize=10, color=colors[i])
-    ax.set_ylabel('PSD (dB)')
-    ax.set_xlim(0, 100)
-    ax.grid(alpha=0.2)
-    ax.tick_params(labelsize=7)
-
-# Linha 3: Constelações
-for i, (name, signal, _) in enumerate(modulations):
-    ax = fig.add_subplot(gs[2, i])
-    if name == 'OOK':
-        ax.scatter([0, 1], [0, 0], s=100, c=colors[i], edgecolors='white', linewidth=1)
-        ax.text(0, -0.15, '0', ha='center', fontsize=10, weight='bold')
-        ax.text(1, -0.15, '1', ha='center', fontsize=10, weight='bold')
-    elif name == 'BPSK':
-        ax.scatter([-1, 1], [0, 0], s=100, c=colors[i], edgecolors='white', linewidth=1)
-        ax.text(-1, -0.15, '0', ha='center', fontsize=10, weight='bold')
-        ax.text(1, -0.15, '1', ha='center', fontsize=10, weight='bold')
-    elif name == 'QPSK':
-        sym = np.array([[-1,-1], [-1,1], [1,1], [1,-1]])
-        ax.scatter(sym[:, 0], sym[:, 1], s=100, c=colors[i], edgecolors='white', linewidth=1)
-        for j, (x, y) in enumerate([(-1,-1), (-1,1), (1,1), (1,-1)]):
-            ax.text(x, y*1.15, format(j, '02b'), ha='center', fontsize=9, weight='bold')
-    elif name == '16-QAM':
-        levels = np.array([-1.5, -0.5, 0.5, 1.5])
-        ii, jj = np.meshgrid(levels, levels)
-        pts = np.column_stack([ii.ravel(), jj.ravel()])
-        ax.scatter(pts[:, 0], pts[:, 1], s=80, c=colors[i], edgecolors='white', linewidth=0.5, alpha=0.8)
-        ax.set_title('16-QAM: 16 pontos', fontsize=10, color=colors[i])
-    elif name == 'BFSK':
-        ax.scatter([0, 1], [0, 0], s=100, c=colors[i], edgecolors='white', linewidth=1)
-        ax.text(0, -0.15, 'f₀', ha='center', fontsize=10, weight='bold')
-        ax.text(1, -0.15, 'f₁', ha='center', fontsize=10, weight='bold')
-        ax.set_xlim(-0.3, 1.3)
-        ax.set_xlabel('Frequência')
-
-    ax.axhline(0, color='gray', lw=0.3)
-    ax.axvline(0, color='gray', lw=0.3)
-    ax.set_title('Constelação ' + name, fontsize=10, color=colors[i])
-    ax.set_xlabel('I')
-    ax.set_ylabel('Q')
-    ax.set_aspect('equal')
-    ax.grid(alpha=0.2)
-    ax.tick_params(labelsize=7)
-
-# Linha 4: BER Teórico
-from scipy.special import erfc as sc_erfc
-ax_ber = fig.add_subplot(gs[3, :])
-EbN0_lin = np.logspace(-1, 2, 500)
-EbN0_dB = 10 * np.log10(EbN0_lin)
-
-ber_bpsk = 0.5 * sc_erfc(np.sqrt(EbN0_lin))
-ber_ook = 0.5 * sc_erfc(np.sqrt(EbN0_lin / 2))
-ber_fsk = 0.5 * np.exp(-EbN0_lin / 2)
-ber_qam16 = (3/8) * sc_erfc(np.sqrt(0.4 * EbN0_lin))
-
-ax_ber.semilogy(EbN0_dB, ber_bpsk, 'o-', color='#2563eb', lw=2, markersize=3, label='BPSK/QPSK')
-ax_ber.semilogy(EbN0_dB, ber_qam16, 's-', color='#047857', lw=2, markersize=3, label='16-QAM')
-ax_ber.semilogy(EbN0_dB, ber_ook, '^-', color='#dc2626', lw=2, markersize=3, label='OOK')
-ax_ber.semilogy(EbN0_dB, ber_fsk, 'd-', color='#9333ea', lw=2, markersize=3, label='BFSK (não-coerente)')
-
-ax_ber.axhline(1e-3, color='gray', ls='--', alpha=0.5)
-ax_ber.axhline(1e-6, color='gray', ls='--', alpha=0.5)
-ax_ber.axhline(1e-5, color='red', ls='--', alpha=0.3)
-
-ax_ber.set_xlabel('$E_b/N_0$ (dB)', fontsize=12)
-ax_ber.set_ylabel('BER', fontsize=12)
-ax_ber.set_title('BER Teórico — Todas as Modulações Digitais', fontsize=12, weight='bold')
-ax_ber.legend(loc='upper right', fontsize=9)
-ax_ber.grid(True, alpha=0.3, which='both')
-ax_ber.set_xlim(-2, 22)
-
-plt.tight_layout()
-plt.savefig('experimento1b_todas_modulacoes.png', dpi=150, bbox_inches='tight')
-print("Experimento 1b salvo: experimento1b_todas_modulacoes.png")
-print("  Comparação BER a 10^-5:")
-for name, ber_func in [('BPSK/QPSK', lambda x: 0.5*sc_erfc(np.sqrt(x))),
-                         ('16-QAM', lambda x: (3/8)*sc_erfc(np.sqrt(0.4*x))),
-                         ('OOK', lambda x: 0.5*sc_erfc(np.sqrt(x/2))),
-                         ('BFSK', lambda x: 0.5*np.exp(-x/2))]:
-    eb_vals = np.linspace(0.01, 20, 10000)
-    bers = ber_func(eb_vals)
-    idx = np.argmin(np.abs(bers - 1e-5))
-    print("    {:12s}: Eb/N0 ~ {:5.1f} dB para BER=10^-5".format(name, 10*np.log10(eb_vals[idx])))
-```
-
-#### O que observar:
-
-- **OOK**: Sinal mais simples — liga/desliga. Menos eficiente que BPSK (~3 dB pior).
-- **BPSK**: Sinal com 2 fases (0 e π). O mais robusto das modulações digitais.
-- **QPSK**: Dobra a eficiência do BPSK (2 bits/símbolo) com BER similar.
-- **16-QAM**: 16 pontos no plano I/Q — carrega 4 bits/símbolo, mas precisa ~10 dB a mais que BPSK.
-- **BFSK**: Frequências diferentes para 0 e 1 — não precisa de sincronismo de fase, mas usa mais banda.
-- **BER**: BPSK é o mais eficiente em energia. QAM ganha em eficiência espectral (bits/Hertz).
+> Sistemas espaciais (Voyager) usam BPSK — sinal a bilhões de km com watts.
+> Sistemas de banda larga (WiFi 6) usam 256-QAM — velocidade, não distância.
 
 ---
 
 
-### Experimento 2: Espectro — O que a transformada de Fourier revela
+## Experiências Python ao Vivo
 
 ```python
-"""
-Experimento 2 — Espectro de AM e FM
-====================================
-Visualize como a modulação "espalha" a informação no domínio da frequência.
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -1210,516 +959,329 @@ beta = 2.0
 
 m = np.sin(2 * np.pi * f_msg * t)
 carrier = np.cos(2 * np.pi * f_carrier * t)
+
 am = (1 + mu * m) * carrier
 fm = np.cos(2 * np.pi * f_carrier * t + beta * np.sin(2 * np.pi * f_msg * t))
 
-# FFT
-N = len(t)
-f = np.fft.fftfreq(N, 1/fs)
-am_fft = np.fft.fft(am)
-fm_fft = np.fft.fft(fm)
-m_fft = np.fft.fft(m)
+fig, axes = plt.subplots(3, 1, figsize=(12, 6))
 
-# Espectro unilateral
-pos = f > 0
-f_pos = f[pos]
-am_spec = 2/N * np.abs(am_fft[pos])
-fm_spec = 2/N * np.abs(fm_fft[pos])
-m_spec = 2/N * np.abs(m_fft[pos])
+axes[0].plot(t[:500], m[:500], '#2563eb', lw=1)
+axes[0].set_ylabel('Mensagem'); axes[0].set_title(f'Mensagem — {f_msg} Hz')
 
-fig, axes = plt.subplots(3, 1, figsize=(14, 9))
+axes[1].plot(t[:500], am[:500], '#dc2626', lw=1)
+axes[1].set_ylabel('AM'); axes[1].set_title(f'AM (μ={mu})')
 
-# Mensagem
-axes[0].semilogy(f_pos[:50], m_spec[:50], color='#2563eb', lw=2, marker='o')
-axes[0].set_ylabel('PSD (dB)')
-axes[0].set_title('Espectro do Sinal Modulante')
-axes[0].grid(alpha=0.3)
-axes[0].set_xlim(0, 2000)
-
-# AM
-axes[1].semilogy(f_pos, am_spec, color='#dc2626', lw=1.5)
-axes[1].axvline(f_carrier - f_msg, color='#dc2626', ls='--', alpha=0.5, label='LSB')
-axes[1].axvline(f_carrier, color='black', ls='--', alpha=0.3, label='Portadora')
-axes[1].axvline(f_carrier + f_msg, color='#dc2626', ls='--', alpha=0.5, label='USB')
-axes[1].set_ylabel('PSD (dB)')
-axes[1].set_title('Espectro AM — Duas bandas laterais!')
-axes[1].grid(alpha=0.3)
-axes[1].set_xlim(3000, 7000)
-axes[1].legend(fontsize=9)
-
-# FM
-axes[2].semilogy(f_pos, fm_spec, color='#047857', lw=1.5)
-axes[2].set_xlabel('Frequência (Hz)')
-axes[2].set_ylabel('PSD (dB)')
-axes[2].set_title('Espectro FM — Múltiplas bandas laterais (Bessel)!')
-axes[2].grid(alpha=0.3)
-axes[2].set_xlim(3000, 7000)
+axes[2].plot(t[:500], fm[:500], '#047857', lw=1)
+axes[2].set_xlabel('Tempo (s)'); axes[2].set_ylabel('FM')
+axes[2].set_title(f'FM (β={beta}) — amplitude constante, frequência varia!')
 
 plt.tight_layout()
-plt.savefig('experimento2_espectro.png', dpi=150, bbox_inches='tight')
-print("Experimento 2 salvo: experimento2_espectro.png")
-print(f"  AM: 3 picos — portadora + LSB + USB (largura = 2 × f_msg)")
-print(f"  FM: Múltiplos picos (funções de Bessel), banda ≈ 2·f_msg·(1+β) = {2*f_msg*(1+beta)} Hz")
+plt.savefig('am_vs_dsb.png', dpi=150, bbox_inches='tight')
+print("AM: envelope segue m(t)")
+print(f"FM: freq. varia entre {f_carrier-beta*f_msg:.0f} e {f_carrier+beta*f_msg:.0f} Hz")
 ```
 
-#### O que observar:
-- **AM**: Apenas 3 componentes (portadora + 2 laterais). Banda = $2f_m$
-- **FM**: Múltiplas bandas laterais! A regra de Carson: $B \approx 2f_m(1+\beta)$
+>! **AM**: envelope segue a mensagem. **FM**: amplitude constante, densidade das oscilações muda.
 
 ---
 
-### Experimento 3: Canais com ruído — AWGN
-
 ```python
-"""
-Experimento 3 — Canal AWGN
-===========================
-Simule um sinal passando por um canal com ruído térmico Gaussiano.
-Observe como o SNR afeta a qualidade da recepção.
-"""
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.special import erfc
+
+np.random.seed(42)
+
+fig, axes = plt.subplots(2, 3, figsize=(18, 6))
+
+# Constelações
+ax = axes[0, 0]
+ax.scatter([-1], [0], s=300, c='#dc2626', ec='white', lw=3)
+ax.text(-1, -0.2, '0', ha='center', fontsize=14, weight='bold', color='white')
+ax.scatter([1], [0], s=300, c='#dc2626', ec='white', lw=3)
+ax.text(1, -0.2, '1', ha='center', fontsize=14, weight='bold', color='white')
+ax.set_xlim(-1.5, 1.5); ax.set_ylim(-1, 1)
+ax.set_title('BPSK — 1 bit/símbolo', color='#dc2626'); ax.grid(alpha=0.3)
+
+ax = axes[0, 1]
+pts = np.array([[-1,-1], [-1,1], [1,1], [1,-1]])
+ax.scatter(pts[:, 0], pts[:, 1], s=300, c='#047857', ec='white', lw=3)
+ax.set_xlim(-1.5, 1.5); ax.set_ylim(-1.5, 1.5)
+ax.set_title('QPSK — 2 bits/símbolo', color='#047857'); ax.grid(alpha=0.3)
+
+ax = axes[0, 2]
+levels = np.array([-1.5, -0.5, 0.5, 1.5])
+ii, jj = np.meshgrid(levels, levels)
+ax.scatter(ii.ravel(), jj.ravel(), s=200, c='#9333ea', ec='white', lw=2)
+ax.set_xlim(-2, 2); ax.set_ylim(-2, 2)
+ax.set_title('16-QAM — 4 bits/símbolo', color='#9333ea'); ax.grid(alpha=0.3)
+
+ax = axes[1, 0]
+levels64 = np.linspace(-3, 3, 8) * 0.5
+ii, jj = np.meshgrid(levels64, levels64)
+ax.scatter(ii.ravel(), jj.ravel(), s=100, c='#ea580c', ec='white', lw=0.8, alpha=0.8)
+ax.set_xlim(-2, 2); ax.set_ylim(-2, 2)
+ax.set_title('64-QAM — 6 bits/símbolo', color='#ea580c'); ax.grid(alpha=0.3)
+
+ax = axes[1, 1]
+EbN0_lin = np.logspace(-1, 2, 500)
+EbN0_dB = 10 * np.log10(EbN0_lin)
+ax.semilogy(EbN0_dB, 0.5*erfc(np.sqrt(EbN0_lin)), lw=2.5, label='BPSK/QPSK', color='#2563eb')
+ax.semilogy(EbN0_dB, (3/8)*erfc(np.sqrt(0.4*EbN0_lin)), lw=2.5, label='16-QAM', color='#047857')
+ax.semilogy(EbN0_dB, 0.5*erfc(np.sqrt(EbN0_lin/2)), lw=2.5, label='OOK', color='#dc2626')
+ax.axhline(1e-5, color='red', ls='--', alpha=0.3)
+ax.set_xlabel('Eb/N₀ (dB)'); ax.set_ylabel('BER')
+ax.set_title('BER Teórico'); ax.legend(); ax.grid(True, alpha=0.3, which='both')
+
+ax = axes[1, 2]
+ax.text(0.5, 0.5, 'BER para 10⁻⁵:', ha='center', fontsize=12, weight='bold', transform=ax.transAxes)
+ax.text(0.5, 0.35, 'BPSK: 9.6 dB', ha='center', fontsize=11, transform=ax.transAxes)
+ax.text(0.5, 0.25, 'QPSK: 12.6 dB', ha='center', fontsize=11, transform=ax.transAxes)
+ax.text(0.5, 0.15, '16-QAM: 19.6 dB', ha='center', fontsize=11, transform=ax.transAxes)
+ax.text(0.5, 0.05, '64-QAM: 26.0 dB', ha='center', fontsize=11, transform=ax.transAxes)
+ax.set_axis_off()
+
+plt.tight_layout()
+plt.savefig('todas_modulacoes.png', dpi=150, bbox_inches='tight')
+print("Constelações e BER geradas!")
+```
+
+---
+
+```python
+import numpy as np
+
+fs = 44100
+t = np.linspace(0, 0.05, int(0.05 * fs))
+f_msg, f_carrier = 440, 5000
+mu, beta = 0.7, 2.0
+
+m = np.sin(2*np.pi*f_msg*t)
+am = (1 + mu*m) * np.cos(2*np.pi*f_carrier*t)
+fm = np.cos(2*np.pi*f_carrier*t + beta*np.sin(2*np.pi*f_msg*t))
+
+N = len(t)
+f = np.fft.fftfreq(N, 1/fs)
+
+am_fft = 2/N * np.abs(np.fft.fft(f > 0))
+fm_fft = 2/N * np.abs(np.fft.fft(f > 0))
+
+print(f"AM: 3 picos — portadora + LSB + USB")
+print(f"FM: Múltiplas laterais (Bessel)")
+print(f"Banda FM ≈ 2·f_msg·(1+β) = {2*f_msg*(1+beta)} Hz")
+```
+
+>! **AM**: 3 componentes (portadora ± lateral). **FM**: múltiplas bandas laterais (funções de Bessel).
+
+---
+
+```python
+import numpy as np
 
 np.random.seed(42)
 fs = 44100
-t = np.linspace(0, 0.02, int(0.02 * fs), endpoint=False)
-f_carrier = 5000
-snr_dB = [20, 10, 3, -3]
+t = np.linspace(0, 0.02, int(0.02 * fs))
+s = np.cos(2*np.pi*5000*t)
 
-# Sinal limpo
-s = np.cos(2 * np.pi * f_carrier * t)
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-axes = axes.flatten()
-
-for i, snr in enumerate(snr_dB):
-    Ps = np.mean(s**2)
-    sigma = np.sqrt(Ps / 10**(snr / 10))
+for snr in [20, 10, 3, -3]:
+    sigma = np.sqrt(0.5 / 10**(snr/10))
     n = np.random.normal(0, sigma, len(t))
     r = s + n
-
-    axes[i].plot(t[:300], r[:300], color='#2563eb', lw=0.8, alpha=0.8)
-    axes[i].plot(t[:300], s[:300], color='#dc2626', lw=0.5, alpha=0.4)
-    axes[i].set_title(f'Canal AWGN — SNR = {snr} dB (σ = {sigma:.3f})')
-    axes[i].set_xlabel('Tempo (s)')
-    axes[i].grid(alpha=0.3)
-    axes[i].set_xlim(0, 0.005)
-
-plt.tight_layout()
-plt.savefig('experimento3_awgn.png', dpi=150, bbox_inches='tight')
-print("Experimento 3 salvo: experimento3_awgn.png")
-for snr in snr_dB:
-    Ps = 0.5
-    sigma = np.sqrt(Ps / 10**(snr / 10))
-    print(f"  SNR = {snr:3d} dB → σ = {sigma:.4f}")
+    print(f"SNR={snr:3d} dB → σ={sigma:.4f} — sinal {'limpo' if snr>10 else 'visível' if snr>0 else 'perdido'} no ruído")
 ```
 
-#### O que observar:
-- SNR = 20 dB: sinal praticamente limpo
-- SNR = 10 dB: ruído visível
-- SNR = 3 dB: sinal quase invisível no ruído
-- SNR = −3 dB: sinal está **mais fraco** que o ruído — impossível recuperar sem diversidade/código
+| SNR | Estado do sinal |
+|---|---|
+| 20 dB | Praticamente limpo |
+| 10 dB | Ruído visível |
+| 3 dB | Quase invisível |
+| −3 dB | Mais fraco que o ruído — impossível sem código |
 
 ---
 
-### Experimento 4: Constelações — A beleza das modulações digitais
 
-```python
-"""
-Experimento 4 — Constelações BPSK, QPSK, 16-QAM, 64-QAM
-=========================================================
-Visualize como os símbolos são representados no plano I/Q.
-"""
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import erfc
-
-np.random.seed(42)
-fs = 100000
-t = np.linspace(0, 0.001, fs, endpoint=False)
-N_symbols = 2000
-bits_per_sym = [1, 2, 4, 6]  # BPSK, QPSK, 16-QAM, 64-QAM
-mod_names = ['BPSK', 'QPSK', '16-QAM', '64-QAM']
-
-# Gerar símbolos
-np.random.seed(42)
-all_bits = np.random.randint(0, 2, N_symbols * max(bits_per_sym))
-
-fig, axes = plt.subplots(1, 4, figsize=(16, 4))
-
-for idx, (bps, name) in enumerate(zip(bits_per_sym, mod_names)):
-    symbols_bits = all_bits[:N_symbols * bps]
-    # Mapear bits para símbolos
-    if bps == 1:  # BPSK
-        sym = 2 * symbols_bits.reshape(-1, 1).astype(float) - 1  # ±1
-    elif bps == 2:  # QPSK
-        i_bits = symbols_bits[::2]
-        q_bits = symbols_bits[1::2]
-        sym = np.column_stack((2*i_bits-1, 2*q_bits-1))
-    elif bps == 4:  # 16-QAM (Gray)
-        raw = symbols_bits.reshape(-1, 4)
-        i_bits = raw[:, [0, 1]]
-        q_bits = raw[:, [2, 3]]
-        i_sym = -1.5 + 2 * np.array([int(b, 2) for b in map(''.join, i_bits)])
-        q_sym = -1.5 + 2 * np.array([int(b, 2) for b in map(''.join, q_bits)])
-        sym = np.column_stack((i_sym, q_sym))
-    elif bps == 6:  # 64-QAM
-        raw = symbols_bits.reshape(-1, 6)
-        i_bits = raw[:, [0, 1, 2]]
-        q_bits = raw[:, [3, 4, 5]]
-        i_sym = -3 + 2 * np.array([int(b, 2) for b in map(''.join, i_bits)])
-        q_sym = -3 + 2 * np.array([int(b, 2) for b in map(''.join, q_bits)])
-        sym = np.column_stack((i_sym, q_sym))
-
-    # Normalizar
-    E = np.mean(np.sum(sym**2, axis=1))
-    sym = sym / np.sqrt(E)
-
-    ax = axes[idx]
-    ax.scatter(sym[:, 0], sym[:, 1], s=20, alpha=0.7, color='#2563eb', edgecolors='white', linewidth=0.5)
-    ax.axhline(0, color='black', lw=0.3)
-    ax.axvline(0, color='black', lw=0.3)
-    num_sym = len(np.unique(sym, axis=0)) if len(np.unique(sym, axis=0))>1 else 2**bps
-    ax.set_title('{}: {} símbolos, {} bits/símbolo'.format(name, int(np.log2(num_sym)), bps))
-    ax.set_xlabel('I (in-phase)')
-    ax.set_ylabel('Q (quadrature)')
-    ax.set_aspect('equal')
-    ax.grid(alpha=0.3)
-    ax.set_xlim(ax.get_xlim()[0]*1.15, ax.get_xlim()[1]*1.15)
-    ax.set_ylim(ax.get_ylim()[0]*1.15, ax.get_ylim()[1]*1.15)
-
-plt.tight_layout()
-plt.savefig('experimento4_constelacoes.png', dpi=150, bbox_inches='tight')
-print("Experimento 4 salvo: experimento4_constelacoes.png")
-print("  Cada ponto = um símbolo digital representado por (I, Q)")
-
-# BER teórico
-EbN0_lin = np.logspace(-1, 2, 500)
-EbN0_dB = 10 * np.log10(EbN0_lin)
-
-fig2, ax2 = plt.subplots(figsize=(10, 6))
-for bps, name in zip(bits_per_sym, mod_names):
-    M = 2**bps
-    if bps == 1:  # BPSK
-        ber = 0.5 * erfc(np.sqrt(EbN0_lin))
-    elif bps == 2:  # QPSK ≈ BPSK em BER
-        ber = 0.5 * erfc(np.sqrt(EbN0_lin))
-    elif bps == 4:  # 16-QAM aproximada
-        ber_approx = (3/8) * erfc(np.sqrt(0.4 * EbN0_lin))
-        ber = np.minimum(1, ber_approx)
-    elif bps == 6:  # 64-QAM aproximada
-        ber_approx = (7/16) * erfc(np.sqrt(np.log2(64)/7 * EbN0_lin))
-        ber = np.minimum(1, ber_approx)
-
-    ax2.semilogy(EbN0_dB, ber, lw=2.5, label=f'{name}')
-
-ax2.axhline(1e-3, color='#dc2626', ls='--', alpha=0.5)
-ax2.axhline(1e-6, color='#047857', ls='--', alpha=0.5)
-ax2.set_xlabel('$E_b/N_0$ (dB)')
-ax2.set_ylabel('Probabilidade de Erro de Bit (BER)')
-ax2.set_title('BER Teórico: BPSK, QPSK, 16-QAM, 64-QAM')
-ax2.legend(fontsize=11)
-ax2.grid(True, alpha=0.3, which='both')
-ax2.set_xlim(-10, 20)
-plt.tight_layout()
-plt.savefig('experimento4_ber.png', dpi=150, bbox_inches='tight')
-print("  BER salvo: experimento4_ber.png")
-```
-
-#### O que observar:
-- **BPSK**: 2 pontos no eixo I (±1) — o mais simples, o mais robusto
-- **QPSK**: 4 pontos nos 4 quadrantes — 2 bits/símbolo
-- **16-QAM**: 16 pontos num grid 4×4 — 4 bits/símbolo, mas mais vulnerável ao ruído
-- **64-QAM**: 64 pontos — 6 bits/símbolo, requer SNR alto (~20 dB para BER=10⁻⁶)
-- O gráfico de BER mostra que QPSK/BPSK têm o mesmo desempenho, mas 16/64-QAM precisam de mais energia por bit
-
----
-
-### Experimento 5: Diagrama de Olho — Diagnosticando ISI
-
-```python
-"""
-Experimento 5 — Olho Digital (Eye Diagram)
-============================================
-O diagrama de olho revela Interferência Entre Símbolos (ISI).
-Olho aberto = canal bom. Olho fechado = canal problemático.
-"""
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.signal import firwin, lfilter
-
-np.random.seed(42)
-fs = 100000
-Rs = 10000         # Taxa de símbolos = 10 kbaud
-oversample = fs // Rs  # 10 amostras por símbolo
-N_symbols = 5000
-
-# Bits aleatórios
-bits = np.random.randint(0, 2, N_symbols)
-symbols = 2 * bits - 1  # NRZ: ±1
-
-# Upsample
-tx = np.repeat(symbols, oversample)
-t = np.arange(len(tx)) / fs
-
-# Canais diferentes
-def raised_cosine(N, alpha, Ts):
-    """Filtro raised cosine."""
-    n = np.arange(-N, N+1)
-    if alpha == 0:
-        h = np.sinc(n / Ts)
-    else:
-        sinc_vals = np.sinc(n / Ts)
-        cos_vals = np.cos(np.pi * alpha * n / Ts)
-        denom = 1 - (2 * alpha * n / Ts)**2
-        h = np.where(np.abs(denom) < 1e-10, 0, sinc_vals * cos_vals / denom)
-    h[N] = 0.5 * (1 + np.sin(np.pi/alpha) / (np.pi/alpha))
-    return h / np.sum(h)
-
-rc = raised_cosine(32, 0.25, 1/Rs)
-
-# Canal 1: ideal (apenas RC)
-rx1 = lfilter(rc, 1, tx)
-
-# Canal 2: com ISI (filter desbalanceado)
-rc_bad = raised_cosine(32, 0.75, 1/Rs)
-rx2 = lfilter(rc_bad, 1, tx) * 0.8 + 0.2 * np.roll(lfilter(rc_bad, 1, tx), 3)
-
-# Canal 3: com ruído SNR=15 dB
-noise = np.random.normal(0, np.std(rx2)/np.sqrt(10**(15/10)), len(rx2))
-rx3 = rx2 + noise
-
-# Montar diagrama de olho
-def eye_diagram(signal, Rs, fs, N_eye=500):
-    """Monta diagrama de olho."""
-    symbols_long = np.arange(0, len(signal)) / fs * Rs
-    symbol_indices = np.floor(symbols_long).astype(int)
-    samples_per_sym = fs // Rs
-    half_eye = samples_per_sym // 2
-
-    segments = []
-    for i in range(N_eye):
-        start = symbol_indices[i] * samples_per_sym
-        seg = signal[start:start+2*half_eye]
-        if len(seg) == 2*half_eye:
-            segments.append(seg)
-    segments = np.array(segments)
-    t_eye = np.arange(2*half_eye) / fs * 1000  # ms
-    return t_eye, segments.T
-
-fig, axes = plt.subplots(3, 1, figsize=(14, 9))
-
-# Canal 1 — ideal
-t_eye, eye1 = eye_diagram(rx1, Rs, fs)
-axes[0].plot(t_eye, eye1, color='#2563eb', lw=0.3, alpha=0.4)
-axes[0].axhline(0, color='white', lw=0.5, alpha=0.5)
-axes[0].set_ylabel('Amplitude')
-axes[0].set_title('Olho Digital — Canal Ideal (α=0.25) — OLHO ABERTO ✓')
-axes[0].set_xlabel('Tempo (ms)')
-axes[0].grid(alpha=0.3)
-
-# Canal 2 — ISI
-t_eye, eye2 = eye_diagram(rx2, Rs, fs)
-axes[1].plot(t_eye, eye2, color='#dc2626', lw=0.3, alpha=0.4)
-axes[1].axhline(0, color='white', lw=0.5, alpha=0.5)
-axes[1].set_ylabel('Amplitude')
-axes[1].set_title('Olho Digital — Canal com ISI (α=0.75) — OLHO PARCIALMENTE FECHADO ⚠')
-axes[1].set_xlabel('Tempo (ms)')
-axes[1].grid(alpha=0.3)
-
-# Canal 3 — com ruído
-t_eye, eye3 = eye_diagram(rx3, Rs, fs)
-axes[2].plot(t_eye, eye3, color='#047857', lw=0.3, alpha=0.4)
-axes[2].axhline(0, color='white', lw=0.5, alpha=0.5)
-axes[2].set_ylabel('Amplitude')
-axes[2].set_title('Olho Digital — Canal com Ruído (SNR=15 dB) — OLHO NUVENTO 🔍')
-axes[2].set_xlabel('Tempo (ms)')
-axes[2].grid(alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('experimento5_olho.png', dpi=150, bbox_inches='tight')
-print("Experimento 5 salvo: experimento5_olho.png")
-print("  Olho aberto = fácil decisão de bits (sem ISI)")
-print("  Olho fechado = ISI severa (equalização necessária!)")
-```
-
-#### O que observar:
-- **Canal ideal**: Olho bem aberto — decisão de bits fácil e confiável
-- **Com ISI**: Olho começa a fechar — risco de decisão errada
-- **Com ruído**: Olho "nuvento" — a abertura diminui, mas ainda decidível
-- Este é um dos diagramas mais importantes na prática de comunicações!
-
----
-
-### Experimento 6: Limites de Shannon — O impossível se torna possível
-
-```python
-"""
-Experimento 6 — Capacidade de Shannon
-======================================
-Descubra o limite absoluto de qualquer sistema de comunicação.
-"""
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import erfc
-
-# Limite de Shannon
-eta = np.linspace(0.01, 12, 1000)
-EbN0_shannon = (2**eta - 1) / eta
-EbN0_shannon_dB = 10 * np.log10(EbN0_shannon)
-EbN0_min = 10 * np.log10(np.log(2))  # -1.59 dB
-
-# BER prático
-EbN0_prac = np.linspace(-3, 25, 500)
-EbN0_lin = 10**(EbN0_prac/10)
-BER_BPSK = 0.5 * erfc(np.sqrt(EbN0_lin))
-
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-
-# Esquerda: Shannon
-ax1.plot(eta, EbN0_shannon_dB, color='#2563eb', lw=3, label='Limite de Shannon')
-ax1.axhline(EbN0_min, color='#dc2626', ls='--', lw=2, label=f'Limite inferior: {EbN0_min:.2f} dB')
-ax1.axvline(1, color='#64748b', ls='--', alpha=0.5, label='η = 1 (BPSK)')
-ax1.axhline(0, color='#047857', ls='--', alpha=0.5, label='Eb/N₀ = 0 dB')
-ax1.set_xlabel('Eficiência Espectral η (bit/s/Hz)')
-ax1.set_ylabel('Eb/N₀ mínimo (dB)')
-ax1.set_title('Limite Fundamental de Shannon')
-ax1.set_xlim(0, 12); ax1.set_ylim(-2, 20)
-ax1.grid(alpha=0.3)
-ax1.legend(fontsize=10)
-ax1.annotate('BPSK\n(η=1)', xy=(1, 0), xytext=(3, 5),
-             arrowprops=dict(arrowstyle='->', color='#dc2626'),
-             fontsize=10, color='#dc2626', weight='bold')
-
-# Direita: BER
-for name, bps in [('BPSK', 1), ('QPSK', 2), ('16-QAM', 4), ('64-QAM', 6)]:
-    if bps <= 2:
-        ber = 0.5 * erfc(np.sqrt(EbN0_lin))
-    elif bps == 4:
-        ber = (3/8) * erfc(np.sqrt(0.4 * EbN0_lin))
-    else:
-        ber = (7/16) * erfc(np.sqrt(np.log2(64)/7 * EbN0_lin))
-    ax2.semilogy(EbN0_prac, np.minimum(ber, 1), lw=2.5, label=name)
-
-ax2.axhline(1e-3, color='#dc2626', ls='--', alpha=0.5, label='BER = 10⁻³')
-ax2.axhline(1e-6, color='#047857', ls='--', alpha=0.5, label='BER = 10⁻⁶')
-ax2.set_xlabel('$E_b/N_0$ (dB)')
-ax2.set_ylabel('Probabilidade de Erro de Bit (BER)')
-ax2.set_title('Desempenho Prático vs. Teórico')
-ax2.set_xlim(-3, 25)
-ax2.grid(True, alpha=0.3, which='both')
-ax2.legend(fontsize=10)
-
-plt.tight_layout()
-plt.savefig('experimento6_shannon.png', dpi=150, bbox_inches='tight')
-print("Experimento 6 salvo: experimento6_shannon.png")
-print(f"\n  Limite fundamental de Shannon: Eb/N₀ ≥ {EbN0_min:.2f} dB")
-print(f"  Para η=1 (BPSK): Eb/N₀ mínimo = 0 dB")
-print(f"  Para η=6 (64-QAM): Eb/N₀ mínimo = {10*np.log10((2**6-1)/6):.1f} dB")
-
-# Tabela comparativa
-print("\n  ┌──────────┬───────────────┬──────────┬─────────────┐")
-print("  │ Modulação│   η (bit/s/Hz)│ BER=10⁻⁵│ Gap Shannon │")
-print("  ├──────────┼───────────────┼──────────┼─────────────┤")
-for name, bps in [('BPSK', 1), ('QPSK', 2), ('16-QAM', 4), ('64-QAM', 6)]:
-    gap = 10*np.log10((2**bps - 1)/bps)
-    ber_bpsk = 0.5 * erfc(np.sqrt(10**(gap/10)))
-    print(f"  │ {name:8s}│ {gap:13.1f} │ {np.log10(ber_bpsk):8.1f} │ {gap - EbN0_min:11.1f} dB │")
-print("  └──────────┴───────────────┴──────────┴─────────────┘")
-```
-
-#### O que observar:
-- Existe um **limite absoluto**: $E_b/N_0 \ge \ln 2 = -1.59$ dB
-- Nenhum sistema do universo pode operar abaixo disso
-- BPSK opera a 0 dB — apenas 1.59 dB do limite
-- 64-QAM precisa de ~13.5 dB — muito acima do limite, mas carrega 6× mais bits/Hertz
-- O "gap" entre implementação prática e Shannon diminui com códigos melhores (Turbo, LDPC)
-
----
-
-## 7. Métricas Fundamentais
+## Métricas Fundamentais
 
 ### As grandezas que importam
 
 | Grandeza | Símbolo | Fórmula | O que diz |
 |---|---|---|---|
-| **Taxa de bits** | $R_b$ | bits/seg | Quantos bits enviamos por segundo |
-| **Taxa de símbolo** | $R_s$ | $1/T_s$ | Quantos símbolos enviamos por segundo |
-| **Eficiência espectral** | $\eta$ | $R_b/B$ | Quantos bits/Hertz — "quão apertado" |
+| **Taxa de bits** | $R_b$ | bits/s | Quantos bits enviamos |
+| **Taxa de símbolo** | $R_s$ | $1/T_s$ | Quantos símbolos/enviamos |
+| **Eficiência espectral** | $\eta$ | $R_b/B$ | Bits/Hertz |
 | **SNR** | — | $P_s/P_n$ | Sinal vs. ruído |
-| **Eb/N₀** | — | SNR/$\eta$ | Energia por bit vs. densidade de ruído — universal! |
+| **Eb/N₀** | — | SNR/$\eta$ | Energia/bit — universal! |
 | **BER** | $P_b$ | — | Fraction de bits errados |
-| **Capacidade** | $C$ | $B\log_2(1+\text{SNR})$ | Limite supremo do canal |
-
-### A grande revelação: $E_b/N_0$ é universal
-
-Independentemente da modulação ou banda, podemos comparar sistemas usando $E_b/N_0$. É a "moeda universal" das comunicações:
-
-$$\frac{E_b}{N_0} = \frac{\text{SNR}}{\eta}$$
-
-Isso significa que podemos comparar BPSK com 1 MHz de banda e 16-QAM com 4 MHz de banda no mesmo gráfico!
+| **Capacidade** | $C$ | $B\log_2(1+\text{SNR})$ | Limite supremo |
 
 ---
 
-## 8. Roteiro do Semestre
+### Eb/N₀ é universal
+
+$$\frac{E_b}{N_0} = \frac{\text{SNR}}{\eta}$$
+
+Independentemente da modulação ou banda, podemos comparar sistemas com $E_b/N_0$.
+
+<!-- .slide: stats -->
+.val vio 9.6 dB
+.label BPSK
+
+<!-- .slide: stats -->
+.val blue 12.6 dB
+.label QPSK
+
+<!-- .slide: stats -->
+.val gold 19.6 dB
+.label 16-QAM
+
+<!-- .slide: stats -->
+.val grn 26.0 dB
+.label 64-QAM
+
+<!-- .endstats -->
+
+> Eb/N₀ é a "moeda universal" das comunicações.
+
+---
+
+
+## A Taxa de Nyquist
+
+### Quantos símbolos por segundo cabem num canal?
+
+Todo canal tem uma largura de banda finita $B$ (Hz). Isso limita **quão rápido** os símbolos podem se suceder sem que um "borre" no outro — fenômeno chamado **Interferência Intersimbólica (ISI)**.
+
+::: definição
+**Critério de Nyquist (versão prática):** um canal ideal com largura de banda $B$ suporta, no máximo,
+$$\boxed{R_s^{\max} = 2B \quad \text{símbolos/s}}$$
+sem gerar ISI. Essa taxa é a **taxa de Nyquist**, e $B_N = R_s/2$ é a **banda de Nyquist**.
+:::
+
+---
+
+### Por que existe esse limite?
+
+Pense em pulsos retangulares no tempo — cada um representando um símbolo. Quanto mais estreito o pulso (mais rápido a taxa de símbolos), **mais largo** seu espectro em frequência ($\Delta t \cdot \Delta f \gtrsim 1$). Um canal com banda $B$ limitada não deixa passar pulsos arbitrariamente estreitos sem distorcê-los — e essa distorção é o que gera ISI.
+
+```mermaid
+flowchart LR
+    T["⏱️ Pulsos mais rápidos<br/>(T_s pequeno)"] --> F["📶 Espectro mais largo<br/>(precisa de mais B)"]
+    F --> C{"Canal tem<br/>banda B suficiente?"}
+    C -->|Sim| OK["✅ Sem ISI"]
+    C -->|Não| ISI["⚠️ Pulsos se sobrepõem<br/>→ ISI"]
+
+    style T fill:#74b9ff,stroke:#0984e3,color:#ffffff
+    style F fill:#a29bfe,stroke:#6c5ce7,color:#ffffff
+    style OK fill:#55efc4,stroke:#00b894,color:#2d3436
+    style ISI fill:#fd79a8,stroke:#e84393,color:#ffffff
+```
+
+---
+
+### Da taxa de símbolo à taxa de bits
+
+Cada símbolo carrega $k = \log_2 M$ bits (onde $M$ é o número de símbolos da constelação). Logo:
+
+$$R_b = R_s \cdot \log_2 M \le 2B\log_2 M$$
+
+| Modulação | $M$ | $k=\log_2 M$ | $R_b$ máx. (com $B$ fixo) |
+|---|---|---|---|
+| BPSK | 2 | 1 | $2B$ |
+| QPSK | 4 | 2 | $4B$ |
+| 16-QAM | 16 | 4 | $8B$ |
+| 64-QAM | 64 | 6 | $12B$ |
+
+>! Aumentar $M$ é uma forma de **burlar** o limite de Nyquist em bits/s — trocamos mais bits por símbolo em troca de exigir mais Eb/N₀ (menos robustez), exatamente o trade-off que já vimos na tabela comparativa de modulações.
+
+---
+
+### Nyquist vs. Shannon — não confundir
+
+| | **Nyquist** | **Shannon** |
+|---|---|---|
+| Pergunta | Quantos *símbolos/s* cabem em $B$? | Quantos *bits/s* cabem com um dado SNR? |
+| Considera ruído? | Não | Sim |
+| Resultado | $R_s^{\max} = 2B$ | $C = B\log_2(1+\text{SNR})$ |
+| Natureza | Limite geométrico (pulso vs. banda) | Limite de informação (capacidade do canal) |
+
+> Nyquist diz **quantos símbolos** cabem; Shannon diz **quantos bits por símbolo** fazem sentido dado o ruído. Vamos aprofundar o critério de Nyquist (pulso sinc, raised cosine, diagrama de olho) no Módulo III do semestre.
+
+---
+
+
+## Limites de Shannon
+
+### Limite de Shannon-Hartley
+
+$$C = B \log_2(1 + \text{SNR}) \quad \text{(bits/s)}$$
+
+---
+
+### O limite fundamental de energia
+
+$$\frac{E_b}{N_0} \ge \ln 2 \approx -1.59 \text{ dB}$$
+
+>! Nenhum sistema do universo pode operar abaixo de −1.59 dB.
+
+<!-- .slide: stats -->
+.val vio -1.59 dB
+.label Limite de Shannon
+
+<!-- .slide: stats -->
+.val blue 0.00 dB
+.label BPSK (η=1)
+
+<!-- .slide: stats -->
+.val red 26.0 dB
+.label 64-QAM (η=6)
+
+<!-- .endstats -->
+
+| Sistema | Gap Shannon |
+|---|---|
+| BPSK | 1.59 dB do limite |
+| Turbo codes | ~0.7 dB do limite |
+| LDPC | ~0.2 dB do limite |
+
+---
+
+
+## Roteiro do Semestre
 
 ### Plano de Aulas
 
 | Semana | Tema | Atividade |
 |---|---|---|
-| **1** | **Aula inaugural** — visão geral, modelo, modulação | Experimentos 1, 1b–6 ✅ |
-| **2** | Sinais, Fourier, PSD, ruído térmico | Lab: FFT e espectro |
-| **3** | Orçamento de enlace, Friis, cascata de ruído | Lab: link budget |
-| **4** | AM — DSB-SC, convencional, envelope | Lab: modular/demodular AM |
-| **5** | AM — SSB, VSB | Lab: SSB com filtro de Hilbert |
-| **6** | FM — NBFM, WBFM, Bessel, Carson | Lab: FM com PLL |
-| **7** | Banda base — Nyquist, ISI, raised cosine | Lab: olho digital |
-| **8** | **Prova 1** (conteúdo semanas 1–7) | |
-| **9** | Digital — ASK, OOK, FSK | Lab: BER Monte Carlo |
-| **10** | Digital — BPSK, QPSK, M-PSK | Lab: constelações no canal |
-| **11** | Digital — QAM quadrada | Lab: QAM com Gray coding |
-| **12** | Equalização — ZF, MMSE | Lab: equalizar canal com ISI |
-| **13** | Equalização adaptativa — LMS | Lab: LMS em tempo real |
-| **14** | Sincronismo — fase, timing, quadro | Lab: Costas loop, Gardner |
-| **15** | Códigos corretores — Hamming, convolucionais | Lab: decoder Viterbi |
-| **16** | **Projeto final** — receptor QPSK completo | Apresentação |
-| **17** | **Prova 2** + revisão geral | |
-
-### Laboratórios
-
-Cada módulo terá exercícios práticos em Python. Recomendamos:
-
-- **NumPy** para operações vetoriais
-- **SciPy** para filtros e funções especiais
-- **Matplotlib** para constelações, espectros, olhos, BER
-- **Seed fixo** (`np.random.seed(42)`) para reprodutibilidade
-- **Sempre formular uma previsão antes de rodar** — depois compare com o resultado
-
-### Projeto Integrador
-
-No final do semestre, você implementará um **receptor digital completo** com:
-
-- Modulador QPSK/16-QAM
-- Canal AWGN + multipercursos
-- Demodulador coerente
-- Equalizador LMS
-- Síndrome de frame sync
-- Medição de BER vs. Eb/N₀
+| **1** | Aula inaugural | Experimentos 1–6 ✅ |
+| **2** | Fourier, PSD, ruído térmico | Lab: FFT e espectro |
+| **3** | Orçamento de enlace, Friis | Lab: link budget |
+| **4** | AM — DSB-SC, envelope | Lab: modular/demodular AM |
+| **5** | AM — SSB, VSB | Lab: SSB com Hilbert |
+| **6** | FM — Bessel, Carson, PLL | Lab: FM com PLL |
+| **7** | Nyquist, ISI, raised cosine | Lab: olho digital |
+| **8** | **Prova 1** (sems 1–7) | |
+| **9–11** | Digital — PSK, FSK, QAM | Lab: constelações, BER |
+| **12–13** | Equalização — ZF, MMSE, LMS | Lab: equalizar canal |
+| **14** | Sincronismo — Costas, Gardner | Lab: loops de fase |
+| **15** | Códigos — Hamming, Viterbi | Lab: decoder Viterbi |
+| **16** | **Projeto final** | Apresentação |
+| **17** | **Prova 2** + revisão | |
 
 ---
 
-## 9. Metodologia e Avaliação
 
-### Como esta disciplina funciona
+## Metodologia e Avaliação
+
+### Como funciona
 
 | Componente | Peso | Descrição |
 |---|---|---|
-| Prova teórica 1 | 30% | Semanas 1–7 (Fourier, ruído, modulação analógica) |
-| Prova teórica 2 | 30% | Semanas 9–16 (digital, equalização, sincronismo, código) |
-| Laboratórios | 20% | 8 relatórios de experimentos Python |
-| Projeto final | 20% | Receptor digital completo em Python |
+| Prova teórica 1 | 30% | Semanas 1–7 |
+| Prova teórica 2 | 30% | Semanas 9–16 |
+| Laboratórios | 20% | 8 relatórios Python |
+| Projeto final | 20% | Receptor digital completo |
 
-### Ferramentas
+---
 
 ```bash
 # Ambiente recomendado
@@ -1728,6 +1290,29 @@ numpy>=1.26
 scipy>=1.13
 matplotlib>=3.9
 ```
+
+### Laboratórios — Boas práticas
+
+- **NumPy** para operações vetoriais
+- **SciPy** para filtros e funções especiais
+- **Matplotlib** para constelações, espectros, BER
+- **Seed fixo** (`np.random.seed(42)`) para reprodutibilidade
+- Sempre formular uma **previsão** antes de rodar — depois compare!
+
+---
+
+### Projeto Integrador
+
+No final do semestre, implementaremos um **receptor digital completo**:
+
+- Modulador QPSK/16-QAM
+- Canal AWGN + multipercursos
+- Demodulador coerente
+- Equalizador LMS
+- Frame synchronization
+- BER vs. Eb/N₀
+
+---
 
 ### Referências
 
@@ -1740,39 +1325,51 @@ matplotlib>=3.9
 
 ---
 
-## 10. Exercício de Fixação
 
-**Resolva agora (5 minutos) — depois discutimos:**
+## Exercício de Fixação
 
 ### Questão 1
+
 Um sistema opera com $B = 10$ MHz e SNR = 30 dB. Qual a capacidade máxima de Shannon?
 
+---
+
 ### Questão 2
+
 Você precisa transmitir vídeo HD a 20 Mbit/s. Qual a banda mínima necessária com:
+
 a) BPSK?  
 b) 64-QAM?
 
+---
+
 ### Questão 3
+
 Um receptor tem:
 - LNA: $G = 20$ dB, $NF = 1.5$ dB
 - Mixer: $G = -5$ dB, $NF = 8$ dB
-- IF Amplifier: $G = 15$ dB, $NF = 4$ dB
+- IF Amp: $G = 15$ dB, $NF = 4$ dB
 
-Qual a figura de ruído total? (Use a fórmula de Friis em cascata)
+Qual a figura de ruído total? (Friis em cascata)
+
+---
 
 ### Questão 4
-Qual a diferença fundamental entre AM e FM em termos de:
+
+Qual a diferença entre AM e FM em:
+
 a) O que varia no sinal?  
 b) Imunidade a ruído?  
 c) Largura de banda?
 
 ---
 
-> **Resumo da aula:** Vimos que comunicar é transferir informação por canais imperfeitos, exploramos **todas as modulações principais** (AM, DSB-SC, SSB, VSB, FM, OOK, BPSK, QPSK, 16-QAM, BFSK) com fórmulas, propriedades e aplicações reais, que existem limites fundamentais (Shannon), e que Python nos permite visualizar tudo isso na prática. No próximo encontro, mergulharemos em Fourier, PSD e ruído térmico — a base matemática de tudo.
+>! **Resumo da aula:**
 
-> 📌 **Para a próxima aula:** Revisar transformada de Fourier (integrais, propriedades) e distribuição Gaussiana.
+> Comunicar é transferir informação por canais imperfeitos. Vimos **todas as modulações principais** (AM, FM, PSK, QAM, FSK), que existem **limites fundamentais** (Shannon), e que **Python** nos permite visualizar tudo na prática.
 
----
+> 📌 **Para a próxima aula:** Revisar transformada de Fourier e distribuição Gaussiana.
+
 
 *Documento gerado para a aula inaugural de Sistemas de Comunicações — UFSC 2026/2*  
 *Prof. Laio Oriel Seman*

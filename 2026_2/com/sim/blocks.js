@@ -80,7 +80,7 @@ export const defs = {
     am: { name: 'Modulador AM', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'AM convencional DSB-LC', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, mu: { type: 'number', label: 'Índice μ', value: .7, min: 0, max: 2 } }, theory: 'Modulação AM com portadora. Para evitar sobremodulação com mensagem normalizada, use μ≤1.', equation: 's(t)=[1+μm(t)]cos(2πfct)' },
     fm: { name: 'Modulador FM', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'Frequência instantânea variável', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, deviation: { type: 'number', label: 'Desvio Δf (Hz)', value: 500 } }, theory: 'A fase é a integral da mensagem; a frequência instantânea varia linearmente com m(t).', equation: 's(t)=cos[2πfct+2πk_f∫m(τ)dτ]' },
     pm: { name: 'Modulador PM', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'Fase proporcional à mensagem', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, kp: { type: 'number', label: 'Sensibilidade kp (rad)', value: 1 } }, theory: 'A fase instantânea varia diretamente com a mensagem.', equation: 's(t)=cos[2πfct+k_pm(t)]' },
-    awgn: { name: 'Canal AWGN', category: 'Channel', inputs: ['signal'], outputs: ['noisy'], summary: 'Ruído branco gaussiano', config: { mode: { type: 'select', label: 'Referência', value: 'Eb/N0', options: ['Eb/N0', 'SNR/amostra'] }, snr: { type: 'number', label: 'Valor (dB)', value: 7, min: -20, max: 60 }, seed: { type: 'number', label: 'Semente', value: 7 } }, theory: 'Mede a potência do sinal e calcula a variância do ruído. Eb/N0 considera amostras por símbolo, bits por símbolo e taxa do código; SNR/amostra compara potência média de sinal e ruído.', equation: 'σ²_dimensão=P·Ns/(2kRγb) ou P/(2γs)' },
+    awgn: { name: 'Canal AWGN', category: 'Channel', inputs: ['signal'], outputs: ['noisy'], summary: 'Ruído branco gaussiano', config: { mode: { type: 'select', label: 'Referência', value: 'Eb/N0', options: ['Eb/N0', 'SNR/amostra'] }, snr: { type: 'number', label: 'Valor (dB)', value: 7, min: -20, max: 60 }, codeRate: { type: 'number', label: 'Taxa do código R (Eb/N0)', value: 1, min: 0.05, max: 1 }, seed: { type: 'number', label: 'Semente', value: 7 } }, theory: 'Mede a potência do sinal e calcula a variância do ruído. Eb/N0 considera amostras por símbolo (Ns) e bits por símbolo (k) lidos do sinal de entrada, e a taxa do código (R) configurada aqui; SNR/amostra compara potência média de sinal e ruído.', equation: 'σ²_dimensão=P·Ns/(2kRγb) ou P/(2γs)' },
     phase_offset: { name: 'Erro de fase', category: 'Channel', inputs: ['signal'], outputs: ['shifted'], summary: 'Rotação de portadora', config: { degrees: { type: 'number', label: 'Fase (graus)', value: 18, min: -180, max: 180 } }, theory: 'Modela erro de fase constante da portadora.', equation: 'r=s·e^{jφ}' },
     bit_flip: { name: 'Injetor de erros binários', category: 'Channel', inputs: ['bits'], outputs: ['corrupted'], summary: 'Inverte posições controladas', config: { positions: { type: 'text', label: 'Posições por bloco', value: '5' }, block: { type: 'number', label: 'Tamanho do bloco (0=global)', value: 7, min: 0, max: 10000 } }, theory: 'Inverte posições indexadas a partir de 1. Com bloco maior que zero, repete o padrão em cada palavra para experimentos controlados.', equation: 'r=c⊕e' },
     frequency_offset: { name: 'Offset de frequência', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'CFO normalizado', config: { cycles: { type: 'number', label: 'Ciclos/amostra', value: .01, min: -.5, max: .5 } }, theory: 'Aplica uma rotação de fase que cresce linearmente no tempo.', equation: 'r[n]=s[n]e^{j2πΔfn}' },
@@ -284,16 +284,16 @@ export function createProcessors(results) {
     // Digital Modulation
     processors.ask = (n, { bits }) => {
         const z = n.config.zero || 0, o = n.config.one || 1;
-        return { symbols: bits.map(b => ({ re: b ? o : z, im: 0 })) };
+        return { symbols: { kind: 'symbols', data: bits.map(b => ({ re: b ? o : z, im: 0 })), bitsPerSymbol: 1 } };
     };
-    processors.bpsk = (n, { bits }) => { return { symbols: bits.map(b => ({ re: b ? -1 : 1, im: 0 })) }; };
+    processors.bpsk = (n, { bits }) => { return { symbols: { kind: 'symbols', data: bits.map(b => ({ re: b ? -1 : 1, im: 0 })), bitsPerSymbol: 1 } }; };
     processors.qpsk = (n, { bits }) => {
         const symbols = [];
         for (let i = 0; i + 2 <= bits.length; i += 2) {
             const I = bits[i] === 0 ? 1 : -1, Q = bits[i + 1] === 0 ? 1 : -1;
             symbols.push({ re: I / Math.SQRT2, im: Q / Math.SQRT2 });
         }
-        return { symbols };
+        return { symbols: { kind: 'symbols', data: symbols, bitsPerSymbol: 2 } };
     };
     processors.mpsk = (n, { bits }) => {
         const M = n.config.M || 8, k = Math.log2(M);
@@ -304,38 +304,37 @@ export function createProcessors(results) {
             const angle = 2 * Math.PI * gray / M - Math.PI;
             symbols.push({ re: Math.cos(angle), im: Math.sin(angle) });
         }
-        return { symbols };
+        return { symbols: { kind: 'symbols', data: symbols, bitsPerSymbol: k } };
     };
     processors.qam = (n, { bits }) => {
         const M = n.config.M || 16, k = Math.log2(M), root = Math.sqrt(M);
         const symbols = [];
         for (let i = 0; i + k <= bits.length; i += k) {
             let val = 0; for (let j = 0; j < k; j++) val = (val << 1) | bits[i + j];
-            const I_val = (val >> (k / 2)) & (root - 1), Q_val = val & (root - 1);
-            const I = I_val % 2 === 0 ? (root - 1 - 2 * I_val) : (2 * I_val - (root - 1));
-            const Q = Q_val % 2 === 0 ? (root - 1 - 2 * Q_val) : (2 * Q_val - (root - 1));
+            const I_val = grayToBinary((val >> (k / 2)) & (root - 1)), Q_val = grayToBinary(val & (root - 1));
+            const I = 2 * I_val - (root - 1);
+            const Q = 2 * Q_val - (root - 1);
             const norm = Math.sqrt(2 / (root * root - 1));
             symbols.push({ re: I * norm, im: Q * norm });
         }
-        return { symbols };
+        return { symbols: { kind: 'symbols', data: symbols, bitsPerSymbol: k } };
     };
     processors.fsk = (n, { bits }) => {
-        const M = n.config.M || 2, sps = n.config.sps || 16, fs = sampleRateOf(null);
-        const symbols = bits.map(b => b ? 1 : 0);
+        const M = n.config.M || 2, sps = n.config.sps || 16, fs = sampleRateOf(null), k = Math.log2(M);
+        const symbols = bitsToInts(arr(bits), k);
         const data = [];
-        for (let k = 0; k < symbols.length; k++) {
-            const m = symbols[k];
+        for (let i = 0; i < symbols.length; i++) {
+            const m = symbols[i];
             for (let s = 0; s < sps; s++) {
-                const t = k * sps + s;
-                data.push({ re: Math.cos(2 * Math.PI * m * t / sps), im: Math.sin(2 * Math.PI * m * t / sps) });
+                data.push({ re: Math.cos(2 * Math.PI * m * s / sps), im: Math.sin(2 * Math.PI * m * s / sps) });
             }
         }
-        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data } };
+        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, fskM: M, sps, bitsPerSymbol: k } };
     };
     processors.am = (n, { message }) => {
         const fc = n.config.carrier || 2000, mu = n.config.mu || 0.7;
         const fs = sampleRateOf(message);
-        const data = message.data.map(s => ({ re: (1 + mu * s.re) * Math.cos(2 * Math.PI * fc * message.data.indexOf(s) / fs), im: 0 }));
+        const data = message.data.map((s, k) => ({ re: (1 + mu * s.re) * Math.cos(2 * Math.PI * fc * k / fs), im: 0 }));
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
     };
     processors.fm = (n, { message }) => {
@@ -352,18 +351,19 @@ export function createProcessors(results) {
     processors.pm = (n, { message }) => {
         const fc = n.config.carrier || 2000, kp = n.config.kp || 1;
         const fs = sampleRateOf(message);
-        const data = message.data.map(s => ({ re: Math.cos(2 * Math.PI * fc * message.data.indexOf(s) / fs + kp * s.re), im: Math.sin(2 * Math.PI * fc * message.data.indexOf(s) / fs + kp * s.re) }));
+        const data = message.data.map((s, k) => ({ re: Math.cos(2 * Math.PI * fc * k / fs + kp * s.re), im: Math.sin(2 * Math.PI * fc * k / fs + kp * s.re) }));
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
     };
     processors.rrc_tx = (n, { symbols }) => {
         const sps = n.config.sps || 8, alpha = n.config.alpha || 0.35, span = n.config.span || 8;
         const taps = rrcTaps(sps, alpha, span);
+        const syms = arr(symbols).map(complex);
         const data = [];
-        for (const sym of symbols) {
+        for (const sym of syms) {
             for (let k = 0; k < sps; k++) data.push({ re: 0, im: 0 });
         }
-        for (let k = 0; k < symbols.length; k++) {
-            const sym = symbols[k];
+        for (let k = 0; k < syms.length; k++) {
+            const sym = syms[k];
             for (let t = 0; t < taps.length; t++) {
                 const sampleIdx = k * sps + t;
                 if (sampleIdx < data.length) {
@@ -372,7 +372,7 @@ export function createProcessors(results) {
                 }
             }
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps, bitsPerSymbol: symbols?.bitsPerSymbol || 1 } };
     };
     processors.rrc_rx = (n, { waveform }) => {
         const sps = n.config.sps || 8, alpha = n.config.alpha || 0.35, span = n.config.span || 8;
@@ -391,12 +391,12 @@ export function createProcessors(results) {
         }
         return { symbols };
     };
-    processors.fft = (n, { signal }) => { return computeFFT(signal, n.config.size || 1024, n.config.window || 'Hann', n.config.shift === 'sim'); };
+    processors.fft = (n, { signal }) => { return { fft: computeFFT(signal, n.config.size || 1024, n.config.window || 'Hann', n.config.shift === 'sim') }; };
 
     // Channel
     processors.awgn = (n, { signal }) => {
         const mode = n.config.mode || 'Eb/N0';
-        const snrDb = n.config.snr || 7;
+        const snrDb = n.config.snr ?? 7;
         const seed = n.config.seed || 7;
         const r = (function(s) { let state = s; return function() { return ((state = (Math.imul(1664525, state) + 1013904223) | 0) >>> 0) / 4294967296 } })(seed);
         const gaussian = () => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
@@ -404,8 +404,14 @@ export function createProcessors(results) {
         let power = 0;
         for (const s of data) power += s.re * s.re + s.im * s.im;
         power /= Math.max(1, data.length);
-        const snr = Math.pow(10, snrDb / 10);
-        const noiseVar = power / snr;
+        const gammaLinear = Math.pow(10, snrDb / 10);
+        let noiseVar;
+        if (mode === 'Eb/N0') {
+            const Ns = signal?.sps || 1, k = signal?.bitsPerSymbol || 1, R = n.config.codeRate || 1;
+            noiseVar = power * Ns / (2 * k * R * gammaLinear);
+        } else {
+            noiseVar = power / (2 * gammaLinear);
+        }
         const noiseStd = Math.sqrt(noiseVar);
         const noisy = data.map(s => ({ re: s.re + gaussian() * noiseStd, im: s.im + gaussian() * noiseStd }));
         return { noisy: { ...signal, data: noisy } };
@@ -553,44 +559,49 @@ export function createProcessors(results) {
         const M = n.config.M || 8, k = Math.log2(M);
         const bits = [];
         for (const s of arr(symbols).map(complex)) {
-            let angle = Math.atan2(s.im, s.re);
-            if (angle < 0) angle += 2 * Math.PI;
-            let m = Math.round(angle * M / (2 * Math.PI)) % M;
-            let gray = m ^ (m >> 1);
-            for (let j = k - 1; j >= 0; j--) { bits.push((gray >> j) & 1); }
+            const angle = Math.atan2(s.im, s.re);
+            let gray = Math.round((angle + Math.PI) * M / (2 * Math.PI)) % M;
+            if (gray < 0) gray += M;
+            const val = grayToBinary(gray);
+            for (let j = k - 1; j >= 0; j--) { bits.push((val >> j) & 1); }
         }
         return { bits };
     };
     processors.hard_qam = (n, { symbols }) => {
         const M = n.config.M || 16, k = Math.log2(M), root = Math.sqrt(M);
         const bits = [];
+        const norm = Math.sqrt(2 / (root * root - 1));
         const levels = Array.from({ length: root }, (_, i) => 2 * i - (root - 1));
         for (const s of arr(symbols).map(complex)) {
-            let I = levels.reduce((prev, curr) => Math.abs(curr - s.re) < Math.abs(prev - s.re) ? curr : prev);
-            let Q = levels.reduce((prev, curr) => Math.abs(curr - s.im) < Math.abs(prev - s.im) ? curr : prev);
-            const I_idx = (root - 1 - I) / 2, Q_idx = (root - 1 - Q) / 2;
+            const reScaled = s.re / norm, imScaled = s.im / norm;
+            let I = levels.reduce((prev, curr) => Math.abs(curr - reScaled) < Math.abs(prev - reScaled) ? curr : prev);
+            let Q = levels.reduce((prev, curr) => Math.abs(curr - imScaled) < Math.abs(prev - imScaled) ? curr : prev);
+            const I_idx = binaryToGray((I + root - 1) / 2), Q_idx = binaryToGray((Q + root - 1) / 2);
             for (let j = k / 2 - 1; j >= 0; j--) bits.push((I_idx >> j) & 1);
             for (let j = k / 2 - 1; j >= 0; j--) bits.push((Q_idx >> j) & 1);
         }
         return { bits };
     };
     processors.fsk_detector = (n, { waveform }) => {
-        const M = 2, sps = 16;
+        const M = waveform?.fskM || n.config.M || 2, sps = waveform?.sps || n.config.sps || 16, k = Math.log2(M);
         const data = arr(waveform).map(complex);
-        const bits = [];
+        const symbols = [];
         for (let symbol = 0; symbol < Math.floor(data.length / sps); symbol++) {
-            let corr0 = 0, corr1 = 0;
-            for (let s = 0; s < sps; s++) {
-                const idx = symbol * sps + s;
-                if (idx >= data.length) break;
-                const cos0 = Math.cos(0), sin0 = Math.sin(0);
-                const cos1 = Math.cos(2 * Math.PI * s / sps), sin1 = Math.sin(2 * Math.PI * s / sps);
-                corr0 += data[idx].re * cos0 + data[idx].im * sin0;
-                corr1 += data[idx].re * cos1 + data[idx].im * sin1;
+            let best = 0, bestMag = -1;
+            for (let m = 0; m < M; m++) {
+                let cr = 0, ci = 0;
+                for (let s = 0; s < sps; s++) {
+                    const idx = symbol * sps + s;
+                    const refRe = Math.cos(2 * Math.PI * m * s / sps), refIm = Math.sin(2 * Math.PI * m * s / sps);
+                    cr += data[idx].re * refRe + data[idx].im * refIm;
+                    ci += data[idx].im * refRe - data[idx].re * refIm;
+                }
+                const mag = cr * cr + ci * ci;
+                if (mag > bestMag) { bestMag = mag; best = m; }
             }
-            bits.push(corr1 > corr0 ? 1 : 0);
+            symbols.push(best);
         }
-        return { bits };
+        return { bits: intsToBits(symbols, k) };
     };
     processors.ofdm_tx = (n, { bits }) => {
         const mode = n.config.mode || 'OFDM', N = +n.config.carriers, cp = Math.max(0, Math.min(N, Math.round(n.config.cp))), source = arr(bits), q = 1 / Math.sqrt(2), carriers = mode === 'DMT' ? N / 2 - 1 : N, perBlock = 2 * carriers, blocks = Math.ceil(source.length / perBlock), data = [];
@@ -601,7 +612,7 @@ export function createProcessors(results) {
             else { symbols.forEach((x, k) => { re[k] = x.re; im[k] = x.im }); if (mode === 'SC-FDMA') radix2FFT(re, im) }
             radix2FFT(re, im, true); const scale = Math.sqrt(N), symbol = Array.from({ length: N }, (_, k) => ({ re: re[k] * scale, im: im[k] * scale })); data.push(...symbol.slice(N - cp), ...symbol);
         }
-        const fs = sampleRateOf(null); return { waveform: { kind: 'waveform', data, fs, sampleRate: fs, ofdmMode: mode, ofdmN: N, ofdmCP: cp, sourceBitCount: source.length } };
+        const fs = sampleRateOf(null); return { waveform: { kind: 'waveform', data, fs, sampleRate: fs, ofdmMode: mode, ofdmN: N, ofdmCP: cp, sourceBitCount: source.length, sps: N + cp, bitsPerSymbol: perBlock } };
     };
     processors.ofdm_rx = (n, { waveform }) => {
         const signal = waveform, mode = signal.ofdmMode || n.config.mode || 'OFDM', N = +n.config.carriers, cp = Math.max(0, Math.min(N, Math.round(n.config.cp))), data = arr(signal).map(complex), size = N + cp, bits = [];
@@ -610,25 +621,27 @@ export function createProcessors(results) {
     };
     processors.msk = (n, { bits }) => {
         const mode = n.config.mode || 'MSK', sps = n.config.sps || 16, bt = n.config.bt || 0.3;
+        let nrz = [];
+        for (const b of bits) for (let s = 0; s < sps; s++) nrz.push(b ? 1 : -1);
+        if (mode === 'GMSK') nrz = gaussianShape(nrz, sps, bt);
         const data = [];
         let phase = 0;
-        for (const b of bits) {
-            const delta = b ? Math.PI / sps : -Math.PI / sps;
-            for (let s = 0; s < sps; s++) {
-                phase += delta;
-                data.push({ re: Math.cos(phase), im: Math.sin(phase) });
-            }
+        for (const a of nrz) {
+            phase += a * Math.PI / sps;
+            data.push({ re: Math.cos(phase), im: Math.sin(phase) });
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps } };
     };
     processors.msk_detector = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
+        const sps = waveform?.sps || 16;
         const bits = [];
-        let phaseAcc = 0;
-        for (let k = 1; k < data.length; k++) {
-            const delta = Math.atan2(data[k].im * data[k - 1].re - data[k].re * data[k - 1].im, data[k].re * data[k - 1].re + data[k].im * data[k - 1].im);
-            phaseAcc += delta;
-            if (k % 16 === 0) { bits.push(phaseAcc >= 0 ? 1 : 0); phaseAcc = 0; }
+        for (let start = 0; start + sps <= data.length; start += sps) {
+            let phaseAcc = 0;
+            for (let k = Math.max(1, start); k < start + sps; k++) {
+                phaseAcc += Math.atan2(data[k].im * data[k - 1].re - data[k].re * data[k - 1].im, data[k].re * data[k - 1].re + data[k].im * data[k - 1].im);
+            }
+            bits.push(phaseAcc >= 0 ? 1 : 0);
         }
         return { bits };
     };
@@ -636,66 +649,104 @@ export function createProcessors(results) {
         const mode = n.config.mode || 'PAM', sps = n.config.sps || 16;
         const data = [];
         for (const b of bits) {
-            const amp = mode === 'PAM' ? (b ? 1 : -1) : (mode === 'PPM' ? 1 : 0);
-            for (let s = 0; s < sps; s++) data.push({ re: amp, im: 0 });
+            if (mode === 'PAM') { const amp = b ? 1 : -1; for (let s = 0; s < sps; s++) data.push({ re: amp, im: 0 }); }
+            else if (mode === 'PPM') { for (let s = 0; s < sps; s++) { const inPulse = b ? (s >= sps / 2) : (s < sps / 2); data.push({ re: inPulse ? 1 : 0, im: 0 }); } }
+            else { const width = Math.round(sps * (b ? 0.75 : 0.25)); for (let s = 0; s < sps; s++) data.push({ re: s < width ? 1 : 0, im: 0 }); }
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, pulseMode: mode, sps } };
     };
     processors.pulse_detector = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
+        const mode = waveform?.pulseMode || 'PAM', sps = waveform?.sps || 16;
         const bits = [];
-        const sps = 16;
         for (let k = 0; k < data.length; k += sps) {
-            let sum = 0;
-            for (let s = 0; s < sps && k + s < data.length; s++) sum += data[k + s].re;
-            bits.push(sum >= 0 ? 1 : 0);
+            const seg = data.slice(k, k + sps).map(x => x.re);
+            if (!seg.length) break;
+            if (mode === 'PPM') {
+                const half = Math.floor(seg.length / 2);
+                const first = seg.slice(0, half).reduce((a, b) => a + b, 0);
+                const second = seg.slice(half).reduce((a, b) => a + b, 0);
+                bits.push(second > first ? 1 : 0);
+            } else if (mode === 'PWM') {
+                const duration = seg.filter(x => x > 0.5).length;
+                bits.push(duration >= seg.length / 2 ? 1 : 0);
+            } else {
+                let sum = 0; for (const x of seg) sum += x;
+                bits.push(sum >= 0 ? 1 : 0);
+            }
         }
         return { bits };
     };
     processors.dpsk = (n, { bits }) => {
         const mode = n.config.mode || 'DBPSK';
         const symbols = [];
-        let prev = 1;
-        for (const b of bits) {
-            const curr = b ? -prev : prev;
-            symbols.push({ re: curr, im: 0 });
-            prev = curr;
+        if (mode === 'DBPSK') {
+            let prev = 1;
+            for (const b of bits) {
+                const curr = b ? -prev : prev;
+                symbols.push({ re: curr, im: 0 });
+                prev = curr;
+            }
+        } else {
+            const base = mode === 'π/4-DQPSK' ? Math.PI / 4 : 0;
+            let phase = 0;
+            for (let i = 0; i + 2 <= bits.length; i += 2) {
+                const val = (bits[i] << 1) | bits[i + 1], gray = binaryToGray(val);
+                phase += base + gray * Math.PI / 2;
+                symbols.push({ re: Math.cos(phase), im: Math.sin(phase) });
+            }
         }
-        return { symbols };
+        return { symbols: { kind: 'symbols', data: symbols, bitsPerSymbol: mode === 'DBPSK' ? 1 : 2 } };
     };
     processors.dpsk_detector = (n, { symbols }) => {
         const mode = n.config.mode || 'DBPSK';
         const bits = [];
-        let prev = 1;
-        for (const s of symbols) {
-            const curr = s.re >= 0 ? 1 : -1;
-            bits.push(curr === prev ? 0 : 1);
-            prev = curr;
+        if (mode === 'DBPSK') {
+            let prev = 1;
+            for (const s of arr(symbols).map(complex)) {
+                const curr = s.re >= 0 ? 1 : -1;
+                bits.push(curr === prev ? 0 : 1);
+                prev = curr;
+            }
+        } else {
+            const base = mode === 'π/4-DQPSK' ? Math.PI / 4 : 0;
+            let prevPhase = 0;
+            for (const s of arr(symbols).map(complex)) {
+                const angle = Math.atan2(s.im, s.re);
+                let dphi = (((angle - prevPhase) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                let gray = Math.round((dphi - base) / (Math.PI / 2)) % 4;
+                if (gray < 0) gray += 4;
+                const val = grayToBinary(gray);
+                bits.push((val >> 1) & 1, val & 1);
+                prevPhase = angle;
+            }
         }
         return { bits };
     };
     processors.oqpsk = (n, { bits }) => {
-        const sps = n.config.sps || 16;
+        const sps = n.config.sps || 16, half = sps / 2;
         const symbols = [];
         for (let i = 0; i + 2 <= bits.length; i += 2) {
             const I = bits[i] === 0 ? 1 : -1;
-            const Q_delayed = i + 1 < bits.length ? (bits[i + 1] === 0 ? 1 : -1) : 0;
-            symbols.push({ re: I, im: Q_delayed });
+            const Q = bits[i + 1] === 0 ? 1 : -1;
+            symbols.push({ I, Q });
         }
-        // Expand to waveform
-        const data = [];
-        for (const sym of symbols) {
-            for (let s = 0; s < sps; s++) data.push({ re: sym.re, im: sym.im });
+        // I is symbol-aligned; Q is delayed by half a symbol (Ts/2), the defining OQPSK stagger.
+        const total = symbols.length * sps + half;
+        const data = Array.from({ length: total }, () => ({ re: 0, im: 0 }));
+        for (let i = 0; i < symbols.length; i++) {
+            for (let s = 0; s < sps; s++) data[i * sps + s].re = symbols[i].I;
+            for (let s = 0; s < sps; s++) data[half + i * sps + s].im = symbols[i].Q;
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps } };
     };
     processors.oqpsk_detector = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
+        const sps = waveform?.sps || 16, half = sps / 2;
         const bits = [];
-        const sps = 16;
-        for (let k = 0; k < data.length; k += sps) {
-            bits.push(data[k].re >= 0 ? 0 : 1);
-            if (k + sps / 2 < data.length) bits.push(data[k + sps / 2].im >= 0 ? 0 : 1);
+        for (let k = 0; k + half < data.length; k += sps) {
+            bits.push(data[k + half].re >= 0 ? 0 : 1);
+            if (half + k + half < data.length) bits.push(data[half + k + half].im >= 0 ? 0 : 1);
         }
         return { bits };
     };
@@ -716,26 +767,27 @@ export function createProcessors(results) {
     };
     processors.cpfsk = (n, { bits }) => {
         const mode = n.config.mode || 'CPFSK', h = n.config.h || 0.7, sps = n.config.sps || 16, bt = n.config.bt || 0.5;
+        let nrz = [];
+        for (const b of bits) for (let s = 0; s < sps; s++) nrz.push(b ? 1 : -1);
+        if (mode === 'GFSK') nrz = gaussianShape(nrz, sps, bt);
         const data = [];
         let phase = 0;
-        for (const b of bits) {
-            const delta = b ? Math.PI * h / sps : -Math.PI * h / sps;
-            for (let s = 0; s < sps; s++) {
-                phase += delta;
-                data.push({ re: Math.cos(phase), im: Math.sin(phase) });
-            }
+        for (const a of nrz) {
+            phase += a * Math.PI * h / sps;
+            data.push({ re: Math.cos(phase), im: Math.sin(phase) });
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps } };
     };
     processors.cpfsk_detector = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
+        const sps = waveform?.sps || 16;
         const bits = [];
-        let phaseAcc = 0;
-        const sps = 16;
-        for (let k = 1; k < data.length; k++) {
-            const delta = Math.atan2(data[k].im * data[k - 1].re - data[k].re * data[k - 1].im, data[k].re * data[k - 1].re + data[k].im * data[k - 1].im);
-            phaseAcc += delta;
-            if (k % sps === 0) { bits.push(phaseAcc >= 0 ? 1 : 0); phaseAcc = 0; }
+        for (let start = 0; start + sps <= data.length; start += sps) {
+            let phaseAcc = 0;
+            for (let k = Math.max(1, start); k < start + sps; k++) {
+                phaseAcc += Math.atan2(data[k].im * data[k - 1].re - data[k].re * data[k - 1].im, data[k].re * data[k - 1].re + data[k].im * data[k - 1].im);
+            }
+            bits.push(phaseAcc >= 0 ? 1 : 0);
         }
         return { bits };
     };
@@ -749,18 +801,22 @@ export function createProcessors(results) {
                 for (let s = 0; s < sps; s++) data.push({ re: chip, im: 0 });
             }
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data } };
+        const fs = sampleRateOf(null);
+        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, code: codeStr, sps } };
     };
     processors.spread_rx = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
+        const codeStr = waveform?.code || n.config.code || '1101001', sps = waveform?.sps || n.config.sps || 8;
+        const code = codeStr.split('').map(c => +c);
+        const codeLen = code.length;
         const bits = [];
-        const sps = 8, codeLen = 7;
         for (let k = 0; k < data.length; k += sps * codeLen) {
             let sum = 0;
             for (let c = 0; c < codeLen; c++) {
+                const polarity = code[c] === 0 ? 1 : -1;
                 for (let s = 0; s < sps; s++) {
                     const idx = k + c * sps + s;
-                    if (idx < data.length) sum += data[idx].re;
+                    if (idx < data.length) sum += data[idx].re * polarity;
                 }
             }
             bits.push(sum >= 0 ? 0 : 1);
@@ -770,11 +826,13 @@ export function createProcessors(results) {
     processors.analog_sideband = (n, { message }) => {
         const mode = n.config.mode || 'DSB-SC', fc = n.config.carrier || 2000;
         const fs = sampleRateOf(message);
-        const data = message.data.map(s => {
-            const t = message.data.indexOf(s) / fs;
-            if (mode === 'DSB-SC') return { re: s.re * Math.cos(2 * Math.PI * fc * t), im: 0 };
-            if (mode === 'USB') return { re: s.re * Math.cos(2 * Math.PI * fc * t) - (0) * Math.sin(2 * Math.PI * fc * t), im: 0 };
-            return { re: s.re * Math.cos(2 * Math.PI * fc * t), im: 0 };
+        const mHat = analyticSignal(message).map(s => s.im);
+        const data = message.data.map((s, k) => {
+            const t = k / fs, c = Math.cos(2 * Math.PI * fc * t), sn = Math.sin(2 * Math.PI * fc * t);
+            if (mode === 'USB') return { re: s.re * c - mHat[k] * sn, im: 0 };
+            if (mode === 'LSB') return { re: s.re * c + mHat[k] * sn, im: 0 };
+            if (mode === 'VSB') return { re: s.re * c - .5 * mHat[k] * sn, im: 0 };
+            return { re: s.re * c, im: 0 };
         });
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
     };
@@ -788,7 +846,7 @@ export function createProcessors(results) {
     processors.envelope = (n, { signal }) => {
         const data = arr(signal).map(complex);
         const analytic = analyticSignal({ data, fs: sampleRateOf(signal) });
-        const message = analytic.data.slice(0, data.length).map(s => ({ re: Math.sqrt(s.re * s.re + s.im * s.im), im: 0 }));
+        const message = analytic.slice(0, data.length).map(s => ({ re: Math.sqrt(s.re * s.re + s.im * s.im), im: 0 }));
         const removeDC = n.config.removeDC === 'sim';
         const mean = message.reduce((s, m) => s + m.re, 0) / message.length;
         return { message: { kind: 'samples', fs: sampleRateOf(signal), sampleRate: sampleRateOf(signal), data: message.map(m => ({ re: removeDC ? m.re - mean : m.re, im: 0 })) } };
@@ -798,7 +856,7 @@ export function createProcessors(results) {
         const fs = sampleRateOf(signal);
         const data = arr(signal).map(complex);
         const analytic = analyticSignal({ data, fs });
-        const phases = analytic.data.slice(0, data.length).map(s => Math.atan2(s.im, s.re));
+        const phases = analytic.slice(0, data.length).map(s => Math.atan2(s.im, s.re));
         const unwrapped = unwrap(phases);
         const message = unwrapped.map((p, k) => {
             const t = k / fs;
@@ -838,8 +896,22 @@ export function createProcessors(results) {
         return {};
     };
     processors.evm = (n, { ideal, measured }) => {
-        const a = arr(ideal).map(complex), b = arr(measured).map(complex), count = Math.min(a.length, b.length); let error = 0, power = 0;
-        for (let k = 0; k < count; k++) { error += (b[k].re - a[k].re) ** 2 + (b[k].im - a[k].im) ** 2; power += a[k].re ** 2 + a[k].im ** 2 }
+        const a = arr(ideal).map(complex), b = arr(measured).map(complex), count = Math.min(a.length, b.length);
+        const equalize = n.config.equalize !== 'não';
+        let bEq = b;
+        if (equalize && count) {
+            let numRe = 0, numIm = 0, den = 0;
+            for (let k = 0; k < count; k++) { numRe += b[k].re * a[k].re + b[k].im * a[k].im; numIm += b[k].im * a[k].re - b[k].re * a[k].im; den += a[k].re ** 2 + a[k].im ** 2; }
+            if (den > 0) {
+                const gRe = numRe / den, gIm = numIm / den, gMagSq = gRe * gRe + gIm * gIm;
+                if (gMagSq > 1e-18) {
+                    // divide measured by the estimated complex gain g to remove a single gain/phase error
+                    bEq = b.map(s => ({ re: (s.re * gRe + s.im * gIm) / gMagSq, im: (s.im * gRe - s.re * gIm) / gMagSq }));
+                }
+            }
+        }
+        let error = 0, power = 0;
+        for (let k = 0; k < count; k++) { error += (bEq[k].re - a[k].re) ** 2 + (bEq[k].im - a[k].im) ** 2; power += a[k].re ** 2 + a[k].im ** 2 }
         const value = power ? Math.sqrt(error / power) : NaN;
         results.push({ type: 'metric', title: 'EVM RMS', value, detail: `${(value * 100).toFixed(2)}% · ${count} símbolos` });
         return {};
@@ -910,16 +982,33 @@ export function createProcessors(results) {
             else if (code === 'Manchester') for (let s = 0; s < sps; s++) data.push({ re: b ? (s < sps / 2 ? 1 : -1) : (s < sps / 2 ? -1 : 1), im: 0 });
             else if (code === 'AMI') { const mark = lastMark === 1 ? -1 : 1; lastMark = b ? mark : 0; for (let s = 0; s < sps; s++) data.push({ re: lastMark, im: 0 }); }
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data } };
+        const fs = sampleRateOf(null);
+        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, lineCode: code, sps } };
     };
     processors.line_decoder = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
+        const code = waveform?.lineCode || 'Manchester', sps = waveform?.sps || 16;
         const bits = [];
-        const sps = 16;
+        let lastMark = 0;
         for (let k = 0; k < data.length; k += sps) {
-            let sum = 0;
-            for (let s = 0; s < sps && k + s < data.length; s++) sum += data[k + s].re;
-            bits.push(sum >= 0 ? 1 : 0);
+            const seg = data.slice(k, k + sps).map(x => x.re);
+            if (!seg.length) break;
+            if (code === 'NRZ unipolar') {
+                const mean = seg.reduce((a, b) => a + b, 0) / seg.length;
+                bits.push(mean >= 0.5 ? 1 : 0);
+            } else if (code === 'Manchester') {
+                const half = Math.floor(seg.length / 2);
+                const first = seg.slice(0, half).reduce((a, b) => a + b, 0);
+                const second = seg.slice(half).reduce((a, b) => a + b, 0);
+                bits.push(first > second ? 1 : 0);
+            } else if (code === 'AMI') {
+                const sum = seg.reduce((a, b) => a + b, 0);
+                if (Math.abs(sum) < seg.length * 0.25) { bits.push(0); }
+                else { bits.push(1); lastMark = sum > 0 ? 1 : -1; }
+            } else {
+                const sum = seg.reduce((a, b) => a + b, 0);
+                bits.push(sum >= 0 ? 1 : 0);
+            }
         }
         return { bits };
     };
@@ -955,8 +1044,10 @@ export function createProcessors(results) {
         const tapsCount = n.config.taps || 7, mu = n.config.mu || 0.05, trainSymbols = n.config.train || 400;
         const data = arr(waveform).map(complex);
         const idealData = arr(ideal).map(complex);
-        const taps = Array(tapsCount).fill({ re: 0, im: 0 });
-        let filtered = [];
+        const delay = Math.floor(tapsCount / 2);
+        const taps = Array.from({ length: tapsCount }, () => ({ re: 0, im: 0 }));
+        // filtered is re-indexed by (k - groupDelay) so its output aligns with the undelayed ideal/reference stream.
+        const filtered = Array.from({ length: data.length }, () => ({ re: 0, im: 0 }));
         for (let k = 0; k < data.length; k++) {
             let y = { re: 0, im: 0 };
             for (let t = 0; t < tapsCount; t++) {
@@ -966,15 +1057,16 @@ export function createProcessors(results) {
                     y.im += taps[t].re * data[idx].im + taps[t].im * data[idx].re;
                 }
             }
-            filtered.push(y);
-            if (k < trainSymbols && k + tapsCount < idealData.length) {
-                const d = idealData[k + tapsCount];
+            const targetIdx = k - tapsCount + 1 + delay;
+            if (targetIdx >= 0) filtered[targetIdx] = y;
+            if (k < trainSymbols && targetIdx >= 0 && targetIdx < idealData.length) {
+                const d = idealData[targetIdx];
                 const e = { re: d.re - y.re, im: d.im - y.im };
                 for (let t = 0; t < tapsCount; t++) {
                     const idx = k - t;
                     if (idx >= 0) {
                         taps[t].re += mu * (e.re * data[idx].re + e.im * data[idx].im);
-                        taps[t].im += mu * (e.re * data[idx].im - e.im * data[idx].re);
+                        taps[t].im += mu * (e.im * data[idx].re - e.re * data[idx].im);
                     }
                 }
             }
