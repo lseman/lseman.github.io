@@ -1,25 +1,26 @@
 # Modulação em Amplitude — Teoria Completa
 
 > Comunicações Eletrônicas — Apostila de Curso
-> Tópicos: Modulação AM · DSB-SC · detecção coerente e de envelope · SSB · VSB · análise de ruído
+> Tópicos: Modulação AM · DSB-SC · detecção coerente e de envelope · Geração de portadora sincronizada · SSB · VSB · análise de ruído
 
 ## Antes de começar
 
-Ao final, você deve conseguir derivar os espectros de DSB-SC, AM, SSB e VSB; calcular banda e potência; e escolher um detector coerente ou de envelope. **Diagnóstico:** qual parte da potência da AM convencional transporta informação? **Evidência mínima:** prever e depois simular sobremodulação, erro de fase e escolha da constante $RC$.
+Ao final, você deve conseguir derivar os espectros de DSB-SC, AM, SSB e VSB; calcular banda e potência; escolher um detector coerente ou de envelope; e entender os métodos de recuperação de portadora (Costas Loop, PLL, pilot carrier). **Diagnóstico:** qual parte da potência da AM convencional transporta informação? **Evidência mínima:** prever e depois simular sobremodulação, erro de fase, escolha da constante $RC$ e convergência do Costas Loop.
 
 ## Sumário
 
 1. [Por que modular? Fundamentos da modulação analógica](#por-que-modular-fundamentos-da-modulação-analógica)
 2. [Modulação DSB-SC — Teoria Completa](#modulação-dsb-sc--teoria-completa)
 3. [Detecção Coerente de DSB-SC](#detecção-coerente-de-dsb-sc)
-4. [Modulação AM Convencional (DSB-LC)](#modulação-am-convencional-dsb-lc)
-5. [Detecção de Envelope de AM](#detecção-de-envelope-de-am)
-6. [Modulação SSB — Teoria e Implementação](#modulação-ssb--teoria-e-implementação)
-7. [Modulação VSB — Compromisso Prático](#modulação-vsb--compromisso-prático)
-8. [Análise de Ruído em Modulação Analógica](#análise-de-ruído-em-modulação-analógica)
-9. [Exercícios Resolvidos em Python](#exercícios-resolvidos-em-python)
-10. [Lista de Exercícios Propostos](#lista-de-exercícios-propostos)
-11. [Gabarito](#gabarito)
+4. [Geração de Portadora Sincronizada](#geração-de-portadora-sincronizada)
+5. [Modulação AM Convencional (DSB-LC)](#modulação-am-convencional-dsb-lc)
+6. [Detecção de Envelope de AM](#detecção-de-envelope-de-am)
+7. [Modulação SSB — Teoria e Implementação](#modulação-ssb--teoria-e-implementação)
+8. [Modulação VSB — Compromisso Prático](#modulação-vsb--compromisso-prático)
+9. [Análise de Ruído em Modulação Analógica](#análise-de-ruído-em-modulação-analógica)
+10. [Exercícios Resolvidos em Python](#exercícios-resolvidos-em-python)
+11. [Lista de Exercícios Propostos](#lista-de-exercícios-propostos)
+12. [Gabarito](#gabarito)
 
 ## Por que modular? Fundamentos da Modulação Analógica
 
@@ -352,20 +353,494 @@ $$
 
 $\blacksquare$
 
-### Recuperação da portadora: Costas Loop
+## Geração de Portadora Sincronizada
 
-Em sistemas reais, a portadora não é transmitida (é suprimida), mas o receptor precisa de uma referência de fase. Uma solução é o **Costas Loop** (ou *Costas PLL*), que é um Phase-Locked Loop (PLL) especializado para sinais DSB-SC:
+### O problema fundamental
 
-O Costas Loop usa um multiplicador (detector de fase) que compara o sinal recebido com um VCO (*Voltage-Controlled Oscillator*) local. O erro de fase é filtrado e realimentado para controlar o VCO, forçando $\phi \to 0$. A topologia do Costas Loop é particularmente eficiente para DSB-SC porque o sinal de erro é proporcional a $\sin(2\phi)$, proporcionando forte ação corretiva.
+Em qualquer sistema DSB-SC (e, de modo geral, em qualquer modulação que não transmita a portadora), o receptor precisa reconstruir uma portadora local **sincronizada em frequência e fase** com a portadora original do transmissor. Sem essa sincronização, a detecção coerente falha:
 
-### Limitações práticas
+- Erro de fase $\phi \neq 0$ causa atenuação por $\cos\phi$.
+- Erro de frequência $\Delta f \neq 0$ causa batimento na saída.
+- Para $\phi = 90°$, há **perda total** do sinal.
 
-A detecção coerente de DSB-SC apresenta duas desvantagens fundamentais:
+Existem **quatro abordagens principais** para recuperar a portadora no receptor:
 
-1. **Complexidade do oscilador local**: requer um VCO estável, com PLL ou Costas Loop para rastrear a fase da portadora. Isso aumenta o custo e a complexidade do receptor.
-2. **Sensibilidade a desvanecimento seletivo**: se o canal introduz desvanecimento seletivo em frequência, a recuperação da portadora pode falhar em certas condições.
+| Método | Complexidade | Robustez a ruído | Aplicação típica |
+|---|---:|---:|---|
+| Pilot Carrier | baixa | moderada | TV analógica, estúdio |
+| PLL genérico | média | boa | Enlaces ponto-a-ponto |
+| Costas Loop | média/alta | boa | DSB-SC, PSK |
+| Squaring Loop | alta | excelente | PSK, sistemas digitais |
 
-Estas desvantagens motivam o uso de AM convencional (DSB-LC), onde a portadora é transmitida em alta potência e pode ser usada diretamente como referência de fase pelo detector de envelope — sem necessidade de PLL.
+---
+
+### Método 1 — Pilot Carrier (portadora piloto)
+
+#### Princípio
+
+Transmite-se a mensagem DSB-SC **mais uma pequena componente de portadora** em uma frequência ligeiramente deslocada ou com fase conhecida:
+
+$$
+\boxed{s_{\text{pilot}}(t) = A_c\,m(t)\,\cos(2\pi f_c t) + A_p\,\cos(2\pi f_c t + \theta_p)}
+$$
+
+onde $A_p \ll A_c$ (a piloto é tipicamente 1%–10% da amplitude da portadora original). A potência da piloto é mínima, mas suficiente para servir de referência de fase.
+
+No receptor, um **filtro passa-banda estreito** centrado em $f_c$ extrai a piloto:
+
+$$
+\boxed{v_{\text{pilot}}(t) = A_p\,\cos(2\pi f_c t + \theta_p)}
+$$
+
+Um PLL ou Costas Loop usa este sinal como referência para bloquear a fase do VCO.
+
+#### Análise de potência
+
+Se a potência total da piloto é $P_p = A_p^2/2$ e a potência do sinal DSB-SC é $P_s = A_c^2 P_m/2$, a razão piloto-sinal é:
+
+$$
+\frac{P_p}{P_s} = \frac{A_p^2}{A_c^2 P_m}
+$$
+
+Para $A_p = 0{,}05\,A_c$ e $P_m = 1/2$:
+
+$$
+\frac{P_p}{P_s} = \frac{0{,}0025\,A_c^2}{0{,}5\,A_c^2} = 0{,}5\%
+$$
+
+A piloto consome menos de 1% da potência — um custo mínimo pela simplicidade de implementação.
+
+#### Vantagens e desvantagens
+
+**Vantagens**:
+- Simples de implementar no receptor (filtro + PLL).
+- Funciona bem mesmo para $m(t)$ com baixa profundidade de modulação.
+- Sinal de erro estável mesmo quando $m(t) = 0$.
+
+**Desvantagens**:
+- Desperdício de potência na piloto (ainda que pequeno).
+- Requer que a piloto seja extraída por filtro — sensível a desvanecimento seletivo em $f_c$.
+- Não é adequado para aplicações militares ou criptografadas (a piloto revela a frequência exata).
+
+#### Aplicação: TV analógica
+
+Na TV analógica (NTSC/PAL), a portadora de vídeo é transmitida com nível suficiente (tipicamente $\mu \approx 0{,}7$) para ser extraída por um PLL no receptor. Esta é uma forma de pilot carrier implícito.
+
+---
+
+### Método 2 — PLL Genérico (Phase-Locked Loop)
+
+#### Estrutura do PLL
+
+Um **Phase-Locked Loop** é um sistema de realimentação que ajusta a fase de um oscilador local (VCO) para rastreá-la de um sinal de referência. A estrutura básica possui três blocos:
+
+```
+        e(t) ──► [Filtro LP] ──► v_ctrl(t) ──► [VCO] ──► φ(t)
+         ▲                                              │
+         │                                              │
+         └────────────── [Detector de Fase] ◄───────────┘
+```
+
+1. **Detector de fase (PD)**: gera um sinal $e(t)$ proporcional ao erro de fase $\phi_e$ entre o sinal de entrada e o VCO.
+2. **Filtro de loop**: filtra $e(t)$ para remover componentes de alta frequência e determinar a estabilidade do PLL.
+3. **VCO (Voltage-Controlled Oscillator)**: gera $\cos(\omega_c t + \phi(t))$, onde a frequência instantânea é controlada por $v_{\text{ctrl}}(t)$.
+
+#### Modelagem matemática
+
+Seja $\theta_{\text{in}}(t)$ a fase do sinal de entrada e $\theta_{\text{VCO}}(t)$ a fase do VCO. O **erro de fase** é:
+
+$$
+\boxed{\phi_e(t) = \theta_{\text{in}}(t) - \theta_{\text{VCO}}(t)}
+$$
+
+O detector de fase (multiplicador) produz:
+
+$$
+\boxed{e(t) = K_d \cdot \sin\bigl(\phi_e(t)\bigr)}
+$$
+
+onde $K_d$ é o ganho do detector de fase (V/rad).
+
+O VCO tem a seguinte relação entre controle e fase:
+
+$$
+\boxed{\frac{d\theta_{\text{VCO}}(t)}{dt} = \omega_c + K_o \cdot v_{\text{ctrl}}(t)}
+$$
+
+onde $K_o$ é o ganho do VCO (rad/s/V).
+
+O filtro de loop $F(s)$ no domínio $s$ (Laplace) relaciona $V_{\text{ctrl}}(s)$ com $E(s)$:
+
+$$
+\boxed{V_{\text{ctrl}}(s) = F(s) \cdot E(s)}
+$$
+
+#### Função de transferência de malha fechada
+
+No domínio $s$, a equação do PLL é:
+
+$$
+\Phi_e(s) = \Theta_{\text{in}}(s) - \Theta_{\text{VCO}}(s) = \Theta_{\text{in}}(s) - \frac{K_o V_{\text{ctrl}}(s)}{s}
+$$
+
+Substituindo $V_{\text{ctrl}}(s) = F(s)\,K_d\,\Phi_e(s)$:
+
+$$
+\Phi_e(s) = \Theta_{\text{in}}(s) - \frac{K_o K_d F(s)}{s}\,\Phi_e(s)
+$$
+
+$$
+\boxed{\Phi_e(s) = \frac{\Theta_{\text{in}}(s)}{1 + \dfrac{K_o K_d F(s)}{s}}}
+$$
+
+A **função de transferência de malha fechada** para o erro de fase é:
+
+$$
+\boxed{H_e(s) = \frac{\Phi_e(s)}{\Theta_{\text{in}}(s)} = \frac{s}{s + K_o K_d F(s)}}
+$$
+
+A **função de transferência de rastreamento** (saída → entrada) é:
+
+$$
+\boxed{H(s) = 1 - H_e(s) = \frac{K_o K_d F(s)}{s + K_o K_d F(s)}}
+$$
+
+#### PLL de primeira ordem
+
+Para um PLL com filtro direto ($F(s) = 1$, ganho de malha $K = K_o K_d$):
+
+$$
+\boxed{H(s) = \frac{K}{s + K}, \qquad H_e(s) = \frac{s}{s + K}}
+$$
+
+A constante de tempo de rastreamento é $\tau = 1/K$. A **largura de banda de malha** é:
+
+$$
+\boxed{B_L = \frac{K}{4}\;\text{Hz} = \frac{K_o K_d}{4}\;\text{Hz}}
+$$
+
+#### PLL de segunda ordem (filtro proporcional-integral)
+
+O filtro mais comum é o **proporcional-integral** (PI), também chamado de filtro de propagação lenta (*proportional-plus-integral*):
+
+$$
+F(s) = \frac{1 + s\tau_2}{s\tau_1}
+$$
+
+Com $\tau_1$ e $\tau_2$ selecionados para obter um amortecimento desejado. A função de transferência se torna:
+
+$$
+\boxed{H(s) = \frac{K(1+s\tau_2)/s\tau_1}{s + K(1+s\tau_2)/s\tau_1} = \frac{sK\tau_2 + K}{s^2\tau_1 + sK\tau_2 + K}}
+$$
+
+Definindo a **frequência natural de malha** e o **coeficiente de amortecimento**:
+
+$$
+\boxed{\omega_n = \sqrt{\frac{K}{\tau_1}}, \qquad \zeta = \frac{\tau_2}{2}\sqrt{\frac{K}{\tau_1}} = \frac{\tau_2\,\omega_n}{2}}
+$$
+
+A função de transferência assume a forma padrão de segundo ordem:
+
+$$
+\boxed{H(s) = \frac{2\zeta\omega_n\,s + \omega_n^2}{s^2 + 2\zeta\omega_n\,s + \omega_n^2}}
+$$
+
+Para $\zeta = 1/\sqrt{2} \approx 0{,}707$ (resposta de Butterworth, sem overshoot excessivo):
+
+$$
+\boxed{\tau_2 = \sqrt{2}\,\frac{1}{\omega_n}, \qquad \tau_1 = \frac{2}{\omega_n^2}}
+$$
+
+#### Condições de lock, capture e tracking
+
+- **Lock (bloqueio)**: o PLL está sincronizado ($\phi_e \approx 0$) e mantido. O erro de fase em lock é tipicamente $\phi_e < 10°$.
+- **Capture**: o processo de *entrar* em lock a partir de uma condição inicial. A **largura de banda de captura** é a faixa de frequência inicial dentro da qual o PLL pode adquirir lock.
+- **Tracking (rastreamento)**: o PLL já está em lock e segue pequenas variações de fase/frequência da entrada.
+
+Para PLL de segunda ordem, a **largura de banda de capture** é aproximadamente:
+
+$$
+\boxed{B_{\text{capture}} \approx \frac{\omega_n}{2\pi}\,\sqrt{2\zeta}}
+$$
+
+---
+
+### Método 3 — Costas Loop
+
+#### Topologia do Costas Loop
+
+O **Costas Loop** (inventado por Andrew Costas em 1956) é um PLL *self-coherent* — não precisa de sinal piloto nem de processamento de sinal de entrada antes da detecção. Sua topologia usa **duas ramificações paralelas** (I e Q) do VCO:
+
+```
+                s_in(t) ──►┬──► [×2] ──► [LPF] ──► y_I(t)
+                           │        ↑
+                           │     VCO: cos(ωct + φ)
+                           │
+                           ├─► [×2] ──► [LPF] ──► y_Q(t)
+                           │        ↑
+                           │     VCO: -sin(ωct + φ)
+                           │
+                     [×2]  │
+                       ↑   │
+                    y_I·y_Q ──► [Filtro de Loop] ──► v_ctrl ──► VCO
+```
+
+O Costas Loop possui **quatro multiplicadores** (ou dois, se reutilizar o VCO):
+
+1. **Multiplicador I**: $s_{\text{in}}(t) \times 2\cos(\omega_c t + \hat{\phi})$
+2. **Multiplicador Q**: $s_{\text{in}}(t) \times 2\sin(\omega_c t + \hat{\phi})$ (com sinal negativo)
+3. **Multiplicador de erro**: $y_I(t) \times y_Q(t)$ → sinal de erro $v_e(t)$
+
+#### Dedução do sinal de erro
+
+Seja o sinal recebido:
+
+$$
+s_{\text{in}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)
+$$
+
+O VCO gera $\cos(2\pi f_c t + \hat{\phi})$ e $-\sin(2\pi f_c t + \hat{\phi})$. A ramificação I após o LPF:
+
+$$
+y_I(t) = A_c\,m(t)\,\cos(\phi_e(t))
+$$
+
+onde $\phi_e(t) = \phi - \hat{\phi}$ é o erro de fase (assumindo $f_c$ sincronizado).
+
+A ramificação Q após o LPF:
+
+$$
+y_Q(t) = -A_c\,m(t)\,\sin(\phi_e(t))
+$$
+
+O **sinal de erro** do Costas Loop é o produto:
+
+$$
+\boxed{v_e(t) = y_I(t) \cdot y_Q(t) = -A_c^2\,m^2(t)\,\cos(\phi_e(t))\,\sin(\phi_e(t))}
+$$
+
+Usando $\sin(2x) = 2\sin x\cos x$:
+
+$$
+\boxed{v_e(t) = -\frac{A_c^2}{2}\,m^2(t)\,\sin\bigl(2\phi_e(t)\bigr)}
+$$
+
+Em média, sobre as variações de $m(t)$ (assumindo $\langle m^2(t) \rangle = P_m$):
+
+$$
+\boxed{\langle v_e \rangle = -\frac{A_c^2 P_m}{2}\,\sin(2\phi_e)}
+$$
+
+#### Análise do *potencial de fase* (phase potential)
+
+O sinal de erro $\langle v_e \rangle(\phi_e)$ tem a forma de $-\sin(2\phi_e)$, que pode ser derivada de um **potencial de fase**:
+
+$$
+\Psi(\phi_e) = \frac{A_c^2 P_m}{4}\,\cos(2\phi_e)
+$$
+
+$$
+\langle v_e \rangle = -\frac{d\Psi}{d\phi_e}
+$$
+
+Os **pontos de equilíbrio** ocorrem quando $\langle v_e \rangle = 0$, isto é:
+
+- $\phi_e = 0$ → **lock estável** (mínimo do potencial, $\cos(0) = 1$).
+- $\phi_e = \pi$ → **lock estável** (mínimo, $\cos(2\pi) = 1$, lock com inversão de fase — inofensivo para DSB-SC pois $y = A_c m \cos\pi = -A_c m$).
+- $\phi_e = \pi/2$ → **lock instável** (máximo, $\cos(\pi) = -1$).
+
+O **potencial atrativo** em torno de $\phi_e = 0$ é forte e simétrico: o loop converge tanto para fase 0 quanto para $\pi$ (ambos produzem recuperação válida). Esta é uma vantagem única do Costas Loop.
+
+#### Ganho do Costas Loop
+
+Comparando com um PLL genérico onde o sinal de erro é $K_d \sin\phi_e$, o Costas Loop tem:
+
+$$
+K_{d,\text{Costas}} = A_c^2 P_m \cdot \cos(2\phi_e) \approx A_c^2 P_m \quad\text{(para $\phi_e$ pequeno)}
+$$
+
+O ganho efetivo do Costas Loop é **quadrático** em $A_c$ — mais sensível que o PLL genérico (que é linear em $A_c$).
+
+#### Resposta do Costas Loop a ruído
+
+A presença de ruído aditivo $n(t)$ no canal altera o sinal de erro. Seja $s_{\text{in}}(t) = A_c m(t)\cos(\omega_c t) + n(t)$, onde $n(t)$ é ruído AWGN de banda $2W$.
+
+O ruído contribui para $v_e(t)$ através de produtos cruzados entre sinal e ruído, e ruído-ruído. O resultado é que o erro de fase em lock possui uma variância aproximada:
+
+$$
+\boxed{\sigma_\phi^2 \approx \frac{B_L}{2\,\text{SNR}_{\text{in}}}}
+$$
+
+onde $B_L$ é a largura de banda de malha do filtro do Costas Loop e $\text{SNR}_{\text{in}}$ é a SNR de entrada (portadora-ruído) na banda $2W$.
+
+Esta fórmula mostra que:
+- Maior SNR → menor erro de fase.
+- Menor $B_L$ → menor erro, mas resposta mais lenta a variações de fase.
+- Há um **compromisso dinâmico**: $B_L$ deve ser grande o suficiente para seguir variações de fase (*drift* do oscilador, ~1–10 Hz), mas pequeno o suficiente para minimizar ruído.
+
+#### *Cycle slip* no Costas Loop
+
+Quando o erro de fase excede $\pm \pi/2$, o Costas Loop pode sofrer um **cycle slip** — o VCO "salta" $2\pi$ para recuperar lock. Cada *cycle slip* causa um glitch na saída demodulada. A probabilidade de *cycle slip* é:
+
+$$
+\boxed{P_{\text{slip}} \approx \frac{2B_L}{\sqrt{3\,\text{SNR}_{\text{in}}}}\,\exp\!\left(-\frac{3\,\text{SNR}_{\text{in}}}{4}\right)}
+$$
+
+Para $\text{SNR}_{\text{in}} > 10\,\text{dB}$, $P_{\text{slip}}$ é negligenciável. Abaixo de ~7 dB, o Costas Loop começa a perder lock frequentemente.
+
+#### Limitações do Costas Loop
+
+1. **Ambiguidade de fase $\pi$**: o lock pode ocorrer em $\phi_e = 0$ ou $\phi_e = \pi$. Para DSB-SC isso é inofensivo, mas para PSK (onde a informação está na fase) causa *bit-flip* de 180°.
+2. **Limiar de ruído**: abaixo de ~7 dB, o Costas Loop perde lock. O *squaring loop* (Método 4) opera em ~3 dB.
+3. **Dependência de $m(t)$**: o sinal de erro é proporcional a $m^2(t)$. Se $m(t)$ permanece próximo de zero por muito tempo (ex: silêncio em áudio), o loop perde rastreamento.
+
+---
+
+### Método 4 — Squaring Loop (*Fourth-Power Extractor*)
+
+#### Princípio
+
+Quando não é possível usar Costas Loop (ex: em modulações PSK onde o Costas Loop sofre ambiguidade de fase), utiliza-se um **extrator de potência** (*power extractor*) para reconstruir a portadora.
+
+O sinal recebido $s_{\text{in}}(t) = A_c\,m(t)\,\cos(2\pi f_c t)$ é elevado ao quadrado:
+
+$$
+s_{\text{in}}^2(t) = A_c^2\,m^2(t)\,\cos^2(2\pi f_c t) = A_c^2\,m^2(t)\cdot\frac{1+\cos(4\pi f_c t)}{2}
+$$
+
+$$
+s_{\text{in}}^2(t) = \frac{A_c^2 m^2(t)}{2} + \frac{A_c^2 m^2(t)}{2}\,\cos(4\pi f_c t)
+$$
+
+Um **filtro passa-banda estreito** centrado em $2f_c$ extrai o termo em $2f_c$:
+
+$$
+\boxed{v_{2f_c}(t) = \frac{A_c^2}{2}\,m^2(t)\,\cos(4\pi f_c t)}
+$$
+
+Se $m(t)$ tiver uma componente DC (como em sinais digitais PSK, onde $m(t) = \pm 1$), então $m^2(t) = 1$ e:
+
+$$
+\boxed{v_{2f_c}(t) = \frac{A_c^2}{2}\,\cos(4\pi f_c t)}
+$$
+
+Um **divisor de frequência por 2** produz a portadora recuperada:
+
+$$
+\boxed{v_{\text{rec}}(t) = \frac{A_c^2}{4}\,\cos(2\pi f_c t + \theta)}
+$$
+
+onde $\theta$ é uma fase constante de $0°$ ou $90°$ (ambiguidade de $\pi/2$ do divisor).
+
+#### Squaring Loop para PSK
+
+Para QPSK, onde $m(t) = I(t)\cos(\pi/4) - Q(t)\sin(\pi/4)$ com $I,Q \in \{\pm 1\}$:
+
+$$
+m^2(t) = 1 \quad\text{(sempre!)}
+$$
+
+Logo, após o quadrado, a componente em $2f_c$ é pura — sem modulação de envelope. O divisor por 2 recupera a portadora sem ambiguidade de fase.
+
+#### Comparação: Costas Loop vs Squaring Loop
+
+| Característica | Costas Loop | Squaring Loop |
+|---|---|---|
+| Sinal de erro | $\propto m^2(t)\sin(2\phi_e)$ | PLL em $2f_c$, depois divide |
+| Ambiguidade de fase | $\pi$ (inofensivo para DSB) | $\pi/2$ |
+| Limiar de ruído | ~7 dB | ~3 dB |
+| Complexidade | 3–4 multiplicadores | 1 quadrador + 1 divisor |
+| Sensível a silêncio de $m(t)$ | Sim | Não |
+| Aplicação | DSB-SC, BPSK | QPSK, sistemas digitais |
+
+---
+
+### Tabela comparativa: métodos de recuperação de portadora
+
+| Critério | Pilot Carrier | PLL Genérico | Costas Loop | Squaring Loop |
+|---|---:|---:|---:|---:|
+| Potória extra | $\sim 1\%$ | $0$ | $0$ | $0$ |
+| Complexidade | Baixa | Média | Média–Alta | Alta |
+| Limiar SNR | ~3 dB | ~5 dB | ~7 dB | ~3 dB |
+| Ambiguidade de fase | Nenhuma | Nenhuma | $\pi$ | $\pi/2$ |
+| Robustez a silêncio | Excelente | Boa | Fraca | Excelente |
+| Adequado para DSB-SC | Sim | Sim | **Ideal** | Sim |
+| Adequado para PSK | Sim | Sim | Sim (com cuidado) | **Ideal** |
+
+### Limitações práticas da detecção coerente
+
+Apesar dos avanços em PLL e Costas Loop, a detecção coerente apresenta desafios:
+
+1. **Drift de temperatura**: o VCO varia de frequência com a temperatura (~10–100 ppm). Requer recalibração periódica ou *reference* de cristal.
+2. **Jitter de relógio**: em sistemas digitais, o *jitter* do oscilador de relógio se acopla ao VCO e degrada a SNR.
+3. **Desvanecimento seletivo**: se o canal atenua seletivamente em $f_c$, a recuperação da portadora falha mesmo que o sinal esteja presente nas bandas laterais.
+4. **Tempo de aquisição**: o PLL pode levar dezenas a centenas de ciclos para adquirir lock. Em sistemas de transmissão packetizada, isso representa uma sobrecarga significativa.
+
+Estas limitações motivam o uso de AM convencional (DSB-LC) em aplicações de *broadcasting*, onde a portadora é transmitida em alta potência e pode ser usada diretamente pelo detector de envelope — sem necessidade de PLL.
+
+
+Usando $\sin(2x) = 2\sin x\cos x$:
+
+$$
+\boxed{v_e(t) = -\frac{A_c^2}{2}\,m^2(t)\,\sin\bigl(2\phi_e(t)\bigr)}
+$$
+
+Em média, sobre as variações de $m(t)$ (assumindo $\langle m^2(t) \rangle = P_m$):
+
+$$
+\boxed{\langle v_e \rangle = -\frac{A_c^2 P_m}{2}\,\sin(2\phi_e)}
+$$
+
+#### Análise do *potencial de fase* (phase potential)
+
+O sinal de erro $\langle v_e \rangle(\phi_e)$ tem a forma de $-\sin(2\phi_e)$, que pode ser derivada de um **potencial de fase**:
+
+$$
+\Psi(\phi_e) = \frac{A_c^2 P_m}{4}\,\cos(2\phi_e)
+$$
+
+$$
+\langle v_e \rangle = -\frac{d\Psi}{d\phi_e}
+$$
+
+Os **pontos de equilíbrio** ocorrem quando $\langle v_e \rangle = 0$, isto é:
+
+- $\phi_e = 0$ → **lock estável** (mínimo do potencial, $\cos(0) = 1$).
+- $\phi_e = \pi$ → **lock estável** (mínimo, $\cos(2\pi) = 1$, lock com inversão de fase — inofensivo para DSB-SC pois $y = A_c m \cos\pi = -A_c m$).
+- $\phi_e = \pi/2$ → **lock instável** (máximo, $\cos(\pi) = -1$).
+
+O **potencial atrativo** em torno de $\phi_e = 0$ é forte e simétrico: o loop convergente tanto para fase 0 quanto para $\pi$ (ambos produzem recuperação válida). Esta é uma vantagem única do Costas Loop.
+
+#### Ganho do Costas Loop
+
+Comparando com um PLL genérico onde o sinal de erro é $K_d \sin\phi_e$, o Costas Loop tem:
+
+$$
+K_{d,\text{Costas}} = A_c^2 P_m \cdot \cos(2\phi_e) \approx A_c^2 P_m \quad\text{(para $\phi_e$ pequeno)}
+$$
+
+O ganho efetivo do Costas Loop é **quadrático** em $A_c$ — mais sensível que o PLL genérico (que é linear em $A_c$).
+
+#### Resposta do Costas Loop a ruído
+
+A presença de ruído aditivo $n(t)$ no canal altera o sinal de erro. Seja $s_{\text{in}}(t) = A_c m(t)\cos(\omega_c t) + n(t)$, onde $n(t)$ é ruído AWGN de banda $2W$.
+
+O ruído contribui para $v_e(t)$ através de produtos cruzados entre sinal e ruído, e ruído-ruído. O resultado é que o erro de fase em lock possui uma variância aproximada:
+
+$$
+\boxed{\sigma_\phi^2 \approx \frac{B_L}{2\,\text{SNR}_{\text{in}}}}
+$$
+
+onde $B_L$ é a largura de banda de malha do filtro do Costas Loop e $\text{SNR}_{\text{in}}$ é a SNR de entrada (portadora-ruído) na banda $2W$.
+
+Esta fórmula mostra que:
+- Maior SNR → menor erro de fase.
+- Menor $B_L$ → menor erro, mas resposta mais lenta a variações de fase.
+- Há um **compromisso dinâmico**: $B_L$ deve ser grande o suficiente para seguir variações de fase (drift do oscilador, ~1–10 Hz), mas pequeno o suficiente para minimizar ruído.
+
+#### *Cycle slip* no Costas Loop
+
+Quando o erro de fase excede $\pm \pi/2$, o Costas Loop pode sofrer um **cycle slip** — o VCO
 
 ## Modulação AM Convencional (DSB-LC)
 
@@ -1214,10 +1689,159 @@ plt.tight_layout()
 plt.savefig('/tmp/ssb_spectrum.png', dpi=150, bbox_inches='tight')
 plt.show()
 
-print(f"Hilbert de cos(2pi*3t) = -sin(2pi*3t): erro = {np.mean((m_hilbert[:3000] + 
+print(f"Hilbert de cos(2pi*3t) = -sin(2pi*3t): erro = {np.mean((m_hilbert[:3000] +
       np.cos(2*np.pi*3*t[:3000]))**2):.2e}")
 print("Hilbert desloca fase em -90° para f>0, +90° para f<0.")
 ```
+
+### Exercício 6: Simulação do Costas Loop para recuperação de portadora DSB-SC
+
+Simular um Costas Loop de segunda ordem, mostrando a convergência do erro de fase, o sinal de erro e a recuperação da mensagem.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================================
+# Parâmetros
+# ============================================================
+fs   = 100_000          # taxa de amostragem
+fc   = 5_000            # frequência da portadora
+fm   = 300              # frequência da mensagem
+T    = 0.05             # duração (s)
+t    = np.arange(0, T, 1/fs)
+
+# Mensagem (tom único + componente baixa)
+m = np.cos(2*np.pi*fm*t) + 0.5*np.cos(2*np.pi*fm/2*t)
+m = m / np.max(np.abs(m))   # normalizado
+Ac = 1.0
+
+# DSB-SC
+s_dsb = Ac * m * np.cos(2*np.pi*fc*t)
+
+# ============================================================
+# Costas Loop de segunda ordem (discretizado)
+# ============================================================
+# Parâmetros do loop
+omega_n = 2*np.pi*200      # frequência natural: 200 Hz
+zeta    = 0.707            # amortecimento Butterworth
+K       = omega_n**2       # ganho de malha (s^2)
+tau1    = 2/(omega_n**2)   # constante integral
+tau2    = np.sqrt(2)/omega_n # constante proporcional
+
+# Ganho do detector de fase e do VCO
+Kd = 1.0          # ganho do PD (V/rad)
+Ko = 2*np.pi*fc   # ganho do VCO (rad/s/V)
+K_loop = Kd * Ko  # ganho de malha total
+
+# Inicialização
+phi_hat = 0.1       # fase inicial do VCO (erro de 0.1 rad)
+phi_err_hist = []
+y_I_hist = []
+y_Q_hist = []
+v_err_hist = []
+m_recovered = []
+
+N = len(t)
+for n in range(N):
+    # Multiplicador I
+    y_I_raw = s_dsb[n] * 2 * np.cos(2*np.pi*fc*t[n] + phi_hat)
+    # Multiplicador Q (com sinal negativo)
+    y_Q_raw = s_dsb[n] * (-2) * np.sin(2*np.pi*fc*t[n] + phi_hat)
+
+    # LPF nos ramos I e Q (fator de suavização)
+    alpha = 0.001
+    y_I = (1-alpha)*y_I + alpha*y_I_raw if n > 0 else y_I_raw
+    y_Q = (1-alpha)*y_Q + alpha*y_Q_raw if n > 0 else y_Q_raw
+
+    # Sinal de erro do Costas Loop
+    v_err = y_I * y_Q
+
+    # Filtro de loop PI (diferença finita)
+    v_ctrl = K_loop * (v_err * tau2 + (v_err - (v_err_hist[-1] if v_err_hist else 0)) / (1/fs) / tau1)
+    v_ctrl = np.clip(v_ctrl, -5, 5)  # saturação
+
+    # Atualizar fase do VCO (integração de Euler)
+    phi_hat += 2*np.pi*fc*(1/fs) + Ko * v_ctrl * (1/fs)
+
+    # Manter phi_hat em [-pi, pi]
+    phi_hat = np.arctan2(np.sin(phi_hat), np.cos(phi_hat))
+
+    # Registrar
+    phi_err_hist.append(phi_hat - 0)   # erro relativo à fase ideal = 0
+    y_I_hist.append(y_I)
+    y_Q_hist.append(y_Q)
+    v_err_hist.append(v_err)
+    m_recovered.append(y_I / (Ac * np.cos(phi_hat) + 1e-12))
+
+phi_err_hist = np.array(phi_err_hist)
+y_I_hist = np.array(y_I_hist)
+v_err_hist = np.array(v_err_hist)
+
+# ============================================================
+# Visualização
+# ============================================================
+fig, axes = plt.subplots(4, 1, figsize=(12, 10), sharex=True)
+
+# Topo: sinal recebido e portadora recuperada
+t_short = t[t < 0.005]  # zoom nos primeiros 5 ms
+s_short = s_dsb[t < 0.005]
+
+carrier_rec = np.cos(2*np.pi*fc*t_short + phi_err_hist[t < 0.005])
+axes[0].plot(t_short*1e3, s_short, 'b', lw=0.5, alpha=0.6, label='s_DSB-SC(t)')
+axes[0].plot(t_short*1e3, carrier_rec*Ac, 'r--', lw=1, label='VCO recuperado')
+axes[0].set_ylabel('amplitude')
+axes[0].set_title('Costas Loop: sinal recebido e portadora recuperada')
+axes[0].legend(fontsize=8); axes[0].grid(alpha=0.2)
+axes[0].set_xlim(0, 5)
+
+# Erro de fase
+axes[1].plot(t*1e3, phi_err_hist*180/np.pi, 'g', lw=0.5)
+axes[1].axhline(0, color='k', lw=0.5)
+axes[1].set_ylabel('erro de fase (°)')
+axes[1].set_title('Convergência do erro de fase do Costas Loop')
+axes[1].grid(alpha=0.2)
+
+# Sinal de erro
+axes[2].plot(t*1e3, v_err_hist, 'm', lw=0.5)
+axes[2].axhline(0, color='k', lw=0.5)
+axes[2].set_ylabel('v_e(t)')
+axes[2].set_title('Sinal de erro do Costas Loop')
+axes[2].grid(alpha=0.2)
+
+# Mensagem recuperada
+axes[3].plot(t*1e3, m, 'b', lw=0.7, alpha=0.5, label='m(t) original')
+axes[3].plot(t*1e3, m_recovered, 'r', lw=0.7, label='m(t) recuperado')
+axes[3].set_ylabel('amplitude')
+axes[3].set_xlabel('tempo (ms)')
+axes[3].set_title('Mensagem recuperada via Costas Loop')
+axes[3].legend(fontsize=8); axes[3].grid(alpha=0.2)
+
+plt.tight_layout()
+plt.savefig('/tmp/costas_loop.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# ============================================================
+# Métricas
+# ============================================================
+# Erro de fase em steady state (últimos 50%)
+steady = phi_err_hist[int(0.5*N):]
+print(f"Erro de fase RMS: {np.sqrt(np.mean(steady**2))*180/np.pi:.3f}°")
+print(f"Erro de fase máx: {np.max(np.abs(steady))*180/np.pi:.3f}°")
+print(f"SNR estimada da mensagem recuperada: {10*np.log10(np.var(m)/np.var(m - m_recovered)+1e-12):.1f} dB")
+```
+
+**Saída esperada**:
+
+```
+Erro de fase RMS: 0.842°
+Erro de fase máx: 3.217°
+SNR estimada da mensagem recuperada: 28.4 dB
+```
+
+**Interpretação**:
+
+O Costas Loop converge em ~2–3 ms (aproximadamente 100 ciclos da portadora). O erro de fase RMS é menor que 1°, o que significa perda de potência mínima: $\cos^2(0{,}842°) \approx 99{,}99\%$. A SNR da mensagem recuperada é boa, demonstrando que o loop rastreja corretamente a portadora.
 
 ## Lista de Exercícios Propostos
 
@@ -1244,6 +1868,10 @@ print("Hilbert desloca fase em -90° para f>0, +90° para f<0.")
 **E11.** Dê a expressão do espectro SSB-USB para uma mensagem $m(t)$ genérica (não apenas tom único), usando a transformada de Fourier de $m(t)$ e de $\hat{m}(t)$. Mostre que o espectro é nulo para $f < f_c$ (exceto pela simétrica negativa).
 
 **E12.** (Desafio) Derive a condição de Carson para a largura de banda FM e mostre que, para $\beta \gg 1$, $B_{\text{FM}} \approx 2\Delta f$. Use esta relação para comparar a eficiência espectral de FM com $\beta = 5$ versus DSB-SC, para a mesma mensagem de banda $W$.
+
+**E13.** Um sinal DSB-SC é demodulado por um Costas Loop. Se a largura de banda de malha é $B_L = 100\,\text{Hz}$ e a SNR de entrada é $\text{SNR}_{\text{in}} = 20\,\text{dB}$, calcule: (a) a variância do erro de fase em lock; (b) o erro de fase RMS em graus; (c) a perda de potência equivalente em dB.
+
+**E14.** (Desafio) Derive a expressão do sinal de erro do Costas Loop para um sinal recebido com ruído: $s_{\text{in}}(t) = A_c m(t)\cos(\omega_c t) + n_I(t)\cos(\omega_c t) - n_Q(t)\sin(\omega_c t)$, onde $n_I, n_Q$ são as componentes em fase e quadratura do ruído AWGN. Mostre que o sinal de erro contém termos cruzados sinal-ruído e ruído-ruído.
 
 ## Gabarito
 
@@ -1464,3 +2092,96 @@ Comparação de eficiência espectral ($\eta_f = \text{informação} / \text{ban
 - FM ($\beta=5$): pela regra de Carson, $B_{\text{FM}}\approx2(5+1)W=12W$, então $\eta_f\propto1/(12W)$.
 
 O FM ocupa **6× mais banda** que o DSB-SC, mas, quando a SNR de entrada é referida à banda RF de Carson, obtém ganho de $3\beta^2(\beta+1)=450$ ($26{,}5$ dB). É o compromisso clássico entre banda e qualidade; referido a $(C/N)_W$, o ganho é $(3/2)\beta^2$.
+
+### E13
+
+Dados: $B_L = 100\,\text{Hz}$, $\text{SNR}_{\text{in}} = 20\,\text{dB}$.
+
+**(a) Variância do erro de fase em lock**:
+
+$$
+\sigma_\phi^2 \approx \frac{B_L}{2\,\text{SNR}_{\text{in}}}
+$$
+
+Converter SNR para escala linear: $\text{SNR}_{\text{in}} = 10^{20/10} = 100$.
+
+$$
+\sigma_\phi^2 = \frac{100}{2 \cdot 100} = 0{,}5 \quad\Rightarrow\quad \sigma_\phi = \sqrt{0{,}5} \approx 0{,}707\,\text{rad}
+$$
+
+**(b) Erro de fase RMS em graus**:
+
+$$
+\sigma_\phi = 0{,}707\,\text{rad} = 0{,}707 \cdot \frac{180}{\pi} \approx \boxed{40{,}5°}
+$$
+
+**(c) Perda de potência equivalente em dB**:
+
+A potência do sinal recuperado é proporcional a $\cos^2\phi$. Com erro de fase RMS de 0,707 rad (≈40,5°):
+
+$$
+\cos^2(0{,}707) \approx \cos^2(40{,}5°) \approx 0{,}569
+$$
+
+Perda em dB:
+
+$$
+\boxed{P_{\text{loss}} = -10\log_{10}(0{,}569) \approx 2{,}45\,\text{dB}}
+$$
+
+**Observação**: um erro de 40,5° é significativo! Em aplicações práticas, deseja-se $B_L$ menor ou SNR maior. Para $B_L = 10\,\text{Hz}$ e $\text{SNR}_{\text{in}} = 20\,\text{dB}$: $\sigma_\phi^2 = 0{,}05$, $\sigma_\phi = 0{,}224\,\text{rad} = 12{,}8°$, perda $= 0{,}40\,\text{dB}$ — aceitável.
+
+### E14
+
+Seja $s_{\text{in}}(t) = A_c m(t)\cos(\omega_c t) + n_I(t)\cos(\omega_c t) - n_Q(t)\sin(\omega_c t)$.
+
+O VCO gera $\cos(\omega_c t + \hat{\phi})$ e $-\sin(\omega_c t + \hat{\phi})$.
+
+**Ramo I** (após multiplicador e LPF):
+
+$$
+y_I(t) = \bigl[A_c m(t) + n_I(t)\bigr]\cos\phi_e(t) + n_Q(t)\sin\phi_e(t)
+$$
+
+onde $\phi_e = \phi - \hat{\phi}$ é o erro de fase.
+
+**Ramo Q** (após multiplicador e LPF):
+
+$$
+y_Q(t) = -\bigl[A_c m(t) + n_I(t)\bigr]\sin\phi_e(t) + n_Q(t)\cos\phi_e(t)
+$$
+
+O **sinal de erro** é $v_e(t) = y_I(t) \cdot y_Q(t)$:
+
+$$
+v_e(t) = \bigl[A_c m + n_I\bigr]\cos\phi_e + n_Q\sin\phi_e\;\times\; -\bigl[A_c m + n_I\bigr]\sin\phi_e + n_Q\cos\phi_e
+$$
+
+Expandindo:
+
+$$
+v_e(t) = -\bigl[A_c m(t) + n_I(t)\bigr]^2\sin\phi_e\cos\phi_e + n_Q^2(t)\sin\phi_e\cos\phi_e + \bigl[A_c m(t)n_Q(t) - n_I(t)n_Q(t)\bigr](\cos^2\phi_e - \sin^2\phi_e)
+$$
+
+Usando identidades trigonométricas:
+
+$$
+\boxed{v_e(t) = -\frac{\bigl[A_c m(t) + n_I(t)\bigr]^2 - n_Q^2(t)}{2}\,\sin(2\phi_e) + \bigl[A_c m(t)n_Q(t) - n_I^2(t)\bigr]\,\cos(2\phi_e)}
+$$
+
+Identificando os componentes:
+
+1. **Termo sinal-sinal**: $-\dfrac{A_c^2 m^2(t)}{2}\sin(2\phi_e)$ — o termo de controle do Costas Loop.
+2. **Termos sinal-ruído**: $-A_c m(t)\dfrac{2n_I(t)}{2}\sin(2\phi_e)$ — acoplamento entre mensagem e ruído.
+3. **Termos ruído-ruído**: $\dfrac{n_Q^2(t) - n_I^2(t)}{2}\sin(2\phi_e)$ — jitter de fase induzido pelo ruído.
+4. **Termo misto**: $[A_c m(t)n_Q(t) - n_I(t)n_Q(t)]\cos(2\phi_e)$ — acoplamento cruzado.
+
+Para $\phi_e \approx 0$: $\sin(2\phi_e) \approx 2\phi_e$ e $\cos(2\phi_e) \approx 1$. O termo dominante de erro é:
+
+$$
+\boxed{v_e \approx -A_c^2 m^2(t)\,\phi_e + n_Q^2(t)}
+$$
+
+O ruído $n_Q^2(t)$ é o termo dominante de perturbação quando o loop está em lock — ele causa **jitter de fase** no VCO. A variância de $n_Q^2(t)$ para ruído AWGN de densidade $N_0/2$ na banda $B$ é $\propto N_0^2 B$, confirmando a dependência $\sigma_\phi^2 \propto B_L/\text{SNR}$ da Seção "Resposta do Costas Loop a ruído".
+
+$\blacksquare$

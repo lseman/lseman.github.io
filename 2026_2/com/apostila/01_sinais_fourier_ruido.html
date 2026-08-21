@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    macros: {
+      Re: 'Re',
+      Im: 'Im',
+      arg: 'arg',
+      sinc: 'sinc',
+      sgn: 'sgn',
+      rect: 'rect',
+      tri: 'tri',
+      expj: 'expj',
+      dB: 'dB',
+      SNR: 'SNR',
+      EbN0: 'EbN0',
+      LPF: 'LPF',
+      BPF: 'BPF',
+      HPF: 'HPF',
+      SSB: 'SSB',
+      DSB: 'DSB',
+      AM: 'AM',
+      FM: 'FM',
+      PM: 'PM',
+      PSD: 'PSD',
+      CDF: 'CDF',
+      PDF: 'PDF',
+      mean: 'E',
+      var: 'Var',
+      cov: 'Cov',
+      corr: 'Corr',
+      jinc: 'jinc',
+      unit: 'u',
+    },
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+  },
+  startup: {
+    ready: function() {
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1. Sinais, Transformada de Fourier, Processos Aleatórios e Ruído — Apostila</title>
+<meta name="description" content="Apostila de curso — material didático com teoria, derivações e experimentos computacionais.">
+<meta name="keywords" content="apostila, curso, engenharia, matemática, física, computação">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="chapter-mode">
+
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+
+<button class="print-button" type="button" onclick="window.print()" aria-label="Imprimir ou salvar este capítulo em PDF" title="Imprimir ou salvar em PDF">
+  <span aria-hidden="true">&#128438;</span><span class="print-button-label">Imprimir / PDF</span>
+</button>
+<button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Alternar tema claro/escuro">
+  <span aria-hidden="true">🌙</span>
+</button>
+
+<section class="print-title-page" aria-hidden="true">
+  <div class="print-kicker">Capítulo</div>
+  <h1>1. Sinais, Transformada de Fourier, Processos Aleatórios e Ruído</h1>
+  <div class="print-book-title">Sistemas de Comunicações</div>
+  <div class="print-imprint">IFSC · Prof. Laio Oriel Seman</div>
+</section>
+
+
+
+<div id="main-content">
+<div class="header">
+  <h1>1. Sinais, Transformada de Fourier, Processos Aleatórios e Ruído</h1>
+  <div class="subtitle">Sistemas de Comunicações</div>
+</div>
+<nav class="page-nav" aria-label="Navegação entre capítulos"><span class="disabled"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">Início da obra</span></span></span><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="02_introducao_sistemas_comunicacoes.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">2. Introdução a Sistemas de Comunicações</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>1. Sinais, Transformada de Fourier, Processos Aleatórios e Ruído</h1>
+<blockquote>
+<p>Sistemas de Comunicações — Apostila de Curso · UFSC · Prof. Laio Oriel Seman · Carga horária: 80h<br />
+Tópicos: Sinais Determinísticos e Aleatórios · Série e Transformada de Fourier · Densidade Espectral de Potência · Convolução e Filtragem · Processos Estocásticos · Ruído Térmico e AWGN · Função Q e Probabilidade de Erro</p>
+</blockquote>
+<hr />
+<h2 id="antes-de-começar"><span class="heading-number">1.1</span> Antes de começar</h2>
+<p>Ao final, você deve conseguir escolher entre espectro de energia e PSD, prever o efeito de um filtro LIT e relacionar variância de ruído a uma probabilidade de erro. <strong>Diagnóstico:</strong> você sabe explicar por que uma senoide tem energia infinita, mas potência finita? <strong>Evidência mínima:</strong> reproduzir o laboratório e justificar, sem olhar o código, os gráficos de Fourier, Parseval, AWGN e BER.</p>
+<nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
+<li><a href="#sinais-e-energiapot%C3%AAncia">Sinais e Energia/Potência</a></li>
+<li><a href="#s%C3%A9rie-de-fourier">Série de Fourier</a></li>
+<li><a href="#transformada-de-fourier">Transformada de Fourier</a></li>
+<li><a href="#convolu%C3%A7%C3%A3o-filtragem-e-o-teorema-de-parseval">Convolução, Filtragem e o Teorema de Parseval</a></li>
+<li><a href="#sinais-passa-faixa-e-envelope-complexo">Sinais Passa-Faixa e Envelope Complexo</a></li>
+<li><a href="#processos-aleat%C3%B3rios">Processos Aleatórios</a></li>
+<li><a href="#densidade-espectral-de-pot%C3%AAncia-de-processos-aleat%C3%B3rios">Densidade Espectral de Potência de Processos Aleatórios</a></li>
+<li><a href="#ru%C3%ADdo-t%C3%A9rmico-e-ru%C3%ADdo-branco-gaussiano-awgn">Ruído Térmico e Ruído Branco Gaussiano (AWGN)</a></li>
+<li><a href="#fun%C3%A7%C3%A3o-q-e-probabilidade-de-erro">Função Q e Probabilidade de Erro</a></li>
+<li><a href="#exerc%C3%ADcios-resolvidos-em-python">Exercícios Resolvidos em Python</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+</ol></nav>
+<hr />
+<h2 id="sinais-e-energiapotência"><span class="heading-number">1.2</span> Sinais e Energia/Potência</h2>
+<h3 id="classificação"><span class="heading-number">1.2.1</span> Classificação</h3>
+<p>Um sinal $x(t)$ é dito de <strong>energia</strong> se $0&lt;E_x&lt;\infty$, com:</p>
+
+<div class="math-display">
+$$
+
+E_x \equiv \int_{-\infty}^{\infty}|x(t)|^2\,dt
+
+$$
+</div>
+
+<p>e de <strong>potência</strong> se $0&lt;P_x&lt;\infty$ (tipicamente sinais periódicos ou aleatórios estacionários, que têm energia infinita):</p>
+
+<div class="math-display">
+$$
+
+P_x \equiv \lim_{T\to\infty}\frac{1}{T}\int_{-T/2}^{T/2}|x(t)|^2\,dt
+
+$$
+</div>
+
+<p>Um sinal de energia finita tem necessariamente potência média nula (a energia se &quot;dilui&quot; ao longo do tempo infinito); um sinal de potência finita e não nula tem energia infinita. Essa dicotomia motiva duas ferramentas espectrais distintas: a <strong>Transformada de Fourier</strong> (sinais de energia) e a <strong>Densidade Espectral de Potência via autocorrelação</strong> (sinais de potência, Seção “Densidade Espectral de Potência de Processos Aleatórios”).</p>
+<h3 id="sinais-em-comunicações"><span class="heading-number">1.2.2</span> Sinais em comunicações</h3>
+<p>Em sistemas de comunicações, praticamente todo sinal de interesse é de <strong>potência</strong> (portadoras, ruído, sinais moduladas continuamente) — a Transformada de Fourier ainda é aplicada, mas de forma generalizada (via funções generalizadas/deltas de Dirac no domínio da frequência para sinais periódicos, Seção “Transformada de sinais periódicos (via trem de deltas espectrais)”) ou substituída pela densidade espectral de potência para processos aleatórios.</p>
+<hr />
+<h2 id="série-de-fourier"><span class="heading-number">1.3</span> Série de Fourier</h2>
+<h3 id="dedução-via-ortogonalidade-das-exponenciais-complexas"><span class="heading-number">1.3.1</span> Dedução via ortogonalidade das exponenciais complexas</h3>
+<p>Um sinal periódico $x(t)=x(t+T_0)$, com $f_0=1/T_0$, pode ser expandido em uma base ortogonal de exponenciais complexas $\{e^{j2\pi nf_0t}\}_{n=-\infty}^{\infty}$. A ortogonalidade decorre de:</p>
+
+<div class="math-display">
+$$
+
+\int_{T_0}e^{j2\pi nf_0t}e^{-j2\pi mf_0t}\,dt = \int_{T_0}e^{j2\pi(n-m)f_0t}\,dt = \begin{cases}T_0 &amp; n=m\\0 &amp; n\neq m\end{cases}
+
+$$
+</div>
+
+<p>(para $n\neq m$, a integral de uma exponencial complexa completa sobre um número inteiro de períodos se anula — soma vetorial de fasores uniformemente distribuídos no círculo unitário). Postulando $x(t)=\sum_{n=-\infty}^{\infty}c_ne^{j2\pi nf_0t}$ e multiplicando ambos os lados por $e^{-j2\pi mf_0t}$, integrando sobre um período e usando a ortogonalidade:</p>
+
+<div class="math-display">
+$$
+
+\boxed{c_n = \frac{1}{T_0}\int_{T_0}x(t)\,e^{-j2\pi nf_0t}\,dt}
+
+$$
+</div>
+
+<!-- slides: columns -->
+<h3 id="espectro-de-linhas-e-simetria-hermitiana"><span class="heading-number">1.3.2</span> Espectro de linhas e simetria hermitiana</h3>
+<p>Os coeficientes $c_n$ formam um <strong>espectro de linhas</strong> discreto em múltiplos de $f_0$. Para $x(t)$ real, $c_{-n}=c_n^*$ (<strong>simetria hermitiana</strong>) — consequência direta de $x(t)=x^*(t)$ aplicado à definição de $c_n$. Isso garante que a soma de pares $c_ne^{j2\pi nf_0t}+c_{-n}e^{-j2\pi nf_0t}=2|c_n|\cos(2\pi nf_0t+\angle c_n)$ seja sempre real.</p>
+<!-- slides: column -->
+<h3 id="potência-média-e-teorema-de-parseval-para-séries"><span class="heading-number">1.3.3</span> Potência média e Teorema de Parseval para séries</h3>
+
+<div class="math-display">
+$$
+
+P_x = \frac{1}{T_0}\int_{T_0}|x(t)|^2\,dt = \sum_{n=-\infty}^{\infty}|c_n|^2
+
+$$
+</div>
+
+<p><strong>Dedução</strong>: substitua $x(t)=\sum_nc_ne^{j2\pi nf_0t}$ em $|x(t)|^2=x(t)x^*(t)$, integre termo a termo sobre $T_0$; pela ortogonalidade (Seção “Dedução via ortogonalidade das exponenciais complexas”), só sobrevivem os termos com índices iguais, resultando em $\sum_n|c_n|^2$. Este resultado — a potência total é a soma das potências de cada harmônica — é a base para calcular a potência de sinais modulados AM/FM compostos por múltiplas componentes espectrais (arquivos 2 e 3).</p>
+<hr />
+<!-- slides: end-columns -->
+<h2 id="transformada-de-fourier"><span class="heading-number">1.4</span> Transformada de Fourier</h2>
+<h3 id="definição-e-transformada-inversa"><span class="heading-number">1.4.1</span> Definição e transformada inversa</h3>
+<p>Para um sinal de energia $x(t)$ (não necessariamente periódico):</p>
+
+<div class="math-display">
+$$
+
+\boxed{X(f) \equiv \int_{-\infty}^{\infty}x(t)\,e^{-j2\pi ft}\,dt}\ ,\qquad \boxed{x(t) = \int_{-\infty}^{\infty}X(f)\,e^{j2\pi ft}\,df}
+
+$$
+</div>
+
+<p>A Transformada de Fourier pode ser vista como o limite da Série de Fourier quando $T_0\to\infty$: o espaçamento entre linhas espectrais $f_0=1/T_0\to0$, o espectro discreto vira contínuo, e $c_n\cdot T_0 \to X(f)$.</p>
+<h3 id="propriedades-fundamentais-com-dedução-breve"><span class="heading-number">1.4.2</span> Propriedades fundamentais (com dedução breve)</h3>
+<p><strong>Linearidade</strong>: $ax_1(t)+bx_2(t) \leftrightarrow aX_1(f)+bX_2(f)$ — direto da linearidade da integral.</p>
+<p><strong>Deslocamento no tempo</strong>: $x(t-t_0)\leftrightarrow X(f)e^{-j2\pi ft_0}$. Prova: substituição $u=t-t_0$ na integral de definição.</p>
+<p><strong>Deslocamento em frequência (modulação)</strong>: $x(t)e^{j2\pi f_0t}\leftrightarrow X(f-f_0)$. Prova: substitua diretamente na definição, agrupe os expoentes. Esta propriedade é o <strong>coração matemático de toda a modulação</strong> (arquivos 2, 3, 5, 6): multiplicar um sinal por uma portadora $\cos(2\pi f_ct)$ desloca seu espectro para $\pm f_c$.</p>
+
+<div class="math-display">
+$$
+
+\boxed{x(t)\cos(2\pi f_ct) \leftrightarrow \frac{1}{2}\left[X(f-f_c)+X(f+f_c)\right]}
+
+$$
+</div>
+
+<p>(decorrência direta de $\cos(2\pi f_ct)=\tfrac12(e^{j2\pi f_ct}+e^{-j2\pi f_ct})$ e da propriedade de deslocamento em frequência aplicada a cada termo).</p>
+<p><strong>Escalamento no tempo</strong>: $x(at)\leftrightarrow \dfrac{1}{|a|}X(f/a)$ — comprimir no tempo expande no espectro (relação de incerteza tempo-frequência).</p>
+<p><strong>Dualidade</strong>: se $x(t)\leftrightarrow X(f)$, então $X(t)\leftrightarrow x(-f)$ — consequência da simetria quase perfeita entre as fórmulas direta e inversa.</p>
+<aside class="callout callout-proof" role="note"><p><strong>Derivação</strong>: $\dfrac{dx}{dt}\leftrightarrow j2\pi f\,X(f)$ — prova por integração por partes.</p></aside>
+<h3 id="pares-de-transformadas-fundamentais"><span class="heading-number">1.4.3</span> Pares de transformadas fundamentais</h3>
+<table>
+<thead>
+<tr>
+<th>$x(t)$</th>
+<th>$X(f)$</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\text{rect}(t/T)$ (pulso retangular)</td>
+<td>$T\,\text{sinc}(fT)$</td>
+<td>Formatação de pulso banda base (arquivo 4)</td>
+</tr>
+<tr>
+<td>$\text{sinc}(2Wt)$</td>
+<td>$\dfrac{1}{2W}\text{rect}(f/2W)$</td>
+<td>Filtro ideal passa-baixas (dual do anterior)</td>
+</tr>
+<tr>
+<td>$\delta(t)$</td>
+<td>$1$</td>
+<td>Resposta ao impulso</td>
+</tr>
+<tr>
+<td>$1$</td>
+<td>$\delta(f)$</td>
+<td>Nível DC</td>
+</tr>
+<tr>
+<td>$e^{-at}u(t)$, $a&gt;0$</td>
+<td>$\dfrac{1}{a+j2\pi f}$</td>
+<td>Filtros RC</td>
+</tr>
+<tr>
+<td>$e^{-\pi t^2}$ (gaussiana)</td>
+<td>$e^{-\pi f^2}$ (autotransformada)</td>
+<td>Pulsos gaussianos</td>
+</tr>
+<tr>
+<td>$\cos(2\pi f_ct)$</td>
+<td>$\tfrac12[\delta(f-f_c)+\delta(f+f_c)]$</td>
+<td>Portadora</td>
+</tr>
+</tbody>
+</table>
+<p>onde $\text{sinc}(x)\equiv\dfrac{\sin(\pi x)}{\pi x}$.</p>
+<h3 id="dedução-do-par-retangular--sinc"><span class="heading-number">1.4.4</span> Dedução do par retangular ↔ sinc</h3>
+
+<div class="math-display">
+$$
+
+X(f) = \int_{-T/2}^{T/2}e^{-j2\pi ft}\,dt = \left[\frac{e^{-j2\pi ft}}{-j2\pi f}\right]_{-T/2}^{T/2} = \frac{e^{-j\pi fT}-e^{j\pi fT}}{-j2\pi f} = \frac{2\sin(\pi fT)}{2\pi f} = T\,\frac{\sin(\pi fT)}{\pi fT} = T\,\text{sinc}(fT)
+
+$$
+</div>
+
+<p>Este resultado é central para o arquivo 4 (banda base): todo pulso retangular no tempo (bit digital &quot;cru&quot;) tem espectro <strong>infinito</strong> em largura de banda (o sinc decai apenas como $1/f$), motivando a necessidade de pulsos formatados (raised cosine) para limitar a banda ocupada.</p>
+<h3 id="transformada-de-sinais-periódicos-via-trem-de-deltas-espectrais"><span class="heading-number">1.4.5</span> Transformada de sinais periódicos (via trem de deltas espectrais)</h3>
+<p>Um sinal periódico não é de energia finita, mas admite Transformada de Fourier generalizada como um trem de impulsos espectrais, ponderados pelos coeficientes de Fourier:</p>
+
+<div class="math-display">
+$$
+
+\boxed{x(t)=\sum_nc_ne^{j2\pi nf_0t} \quad\longleftrightarrow\quad X(f)=\sum_nc_n\,\delta(f-nf_0)}
+
+$$
+</div>
+
+<p>Esta identidade unifica o tratamento espectral de sinais periódicos e não periódicos sob o mesmo formalismo de Fourier, essencial para tratar portadoras (sinais periódicos) moduladas por sinais de informação (tipicamente de banda finita, mas não necessariamente periódicos).</p>
+<hr />
+<h2 id="convolução-filtragem-e-o-teorema-de-parseval"><span class="heading-number">1.5</span> Convolução, Filtragem e o Teorema de Parseval</h2>
+<h3 id="convolução-no-tempo--produto-em-frequência"><span class="heading-number">1.5.1</span> Convolução no tempo ↔ Produto em frequência</h3>
+
+<div class="math-display">
+$$
+
+y(t) = x(t)*h(t) \equiv \int_{-\infty}^{\infty}x(\tau)h(t-\tau)\,d\tau \quad\longleftrightarrow\quad Y(f)=X(f)H(f)
+
+$$
+</div>
+
+<p><strong>Dedução</strong>: aplique a Transformada de Fourier à definição de convolução, troque a ordem de integração (justificável para sinais absolutamente integráveis), e reconheça a integral interna como uma Transformada de Fourier deslocada:</p>
+
+<div class="math-display">
+$$
+
+Y(f) = \int\!\!\int x(\tau)h(t-\tau)e^{-j2\pi ft}\,d\tau\,dt = \int x(\tau)\left[\int h(t-\tau)e^{-j2\pi ft}\,dt\right]d\tau = \int x(\tau)H(f)e^{-j2\pi f\tau}\,d\tau = X(f)H(f)
+
+$$
+</div>
+
+<p>Este resultado é a base de <strong>toda a teoria de filtragem linear</strong> em comunicações: um sistema LIT (linear invariante no tempo) com resposta ao impulso $h(t)$ processa um sinal de entrada multiplicando seu espectro por $H(f)$ — a <strong>resposta em frequência</strong> do sistema. Filtros passa-baixas, passa-faixa, e o próprio canal de comunicação são modelados dessa forma.</p>
+<h3 id="produto-no-tempo--convolução-em-frequência-dual"><span class="heading-number">1.5.2</span> Produto no tempo ↔ Convolução em frequência (dual)</h3>
+
+<div class="math-display">
+$$
+
+x(t)y(t) \longleftrightarrow X(f)*Y(f)
+
+$$
+</div>
+
+<p>Por dualidade da Seção “Propriedades fundamentais (com dedução breve)”. Esta é a propriedade usada para derivar o espectro de um sinal modulado como convolução do espectro da informação com o espectro (impulsivo) da portadora — resultando no deslocamento espectral já visto na Seção “Propriedades fundamentais (com dedução breve)” aplicado agora de forma geral a portadoras moduladas em amplitude por um sinal arbitrário $m(t)$ (arquivo 2).</p>
+<h3 id="teorema-de-parsevalrayleigh-energia-no-tempo--energia-na-frequência"><span class="heading-number">1.5.3</span> Teorema de Parseval/Rayleigh (energia no tempo = energia na frequência)</h3>
+
+<div class="math-display">
+$$
+
+\boxed{E_x = \int_{-\infty}^{\infty}|x(t)|^2\,dt = \int_{-\infty}^{\infty}|X(f)|^2\,df}
+
+$$
+</div>
+
+<p><strong>Dedução</strong>: escreva $E_x=\int x(t)x^*(t)\,dt$ e substitua $x^*(t)=\int X^*(f)e^{-j2\pi ft}\,df$ (conjugado da transformada inversa); troque a ordem de integração:</p>
+
+<div class="math-display">
+$$
+
+E_x = \int X^*(f)\left[\int x(t)e^{-j2\pi ft}\,dt\right]df = \int X^*(f)X(f)\,df = \int|X(f)|^2\,df
+
+$$
+</div>
+
+<p>$|X(f)|^2$ é a <strong>densidade espectral de energia</strong> — mede como a energia do sinal se distribui em frequência, conceito que se generaliza para a densidade espectral de potência de processos aleatórios (Seção “Densidade Espectral de Potência de Processos Aleatórios”), central para calcular a potência de ruído que passa por um filtro receptor.</p>
+<hr />
+<h2 id="sinais-passa-faixa-e-envelope-complexo"><span class="heading-number">1.6</span> Sinais Passa-Faixa e Envelope Complexo</h2>
+<h3 id="motivação"><span class="heading-number">1.6.1</span> Motivação</h3>
+<p>Sinais de comunicação (moduladas AM/FM/PSK etc.) são tipicamente <strong>sinais passa-faixa</strong>: seu espectro está concentrado em torno de uma frequência de portadora $f_c$ alta, com largura de banda $B\ll f_c$. Simular tais sinais diretamente exigiria amostrar a $f_c$ (GHz em rádio), desperdiçando recursos computacionais. A representação de <strong>envelope complexo</strong> (ou banda base equivalente) resolve isso.</p>
+<h3 id="dedução-da-representação-em-envelope-complexo"><span class="heading-number">1.6.2</span> Dedução da representação em envelope complexo</h3>
+<p>Todo sinal passa-faixa real $s(t)$ pode ser escrito como:</p>
+
+<div class="math-display">
+$$
+
+s(t) = A(t)\cos\big(2\pi f_ct+\phi(t)\big) = \text{Re}\left\{\underbrace{A(t)e^{j\phi(t)}}_{\tilde{s}(t)}\,e^{j2\pi f_ct}\right\} = \text{Re}\{\tilde{s}(t)e^{j2\pi f_ct}\}
+
+$$
+</div>
+
+<p>onde $\tilde s(t)=A(t)e^{j\phi(t)}$ é o <strong>envelope complexo</strong> (ou sinal banda base equivalente), variando lentamente. Se o sinal RF real ocupa uma banda positiva de largura $B$ centrada em $f_c$, o envelope pode ser escolhido com suporte em $[-B/2,B/2]$. Assim, ele pode ser amostrado como sinal complexo a $F_s\ge B$, em vez de amostrar a portadora em GHz. Escrevendo $\tilde s(t)=s_I(t)+js_Q(t)$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{s(t) = s_I(t)\cos(2\pi f_ct) - s_Q(t)\sin(2\pi f_ct)}
+
+$$
+</div>
+
+<p><strong>Dedução da forma I/Q</strong>: expandindo $\cos(2\pi f_ct+\phi)=\cos\phi\cos(2\pi f_ct)-\sin\phi\sin(2\pi f_ct)$ e identificando $s_I=A\cos\phi$, $s_Q=A\sin\phi$.</p>
+<p>Esta decomposição é a base de <strong>todos</strong> os moduladores/demoduladores digitais em quadratura (QAM, PSK — arquivo 6): a informação é codificada em $(s_I,s_Q)$, e a portadora serve apenas de &quot;veículo&quot; de transporte para a faixa de RF.</p>
+<h3 id="relação-espectral-entre-passa-faixa-e-banda-base"><span class="heading-number">1.6.3</span> Relação espectral entre passa-faixa e banda base</h3>
+<p>Se $\tilde S(f)$ é a transformada de $\tilde s(t)$, então (usando $s(t)=\tfrac12[\tilde s(t)e^{j2\pi f_ct}+\tilde s^*(t)e^{-j2\pi f_ct}]$, decorrente de $\text{Re}\{z\}=\tfrac12(z+z^*)$):</p>
+
+<div class="math-display">
+$$
+
+S(f) = \frac{1}{2}\left[\tilde S(f-f_c) + \tilde S^*(-f-f_c)\right]
+
+$$
+</div>
+
+<p>O espectro do sinal passa-faixa é o espectro banda base deslocado para $\pm f_c$ — simulações numéricas trabalham com $\tilde s(t)$ a uma taxa complexa determinada por sua largura de banda, reconstruindo $s(t)$ apenas quando necessário.</p>
+<hr />
+<h2 id="processos-aleatórios"><span class="heading-number">1.7</span> Processos Aleatórios</h2>
+<h3 id="definição"><span class="heading-number">1.7.1</span> Definição</h3>
+<p>Um <strong>processo aleatório</strong> (ou estocástico) $X(t)$ é uma função cujo valor em cada instante $t$ é uma variável aleatória. Uma <strong>realização</strong> (ou amostra) $x(t)$ é uma função determinística específica, obtida de um experimento. Em comunicações, o ruído térmico, a informação transmitida (antes de ser conhecida) e o próprio canal (desvanecimento) são modelados como processos aleatórios.</p>
+<h3 id="estacionariedade-em-sentido-amplo-wss"><span class="heading-number">1.7.2</span> Estacionariedade em sentido amplo (WSS)</h3>
+<p>Um processo é <strong>WSS</strong> (<em>wide-sense stationary</em>) se:</p>
+<ol>
+<li>A média é constante no tempo: $E[X(t)]=\mu_X$ (não depende de $t$).</li>
+<li>A autocorrelação depende apenas da diferença de tempos: $R_X(t_1,t_2) = E[X(t_1)X(t_2)] = R_X(t_1-t_2) \equiv R_X(\tau)$.</li>
+</ol>
+<p>A maioria dos sinais de comunicação (ruído térmico, sinais digitais aleatórios de longo prazo) são modelados como WSS — hipótese que simplifica drasticamente a análise espectral (Seção “Densidade Espectral de Potência de Processos Aleatórios”).</p>
+<h3 id="autocorrelação-propriedades-e-interpretação"><span class="heading-number">1.7.3</span> Autocorrelação: propriedades e interpretação</h3>
+
+<div class="math-display">
+$$
+
+R_X(\tau) = E[X(t)X(t+\tau)]
+
+$$
+</div>
+
+<p>Propriedades fundamentais (demonstráveis diretamente da definição):</p>
+<ul>
+<li>$R_X(0) = E[X^2(t)] = $ potência média do processo (sempre real e não-negativa).</li>
+<li>$R_X(\tau) = R_X(-\tau)$ (simetria par, para processos reais — troque $t\to t-\tau$ na definição).</li>
+<li>$|R_X(\tau)| \le R_X(0)$ (consequência da desigualdade de Cauchy-Schwarz aplicada a $X(t)$ e $X(t+\tau)$).</li>
+<li>$R_X(\tau)\to \mu_X^2$ quando $\tau\to\infty$, se o processo &quot;esquece&quot; sua correlação com o passado distante (ergodicidade em correlação).</li>
+</ul>
+<hr />
+<h2 id="densidade-espectral-de-potência-de-processos-aleatórios"><span class="heading-number">1.8</span> Densidade Espectral de Potência de Processos Aleatórios</h2>
+<h3 id="teorema-de-wiener-khinchin"><span class="heading-number">1.8.1</span> Teorema de Wiener-Khinchin</h3>
+<aside class="callout callout-theorem" role="note"><p><strong>Teorema</strong>: para um processo WSS $X(t)$, a <strong>densidade espectral de potência</strong> (PSD) é a Transformada de Fourier da função de autocorrelação:</p></aside>
+
+<div class="math-display">
+$$
+
+\boxed{S_X(f) \equiv \int_{-\infty}^{\infty}R_X(\tau)\,e^{-j2\pi f\tau}\,d\tau}
+
+$$
+</div>
+
+<p><strong>Ideia da prova</strong>: considere uma janela truncada $X_T(t)=X(t)$ para $|t|&lt;T/2$ e zero fora. Sua Transformada de Fourier é $X_T(f)$, e pelo Teorema de Parseval (Seção “Teorema de Parseval/Rayleigh (energia no tempo = energia na frequência)”), $\int|X_T(t)|^2dt=\int|X_T(f)|^2df$. Dividindo por $T$ e tomando $T\to\infty$ (com valor esperado), o lado esquerdo tende à potência média $P_X=R_X(0)$; mostra-se (via manipulação envolvendo a definição de $R_X$ e mudança de variáveis) que o lado direito, no limite, é exatamente $\int S_X(f)\,df$ com $S_X(f)$ definida como acima — a PSD é, portanto, &quot;quanta potência por unidade de frequência&quot; o processo carrega, generalizando $|X(f)|^2$ (válida só para sinais de energia) para sinais de potência.</p>
+<h3 id="propriedades-da-psd"><span class="heading-number">1.8.2</span> Propriedades da PSD</h3>
+<ul>
+<li>$S_X(f)\ge0$ para todo $f$ (é uma densidade de potência, não pode ser negativa).</li>
+<li>$S_X(f)=S_X(-f)$ para processos reais (pois $R_X(\tau)$ é real e par).</li>
+<li>$P_X = R_X(0) = \displaystyle\int_{-\infty}^{\infty}S_X(f)\,df$ (potência total = área sob a PSD).</li>
+</ul>
+<h3 id="psd-na-saída-de-um-filtro-lit"><span class="heading-number">1.8.3</span> PSD na saída de um filtro LIT</h3>
+<p>Se $X(t)$ (WSS, PSD $S_X(f)$) passa por um filtro LIT com resposta em frequência $H(f)$, a PSD da saída $Y(t)=X(t)*h(t)$ é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{S_Y(f) = |H(f)|^2\,S_X(f)}
+
+$$
+</div>
+
+<p><strong>Dedução (esboço)</strong>: a autocorrelação da saída se relaciona com a de entrada por $R_Y(\tau)=R_X(\tau)*h(\tau)*h^*(-\tau)$ (resultado da definição $Y(t)=\int h(\alpha)X(t-\alpha)d\alpha$ substituída em $E[Y(t)Y(t+\tau)]$); aplicando Fourier a ambos os lados e usando a propriedade de convolução (Seção “Convolução no tempo ↔ Produto em frequência”) mais o fato de que a transformada de $h^*(-\tau)$ é $H^*(f)$: $S_Y(f)=S_X(f)H(f)H^*(f)=|H(f)|^2S_X(f)$. Este resultado é usado extensivamente para calcular a potência de ruído na saída de filtros receptores (Seção “Ruído Térmico e Ruído Branco Gaussiano (AWGN)”, e ao longo de toda a apostila).</p>
+<hr />
+<h2 id="ruído-térmico-e-ruído-branco-gaussiano-awgn"><span class="heading-number">1.9</span> Ruído Térmico e Ruído Branco Gaussiano (AWGN)</h2>
+<h3 id="origem-física-do-ruído-térmico"><span class="heading-number">1.9.1</span> Origem física do ruído térmico</h3>
+<p>O movimento térmico aleatório dos elétrons em qualquer condutor com resistência $R$ a temperatura $T$ (Kelvin) produz uma tensão de ruído — o <strong>ruído de Johnson-Nyquist</strong>. A potência máxima disponível em uma carga casada, numa banda positiva de largura $B$, é $k_BTB$. Assim, sua densidade disponível <strong>unilateral</strong> é $k_BT$; na representação bilateral de um processo real, essa potência é dividida entre frequências positivas e negativas. Para frequências até a região de micro-ondas (aproximação clássica de Rayleigh-Jeans, válida quando $hf\ll k_BT$):</p>
+
+<div class="math-display">
+$$
+
+S_N(f) = \frac{k_BT}{2}\qquad\text{(W/Hz, bilateral)}
+
+$$
+</div>
+
+<p>onde $k_B=1{,}380649\times10^{-23}\,\text{J/K}$ é a constante de Boltzmann. A PSD é <strong>constante em frequência</strong> até frequências extremamente altas (ordem de THz à temperatura ambiente) — daí o nome <strong>ruído branco</strong> (por analogia com a luz branca, que contém todas as frequências visíveis com intensidade comparável).</p>
+<h3 id="modelo-awgn-additive-white-gaussian-noise"><span class="heading-number">1.9.2</span> Modelo AWGN (Additive White Gaussian Noise)</h3>
+<p>O modelo padrão de canal em comunicações digitais é:</p>
+
+<div class="math-display">
+$$
+
+\boxed{r(t) = s(t) + n(t)}
+
+$$
+</div>
+
+<p>onde $s(t)$ é o sinal transmitido e $n(t)$ é <strong>ruído branco Gaussiano aditivo</strong>, com:</p>
+<ol>
+<li><strong>Branco</strong>: $S_N(f) = N_0/2$ (constante em toda frequência de interesse). Aqui, $N_0$ é o <strong>parâmetro unilateral</strong> de densidade de ruído; portanto, a PSD bilateral do processo real é $N_0/2$. Para uma fonte térmica equivalente, $N_0=k_BT_{eq}$. A temperatura $T_{eq}$ representa o ruído acrescentado pelo receptor e não deve ser confundida, sem justificativa, com sua temperatura física.</li>
+<li><strong>Gaussiano</strong>: em cada instante $t$, $N(t)$ é uma variável aleatória Gaussiana de média zero (justificado pelo <strong>Teorema Central do Limite</strong>: o ruído é a soma de contribuições de um número enorme de elétrons e fontes microscópicas independentes).</li>
+<li><strong>Aditivo</strong>: soma-se ao sinal, não o multiplica nem distorce.</li>
+</ol>
+<h3 id="potência-de-ruído-após-filtragem-de-banda-b"><span class="heading-number">1.9.3</span> Potência de ruído após filtragem de banda $B$</h3>
+<p>Um filtro receptor ideal de largura de banda $B$ (passa-baixas ou passa-faixa) limita o ruído branco (infinito em potência total) a uma potência finita. Pela Seção “PSD na saída de um filtro LIT”, com $|H(f)|^2=1$ dentro da banda e $0$ fora:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_N = \int_{-B}^{B}\frac{N_0}{2}\,df = N_0B}
+
+$$
+</div>
+
+<p>(para um passa-baixas cujo corte positivo é $B$, isto é, que ocupa $-B\le f\le B$). Em um passa-faixa real, se $B$ denota a largura da banda em frequências positivas, existe também sua imagem simétrica em frequências negativas; a integral bilateral volta a fornecer $P_N=N_0B$. Esta convenção de $B$ é usada em <strong>todo</strong> o restante da apostila para calcular a relação sinal-ruído (SNR) na entrada do demodulador.</p>
+<h3 id="densidade-de-probabilidade-gaussiana"><span class="heading-number">1.9.4</span> Densidade de probabilidade Gaussiana</h3>
+
+<div class="math-display">
+$$
+
+f_N(n) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{n^2}{2\sigma^2}\right),\qquad \sigma^2 = P_N = N_0B
+
+$$
+</div>
+
+<p>$\sigma^2$ é a variância (= potência média do ruído filtrado). Após um passa-baixas retangular, o ruído Gaussiano já não é independente em instantes arbitrários: sua autocorrelação tem forma sinc. Amostras Gaussianas são independentes quando sua correlação é nula; no filtro ideal acima, isso ocorre em separações inteiras de $1/(2B)$. No receptor digital, o filtro casado e a amostragem nos instantes de símbolo produzem as variáveis de decisão modeladas como i.i.d. quando os pulsos são ortogonais e o canal não introduz memória. Essa é a base do <strong>canal AWGN discreto</strong> usado nas simulações de BER (arquivos 5 e 6): cada símbolo recebido é o símbolo transmitido mais uma amostra de $\mathcal{N}(0,\sigma^2)$, independente das demais sob essas hipóteses.</p>
+<hr />
+<h2 id="função-q-e-probabilidade-de-erro"><span class="heading-number">1.10</span> Função Q e Probabilidade de Erro</h2>
+<h3 id="definição-da-função-q"><span class="heading-number">1.10.1</span> Definição da função Q</h3>
+<p>A <strong>função Q</strong> é a probabilidade de cauda de uma Gaussiana padrão $\mathcal N(0,1)$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{Q(x) \equiv \int_x^\infty \frac{1}{\sqrt{2\pi}}e^{-u^2/2}\,du = P(Z&gt;x),\quad Z\sim\mathcal N(0,1)}
+
+$$
+</div>
+
+<p>Propriedades: $Q(0)=1/2$; $Q(-x)=1-Q(x)$; $Q(x)$ é monotonicamente decrescente; não tem forma fechada elementar (relacionada à função erro complementar, $Q(x)=\tfrac12\text{erfc}(x/\sqrt2)$).</p>
+<h3 id="dedução-da-probabilidade-de-erro-para-detecção-binária-em-awgn"><span class="heading-number">1.10.2</span> Dedução da probabilidade de erro para detecção binária em AWGN</h3>
+<p>Considere a detecção de um bit binário: transmite-se $+A$ (bit 1) ou $-A$ (bit 0), o receptor observa $r=s+n$ com $n\sim\mathcal N(0,\sigma^2)$, e decide &quot;1&quot; se $r&gt;0$, &quot;0&quot; caso contrário (<strong>detector de limiar ótimo</strong> para sinais antipodais equiprováveis, resultado que será justificado formalmente no arquivo 5 via detecção de máxima verossimilhança). Dado que &quot;0&quot; foi transmitido ($s=-A$), o erro ocorre se $r&gt;0$, isto é, se $n&gt;A$:</p>
+
+<div class="math-display">
+$$
+
+P(\text{erro}\,|\,s=-A) = P(n&gt;A) = \int_A^\infty\frac{1}{\sqrt{2\pi}\sigma}e^{-n^2/(2\sigma^2)}\,dn
+
+$$
+</div>
+
+<p>Substituindo $u=n/\sigma$ ($du=dn/\sigma$), os limites tornam-se $A/\sigma$ a $\infty$:</p>
+
+<div class="math-display">
+$$
+
+P(\text{erro}\,|\,s=-A) = \int_{A/\sigma}^\infty\frac{1}{\sqrt{2\pi}}e^{-u^2/2}\,du = Q\!\left(\frac{A}{\sigma}\right)
+
+$$
+</div>
+
+<p>Por simetria (mesmo argumento para $s=+A$, erro se $n&lt;-A$), a probabilidade de erro é a mesma condicionada a cada símbolo, logo:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_e = Q\!\left(\frac{A}{\sigma}\right)}
+
+$$
+</div>
+
+<p>Esta é a fórmula-mãe de onde <strong>todas</strong> as expressões de BER (Bit Error Rate) do restante da apostila são derivadas (ASK, PSK, FSK, QAM — arquivos 5 e 6), trocando $A/\sigma$ pela distância euclidiana relevante entre símbolos da constelação, normalizada pelo desvio padrão do ruído.</p>
+<h3 id="relação-com-e_bn_0"><span class="heading-number">1.10.3</span> Relação com $E_b/N_0$</h3>
+<p>Definindo a energia por bit $E_b = A^2T_b$ (para um pulso retangular de amplitude $A$ e duração $T_b$) e usando $\sigma^2=N_0B$ com $B\approx1/(2T_b)$ (banda de um filtro casado, resultado justificado no arquivo 5):</p>
+
+<div class="math-display">
+$$
+
+\frac{A}{\sigma} = \sqrt{\frac{2E_b}{N_0}} \quad\Rightarrow\quad \boxed{P_e = Q\!\left(\sqrt{\frac{2E_b}{N_0}}\right)}
+
+$$
+</div>
+
+<p>Esta é a forma em que a probabilidade de erro é universalmente reportada na literatura de comunicações digitais — em função da razão <strong>energia por bit sobre densidade espectral de ruído</strong>, $E_b/N_0$, permitindo comparar esquemas de modulação diferentes em bases equivalentes (mesma energia gasta por bit de informação).</p>
+<hr />
+<h2 id="exercícios-resolvidos-em-python"><span class="heading-number">1.11</span> Exercícios Resolvidos em Python</h2>
+<h3 id="protocolo-computacional"><span class="heading-number">1.11.1</span> Protocolo computacional</h3>
+<p><strong>Objetivo:</strong> verificar Fourier, Parseval, PSD de AWGN e a função $Q$. <strong>Reprodutibilidade:</strong> use <code>np.random.default_rng(42)</code>, declare frequência de amostragem e convenção de FFT/PSD. <strong>Validação:</strong> compare energia nos dois domínios e BER simulada com a expressão analítica, informando a contagem de erros.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> numpy </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> np</span>
+<span style="color: #FF4689">import</span><span style="color: #F8F8F2"> matplotlib.pyplot </span><span style="color: #66D9EF">as</span><span style="color: #F8F8F2"> plt</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">signal</span>
+<span style="color: #FF4689">from</span><span style="color: #F8F8F2"> scipy.special </span><span style="color: #FF4689">import</span> <span style="color: #F8F8F2">erfc</span>
+
+<span style="color: #959077"># === Série de Fourier de uma onda quadrada ===</span>
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">coef_fourier_onda_quadrada</span><span style="color: #F8F8F2">(n,</span> <span style="color: #F8F8F2">A</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Coeficientes c_n de uma onda quadrada ímpar de amplitude A (só harmônicos ímpares).&quot;&quot;&quot;</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">0.0</span>
+    <span style="color: #66D9EF">if</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">%</span> <span style="color: #AE81FF">2</span> <span style="color: #FF4689">==</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">:</span>
+        <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">0.0</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">A)</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">n)</span>
+
+<span style="color: #F8F8F2">N_harm</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">15</span>
+<span style="color: #F8F8F2">ns</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">N_harm,</span> <span style="color: #F8F8F2">N_harm</span><span style="color: #FF4689">+</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">cs</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">array([coef_fourier_onda_quadrada(n)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">ns])</span>
+<span style="color: #F8F8F2">t</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">linspace(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2000</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">f0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+<span style="color: #F8F8F2">x_reconstruida</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">real(sum(cs[i]</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">exp(</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">j</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">pi</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">ns[i]</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">f0</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">t)</span> <span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">i</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">range(len(ns))))</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Reconstrução com {</span><span style="color: #F8F8F2">N_harm</span><span style="color: #E6DB74">} harmônicos ímpares: max={</span><span style="color: #F8F8F2">x_reconstruida</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max()</span><span style="color: #E6DB74">:.3f} (ideal=1.0, fenômeno de Gibbs)&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># === Transformada de Fourier numérica: pulso retangular -&gt; sinc ===</span>
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">pulso_retangular</span><span style="color: #F8F8F2">(t,</span> <span style="color: #F8F8F2">T):</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">where(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(t)</span> <span style="color: #FF4689">&lt;=</span> <span style="color: #F8F8F2">T</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.0</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">Fs</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1000</span>
+<span style="color: #F8F8F2">t_vec</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #FF4689">-</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">5</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">Fs)</span>
+<span style="color: #F8F8F2">T_pulso</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span>
+<span style="color: #F8F8F2">x</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">pulso_retangular(t_vec,</span> <span style="color: #F8F8F2">T_pulso)</span>
+<span style="color: #F8F8F2">X</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftshift(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft(x))</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">Fs</span>
+<span style="color: #F8F8F2">f_vec</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftshift(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fft</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">fftfreq(len(t_vec),</span> <span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">Fs))</span>
+
+<span style="color: #F8F8F2">X_teorico</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">T_pulso</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sinc(f_vec</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">T_pulso)</span>
+<span style="color: #F8F8F2">erro_max</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">max(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(X)</span> <span style="color: #FF4689">-</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(X_teorico)))</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Erro máximo FFT numérica vs. T*sinc(fT) teórico: {</span><span style="color: #F8F8F2">erro_max</span><span style="color: #E6DB74">:.4f}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># === Verificação de Parseval ===</span>
+<span style="color: #F8F8F2">E_tempo</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(x)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">Fs</span>
+<span style="color: #F8F8F2">E_freq</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sum(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">abs(X)</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">)</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">(f_vec[</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">]</span><span style="color: #FF4689">-</span><span style="color: #F8F8F2">f_vec[</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">])</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Energia no tempo:      {</span><span style="color: #F8F8F2">E_tempo</span><span style="color: #E6DB74">:.4f}&quot;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Energia na frequência: {</span><span style="color: #F8F8F2">E_freq</span><span style="color: #E6DB74">:.4f}  (Parseval)&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># === Ruído AWGN: geração e verificação de PSD ===</span>
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">gerar_awgn</span><span style="color: #F8F8F2">(N,</span> <span style="color: #F8F8F2">N0_sobre_2,</span> <span style="color: #F8F8F2">Fs):</span>
+<span style="color: #F8F8F2">    </span><span style="color: #E6DB74">&quot;&quot;&quot;Gera N amostras de ruído branco com PSD bilateral N0/2 (variância = N0/2 * Fs).&quot;&quot;&quot;</span>
+    <span style="color: #F8F8F2">sigma</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(N0_sobre_2</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">Fs)</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">sigma,</span> <span style="color: #F8F8F2">N)</span>
+
+<span style="color: #F8F8F2">N0_2</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e-3</span>
+<span style="color: #F8F8F2">Fs_ruido</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10000</span>
+<span style="color: #F8F8F2">n_amostras</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100000</span>
+<span style="color: #F8F8F2">ruido</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">gerar_awgn(n_amostras,</span> <span style="color: #F8F8F2">N0_2,</span> <span style="color: #F8F8F2">Fs_ruido)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">Ruído AWGN gerado: variância medida={</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">var(ruido)</span><span style="color: #E6DB74">:.6e}, esperada={</span><span style="color: #F8F8F2">N0_2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">Fs_ruido</span><span style="color: #E6DB74">:.6e}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">f_psd,</span> <span style="color: #F8F8F2">Pxx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">signal</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">welch(ruido,</span> <span style="color: #F8F8F2">Fs_ruido,</span> <span style="color: #F8F8F2">nperseg</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">1024</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;PSD média medida: {</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(Pxx)</span><span style="color: #E6DB74">:.6e} (esperado ~{</span><span style="color: #F8F8F2">N0_2</span><span style="color: #E6DB74">:.6e}, unilateral = 2x bilateral)&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># === Função Q e probabilidade de erro binária ===</span>
+<span style="color: #66D9EF">def</span><span style="color: #F8F8F2"> </span><span style="color: #A6E22E">Q</span><span style="color: #F8F8F2">(x):</span>
+    <span style="color: #66D9EF">return</span> <span style="color: #AE81FF">0.5</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">erfc(x</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #F8F8F2">))</span>
+
+<span style="color: #F8F8F2">A,</span> <span style="color: #F8F8F2">sigma_ruido</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1.0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">0.3</span>
+<span style="color: #F8F8F2">Pe</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Q(A</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">sigma_ruido)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;</span><span style="color: #AE81FF">\n</span><span style="color: #E6DB74">P_e (detecção binária, A/sigma={</span><span style="color: #F8F8F2">A</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">sigma_ruido</span><span style="color: #E6DB74">:.2f}): {</span><span style="color: #F8F8F2">Pe</span><span style="color: #E6DB74">:.6e}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># Verificação por simulação Monte Carlo</span>
+<span style="color: #F8F8F2">n_bits</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">200000</span>
+<span style="color: #F8F8F2">bits</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">randint(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">2</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">n_bits)</span>
+<span style="color: #F8F8F2">s</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">where(bits</span><span style="color: #FF4689">==</span><span style="color: #AE81FF">1</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">A,</span> <span style="color: #FF4689">-</span><span style="color: #F8F8F2">A)</span>
+<span style="color: #F8F8F2">r</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">s</span> <span style="color: #FF4689">+</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">random</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">normal(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">sigma_ruido,</span> <span style="color: #F8F8F2">n_bits)</span>
+<span style="color: #F8F8F2">bits_detectados</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">(r</span> <span style="color: #FF4689">&gt;</span> <span style="color: #AE81FF">0</span><span style="color: #F8F8F2">)</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">astype(int)</span>
+<span style="color: #F8F8F2">Pe_simulado</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">mean(bits_detectados</span> <span style="color: #FF4689">!=</span> <span style="color: #F8F8F2">bits)</span>
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;P_e simulado (Monte Carlo, {</span><span style="color: #F8F8F2">n_bits</span><span style="color: #E6DB74">} bits): {</span><span style="color: #F8F8F2">Pe_simulado</span><span style="color: #E6DB74">:.6e}&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #959077"># === Curva de P_e vs Eb/N0 ===</span>
+<span style="color: #F8F8F2">EbN0_dB</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">arange(</span><span style="color: #AE81FF">0</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">13</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">1</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">EbN0_lin</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">10</span><span style="color: #FF4689">**</span><span style="color: #F8F8F2">(EbN0_dB</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">10</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">Pe_teorico</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">Q(np</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">2</span><span style="color: #FF4689">*</span><span style="color: #F8F8F2">EbN0_lin))</span>
+
+<span style="color: #F8F8F2">fig,</span> <span style="color: #F8F8F2">ax</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">subplots(figsize</span><span style="color: #FF4689">=</span><span style="color: #F8F8F2">(</span><span style="color: #AE81FF">8</span><span style="color: #F8F8F2">,</span><span style="color: #AE81FF">5</span><span style="color: #F8F8F2">))</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">semilogy(EbN0_dB,</span> <span style="color: #F8F8F2">Pe_teorico,</span> <span style="color: #E6DB74">&#39;b-o&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">label</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;$P_e=Q(</span><span style="color: #AE81FF">\\</span><span style="color: #E6DB74">sqrt{2E_b/N_0})$&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_xlabel(</span><span style="color: #E6DB74">&#39;$E_b/N_0$ (dB)&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_ylabel(</span><span style="color: #E6DB74">&#39;Probabilidade de erro de bit&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">set_title(</span><span style="color: #E6DB74">&#39;Curva de BER teórica — detecção binária antipodal em AWGN&#39;</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">grid(</span><span style="color: #66D9EF">True</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">which</span><span style="color: #FF4689">=</span><span style="color: #E6DB74">&#39;both&#39;</span><span style="color: #F8F8F2">,</span> <span style="color: #F8F8F2">alpha</span><span style="color: #FF4689">=</span><span style="color: #AE81FF">0.3</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">ax</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">legend()</span>
+<span style="color: #F8F8F2">plt</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">tight_layout()</span>
+</pre></div>
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">Reconstrução com 15 harmônicos ímpares: max=1.180 (ideal=1.0, fenômeno de Gibbs)
+
+Erro máximo FFT numérica vs. T*sinc(fT) teórico: 0.0004
+
+Energia no tempo:      1.0000
+Energia na frequência: 1.0000  (Parseval)
+
+Ruído AWGN gerado: variância medida=9.973365e+00, esperada=1.000000e+01
+PSD média medida: 1.991730e-03 (esperado ~1.000000e-03, unilateral = 2x bilateral)
+
+P_e (detecção binária, A/sigma=3.33): 4.290603e-04
+P_e simulado (Monte Carlo, 200000 bits): 3.650000e-04</pre></div>
+
+<div class="output figure"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKAAAALdCAYAAAAbNRuZAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjExLjEsIGh0dHBzOi8vbWF0cGxvdGxpYi5vcmcvctoD+AAAAAlwSFlzAAAXEgAAFxIBZ5/SUgAA7VlJREFUeJzs3QeYE9XXx/HfAkvvIKCighXFgl0BBRuKYleKqIDYG2Dvii/YC+rfgogo2LChKDZQKQpKFQVBihWkuAJLh2XZ9zk3ztZsTbKTSb6f5xmGnUwys5Ob2cmZc89NycrKyhIAAAAAAAAQIxVi9cIAAAAAAAAAASgAAAAAAADEHBlQAAAAAAAAiCkCUAAAAAAAAIgpAlAAAAAAAACIKQJQAAAAAAAAiCkCUAAAAAAAAIgpAlAAAAAAAACIKQJQAAAAAAAAiCkCUAAAAAAAAIgpAlAAAAAAAACIKQJQAAAAAAAAiCkCUAAAAAAAAIipSrF9eQAAEtM///yjZ5991v3/0ksvVdOmTf3eJQBx4JNPPtHUqVPVpEkTXXnllX7vDgAAcYMAFADE0H333efml1xyiXbddVeOdQK54oorNGrUKPXs2TPi4JPXTuy1mjVrFqU9BJ+/0nv//fe1bNkydenSRQ0bNnTLPvjgA/3666+64YYbyrVRrV+/Xo899pj7/9VXX61GjRrF/WfLjlPnzp21detWffnllxG/HueGxDw2sTo3BfmYAEgOKVlZWVl+7wQA/23btk3Tp0/X3LlzlZaWpooVK2rHHXdU69at1bx5c793L7BSUlLcfNKkSWrbtm25bde+tNmXt/zsfa1du7b22msvHXvssapZs2apXyOcVq1a6ayzzir2+RUqVHDb3GWXXdSmTRvttNNOKiv7gvfAAw/4koH06quvugv8ww47zL23VatWjUo7+frrr9W+ffso7SVi8fnzs93F2jPPPKPrr7/e/d/O+999950L+nTo0EErV67UDz/8UK77s3z5cvd3yPz000/af//94/qztX37drVr107ffPON/ve//+maa66J+DWT7dxQms9XkI9NrK4NgnxMomnBggV644033P9btGihrl27hl3vueeec+e2/fbbzwWOC/PCCy+485G56aabCr12snOkBexNv379VKdOnUJfc926dZo8ebJ+//13rVq1yl1HNG7cWEceeaT22GOP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9odoWLMmRQ89VF3DhlXV9u0p2curV89Sv34bddVVm1SlSvwda86B8BttEH5LD/h34rZt26pixYrxMwre0qVL3dzqPoXjLbdAFIpn3RibN2/upoULF2q1jc8LAACApFW3bpYeemiDxo1bo8MPz8hevnFjigYOrKF27erq669Tfd1HAADyi/pQdFZc/O+//9bEiRN1xhlnFHh8woQJ2euheNZtsadVoPwvA8qijUE/dkHffwQfbRB+ow2C9odoOO446bvvpOHDpVtukf75J7R88eJK6ty5js49V3riCWnXXePreHMOhN9og/Bbw4B+J7Z4RCSingF19tlnu/l1112nWbNm5Xls5syZbnnu9VC0unXrqlmzZm5KTU1VhdxDoAAAACCpeaPlLVjAaHkAgPgW9WhG//79tddee7lR7g477DC1atVKp512mpvb6HjW9W7vvffWfffdF+1NAwAAAEmpbt3QaHkzZkitWxccLe+AA6TPP/dzDwEAyS7qAagGDRq4Itm9e/d2GTuzZ8/WJ5984ub2sy2fPHmyWw8AAABA9LRqJU2aJA0bJu2wQ87yhQulU06R65b3558ccQBA+YtJfy4LLr300kuuYPa0adM0duxYN7fR3Gw5wScAAACg/Lvlvf++1KKF9MAD0pYtvAMAgPIT04JC1apVc93wTjzxRDevWrVqLDcHAAAAoJhueZs2SXfeSbc8AED5oqI1AAAAkATd8l55hW55AAD/EIACAAAAEpx1w+vRI9QtzwalplseAKC8VSr3LaJUrG6WTSYjI0NZWVlKS0sL5FFMT0/3exeQ5GiD8BttELQ/xIN77pHOPruibr21pqZNS83TLW/o0Ew9+OB6HX98RtS3yzkQfqMNwm/pAf9OnJmZqYoVK5b5+WRAxblBgwapefPmblq4cKEr7A4AAABE4oADMvXxx+l65pl1athwe/byX3+tqC5d6qhnz1pasoSvCgCA6EnJspQaBCIDqkOHDi7aOG/ePAWRl7nVsGFDv3cFSYo2CL/RBkH7QzyyS03Linr2WWl7TixK1apJd90l3XijVKVK5NvhHAi/0Qbht7SAfydu2bKlm8+dO7dMz+e2RpyrW7eumjVr5qbU1FRVyN1hHwAAAIj4elN6+unQaHlt2uQsZ7Q8AEA0Ec0AAAAAkD1a3quvSo0a5RyQhQulU06Rzj1X+vNPDhQAIA4DUFu3btXs2bM1YcIEN7ci2gAAAADiU0qKdPHF0i+/MFoeACAAAaj169fruuuuU7169dSqVSu1b9/eza072fXXX68NGzbEYrMAAAAAyqlb3mefcagBAD4GoDZt2uQCTv/73/+0ceNGNW3aVEcffbSb28/PPPOMjj/+eG3evDnamwYAAABQTt3yOnaUzjlH+uMPDjkAwIcA1JNPPqkZM2aofv36GjNmjP766y9NnjzZzT/55BO3fOrUqXrqqaeivWkAAAAAMeyWd/31Uu4xcUaNkvbdVxo4UNqyhUMPACjHANTIkSOzA1Gnnnpqnsc6duyoJ554wv3/rbfeivamAQAAAMSwW57dQ545s2C3vLvukvbfP3y3vBUrQgGq88+vrY4d66hDB+mBB0LLAQDJI+oBqIWWjysbKeOUsI97yxcsWBDtTQMAAACIsYMOCt8tb9GivN3yLDB1+eXSLruEAlTjx1fW9OmpGjs2VEfKll9xhURlDgBIDjEbBS/FcnXDbTB3zi4AAACAhOuW16KFtN9+0pAhUmEDYdvyF1+0G9ShYBUAILFFPRq05557uvlYu7URxrhx4/KsBwAAACCxuuVZVtPvv5fsNSZMkPr2jdkuAgASNQB1/vnnu3m/fv00wf6a5GI/9/3vr0vnzp2jvWkAAAAAPnfLa9Cg9M8fNoyaUACQ6CpF+wVvuOEGvfvuu/rxxx/Vvn177bXXXtpll13cKHhefahWrVq5ABWKt2bNGjeZjIwMZWVlKS0tLZCHLj093e9dQJKjDcJvtEHQ/pDobAyi2bOr64knqpfqedYd7+mnN6hfP/riIXb4Owy/pQf8O3FmZqYqVqwYPxlQNWrUcJlOl112mapWreqCTl999ZWb28+XX365e7x69dL9UUpWgwYNUvPmzd1kx3D16tV+7xIAAABQqJkzy3aPe/LkVI4qACSwlCxLqYmRzZs3a86cOS7KV6dOHe2///4uCIWyZUB16NDBRRvnzZsXyEPoZW41bNjQ711BkqINwm+0QdD+kAyOPlr67rvSP++oo6QpU2KxR0AIf4fht7SAfydu2bKlm8+dOzc+uuBdeOGF2r59u9544w0XbDrssMOivYmkUrduXTeZ1FTuCgEAACC+1apVvs8DAARD1Lvgvf3223rzzTej/bIAAAAAAqBdu7I9r337aO8JACChA1BWcNwsX7482i8NAAAAIM717m2Z+6V/3n9J/wCABBX1ANR5553n5p9//nm0XxoAAABAnGvSROrZs/TPu+Ya6dJLpY0bY7FXAICEC0Ddc889Ovroo3XTTTdpzJgx0X55AAAAAHHuqadK3hUv94jeQ4dKRxwh/fxzzHYNAJAoAag2bdq4UdusununTp3c6HcHHnigWrVqVWACAAAAkHiqVZM+/VS6/PLCu+PZcnvcBlM68sic5fazjWP0yivltrsAgHIQ9VHwZs+enefntWvX6qeffor2ZgAAAADEeRBq8GDp/vtDmU1jx27V+vUpqlcv1RUct1pRjRuH1p04UbrjDunxx0M/b9ok9eolff219OyzUs2avv4qAIB4DED9888/0X5JAAAAAAFlQSYLLl1++Vr3c8OGDQusU7my9NhjoZHwevSQVq0KLR8+XJo6VRo5UjrwwPLecwBAXAeg7A/K9u3bVaFC1Hv3AQAAAEhgnTpJP/wgdesmffttaNn8+aEuelZX6rLLpJQUv/cSAFAWUY8SpaSkqGLuSoIAAAAAUEK77BLqenf77TnLNm+WrrhCuuACK/HBoQSAIIp6AKrmfx20t23bFu2XBgAAAJAErED5Aw9In30m7bBDzvK33pIOPVSaNcvPvQMAxEUA6oADDnDzxYsXK9llZWXp7LPPVtOmTfXmm2/6vTsAAABAoJx8cqhLXrt2OcsWLZKOOipUnDwry8+9AwD4GoDq06ePmz/zzDNKdv/73//0ww8/aOnSpdqwYYPfuwMAAAAEzk47SePGSffck1P/aetW6dprpc6dpTVr/N5DAIAvRchbtmyp3r1769lnn9W///6rCy64QLvttlvYouT777+/EtWCBQt055136p133tEpp5zi9+4AAAAAgVWpktS/v3TssVL37tKKFaHl774rzZgRGiXv8MP93ksAQLkGoLwueOatt95yU1Fd1BJRZmamevTooauuukqHWid1AAAAABE74YRQl7wLL5S+/DK07LffpDZtpEcesd4YjJIHAEkTgDrZOmqXs9WrV2vGjBmu8LllVVnNpeJs2bJFP/30k9avX69mzZq5KVoefPBBl/3Vv39/9/oAAAAAoqNJE+nzz+2aW7r3Xmn7dikjQ+rXLzR63rBhUv36HG0ASPgA1Gc2VEU5WLJkiQYPHqwvvvhC06dP13b7yyNpyJAhuvTSS4t87iOP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+JwBddhhh0W08enTp0f0fAAAAABA9Jx6qvTFF1KnTlJ6upSZGRotb9WqvAXLAaBcA1AzqEwHAAAAAAmlbVtpwgTp5JOlFStCy/r1k/79V7r//lDdKAAo1y54y5YtCztdcsklSklJUc+ePTVx4kT9+uuvbt6jRw+33B639QAAAAAA8eegg6RvvpGaNctZNmBAqFD59u1+7hmApMyAatKkSYFlzz//vF5++WXdeOONeuyxx7KXN2/eXMccc4zq1aunQYMG6aijjtJll10WyeYBAAAAADFi40lZEKpDB+nnn0PLnntOWr1aevVVKTWVQw/AxyLkFoAyV111VdjHr7nmGjd/9tlno71pAAAAAEAU7byzNHGidMQROcvefFM66yxp40YONYByyoAKZ+HChW7euHHjIrOmFixYoESUnp6uZ555psDyfffdV+eee64v+wQAAAAAZdWggfTll6Ggk83NJ5+EakR99JFUty7HFoAPGVDVq1d389mzZ4d9fNasWXnWSzSrV6/W3XffrcWLF2vz5s3ZU0ZGht+7BgAAAABlUrOmNGaMlPueunXPa98+p1A5AJRrBtSJJ56ot99+W/369dPnn3/uaj55Vq1apb7/jd1p6yWyK664wtW5AgAAAIBEUKWKNHKkfdeRhg4NLbO8Axs1b+zYvAXLASDmAagBAwboiy++0LRp07Tnnnvq9NNP184776ylS5dq9OjRLkPIglK2HgAAAAAgOCpWlIYMCXXLe+SR0LJFi6Q2bUJBqP3283sPASRNAGqvvfbSxIkT1atXL82YMUOv2vAIuRx66KEaNmyYC04lso8++kjffPONdt11V7Vr167QmlgAAAAAECQpKdLDD0v160u33RZa9vff0jHHSJ9+mrdgOQDErAaUOeCAAzR9+nTNnDlTQ4YM0aOPPurm9rMtt8ej4Y8//nCve/7556tZs2Zq2rSp3rQhGYrx+++/67rrrlOrVq1cIOykk07S0KFDtX379qjsV7Vq1TR//nwtWbJETzzxhNvGSy+9FJXXBgAAAIB4cOut0osvhgJSZtUq6fjjpXHj/N4zAEmRAZXbwQcf7KZYeP/998OOKrdhw4Yin/fdd9+pQ4cOWrduXfYyKxg+btw410XwvffeU6VKOYdlzpw5+uCDD4rdn9tvv10VK1Z03QvnzZun3XbbLfuxm2++2dWEatu2rVq0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AACxJiFBevhhadUq6Y03gveNGhVcKa9/f69HB8RYAspWurvooov0rdUe7uLggw/W1KlT3TQ8AAAAAABiTVKS9Oyzkp32ZmYG7xs4ULJWyZ06eT06IEYSUJ9++qkyMjK0efNmNWnSxDUlt+sffvhBTz/9tL755ht17txZ7777rlq0aBHujwcAAAAAwHN16kivvCKdcIK0Zo20Y4fUs6cVbEhHHun16ICKF/Y2aLfeeqtLPp188sn68ssvdc899+iaa65x17ZtlU+bNm1yz4tlCxYsULdu3VzFV4cOHfTiiy96PSQAAAAAQAU66CBp9mypRo3g9vr1Uteu0s8/8zUg/iRGIvFixowZoxqhf2V/2m+//VwiqvDzYtGTTz6pLl266LTTTtPcuXM1btw4N+3Qqr8AAAAAAPHjuOOCjchDq+B9/7105pnSxo1ejwzweQJq27Zt7jo9Pb3Yx0P3b926VbFo7dq1GjhwoEaPHq3BgwerWbNmOu644/Tcc88pLS3N6+EBAAAAACrYWWdJ48cXbC9bJp1/vi3exVeB+BH2BNQRRxzhrq3nU3FC95eUoPI763NlybVLLrlkt8cSbDkEAAAAAEDcueoqafDggu2XXpKGDJECAS9HBfg4ATXE/gVJ+VPtdmVT84z1hQpn1dGrr76q2bNn63urZywFSxItWbJEb7zxhlauXBm2sSxdulSHHnqo5syZo+OPP16HHHKI6wVlnwUAAAAAiF92mty9e8H2gw9K993n5YgAn6yC9/nnn+923zHHHOOqf/773/9qzZo17nZoFbzHH3/cJYn69++vo446qjwfrdWrV+vhhx/W66+/ro8++kiBP9PG9rmXXnppia+z5915553usrHQpNtWrVrpscceK/e4srOz9e2337om64888ogaNmyoBx98UCeddJJLQtnnAAAAAADiT6VK0hNPSKecYsULwfuuvVZKTZV69PB6dEBkJQRCmZuyvLicU8rK8dGaMWOG+vTp426npKS4sfz22297TUDdfPPNGjVqVP40wAYNGujDDz9UTk6O6tWrp/fff9/1bQqx3k2DBg3a63hWrVqlqlWr6rzzznPT8KyyypqQm507d7qpiZacs3GXVWjaYmZmpvzIKtVC3xdADCIecRwE8Yd4xjEQXoumGFyzRmrTxs4jg9vVq9tCXdLxx3s9MsRLDHqRkyhXBVTn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91ZKSorrkWe/A9pxsGrVqq4hPol4lIetbvz++++721Z9fMEFF7jbtgKoxViomunQQw/Nf40lmS6++GIlJCS4JID1xfvhhx90//33uz+U2x+SXn/9db4YlIotOhNqqfDFF1/o9ttvd1M9Q9Pdzemnn55f+Wn333jjjW5hrjvvvNOdkxTHjpslLerlRySgEFH2V1dLQtk/yCKBl5CgG264wf1jAyLB/rJamgb3thqPzbsGKhIJKFQkO5n697//7aaZFGa/9I4aNcr1KwMixfov2klWcase20pPlgTo1q0bXwDKZeLEiW4a055YpdOu0+JtsRA7Du5ak2EJU/sjuvXLA0qjX79+mjJlyh6f81GhPzxacj70h6A92bJli+vlGCvoAYWIqlevnusDZSf41vPJVr6zKqiePXvyV39ElM3lt6lNe2O/YAAVzSpSrOy/bt267HxE3NVXX60zzjjDNby3hUHsj0CHH364q3piIRBEmiU/7S/4Nh3eqgJsEQarALAmu9abkeMgwsGmce7t977mzZvvdt8dd9zhzkueffZZff/9927Z+1NOOUU9evRQpUqV+HKwT9M6rcJ4T+oW+r3v5JNPzl+NcU9iLQ6pgAIAAAAAAEBExc5kQgAAAAAAAEQlElAAAAAAAACIKBJQAAAAAAAAiCgSUAAAAAAAAIgoElAAAAAAAACIKBJQAAAAAAAAiCgSUAAAAAAAAIgoElAAAAAAAACIKBJQAAAAAAAAiCgSUAAAAAAAAIgoElAAAAAAAACIKBJQAAAA2KMffvhBmZmZ+7SXvv76a33++efauXNnufdubm6ue69ff/213O8FAAC8kRAIBAIefTYAAIBvWAJkb+rUqaMDDzywTO+/adMmffvtt2rQoIH233///Pst8WO/rlWrVk2HHHJIsa/9448/9NNPP6levXpq3LixwiknJ0fNmjXTSSedpJkzZ5b6dUceeaQbe3Z2tpKTk919eXl5Wr58+W7PTUpKcj+zjb84lsQ66qijlJCQoI8//liVKlUqx08EAAC8QAUUAADAXnzzzTdq0aLFXi9jxowp876cMGGCe48lS5bk37d69WqXyLH709PTtX79+mJfO3r0aPecKVOmhP27HDlypEtwDRs2rNzvZcmo4vbb4Ycfrvr16+uwww7TI488stvrEhMTNXToUJcEnDx5crnHAQAAKl5lDz4TAADAVz788EN3XatWLR100EElPq9du3Zl/owXXnhB++23nzp16rTb55rt27dr1qxZuvDCC0sc33HHHadw+u2333T//ferY8eOOuaYY8L63pZQC9m8ebN+/PFHffXVV7riiitcNddtt91W5Pm9evXSDTfcoBEjRqhfv35UQQEA4DNUQAEAAOxFKMFjiQ+rwinpcu6555Y50bN48WJ17tzZTbXb9XPPPvtsd/3ss88W+/ply5a562OPPTas3+WkSZO0bds2XXTRRWF9X5tCV3i/WYXZ2rVrdfXVV7vH77nnHve5u1ZBnX/++fr+++/18ssvh3U8AAAg8khAAQAA7EUoEdSmTZuI7CurbLI+Rz169Cj2cy+99FIdfPDBeu2117Rx48Yiz1m5cqXWrVunpk2bKiUlJazjmjhxoqpWrZqfACuJTQ3MysoqcYpgaVh12V133aXKlSu7iihLyu2qT58++eMCAAD+QgIKAABgL0IVRpFKQFlzb0u8nHnmmSVOrTvnnHO0detWzZ49u8TnhJM1RLekUsuWLVWzZs0Sn3PGGWeobt26at68ubvu0qWLVq1aVabP/P3337Vjxw5VqVLFNWPflfXDsobmb775pnseAADwD3pAAQAA7IElWawJd+3atV1lTkmr4VkCxhInZVn97o033lCHDh1cAifEpppZFdBf/vIXl4yxBJQ1ObdpeOedd17EE1ALFy501yeccEKxj69Zs8b1vPr555/dto3RkkKvvvqqTjvttL0miArvR9uv1v/p7rvvdtuDBg1yK+PtylbBO/744zV37lwtXbo0YglBAAAQfiSgAAAA9iCU4LHpZbZiW3EsMbJhw4YiCSjrYRQIBIr0dCrOnDlzXGVTSdPvQoml1q1b68ADD3TPt4RNjRo1in3eriwRZNVV+2r58uXuOi0trdjHb7rpJpd8+utf/6qnnnpKRx11lLvfellZr6Y9VUHl5eUVuy+tuunhhx/WwIEDS3xtaDw2PhJQAAD4B1PwAAAA9iCU4DnggAPcym3FXazix1awK6xbt25uRbfSTL8z3bt3L/ZzQ43FLcn197//3SWfXnnllb02IH/vvfdctZAlqmxs/fv3d0my0rKm4KZevXrFJrWeeeYZN6bCySdz4okn6rHHHtvr+xfef4ceeqgbo/WyuuWWW/Tiiy+W+LrQeIrrEQUAAKIXCSgAAIA9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" alt="Figura" style="max-width:90%;display:block;margin:1em auto;"/></div></div>
+
+<aside class="callout callout-result" role="status"><p><strong>Saída esperada</strong>:</p></aside>
+<ul>
+<li>Reconstrução de Fourier: overshoot de ~9% acima da amplitude ideal (fenômeno de Gibbs), típico de truncar uma série de Fourier de um sinal descontínuo.</li>
+<li>FFT numérica vs. sinc teórico: erro pequeno (efeitos de janelamento/discretização).</li>
+<li>Parseval: energia no tempo e na frequência coincidem.</li>
+<li>Ruído AWGN: variância medida ≈ variância teórica.</li>
+<li>$P_e$ teórico (fórmula Q) e $P_e$ simulado (Monte Carlo) devem coincidir dentro da incerteza estatística de $\sqrt{P_e(1-P_e)/n_{bits}}$.</li>
+<li>Curva BER: decaimento exponencial característico, ~1 década a cada ~2 dB de $E_b/N_0$ adicional nessa região.</li>
+</ul>
+<hr />
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">1.12</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Calcule a Série de Fourier (coeficientes $c_n$) de um trem de pulsos retangulares periódico, com período $T_0=1\,\text{ms}$, largura de pulso $\tau=0{,}2\,\text{ms}$ e amplitude $A=5\,\text{V}$.</p>
+<p><strong>E2.</strong> Usando a propriedade de deslocamento em frequência, determine o espectro $X(f)$ de $x(t)=\text{sinc}(2Wt)\cos(2\pi f_ct)$, com $f_c\gg W$. Esboce o resultado.</p>
+<p><strong>E3.</strong> Demonstre a propriedade de escalamento no tempo $x(at)\leftrightarrow\frac{1}{|a|}X(f/a)$ a partir da definição da Transformada de Fourier (faça a substituição de variável explicitamente, tratando os casos $a&gt;0$ e $a&lt;0$).</p>
+<p><strong>E4.</strong> Um filtro passa-baixas ideal tem $H(f)=\text{rect}(f/2B)$. Um sinal de entrada tem PSD $S_X(f)=S_0$ (constante, ruído branco) para todo $f$. Calcule a potência do sinal na saída do filtro.</p>
+<p><strong>E5.</strong> Mostre que a autocorrelação de um processo WSS satisfaz $R_X(\tau)=R_X(-\tau)$ partindo da definição $R_X(\tau)=E[X(t)X(t+\tau)]$ e da propriedade de estacionariedade.</p>
+<p><strong>E6.</strong> Um resistor de $R=50\,\Omega$ está a temperatura ambiente $T=290\,\text{K}$. Calcule a potência de ruído térmico disponível em uma banda $B=10\,\text{MHz}$ (use $P_N=k_BTB$, forma equivalente à da Seção “Potência de ruído após filtragem de banda $B$” para ruído unilateral).</p>
+<p><strong>E7.</strong> Calcule $Q(0)$, $Q(1)$, $Q(2)$, $Q(3)$ numericamente (ou usando tabela) e verifique a relação $Q(-x)=1-Q(x)$ calculando também $Q(-1)$.</p>
+<p><strong>E8.</strong> Para um sistema de detecção binária antipodal com $A=2\,\text{V}$ e ruído com $\sigma=0{,}5\,\text{V}$, calcule $P_e$. Se a amplitude for dobrada para $A=4\,\text{V}$ (mantendo $\sigma$), por qual fator aproximado $P_e$ diminui (expresse em ordens de grandeza, usando a natureza exponencial da cauda de $Q(x)$ para $x$ grande)?</p>
+<p><strong>E9.</strong> Escreva o sinal passa-faixa $s(t)=3\cos(2\pi f_ct)-4\sin(2\pi f_ct)$ na forma envelope-fase $A(t)\cos(2\pi f_ct+\phi(t))$, determinando $A$ e $\phi$ (constantes, neste caso).</p>
+<p><strong>E10 (desafio).</strong> Um sinal aleatório binário NRZ (Não-Retorno-a-Zero) transmite $+A$ ou $-A$ com igual probabilidade a cada intervalo de bit $T_b$, de forma independente entre intervalos. Mostre que sua autocorrelação é $R_X(\tau) = A^2\left(1-\dfrac{|\tau|}{T_b}\right)$ para $|\tau|&lt;T_b$ e $R_X(\tau)=0$ para $|\tau|\ge T_b$ (dica: para $|\tau|&lt;T_b$, considere a probabilidade de que $\tau$ &quot;caia&quot; dentro do mesmo intervalo de bit vs. em um intervalo adjacente). Em seguida, aplique o Teorema de Wiener-Khinchin para obter $S_X(f)=A^2T_b\,\text{sinc}^2(fT_b)$.</p>
+<p><strong>E11 (desafio).</strong> Um sinal passa-faixa real ocupa a faixa positiva de $f_c-B/2$ a $f_c+B/2$, com $f_c=1\,\text{GHz}$ e $B=1\,\text{MHz}$. Compare a taxa mínima para amostrar diretamente o sinal real RF e para amostrar o envelope complexo cujo suporte é $[-B/2,B/2]$. Quantas amostras complexas por segundo são poupadas?</p>
+<p><strong>E12.</strong> Verifique a identidade $\cos(2\pi f_ct+\phi) = \cos\phi\cos(2\pi f_ct)-\sin\phi\sin(2\pi f_ct)$ usando a fórmula de adição de ângulos, e identifique $s_I$ e $s_Q$ para $A=5$, $\phi=60°$.</p>
+<hr />
+<h2 id="gabarito"><span class="heading-number">1.13</span> Gabarito</h2>
+<p><strong>E1.</strong> $c_n = \dfrac{1}{T_0}\displaystyle\int_{-\tau/2}^{\tau/2}A\,e^{-j2\pi nf_0t}\,dt = \dfrac{A}{T_0}\left[\dfrac{e^{-j2\pi nf_0t}}{-j2\pi nf_0}\right]_{-\tau/2}^{\tau/2} = \dfrac{A}{n\pi}\sin(\pi nf_0\tau)$ para $n\neq0$, e $c_0=A\tau/T_0$ (valor médio, = duty cycle × amplitude). Reescrevendo com a função sinc: $c_n = \dfrac{A\tau}{T_0}\,\text{sinc}(nf_0\tau)$. Numericamente, $f_0=1/T_0=1000\,\text{Hz}$, $f_0\tau=0{,}2$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{c_n = \frac{(5)(0{,}2\times10^{-3})}{10^{-3}}\,\text{sinc}(0{,}2n) = 1{,}0\cdot\text{sinc}(0{,}2n)\,\text{V},\qquad c_0=1{,}0\,\text{V}}
+
+$$
+</div>
+
+<p><strong>E2.</strong> $\text{sinc}(2Wt)\leftrightarrow\frac{1}{2W}\text{rect}(f/2W)$ (par da Seção “Pares de transformadas fundamentais”). Pela propriedade de modulação (Seção “Propriedades fundamentais (com dedução breve)”), multiplicar por $\cos(2\pi f_ct)$ desloca o espectro para $\pm f_c$ com fator $1/2$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{X(f) = \frac{1}{4W}\left[\text{rect}\!\left(\frac{f-f_c}{2W}\right)+\text{rect}\!\left(\frac{f+f_c}{2W}\right)\right]}
+
+$$
+</div>
+
+<p>Esboço: dois retângulos de largura $2W$ e altura $1/(4W)$, centrados em $f=\pm f_c$ — não se sobrepõem pois $f_c\gg W$.</p>
+<p><strong>E3.</strong> Caso $a&gt;0$: substituindo $u=at$ ($du=a\,dt$) em $X_a(f)=\int x(at)e^{-j2\pi ft}dt$: $X_a(f)=\int x(u)e^{-j2\pi f(u/a)}\frac{du}{a} = \frac{1}{a}\int x(u)e^{-j2\pi(f/a)u}du = \frac{1}{a}X(f/a)$. Caso $a&lt;0$: com $a=-|a|$, a substituição $u=at$ inverte os limites de integração ($t:-\infty\to\infty$ corresponde a $u:\infty\to-\infty$), introduzindo um sinal negativo extra que cancela com o $1/a$ negativo, resultando em $\frac{1}{|a|}X(f/a)$. Combinando os dois casos: $\boxed{x(at)\leftrightarrow\frac{1}{|a|}X(f/a)}$.</p>
+<p><strong>E4.</strong> Pela Seção “PSD na saída de um filtro LIT”, $S_Y(f)=|H(f)|^2S_X(f) = S_0$ para $|f|&lt;B$ e $0$ fora. Potência de saída:</p>
+
+<div class="math-display">
+$$
+
+P_Y = \int_{-B}^{B}S_0\,df = \boxed{2S_0B}
+
+$$
+</div>
+
+<p><strong>E5.</strong> Por definição, $R_X(-\tau)=E[X(t)X(t-\tau)]$. Fazendo a mudança de variável $t'=t-\tau$ (ou seja, $t=t'+\tau$): $R_X(-\tau)=E[X(t'+\tau)X(t')]=E[X(t')X(t'+\tau)]$. Como o processo é WSS, esta expectativa não depende de qual instante $t'$ se escolhe, e por definição é exatamente $R_X(\tau)$. Logo $\boxed{R_X(-\tau)=R_X(\tau)}$ — simetria par.</p>
+<p><strong>E6.</strong> $P_N = k_BTB = (1{,}380649\times10^{-23})(290)(10\times10^6)$:</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_N \approx 4{,}00\times10^{-14}\,\text{W} = 40{,}0\,\text{fW}}
+
+$$
+</div>
+
+<p>(Nota: esta é a forma unilateral $k_BTB$, equivalente a integrar a PSD bilateral $N_0/2=k_BT/2$ de $-B$ a $B$, que dá exatamente $k_BTB$ — consistente com a Seção “Potência de ruído após filtragem de banda $B$”.)</p>
+<p><strong>E7.</strong> Valores numéricos (via tabela ou <code>scipy.special.erfc</code>): $Q(0)=0{,}5$; $Q(1)\approx0{,}1587$; $Q(2)\approx0{,}0228$; $Q(3)\approx0{,}00135$. Verificação: $Q(-1) = 1-Q(1) = 1-0{,}1587 = 0{,}8413$ — consistente com a definição, pois $Q(-1)=P(Z&gt;-1)=P(Z&lt;1)=1-P(Z&gt;1)=1-Q(1)$.</p>
+
+<div class="math-display">
+$$
+
+\boxed{Q(0)=0{,}5;\ Q(1)\approx0{,}1587;\ Q(2)\approx0{,}0228;\ Q(3)\approx0{,}00135;\ Q(-1)\approx0{,}8413}
+
+$$
+</div>
+
+<p><strong>E8.</strong> $P_e = Q(A/\sigma) = Q(2/0{,}5) = Q(4) \approx 3{,}17\times10^{-5}$. Dobrando $A$: $P_e' = Q(4/0{,}5)=Q(8)\approx6{,}22\times10^{-16}$.</p>
+
+<div class="math-display">
+$$
+
+\boxed{P_e\approx3{,}17\times10^{-5}\ \to\ P_e'\approx6{,}22\times10^{-16}\qquad\text{(redução de aproximadamente 11 ordens de grandeza)}}
+
+$$
+</div>
+
+<p>Isso ilustra a natureza extremamente não-linear (decaimento tipo $e^{-x^2/2}$) da função $Q$: dobrar a distância entre símbolos (ou, equivalentemente, quadruplicar a energia) reduz $P_e$ de forma dramática — motivo pelo qual pequenos aumentos de $E_b/N_0$ produzem grandes ganhos de confiabilidade (visível no &quot;joelho&quot; das curvas de BER, arquivos 5 e 6).</p>
+<p><strong>E9.</strong> Comparando com $s(t)=s_I\cos(2\pi f_ct)-s_Q\sin(2\pi f_ct)$: $s_I=3$, $s_Q=4$. Logo:</p>
+
+<div class="math-display">
+$$
+
+A = \sqrt{s_I^2+s_Q^2} = \sqrt{9+16}=5,\qquad \phi = \arctan\!\left(\frac{s_Q}{s_I}\right) = \arctan(4/3)\approx53{,}13°
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{s(t) = 5\cos(2\pi f_ct+53{,}13°)}
+
+$$
+</div>
+
+<p>Verificação: $5\cos(53{,}13°)\approx3{,}0=s_I$ ✓, $5\sin(53{,}13°)\approx4{,}0=s_Q$ ✓.</p>
+<p><strong>E10 (desafio).</strong> Para $|\tau|&lt;T_b$: com probabilidade $1-|\tau|/T_b$, os instantes $t$ e $t+\tau$ caem no <strong>mesmo</strong> intervalo de bit (mesmo valor $\pm A$, produto $=A^2$); com probabilidade $|\tau|/T_b$, caem em intervalos <strong>adjacentes distintos</strong> e independentes (valores independentes $\pm A$ cada, produto médio $=E[\pm A]\cdot E[\pm A]=0\cdot0=0$, pois cada bit tem média zero). Logo:</p>
+
+<div class="math-display">
+$$
+
+R_X(\tau) = \left(1-\frac{|\tau|}{T_b}\right)A^2 + \frac{|\tau|}{T_b}\cdot0 = A^2\left(1-\frac{|\tau|}{T_b}\right),\qquad |\tau|&lt;T_b
+
+$$
+</div>
+
+<p>Para $|\tau|\ge T_b$, os dois instantes estão sempre em intervalos de bit diferentes (e, assumindo bits i.i.d., não-correlacionados), logo $R_X(\tau)=0$. Isso confirma a forma triangular enunciada. Aplicando Wiener-Khinchin (Seção “Teorema de Wiener-Khinchin”), a transformada de uma função triangular de base $2T_b$ e altura $A^2$ é (resultado padrão, obtido por integração direta ou reconhecendo o triângulo como a autoconvolução de um retângulo de largura $T_b$):</p>
+
+<div class="math-display">
+$$
+
+\boxed{S_X(f) = A^2T_b\,\text{sinc}^2(fT_b)}
+
+$$
+</div>
+
+<p>Este é o espectro padrão de um sinal digital NRZ aleatório — um lóbulo principal de largura $2/T_b$ com lóbulos laterais decaindo como $1/f^2$, resultado usado extensivamente no arquivo 4 (banda base).</p>
+<p><strong>E11 (desafio).</strong> Amostragem direta do sinal real: a maior frequência é $f_{\max}=f_c+B/2=1{,}0005$ GHz, logo a taxa mínima uniforme é</p>
+
+<div class="math-display">
+$$
+F_{s,\rm RF}\ge2f_{\max}=2{,}001\ \text{GHz}.
+$$
+</div>
+
+<p>O envelope complexo ocupa $[-B/2,B/2]$; como suas amostras são complexas, a taxa mínima é</p>
+
+<div class="math-display">
+$$
+F_{s,\rm bb}\ge B=1\ \text{MHz}.
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{\text{Razão}=\frac{2(f_c+B/2)}{B}=2001.}
+
+$$
+</div>
+
+<p>A simulação via envelope complexo exige cerca de <strong>2000 vezes menos amostras</strong>. Técnicas especializadas de subamostragem passa-faixa podem reduzir a taxa de uma representação RF sob condições estritas de filtragem e sincronismo, mas o envelope complexo é a representação robusta e usual em simulações de comunicação.</p>
+<p><strong>E12.</strong> Pela fórmula de adição, $\cos(2\pi f_ct+\phi)=\cos(2\pi f_ct)\cos\phi-\sin(2\pi f_ct)\sin\phi$, que reescrita na forma-padrão $s_I\cos(2\pi f_ct)-s_Q\sin(2\pi f_ct)$ identifica $s_I=A\cos\phi$ e $s_Q=A\sin\phi$ (com $A$ a amplitude, aqui implicitamente $1$ na identidade trigonométrica pura). Para $A=5$, $\phi=60°$:</p>
+
+<div class="math-display">
+$$
+
+s_I = 5\cos(60°) = 5(0{,}5) = 2{,}5,\qquad s_Q = 5\sin(60°) = 5(0{,}8660) \approx4{,}33
+
+$$
+</div>
+
+
+<div class="math-display">
+$$
+
+\boxed{s_I=2{,}5,\quad s_Q\approx4{,}33}
+
+$$
+</div>
+
+<p>Verificação: $\sqrt{s_I^2+s_Q^2}=\sqrt{6{,}25+18{,}75}=\sqrt{25}=5=A$ ✓.</p>
+<hr />
+</div><nav class="page-nav" aria-label="Navegação entre capítulos"><span class="disabled"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">Início da obra</span></span></span><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="02_introducao_sistemas_comunicacoes.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">2. Introdução a Sistemas de Comunicações</span></span><span class="page-nav-arrow">→</span></a></nav>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

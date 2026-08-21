@@ -4,7 +4,7 @@ import { arr, complex, sampleRateOf, assertSameRate, bitsToInts, intsToBits, bin
 
 export const COLORS = { Sources: '#60a5fa', Coding: '#a78bfa', 'Digital Modulation': '#f59e0b', 'Analog Modulation': '#f97316', Channel: '#fb7185', 'Signal Processing': '#38bdf8', 'Digital Receiver': '#34d399', 'Analog Receiver': '#2dd4bf', Analysis: '#22d3ee', Custom: '#e879f9' };
 export const TYPE_COLORS = { bits: '#a78bfa', real: '#60a5fa', complex: '#f59e0b', any: '#94a3b8' };
-export const OUTPUT_TYPES = { bits: 'bits', coded: 'bits', decoded: 'bits', received: 'bits', corrupted: 'bits', samples: 'real', message: 'real', symbols: 'complex', waveform: 'complex', modulated: 'complex', noisy: 'complex', shifted: 'complex', signal: 'complex', filtered: 'complex', resampled: 'complex', impaired: 'complex', fft: 'complex', output: 'any', sum: 'complex', mixed: 'complex', delayed: 'complex' };
+export const OUTPUT_TYPES = { bits: 'bits', coded: 'bits', decoded: 'bits', received: 'bits', corrupted: 'bits', samples: 'real', message: 'real', error: 'real', symbols: 'complex', waveform: 'complex', modulated: 'complex', noisy: 'complex', shifted: 'complex', signal: 'complex', filtered: 'complex', resampled: 'complex', impaired: 'complex', fft: 'complex', output: 'any', sum: 'complex', mixed: 'complex', delayed: 'complex' };
 export const INPUT_TYPES = { bits: 'bits', reference: 'bits', received: 'bits', ideal: 'complex', measured: 'complex', message: 'real', symbols: 'complex', waveform: 'complex', fft: 'complex', signal: 'complex', input: 'any' };
 export const FLEX_INPUTS = new Set(['scope:signal', 'probe:signal', 'spectrum:signal', 'fft:signal', 'sampling_audit:signal', 'signal_stats:signal', 'student_transform:input', 'fir:signal', 'gain:signal', 'delay:signal', 'add:a', 'add:b', 'viterbi_decoder:bits']);
 export const FLEX_OUTPUTS = new Set(['scope:signal', 'probe:signal']);
@@ -123,12 +123,13 @@ export const defs = {
     spread_tx: { name: 'Espalhamento DSSS / FHSS', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Sequência direta ou saltos de frequência', config: { mode: { type: 'select', label: 'Técnica', value: 'DSSS', options: ['DSSS', 'FHSS'] }, code: { type: 'text', label: 'Código / padrão de saltos', value: '1101001' }, sps: { type: 'number', label: 'Amostras por chip', value: 8, min: 2, max: 32 } }, theory: 'DSSS multiplica cada bit por uma sequência de chips. FHSS alterna a frequência portadora conforme um padrão conhecido.', equation: 'DSSS: c[n]b[k]; FHSS: f=fhop[n]+fb' },
     spread_rx: { name: 'Receptor DSSS / FHSS', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Desespalhamento coerente', config: {}, theory: 'Correlaciona com o mesmo código ou padrão de saltos para recuperar os bits.', equation: 'b̂=sign(Σr[n]c[n])' },
     analog_sideband: { name: 'Modulador de bandas laterais', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'DSB-SC, USB, LSB ou VSB', config: { mode: { type: 'select', label: 'Modo', value: 'DSB-SC', options: ['DSB-SC', 'USB', 'LSB', 'VSB'] }, carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 } }, theory: 'Remove a portadora de AM e permite transmitir duas bandas laterais, apenas uma banda, ou uma banda com vestígio da outra.', equation: 'sUSB=m cosωct−m̂ sinωct' },
-    coherent_am_detector: { name: 'Detector AM coerente', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Demodula DSB-SC, SSB e VSB', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 } }, theory: 'Translada o sinal para banda base usando uma referência coerente de portadora.', equation: 'm̂(t)=LPF{2s(t)e^{-jωct}}' },
+    coherent_am_detector: { name: 'Detector AM coerente', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Mixer local e passa-baixas para DSB-SC, SSB e VSB', config: { carrier: { type: 'number', label: 'Portadora local (Hz)', value: 2000 }, phase: { type: 'number', label: 'Erro de fase (°)', value: 0, min: -180, max: 180 }, frequencyOffset: { type: 'number', label: 'Erro Δf (Hz)', value: 0 }, cutoff: { type: 'number', label: 'Corte do LPF (Hz)', value: 500, min: 1 } }, theory: 'Multiplica por uma portadora local de ganho 2 e aplica um FIR passa-baixas. Erro de fase escala a saída por cosφ; erro de frequência produz batimento.', equation: 'm̂(t)=LPF{2s(t)cos[2π(fc+Δf)t+φ]}' },
     envelope: { name: 'Detector de envelope', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Demodulação AM não coerente', config: { removeDC: { type: 'select', label: 'Remover DC', value: 'sim', options: ['sim', 'não'] } }, theory: 'Obtém a magnitude do sinal analítico simplificado. Adequado para AM sem sobremodulação.', equation: 'm̂(t)∝|s_a(t)|' },
+    costas_loop: { name: 'Costas Loop', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message', 'error'], summary: 'PLL de 2ª ordem: recupera fase e mensagem sem portadora', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, loopBandwidth: { type: 'number', label: 'ωₙ/2π — banda do loop (Hz)', value: 60, min: 1 }, zeta: { type: 'number', label: 'Fator de amortecimento ζ', value: .707, min: .1, max: 2 }, phaseInit: { type: 'number', label: 'Erro de fase inicial (°)', value: 45, min: -180, max: 180 } }, theory: 'Ramo I (×2cosφ̂) e ramo Q (×−2sinφ̂), cada um seguido de LPF, geram o erro vₑ=y_I·y_Q∝−sin(2φₑ). Um filtro de laço PI integra vₑ e realimenta o VCO até φ̂ convergir para o erro de fase real — sem exigir portadora nem piloto.', equation: 'φ̂[n+1]=φ̂[n]+K₀v_c[n]Δt,  v_c=K_p vₑ+K_i∫vₑ' },
     phase_demod: { name: 'Demodulador de fase', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Fase instantânea desembrulhada', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, mode: { type: 'select', label: 'Modo', value: 'PM', options: ['PM', 'FM'] } }, theory: 'Remove a fase da portadora; em PM retorna fase e em FM deriva a fase desembrulhada.', equation: 'φ̂=unwrap(arg s_a)−2πfct' },
     scope: { name: 'Osciloscópio', category: 'Analysis', inputs: ['signal'], outputs: ['signal'], summary: 'Sink ou probe inline no domínio do tempo', config: { samples: { type: 'number', label: 'Amostras exibidas', value: 400, min: 10, max: 5000 }, interpolation: { type: 'select', label: 'Traçado', value: 'suave', options: ['suave', 'linear', 'pontos'] }, trigger: { type: 'select', label: 'Trigger', value: 'livre', options: ['livre', 'subida', 'descida'] }, level: { type: 'number', label: 'Nível do trigger', value: 0 } }, theory: 'Mostra I/Q contra tempo real. O traçado suave interpola apenas a visualização; linear e pontos preservam explicitamente as amostras. A saída pass-through permite inserção inline.', equation: 't=n/Fₛ' },
     probe: { name: 'Probe numérica', category: 'Analysis', inputs: ['signal'], outputs: ['signal'], summary: 'Inspeção inline com metadados', config: { label: { type: 'text', label: 'Rótulo', value: 'Probe' } }, theory: 'Mede comprimento, taxa, duração, potência RMS e pico, preservando o stream na saída.', equation: 'xout=xin' },
-    spectrum: { name: 'Analisador de espectro', category: 'Analysis', inputs: ['signal'], outputs: [], summary: 'DFT, janela e resolução', config: { bins: { type: 'number', label: 'Bins', value: 1024, min: 32, max: 2048 } }, theory: 'Calcula uma DFT com janela Hann. A resolução é Δf=fs/N; frequências separadas por menos que Δf não são resolvidas.', equation: 'Δf=fₛ/N' },
+    spectrum: { name: 'Analisador de espectro', category: 'Analysis', inputs: ['signal'], outputs: [], summary: 'DFT, janela e resolução', config: { bins: { type: 'number', label: 'Bins', value: 1024, min: 32, max: 4096 }, window: { type: 'select', label: 'Janela', value: 'Hann', options: ['Hann', 'Retangular'] }, center: { type: 'number', label: 'Centro inicial (Hz; 0 = auto)', value: 0 }, span: { type: 'number', label: 'Span inicial (Hz; 0 = completo)', value: 0, min: 0 }, markers: { type: 'text', label: 'Marcadores (Hz:rótulo)', value: '' } }, theory: 'Calcula uma DFT com janela configurável. Centro e span definem apenas a visualização inicial; a FFT permanece completa. Marcadores usam o formato frequência:rótulo, separados por vírgulas.', equation: 'Δf=fₛ/N' },
     fft_plot: { name: 'Visualizador FFT', category: 'Analysis', inputs: ['fft'], outputs: [], summary: 'Magnitude de uma FFT calculada', config: { scale: { type: 'select', label: 'Escala', value: 'dB', options: ['dB', 'linear'] } }, theory: 'Exibe a magnitude do vetor FFT sem recalcular a transformada.', equation: '|X[k]| ou 20log₁₀|X[k]|' },
     constellation: { name: 'Constelação', category: 'Analysis', inputs: ['symbols'], outputs: [], summary: 'Plano I/Q', config: { points: { type: 'number', label: 'Pontos', value: 500, min: 20, max: 5000 } }, theory: 'Exibe as amostras complexas no espaço de sinais.', equation: 'I=Re{s}, Q=Im{s}' },
     eye: { name: 'Diagrama de olho', category: 'Analysis', inputs: ['signal'], outputs: [], summary: 'Sobreposição por símbolo', config: { sps: { type: 'number', label: 'Amostras/símbolo', value: 8, min: 2, max: 128 }, traces: { type: 'number', label: 'Traços', value: 60, min: 5, max: 500 } }, theory: 'Sobrepõe segmentos de dois símbolos para revelar ISI e margem de temporização.', equation: 'x[n mod 2Ns]' },
@@ -172,7 +173,7 @@ export function createProcessors(results) {
         const A = n.config.amplitude || 1;
         const dur = n.config.duration || 0.1;
         const N = Math.round(fs * dur);
-        return { samples: { kind: 'samples', fs, sampleRate: fs, data: Array.from({ length: N }, (_, k) => ({ re: A * Math.cos(2 * Math.PI * f * k / fs), im: 0 })) } };
+        return { samples: { kind: 'samples', fs, sampleRate: fs, toneFrequency: f, highestFrequency: f, data: Array.from({ length: N }, (_, k) => ({ re: A * Math.cos(2 * Math.PI * f * k / fs), im: 0 })) } };
     };
     processors.complex_tone = (n) => {
         const fs = sampleRateOf(null);
@@ -335,7 +336,14 @@ export function createProcessors(results) {
         const fc = n.config.carrier || 2000, mu = n.config.mu || 0.7;
         const fs = sampleRateOf(message);
         const data = message.data.map((s, k) => ({ re: (1 + mu * s.re) * Math.cos(2 * Math.PI * fc * k / fs), im: 0 }));
-        return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
+        const fm = Number(message.toneFrequency);
+        const spectrumMarkers = Number.isFinite(fm) ? [
+            { frequency: fc - fm, label: 'LSB' },
+            { frequency: fc, label: 'Portadora' },
+            { frequency: fc + fm, label: 'USB' }
+        ] : [{ frequency: fc, label: 'Portadora' }];
+        const spectrumView = { center: fc, span: Number.isFinite(fm) && fm > 0 ? 6 * fm : Math.max(600, fc * .3) };
+        return { modulated: { kind: 'waveform', fs, sampleRate: fs, carrierFrequency: fc, messageFrequency: Number.isFinite(fm) ? fm : undefined, highestFrequency: Number.isFinite(fm) ? fc + fm : fc, spectrumMarkers, spectrumView, data } };
     };
     processors.fm = (n, { message }) => {
         const fc = n.config.carrier || 2000, dev = n.config.deviation || 500;
@@ -837,11 +845,55 @@ export function createProcessors(results) {
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
     };
     processors.coherent_am_detector = (n, { signal }) => {
-        const fc = n.config.carrier || 2000;
+        const fc = n.config.carrier || 2000, phase = (+n.config.phase || 0) * Math.PI / 180, frequencyOffset = +n.config.frequencyOffset || 0;
         const fs = sampleRateOf(signal);
         const data = arr(signal).map(complex);
-        const message = data.map((s, k) => { const t = k / fs; return { re: s.re * Math.cos(2 * Math.PI * fc * t) + s.im * Math.sin(2 * Math.PI * fc * t), im: 0 } });
-        return { message: { kind: 'samples', fs, sampleRate: fs, data: message } };
+        const mixed = data.map((s, k) => {
+            const angle = 2 * Math.PI * (fc + frequencyOffset) * k / fs + phase;
+            return { re: 2 * s.re * Math.cos(angle), im: 0 };
+        });
+        const cutoff = Math.max(1, Math.min(+n.config.cutoff || 500, fs * .49));
+        const length = 129, center = (length - 1) / 2, q = cutoff / fs;
+        const taps = Array.from({ length }, (_, k) => {
+            const m = k - center;
+            const ideal = m === 0 ? 2 * q : Math.sin(2 * Math.PI * q * m) / (Math.PI * m);
+            const hann = .5 - .5 * Math.cos(2 * Math.PI * k / (length - 1));
+            return ideal * hann;
+        });
+        const gain = taps.reduce((sum, tap) => sum + tap, 0);
+        for (let k = 0; k < taps.length; k++) taps[k] /= gain;
+        const filtered = convolveSignal({ kind: 'samples', fs, sampleRate: fs, data: mixed }, taps);
+        return { message: filtered };
+    };
+    processors.costas_loop = (n, { signal }) => {
+        const fc = n.config.carrier || 2000, wn = 2 * Math.PI * Math.max(1, +n.config.loopBandwidth || 60), zeta = Math.max(.05, +n.config.zeta || .707);
+        const fs = sampleRateOf(signal), dt = 1 / fs;
+        const data = arr(signal).map(complex);
+        const Kp = 2 * zeta * wn, Ki = wn * wn; // filtro PI de 2ª ordem clássico: Kp=2ζωₙ, Ki=ωₙ²
+        let phiHat = (+n.config.phaseInit || 0) * Math.PI / 180, yI = 0, yQ = 0, intErr = 0;
+        const message = new Array(data.length), errorTrace = new Array(data.length);
+        const alpha = Math.min(1, 8 * fc / fs); // I/Q branch LPF cutoff tied to carrier for stability across Fs
+        for (let k = 0; k < data.length; k++) {
+            const angle = 2 * Math.PI * fc * k * dt + phiHat;
+            const yIraw = data[k].re * 2 * Math.cos(angle), yQraw = data[k].re * -2 * Math.sin(angle);
+            yI = (1 - alpha) * yI + alpha * yIraw;
+            yQ = (1 - alpha) * yQ + alpha * yQraw;
+            const ve = yI * yQ;
+            intErr += ve * dt;
+            const vc = Math.max(-50, Math.min(50, Kp * ve + Ki * intErr));
+            phiHat += vc * dt;
+            phiHat = Math.atan2(Math.sin(phiHat), Math.cos(phiHat));
+            message[k] = { re: yI, im: 0 };
+            errorTrace[k] = { re: phiHat * 180 / Math.PI, im: 0 };
+        }
+        const steadyStart = Math.floor(data.length * .5);
+        const steady = errorTrace.slice(steadyStart).map(s => s.re);
+        const rms = steady.length ? Math.sqrt(steady.reduce((sum, v) => sum + v * v, 0) / steady.length) : NaN;
+        results.push({ type: 'metric', title: 'Costas Loop · erro de fase RMS (regime)', value: rms, detail: `${rms.toFixed(2)}° sobre as últimas ${steady.length} amostras` });
+        return {
+            message: { kind: 'samples', fs, sampleRate: fs, data: message },
+            error: { kind: 'samples', fs, sampleRate: fs, data: errorTrace }
+        };
     };
     processors.envelope = (n, { signal }) => {
         const data = arr(signal).map(complex);
@@ -858,11 +910,11 @@ export function createProcessors(results) {
         const analytic = analyticSignal({ data, fs });
         const phases = analytic.slice(0, data.length).map(s => Math.atan2(s.im, s.re));
         const unwrapped = unwrap(phases);
-        const message = unwrapped.map((p, k) => {
-            const t = k / fs;
-            const phi = p - 2 * Math.PI * fc * t;
-            return { re: mode === 'FM' ? (k > 0 ? (phi - unwrapped[k - 1]) / (2 * Math.PI / fs) : 0) : phi, im: 0 };
-        });
+        const residual = unwrapped.map((p, k) => p - 2 * Math.PI * fc * k / fs);
+        const message = residual.map((phi, k) => ({
+            re: mode === 'FM' ? (k > 0 ? (phi - residual[k - 1]) * fs / (2 * Math.PI) : 0) : phi,
+            im: 0
+        }));
         return { message: { kind: 'samples', fs, sampleRate: fs, data: message } };
     };
     processors.scope = (n, { signal }) => {
@@ -876,8 +928,21 @@ export function createProcessors(results) {
         return { signal };
     };
     processors.spectrum = (n, { signal }) => {
-        const size = Math.max(1, Math.round(n.config.bins || 1024)), fft = computeFFT(signal, size, 'Hann', true);
-        results.push({ type: 'spectrum', title: `Espectro · Hann · ${size} bins`, data: fft.data.map(x => 20 * Math.log10(Math.hypot(x.re, x.im) + 1e-12)), fs: fft.fs, binWidth: fft.binWidth, frequencyStart: fft.frequencyStart, unit: 'dB' });
+        const size = Math.max(1, Math.round(n.config.bins || 1024)), windowName = n.config.window || 'Hann', fft = computeFFT(signal, size, windowName, true);
+        const configuredCenter = Number(n.config.center), configuredSpan = Number(n.config.span), useConfiguredView = Number.isFinite(configuredCenter) && Number.isFinite(configuredSpan) && configuredSpan > 0;
+        const center = useConfiguredView ? configuredCenter : Number(signal.spectrumView?.center), span = useConfiguredView ? configuredSpan : Number(signal.spectrumView?.span), hasFocusedView = Number.isFinite(center) && Number.isFinite(span) && span > 0 && fft.fs;
+        const view = hasFocusedView ? {
+            start: Math.max(0, (center - span / 2 - fft.frequencyStart) / fft.binWidth),
+            end: Math.min(size, (center + span / 2 - fft.frequencyStart) / fft.binWidth)
+        } : undefined;
+        const configuredMarkers = String(n.config.markers || '').split(',').map(entry => entry.trim()).filter(Boolean).map(entry => {
+            const separator = entry.indexOf(':');
+            const frequency = Number(separator >= 0 ? entry.slice(0, separator) : entry);
+            const label = separator >= 0 ? entry.slice(separator + 1).trim() : `${frequency} Hz`;
+            return { frequency, label };
+        }).filter(marker => Number.isFinite(marker.frequency));
+        const markers = configuredMarkers.length ? configuredMarkers : (signal.spectrumMarkers || []);
+        results.push({ type: 'spectrum', title: `Espectro · ${windowName} · ${size} bins`, data: fft.data.map(x => 20 * Math.log10(Math.hypot(x.re, x.im) + 1e-12)), fs: fft.fs, binWidth: fft.binWidth, frequencyStart: fft.frequencyStart, unit: 'dB', view, initialView: view ? { ...view } : undefined, markers });
         return {};
     };
     processors.fft_plot = (n, { fft }) => {

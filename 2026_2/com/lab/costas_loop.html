@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Costas Loop — Coherent Carrier Recovery for DSB-SC AM</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/nord.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+<style>
+  :root{
+    --bg: #090b10;
+    --bg-panel: #11151f;
+    --bg-panel-2: #151a26;
+    --grid: rgba(94, 209, 255, 0.05);
+    --phosphor: #5ed1ff;         /* primary accent — electric cyan */
+    --phosphor-dim: #2e6f8e;
+    --phosphor-bright: #b9ecff;
+    --amber: #ff8a5b;            /* secondary accent — lab-coral, used for TODO / warnings */
+    --amber-dim: #a3532e;
+    --violet: #b9a3ff;           /* tertiary accent — used sparingly for defs/notes */
+    --ink: #d4dae6;
+    --ink-dim: #7c8699;
+    --line: #1f2635;
+    --red-warn: #ff6b7a;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --cond: 'Barlow Condensed', sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html{ scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(94,209,255,0.07), transparent 60%),
+      radial-gradient(ellipse 900px 700px at 100% 20%, rgba(255,138,91,0.05), transparent 55%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* scanline + grid overlay */
+  body::before{
+    content:"";
+    position: fixed; inset:0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 34px 34px;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: screen;
+  }
+  body::after{
+    content:"";
+    position: fixed; inset:0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.045) 3px
+    );
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.5;
+  }
+
+  .wrap{ position: relative; z-index: 2; }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content: space-between;
+    padding: 14px 5vw;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--phosphor-dim);
+    position: sticky; top:0;
+    background: rgba(5,8,10,0.88);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+  }
+  .topbar .dot{ color: var(--amber); animation: blink 2.2s infinite steps(1); }
+  @keyframes blink{ 0%,49%{opacity:1;} 50%,100%{opacity:0.15;} }
+  .topbar .status{ display:flex; gap: 22px; align-items:center; flex-wrap: wrap; }
+  .topbar .status span{ color: var(--ink-dim); }
+  .topbar .status b{ color: var(--phosphor); font-weight: 600; }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding: 90px 5vw 60px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero .eyebrow{
+    font-family: var(--mono);
+    color: var(--amber);
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display:flex; align-items:center; gap: 10px;
+  }
+  .hero .eyebrow::before{
+    content:""; width: 26px; height: 1px; background: var(--amber);
+  }
+  h1.title{
+    font-family: var(--cond);
+    font-weight: 700;
+    font-size: clamp(2.4rem, 5.4vw, 4.4rem);
+    line-height: 1.02;
+    margin: 0 0 20px;
+    color: var(--phosphor-bright);
+    text-shadow: 0 0 26px rgba(94,209,255,0.30);
+    letter-spacing: -0.01em;
+    max-width: 16ch;
+  }
+  .hero .sub{
+    max-width: 62ch;
+    color: var(--ink-dim);
+    font-size: 1.08rem;
+  }
+  .hero .sub em{ color: var(--ink); font-style: normal; border-bottom: 1px dashed var(--phosphor-dim); }
+  .hero .meta-row{
+    margin-top: 34px;
+    display:flex; gap: 34px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-dim);
+  }
+  .hero .meta-row div span{ display:block; color: var(--phosphor); font-size: 13px; margin-top: 3px; }
+
+  /* corner scope decoration */
+  .scope-corner{
+    position:absolute; right: 4vw; top: 60px; width: 260px; height: 150px;
+    border: 1px solid var(--line); border-radius: 3px;
+    background: var(--bg-panel);
+    opacity: 0.9;
+    display: none;
+  }
+  @media(min-width: 980px){ .scope-corner{ display:block; } }
+
+  /* ---------- layout ---------- */
+  main{ padding: 10px 5vw 40px; max-width: 980px; margin: 0 auto; }
+
+  .section{ margin-top: 70px; scroll-margin-top: 70px; }
+
+  .section-tag{
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
+    color: var(--phosphor-dim); text-transform: uppercase; margin-bottom: 10px;
+    display:flex; align-items:center; gap: 10px;
+  }
+  .section-tag .num{
+    color: var(--amber); border: 1px solid var(--amber-dim); padding: 2px 8px;
+    border-radius: 2px; font-size: 11px;
+  }
+
+  h2{
+    font-family: var(--cond); font-weight: 700; font-size: 2rem;
+    color: var(--phosphor-bright); margin: 0 0 18px; letter-spacing: -0.01em;
+  }
+  h3{
+    font-family: var(--cond); font-weight: 700; font-size: 1.32rem;
+    color: var(--ink); margin: 34px 0 12px; letter-spacing: 0.01em;
+  }
+  h3::before{ content: "▸ "; color: var(--amber); }
+
+  p{ color: var(--ink); }
+  p.lead{ color: var(--ink-dim); font-size: 1.02rem; }
+
+  a{ color: var(--phosphor); text-decoration: none; border-bottom: 1px solid var(--phosphor-dim); }
+  a:hover{ color: var(--phosphor-bright); }
+
+  strong{ color: var(--phosphor-bright); font-weight: 600; }
+
+  ul, ol{ padding-left: 22px; }
+  li{ margin: 8px 0; }
+  li::marker{ color: var(--amber); }
+
+  .callout{
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--phosphor-dim);
+    background: var(--bg-panel);
+    padding: 16px 20px;
+    border-radius: 3px;
+    margin: 22px 0;
+    font-size: 0.96rem;
+  }
+  .callout .label{
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+    color: var(--phosphor); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .callout.warn{ border-left-color: var(--amber-dim); }
+  .callout.warn .label{ color: var(--amber); }
+  .callout.pitfall{ border-left-color: var(--red-warn); }
+  .callout.pitfall .label{ color: var(--red-warn); }
+
+  /* equations */
+  .eq-block{
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 18px 22px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+  .eq-block .katex{ color: var(--phosphor-bright) !important; font-size: 1.06em; }
+  .eq-inline .katex{ color: var(--phosphor-bright) !important; }
+  code{ color: var(--phosphor); background: rgba(94,209,255,0.10); padding: 1px 5px; border-radius: 3px; font-family: var(--mono); font-size: 0.92em; }
+  .code-card code{ background: transparent; padding: 0; }
+  .eq-note{ font-family: var(--mono); font-size: 12px; color: var(--ink-dim); margin-top: 6px; }
+
+  /* code blocks */
+  .code-card{
+    margin: 20px 0 28px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #0c1210;
+  }
+  .code-head{
+    display:flex; align-items:center; justify-content: space-between;
+    padding: 9px 16px;
+    background: var(--bg-panel-2);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+  }
+  .code-head .fname{ color: var(--phosphor); }
+  .code-head .dots{ display:flex; gap:6px; }
+  .code-head .dots span{ width:8px; height:8px; border-radius:50%; display:inline-block; background: var(--line); }
+  .code-card pre{ margin: 0; padding: 18px 20px; overflow-x: auto; }
+  .code-card code{ font-family: var(--mono); font-size: 13.2px; line-height: 1.65; background: transparent !important; }
+  .code-head .badge{
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
+    padding: 2px 8px; border-radius: 2px; text-transform: uppercase; font-weight: 700;
+  }
+  .code-head .badge.skeleton{ background: rgba(255,138,91,0.14); color: var(--amber); border: 1px solid var(--amber-dim); }
+  .code-head .badge.provided{ background: rgba(94,209,255,0.12); color: var(--phosphor); border: 1px solid var(--phosphor-dim); }
+  .code-card.skeleton{ border-color: var(--amber-dim); }
+  .code-card.skeleton .code-head{ background: #1a140f; }
+  .todo{ color: var(--amber); }
+  .code-head-left{ display:flex; align-items:center; gap: 12px; }
+  .hljs{ background: transparent !important; }
+
+  /* table */
+  table{ width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.94rem; }
+  th, td{ border: 1px solid var(--line); padding: 9px 12px; text-align: left; }
+  th{ font-family: var(--mono); color: var(--phosphor); font-size: 12px; letter-spacing: 0.04em; background: var(--bg-panel); text-transform: uppercase; }
+  td{ color: var(--ink-dim); }
+  td b, td strong{ color: var(--ink); }
+
+  /* svg diagram wrapper */
+  .diagram-card{
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    border-radius: 4px;
+    padding: 14px;
+    margin: 22px 0;
+  }
+  .diagram-card svg{ width: 100%; height: auto; display:block; }
+  .diagram-caption{
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+    text-align:center; margin-top: 10px; letter-spacing: 0.02em;
+  }
+
+  /* exercises */
+  .exercise{
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin: 16px 0;
+    position: relative;
+  }
+  .exercise .ex-tag{
+    font-family: var(--mono); font-size: 11px; color: var(--bg);
+    background: var(--phosphor); display:inline-block; padding: 2px 9px; border-radius: 2px;
+    letter-spacing: 0.08em; margin-bottom: 10px; font-weight:700;
+  }
+  .exercise.hard .ex-tag{ background: var(--amber); }
+
+  /* footer */
+  footer{
+    margin-top: 90px; padding: 30px 5vw 50px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; color: var(--ink-dim);
+    display:flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+
+  ::selection{ background: var(--phosphor-dim); color: #04140c; }
+
+  /* toc */
+  .toc{
+    display:flex; flex-wrap: wrap; gap: 10px 22px;
+    margin: 22px 0 0;
+    padding: 16px 20px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--bg-panel);
+    font-family: var(--mono); font-size: 12.5px;
+  }
+  .toc a{ color: var(--ink-dim); border: none; }
+  .toc a:hover{ color: var(--phosphor); }
+  .toc a::before{ content: "// "; color: var(--phosphor-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>Communication Systems <span class="dot">●</span> DATA-DRIVEN ALGORITHMS &amp; SIGNAL RECOVERY</div>
+    <div class="status">
+      <span>LOCK: <b>ACQUIRING</b></span>
+      <span>MOD: <b>DSB-SC</b></span>
+      <span>MODE: <b>LAB — SKELETON</b></span>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="scope-corner" id="scopeCorner"></div>
+    <div class="eyebrow">Carrier Recovery · Phase-Locked Loops</div>
+    <h1 class="title">The Costas Loop</h1>
+    <p class="sub">
+      How a receiver with no carrier reference can still lock onto one. We derive the loop from first
+      principles — then it's your turn: you implement the <em>phase detector, loop filter, and NCO</em>
+      against provided skeletons and a grading harness, and watch your own loop lock (or fail to).
+    </p>
+    <div class="meta-row">
+      <div>Prerequisites <span>Trig identities, LTI systems, basic control</span></div>
+      <div>Tools <span>Python, NumPy, SciPy, Matplotlib</span></div>
+      <div>Reading time <span>~35 min</span></div>
+    </div>
+  </div>
+
+  <main>
+
+    <div class="toc">
+      <a href="#why">Why coherent demod needs a PLL</a>
+      <a href="#dsb">The DSB‑SC signal model</a>
+      <a href="#architecture">Costas loop architecture</a>
+      <a href="#math">Loop dynamics</a>
+      <a href="#implementation">Lab: skeleton code</a>
+      <a href="#full-code">Grading harness</a>
+      <a href="#pitfalls">Common pitfalls</a>
+      <a href="#exercises">Exercises</a>
+    </div>
+
+    <!-- ===================== SECTION 1 ===================== -->
+    <section class="section" id="why">
+      <div class="section-tag"><span class="num">01</span> Motivation</div>
+      <h2>Why coherent demodulation needs a phase-locked loop</h2>
+      <p class="lead">
+        Ordinary envelope-detector AM works because the carrier is transmitted along with the sidebands —
+        the receiver can rectify and low-pass filter the signal without knowing the carrier's exact phase.
+        <strong>Double-sideband suppressed-carrier (DSB-SC) AM</strong> throws the carrier away to save
+        power, which means the receiver has to reconstruct it. That reconstruction has to match the
+        transmitter's carrier in both <strong>frequency and phase</strong> — a few degrees of phase error
+        already start to attenuate and distort the recovered signal.
+      </p>
+      <p>
+        The <strong>Costas loop</strong>, introduced by John P. Costas in 1956, solves exactly this problem.
+        It is a closed-loop feedback system: it demodulates the signal <em>and</em> uses the demodulated
+        output as an error signal to correct its own local oscillator, converging on the true carrier phase
+        without ever needing a pilot tone.
+      </p>
+      <div class="callout">
+        <div class="label">Where you'll see this again</div>
+        Everything here generalizes directly to BPSK/QPSK carrier recovery in digital receivers — the block
+        diagram is identical, only the phase detector nonlinearity changes.
+      </div>
+    </section>
+
+    <!-- ===================== SECTION 2 ===================== -->
+    <section class="section" id="dsb">
+      <div class="section-tag"><span class="num">02</span> Signal Model</div>
+      <h2>The DSB-SC signal</h2>
+      <p>A baseband message <span class="eq-inline">\(m(t)\)</span> is modulated onto a carrier of frequency <span class="eq-inline">\(\omega_c\)</span> with no carrier term added:</p>
+      <div class="eq-block">$$ s(t) = m(t)\,\cos(\omega_c t + \theta) $$
+      <div class="eq-note">θ is an unknown, slowly drifting phase offset — the thing we need to estimate.</div>
+      </div>
+      <p>
+        If the receiver simply multiplied <span class="eq-inline">\(s(t)\)</span> by a locally generated
+        <span class="eq-inline">\(\cos(\omega_c t)\)</span> and low-pass filtered, it would recover
+        <span class="eq-inline">\(\tfrac{1}{2}m(t)\cos\theta\)</span> — scaled by <span class="eq-inline">\(\cos\theta\)</span>.
+        Any phase error attenuates the message, and at <span class="eq-inline">\(\theta = 90^\circ\)</span> the
+        output vanishes entirely. We need a way to drive <span class="eq-inline">\(\theta \to 0\)</span> automatically.
+      </p>
+    </section>
+
+    <!-- ===================== SECTION 3 ===================== -->
+    <section class="section" id="architecture">
+      <div class="section-tag"><span class="num">03</span> Architecture</div>
+      <h2>Costas loop block diagram</h2>
+      <p>
+        The trick is to build <strong>two</strong> mixers driven by quadrature copies of the local
+        oscillator — an in-phase (I) branch and a quadrature (Q) branch — and multiply their low-pass
+        filtered outputs together to form an error signal that is zero exactly when the loop is locked.
+      </p>
+
+      <div class="diagram-card">
+        <svg viewBox="0 0 920 460" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L7,3.5 L0,7 Z" fill="#5ed1ff"/>
+            </marker>
+            <marker id="arrowAmber" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L7,3.5 L0,7 Z" fill="#ff8a5b"/>
+            </marker>
+          </defs>
+          <style>
+            .blk{ fill:#11151f; stroke:#2e6f8e; stroke-width:1.4; }
+            .blkAmber{ fill:#11151f; stroke:#a3532e; stroke-width:1.4; }
+            .lbl{ font-family:'JetBrains Mono',monospace; font-size:13px; fill:#d4dae6; }
+            .lblSmall{ font-family:'JetBrains Mono',monospace; font-size:11px; fill:#7c8699; }
+            .wire{ stroke:#5ed1ff; stroke-width:1.4; fill:none; }
+            .wireAmber{ stroke:#ff8a5b; stroke-width:1.4; fill:none; }
+            .wireDim{ stroke:#2e6f8e; stroke-width:1.2; fill:none; stroke-dasharray:3,3; }
+            .node circle{ fill:#090b10; stroke:#5ed1ff; stroke-width:1.4; }
+          </style>
+
+          <!-- input -->
+          <line x1="15" y1="150" x2="70" y2="150" class="wire" marker-end="url(#arrow)"/>
+          <text x="18" y="138" class="lbl">s(t)</text>
+
+          <!-- split node -->
+          <circle cx="70" cy="150" r="4" fill="#5ed1ff"/>
+          <line x1="70" y1="150" x2="70" y2="90" class="wire"/>
+          <line x1="70" y1="150" x2="70" y2="330" class="wire"/>
+
+          <!-- I mixer -->
+          <line x1="70" y1="90" x2="150" y2="90" class="wire" marker-end="url(#arrow)"/>
+          <circle class="node" cx="168" cy="90" r="18"/>
+          <text x="161" y="95" class="lbl" font-size="15">×</text>
+          <text x="205" y="70" class="lblSmall">I mixer</text>
+
+          <!-- I LPF -->
+          <line x1="186" y1="90" x2="250" y2="90" class="wire" marker-end="url(#arrow)"/>
+          <rect x="250" y="65" width="90" height="50" rx="4" class="blk"/>
+          <text x="264" y="94" class="lbl">LPF</text>
+          <text x="255" y="128" class="lblSmall">I(t) ≈ ½m(t)cosθ</text>
+
+          <!-- I to output and to phase detector -->
+          <line x1="340" y1="90" x2="420" y2="90" class="wire" marker-end="url(#arrow)"/>
+          <circle cx="420" cy="90" r="4" fill="#5ed1ff"/>
+          <line x1="420" y1="90" x2="700" y2="90" class="wire" marker-end="url(#arrow)"/>
+          <text x="710" y="95" class="lbl">I(t) → demodulated audio</text>
+
+          <line x1="420" y1="90" x2="420" y2="210" class="wire"/>
+
+          <!-- Q mixer -->
+          <line x1="70" y1="330" x2="150" y2="330" class="wire" marker-end="url(#arrow)"/>
+          <circle class="node" cx="168" cy="330" r="18"/>
+          <text x="161" y="335" class="lbl" font-size="15">×</text>
+          <text x="203" y="360" class="lblSmall">Q mixer</text>
+
+          <!-- Q LPF -->
+          <line x1="186" y1="330" x2="250" y2="330" class="wire" marker-end="url(#arrow)"/>
+          <rect x="250" y="305" width="90" height="50" rx="4" class="blk"/>
+          <text x="264" y="334" class="lbl">LPF</text>
+          <text x="255" y="298" class="lblSmall">Q(t) ≈ ½m(t)sinθ</text>
+
+          <line x1="340" y1="330" x2="420" y2="330" class="wire" marker-end="url(#arrow)"/>
+          <line x1="420" y1="330" x2="420" y2="250" class="wire"/>
+
+          <!-- phase detector multiplier -->
+          <circle class="node" cx="420" cy="230" r="20"/>
+          <text x="411" y="236" class="lbl" font-size="15">×</text>
+          <text x="450" y="225" class="lblSmall">phase detector</text>
+          <text x="450" y="240" class="lblSmall">e(t) = I(t)·Q(t)</text>
+
+          <!-- error to loop filter -->
+          <line x1="420" y1="250" x2="420" y2="300" class="wireAmber" marker-end="url(#arrowAmber)"/>
+          <rect x="365" y="300" width="110" height="50" rx="4" class="blkAmber"/>
+          <text x="382" y="330" class="lbl">Loop Filter</text>
+          <text x="380" y="368" class="lblSmall">PI controller</text>
+
+          <!-- loop filter to VCO -->
+          <line x1="420" y1="350" x2="420" y2="410" class="wireAmber" marker-end="url(#arrowAmber)"/>
+          <rect x="330" y="410" width="180" height="40" rx="18" class="blkAmber"/>
+          <text x="378" y="435" class="lbl">VCO / NCO</text>
+
+          <!-- VCO feedback to mixers -->
+          <line x1="330" y1="430" x2="90" y2="430" class="wireAmber" marker-end="url(#arrowAmber)"/>
+          <line x1="90" y1="430" x2="90" y2="108" class="wireAmber" marker-end="url(#arrowAmber)"/>
+          <text x="30" y="422" class="lblSmall">cos(ω̂t+φ̂)</text>
+
+          <line x1="90" y1="430" x2="90" y2="348" class="wireDim" marker-end="url(#arrow)"/>
+          <text x="30" y="400" class="lblSmall">−sin(ω̂t+φ̂)</text>
+          <text x="60" y="450" class="lblSmall">(90° shift)</text>
+
+          <text x="330" y="470" class="lblSmall">closed-loop feedback: the VCO phase is steered until e(t) → 0</text>
+        </svg>
+        <div class="diagram-caption">FIG. 1 — I/Q mixers feed low-pass filters; their product drives the loop filter, which steers the VCO. Lock ⇔ e(t) = 0.</div>
+      </div>
+
+      <p>
+        Note the asymmetry that makes this a phase-locked loop rather than just a demodulator: the
+        <strong>I</strong> branch delivers the recovered message, while the <strong>Q</strong> branch exists
+        purely to sense phase error. At lock, <span class="eq-inline">\(Q(t)\to 0\)</span> and
+        <span class="eq-inline">\(I(t)\)</span> carries the full message amplitude.
+      </p>
+    </section>
+
+    <!-- ===================== SECTION 4 ===================== -->
+    <section class="section" id="math">
+      <div class="section-tag"><span class="num">04</span> Loop Dynamics</div>
+      <h2>Deriving the error signal</h2>
+      <p>
+        Let the VCO produce quadrature references at its current phase estimate <span class="eq-inline">\(\hat\theta\)</span>:
+      </p>
+      <div class="eq-block">
+        $$ v_I(t) = \cos(\omega_c t + \hat\theta), \qquad v_Q(t) = -\sin(\omega_c t + \hat\theta) $$
+      </div>
+      <p>Multiplying the input <span class="eq-inline">\(s(t)=m(t)\cos(\omega_c t+\theta)\)</span> by each and applying a low-pass filter to remove the <span class="eq-inline">\(2\omega_c\)</span> term leaves:</p>
+      <div class="eq-block">
+        $$ I(t) = \tfrac{1}{2}m(t)\cos(\theta-\hat\theta), \qquad Q(t) = -\tfrac{1}{2}m(t)\sin(\theta-\hat\theta) $$
+      </div>
+      <p>Define the phase error <span class="eq-inline">\(\phi = \theta-\hat\theta\)</span>. The phase detector output is the product:</p>
+      <div class="eq-block">
+        $$ e(t) = I(t)\cdot Q(t) = -\tfrac{1}{8}m(t)^2\sin(2\phi) $$
+        <div class="eq-note">The message-squared factor is why Costas loops are sometimes called "squaring loops in disguise" — it's always non-negative, so it never flips the sign of the error.</div>
+      </div>
+      <p>
+        For small phase error, <span class="eq-inline">\(\sin(2\phi)\approx 2\phi\)</span>, so
+        <span class="eq-inline">\(e(t)\)</span> is (up to a negative, message-dependent gain) proportional to the
+        phase error itself — exactly what a linear feedback loop needs. The loop filter — typically a
+        proportional-integral (PI) controller — smooths <span class="eq-inline">\(e(t)\)</span> and integrates
+        it into a frequency correction for the VCO:
+      </p>
+      <div class="eq-block">
+        $$ \frac{d\hat\theta}{dt} = K_p\, e(t) + K_i \int_0^t e(\tau)\,d\tau $$
+      </div>
+      <div class="callout warn">
+        <div class="label">Design note</div>
+        <span class="eq-inline">\(K_p\)</span> and <span class="eq-inline">\(K_i\)</span> set the loop bandwidth and damping.
+        Too high and the loop chases noise; too low and it can't track phase drift or acquire lock quickly.
+        In the code below we parametrize them through a target loop bandwidth and damping factor, the
+        standard way to design a 2nd-order PLL.
+      </div>
+    </section>
+
+    <!-- ===================== SECTION 5 ===================== -->
+    <section class="section" id="implementation">
+      <div class="section-tag"><span class="num">05</span> Lab Assignment</div>
+      <h2>Lab: build it yourself, block by block</h2>
+      <p class="lead">
+        You get the plumbing — signal generation and the grading/plotting harness in Section 6 — but the
+        four functions that actually <em>are</em> the Costas loop are yours to implement. Each skeleton
+        below has the exact docstring contract your function must satisfy; the equations you need live in
+        Section 4 and are cross-referenced inline. Don't peek at a solution online — the point is to watch
+        <em>your</em> loop fail to lock, then figure out why.
+      </p>
+
+      <div class="callout">
+        <div class="label">Lab file layout</div>
+        <code>signal.py</code> (provided) · <code>filters.py</code> — <code>OnePoleLPF</code> (you write) ·
+        <code>loop_filter.py</code> — <code>pi_gains</code>, <code>LoopFilter</code> (you write) ·
+        <code>costas.py</code> — <code>costas_loop</code> (you write) · <code>run_lab.py</code> (provided,
+        Section 6 — imports your three modules and grades the result)
+      </div>
+
+      <h3>Step 1 — Provided: the DSB-SC test signal</h3>
+      <p>This part isn't the learning objective, so it's given. Read it anyway — you'll need <code>fs</code>, <code>fc</code>, and <code>true_phase_offset</code> to reason about your own results.</p>
+      <div class="code-card">
+        <div class="code-head"><span class="code-head-left"><span class="fname">signal.py</span><span class="badge provided">provided</span></span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code class="language-python">import numpy as np
+
+fs   = 200_000        # sample rate (Hz)
+fc   = 10_000          # carrier frequency (Hz)
+dur  = 0.05            # seconds
+t    = np.arange(0, dur, 1/fs)
+
+# message: sum of two tones, so envelope detection alone would fail
+message = 0.6*np.sin(2*np.pi*400*t) + 0.3*np.sin(2*np.pi*900*t)
+
+true_phase_offset = np.deg2rad(70)     # unknown phase error the loop must find
+freq_offset       = 15                  # Hz, small carrier mismatch (Doppler / oscillator drift)
+
+carrier = np.cos(2*np.pi*(fc+freq_offset)*t + true_phase_offset)
+tx = message * carrier                  # the DSB-SC signal we transmit
+
+noise = 0.03*np.random.randn(len(t))
+rx = tx + noise                         # what the receiver actually sees
+</code></pre>
+      </div>
+
+      <h3>Step 2 — You implement: the low-pass filter</h3>
+      <p>The I/Q branches need to reject the <span class="eq-inline">\(2\omega_c\)</span> term. A first-order IIR one-pole filter is enough — but you derive <code>alpha</code> and write the recursion.</p>
+      <div class="code-card skeleton">
+        <div class="code-head"><span class="code-head-left"><span class="fname">filters.py</span><span class="badge skeleton">skeleton</span></span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code class="language-python">class OnePoleLPF:
+    """
+    First-order IIR low-pass filter.
+
+    Recursion to implement:  y[n] = y[n-1] + alpha*(x[n] - y[n-1])
+
+    where alpha is derived from the RC time constant of an equivalent
+    analog one-pole filter:  rc = 1 / (2*pi*cutoff_hz),  alpha = dt / (rc + dt)
+
+    Parameters
+    ----------
+    cutoff_hz : float   -3 dB cutoff frequency, in Hz
+    fs        : float   sample rate, in Hz
+    """
+    def __init__(self, cutoff_hz, fs):
+        # TODO: compute self.alpha from cutoff_hz and fs (see docstring)
+        # TODO: initialize self.y, the filter's running output state, to 0.0
+        raise NotImplementedError
+
+    def process(self, x):
+        """
+        Push one new sample x through the filter and return the filtered
+        output. Must update self.y in place -- this gets called once per
+        sample inside the Costas loop, so it has to be O(1).
+        """
+        # TODO: implement the one-line recursion from the docstring
+        raise NotImplementedError
+</code></pre>
+      </div>
+      <div class="callout">
+        <div class="label">Self-check</div>
+        Feed a constant input into <code>process</code> repeatedly (a step input). <code>self.y</code>
+        should climb toward that constant and never overshoot it — if it oscillates or overshoots, your
+        recursion or your <code>alpha</code> derivation has a sign or ordering error.
+      </div>
+
+      <h3>Step 3 — You implement: the loop filter (PI controller)</h3>
+      <p>Design the PI gains from a target natural frequency and damping ratio — the standard 2nd-order PLL parametrization — then implement the controller that consumes <span class="eq-inline">\(e(t)\)</span> each sample.</p>
+      <div class="code-card skeleton">
+        <div class="code-head"><span class="code-head-left"><span class="fname">loop_filter.py</span><span class="badge skeleton">skeleton</span></span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code class="language-python">def pi_gains(loop_bw_hz, damping, fs):
+    """
+    Classic 2nd-order PLL gain design from bandwidth + damping.
+
+    theta_n = loop_bw_hz / fs
+    denom   = 1 + 2*damping*theta_n + theta_n**2
+    Kp      = (4*damping*theta_n) / denom
+    Ki      = (4*theta_n**2) / denom
+
+    Returns
+    -------
+    (Kp, Ki) : tuple of float
+    """
+    # TODO: implement the four lines above and return (Kp, Ki)
+    raise NotImplementedError
+
+
+class LoopFilter:
+    """
+    PI controller: dphi_hat/dt = Kp*e(t) + Ki*integral(e(t))  (Section 4)
+
+    update(error) is called once per sample with the phase-detector
+    output and must return the frequency correction to feed the NCO.
+    """
+    def __init__(self, Kp, Ki):
+        # TODO: store Kp, Ki
+        # TODO: initialize an integrator state to 0.0
+        raise NotImplementedError
+
+    def update(self, error):
+        # TODO: accumulate the integral term (Ki * error) into your
+        #       integrator state
+        # TODO: return Kp*error + integrator_state
+        raise NotImplementedError
+</code></pre>
+      </div>
+      <div class="callout warn">
+        <div class="label">Before you move on</div>
+        Write a throwaway script that feeds <code>LoopFilter.update</code> a constant <code>error</code> for
+        1000 iterations and plot the returned correction. It should grow roughly linearly (that's the
+        integral term dominating) — if it's flat, your integrator isn't accumulating.
+      </div>
+
+      <h3>Step 4 — You implement: the Costas loop itself</h3>
+      <p>
+        This is the closed loop from Fig. 1, sample by sample. The skeleton wires your <code>OnePoleLPF</code>
+        and <code>LoopFilter</code> together and sets up the NCO's phase accumulator — the five numbered
+        <span class="todo">TODO</span> blocks inside the loop are the actual signal-processing steps you're
+        being graded on. Reread Section 4 before writing these.
+      </p>
+      <div class="code-card skeleton">
+        <div class="code-head"><span class="code-head-left"><span class="fname">costas.py</span><span class="badge skeleton">skeleton</span></span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code class="language-python">import numpy as np
+from filters import OnePoleLPF
+from loop_filter import pi_gains, LoopFilter
+
+def costas_loop(rx, fs, fc_nominal, loop_bw_hz=250, damping=0.707,
+                 lpf_cutoff_hz=2000):
+    """
+    Run a Costas loop over the received samples `rx` and return
+    (I_out, Q_out, err_out, phase_hist) -- each a 1D array of length
+    len(rx). See Fig. 1 and Section 4 for the block-by-block derivation.
+    """
+    n = len(rx)
+    Kp, Ki = pi_gains(loop_bw_hz, damping, fs)
+    loop = LoopFilter(Kp, Ki)
+    lpf_i, lpf_q = OnePoleLPF(lpf_cutoff_hz, fs), OnePoleLPF(lpf_cutoff_hz, fs)
+
+    phase_acc = 0.0                      # NCO phase accumulator, phi_hat
+    w0 = 2*np.pi*fc_nominal/fs           # nominal phase increment per sample
+
+    I_out      = np.zeros(n)
+    Q_out      = np.zeros(n)
+    err_out    = np.zeros(n)
+    phase_hist = np.zeros(n)
+
+    for k in range(n):
+        # (1) TODO -- NCO: compute vco_i, vco_q at the current phase_acc.
+        #     vco_i = cos(phase_acc), vco_q = -sin(phase_acc)  (Section 4)
+
+        # (2) TODO -- mixers: multiply rx[k] by vco_i and by vco_q
+
+        # (3) TODO -- low-pass each mixer output through lpf_i / lpf_q
+        #     to get this sample's I and Q
+
+        # (4) TODO -- phase detector: error = I * Q  (Section 4)
+
+        # (5) TODO -- loop filter + NCO update:
+        #     freq_correction = loop.update(error)
+        #     phase_acc += w0 + freq_correction
+        #     then wrap phase_acc into [-pi, pi]:
+        #     phase_acc = (phase_acc + np.pi) % (2*np.pi) - np.pi
+
+        # TODO -- store this sample's I, Q, error, phase_acc into
+        #         I_out[k], Q_out[k], err_out[k], phase_hist[k]
+        raise NotImplementedError
+
+    return I_out, Q_out, err_out, phase_hist
+</code></pre>
+      </div>
+
+      <div class="callout">
+        <div class="label">Reading the skeleton against Fig. 1</div>
+        TODO (1) is the VCO block · (2)+(3) are the two mixer→LPF branches · (4) is the phase-detector
+        multiplier · (5) is the loop filter box <em>and</em> the VCO's feedback path in one step. If your
+        loop won't lock, add a print of <code>error</code> every 1000 samples first — a wrong sign in (4) or
+        (5) is the single most common bug and shows up immediately as an error that grows instead of decays.
+      </div>
+    </section>
+
+    <!-- ===================== SECTION 6 ===================== -->
+    <section class="section" id="full-code">
+      <div class="section-tag"><span class="num">06</span> Grading Harness</div>
+      <h2>Provided: run_lab.py — this is how you'll be graded</h2>
+      <p>
+        Once <code>filters.py</code>, <code>loop_filter.py</code>, and <code>costas.py</code> are filled in,
+        this script imports them, runs your loop against the test signal from Step 1, plots the three
+        diagnostic traces, and prints a pass/fail check. You don't need to (and shouldn't) modify this file —
+        treat a failing assert as a bug report about your own code, not about the harness.
+      </p>
+      <div class="code-card">
+        <div class="code-head"><span class="code-head-left"><span class="fname">run_lab.py</span><span class="badge provided">provided</span></span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+from signal import t, message, rx, fs, fc
+from costas import costas_loop
+
+I_out, Q_out, err_out, phase_hist = costas_loop(rx, fs, fc)
+
+fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+
+axs[0].plot(t, message, label="original message", alpha=0.6)
+axs[0].plot(t, 2*I_out, label="recovered (2·I)", lw=1)
+axs[0].set_title("Message recovery")
+axs[0].legend(); axs[0].set_ylabel("amplitude")
+
+axs[1].plot(t, err_out, color="tab:orange")
+axs[1].set_title("Phase-detector error e(t) — should decay to ~0")
+axs[1].set_ylabel("e(t)")
+
+axs[2].plot(t, phase_hist, color="tab:cyan")
+axs[2].set_title("NCO phase accumulator")
+axs[2].set_xlabel("time (s)"); axs[2].set_ylabel("radians")
+
+plt.tight_layout()
+plt.savefig("costas_lock.png", dpi=150)
+plt.show()
+
+# ---- pass/fail check -------------------------------------------------
+# RMS phase-detector error over the last 20% of samples must be small,
+# i.e. the loop actually locked and stayed locked.
+tail = int(0.8*len(err_out))
+rms_err = np.sqrt(np.mean(err_out[tail:]**2))
+print(f"steady-state |e(t)| RMS: {rms_err:.2e}")
+
+LOCK_THRESHOLD = 5e-4
+assert rms_err < LOCK_THRESHOLD, (
+    f"Loop did not lock (RMS error {rms_err:.2e} >= {LOCK_THRESHOLD:.0e}). "
+    "Check the TODOs in costas.py against Section 4 before asking for help."
+)
+print("LOCK ACQUIRED — pass.")
+</code></pre>
+      </div>
+      <p>
+        On a correctly implemented loop the error trace decays within a few hundred samples and the
+        recovered waveform overlays the original message almost exactly once locked — including the
+        expected <strong>180° phase ambiguity</strong> inherent to any Costas loop (more on that below).
+      </p>
+
+      <table>
+        <thead><tr><th>Parameter</th><th>Typical value here</th><th>Effect if increased</th></tr></thead>
+        <tbody>
+          <tr><td><b>loop_bw_hz</b></td><td>250 Hz</td><td>Faster acquisition, more noise sensitivity</td></tr>
+          <tr><td><b>damping</b></td><td>0.707 (critical)</td><td>&lt;0.707 → overshoot/ringing; &gt;0.707 → sluggish</td></tr>
+          <tr><td><b>lpf_cutoff_hz</b></td><td>2000 Hz</td><td>Must exceed message bandwidth but reject 2·f<sub>c</sub></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ===================== SECTION 7 ===================== -->
+    <section class="section" id="pitfalls">
+      <div class="section-tag"><span class="num">07</span> Gotchas</div>
+      <h2>Common pitfalls when students build this</h2>
+
+      <div class="callout pitfall">
+        <div class="label">The 180° phase ambiguity</div>
+        Because the error signal depends on <span class="eq-inline">\(\sin(2\phi)\)</span>, the loop has
+        <strong>two</strong> stable lock points: <span class="eq-inline">\(\phi=0\)</span> and
+        <span class="eq-inline">\(\phi=\pi\)</span>. The loop may lock with the recovered message inverted
+        in sign. This is fundamental to Costas loops (and to BPSK carrier recovery) — it's resolved at a
+        higher layer, e.g. differential encoding, not by the loop itself.
+      </div>
+
+      <div class="callout pitfall">
+        <div class="label">Confusing loop bandwidth with the LPF cutoff</div>
+        These are two <em>different</em> filters serving different purposes: <code>lpf_cutoff_hz</code>
+        strips the 2·f<sub>c</sub> mixing product from I/Q; <code>loop_bw_hz</code> shapes how fast the VCO
+        phase estimate reacts to the error signal. Students often set them equal and get either a sluggish
+        demodulator or an unstable one.
+      </div>
+
+      <div class="callout pitfall">
+        <div class="label">Sample-rate vs. carrier-frequency ratio</div>
+        If <span class="eq-inline">\(f_s\)</span> isn't comfortably above <span class="eq-inline">\(2f_c\)</span>
+        (Nyquist) with headroom for the 2·f<sub>c</sub> image, the LPF can't separate the wanted term
+        cleanly. In this teaching example <span class="eq-inline">\(f_s/f_c=20\)</span>, which is generous
+        on purpose — try lowering it and watch the loop struggle.
+      </div>
+
+      <div class="callout pitfall">
+        <div class="label">Phase wrap-around</div>
+        Forgetting to wrap <code>phase_acc</code> into <span class="eq-inline">\([-\pi,\pi]\)</span> is
+        harmless numerically (cos/sin are periodic) but makes the phase-history plot in Fig. useless for
+        diagnosing lock — always wrap before plotting.
+      </div>
+    </section>
+
+    <div class="callout">
+      <div class="label">Lab deliverables</div>
+      <ol style="margin:8px 0 0; padding-left:20px;">
+        <li>Completed <code>filters.py</code>, <code>loop_filter.py</code>, <code>costas.py</code></li>
+        <li><code>run_lab.py</code> output showing <code>LOCK ACQUIRED — pass.</code></li>
+        <li><code>costas_lock.png</code> (the three-panel plot it saves)</li>
+        <li>One paragraph: what did you change to get from an unstable/non-locking loop to a stable one, if anything did?</li>
+      </ol>
+    </div>
+
+    <!-- ===================== SECTION 8 ===================== -->
+    <section class="section" id="exercises">
+      <div class="section-tag"><span class="num">08</span> Exercises</div>
+      <h2>For students</h2>
+
+      <div class="exercise">
+        <div class="ex-tag">Exercise 1</div>
+        Sweep <code>loop_bw_hz</code> over <code>[50, 150, 250, 500, 1000]</code> and plot acquisition time
+        (samples until <span class="eq-inline">\(|e(t)|\)</span> stays below a threshold) versus bandwidth.
+        Explain the trade-off you observe in terms of the theory in Section 4.
+      </div>
+
+      <div class="exercise">
+        <div class="ex-tag">Exercise 2</div>
+        Repeat the simulation with <code>damping</code> set to 0.3 and 2.0. Describe what changes in the
+        error trace and connect it to standard 2nd-order system step-response behavior.
+      </div>
+
+      <div class="exercise hard">
+        <div class="ex-tag">Exercise 3 — harder</div>
+        Modify <code>costas_loop</code> to detect and correct the 180° ambiguity using a known preamble
+        (e.g. the first 200 samples of <code>message</code> transmitted with known sign). Hint: compare the
+        sign of the correlation between <code>I_out</code> and the known preamble once locked.
+      </div>
+
+      <div class="exercise hard">
+        <div class="ex-tag">Exercise 4 — harder</div>
+        Replace the one-pole <code>OnePoleLPF</code> with a proper <code>scipy.signal.butter</code> IIR
+        filter run in streaming form (<code>lfilter</code> with saved state via <code>zi</code>). Compare
+        lock time and steady-state error against the simple one-pole version.
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div>Costas, J.P. (1956), "Synchronous Communications," Proc. IRE — the original reference, worth reading once you've built the loop yourself.</div>
+    <div>GOS Lab · Communication Systems</div>
+  </footer>
+</div>
+
+<script>
+  try {
+    document.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+  } catch (err) {
+    console.error("highlight.js failed:", err);
+  }
+
+  try {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "\\(", right: "\\)", display: false}
+      ],
+      throwOnError: false
+    });
+  } catch (err) {
+    console.error("KaTeX render failed:", err);
+  }
+
+  // tiny animated "oscilloscope" trace in the hero corner box
+  (function(){
+   try {
+    const box = document.getElementById('scopeCorner');
+    if(!box) return;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 260 150");
+    svg.style.width = "100%"; svg.style.height = "100%";
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("stroke", "#5ed1ff");
+    path.setAttribute("stroke-width", "1.6");
+    path.setAttribute("fill", "none");
+    path.setAttribute("opacity", "0.85");
+    svg.appendChild(path);
+
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", "10"); label.setAttribute("y", "18");
+    label.setAttribute("fill", "#7c8699");
+    label.setAttribute("font-family", "IBM Plex Mono, monospace");
+    label.setAttribute("font-size", "10");
+    label.textContent = "I(t) · Q(t) — live error trace";
+    svg.appendChild(label);
+    box.appendChild(svg);
+
+    let t0 = 0;
+    let phase = Math.PI*0.9;   // start "unlocked"
+    function frame(){
+      t0 += 0.06;
+      phase *= 0.985;          // simulate convergence toward lock
+      let d = "";
+      for(let x=0; x<=260; x+=3){
+        const tt = x/260*8 + t0;
+        const y = 75 - 55*Math.exp(-tt*0.15)*Math.sin(tt*1.4 + phase);
+        d += (x===0? "M":"L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+      }
+      path.setAttribute("d", d);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+   } catch (err) {
+     console.error("scope animation failed:", err);
+   }
+  })();
+</script>
+
+</body>
+</html>
