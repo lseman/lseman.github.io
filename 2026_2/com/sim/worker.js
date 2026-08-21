@@ -51,15 +51,16 @@ function convolveFull(signal, taps) {
     const a = signal, length = Math.max(0, a.length + taps.length - 1);
     if (!a.length || !taps.length) return [];
     if (a.length * taps.length < 200000 || taps.length < 32) {
-        const out = Array.from({ length }, () => ({ re: 0, im: 0 }));
+        const outRe = new Float64Array(length);
+        const outIm = new Float64Array(length);
         for (let n = 0; n < a.length; n++) {
             const ar = a[n].re, ai = a[n].im;
             for (let k = 0; k < taps.length; k++) {
-                out[n + k].re += ar * taps[k];
-                out[n + k].im += ai * taps[k];
+                outRe[n + k] += ar * taps[k];
+                outIm[n + k] += ai * taps[k];
             }
         }
-        return out;
+        return Array.from({ length }, (_, i) => ({ re: outRe[i], im: outIm[i] }));
     }
     const N = nextPowerOfTwo(length), ar = new Float64Array(N), ai = new Float64Array(N), br = new Float64Array(N), bi = new Float64Array(N);
     for (let i = 0; i < a.length; i++) { ar[i] = a[i].re; ai[i] = a[i].im; }

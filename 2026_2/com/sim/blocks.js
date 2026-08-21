@@ -262,21 +262,49 @@ export function createProcessors(results) {
         const received = arr(bits), requested = n.config.decision || 'automática';
         const soft = requested === 'suave' || (requested === 'automática' && received.some(v => typeof v === 'object'));
         const steps = Math.floor(received.length / 2), infinity = Number.POSITIVE_INFINITY;
-        let metrics = [0, infinity, infinity, infinity], paths = [[], [], [], []];
+        // metrics[state]
+        let metrics = new Float64Array([0, infinity, infinity, infinity]);
+        // prevState[step * 4 + state] stores the predecessor state that led to this state at this step
+        const prevStates = new Int8Array(steps * 4);
+        // prevBit[step * 4 + state] stores the input bit that led to this state at this step
+        const prevBits = new Int8Array(steps * 4);
+        
         for (let k = 0; k < steps; k++) {
-            const pair = received.slice(2 * k, 2 * k + 2), nextMetrics = [infinity, infinity, infinity, infinity], nextPaths = [[], [], [], []];
-            for (let state = 0; state < 4; state++) if (Number.isFinite(metrics[state])) for (const bit of [0, 1]) {
-                const transition = convTransition(state, bit); let branch;
-                if (soft) { const y0 = complex(pair[0]).re, y1 = complex(pair[1]).re; branch = (y0 - (1 - 2 * transition.out[0])) ** 2 + (y1 - (1 - 2 * transition.out[1])) ** 2 }
-                else branch = (pair[0] !== transition.out[0]) + (pair[1] !== transition.out[1]);
-                const metric = metrics[state] + branch;
-                if (metric < nextMetrics[transition.next]) { nextMetrics[transition.next] = metric; nextPaths[transition.next] = paths[state].concat(bit) }
+            const pair = received.slice(2 * k, 2 * k + 2);
+            const nextMetrics = new Float64Array(4).fill(infinity);
+            for (let state = 0; state < 4; state++) {
+                if (!Number.isFinite(metrics[state])) continue;
+                for (const bit of [0, 1]) {
+                    const transition = convTransition(state, bit); 
+                    let branch;
+                    if (soft) { 
+                        const y0 = complex(pair[0]).re, y1 = complex(pair[1]).re; 
+                        branch = (y0 - (1 - 2 * transition.out[0])) ** 2 + (y1 - (1 - 2 * transition.out[1])) ** 2; 
+                    }
+                    else branch = (pair[0] !== transition.out[0]) + (pair[1] !== transition.out[1]);
+                    const metric = metrics[state] + branch;
+                    if (metric < nextMetrics[transition.next]) { 
+                        nextMetrics[transition.next] = metric; 
+                        prevStates[k * 4 + transition.next] = state;
+                        prevBits[k * 4 + transition.next] = bit;
+                    }
+                }
             }
-            metrics = nextMetrics; paths = nextPaths;
+            metrics = nextMetrics;
         }
         const terminated = n.config.terminated === 'sim', finalState = terminated ? 0 : metrics.indexOf(Math.min(...metrics)), tail = terminated ? 2 : 0;
         results.push({ type: 'metric', title: `Métrica de Viterbi ${soft ? 'suave' : 'dura'}`, value: metrics[finalState], detail: `${steps} passos · estado final ${finalState}` });
-        return { decoded: paths[finalState].slice(0, Math.max(0, steps - tail)) };
+        
+        // Backtrack to reconstruct path
+        const decoded = new Uint8Array(Math.max(0, steps - tail));
+        let currentState = finalState;
+        for (let k = steps - 1; k >= tail; k--) {
+            const idx = k * 4 + currentState;
+            const bit = prevBits[idx];
+            decoded[steps - 1 - k] = bit;
+            currentState = prevStates[idx];
+        }
+        return { decoded: Array.from(decoded) };
     };
     processors.student_transform = (n, { input }) => {
         try { const fn = new Function('data', n.config.code || 'return data;'); return { output: fn(input) }; } catch { return { output: input }; }
