@@ -328,7 +328,7 @@ function classifyPaper(p) {
 		/forecast|time.?series|temporal|sequence|attention|transformer|lstm|recurrent|prediction|autoregressive/;
 	const mlKw =
 		/machine learning|deep learning|neural|reinforcement|graph neural|embedding|classification|regression|convolutional|bert|gpt|language model/;
-	if (tsKw.test(text)) return "ml";
+	if (tsKw.test(text)) return "ts";
 	if (orKw.test(text)) return "or";
 	if (mlKw.test(text)) return "ml";
 	return "or"; // default for academic OR/ML researcher
@@ -361,8 +361,8 @@ function renderPublications(items) {
 			// Generate a pseudo git hash from the title
 			const hash = generatePubHash(p);
 
-			// Format date like git log: "Mar 15, 2026"
-			const dateStr = year ? formatDate(year, p.month) : "";
+			// Display only the publication year supplied by the source.
+			const dateStr = year ? String(year) : "";
 
 			// Build tags
 			const tags = [tagLabel];
@@ -388,24 +388,85 @@ function renderPublications(items) {
 				? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="pub-link">${mainTitle}</a>${subtitle ? " - " + subtitle : ""}`
 				: title;
 
-			li.innerHTML = `
+			// Build academic citation (APA-like)
+		const authors = Array.isArray(p.authors) && p.authors.length
+		  ? p.authors.map((author) => {
+			    const name = typeof author === "string" ? author : author.name || "";
+			    // Convert "Last, First" or "First Last" → "L., F. M."
+			    const parts = name.trim().split(/\s+/);
+			    if (parts.length <= 1) return escapeHtml(name);
+			    let last;
+			    let firsts = [];
+			    // Check for "Last, First" format
+			    if (name.includes(",")) {
+			      const [l, ...f] = name.split(",").map((s) => s.trim());
+			      last = l;
+			      firsts = f.join(" ").split(/\s+/).filter(Boolean);
+			    } else {
+			      last = parts.pop();
+			      firsts = parts;
+			    }
+			    const initials = firsts.map((f) => escapeHtml(f.charAt(0) + ".")).join(" ");
+			    return `${escapeHtml(last)}, ${initials}`;
+		    }).join("; ")
+		  : "";
+
+		const citationText = authors && year
+		  ? `${authors} (${year}). ${title}.${venue ? ` <em>${escapeHtml(venue)}</em>` : ``}`
+		  : "";
+
+		li.innerHTML = `
         <div class="pub-gitlog">
           <div class="pub-gitlog-line">
             <span class="pub-hash mono">${hash}</span>${headMark ? `<span class="pub-head mono">${headMark}</span>` : ""}
             <span class="pub-title-main">${titleLine}</span>
+            <button class="cite-btn" title="Copy citation" aria-label="Copy citation" data-citation='${citationText.replace(/'/g, "\u2019")}'>📋 cite</button>
           </div>
           <div class="pub-gitlog-meta">
             ${dateStr ? `<span class="pub-date mono">${dateStr}</span>` : ""}
-            ${tags.map((t) => `<span class="pub-tag-git">tag: ${t}</span>`).join(" ")}
+            ${tags.map((t) => `<span class="pub-tag-git">${t}</span>`).join(" ")}
           </div>
+          ${Array.isArray(p.authors) && p.authors.length ? `<p class="pub-authors">${p.authors.map((author) => escapeHtml(typeof author === "string" ? author : author.name || "")).join(", ")}</p>` : ""}
           ${abstract ? `<div class="pub-gitlog-desc">${abstract}${abstract.length >= 160 ? "…" : ""}</div>` : ""}
+          <div class="pub-citation-block hidden" aria-hidden="true"></div>
           <div class="pub-gitlog-footer">
             ${venue ? `<span class="pub-venue">${venue}</span>` : ""}
             ${citationCount ? `<span class="pub-cite-badge">${citationCount} citations</span>` : ""}
-            ${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="pub-link-btn">↗</a>` : ""}
+            ${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer" class="pub-link-btn" aria-label="Read ${title}">↗</a>` : ""}
           </div>
         </div>
       `;
+
+		// Wire up cite button
+		const citeBtn = li.querySelector(".cite-btn");
+		const citationBlock = li.querySelector(".pub-citation-block");
+		if (citeBtn && citationText) {
+		  citeBtn.addEventListener("click", (e) => {
+		    e.stopPropagation();
+		    // Toggle citation visibility
+		    const isHidden = citationBlock.classList.toggle("hidden");
+		    citationBlock.setAttribute("aria-hidden", isHidden);
+		    if (!isHidden) {
+		      citationBlock.innerHTML = `<div class="citation-apa"><span class="t-comment">% APA</span><p>${citationText}</p></div>`;
+		    }
+		  });
+		}
+
+		// Copy citation to clipboard on double-click
+		if (citeBtn && citationText) {
+		  citeBtn.addEventListener("dblclick", (e) => {
+		    e.stopPropagation();
+		    navigator.clipboard.writeText(citationText).then(() => {
+		      const orig = citeBtn.textContent;
+		      citeBtn.textContent = "✓ copied";
+		      citeBtn.classList.add("copied");
+		      setTimeout(() => {
+		        citeBtn.textContent = orig;
+		        citeBtn.classList.remove("copied");
+		      }, 1500);
+		    }).catch(() => {});
+		  });
+		}
 			LIST.appendChild(li);
 			setTimeout(() => li.classList.add("show"), idx * 60);
 		});
@@ -842,6 +903,27 @@ function buildAndRenderCloudFrom(items) {
 		charIdx = 0,
 		deleting = false;
 
+	// Reserve the tallest phrase's height so typing never re-wraps the
+	// paragraph into a new height, which shifted the hero layout every tick.
+	const box = el.closest("p") || el.parentElement;
+	function reserveHeight() {
+		const prev = el.textContent;
+		box.style.minHeight = "";
+		let max = 0;
+		for (const p of phrases) {
+			el.textContent = p;
+			max = Math.max(max, box.offsetHeight);
+		}
+		el.textContent = prev;
+		box.style.minHeight = max + "px";
+	}
+	reserveHeight();
+	let resizeTimer;
+	window.addEventListener("resize", () => {
+		clearTimeout(resizeTimer);
+		resizeTimer = setTimeout(reserveHeight, 150);
+	});
+
 	function tick() {
 		const current = phrases[phraseIdx];
 		if (!deleting) {
@@ -961,7 +1043,7 @@ function buildAndRenderCloudFrom(items) {
 		windows.forEach((windowEl) => {
 			const isActive = windowEl === activeWindow;
 			windowEl.classList.toggle("terminal-focused", isActive);
-			windowEl.closest(".hero-shell, .hero-tetris")?.classList.toggle("hero-window-front", isActive);
+			windowEl.closest(".hero-shell, .hero-tetris, .hero-cubesat")?.classList.toggle("hero-window-front", isActive);
 		});
 	};
 
@@ -977,14 +1059,12 @@ function buildAndRenderCloudFrom(items) {
 })();
 
 /* --------------------------------------------------------------------------
-   Partnerships globe
+   Partnerships — flat world projection
    -------------------------------------------------------------------------- */
-(function initPartnershipsGlobe() {
-	const canvas = document.getElementById("globe-canvas");
+(function initPartnershipsMap() {
+	const map = document.getElementById("partnership-map");
 	const legend = document.getElementById("globe-legend");
-	if (!canvas || !canvas.getContext) return;
-
-	const ctx = canvas.getContext("2d");
+	if (!map || !legend) return;
 
 	const HUB_ID = "ufsc";
 	const institutions = [
@@ -1048,220 +1128,95 @@ function buildAndRenderCloudFrom(items) {
 	];
 
 	const hub = institutions.find((d) => d.id === HUB_ID);
-	const links = institutions.filter((d) => d.id !== HUB_ID);
-
-	/* Populate legend */
-	legend.innerHTML = institutions
-		.map(
-			(d) => `
+	const svgNS = "http://www.w3.org/2000/svg";
+	const make = (tag, attrs, parent = map) => {
+		const el = document.createElementNS(svgNS, tag);
+		for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+		parent.appendChild(el);
+		return el;
+	};
+	// Equirectangular projection: every institution stays visible at once.
+	const project = (lat, lon) => ({ x: 30 + ((lon + 180) / 360) * 940, y: 25 + ((90 - lat) / 180) * 470 });
+	const grid = make("g", { class: "map-grid" });
+	for (let lat = -60; lat <= 60; lat += 30) {
+		const a = project(lat, -180), b = project(lat, 180);
+		make("path", { d: `M${a.x},${a.y}L${b.x},${b.y}` }, grid);
+	}
+	for (let lon = -150; lon <= 150; lon += 30) {
+		const a = project(85, lon), b = project(-85, lon);
+		make("path", { d: `M${a.x},${a.y}L${b.x},${b.y}` }, grid);
+	}
+	const land = make("g", { class: "map-land" });
+	for (const polygon of window.WORLD_LAND || []) {
+		// Break at the antimeridian so the coast never cuts across the map.
+		let d = "", previousLon = null, crossesSeam = false;
+		for (const [lon, lat] of polygon) {
+			const p = project(lat, lon);
+			const seam = previousLon !== null && Math.abs(lon - previousLon) > 180;
+			crossesSeam ||= seam;
+			d += `${previousLon === null || seam ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`;
+			previousLon = lon;
+		}
+		if (!crossesSeam) d += "Z";
+		make("path", { d, ...(crossesSeam ? { fill: "none" } : {}) }, land);
+	}
+	const routes = make("g", {});
+	const source = project(hub.lat, hub.lon);
+	for (const d of institutions.filter((d) => !d.hub)) {
+		const target = project(d.lat, d.lon);
+		const lift = Math.max(18, Math.hypot(target.x - source.x, target.y - source.y) * .25);
+		make("path", {
+			d: `M${source.x},${source.y}Q${(source.x + target.x) / 2},${Math.min(source.y, target.y) - lift} ${target.x},${target.y}`,
+			class: "map-route", stroke: d.color, "data-institution": d.id,
+		}, routes);
+	}
+	// Callouts separate nearby Brazilian and Iberian institutions.
+	const offsets = { ufsc: [30, 50], utfpr: [-100, 10], ufscar: [30, -20], udesc: [-100, 35], isel: [25, 18], salamanca: [25, -18], regina: [-20, -20] };
+	const pins = make("g", {});
+	for (const d of institutions) {
+		const p = project(d.lat, d.lon);
+		const group = make("g", { class: "map-pin", "data-institution": d.id }, pins);
+		const title = make("title", {}, group); title.textContent = `${d.name} — ${d.place}`;
+		make("circle", { cx: p.x, cy: p.y, r: d.hub ? 11 : 8, stroke: d.color, class: "map-pin-halo" }, group);
+		make("circle", { cx: p.x, cy: p.y, r: d.hub ? 4.5 : 3, fill: d.color }, group);
+		const [dx, dy] = offsets[d.id];
+		make("path", { d: `M${p.x},${p.y}L${p.x + dx},${p.y + dy}`, class: "map-label-leader" }, group);
+		const label = make("text", { x: p.x + dx + (dx < 0 ? -5 : 5), y: p.y + dy + 4, "text-anchor": dx < 0 ? "end" : "start", class: "map-label" }, group);
+		label.textContent = d.name;
+	}
+	legend.innerHTML = institutions.map((d) => `
 		<li class="globe-legend-item${d.hub ? " is-hub" : ""}">
-			<span class="globe-legend-dot" style="background:${d.color}"></span>
-			<span class="globe-legend-name">${d.name}</span>
-			<span class="globe-legend-place">${d.place}</span>
-		</li>`,
-		)
-		.join("");
-
-	let width = 0;
-	let height = 0;
-	let radius = 0;
-	let dpr = Math.min(window.devicePixelRatio || 1, 2);
-	const rotation = (50 * Math.PI) / 180;
-
-	const resize = () => {
-		const rect = canvas.parentElement.getBoundingClientRect();
-		width = rect.width;
-		height = Math.max(420, Math.min(width * 0.85, 640));
-		radius = Math.min(width, height) * 0.42;
-		canvas.style.height = `${height}px`;
-		canvas.width = width * dpr;
-		canvas.height = height * dpr;
-		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-	};
-
-	/* Project lat/lon (degrees) to 2D point on rotating sphere.
-	   Returns null when the point faces away from the viewer. */
-	const project = (lat, lon, rot) => {
-		const latR = (lat * Math.PI) / 180;
-		const lonR = (lon * Math.PI) / 180 + rot;
-		const x = Math.cos(latR) * Math.sin(lonR);
-		const y = Math.sin(latR);
-		const z = Math.cos(latR) * Math.cos(lonR);
-		if (z < -0.15) return null;
-		const cx = width / 2;
-		const cy = height / 2;
-		return {
-			x: cx + x * radius,
-			y: cy - y * radius,
-			z,
-			depth: (z + 1) / 2,
-		};
-	};
-
-	const landPolygons = window.WORLD_LAND || [];
-
-	const drawLand = (rot) => {
-		ctx.strokeStyle = "rgba(230,237,243,0.28)";
-		ctx.lineWidth = 0.75;
-
-		for (const poly of landPolygons) {
-			/* Split into contiguous visible segments so polygons that wrap
-			   behind the globe don't draw a straight line across the disc. */
-			let segment = [];
-			const segments = [];
-			for (let i = 0; i <= poly.length; i++) {
-				const [lon, lat] = poly[i % poly.length];
-				const p = project(lat, lon, rot);
-				if (p) {
-					segment.push(p);
-				} else if (segment.length) {
-					segments.push(segment);
-					segment = [];
-				}
-				if (i === poly.length && segment.length) segments.push(segment);
-			}
-			for (const seg of segments) {
-				if (seg.length < 2) continue;
-				ctx.beginPath();
-				ctx.moveTo(seg[0].x, seg[0].y);
-				for (let i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x, seg[i].y);
-				ctx.stroke();
-			}
-		}
-	};
-
-	const drawArc = (a, b, rot) => {
-		const steps = 64;
-		ctx.beginPath();
-		let started = false;
-		for (let i = 0; i <= steps; i++) {
-			const t = i / steps;
-			/* Great-circle-ish interpolation with a lifted midpoint for an arcing line */
-			const lat = a.lat + (b.lat - a.lat) * t;
-			const lon = a.lon + (b.lon - a.lon) * t;
-			const lift = Math.sin(Math.PI * t) * 8;
-			const p = project(lat + lift * 0.15, lon, rot);
-			if (!p) {
-				started = false;
-				continue;
-			}
-			if (!started) {
-				ctx.moveTo(p.x, p.y);
-				started = true;
-			} else {
-				ctx.lineTo(p.x, p.y);
-			}
-		}
-		ctx.stroke();
-	};
-
-	const drawPinDot = (d, p) => {
-		const scale = 0.55 + p.depth * 0.7;
-		ctx.beginPath();
-		ctx.arc(p.x, p.y, 3.2 * scale, 0, Math.PI * 2);
-		ctx.fillStyle = d.color;
-		ctx.globalAlpha = 0.35 + p.depth * 0.65;
-		ctx.fill();
-
-		ctx.beginPath();
-		ctx.arc(p.x, p.y, 1.4 * scale, 0, Math.PI * 2);
-		ctx.fillStyle = "#0a0d14";
-		ctx.fill();
-		ctx.globalAlpha = 1;
-	};
-
-	/* Stack labels vertically for pins that land close together on screen
-	   so clustered institutions (e.g. the Brazilian cities) stay legible. */
-	const drawLabels = (projected) => {
-		const CLUSTER_DIST = 26;
-		const placed = [];
-
-		const visible = projected.filter((entry) => entry.p.depth > 0.35);
-		visible.forEach((entry) => {
-			const near = placed.filter(
-				(other) => Math.hypot(other.p.x - entry.p.x, other.p.y - entry.p.y) < CLUSTER_DIST,
-			);
-			entry.stackIndex = near.length;
-			placed.push(entry);
+			<button type="button" class="map-institution" data-institution="${d.id}" aria-pressed="false">
+				<span class="globe-legend-dot" style="background:${d.color}" aria-hidden="true"></span>
+				<span><span class="globe-legend-name">${d.name}${d.hub ? " / hub" : ""}</span><span class="globe-legend-place">${d.place}</span></span>
+			</button>
+		</li>`).join("");
+	legend.addEventListener("click", (event) => {
+		const button = event.target.closest("button[data-institution]");
+		if (!button) return;
+		const id = button.dataset.institution;
+		const active = button.getAttribute("aria-pressed") !== "true";
+		legend.querySelectorAll("button").forEach((el) => el.setAttribute("aria-pressed", String(active && el === button)));
+		map.querySelectorAll("[data-institution]").forEach((el) => {
+			el.classList.toggle("is-highlighted", active && (el.dataset.institution === id || (id === HUB_ID && el.classList.contains("map-route"))));
 		});
-
-		ctx.font = "600 11px 'JetBrains Mono', monospace";
-		ctx.fillStyle = "rgba(230,237,243,0.85)";
-		ctx.textBaseline = "middle";
-
-		visible.forEach(({ d, p, stackIndex }) => {
-			const scale = 0.55 + p.depth * 0.7;
-			const align = p.x > width / 2 ? "left" : "right";
-			ctx.textAlign = align;
-			const dx = align === "left" ? 8 : -8;
-			const dy = -10 * scale - stackIndex * 12;
-			ctx.fillText(d.name, p.x + dx, p.y + dy);
-		});
-	};
-
-	const draw = () => {
-		ctx.clearRect(0, 0, width, height);
-
-		const cx = width / 2;
-		const cy = height / 2;
-
-		/* Globe disc background */
-		const grad = ctx.createRadialGradient(
-			cx - radius * 0.3,
-			cy - radius * 0.3,
-			radius * 0.1,
-			cx,
-			cy,
-			radius,
-		);
-		grad.addColorStop(0, "rgba(167,139,250,0.10)");
-		grad.addColorStop(1, "rgba(10,13,20,0.05)");
-		ctx.beginPath();
-		ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-		ctx.fillStyle = grad;
-		ctx.fill();
-
-		/* Pins, sorted so nearer points draw last (on top) */
-		const projected = institutions
-			.map((d) => ({ d, p: project(d.lat, d.lon, rotation) }))
-			.filter((entry) => entry.p)
-			.sort((a, b) => a.p.depth - b.p.depth);
-
-		/* Clip to globe disc to prevent border rendering outside the circle */
-		ctx.save();
-		ctx.clip();
-
-		drawLand(rotation);
-
-		/* Arcs from hub to each partner */
-		ctx.strokeStyle = "rgba(251,191,36,0.55)";
-		ctx.lineWidth = 1.4;
-		links.forEach((d) => drawArc(hub, d, rotation));
-
-		projected.forEach(({ d, p }) => drawPinDot(d, p));
-
-		ctx.restore();
-
-		/* Globe disc border */
-		ctx.strokeStyle = "rgba(255,255,255,0.14)";
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-		ctx.stroke();
-
-		/* Draw labels outside the clip region so they are always visible */
-		drawLabels(projected);
-	};
-
-	const start = () => {
-		resize();
-		draw();
-	};
-
-	window.addEventListener("resize", () => {
-		resize();
-		draw();
 	});
+})();
 
-	start();
+/* --------------------------------------------------------------------------
+   Pause looping CSS animations in sections that are offscreen, so they stop
+   costing style/paint work every frame while the CubeSat animates.
+   -------------------------------------------------------------------------- */
+(function pauseOffscreenAnimations() {
+	if (!("IntersectionObserver" in window)) return;
+	const io = new IntersectionObserver(
+		(entries) =>
+			entries.forEach((e) =>
+				e.target.classList.toggle("anim-paused", !e.isIntersecting),
+			),
+		{ rootMargin: "100px 0px" },
+	);
+	document
+		.querySelectorAll("main section, .ascii-sep, footer")
+		.forEach((s) => io.observe(s));
 })();

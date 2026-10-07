@@ -1,0 +1,511 @@
+/* Keep the terminal identity; improve reading and give the network its own stage. */
+:root { --ink-muted: #a4a4b6; }
+.ide-window { border-color: rgba(167,139,250,.18); box-shadow: 0 0 90px rgba(139,92,246,.065); }
+.ide-window .section-head h2 { font-size: 1.3rem !important; }
+.ide-window .section-lead { line-height: 1.9; }
+.ide-tab { letter-spacing: 0; text-transform: none; }
+.ide-tab[aria-current="page"] { background: rgba(167,139,250,.10); color: var(--brand-light); }
+.ide-tab.is-active { background: transparent; }
+.teaching-shortcut { display: inline-block; color: var(--teal); margin: .3rem 0 1.2rem; font-size: .82rem; text-underline-offset: 4px; }
+.teaching-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; }
+.teaching-card { position: relative; padding: 1.5rem; border: 1px solid rgba(45,212,191,.22); border-radius: .5rem; background: linear-gradient(135deg,rgba(45,212,191,.05),rgba(167,139,250,.035)); display: flex; flex-direction: column; transition: transform .2s,border-color .2s; }
+.teaching-card:nth-child(2) { border-color: rgba(167,139,250,.3); }
+.teaching-card:nth-child(3) { border-color: rgba(251,191,36,.25); }
+.teaching-card:hover { transform: translateY(-4px); border-color: var(--teal); }
+.ide-window .academic-eyebrow { font-size: .65rem; color: var(--teal); letter-spacing: .08em; text-transform: uppercase; }
+.teaching-card h3 { margin: 1rem 0 .8rem; color: var(--ink); font-size: 1.05rem !important; }
+.teaching-card > p:not(.academic-eyebrow) { font-size: .78rem; line-height: 1.85; margin-bottom: 1.5rem; }
+.teaching-links { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: auto; }
+.teaching-links a { color: var(--teal); font-size: .75rem; text-underline-offset: 4px; }
+.publication-guide { font-size: .8rem; margin-bottom: 1.25rem; }
+.publication-guide a { color: var(--brand-light); text-underline-offset: 3px; }
+.ide-window .pub-authors { font-size: .75rem; color: var(--ink-muted); margin: .6rem 0; }
+.pub-hash, .pub-head { display: none; }
+.globe-card { overflow: hidden; background: radial-gradient(ellipse at 30% 40%,rgba(45,212,191,.06),transparent 65%),radial-gradient(ellipse at 65% 20%,rgba(167,139,250,.07),transparent 60%) !important; }
+.partnership-map-heading { display: flex; align-items: center; gap: .7rem; font-size: .72rem; color: var(--teal); padding-bottom: .8rem; border-bottom: 1px solid var(--line); }
+.map-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 12px var(--teal); }
+.map-projection { margin-left: auto; font-size: .6rem; color: var(--ink-muted); }
+#partnership-map { display: block; width: 100%; height: auto; }
+.map-land { fill: rgba(167,139,250,.055); stroke: rgba(167,139,250,.38); stroke-width: .8; }
+.map-grid { stroke: rgba(167,139,250,.09); stroke-width: .6; fill: none; }
+.map-route { fill: none; stroke-width: 1.8; opacity: .65; stroke-dasharray: 5 5; animation: map-flow 24s linear infinite; }
+.map-route.is-highlighted { opacity: 1; stroke-width: 3; }
+.map-pin-halo { fill: none; stroke-width: 1; opacity: .4; }
+.map-pin.is-highlighted .map-pin-halo { stroke-width: 3; opacity: .9; }
+.map-label { font: 600 11px "JetBrains Mono",monospace; fill: var(--ink); paint-order: stroke; stroke: #181b26; stroke-width: 4px; stroke-linejoin: round; }
+.map-label-leader { stroke: rgba(230,237,243,.3); stroke-width: .7; fill: none; }
+.ide-window .map-help { font-size: .72rem; color: var(--ink-muted); }
+.globe-legend { grid-template-columns: repeat(auto-fit,minmax(235px,1fr)); }
+.globe-legend-item { display: block; }
+.map-institution { width: 100%; display: flex; align-items: center; gap: .6rem; padding: .65rem .7rem; font: inherit; font-size: .72rem; color: var(--ink); background: rgba(255,255,255,.02); border: 1px solid transparent; border-radius: .35rem; text-align: left; cursor: pointer; }
+.map-institution[aria-pressed="true"], .map-institution:hover { border-color: rgba(167,139,250,.4); background: rgba(167,139,250,.07); }
+.map-institution .globe-legend-place { display: block; font-size: .62rem; margin-top: .15rem; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--brand-light); outline-offset: 4px; }
+@keyframes map-flow { to { stroke-dashoffset: -200; } }
+@media(max-width:768px) { .teaching-grid { grid-template-columns: 1fr; } .map-label, .map-label-leader { display: none; } .globe-card { padding: .8rem; } .partnership-map-heading { font-size: .6rem; } .map-projection { font-size: .5rem; } }
+@media(prefers-reduced-motion:reduce) { .map-route { animation: none; } .teaching-card { transition: none; } .js .reveal { opacity: 1; transform: none; } }
+
+/* ═══════════════════════════════════════════
+   RETRO-ACADEMIC COMPUTING ENHANCEMENTS
+═══════════════════════════════════════════ */
+
+/* CRT scanline overlay */
+.ide-window::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  border-radius: inherit;
+}
+
+/* Phosphor glow for key headings */
+.ide-window h2::after {
+  content: "";
+  display: block;
+  width: 3ch;
+  height: 2px;
+  margin-top: 0.4rem;
+  background: var(--brand);
+  box-shadow: 0 0 6px var(--brand), 0 0 12px rgba(167, 139, 250, 0.3);
+}
+
+/* Academic serif for h2 section titles */
+.ide-window .section-head h2 {
+  font-family: "Newsreader", "Georgia", serif !important;
+  letter-spacing: 0.01em;
+  font-size: 1.4rem !important;
+}
+
+/* LaTeX-style equation block */
+.latex-block {
+  border: 1px dashed rgba(167, 139, 250, 0.3);
+  border-left: 3px solid var(--brand);
+  background: rgba(167, 139, 250, 0.04);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+  position: relative;
+}
+.latex-block::before {
+  content: "$$";
+  position: absolute;
+  top: -0.55rem;
+  left: 0.6rem;
+  background: var(--surface);
+  padding: 0 0.3rem;
+  font-size: 0.7rem;
+  color: var(--brand);
+}
+.latex-block .eq-label {
+  font-size: 0.65rem;
+  color: var(--ink-muted);
+  margin-top: 0.4rem;
+}
+.latex-block .eq-math {
+  font-family: "Newsreader", serif;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+
+/* ASCII art section separator */
+.ascii-sep {
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  padding: 0.5rem 0;
+  opacity: 0.6;
+  user-select: none;
+}
+.ascii-sep .sep-glow {
+  color: var(--brand);
+  text-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
+}
+
+/* Retro "machine-readable" badge */
+.mach-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.58rem;
+  color: var(--teal);
+  border: 1px solid rgba(45, 212, 191, 0.25);
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.mach-badge .blink-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: mach-blink 2s ease-in-out infinite;
+}
+@keyframes mach-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* Retro status line */
+.retro-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.6rem;
+  color: var(--ink-muted);
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.75rem;
+}
+.retro-status .status-ok {
+  color: var(--teal);
+}
+.retro-status .status-time {
+  color: var(--accent);
+}
+
+/* LaTeX-style citation */
+.cite-ref {
+  font-size: 0.65rem;
+  color: var(--brand-light);
+  vertical-align: super;
+  cursor: pointer;
+  text-decoration: none;
+}
+.cite-ref:hover {
+  text-decoration: underline;
+  text-shadow: 0 0 6px var(--brand);
+}
+
+/* Fortune-style system message */
+.fortune-msg {
+  font-size: 0.7rem;
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+  padding: 0.5rem 0.75rem;
+  margin: 1rem 0;
+  font-style: italic;
+}
+.fortune-msg::before {
+  content: "> fortune\n";
+  color: var(--ink-muted);
+  font-style: normal;
+  font-size: 0.6rem;
+  display: block;
+}
+
+/* Dot-matrix pattern decoration */
+.dot-deco {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-image: radial-gradient(circle, var(--brand) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.4;
+  vertical-align: middle;
+}
+
+/* Typewriter accent for hero */
+.hero-typewriter-accent {
+  display: inline-block;
+  animation: typewriter-blink 1s step-end infinite;
+}
+@keyframes typewriter-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Retro terminal prompt arrow */
+.term-arrow {
+  display: inline-block;
+  color: var(--teal);
+  text-shadow: 0 0 4px var(--teal);
+  animation: term-pulse 3s ease-in-out infinite;
+}
+@keyframes term-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Academic paper-style abstract box */
+.abstract-box {
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.03), rgba(45, 212, 191, 0.02));
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  font-size: 0.78rem;
+  line-height: 1.8;
+}
+.abstract-box .abs-title {
+  font-family: "Newsreader", serif;
+  font-size: 0.95rem;
+  color: var(--brand-light);
+  margin-bottom: 0.5rem;
+}
+.abstract-box .abs-authors {
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.4rem;
+}
+
+/* Retro "loading" spinner for dynamic content */
+.retro-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--line);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: retro-spin 0.8s linear infinite;
+}
+@keyframes retro-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Subtle page vignette (retro monitor effect) */
+.ide-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.15) 100%);
+  border-radius: inherit;
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .mach-badge .blink-dot { animation: none; }
+  .term-arrow { animation: none; }
+  .retro-spinner { animation: none; }
+  .ide-window::before, .ide-window::after { display: none; }
+}
+
+/* CubeSat animation container */
+.hero-cubesat {
+  position: absolute;
+  top: 8rem;
+  /* Inset slightly farther than the centered container edge. */
+  right: calc(max(0px, (100% - 1240px) / 2) + 2rem);
+  bottom: 1rem;
+  width: calc(min(38rem, 46vw) - 6rem);
+  z-index: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.hero-cubesat.hero-window-front {
+  z-index: 2;
+}
+.hero-cubesat .tetris-window {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.hero-cubesat .tetris-titlebar,
+.hero-cubesat .tetris-statusbar {
+  flex-shrink: 0;
+}
+#cubesat-svg,
+#cubesat-canvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block;
+  object-fit: contain;
+  shape-rendering: geometricPrecision;
+  image-rendering: auto;
+  /* Own compositor layer + paint isolation: per-frame SVG repaints stay
+     inside this layer instead of invalidating the page and the
+     .ide-window scanline/vignette overlays stacked above it. */
+  will-change: transform;
+  transform: translateZ(0);
+  contain: layout paint;
+}
+
+#cubesat-canvas {
+  transform: none;
+}
+
+/* Responsive adjustments for CubeSat */
+@media (max-width: 1024px) {
+  .hero-cubesat {
+    width: calc(min(28rem, 38vw) - 6rem);
+    opacity: 0.64;
+  }
+}
+@media (max-width: 768px) {
+  .hero-cubesat {
+    display: none;
+  }
+}
+
+/* Additional retro-academic polish */
+
+/* Subtle glow on interactive elements */
+.jcard:hover,
+.teaching-card:hover {
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.08), 0 0 40px rgba(45, 212, 191, 0.04);
+}
+
+/* Academic paper-style abstract box refinement */
+.abstract-box {
+  border-left-width: 3px;
+}
+
+/* LaTeX block hover effect */
+.latex-block:hover {
+  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(167, 139, 250, 0.06);
+}
+
+/* Fortune message refinement */
+.fortune-msg:hover {
+  border-left-color: var(--accent-soft);
+  background: rgba(251, 191, 36, 0.04);
+}
+
+/* Section head h2 serif font fallback */
+.section-head h2 {
+  font-family: "Newsreader", "Georgia", "Times New Roman", serif;
+}
+
+/* Mach badge hover */
+.mach-badge:hover {
+  border-color: rgba(45, 212, 191, 0.5);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+/* ASCII separator hover */
+.ascii-sep:hover .sep-glow {
+  text-shadow: 0 0 12px var(--brand), 0 0 24px rgba(167, 139, 250, 0.3);
+}
+
+/* Dot deco animation */
+.dot-deco {
+  /* Static glow + opacity-only pulse: runs on the compositor, no repaints. */
+  text-shadow: 0 0 4px var(--brand);
+  animation: dot-pulse 4s ease-in-out infinite;
+}
+.dot-deco:nth-child(2) { animation-delay: 0.5s; }
+.dot-deco:nth-child(3) { animation-delay: 1s; }
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Tetris ASCII titlebar */
+.tetris-ascii {
+  font-size: 0.55rem;
+  color: var(--ink-muted);
+  margin-right: auto;
+}
+
+/* ── Citation button & APA block ─────────────────────────────── */
+.cite-btn {
+  background: none;
+  border: 1px solid rgba(45, 212, 191, 0.2);
+  color: var(--teal);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.cite-btn:hover {
+  background: rgba(45, 212, 191, 0.08);
+  border-color: var(--teal);
+  box-shadow: 0 0 6px rgba(45, 212, 191, 0.2);
+}
+.cite-btn.copied {
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.pub-citation-block {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(167, 139, 250, 0.04);
+  border-left: 2px solid var(--brand-light);
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+.pub-citation-block.hidden {
+  display: none;
+}
+.citation-apa .t-comment {
+  font-size: 0.6rem;
+  color: var(--ink-muted);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.citation-apa p {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Newsreader", Georgia, serif;
+}
+.citation-apa em {
+  font-style: italic;
+  color: var(--brand-light);
+}
+
+/* ── Retro boot sequence overlay ─────────────────────────────── */
+#boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #050510;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", monospace;
+  transition: opacity 0.6s ease;
+}
+#boot-overlay.boot-fade {
+  opacity: 0;
+  pointer-events: none;
+}
+#boot-overlay.boot-done {
+  display: none;
+}
+#boot-terminal {
+  width: min(720px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+.boot-line {
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--teal);
+  opacity: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.boot-line.visible {
+  opacity: 1;
+}
+.boot-line .boot-ok { color: #4ade80; }
+.boot-line .boot-warn { color: #fbbf24; }
+.boot-line .boot-sys { color: var(--brand-light); }
+.boot-line .boot-punc { color: var(--ink-muted); }
+
+/* Toggled by main.js for sections outside the viewport. */
+.anim-paused,
+.anim-paused * {
+  animation-play-state: paused !important;
+}

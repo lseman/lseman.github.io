@@ -2,9 +2,70 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-const root=resolve(fileURLToPath(new URL(".",import.meta.url)));
-const types={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json"};
-const port=Number(process.env.PORT)||8780;
-const server=createServer(async(req,res)=>{const url=new URL(req.url,"http://localhost"),pathname=decodeURIComponent(url.pathname);if(pathname==="/api/gp"){const catnr=url.searchParams.get("catnr")||"";if(!/^\d{1,9}$/.test(catnr)){res.writeHead(400).end("Invalid catalog number");return}try{const upstream=await fetch(`https://celestrak.org/NORAD/elements/gp.php?CATNR=${catnr}&FORMAT=TLE`),body=await upstream.text();res.writeHead(upstream.status,{"Content-Type":"text/plain; charset=utf-8","Cache-Control":"public, max-age=7200"}).end(body)}catch{res.writeHead(502).end("Orbital data unavailable")}return}const file=resolve(root,pathname==="/"?"index.html":`.${pathname}`);if(file!==root&&!file.startsWith(root+sep)){res.writeHead(403).end("Forbidden");return}try{const body=await readFile(file);res.writeHead(200,{"Content-Type":types[extname(file)]||"application/octet-stream","Cache-Control":"no-store"}).end(body)}catch{res.writeHead(404).end("Not found")}});
-server.on("error",error=>{if(error.code==="EADDRINUSE"){console.error(`Porta ${port} já está em uso. Execute com outra porta: PORT=8781 npm start`);process.exitCode=1;return}throw error});
-server.listen(port,()=>console.log(`CommsLab: http://localhost:${port}`));
+
+const root = resolve(fileURLToPath(new URL(".", import.meta.url)));
+
+const types = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json"
+};
+const port = Number(process.env.PORT) || 8780;
+
+const server = createServer(async (req, res) => {
+    const url = new URL(req.url, "http://localhost");
+    const pathname = decodeURIComponent(url.pathname);
+
+    // TLE API endpoint
+    if (pathname === "/api/gp") {
+        const catnr = url.searchParams.get("catnr") || "";
+        if (!/^\d{1,9}$/.test(catnr)) {
+            res.writeHead(400).end("Invalid catalog number");
+            return;
+        }
+        try {
+            const upstream = await fetch(`https://celestrak.org/NORAD/elements/gp.php?CATNR=${catnr}&FORMAT=TLE`);
+            const body = await upstream.text();
+            res.writeHead(upstream.status, {
+                "Content-Type": "text/plain; charset=utf-8",
+                "Cache-Control": "public, max-age=7200"
+            }).end(body);
+        } catch {
+            res.writeHead(502).end("Orbital data unavailable");
+        }
+        return;
+    }
+
+    // Static file serving with path traversal protection
+    let file = resolve(root, pathname === "/" ? "index.html" : `.${pathname}`);
+
+    // Security: the resolved path must be inside the root directory
+    // Check both the directory itself and anything inside it
+    const prefixCheck = file === root || file.startsWith(root + sep);
+    if (!prefixCheck) {
+        res.writeHead(403).end("Forbidden");
+        return;
+    }
+
+    try {
+        const body = await readFile(file);
+        res.writeHead(200, {
+            "Content-Type": types[extname(file)] || "application/octet-stream",
+            "Cache-Control": "no-store"
+        }).end(body);
+    } catch {
+        res.writeHead(404).end("Not found");
+    }
+});
+
+server.on("error", error => {
+    if (error.code === "EADDRINUSE") {
+        console.error(`Porta ${port} já está em uso. Execute com outra porta: PORT=8781 npm start`);
+        process.exitCode = 1;
+        return;
+    }
+    throw error;
+});
+
+server.listen(port, () => console.log(`CommsLab: http://localhost:${port}`));
