@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Magnetostática — Lista de Exercícios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: índice fixo à esquerda (largo) + coluna de leitura ~70ch; cada exercício = enunciado, figura, resolução recolhível */
+:root{
+  --bg:#f4f6f9; --surface:#ffffff; --ink:#1a2130; --muted:#5b6577; --line:#d8dee7;
+  --current:#a85a17; --field:#2459c2; --force:#b62d63; --pot:#6b46c1;
+  --tint-current:rgba(168,90,23,.13); --tint-field:rgba(36,89,194,.09);
+  --tint-force:rgba(182,45,99,.08); --tint-pot:rgba(107,70,193,.09);
+  --f-display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-body:"Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#11141a; --surface:#181d25; --ink:#e5e9f0; --muted:#9aa4b5; --line:#2b3340;
+  --current:#e39a57; --field:#77a3f2; --force:#ef7aa4; --pot:#a78bfa;
+  --tint-current:rgba(227,154,87,.16); --tint-field:rgba(119,163,242,.11);
+  --tint-force:rgba(239,122,164,.10); --tint-pot:rgba(167,139,250,.11); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#11141a; --surface:#181d25; --ink:#e5e9f0; --muted:#9aa4b5; --line:#2b3340;
+  --current:#e39a57; --field:#77a3f2; --force:#ef7aa4; --pot:#a78bfa;
+  --tint-current:rgba(227,154,87,.16); --tint-field:rgba(119,163,242,.11);
+  --tint-force:rgba(239,122,164,.10); --tint-pot:rgba(167,139,250,.11); color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6}
+.wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:48px;max-width:1120px;margin:0 auto;padding-inline:24px;padding-block:40px 80px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:24px;padding-inline:16px;padding-block:24px 60px}}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:14px}
+@media (max-width:900px){nav.toc{position:static}}
+.toc h3{font-family:var(--f-body);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.toc a{display:grid;grid-template-columns:2.4em 1fr;color:var(--ink);text-decoration:none;padding:4px 8px;border-radius:6px}
+.toc a:hover,.toc a:focus-visible{background:var(--tint-field);outline:none}
+.toc a span:first-child{font-family:var(--f-mono);font-size:12px;color:var(--current);padding-top:2px}
+.toc .grp{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:10px 8px 2px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+button{font:600 13px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--field)} button:focus-visible{outline:2px solid var(--field);outline-offset:2px}
+
+main{min-width:0;max-width:760px}
+header.top .eyebrow{font-family:var(--f-mono);font-size:12px;color:var(--current);letter-spacing:.04em}
+h1{font-family:var(--f-display);font-weight:650;font-size:clamp(30px,4.6vw,42px);line-height:1.12;margin:6px 0 12px;text-wrap:balance}
+.lede{color:var(--muted);max-width:62ch;margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-top:24px}
+.panel h2{font-family:var(--f-body);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.consts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 20px;font-size:15px;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:.03em}
+td.num{font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:14px}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+article.ex{margin-top:64px;scroll-margin-top:24px}
+.exhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.exnum{font-family:var(--f-mono);font-size:13px;color:var(--current);font-weight:500}
+.chip{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--field);background:var(--tint-field);border-radius:4px;padding:2px 8px}
+.lvl{font-size:12px;color:var(--muted)}
+.lvl b{color:var(--current);letter-spacing:2px}
+article.ex h2{font-family:var(--f-display);font-weight:650;font-size:26px;line-height:1.2;margin:6px 0 10px;text-wrap:balance}
+.statement{margin:0}
+.statement ol{margin:8px 0 0;padding-left:1.4em}
+
+figure{margin:22px 0 4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 14px 10px;overflow-x:auto}
+figure > svg{display:block;width:100%;height:auto;max-width:640px;margin:0 auto;color:var(--ink);font-family:var(--f-body)}
+figcaption{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.45}
+figure > svg text{font-size:13px;fill:currentColor}
+figure > svg .sm{font-size:11.5px}
+figure > svg .lb{font-family:var(--f-display);font-style:italic;font-size:15px}
+mjx-container svg{display:inline-block;max-width:none}
+.cur{stroke:var(--current)} .fld{stroke:var(--field)} .frc{stroke:var(--force)} .pt{stroke:var(--pot)} .ink{stroke:currentColor} .mut{stroke:var(--muted)}
+.fcur{fill:var(--current)} .ffld{fill:var(--field)} .ffrc{fill:var(--force)} .fpt{fill:var(--pot)} .fink{fill:currentColor} .fmut{fill:var(--muted)}
+.tcur{fill:var(--current)!important} .tfld{fill:var(--field)!important} .tfrc{fill:var(--force)!important} .tpt{fill:var(--pot)!important} .tmut{fill:var(--muted)!important}
+.nofill{fill:none}
+
+details.sol{margin-top:18px;border-top:1px solid var(--line)}
+details.sol>summary{cursor:pointer;list-style:none;padding:12px 0 4px;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+details.sol>summary::-webkit-details-marker{display:none}
+details.sol>summary::before{content:"▸";display:inline-block;width:1.2em;transition:transform .15s}
+details.sol[open]>summary::before{transform:rotate(90deg)}
+details.sol>summary:focus-visible{outline:2px solid var(--field);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){details.sol>summary::before{transition:none}}
+.strategy{margin:8px 0 0}
+.strategy strong{color:var(--field)}
+ol.steps{list-style:none;counter-reset:st;margin:16px 0 0;padding:0;display:grid;gap:14px}
+ol.steps>li{counter-increment:st;display:grid;grid-template-columns:2em minmax(0,1fr);gap:0 10px}
+ol.steps>li::before{content:counter(st);font-family:var(--f-mono);font-size:13px;color:var(--current);border:1px solid var(--current);border-radius:50%;width:1.75em;height:1.75em;display:grid;place-items:center;margin-top:2px}
+ol.steps h4{margin:0;font-size:16px;font-weight:700}
+ol.steps p{margin:4px 0 0}
+.result{margin-top:18px;background:var(--tint-current);border-radius:8px;padding:12px 16px}
+.result .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--current)}
+aside.note{margin-top:14px;border-radius:8px;padding:12px 16px}
+aside.note .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+aside.note p{margin:4px 0 0}
+aside.insight{background:var(--tint-field)} aside.insight .k{color:var(--field)}
+aside.trap{background:var(--tint-force)} aside.trap .k{color:var(--force)}
+aside.whatif{background:var(--tint-pot)} aside.whatif .k{color:var(--pot)}
+aside.decision{background:transparent;border:1px solid var(--line)} aside.decision .k{color:var(--current)}
+aside.note ul{margin:6px 0 0;padding-left:1.2em;display:grid;gap:5px}
+p.why{font-size:15.5px;color:var(--muted);margin-top:8px!important;padding-left:12px;border-left:2px solid var(--line)}
+p.why b{color:var(--ink)}
+details.sol figure{margin-top:16px}
+mjx-container[display="true"]{overflow-x:auto;overflow-y:hidden;max-width:100%;padding:2px 0}
+footer{margin-top:72px;color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:16px}
+a{color:var(--field)}
+
+/* Camadas de estudo: prever, resolver, conferir e explorar. */
+html{scroll-behavior:smooth} body{margin:0}
+.skip-link{position:absolute;top:-100px;left:16px;z-index:10;background:var(--surface);padding:12px}.skip-link:focus{top:12px}
+nav.toc{max-height:calc(100dvh - 48px);overflow-y:auto;padding-right:6px;scrollbar-width:thin}
+.toc a[aria-current="location"]{background:var(--tint-field);box-shadow:inset 3px 0 var(--field)}
+.toc h2{font-size:13px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.08em}
+.study-route{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;padding:0;margin:12px 0}
+.study-route li{border-left:3px solid var(--field);padding-left:12px;font-size:15px}.study-route strong{display:block}
+.reading-key{display:flex;gap:20px;flex-wrap:wrap;font-size:15px}.reading-key b{font-size:22px;color:var(--field)}
+.preflight{margin-top:18px;padding:14px 16px;border-left:3px solid var(--pot);background:var(--tint-pot);border-radius:0 8px 8px 0}
+.preflight p{margin:3px 0}.preflight strong{color:var(--pot);font-size:14px}
+details.hint,details.check{margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--surface)}
+details.hint>summary,details.check>summary{cursor:pointer;font-weight:600}details.hint p,details.check p{margin:8px 0 2px}
+summary:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--field);outline-offset:4px}
+.lab{border:1px solid var(--line);border-top:3px solid var(--field);background:var(--surface);border-radius:10px;margin:20px 0;padding:18px}
+.lab h3{font-size:19px;margin:0 0 6px;font-family:var(--f-display)}.lab p{font-size:15px;margin:8px 0}
+.lab .lab-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}.lab label{font-weight:600;font-size:15px}
+.lab input[type=range]{accent-color:var(--field);flex:1;min-width:120px;max-width:280px;min-height:30px}
+.lab output{font-family:var(--f-mono);font-size:14px;font-variant-numeric:tabular-nums}
+.lab figure{border:0;padding:0;margin:12px 0}.lab .metrics{padding:10px 12px;background:var(--tint-field);border-radius:6px;display:block;line-height:1.7}
+.lab .live-only{display:none}html.js .lab .live-only{display:flex}.lab .static-note{color:var(--muted)}html.js .lab .static-note{display:none}
+ol.steps h3{margin:0;font-size:17px;font-family:var(--f-body)}
+.derivation{margin:12px 0;padding:10px 14px;border-left:3px solid var(--field);background:var(--tint-field)}.derivation p{margin:6px 0}
+.ex h3.solution-title{font-size:18px;margin:20px 0 4px}.step-toggle{margin:8px 0}
+@media(max-width:900px){nav.toc{max-height:none;overflow:visible}.toc ol{grid-template-columns:repeat(2,minmax(0,1fr))}.toc .grp{grid-column:1/-1}.study-route{grid-template-columns:1fr}}
+@media(max-width:480px){.wrap{padding-inline:12px}.panel,.lab{padding:14px}.toc a{font-size:13px}figure{padding:8px}.reading-key{gap:8px 16px}ol.steps>li{gap:0 7px;grid-template-columns:1.6em minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{ :root{--bg:white;--surface:white;--ink:#111;--muted:#444;--line:#bbb;--current:#894412;--field:#174caa;--force:#92214c;--pot:#5a3599;color-scheme:light}
+ body{font-size:11pt}.wrap{display:block;padding:0;max-width:none}main{max-width:none}nav.toc,.skip-link,.controls,.live-only,.step-toggle{display:none!important}
+ article.ex{margin-top:26px}figure,.result,.preflight{break-inside:avoid}h2,h3,summary{break-after:avoid}details.sol>summary{display:none}details.sol{border:0}a{color:inherit} .lab{break-inside:avoid}footer{margin-top:24px}}
+
+mjx-container{max-width:100%;overflow-x:auto;overflow-y:hidden;padding-block:2px}
+mjx-container:not([display="true"]){display:inline-block;vertical-align:middle}
+@media(max-width:600px){
+ .lab figure>svg{overflow:visible}
+ .helix-side{transform:translate(0px,0px)}.helix-end{transform:translate(-295px,285px)}
+ .polygon-geometry{transform:translate(20px,0px)}.polygon-chart{transform:translate(-280px,280px)}
+ .ampere-geometry{transform:translate(20px,0px)}.ampere-chart{transform:translate(-280px,280px)}
+ figure:not(.lab figure)>svg{min-width:360px}
+}
+@media(max-width:600px){:root:not(.js) .lab figure>svg{min-width:540px}:root:not(.js) .lab svg g{transform:none}}
+@media print{.helix-end,.polygon-chart,.ampere-chart,.polygon-geometry,.ampere-geometry{transform:none!important}}
+
+/* Lista para resolver: espaço de trabalho e impressão */
+.statement ol[type=a]{margin-top:6px}
+article.ex figure{margin-top:16px}
+.workspace{margin-top:18px;border:1px dashed var(--line);border-radius:8px;min-height:120px;padding:10px 14px;color:var(--muted);font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+@media screen{.workspace{display:none}}
+@media print{article.ex{break-before:page;margin-top:0}article.ex:first-of-type{break-before:auto}.workspace{display:block;min-height:9cm}}
+</style>
+
+<script>
+window.MathJax={tex:{inlineMath:[["$","$"]],displayMath:[["$$","$$"]],tags:"none"},svg:{fontCache:"global"},startup:{typeset:true}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+
+
+<!-- marcadores e símbolos compartilhados pelas figuras -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker>
+    <marker id="a-cur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--current)"/></marker>
+    <marker id="a-fld" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--field)"/></marker>
+    <marker id="a-frc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--force)"/></marker>
+    <marker id="a-pt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pot)"/></marker>
+    <marker id="a-mut" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker>
+    <symbol id="dot" viewBox="-6 -6 12 12" overflow="visible"><circle r="5.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle r="1.8" fill="currentColor"/></symbol>
+    <symbol id="cross" viewBox="-6 -6 12 12" overflow="visible"><circle r="5.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M-3.6,-3.6 L3.6,3.6 M3.6,-3.6 L-3.6,3.6" stroke="currentColor" stroke-width="1.2"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+<nav class="toc" aria-label="Exercícios">
+  <h2>Exercícios</h2>
+  <ol>
+    <li class="grp">Força de Lorentz</li>
+    <li><a href="#r1"><span>R1</span><span>Espectrômetro de massa</span></a></li>
+    <li><a href="#r2"><span>R2</span><span>Trajetória helicoidal</span></a></li>
+    <li><a href="#r3"><span>R3</span><span>Cíclotron</span></a></li>
+    <li><a href="#r4"><span>R4</span><span>Efeito Hall</span></a></li>
+    <li><a href="#r5"><span>R5</span><span>Fio semicircular em B uniforme</span></a></li>
+    <li class="grp">Biot–Savart</li>
+    <li><a href="#r6"><span>R6</span><span>Fio em grampo</span></a></li>
+    <li><a href="#r7"><span>R7</span><span>Espira poligonal → círculo</span></a></li>
+    <li><a href="#r8"><span>R8</span><span>Disco carregado girante</span></a></li>
+    <li><a href="#r9"><span>R9</span><span>Solenoide finito</span></a></li>
+    <li><a href="#r10"><span>R10</span><span>Bobinas anti-Helmholtz</span></a></li>
+    <li class="grp">Stokes</li>
+    <li><a href="#r11"><span>R11</span><span>Disco × hemisfério</span></a></li>
+    <li class="grp">Ampère</li>
+    <li><a href="#r12"><span>R12</span><span>Cilindro com J ∝ s</span></a></li>
+    <li><a href="#r13"><span>R13</span><span>Cavidade excêntrica</span></a></li>
+    <li><a href="#r14"><span>R14</span><span>Placa espessa</span></a></li>
+    <li><a href="#r15"><span>R15</span><span>Qual campo é magnético?</span></a></li>
+    <li class="grp">Forças entre correntes</li>
+    <li><a href="#r16"><span>R16</span><span>Espira junto a um fio</span></a></li>
+    <li><a href="#r17"><span>R17</span><span>Três fios em triângulo</span></a></li>
+    <li class="grp">Potencial vetor</li>
+    <li><a href="#r18"><span>R18</span><span>A de um solenoide</span></a></li>
+    <li><a href="#r19"><span>R19</span><span>Dois calibres, um campo</span></a></li>
+    <li class="grp">Energia magnética</li>
+    <li><a href="#r20"><span>R20</span><span>Coaxial: energia e L′</span></a></li>
+    <li><a href="#r21"><span>R21</span><span>Toroide retangular</span></a></li>
+    <li><a href="#r22"><span>R22</span><span>Energia como pressão</span></a></li>
+  </ol>
+  <div class="controls">
+    <button type="button" id="btn-theme" aria-pressed="false">Tema escuro</button>
+    <button type="button" id="btn-print">Imprimir / PDF</button>
+  </div>
+</nav>
+
+<main id="conteudo">
+<header class="top">
+  <div class="eyebrow">Eletromagnetismo · Cap. 5 · Aula de exercícios</div>
+  <h1>Magnetostática: lista de exercícios</h1>
+  <p class="lede">Vinte e dois problemas que complementam a lista E1–E20 da apostila, cobrindo todos os tópicos do capítulo. Esta versão traz apenas enunciados e figuras; as resoluções comentadas estão no arquivo de exercícios resolvidos. Ao imprimir, cada exercício começa em uma página nova, com espaço para a resolução.</p>
+</header>
+<section class="panel" aria-labelledby="study-title">
+  <h2 id="study-title">Como estudar esta lista</h2>
+  <ol class="study-route">
+    <li><strong>1 · Preveja</strong>Leia o enunciado e antecipe direção, simetria ou dependência antes de abrir a conta.</li>
+    <li><strong>2 · Resolva</strong>Escolha a ferramenta e explique por que cada equação se aplica antes de substituir números.</li>
+    <li><strong>3 · Confira</strong>Verifique unidade, sinal e um caso-limite. Só depois compare com a resolução.</li>
+  </ol>
+  <div class="reading-key"><span><b>⊙</b> vetor saindo da página</span><span><b>⊗</b> vetor entrando na página</span></div>
+  <p>Imagine uma flecha: ⊙ mostra sua ponta; ⊗, sua cauda. Para $q&gt;0$, use a mão direita em $\vec v\times\vec B$; para $q&lt;0$, inverta o resultado. Nas figuras, setas indicam sentidos; proporções só são quantitativas quando há uma escala.</p>
+  <details class="hint"><summary>Notação e unidades que aparecem nas contas</summary>
+  <p>$s$ é a distância ao eixo em coordenadas cilíndricas; $s'$ é uma variável de integração. $n$ é o número de espiras por metro; $N$, o número total. $J$ tem unidade A/m² e $K$, A/m. Em R20, a linha em $W'$ e $L'$ significa “por unidade de comprimento”, não derivada.</p>
+  <p>$1\,\text{cm}=10^{-2}\,\text m$, $1\,\text{mm}=10^{-3}\,\text m$, $1\,\text{cm}^2=10^{-4}\,\text m^2$ e $1\,\mu\text T=10^{-6}\,\text T$. Converta os dados antes da substituição numérica.</p></details>
+</section>
+
+<section class="panel" aria-labelledby="k-const">
+  <h2 id="k-const">Constantes usadas</h2>
+  <div class="consts">
+    <div>$\mu_0 = 4\pi\times10^{-7}\ \text{T·m/A}$</div>
+    <div>$e = 1{,}602\times10^{-19}\ \text{C}$</div>
+    <div>$m_p = 1{,}673\times10^{-27}\ \text{kg}$</div>
+    <div>$u = 1{,}6605\times10^{-27}\ \text{kg}$</div>
+  </div>
+  <div class="legend" aria-label="Código de cores das figuras">
+    <span><i style="background:var(--current)"></i>corrente / trajetória</span>
+    <span><i style="background:var(--field)"></i>campo $\vec B$</span>
+    <span><i style="background:var(--force)"></i>força</span>
+    <span><i style="background:var(--pot)"></i>potencial vetor $\vec A$</span>
+  </div>
+</section>
+
+<!-- ============ R1 ============ -->
+<article class="ex" id="r1">
+  <div class="exhead"><span class="exnum">R1</span><span class="chip">Força de Lorentz</span><span class="lvl">dificuldade <b>●○○</b></span></div>
+  <h2>Espectrômetro de massa: separando ¹²C⁺ de ¹⁴C⁺</h2>
+  <div class="statement">
+    <p>Íons ¹²C⁺ ($12u$) e ¹⁴C⁺ ($14u$), ambos com carga $+e$, passam por um seletor de velocidades com $E = 1{,}2\times10^{5}\ \text{V/m}$ e $B_s = 0{,}30\ \text{T}$. Na câmara seguinte há apenas $B = 0{,}50\ \text{T}$, saindo do plano. Os íons descrevem meia volta e atingem um detector na parede de entrada.</p>
+    <ol type="a"><li>Que velocidade atravessa o seletor sem deflexão?</li><li>Qual o raio de cada trajetória?</li><li>Qual a distância entre os pontos de impacto no detector?</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 232" role="img" aria-label="Seletor de velocidades à esquerda; na câmara à direita os íons descrevem semicírculos de raios diferentes e atingem o detector separados por Δx.">
+      <rect x="20" y="8" width="112" height="6" class="fcur" />
+      <rect x="20" y="68" width="112" height="6" class="fmut" />
+      <text x="138" y="15" class="sm tcur">+</text><text x="138" y="76" class="sm tmut">−</text>
+      <line x1="30" y1="18" x2="30" y2="62" class="frc" stroke-width="1.2" marker-end="url(#a-frc)"/>
+      <text x="36" y="34" class="sm tfrc">E</text>
+      <use href="#cross" x="54" y="17" width="12" height="12" style="color:var(--field)"/>
+      <use href="#cross" x="94" y="17" width="12" height="12" style="color:var(--field)"/>
+      <use href="#cross" x="54" y="51" width="12" height="12" style="color:var(--field)"/>
+      <use href="#cross" x="94" y="51" width="12" height="12" style="color:var(--field)"/>
+      <text x="112" y="34" class="sm tfld">Bₛ</text>
+      <text x="76" y="94" text-anchor="middle" class="sm tmut">seletor</text>
+      <line x1="2" y1="41" x2="150" y2="41" class="cur" stroke-width="2"/>
+      <line x1="2" y1="41" x2="22" y2="41" class="cur" stroke-width="2" marker-end="url(#a-cur)"/>
+      <text x="140" y="34" class="lb" text-anchor="end">v</text>
+      <rect x="150" y="12" width="222" height="212" class="mut nofill" stroke-dasharray="4 4"/>
+      <g style="color:var(--field)" opacity=".7">
+        <use href="#dot" x="290" y="24" width="12" height="12"/><use href="#dot" x="340" y="24" width="12" height="12"/>
+        <use href="#dot" x="290" y="190" width="12" height="12"/><use href="#dot" x="340" y="190" width="12" height="12"/>
+        <use href="#dot" x="250" y="56" width="12" height="12"/><use href="#dot" x="340" y="104" width="12" height="12"/>
+      </g>
+      <text x="364" y="66" text-anchor="end" class="tfld">B = 0,50 T</text>
+      <path d="M150,41 A60,60 0 0 1 150,161" class="cur nofill" stroke-width="2"/>
+      <path d="M150,41 A70,70 0 0 1 150,181" class="cur nofill" stroke-width="2" stroke-dasharray="6 4"/>
+      <circle cx="150" cy="101" r="2.5" class="fink"/><line x1="150" y1="101" x2="210" y2="101" class="mut" stroke-dasharray="3 3"/><text x="172" y="94" class="sm">r₁₂</text><path d="M199,66 A60,60 0 0 1 207,82" class="cur nofill" stroke-width="2" marker-end="url(#a-cur)"/>
+      <text x="204" y="120" text-anchor="end" class="sm tcur">¹²C⁺</text>
+      <text x="231" y="141" class="sm tcur">¹⁴C⁺</text>
+      <line x1="150" y1="140" x2="150" y2="206" class="ink" stroke-width="5"/>
+      <text x="144" y="214" text-anchor="end" class="sm">detector</text>
+      <line x1="138" y1="161" x2="138" y2="181" class="ink" stroke-width="1"/>
+      <line x1="134" y1="161" x2="142" y2="161" class="ink"/><line x1="134" y1="181" x2="142" y2="181" class="ink"/>
+      <text x="130" y="176" text-anchor="end" class="lb">Δx</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R2 ============ -->
+<article class="ex" id="r2">
+  <div class="exhead"><span class="exnum">R2</span><span class="chip">Força de Lorentz</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Próton em hélice: raio, período e passo</h2>
+  <div class="statement">
+    <p>Um próton entra em uma região de campo uniforme $\vec B = 0{,}20\,\hat x\ \text{T}$ com velocidade $v = 1{,}0\times10^{6}\ \text{m/s}$ formando $30^\circ$ com $\vec B$. Determine o raio da hélice, o período de revolução e o passo (avanço ao longo de $\hat x$ por volta).</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 200" role="img" aria-label="Hélice de próton ao longo do campo B horizontal, com decomposição da velocidade em componentes paralela e perpendicular e o passo p indicado; esquema sem escala.">
+      <line x1="16" y1="24" x2="364" y2="24" class="fld" stroke-width="1.4" marker-end="url(#a-fld)"/>
+      <line x1="16" y1="186" x2="364" y2="186" class="fld" stroke-width="1.4" marker-end="url(#a-fld)"/>
+      <text x="350" y="16" class="lb tfld">B</text>
+      <polyline class="cur nofill" stroke-width="2" points="70.0,105.0 70.8,101.8 71.6,98.7 72.2,95.6 72.8,92.6 73.3,89.6 73.7,86.8 74.1,84.0 74.3,81.4 74.5,78.9 74.7,76.6 74.7,74.5 74.7,72.5 74.7,70.8 74.6,69.3 74.5,68.0 74.3,66.9 74.1,66.1 73.9,65.5 73.7,65.1 73.5,65.0 73.3,65.1 73.0,65.5 72.8,66.2 72.7,67.1 72.5,68.2 72.4,69.5 72.3,71.1 72.3,72.9 72.3,74.8 72.4,77.0 72.5,79.3 72.7,81.8 73.0,84.5 73.3,87.2 73.8,90.1 74.3,93.1 74.9,96.1 75.5,99.2 76.3,102.4 77.1,105.5 78.1,108.7 79.1,111.8 80.2,114.9 81.4,117.9 82.7,120.9 84.0,123.7 85.5,126.4 87.0,129.0 88.6,131.5 90.2,133.7 91.9,135.8 93.7,137.8 95.5,139.5 97.3,141.0 99.2,142.2 101.1,143.3 103.1,144.1 105.0,144.6 107.0,144.9 109.0,145.0 111.0,144.8 112.9,144.4 114.9,143.7 116.8,142.8 118.7,141.6 120.6,140.2 122.4,138.6 124.2,136.8 126.0,134.8 127.6,132.6 129.2,130.3 130.8,127.7 132.3,125.1 133.6,122.3 135.0,119.4 136.2,116.4 137.3,113.4 138.4,110.2 139.4,107.1 140.3,103.9 141.1,100.8 141.8,97.7 142.4,94.6 143.0,91.6 143.5,88.7 143.9,85.8 144.2,83.1 144.4,80.6 144.6,78.1 144.7,75.9 144.7,73.8 144.7,71.9 144.7,70.3 144.6,68.8 144.4,67.6 144.3,66.6 144.1,65.8 143.9,65.3 143.6,65.0 143.4,65.0 143.2,65.2 143.0,65.7 142.8,66.4 142.6,67.4 142.5,68.6 142.4,70.0 142.3,71.7 142.3,73.5 142.3,75.5 142.4,77.8 142.6,80.1 142.8,82.7 143.1,85.4 143.5,88.2 143.9,91.1 144.5,94.1 145.1,97.2 145.8,100.3 146.6,103.4 147.5,106.6 148.4,109.7 149.5,112.8 150.6,115.9 151.8,118.9 153.1,121.8 154.5,124.6 156.0,127.3 157.5,129.9 159.1,132.2 160.8,134.5 162.5,136.5 164.3,138.3 166.1,140.0 167.9,141.4 169.8,142.6 171.8,143.6 173.7,144.3 175.7,144.8 177.7,145.0 179.7,145.0 181.6,144.7 183.6,144.2 185.6,143.4 187.5,142.4 189.4,141.2 191.2,139.7 193.0,138.1 194.8,136.2 196.5,134.1 198.2,131.9 199.8,129.4 201.3,126.9 202.7,124.2 204.1,121.3 205.4,118.4 206.6,115.4 207.7,112.3 208.8,109.2 209.7,106.1 210.6,102.9 211.3,99.8 212.0,96.6 212.6,93.6 213.2,90.6 213.6,87.7 214.0,84.9 214.3,82.3 214.5,79.7 214.6,77.4 214.7,75.2 214.7,73.2 214.7,71.4 214.6,69.8 214.5,68.4 214.4,67.2 214.2,66.3 214.0,65.6 213.8,65.2 213.6,65.0 213.3,65.1 213.1,65.4 212.9,65.9 212.7,66.7 212.6,67.8 212.4,69.0 212.3,70.5 212.3,72.2 212.3,74.2 212.3,76.3 212.4,78.5 212.6,81.0 212.9,83.6 213.2,86.3 213.6,89.1 214.1,92.1 214.7,95.1 215.3,98.2 216.0,101.3 216.9,104.5 217.8,107.6 218.8,110.8 219.8,113.9 221.0,116.9 222.3,119.9 223.6,122.8 225.0,125.5 226.5,128.2 228.0,130.7 229.6,133.0 231.3,135.2 233.1,137.1 234.9,138.9 236.7,140.5 238.6,141.8 240.5,142.9 242.4,143.8 244.4,144.5 246.4,144.9 248.3,145.0 250.3,144.9 252.3,144.5 254.3,143.9 256.2,143.1 258.1,142.0 260.0,140.7 261.8,139.2 263.6,137.5 265.4,135.5 267.1,133.4 268.7,131.1 270.3,128.6 271.8,126.0 273.2,123.2 274.5,120.4 275.8,117.4 277.0,114.4 278.1,111.3 279.1,108.2 280.0,105.0"/>
+      <line x1="30" y1="105" x2="62" y2="105" class="ink" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#a-ink)"/>
+      <text x="24" y="122" class="sm">v∥</text>
+      <line x1="30" y1="105" x2="30" y2="85" class="ink" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#a-ink)"/>
+      <text x="12" y="92" class="sm">v⊥</text>
+      <line x1="30" y1="105" x2="62" y2="85" class="ink" stroke-width="1.6" marker-end="url(#a-ink)"/>
+      <text x="44" y="82" class="lb">v</text>
+      <line x1="73" y1="160" x2="143" y2="160" class="ink"/><line x1="73" y1="154" x2="73" y2="166" class="ink"/><line x1="143" y1="154" x2="143" y2="166" class="ink"/>
+      <text x="108" y="177" text-anchor="middle" class="lb">p</text>
+      <line x1="304" y1="65" x2="304" y2="105" class="ink"/><line x1="298" y1="65" x2="310" y2="65" class="ink"/><line x1="298" y1="105" x2="310" y2="105" class="ink"/>
+      <text x="314" y="90" class="lb">r</text>
+      <line x1="284" y1="105" x2="300" y2="105" class="mut" stroke-dasharray="2 3"/>
+      <line x1="284" y1="65" x2="300" y2="65" class="mut" stroke-dasharray="2 3"/>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R3 ============ -->
+<article class="ex" id="r3">
+  <div class="exhead"><span class="exnum">R3</span><span class="chip">Força de Lorentz</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Cíclotron: por que a energia final não depende da tensão</h2>
+  <div class="statement">
+    <p>Um cíclotron acelera prótons com $B = 1{,}5\ \text{T}$ e raio útil das “dês” $R = 0{,}50\ \text{m}$. A tensão entre as dês é $\Delta V = 50\ \text{kV}$ (amplitude).</p>
+    <ol type="a"><li>Qual a frequência do oscilador?</li><li>Qual a energia cinética na saída (em MeV)?</li><li>Quantas voltas o próton dá até sair?</li><li>A hipótese não relativística é aceitável?</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 222" role="img" aria-label="Duas dês semicirculares separadas por uma fenda; o próton parte do centro e descreve uma espiral, ganhando energia a cada travessia da fenda.">
+      <path d="M180,20 A90,90 0 0 0 180,200 Z" class="mut" style="fill:var(--tint-field)" stroke-width="1.4"/>
+      <path d="M200,20 A90,90 0 0 1 200,200 Z" class="mut" style="fill:var(--tint-field)" stroke-width="1.4"/>
+      <polyline class="cur nofill" stroke-width="1.6" points="194.0,110.0 194.2,109.7 194.4,109.4 194.5,109.1 194.7,108.8 194.8,108.4 194.9,108.1 195.0,107.7 195.0,107.3 195.0,106.8 194.9,106.4 194.9,106.0 194.7,105.5 194.6,105.1 194.4,104.6 194.2,104.2 193.9,103.8 193.6,103.3 193.3,102.9 192.9,102.6 192.5,102.2 192.1,101.8 191.6,101.5 191.1,101.2 190.5,101.0 190.0,100.7 189.4,100.5 188.7,100.4 188.1,100.3 187.4,100.2 186.8,100.2 186.1,100.2 185.4,100.3 184.7,100.4 184.0,100.6 183.3,100.8 182.6,101.1 181.9,101.5 181.2,101.8 180.5,102.3 179.9,102.8 179.3,103.3 178.7,103.9 178.2,104.5 177.6,105.2 177.2,105.9 176.7,106.7 176.3,107.5 176.0,108.3 175.7,109.2 175.5,110.1 175.3,111.0 175.2,112.0 175.1,113.0 175.1,113.9 175.2,114.9 175.4,115.9 175.6,116.9 175.9,117.9 176.2,118.9 176.6,119.9 177.1,120.9 177.7,121.8 178.3,122.7 179.0,123.6 179.8,124.4 180.6,125.2 181.4,126.0 182.4,126.7 183.4,127.3 184.4,127.9 185.5,128.4 186.6,128.9 187.8,129.2 189.0,129.6 190.2,129.8 191.5,129.9 192.8,130.0 194.1,130.0 195.4,129.9 196.7,129.7 198.0,129.5 199.3,129.1 200.6,128.7 201.9,128.2 203.1,127.5 204.3,126.8 205.5,126.1 206.6,125.2 207.7,124.2 208.8,123.2 209.7,122.1 210.6,121.0 211.5,119.7 212.2,118.4 212.9,117.1 213.5,115.7 214.1,114.2 214.5,112.7 214.8,111.2 215.0,109.6 215.2,108.0 215.2,106.4 215.1,104.8 215.0,103.2 214.7,101.5 214.3,99.9 213.8,98.3 213.2,96.7 212.5,95.2 211.7,93.7 210.8,92.2 209.8,90.8 208.7,89.4 207.5,88.1 206.2,86.9 204.8,85.7 203.3,84.7 201.8,83.7 200.2,82.8 198.5,82.0 196.8,81.3 195.0,80.7 193.2,80.3 191.3,79.9 189.4,79.7 187.5,79.6 185.5,79.6 183.6,79.7 181.6,80.0 179.7,80.4 177.8,80.9 175.9,81.5 174.0,82.3 172.2,83.2 170.4,84.2 168.7,85.3 167.0,86.5 165.4,87.9 163.9,89.4 162.5,90.9 161.2,92.6 159.9,94.3 158.8,96.2 157.8,98.1 156.9,100.1 156.2,102.1 155.5,104.2 155.0,106.4 154.7,108.6 154.4,110.8 154.3,113.1 154.4,115.4 154.6,117.6 155.0,119.9 155.4,122.2 156.1,124.4 156.9,126.6 157.8,128.8 158.9,130.9 160.1,132.9 161.4,134.9 162.9,136.8 164.5,138.6 166.2,140.3 168.1,141.9 170.0,143.4 172.0,144.8 174.2,146.1 176.4,147.2 178.7,148.2 181.1,149.0 183.5,149.7 186.0,150.2 188.6,150.6 191.1,150.8 193.7,150.9 196.3,150.8 198.9,150.5 201.5,150.1 204.1,149.5 206.6,148.7 209.1,147.8 211.6,146.7 213.9,145.4 216.2,144.0 218.5,142.4 220.6,140.7 222.6,138.9 224.6,136.9 226.4,134.8 228.0,132.6 229.6,130.2 230.9,127.8 232.2,125.2 233.3,122.6 234.2,119.9 234.9,117.1 235.5,114.3 235.9,111.4 236.1,108.5 236.1,105.6 236.0,102.7 235.6,99.8 235.1,96.9 234.4,94.0 233.5,91.1 232.4,88.3 231.1,85.6 229.7,83.0 228.0,80.4 226.3,77.9 224.3,75.5 222.2,73.3 220.0,71.2 217.6,69.2 215.1,67.4 212.4,65.7 209.7,64.2 206.8,62.8 203.9,61.6 200.9,60.7 197.8,59.9 194.6,59.3 191.4,58.9 188.2,58.7 184.9,58.7 181.7,58.9 178.4,59.3 175.2,59.9 172.0,60.8 168.9,61.8 165.8,63.0 162.8,64.5 159.8,66.1 157.0,67.9 154.3,69.9 151.7,72.1 149.2,74.5 146.9,77.0 144.7,79.6 142.7,82.4 140.9,85.4 139.2,88.4 137.8,91.6 136.5,94.9 135.5,98.2 134.6,101.7 134.0,105.1 133.6,108.7 133.4,112.2 133.5,115.8 133.7,119.4 134.2,123.0 134.9,126.5 135.9,130.0 137.1,133.5 138.5,136.8 140.1,140.1 141.9,143.3 143.9,146.4 146.2,149.4 148.6,152.2 151.2,154.9 154.0,157.4 156.9,159.8 160.0,162.0 163.2,163.9 166.6,165.7 170.1,167.3 173.7,168.6 177.4,169.7 181.1,170.6 184.9,171.3 188.8,171.7 192.7,171.8 196.6,171.8 200.5,171.4 204.4,170.8 208.3,170.0 212.1,169.0 215.8,167.6 219.5,166.1 223.1,164.3 226.6,162.3 229.9,160.0 233.1,157.6 236.2,154.9 239.1,152.1 241.8,149.0 244.3,145.8 246.6,142.4 248.8,138.9 250.7,135.2 252.3,131.4 253.8,127.5 254.9,123.5 255.9,119.4 256.5,115.2 256.9,111.1 257.1,106.8 257.0,102.6 256.6,98.4 255.9,94.1 255.0,90.0 253.8,85.8 252.3,81.8 250.6,77.8 248.6,73.9 246.4,70.2 244.0,66.6 241.3,63.1 238.4,59.9 235.3,56.8 232.0,53.8 228.5,51.1 224.8,48.6 220.9,46.4 217.0,44.4 212.8,42.6 208.6,41.1 204.3,39.9 199.9,38.9 195.4,38.2 190.9,37.8 186.3,37.7 181.7,37.8 177.2,38.3 172.6,39.0 168.1,40.1 163.7,41.4 159.3,43.0 155.1,44.9 150.9,47.0 146.9,49.4 143.1,52.1 139.4,55.0 135.9,58.2 132.6,61.5 129.4,65.1 126.6,68.9 123.9,72.9 121.5,77.0 119.4,81.3 117.5,85.8 115.9,90.3 114.6,95.0 113.6,99.7 112.9,104.5 112.5,109.4 112.4,114.3 112.6,119.2 113.2,124.1 114.0,128.9 115.1,133.7 116.6,138.5 118.3,143.1 120.4,147.7 122.7,152.1 125.3,156.4 128.2,160.5 131.4,164.4 134.8,168.2 138.4,171.7 142.2,175.0 146.3,178.0 150.6,180.8 155.0,183.4 159.6,185.6 164.4,187.6 169.3,189.2 174.3,190.6 179.3,191.6 184.5,192.3 189.7,192.7 194.9,192.8 200.1,192.5 205.3,191.9 210.5,191.0 215.6,189.8 220.7,188.2 225.6,186.3 230.5,184.1 235.2,181.6 239.7,178.8 244.1,175.7 248.2,172.3 252.2,168.6 255.9,164.7 259.4,160.6 262.6,156.2 265.6,151.7 268.3,146.9 270.6,142.0 272.7,136.9 274.4,131.7 275.8,126.4 276.9,121.0 277.6,115.5 278.0,110.0"/>
+      <line x1="278" y1="110" x2="350" y2="110" class="cur" stroke-width="1.8" marker-end="url(#a-cur)"/>
+      <text x="356" y="106" class="sm tcur">saída</text>
+      <circle cx="190" cy="110" r="3" class="fcur"/>
+      <text x="40" y="30" class="sm">dê 1</text><text x="314" y="30" class="sm">dê 2</text>
+      <line x1="190" y1="10" x2="190" y2="20" class="ink"/>
+      <text x="190" y="12" text-anchor="middle" class="sm tfrc">ΔV ~</text>
+      <g style="color:var(--field)"><use href="#cross" x="110" y="40" width="12" height="12"/><use href="#cross" x="250" y="168" width="12" height="12"/></g>
+      <text x="124" y="51" class="sm tfld">B</text>
+      <line x1="190" y1="110" x2="190" y2="200" class="ink" stroke-dasharray="3 3"/>
+      <text x="196" y="190" class="lb">R</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R4 ============ -->
+<article class="ex" id="r4">
+  <div class="exhead"><span class="exnum">R4</span><span class="chip">Força de Lorentz</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Efeito Hall em uma fita de cobre</h2>
+  <div class="statement">
+    <p>Uma fita de cobre de largura $w = 1{,}0\ \text{cm}$ e espessura $t = 0{,}10\ \text{mm}$ conduz $I = 2{,}0\ \text{A}$ ao longo de $+\hat x$. Um campo $\vec B = 0{,}50\,\hat z\ \text{T}$ é perpendicular à face larga. Densidade de elétrons livres: $n = 8{,}5\times10^{28}\ \text{m}^{-3}$.</p>
+    <ol type="a"><li>Qual a velocidade de deriva dos elétrons?</li><li>Qual borda fica positiva?</li><li>Qual a tensão Hall $V_H$?</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 400 210" role="img" aria-label="Fita condutora horizontal com corrente para a direita; um voltímetro mede a tensão entre as bordas.">
+      <rect x="30" y="60" width="250" height="90" class="ink" style="fill:var(--tint-current)" stroke-width="1.4"/>
+      <line x1="4" y1="105" x2="40" y2="105" class="cur" stroke-width="2.4" marker-end="url(#a-cur)"/>
+      <text x="6" y="96" class="lb tcur">I</text>
+      <g style="color:var(--field)" opacity=".75"><use href="#dot" x="60" y="72" width="12" height="12"/><use href="#dot" x="220" y="72" width="12" height="12"/><use href="#dot" x="60" y="126" width="12" height="12"/><use href="#dot" x="220" y="126" width="12" height="12"/></g>
+      <text x="236" y="84" class="sm tfld">B</text>
+      <line x1="270" y1="60" x2="270" y2="36" class="ink"/><line x1="270" y1="36" x2="350" y2="36" class="ink"/><line x1="350" y1="36" x2="350" y2="89" class="ink"/>
+      <line x1="270" y1="150" x2="270" y2="186" class="ink"/><line x1="270" y1="186" x2="350" y2="186" class="ink"/><line x1="350" y1="186" x2="350" y2="121" class="ink"/>
+      <circle cx="350" cy="105" r="16" class="ink" style="fill:var(--surface)"/>
+      <text x="350" y="110" text-anchor="middle" class="lb">V</text>
+      <line x1="18" y1="60" x2="18" y2="150" class="ink"/><line x1="13" y1="60" x2="23" y2="60" class="ink"/><line x1="13" y1="150" x2="23" y2="150" class="ink"/>
+      <text x="10" y="132" text-anchor="end" class="lb">w</text>
+      <text x="155" y="200" text-anchor="middle" class="sm tmut">espessura t ao longo de z (perpendicular ao papel)</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R5 ============ -->
+<article class="ex" id="r5">
+  <div class="exhead"><span class="exnum">R5</span><span class="chip">Força de Lorentz</span><span class="lvl">dificuldade <b>●○○</b></span></div>
+  <h2>Fio semicircular em campo uniforme</h2>
+  <div class="statement">
+    <p>Um fio em forma de semicircunferência de raio $R = 20\ \text{cm}$ está no plano $xy$, com extremos em $(\pm R, 0)$, e conduz $I = 5{,}0\ \text{A}$ de $(R,0)$ para $(-R,0)$ passando por $(0,R)$. O campo é uniforme, $\vec B = 0{,}40\,\hat z\ \text{T}$.</p>
+    <ol type="a"><li>Calcule a força resultante integrando ao longo do arco.</li><li>Obtenha o mesmo resultado sem integrar.</li><li>Qual a força sobre a espira fechada pelo diâmetro?</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 222" role="img" aria-label="Semicircunferência com corrente; o diâmetro tracejado fecha a espira.">
+      <g style="color:var(--field)" opacity=".6"><use href="#dot" x="34" y="30" width="10" height="10"/><use href="#dot" x="334" y="30" width="10" height="10"/><use href="#dot" x="34" y="120" width="10" height="10"/><use href="#dot" x="334" y="120" width="10" height="10"/></g>
+      <text x="350" y="56" class="sm tfld">B</text>
+      <path d="M300,170 A110,110 0 0 0 80,170" class="cur nofill" stroke-width="2.4"/>
+      <path d="M205,60.6 A110,110 0 0 0 175,60.6" class="cur nofill" stroke-width="2.4" marker-end="url(#a-cur)"/>
+      <text x="196" y="52" class="lb tcur">I</text>
+      <line x1="80" y1="170" x2="300" y2="170" class="cur" stroke-width="1.6" stroke-dasharray="6 4"/>
+      <circle cx="190" cy="170" r="2.5" class="fink"/>
+      <line x1="190" y1="170" x2="268" y2="92" class="ink" stroke-dasharray="3 3"/>
+      <text x="232" y="146" class="lb">R</text>
+      <path d="M216,170 A26,26 0 0 0 208.4,151.6" class="ink nofill"/>
+      <text x="222" y="160" class="lb">θ</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R6 ============ -->
+<article class="ex" id="r6">
+  <div class="exhead"><span class="exnum">R6</span><span class="chip">Biot–Savart</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Fio em forma de grampo</h2>
+  <div class="statement">
+    <p>Um fio longo é dobrado em forma de grampo: dois trechos retos semi-infinitos e paralelos, separados por $2R$, unidos por uma semicircunferência de raio $R$. A corrente é $I$. Determine $\vec B$ no centro $P$ da semicircunferência. Calcule para $R = 2{,}0\ \text{cm}$ e $I = 10\ \text{A}$.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 190" role="img" aria-label="Grampo: dois fios retos semi-infinitos paralelos ligados por um semicírculo de raio R; o ponto P está no centro do semicírculo.">
+      <line x1="20" y1="50" x2="230" y2="50" class="cur" stroke-width="2.2"/>
+      <line x1="20" y1="50" x2="120" y2="50" class="cur" stroke-width="2.2" marker-end="url(#a-cur)"/>
+      <path d="M230,50 A45,45 0 0 1 230,140" class="cur nofill" stroke-width="2.2"/>
+      <line x1="230" y1="140" x2="20" y2="140" class="cur" stroke-width="2.2"/>
+      <line x1="230" y1="140" x2="130" y2="140" class="cur" stroke-width="2.2" marker-end="url(#a-cur)"/>
+      <text x="22" y="40" class="sm tmut">← −∞</text><text x="22" y="160" class="sm tmut">← −∞</text>
+      <text x="100" y="40" class="lb tcur">I</text>
+      <circle cx="230" cy="95" r="3" class="fink"/>
+      <text x="218" y="100" text-anchor="end" class="lb">P</text>
+      <line x1="230" y1="95" x2="275" y2="95" class="ink" stroke-dasharray="3 3"/>
+      <text x="250" y="88" class="lb">R</text>
+      <line x1="230" y1="50" x2="230" y2="140" class="mut" stroke-dasharray="2 4"/>
+      <text x="236" y="73" class="sm tmut">pé da ⊥</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R7 ============ -->
+<article class="ex" id="r7">
+  <div class="exhead"><span class="exnum">R7</span><span class="chip">Biot–Savart</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Espira poligonal: do triângulo ao círculo</h2>
+  <div class="statement">
+    <p>Uma espira tem a forma de um polígono regular de $N$ lados inscrito em uma circunferência de raio $R$ e conduz corrente $I$.</p>
+    <ol type="a"><li>Mostre que o campo no centro é $B_N = \dfrac{N\mu_0 I}{2\pi R}\tan\dfrac{\pi}{N}$.</li><li>Calcule para um triângulo equilátero de lado $a = 10\ \text{cm}$ com $I = 5{,}0\ \text{A}$.</li><li>Mostre que $B_N\to\mu_0I/(2R)$ quando $N\to\infty$.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 400 220" role="img" aria-label="Triângulo inscrito em círculo com apótema d e semiângulo π/N indicados; ao lado, triângulo e hexágono inscritos no mesmo círculo.">
+      <circle cx="130" cy="120" r="80" class="mut nofill" stroke-dasharray="4 4"/>
+      <polygon points="130,40 199.3,160 60.7,160" class="cur nofill" stroke-width="2.2"/>
+      <line x1="60.7" y1="160" x2="140" y2="160" class="cur" stroke-width="2.2" marker-end="url(#a-cur)"/>
+      <circle cx="130" cy="120" r="3" class="fink"/>
+      <text x="122" y="116" text-anchor="end" class="lb">O</text>
+      <line x1="130" y1="120" x2="130" y2="160" class="ink" stroke-width="1.4"/>
+      <text x="135" y="146" class="lb">d</text>
+      <line x1="130" y1="120" x2="199.3" y2="160" class="ink" stroke-dasharray="3 3"/>
+      <line x1="130" y1="120" x2="60.7" y2="160" class="ink" stroke-dasharray="3 3"/>
+      <path d="M130,142 A22,22 0 0 0 149,131" class="ink nofill"/>
+      <text x="152" y="148" class="sm">π/N</text>
+      <text x="168" y="135" class="lb">R</text>
+      <text x="130" y="184" text-anchor="middle" class="sm tmut">lado a</text>
+      <g transform="translate(0,0)">
+        <circle cx="310" cy="112" r="62" class="mut nofill" stroke-dasharray="4 4"/>
+        <polygon points="310,50 363.7,143 256.3,143" class="cur nofill" stroke-width="1.6"/>
+        <polygon points="372,112 341,165.7 279,165.7 248,112 279,58.3 341,58.3" class="cur nofill" stroke-width="1.6" stroke-dasharray="5 3"/>
+        <circle cx="310" cy="112" r="2.5" class="fink"/>
+        <text x="310" y="200" text-anchor="middle" class="sm tmut">N = 3, 6, ∞ (mesmo R)</text>
+      </g>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R8 ============ -->
+<article class="ex" id="r8">
+  <div class="exhead"><span class="exnum">R8</span><span class="chip">Biot–Savart</span><span class="lvl">dificuldade <b>●●●</b></span></div>
+  <h2>Disco carregado girante</h2>
+  <div class="statement">
+    <p>Um disco isolante fino de raio $R$ tem densidade superficial de carga uniforme $\sigma$ e gira com velocidade angular $\omega$ em torno do seu eixo. Determine $\vec B$ no centro do disco. Calcule para $\sigma = 1{,}0\ \mu\text{C/m}^2$, $\omega = 100\ \text{rad/s}$ e $R = 10\ \text{cm}$.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 210" role="img" aria-label="Disco em perspectiva girando com ω; destaca-se um anel de raio r e largura dr.">
+      <ellipse cx="170" cy="130" rx="140" ry="48" class="mut" style="fill:var(--tint-current)" stroke-width="1.2"/>
+      <ellipse cx="170" cy="130" rx="88" ry="30" class="cur nofill" stroke-width="8" opacity=".55"/>
+      <line x1="170" y1="200" x2="170" y2="14" class="ink" stroke-dasharray="4 4"/>
+      <path d="M150,30 A20,7 0 1 0 190,30" class="ink nofill" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <text x="196" y="26" class="lb">ω</text>
+      <line x1="170" y1="130" x2="258" y2="130" class="ink" stroke-width="1.2"/>
+      <text x="222" y="146" class="lb">r</text>
+      <line x1="170" y1="130" x2="310" y2="130" class="mut" stroke-dasharray="2 3"/>
+      <text x="300" y="148" class="lb">R</text>
+      <text x="262" y="112" class="sm tcur">dr</text>
+      <text x="80" y="112" class="sm tmut">+</text><text x="120" y="155" class="sm tmut">+</text><text x="250" y="160" class="sm tmut">+</text><text x="220" y="104" class="sm tmut">+</text><text x="60" y="140" class="sm tmut">+</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R9 ============ -->
+<article class="ex" id="r9">
+  <div class="exhead"><span class="exnum">R9</span><span class="chip">Biot–Savart</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Solenoide finito: campo no eixo</h2>
+  <div class="statement">
+    <p>Um solenoide de comprimento $L = 20\ \text{cm}$, raio $a = 2{,}0\ \text{cm}$, $n = 1000$ espiras/m e $I = 2{,}0\ \text{A}$.</p>
+    <ol type="a"><li>Mostre que no eixo $B = \dfrac{\mu_0 nI}{2}(\cos\beta_1+\cos\beta_2)$, com $\beta_1,\beta_2$ os ângulos sob os quais o ponto vê as bordas das extremidades.</li><li>Calcule $B$ no centro e em uma extremidade e compare com o solenoide infinito.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 170" role="img" aria-label="Corte longitudinal de um solenoide finito; um ponto P no eixo vê as bordas das extremidades sob os ângulos beta 1 e beta 2; uma fatia de espessura dz' age como espira.">
+      <g style="color:var(--current)">
+        <use href="#dot" x="44" y="34" width="10" height="10"/><use href="#dot" x="74" y="34" width="10" height="10"/><use href="#dot" x="104" y="34" width="10" height="10"/><use href="#dot" x="134" y="34" width="10" height="10"/><use href="#dot" x="164" y="34" width="10" height="10"/><use href="#dot" x="194" y="34" width="10" height="10"/><use href="#dot" x="224" y="34" width="10" height="10"/><use href="#dot" x="254" y="34" width="10" height="10"/><use href="#dot" x="284" y="34" width="10" height="10"/><use href="#dot" x="314" y="34" width="10" height="10"/>
+        <use href="#cross" x="44" y="126" width="10" height="10"/><use href="#cross" x="74" y="126" width="10" height="10"/><use href="#cross" x="104" y="126" width="10" height="10"/><use href="#cross" x="134" y="126" width="10" height="10"/><use href="#cross" x="164" y="126" width="10" height="10"/><use href="#cross" x="194" y="126" width="10" height="10"/><use href="#cross" x="224" y="126" width="10" height="10"/><use href="#cross" x="254" y="126" width="10" height="10"/><use href="#cross" x="284" y="126" width="10" height="10"/><use href="#cross" x="314" y="126" width="10" height="10"/>
+      </g>
+      <rect x="220" y="30" width="18" height="110" class="cur" style="fill:var(--tint-current)" stroke-dasharray="3 2"/>
+      <text x="229" y="160" text-anchor="middle" class="sm tcur">dz′</text>
+      <line x1="10" y1="85" x2="370" y2="85" class="ink" stroke-dasharray="5 4"/>
+      <text x="360" y="78" class="lb">z</text>
+      <circle cx="120" cy="85" r="3" class="fink"/><text x="116" y="102" text-anchor="end" class="lb">P</text>
+      <line x1="120" y1="85" x2="40" y2="39" class="ink"/>
+      <line x1="120" y1="85" x2="328" y2="39" class="ink"/>
+      <path d="M96,85 A24,24 0 0 1 99.2,73" class="ink nofill"/><text x="84" y="76" class="lb">β₁</text>
+      <path d="M160,85 A40,40 0 0 0 159,76" class="ink nofill"/><text x="164" y="80" class="lb">β₂</text>
+      <line x1="40" y1="148" x2="328" y2="148" class="ink"/><line x1="40" y1="143" x2="40" y2="153" class="ink"/><line x1="328" y1="143" x2="328" y2="153" class="ink"/>
+      <text x="184" y="166" text-anchor="middle" class="lb">L</text>
+      <line x1="346" y1="39" x2="346" y2="85" class="ink"/><text x="352" y="66" class="lb">a</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R10 ============ -->
+<article class="ex" id="r10">
+  <div class="exhead"><span class="exnum">R10</span><span class="chip">Biot–Savart</span><span class="lvl">dificuldade <b>●●●</b></span></div>
+  <h2>Bobinas anti-Helmholtz: um campo que cresce linearmente</h2>
+  <div class="statement">
+    <p>Duas bobinas coaxiais de raio $a = 5{,}0\ \text{cm}$, com $N = 100$ espiras cada, conduzem $I = 10\ \text{A}$ em sentidos <em>opostos</em>, separadas por $d$.</p>
+    <ol type="a"><li>Mostre que $B(0) = 0$ no ponto médio.</li><li>Calcule o gradiente $dB_z/dz$ no centro.</li><li>Mostre que a escolha $d = \sqrt3\,a$ torna o gradiente o mais uniforme possível e calcule seu valor.</li><li>Estime $B$ a $1{,}0\ \text{cm}$ do centro.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 200" role="img" aria-label="Duas bobinas com correntes opostas, separadas por d, e o eixo z.">
+      <ellipse cx="138" cy="100" rx="14" ry="60" class="cur nofill" stroke-width="3"/>
+      <ellipse cx="242" cy="100" rx="14" ry="60" class="cur nofill" stroke-width="3"/>
+      <line x1="152" y1="112" x2="152" y2="88" class="cur" stroke-width="2.4" marker-end="url(#a-cur)"/>
+      <line x1="256" y1="88" x2="256" y2="112" class="cur" stroke-width="2.4" marker-end="url(#a-cur)"/>
+      <text x="112" y="34" class="lb tcur">I</text><text x="262" y="34" class="lb tcur">−I</text>
+      <line x1="20" y1="100" x2="365" y2="100" class="ink" stroke-dasharray="5 4"/>
+      <text x="358" y="94" class="lb">z</text>
+      <circle cx="190" cy="100" r="3" class="fink"/>
+      <line x1="138" y1="176" x2="242" y2="176" class="ink"/><line x1="138" y1="171" x2="138" y2="181" class="ink"/><line x1="242" y1="171" x2="242" y2="181" class="ink"/>
+      <text x="190" y="194" text-anchor="middle" class="lb">d</text>
+      <line x1="300" y1="40" x2="300" y2="100" class="ink"/><text x="306" y="74" class="lb">a</text>
+      <line x1="242" y1="40" x2="300" y2="40" class="mut" stroke-dasharray="2 3"/>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R11 ============ -->
+<article class="ex" id="r11">
+  <div class="exhead"><span class="exnum">R11</span><span class="chip">Teorema de Stokes</span><span class="lvl">dificuldade <b>●○○</b></span></div>
+  <h2>Mesma borda, duas superfícies</h2>
+  <div class="statement">
+    <p>Seja $\vec F = -y\,\hat x + x\,\hat y$ e $C$ a circunferência de raio $R$ no plano $xy$, centrada na origem, percorrida no sentido anti-horário (visto de $+z$).</p>
+    <ol type="a"><li>Calcule $\oint_C\vec F\cdot d\vec\ell$ diretamente.</li><li>Calcule o fluxo de $\nabla\times\vec F$ através do disco plano limitado por $C$.</li><li>Repita (b) para o hemisfério superior de raio $R$, que tem a mesma borda.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 200" role="img" aria-label="À esquerda, vista de cima do campo de rotação rígida e do contorno C; à direita, hemisfério com a mesma borda e normais apontando para fora.">
+      <circle cx="95" cy="100" r="70" class="ink nofill" stroke-width="1.8"/>
+      <path d="M108,30.7 A70,70 0 0 0 82,30.7" class="ink nofill" stroke-width="2" marker-end="url(#a-ink)"/>
+      <text x="168" y="64" class="lb">C</text>
+      <g class="fld" stroke-width="1.6">
+        <line x1="130" y1="100" x2="130" y2="86" marker-end="url(#a-fld)"/>
+        <line x1="95" y1="65" x2="81" y2="65" marker-end="url(#a-fld)"/>
+        <line x1="60" y1="100" x2="60" y2="114" marker-end="url(#a-fld)"/>
+        <line x1="95" y1="135" x2="109" y2="135" marker-end="url(#a-fld)"/>
+        <line x1="137.4" y1="57.6" x2="120.4" y2="40.6" marker-end="url(#a-fld)"/>
+        <line x1="52.6" y1="57.6" x2="35.6" y2="74.6" marker-end="url(#a-fld)"/>
+        <line x1="52.6" y1="142.4" x2="69.6" y2="159.4" marker-end="url(#a-fld)"/>
+        <line x1="137.4" y1="142.4" x2="154.4" y2="125.4" marker-end="url(#a-fld)"/>
+      </g>
+      <circle cx="95" cy="100" r="2.5" class="fink"/>
+      <text x="95" y="192" text-anchor="middle" class="sm">S₁: disco (vista de +z)</text>
+      <ellipse cx="290" cy="150" rx="70" ry="20" class="ink nofill" stroke-width="1.8"/>
+      <path d="M220,150 A70,70 0 0 1 360,150" class="mut" style="fill:var(--tint-field)" stroke-width="1.2"/>
+      <line x1="290" y1="80" x2="290" y2="52" class="ink" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <text x="296" y="60" class="lb">n̂</text>
+      <line x1="240.5" y1="100.5" x2="221" y2="81" class="ink" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <line x1="339.5" y1="100.5" x2="359" y2="81" class="ink" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <path d="M300,170 A70,20 0 0 0 330,166" class="ink nofill" stroke-width="2" marker-end="url(#a-ink)"/>
+      <text x="290" y="192" text-anchor="middle" class="sm">S₂: hemisfério, mesma borda C</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R12 ============ -->
+<article class="ex" id="r12">
+  <div class="exhead"><span class="exnum">R12</span><span class="chip">Ampère integral e pontual</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Condutor cilíndrico com corrente concentrada na borda</h2>
+  <div class="statement">
+    <p>Um condutor cilíndrico infinito de raio $R$ conduz densidade de corrente $\vec J = J_0\,(s/R)\,\hat z$ para $s&lt;R$.</p>
+    <ol type="a"><li>Calcule a corrente total $I$.</li><li>Determine $B(s)$ dentro e fora do condutor.</li><li>Verifique que o resultado interno satisfaz $\nabla\times\vec B = \mu_0\vec J$.</li></ol>
+    <p>Valores: $J_0 = 1{,}0\times10^{6}\ \text{A/m}^2$, $R = 5{,}0\ \text{mm}$.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 170 200" style="max-width:280px" role="img" aria-label="Seção transversal do condutor, mais escura perto da borda, com um caminho amperiano de raio s.">
+      <defs><radialGradient id="g7"><stop offset="0" style="stop-color:var(--current);stop-opacity:0"/><stop offset="1" style="stop-color:var(--current);stop-opacity:.55"/></radialGradient></defs>
+      <circle cx="80" cy="100" r="62" fill="url(#g7)" class="cur" stroke-width="1.5"/>
+      <circle cx="80" cy="100" r="36" class="ink nofill" stroke-dasharray="5 4" stroke-width="1.4"/>
+      <line x1="80" y1="100" x2="105.5" y2="125.5" class="ink"/>
+      <text x="96" y="124" class="lb">s</text>
+      <text x="80" y="186" text-anchor="middle" class="sm">J ∝ s (⊙)</text>
+      <text x="146" y="54" class="lb tcur">R</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R13 ============ -->
+<article class="ex" id="r13">
+  <div class="exhead"><span class="exnum">R13</span><span class="chip">Ampère + superposição</span><span class="lvl">dificuldade <b>●●●</b></span></div>
+  <h2>Campo uniforme em uma cavidade excêntrica</h2>
+  <div class="statement">
+    <p>Um cilindro condutor infinito de raio $R$ conduz densidade de corrente uniforme $\vec J = J\,\hat z$. Dele é removida uma cavidade cilíndrica de raio $a$, com eixo paralelo ao do cilindro e deslocado pelo vetor $\vec d$ (perpendicular a $\hat z$). Considere $d+a&lt;R$, para que a cavidade fique inteiramente dentro do cilindro. Mostre que o campo na cavidade é uniforme e vale $\vec B = \frac{\mu_0 J}{2}\,\hat z\times\vec d$. Calcule para $J = 1{,}0\times10^{6}\ \text{A/m}^2$ e $d = 2{,}0\ \text{cm}$.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 250 220" style="max-width:380px" role="img" aria-label="Cilindro com cavidade deslocada pelo vetor d.">
+      <circle cx="140" cy="110" r="95" class="cur" style="fill:var(--tint-current)" stroke-width="1.6"/>
+      <circle cx="190" cy="110" r="40" class="cur" style="fill:var(--surface)" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <g style="color:var(--current)">
+        <use href="#dot" x="70" y="60" width="12" height="12"/><use href="#dot" x="70" y="140" width="12" height="12"/>
+        <use href="#dot" x="110" y="30" width="12" height="12"/><use href="#dot" x="110" y="170" width="12" height="12"/>
+        <use href="#dot" x="60" y="100" width="12" height="12"/><use href="#dot" x="165" y="40" width="12" height="12"/>
+        <use href="#dot" x="165" y="166" width="12" height="12"/>
+      </g>
+      <circle cx="140" cy="110" r="3" class="fink"/><text x="134" y="104" text-anchor="end" class="lb">O</text>
+      <circle cx="190" cy="110" r="3" class="fink"/><text x="196" y="124" class="lb">O′</text>
+      <line x1="140" y1="110" x2="187" y2="110" class="ink" stroke-width="1.6" marker-end="url(#a-ink)"/>
+      <text x="160" y="104" class="lb">d</text>
+      <line x1="140" y1="110" x2="73" y2="177" class="mut" stroke-dasharray="2 3"/>
+      <text x="92" y="168" class="lb tmut">R</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R14 ============ -->
+<article class="ex" id="r14">
+  <div class="exhead"><span class="exnum">R14</span><span class="chip">Ampère integral</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Placa espessa de corrente</h2>
+  <div class="statement">
+    <p>Uma placa infinita ocupa $-t/2\lt x\lt t/2$ e conduz densidade de corrente uniforme $\vec J = J\,\hat z$. Determine $\vec B$ dentro e fora. Calcule para $J = 1{,}0\times10^{6}\ \text{A/m}^2$ e $t = 4{,}0\ \text{mm}$. Discuta o limite de placa fina.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 310 220" style="max-width:440px" role="img" aria-label="Placa vista de cima com corrente saindo do plano; caminho amperiano retangular simétrico.">
+      <rect x="170" y="15" width="44" height="190" class="cur" style="fill:var(--tint-current)" stroke-width="1.2"/>
+      <g style="color:var(--current)"><use href="#dot" x="186" y="34" width="12" height="12"/><use href="#dot" x="186" y="104" width="12" height="12"/><use href="#dot" x="186" y="174" width="12" height="12"/></g>
+      <rect x="120" y="60" width="144" height="100" class="ink nofill" stroke-dasharray="5 4" stroke-width="1.4"/>
+      <line x1="264" y1="130" x2="264" y2="95" class="ink" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <line x1="120" y1="95" x2="120" y2="130" class="ink" stroke-width="1.4" marker-end="url(#a-ink)"/>
+      <line x1="192" y1="190" x2="264" y2="190" class="ink"/><text x="228" y="203" text-anchor="middle" class="lb">x₀</text>
+      <line x1="170" y1="12" x2="214" y2="12" class="ink"/><text x="192" y="10" text-anchor="middle" class="lb">t</text>
+      <text x="272" y="176" class="lb">ℓ</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R15 ============ -->
+<article class="ex" id="r15">
+  <div class="exhead"><span class="exnum">R15</span><span class="chip">Ampère pontual</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Qual destes campos pode ser magnético?</h2>
+  <div class="statement">
+    <p>Para $k\ne0$ constante, considere (a) $\vec B=kx\,\hat x$; (b) $\vec B=k(-y\,\hat x+x\,\hat y)$; (c) $\vec B=ky\,\hat x$; (d) $\vec B=k(x\,\hat x-y\,\hat y)$. Diga quais são campos magnéticos possíveis e, para esses, encontre a densidade de corrente que os produz.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 560 175" role="img" aria-label="Quatro mapas de vetores: (a) campo radial unidimensional que diverge; (b) rotação rígida; (c) cisalhamento; (d) campo de quadrupolo.">
+      <rect x="10" y="20" width="120" height="120" class="mut nofill"/><rect x="150" y="20" width="120" height="120" class="mut nofill"/><rect x="290" y="20" width="120" height="120" class="mut nofill"/><rect x="430" y="20" width="120" height="120" class="mut nofill"/>
+      <line x1="24.0" y1="135.0" x2="6.0" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="24.0" y1="107.5" x2="6.0" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="24.0" y1="80.0" x2="6.0" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="24.0" y1="52.5" x2="6.0" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="24.0" y1="25.0" x2="6.0" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="47.0" y1="135.0" x2="38.0" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="47.0" y1="107.5" x2="38.0" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="47.0" y1="80.0" x2="38.0" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="47.0" y1="52.5" x2="38.0" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="47.0" y1="25.0" x2="38.0" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="70.0" cy="135.0" r="1.6" class="fmut"/><circle cx="70.0" cy="107.5" r="1.6" class="fmut"/><circle cx="70.0" cy="80.0" r="1.6" class="fmut"/><circle cx="70.0" cy="52.5" r="1.6" class="fmut"/><circle cx="70.0" cy="25.0" r="1.6" class="fmut"/><line x1="93.0" y1="135.0" x2="102.0" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="93.0" y1="107.5" x2="102.0" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="93.0" y1="80.0" x2="102.0" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="93.0" y1="52.5" x2="102.0" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="93.0" y1="25.0" x2="102.0" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="116.0" y1="135.0" x2="134.0" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="116.0" y1="107.5" x2="134.0" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="116.0" y1="80.0" x2="134.0" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="116.0" y1="52.5" x2="134.0" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="116.0" y1="25.0" x2="134.0" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="148.6" y1="128.6" x2="161.4" y2="141.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="151.8" y1="101.1" x2="158.2" y2="113.9" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="155.0" y1="73.6" x2="155.0" y2="86.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="158.2" y1="46.1" x2="151.8" y2="58.9" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="161.4" y1="18.6" x2="148.6" y2="31.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="176.1" y1="131.8" x2="188.9" y2="138.2" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="179.3" y1="104.3" x2="185.7" y2="110.7" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="182.5" y1="76.8" x2="182.5" y2="83.2" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="185.7" y1="49.3" x2="179.3" y2="55.7" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="188.9" y1="21.8" x2="176.1" y2="28.2" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="203.6" y1="135.0" x2="216.4" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="206.8" y1="107.5" x2="213.2" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="210.0" cy="80.0" r="1.6" class="fmut"/><line x1="213.2" y1="52.5" x2="206.8" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="216.4" y1="25.0" x2="203.6" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="231.1" y1="138.2" x2="243.9" y2="131.8" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="234.3" y1="110.7" x2="240.7" y2="104.3" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="237.5" y1="83.2" x2="237.5" y2="76.8" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="240.7" y1="55.7" x2="234.3" y2="49.3" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="243.9" y1="28.2" x2="231.1" y2="21.8" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="258.6" y1="141.4" x2="271.4" y2="128.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="261.8" y1="113.9" x2="268.2" y2="101.1" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="265.0" y1="86.4" x2="265.0" y2="73.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="268.2" y1="58.9" x2="261.8" y2="46.1" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="271.4" y1="31.4" x2="258.6" y2="18.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="304.0" y1="135.0" x2="286.0" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="299.5" y1="107.5" x2="290.5" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="295.0" cy="80.0" r="1.6" class="fmut"/><line x1="290.5" y1="52.5" x2="299.5" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="286.0" y1="25.0" x2="304.0" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="331.5" y1="135.0" x2="313.5" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="327.0" y1="107.5" x2="318.0" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="322.5" cy="80.0" r="1.6" class="fmut"/><line x1="318.0" y1="52.5" x2="327.0" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="313.5" y1="25.0" x2="331.5" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="359.0" y1="135.0" x2="341.0" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="354.5" y1="107.5" x2="345.5" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="350.0" cy="80.0" r="1.6" class="fmut"/><line x1="345.5" y1="52.5" x2="354.5" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="341.0" y1="25.0" x2="359.0" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="386.5" y1="135.0" x2="368.5" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="382.0" y1="107.5" x2="373.0" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="377.5" cy="80.0" r="1.6" class="fmut"/><line x1="373.0" y1="52.5" x2="382.0" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="368.5" y1="25.0" x2="386.5" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="414.0" y1="135.0" x2="396.0" y2="135.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="409.5" y1="107.5" x2="400.5" y2="107.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="405.0" cy="80.0" r="1.6" class="fmut"/><line x1="400.5" y1="52.5" x2="409.5" y2="52.5" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="396.0" y1="25.0" x2="414.0" y2="25.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="441.4" y1="141.4" x2="428.6" y2="128.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="441.4" y1="110.7" x2="428.6" y2="104.3" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="441.4" y1="80.0" x2="428.6" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="441.4" y1="49.3" x2="428.6" y2="55.7" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="441.4" y1="18.6" x2="428.6" y2="31.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="465.7" y1="141.4" x2="459.3" y2="128.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="465.7" y1="110.7" x2="459.3" y2="104.3" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="465.7" y1="80.0" x2="459.3" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="465.7" y1="49.3" x2="459.3" y2="55.7" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="465.7" y1="18.6" x2="459.3" y2="31.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="490.0" y1="141.4" x2="490.0" y2="128.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="490.0" y1="110.7" x2="490.0" y2="104.3" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><circle cx="490.0" cy="80.0" r="1.6" class="fmut"/><line x1="490.0" y1="49.3" x2="490.0" y2="55.7" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="490.0" y1="18.6" x2="490.0" y2="31.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="514.3" y1="141.4" x2="520.7" y2="128.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="514.3" y1="110.7" x2="520.7" y2="104.3" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="514.3" y1="80.0" x2="520.7" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="514.3" y1="49.3" x2="520.7" y2="55.7" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="514.3" y1="18.6" x2="520.7" y2="31.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="538.6" y1="141.4" x2="551.4" y2="128.6" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="538.6" y1="110.7" x2="551.4" y2="104.3" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="538.6" y1="80.0" x2="551.4" y2="80.0" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="538.6" y1="49.3" x2="551.4" y2="55.7" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/><line x1="538.6" y1="18.6" x2="551.4" y2="31.4" class="fld" stroke-width="1.5" marker-end="url(#a-fld)"/>
+      <text x="70" y="160" text-anchor="middle" class="sm">(a) kx x̂</text>
+      <text x="210" y="160" text-anchor="middle" class="sm">(b) k(−y x̂ + x ŷ)</text>
+      <text x="350" y="160" text-anchor="middle" class="sm">(c) ky x̂</text>
+      <text x="490" y="160" text-anchor="middle" class="sm">(d) k(x x̂ − y ŷ)</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R16 ============ -->
+<article class="ex" id="r16">
+  <div class="exhead"><span class="exnum">R16</span><span class="chip">Força entre correntes</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Espira retangular ao lado de um fio infinito</h2>
+  <div class="statement">
+    <p>Um fio infinito conduz $I_1 = 20\ \text{A}$. Uma espira retangular coplanar conduz $I_2 = 5{,}0\ \text{A}$; seus lados paralelos ao fio têm comprimento $L = 30\ \text{cm}$ e estão a $a = 5{,}0\ \text{cm}$ e $b = 15\ \text{cm}$ do fio. No lado mais próximo, $I_2$ tem o mesmo sentido de $I_1$. Determine a força resultante sobre a espira.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 380 228" role="img" aria-label="Fio vertical à esquerda e espira retangular à direita.">
+      <line x1="40" y1="200" x2="40" y2="10" class="cur" stroke-width="2.4"/>
+      <line x1="40" y1="130" x2="40" y2="90" class="cur" stroke-width="2.4" marker-end="url(#a-cur)"/>
+      <text x="46" y="20" class="lb tcur">I₁</text>
+      <rect x="100" y="40" width="120" height="140" class="cur nofill" stroke-width="2"/>
+      <line x1="100" y1="130" x2="100" y2="100" class="cur" stroke-width="2" marker-end="url(#a-cur)"/>
+      <line x1="220" y1="90" x2="220" y2="120" class="cur" stroke-width="2" marker-end="url(#a-cur)"/>
+      <line x1="140" y1="40" x2="170" y2="40" class="cur" stroke-width="2" marker-end="url(#a-cur)"/>
+      <line x1="180" y1="180" x2="150" y2="180" class="cur" stroke-width="2" marker-end="url(#a-cur)"/>
+      <text x="226" y="60" class="lb tcur">I₂</text>
+      <line x1="40" y1="212" x2="100" y2="212" class="ink"/><line x1="100" y1="207" x2="100" y2="217" class="ink"/>
+      <text x="70" y="226" text-anchor="middle" class="lb">a</text>
+      <line x1="40" y1="207" x2="40" y2="217" class="ink"/>
+      <line x1="100" y1="212" x2="220" y2="212" class="mut" stroke-dasharray="3 3"/><line x1="220" y1="207" x2="220" y2="217" class="ink"/>
+      <text x="160" y="226" text-anchor="middle" class="sm tmut">b − a</text>
+      <line x1="300" y1="40" x2="300" y2="180" class="ink"/><line x1="294" y1="40" x2="306" y2="40" class="ink"/><line x1="294" y1="180" x2="306" y2="180" class="ink"/>
+      <text x="310" y="114" class="lb">L</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R17 ============ -->
+<article class="ex" id="r17">
+  <div class="exhead"><span class="exnum">R17</span><span class="chip">Força entre correntes</span><span class="lvl">dificuldade <b>●○○</b></span></div>
+  <h2>Três fios nos vértices de um triângulo</h2>
+  <div class="statement">
+    <p>Três fios paralelos infinitos passam pelos vértices de um triângulo equilátero de lado $d = 4{,}0\ \text{cm}$, todos com $I = 20\ \text{A}$ no mesmo sentido. Determine a força por unidade de comprimento sobre cada fio. Compare com o E16 da apostila (fios alinhados).</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 300 210" role="img" aria-label="Três fios nos vértices de um triângulo equilátero.">
+      <polygon points="150,40 80,161 220,161" class="mut nofill" stroke-dasharray="4 4"/>
+      <g style="color:var(--current)">
+        <use href="#dot" x="142" y="32" width="16" height="16"/>
+        <use href="#dot" x="72" y="153" width="16" height="16"/>
+        <use href="#dot" x="212" y="153" width="16" height="16"/>
+      </g>
+      <text x="150" y="26" text-anchor="middle" class="lb">A</text>
+      <text x="70" y="182" text-anchor="middle" class="lb">B</text>
+      <text x="230" y="182" text-anchor="middle" class="lb">C</text>
+      <text x="150" y="200" text-anchor="middle" class="lb">d</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R18 ============ -->
+<article class="ex" id="r18">
+  <div class="exhead"><span class="exnum">R18</span><span class="chip">Potencial vetor</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Potencial vetor de um solenoide infinito</h2>
+  <div class="statement">
+    <p>Um solenoide ideal tem raio $R = 2{,}0\ \text{cm}$, $n = 1000$ espiras/m e corrente $I = 2{,}0\ \text{A}$.</p>
+    <ol type="a"><li>Determine $\vec A(s)$ dentro e fora, usando Stokes em vez de integrar a fórmula de $\vec A$.</li><li>Calcule $A$ em $s = 1{,}0\ \text{cm}$ e em $s = 5{,}0\ \text{cm}$.</li><li>Verifique $\nabla\times\vec A = \vec B$ e $\nabla\cdot\vec A = 0$.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 180 200" style="max-width:280px" role="img" aria-label="Seção transversal do solenoide de raio R, com corrente circulando no enrolamento e B saindo do plano no interior.">
+      <circle cx="90" cy="100" r="45" class="cur nofill" stroke-width="3"/>
+      <line x1="90" y1="100" x2="135" y2="100" class="ink" stroke-dasharray="3 3"/><text x="118" y="97" class="lb">R</text>
+      <path d="M118,64.5 A45,45 0 0 0 90,55" class="cur nofill" stroke-width="3" marker-end="url(#a-cur)"/>
+      <g style="color:var(--field)">
+        <use href="#dot" x="70" y="80" width="12" height="12"/><use href="#dot" x="98" y="80" width="12" height="12"/>
+        <use href="#dot" x="70" y="108" width="12" height="12"/><use href="#dot" x="98" y="108" width="12" height="12"/>
+      </g>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R19 ============ -->
+<article class="ex" id="r19">
+  <div class="exhead"><span class="exnum">R19</span><span class="chip">Potencial vetor</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Dois potenciais vetores para o mesmo campo uniforme</h2>
+  <div class="statement">
+    <p>Seja $\vec B=B_0\,\hat z$ uniforme.</p>
+    <ol type="a"><li>Verifique que $\vec A_1=\tfrac12\vec B\times\vec r=\tfrac{B_0}{2}(-y\,\hat x+x\,\hat y)$ e $\vec A_2=B_0x\,\hat y$ produzem o mesmo $\vec B$.</li><li>Encontre $\chi$ tal que $\vec A_2=\vec A_1+\nabla\chi$.</li><li>Verifique se ambos estão no calibre de Coulomb.</li><li>Confira com Stokes num quadrado de lado $\ell$ com vértice na origem.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 440 215" role="img" aria-label="À esquerda, potencial vetor circulando em torno da origem; à direita, potencial vetor vertical crescendo linearmente com x.">
+      <rect x="35" y="30" width="150" height="150" class="mut nofill"/><rect x="255" y="30" width="150" height="150" class="mut nofill"/>
+      <line x1="27.9" y1="172.9" x2="42.1" y2="187.1" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="30.3" y1="147.9" x2="39.7" y2="162.1" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="32.6" y1="122.9" x2="37.4" y2="137.1" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="35.0" y1="97.9" x2="35.0" y2="112.1" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="37.4" y1="72.9" x2="32.6" y2="87.1" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="39.7" y1="47.9" x2="30.3" y2="62.1" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="42.1" y1="22.9" x2="27.9" y2="37.1" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="52.9" y1="175.3" x2="67.1" y2="184.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="55.3" y1="150.3" x2="64.7" y2="159.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="57.6" y1="125.3" x2="62.4" y2="134.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="60.0" y1="100.3" x2="60.0" y2="109.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="62.4" y1="75.3" x2="57.6" y2="84.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="64.7" y1="50.3" x2="55.3" y2="59.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="67.1" y1="25.3" x2="52.9" y2="34.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="77.9" y1="177.6" x2="92.1" y2="182.4" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="80.3" y1="152.6" x2="89.7" y2="157.4" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="82.6" y1="127.6" x2="87.4" y2="132.4" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="85.0" y1="102.6" x2="85.0" y2="107.4" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="87.4" y1="77.6" x2="82.6" y2="82.4" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="89.7" y1="52.6" x2="80.3" y2="57.4" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="92.1" y1="27.6" x2="77.9" y2="32.4" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="102.9" y1="180.0" x2="117.1" y2="180.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="105.3" y1="155.0" x2="114.7" y2="155.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="107.6" y1="130.0" x2="112.4" y2="130.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><circle cx="110.0" cy="105.0" r="1.6" class="fmut"/><line x1="112.4" y1="80.0" x2="107.6" y2="80.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="114.7" y1="55.0" x2="105.3" y2="55.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="117.1" y1="30.0" x2="102.9" y2="30.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="127.9" y1="182.4" x2="142.1" y2="177.6" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="130.3" y1="157.4" x2="139.7" y2="152.6" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="132.6" y1="132.4" x2="137.4" y2="127.6" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="135.0" y1="107.4" x2="135.0" y2="102.6" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="137.4" y1="82.4" x2="132.6" y2="77.6" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="139.7" y1="57.4" x2="130.3" y2="52.6" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="142.1" y1="32.4" x2="127.9" y2="27.6" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="152.9" y1="184.7" x2="167.1" y2="175.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="155.3" y1="159.7" x2="164.7" y2="150.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="157.6" y1="134.7" x2="162.4" y2="125.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="160.0" y1="109.7" x2="160.0" y2="100.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="162.4" y1="84.7" x2="157.6" y2="75.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="164.7" y1="59.7" x2="155.3" y2="50.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="167.1" y1="34.7" x2="152.9" y2="25.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="177.9" y1="187.1" x2="192.1" y2="172.9" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="180.3" y1="162.1" x2="189.7" y2="147.9" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="182.6" y1="137.1" x2="187.4" y2="122.9" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="185.0" y1="112.1" x2="185.0" y2="97.9" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="187.4" y1="87.1" x2="182.6" y2="72.9" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="189.7" y1="62.1" x2="180.3" y2="47.9" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="192.1" y1="37.1" x2="177.9" y2="22.9" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/>
+      <line x1="255.0" y1="169.0" x2="255.0" y2="191.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="255.0" y1="144.0" x2="255.0" y2="166.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="255.0" y1="119.0" x2="255.0" y2="141.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="255.0" y1="94.0" x2="255.0" y2="116.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="255.0" y1="69.0" x2="255.0" y2="91.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="255.0" y1="44.0" x2="255.0" y2="66.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="255.0" y1="19.0" x2="255.0" y2="41.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="280.0" y1="172.7" x2="280.0" y2="187.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="280.0" y1="147.7" x2="280.0" y2="162.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="280.0" y1="122.7" x2="280.0" y2="137.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="280.0" y1="97.7" x2="280.0" y2="112.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="280.0" y1="72.7" x2="280.0" y2="87.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="280.0" y1="47.7" x2="280.0" y2="62.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="280.0" y1="22.7" x2="280.0" y2="37.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="305.0" y1="176.3" x2="305.0" y2="183.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="305.0" y1="151.3" x2="305.0" y2="158.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="305.0" y1="126.3" x2="305.0" y2="133.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="305.0" y1="101.3" x2="305.0" y2="108.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="305.0" y1="76.3" x2="305.0" y2="83.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="305.0" y1="51.3" x2="305.0" y2="58.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="305.0" y1="26.3" x2="305.0" y2="33.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><circle cx="330.0" cy="180.0" r="1.6" class="fmut"/><circle cx="330.0" cy="155.0" r="1.6" class="fmut"/><circle cx="330.0" cy="130.0" r="1.6" class="fmut"/><circle cx="330.0" cy="105.0" r="1.6" class="fmut"/><circle cx="330.0" cy="80.0" r="1.6" class="fmut"/><circle cx="330.0" cy="55.0" r="1.6" class="fmut"/><circle cx="330.0" cy="30.0" r="1.6" class="fmut"/><line x1="355.0" y1="183.7" x2="355.0" y2="176.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="355.0" y1="158.7" x2="355.0" y2="151.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="355.0" y1="133.7" x2="355.0" y2="126.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="355.0" y1="108.7" x2="355.0" y2="101.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="355.0" y1="83.7" x2="355.0" y2="76.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="355.0" y1="58.7" x2="355.0" y2="51.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="355.0" y1="33.7" x2="355.0" y2="26.3" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="380.0" y1="187.3" x2="380.0" y2="172.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="380.0" y1="162.3" x2="380.0" y2="147.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="380.0" y1="137.3" x2="380.0" y2="122.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="380.0" y1="112.3" x2="380.0" y2="97.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="380.0" y1="87.3" x2="380.0" y2="72.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="380.0" y1="62.3" x2="380.0" y2="47.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="380.0" y1="37.3" x2="380.0" y2="22.7" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="405.0" y1="191.0" x2="405.0" y2="169.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="405.0" y1="166.0" x2="405.0" y2="144.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="405.0" y1="141.0" x2="405.0" y2="119.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="405.0" y1="116.0" x2="405.0" y2="94.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="405.0" y1="91.0" x2="405.0" y2="69.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="405.0" y1="66.0" x2="405.0" y2="44.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/><line x1="405.0" y1="41.0" x2="405.0" y2="19.0" class="pt" stroke-width="1.5" marker-end="url(#a-pt)"/>
+      <text x="110" y="200" text-anchor="middle" class="sm">A₁ = ½ B × r (simétrico)</text>
+      <text x="330" y="200" text-anchor="middle" class="sm">A₂ = B₀x ŷ (Landau)</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R20 ============ -->
+<article class="ex" id="r20">
+  <div class="exhead"><span class="exnum">R20</span><span class="chip">Energia magnética</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Indutância do cabo coaxial pela energia</h2>
+  <div class="statement">
+    <p>Um cabo coaxial ideal, com permeabilidade $\mu_0$ em todas as regiões, tem condutor interno maciço de raio $a = 2{,}0\ \text{mm}$ (corrente uniforme $I$) e condutor externo fino de raio $b = 7{,}0\ \text{mm}$ (corrente de retorno $-I$).</p>
+    <ol type="a"><li>Calcule a energia por unidade de comprimento armazenada entre os condutores e a indutância externa $L'_{\text{ext}}$.</li><li>Calcule a contribuição do interior do condutor central, $L'_{\text{int}}$.</li><li>Avalie para $I = 10\ \text{A}$.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 220 210" style="max-width:340px" role="img" aria-label="Seção do cabo coaxial com uma casca de raio s e espessura ds destacada.">
+      <circle cx="110" cy="105" r="70" class="cur nofill" stroke-width="4"/>
+      <circle cx="110" cy="105" r="20" class="cur" style="fill:var(--tint-current)" stroke-width="2"/>
+      <use href="#dot" x="104" y="99" width="12" height="12" style="color:var(--current)"/>
+      <circle cx="110" cy="105" r="44" class="fld nofill" stroke-width="7" opacity=".35"/>
+      <line x1="110" y1="105" x2="96" y2="91" class="ink"/><text x="86" y="92" class="lb">a</text>
+      <line x1="110" y1="105" x2="160" y2="155" class="ink"/><text x="158" y="146" class="lb">b</text>
+      <line x1="110" y1="105" x2="110" y2="149" class="ink" stroke-dasharray="3 3"/><text x="114" y="138" class="lb">s</text>
+      <text x="110" y="200" text-anchor="middle" class="sm">casca ds: volume 2πs ds por metro</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R21 ============ -->
+<article class="ex" id="r21">
+  <div class="exhead"><span class="exnum">R21</span><span class="chip">Energia magnética</span><span class="lvl">dificuldade <b>●●○</b></span></div>
+  <h2>Toroide de seção retangular: L exata e energia por dois caminhos</h2>
+  <div class="statement">
+    <p>Um toroide ideal, com enrolamento denso e núcleo de ar ($\mu=\mu_0$), tem $N = 500$ espiras, raios interno $a = 10\ \text{cm}$ e externo $b = 15\ \text{cm}$, altura $h = 2{,}0\ \text{cm}$ (seção retangular), e conduz $I = 2{,}0\ \text{A}$.</p>
+    <ol type="a"><li>Determine $B(s)$ no núcleo e o fluxo por espira.</li><li>Calcule $L$ exata e compare com a aproximação de toroide fino.</li><li>Calcule a energia por $\tfrac12LI^2$ e por $\int u_B\,dV$.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 400 210" role="img" aria-label="À esquerda, vista de cima do toroide com enrolamento; à direita, a seção retangular entre os raios a e b, com uma faixa de largura ds usada para calcular o fluxo.">
+      <circle cx="100" cy="105" r="80" class="cur" style="fill:var(--tint-current)" stroke-width="1.4"/>
+      <circle cx="100" cy="105" r="52" class="cur" style="fill:var(--surface)" stroke-width="1.4"/>
+      <g class="cur" stroke-width="1.2">
+        <line x1="152" y1="105" x2="180" y2="105"/><line x1="145" y1="131" x2="169.3" y2="145"/><line x1="126" y1="150" x2="140" y2="174.3"/><line x1="100" y1="157" x2="100" y2="185"/><line x1="74" y1="150" x2="60" y2="174.3"/><line x1="55" y1="131" x2="30.7" y2="145"/><line x1="48" y1="105" x2="20" y2="105"/><line x1="55" y1="79" x2="30.7" y2="65"/><line x1="74" y1="60" x2="60" y2="35.7"/><line x1="100" y1="53" x2="100" y2="25"/><line x1="126" y1="60" x2="140" y2="35.7"/><line x1="145" y1="79" x2="169.3" y2="65"/>
+      </g>
+      <line x1="100" y1="105" x2="100" y2="105" class="ink"/>
+      <circle cx="100" cy="105" r="2" class="fink"/>
+      <text x="100" y="204" text-anchor="middle" class="sm">vista de cima</text>
+      <line x1="210" y1="30" x2="210" y2="180" class="ink" stroke-dasharray="5 4"/>
+      <text x="214" y="40" class="sm">eixo</text>
+      <rect x="250" y="85" width="120" height="44" class="cur" style="fill:var(--tint-current)" stroke-width="1.4"/>
+      <rect x="296" y="85" width="10" height="44" class="fld" style="fill:var(--tint-field)" stroke-width="1"/>
+      <use href="#cross" x="320" y="101" width="12" height="12" style="color:var(--field)"/>
+      <line x1="210" y1="150" x2="250" y2="150" class="ink" marker-end="url(#a-ink)"/><text x="230" y="166" text-anchor="middle" class="lb">a</text>
+      <line x1="210" y1="172" x2="370" y2="172" class="ink" marker-end="url(#a-ink)"/><text x="290" y="190" text-anchor="middle" class="lb">b</text>
+      <text x="301" y="80" text-anchor="middle" class="lb tfld">ds</text>
+      <line x1="380" y1="85" x2="380" y2="129" class="ink"/><text x="386" y="112" class="lb">h</text>
+      <text x="300" y="204" text-anchor="middle" class="sm">seção transversal</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<!-- ============ R22 ============ -->
+<article class="ex" id="r22">
+  <div class="exhead"><span class="exnum">R22</span><span class="chip">Energia magnética</span><span class="lvl">dificuldade <b>●●●</b></span></div>
+  <h2>Densidade de energia como pressão: ímã de 10 T e eletroímã de carga</h2>
+  <div class="statement">
+    <ol type="a"><li>Mostre que o enrolamento de um solenoide longo sofre pressão $P = B^2/(2\mu_0)$ para fora e calcule para $B = 10\ \text{T}$.</li><li>Um eletroímã em U produz $B = 1{,}0\ \text{T}$ no entreferro de cada um dos dois polos, cada um com área $A = 100\ \text{cm}^2$. Estime a força de sustentação sobre uma placa de ferro.</li></ol>
+  </div>
+  <figure>
+    <svg viewBox="0 0 400 220" role="img" aria-label="À esquerda, corte de solenoide com o enrolamento; à direita, eletroímã em U diante de uma placa de ferro, com campo atravessando os entreferros.">
+      <g style="color:var(--current)">
+        <use href="#dot" x="34" y="44" width="12" height="12"/><use href="#dot" x="64" y="44" width="12" height="12"/><use href="#dot" x="94" y="44" width="12" height="12"/><use href="#dot" x="124" y="44" width="12" height="12"/><use href="#dot" x="154" y="44" width="12" height="12"/>
+        <use href="#cross" x="34" y="144" width="12" height="12"/><use href="#cross" x="64" y="144" width="12" height="12"/><use href="#cross" x="94" y="144" width="12" height="12"/><use href="#cross" x="124" y="144" width="12" height="12"/><use href="#cross" x="154" y="144" width="12" height="12"/>
+      </g>
+      <g class="fld" stroke-width="2"><line x1="30" y1="80" x2="170" y2="80" marker-end="url(#a-fld)"/><line x1="30" y1="100" x2="170" y2="100" marker-end="url(#a-fld)"/><line x1="30" y1="120" x2="170" y2="120" marker-end="url(#a-fld)"/></g>
+      <text x="96" y="74" class="lb tfld">B</text>
+      <text x="100" y="208" text-anchor="middle" class="sm">solenoide (corte)</text>
+      <path d="M230,30 L350,30 L350,140 L320,140 L320,60 L260,60 L260,140 L230,140 Z" class="mut" style="fill:var(--tint-field)" stroke-width="1.4"/>
+      <rect x="226" y="80" width="38" height="40" class="cur" style="fill:var(--tint-current)" stroke-width="1"/>
+      <rect x="316" y="80" width="38" height="40" class="cur" style="fill:var(--tint-current)" stroke-width="1"/>
+      <rect x="222" y="152" width="136" height="18" class="ink" style="fill:var(--line)" stroke-width="1.2"/>
+      <line x1="245" y1="141" x2="245" y2="151" class="fld" stroke-width="2" marker-end="url(#a-fld)"/>
+      <line x1="335" y1="151" x2="335" y2="141" class="fld" stroke-width="2" marker-end="url(#a-fld)"/>
+      <text x="364" y="150" class="sm">gap</text>
+      <text x="290" y="214" text-anchor="middle" class="sm">eletroímã em U</text>
+    </svg>
+  </figure>
+  <div class="workspace" aria-hidden="true">Resolução</div>
+</article>
+
+<footer>
+  Material de apoio ao <a href="https://www.laioseman.com/2026_2/eletromag/apostila/05_magnetostatica_fundamentos.html">Capítulo 5 da apostila</a>. Notação e constantes seguem a apostila; os exercícios R1–R22 não repetem a lista E1–E20.
+<p>Para retomar os fundamentos: <a href="https://openstax.org/books/university-physics-volume-2/pages/11-7-applications-of-magnetic-forces-and-fields">seletor de velocidades e cíclotron (OpenStax)</a> e <a href="https://openstax.org/books/university-physics-volume-2/pages/12-summary">leis de Biot–Savart e Ampère (OpenStax)</a>.</p>
+</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  document.documentElement.classList.add('js');
+  const $=id=>document.getElementById(id);
+  const theme=$('btn-theme');
+  theme.addEventListener('click',()=>{const dark=theme.getAttribute('aria-pressed')!=='true';document.documentElement.dataset.theme=dark?'dark':'light';theme.setAttribute('aria-pressed',String(dark));theme.textContent=dark?'Tema claro':'Tema escuro'});
+  const initialDark=matchMedia('(prefers-color-scheme: dark)').matches;
+  theme.setAttribute('aria-pressed',String(initialDark));theme.textContent=initialDark?'Tema claro':'Tema escuro';
+  $('btn-print').addEventListener('click',()=>window.print());
+  if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{const entry=entries.filter(e=>e.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top)[0];if(!entry)return;document.querySelectorAll('.toc a[aria-current]').forEach(a=>a.removeAttribute('aria-current'));const link=document.querySelector('.toc a[href="#'+entry.target.id+'"]');if(link)link.setAttribute('aria-current','location')},{rootMargin:'0px 0px -65% 0px'});document.querySelectorAll('article.ex').forEach(a=>observer.observe(a))}
+})();
+</script>
+</body>
+</html>
