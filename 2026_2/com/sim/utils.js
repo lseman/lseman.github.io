@@ -245,8 +245,7 @@ const rrcCache = new Map();
 const RRC_CACHE_MAX = 100;
 
 export function rrcTapsKey(sps, alpha, span) {
-    const aKey = Math.round(alpha * 10000);
-    return (sps << 19) | (aKey << 5) | span;
+    return `${sps}:${alpha}:${span}`;
 }
 
 export function rrcTaps(samplesPerSymbol, rolloff, spanSymbols) {
@@ -280,7 +279,7 @@ export function computeFFT(signal, size, windowName = 'Hann', shift = true) {
     fftAny(re, im);
     const out = Array.from({ length: N }, (_, k) => ({ re: re[k] / (N * gain), im: im[k] / (N * gain) }));
     const data = shift ? out.slice(Math.ceil(N / 2)).concat(out.slice(0, Math.ceil(N / 2))) : out, fs = signal?.fs || signal?.sampleRate;
-    return { kind: 'fft', data, fs, fftSize: N, binWidth: fs ? fs / N : 1 / N, frequencyStart: shift ? (fs ? -fs / 2 : -.5) : 0, shifted: shift, window: windowName };
+    return { kind: 'fft', data, fs, fftSize: N, binWidth: fs ? fs / N : 1 / N, frequencyStart: shift ? -Math.floor(N / 2) * (fs ? fs / N : 1 / N) : 0, shifted: shift, window: windowName };
 }
 
 export function gaussianShape(raw, sps, bt) {

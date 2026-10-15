@@ -1,6 +1,6 @@
 // blocks.js - Block definitions and processors
 
-import { arr, complex, sampleRateOf, assertSameRate, bitsToInts, intsToBits, binaryToGray, grayToBinary, unwrap, parseTaps, binaryPolynomial, polynomialRemainder, hamming74Word, hammingSyndrome, convTransition, convolveSignal, rrcTaps, computeFFT, gaussianShape, apskPoints, analyticSignal, radix2FFT, qFunction } from './utils.js';
+import { arr, complex, sampleRateOf, assertSameRate, bitsToInts, intsToBits, binaryToGray, grayToBinary, unwrap, parseTaps, binaryPolynomial, polynomialRemainder, hamming74Word, hammingSyndrome, convTransition, convolveSignal, convolveFull, rrcTaps, computeFFT, gaussianShape, apskPoints, analyticSignal, radix2FFT, qFunction } from './utils.js';
 
 export const COLORS = { Sources: '#60a5fa', Coding: '#a78bfa', 'Digital Modulation': '#f59e0b', 'Analog Modulation': '#f97316', Channel: '#fb7185', 'Signal Processing': '#38bdf8', 'Digital Receiver': '#34d399', 'Analog Receiver': '#2dd4bf', Analysis: '#22d3ee', Custom: '#e879f9' };
 export const TYPE_COLORS = { bits: '#a78bfa', real: '#60a5fa', complex: '#f59e0b', any: '#94a3b8' };
@@ -154,7 +154,7 @@ export function createProcessors(results) {
     // Sources
     processors.bit_source = (n) => {
         const count = n.config.count || 512;
-        const seed = n.config.seed || 42;
+        const seed = n.config.seed ?? 42;
         const r = (function(s) { return function() { return ((s = (Math.imul(1664525, s) + 1013904223) | 0) >>> 0) / 4294967296 } })(seed);
         const bits = Array.from({ length: count }, () => Math.floor(r() * 2));
         return { bits };
@@ -169,16 +169,16 @@ export function createProcessors(results) {
     };
     processors.sine_source = (n) => {
         const fs = sampleRateOf(null);
-        const f = n.config.frequency || 100;
-        const A = n.config.amplitude || 1;
+        const f = n.config.frequency ?? 100;
+        const A = n.config.amplitude ?? 1;
         const dur = n.config.duration || 0.1;
         const N = Math.round(fs * dur);
         return { samples: { kind: 'samples', fs, sampleRate: fs, toneFrequency: f, highestFrequency: f, data: Array.from({ length: N }, (_, k) => ({ re: A * Math.cos(2 * Math.PI * f * k / fs), im: 0 })) } };
     };
     processors.complex_tone = (n) => {
         const fs = sampleRateOf(null);
-        const f = n.config.frequency || 1000;
-        const A = n.config.amplitude || 1;
+        const f = n.config.frequency ?? 1000;
+        const A = n.config.amplitude ?? 1;
         const dur = n.config.duration || 0.1;
         const phi = (n.config.phase || 0) * Math.PI / 180;
         const N = Math.round(fs * dur);
@@ -186,10 +186,10 @@ export function createProcessors(results) {
     };
     processors.noise_source = (n) => {
         const fs = sampleRateOf(null);
-        const P = n.config.power || 1;
+        const P = n.config.power ?? 1;
         const dur = n.config.duration || 0.1;
         const mode = n.config.mode || 'complexa';
-        const seed = n.config.seed || 123;
+        const seed = n.config.seed ?? 123;
         const r = (function(s) { let state = s; return function() { return ((state = (Math.imul(1664525, state) + 1013904223) | 0) >>> 0) / 4294967296 } })(seed);
         const gaussian = () => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
         const N = Math.round(fs * dur);
@@ -312,7 +312,7 @@ export function createProcessors(results) {
 
     // Digital Modulation
     processors.ask = (n, { bits }) => {
-        const z = n.config.zero || 0, o = n.config.one || 1;
+        const z = n.config.zero ?? 0, o = n.config.one ?? 1;
         return { symbols: { kind: 'symbols', data: bits.map(b => ({ re: b ? o : z, im: 0 })), bitsPerSymbol: 1 } };
     };
     processors.bpsk = (n, { bits }) => { return { symbols: { kind: 'symbols', data: bits.map(b => ({ re: b ? -1 : 1, im: 0 })), bitsPerSymbol: 1 } }; };
@@ -361,7 +361,7 @@ export function createProcessors(results) {
         return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, fskM: M, sps, bitsPerSymbol: k } };
     };
     processors.am = (n, { message }) => {
-        const fc = n.config.carrier || 2000, mu = n.config.mu || 0.7;
+        const fc = n.config.carrier ?? 2000, mu = n.config.mu ?? 0.7;
         const fs = sampleRateOf(message);
         const data = message.data.map((s, k) => ({ re: (1 + mu * s.re) * Math.cos(2 * Math.PI * fc * k / fs), im: 0 }));
         const fm = Number(message.toneFrequency);
@@ -374,7 +374,7 @@ export function createProcessors(results) {
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, carrierFrequency: fc, messageFrequency: Number.isFinite(fm) ? fm : undefined, highestFrequency: Number.isFinite(fm) ? fc + fm : fc, spectrumMarkers, spectrumView, data } };
     };
     processors.fm = (n, { message }) => {
-        const fc = n.config.carrier || 2000, dev = n.config.deviation || 500;
+        const fc = n.config.carrier ?? 2000, dev = n.config.deviation ?? 500;
         const fs = sampleRateOf(message);
         const data = [{ re: 0, im: 0 }];
         let phase = 0;
@@ -385,47 +385,32 @@ export function createProcessors(results) {
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, data: data.slice(1) } };
     };
     processors.pm = (n, { message }) => {
-        const fc = n.config.carrier || 2000, kp = n.config.kp || 1;
+        const fc = n.config.carrier ?? 2000, kp = n.config.kp ?? 1;
         const fs = sampleRateOf(message);
         const data = message.data.map((s, k) => ({ re: Math.cos(2 * Math.PI * fc * k / fs + kp * s.re), im: Math.sin(2 * Math.PI * fc * k / fs + kp * s.re) }));
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
     };
     processors.rrc_tx = (n, { symbols }) => {
-        const sps = n.config.sps || 8, alpha = n.config.alpha || 0.35, span = n.config.span || 8;
+        const sps = n.config.sps || 8, alpha = n.config.alpha ?? 0.35, span = n.config.span || 8;
+        if (!Number.isInteger(sps) || sps < 2) throw Error('RRC: amostras por símbolo deve ser inteiro ≥ 2.');
         const taps = rrcTaps(sps, alpha, span);
         const syms = arr(symbols).map(complex);
-        const data = [];
-        for (const sym of syms) {
-            for (let k = 0; k < sps; k++) data.push({ re: 0, im: 0 });
-        }
-        for (let k = 0; k < syms.length; k++) {
-            const sym = syms[k];
-            for (let t = 0; t < taps.length; t++) {
-                const sampleIdx = k * sps + t;
-                if (sampleIdx < data.length) {
-                    data[sampleIdx].re += sym.re * taps[t];
-                    data[sampleIdx].im += sym.im * taps[t];
-                }
-            }
-        }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps, bitsPerSymbol: symbols?.bitsPerSymbol || 1 } };
+        const upsampled = Array.from({ length: Math.max(0, (syms.length - 1) * sps + 1) }, () => ({ re: 0, im: 0 }));
+        syms.forEach((sym, k) => { upsampled[k * sps] = sym; });
+        const data = convolveFull(upsampled, taps);
+        const fs = sampleRateOf(symbols);
+        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, sps, symbolCount: syms.length, bitsPerSymbol: symbols?.bitsPerSymbol || 1 } };
     };
     processors.rrc_rx = (n, { waveform }) => {
-        const sps = n.config.sps || 8, alpha = n.config.alpha || 0.35, span = n.config.span || 8;
+        const sps = n.config.sps || 8, alpha = n.config.alpha ?? 0.35, span = n.config.span || 8;
+        if (!Number.isInteger(sps) || sps < 2) throw Error('RRC: amostras por símbolo deve ser inteiro ≥ 2.');
         const taps = rrcTaps(sps, alpha, span);
-        const data = arr(waveform).map(complex);
-        const symbols = [];
-        const totalTaps = taps.length;
-        const delay = Math.floor(totalTaps / 2);
-        for (let k = 0; k < data.length - totalTaps; k += sps) {
-            let I = 0, Q = 0;
-            for (let t = 0; t < totalTaps; t++) {
-                const idx = k + t;
-                if (idx < data.length) { I += data[idx].re * taps[t]; Q += data[idx].im * taps[t]; }
-            }
-            symbols.push({ re: I, im: Q });
-        }
-        return { symbols };
+        const data = convolveFull(arr(waveform).map(complex), taps);
+        const delay = taps.length - 1;
+        const count = waveform.symbolCount ?? Math.max(0, Math.floor((arr(waveform).length - taps.length) / sps) + 1);
+        const symbols = Array.from({ length: count }, (_, k) => data[delay + k * sps]);
+        const fs = sampleRateOf(waveform) / sps;
+        return { symbols: { kind: 'symbols', data: symbols, fs, sampleRate: fs, bitsPerSymbol: waveform.bitsPerSymbol } };
     };
     processors.fft = (n, { signal }) => { return { fft: computeFFT(signal, n.config.size || 1024, n.config.window || 'Hann', n.config.shift === 'sim') }; };
 
@@ -433,7 +418,7 @@ export function createProcessors(results) {
     processors.awgn = (n, { signal }) => {
         const mode = n.config.mode || 'Eb/N0';
         const snrDb = n.config.snr ?? 7;
-        const seed = n.config.seed || 7;
+        const seed = n.config.seed ?? 7;
         const r = (function(s) { let state = s; return function() { return ((state = (Math.imul(1664525, state) + 1013904223) | 0) >>> 0) / 4294967296 } })(seed);
         const gaussian = () => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
         const data = arr(signal).map(complex);
@@ -477,7 +462,7 @@ export function createProcessors(results) {
         return { corrupted };
     };
     processors.frequency_offset = (n, { signal }) => {
-        const cycles = n.config.cycles || 0.01;
+        const cycles = n.config.cycles ?? 0.01;
         const fs = sampleRateOf(signal);
         const data = arr(signal).map(complex);
         return { impaired: { ...signal, data: data.map((s, k) => { const phase = 2 * Math.PI * cycles * k; return { re: s.re * Math.cos(phase) - s.im * Math.sin(phase), im: s.re * Math.sin(phase) + s.im * Math.cos(phase) }; }) } };
@@ -487,7 +472,7 @@ export function createProcessors(results) {
         return { impaired: convolveSignal(signal, taps) };
     };
     processors.iq_imbalance = (n, { signal }) => {
-        const gainErr = n.config.gain || 0;
+        const gainErr = n.config.gain ?? 0;
         const phaseErr = n.config.phase || 0;
         const g = 1 + gainErr / 100;
         const phi = phaseErr * Math.PI / 180;
@@ -501,33 +486,33 @@ export function createProcessors(results) {
         return { impaired: { ...signal, data: data.map(s => { const mag = Math.sqrt(s.re * s.re + s.im * s.im); const scale = Math.min(1, level / Math.max(1e-12, mag)); return { re: s.re * scale, im: s.im * scale }; }) } };
     };
     processors.rayleigh_fading = (n, { signal }) => {
-        const seed = n.config.seed || 11;
-        const doppler = n.config.doppler_hz || 100;
+        const seed = n.config.seed ?? 11;
+        const doppler = n.config.doppler_hz ?? 100;
         const fs = sampleRateOf(signal);
         const r = (function(s) { let state = s; return function() { return ((state = (Math.imul(1664525, state) + 1013904223) | 0) >>> 0) / 4294967296 } })(seed);
         const gaussian = () => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
-        const rho = doppler > 0 ? Math.max(0, Math.min(1, Math.cos(2 * Math.PI * doppler / fs))) : 0;
-        let g1 = 0, g2 = 0;
+        const rho = doppler > 0 ? Math.max(0, Math.min(1, Math.cos(2 * Math.PI * doppler / fs))) : 1;
+        let g1 = gaussian(), g2 = gaussian();
         const data = arr(signal).map(complex);
         return { impaired: { ...signal, data: data.map(s => { g1 = rho * g1 + Math.sqrt(1 - rho * rho) * gaussian(); g2 = rho * g2 + Math.sqrt(1 - rho * rho) * gaussian(); const h_re = g1 / Math.SQRT2, h_im = g2 / Math.SQRT2; return { re: s.re * h_re - s.im * h_im, im: s.re * h_im + s.im * h_re }; }) } };
     };
     processors.rician_fading = (n, { signal }) => {
-        const seed = n.config.seed || 12;
-        const KdB = n.config.K_dB || 3;
-        const doppler = n.config.doppler_hz || 100;
+        const seed = n.config.seed ?? 12;
+        const KdB = n.config.K_dB ?? 3;
+        const doppler = n.config.doppler_hz ?? 100;
         const fs = sampleRateOf(signal);
         const r = (function(s) { let state = s; return function() { return ((state = (Math.imul(1664525, state) + 1013904223) | 0) >>> 0) / 4294967296 } })(seed);
         const gaussian = () => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
         const K = Math.pow(10, KdB / 10);
-        const sigma = Math.sqrt(1 / (K + 1));
+        const sigma = Math.sqrt(1 / (2 * (K + 1)));
         const LOS_re = Math.sqrt(K / (K + 1)), LOS_im = 0;
-        const rho = doppler > 0 ? Math.max(0, Math.min(1, Math.cos(2 * Math.PI * doppler / fs))) : 0;
-        let g1 = 0, g2 = 0;
+        const rho = doppler > 0 ? Math.max(0, Math.min(1, Math.cos(2 * Math.PI * doppler / fs))) : 1;
+        let g1 = gaussian(), g2 = gaussian();
         const data = arr(signal).map(complex);
         return { impaired: { ...signal, data: data.map(s => { g1 = rho * g1 + Math.sqrt(1 - rho * rho) * gaussian(); g2 = rho * g2 + Math.sqrt(1 - rho * rho) * gaussian(); const hNLOS_re = g1 * sigma, hNLOS_im = g2 * sigma; const h_re = LOS_re + hNLOS_re, h_im = LOS_im + hNLOS_im; return { re: s.re * h_re - s.im * h_im, im: s.re * h_im + s.im * h_re }; }) } };
     };
     processors.phase_noise = (n, { signal }) => {
-        const varPhase = n.config.variance || 0.01;
+        const varPhase = n.config.variance ?? 0.01;
         const std = Math.sqrt(varPhase);
         const r = (function(s) { let state = s; return function() { return ((state = (Math.imul(1664525, state) + 1013904223) | 0) >>> 0) / 4294967296 } })(42);
         const gaussian = () => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
@@ -537,12 +522,12 @@ export function createProcessors(results) {
 
     // Signal Processing
     processors.gain = (n, { signal }) => {
-        const gain = n.config.gain || 1;
+        const gain = n.config.gain ?? 1;
         const data = arr(signal).map(complex);
         return { signal: { ...signal, data: data.map(s => ({ re: s.re * gain, im: s.im * gain })) } };
     };
     processors.mixer = (n, { signal }) => {
-        const freq = n.config.frequency || 1000;
+        const freq = n.config.frequency ?? 1000;
         const phaseDeg = n.config.phase || 0;
         const phaseRad = phaseDeg * Math.PI / 180;
         const fs = sampleRateOf(signal);
@@ -551,6 +536,7 @@ export function createProcessors(results) {
     };
     processors.add = (n, { a, b }) => {
         const dataA = arr(a).map(complex), dataB = arr(b).map(complex);
+        assertSameRate(a, b, 'Soma');
         const len = Math.min(dataA.length, dataB.length);
         return { sum: { ...a, data: Array.from({ length: len }, (_, k) => ({ re: dataA[k].re + dataB[k].re, im: dataA[k].im + dataB[k].im })) } };
     };
@@ -565,24 +551,26 @@ export function createProcessors(results) {
         return { filtered: convolveSignal(signal, taps) };
     };
     processors.upsample = (n, { signal }) => {
-        const factor = n.config.factor || 4;
+        const factor = n.config.factor ?? 4;
+        if (!Number.isInteger(factor) || factor < 1) throw Error('Interpolação: fator deve ser inteiro positivo.');
         const data = arr(signal).map(complex);
         const resampled = [];
         for (const s of data) { resampled.push(s); for (let k = 1; k < factor; k++) resampled.push({ re: 0, im: 0 }); }
-        return { resampled: { ...signal, data: resampled } };
+        return { resampled: { ...signal, fs: sampleRateOf(signal) * factor, sampleRate: sampleRateOf(signal) * factor, ...(signal.sps ? { sps: signal.sps * factor } : {}), data: resampled } };
     };
     processors.decimate = (n, { signal }) => {
-        const factor = n.config.factor || 2;
-        const phase = n.config.phase || 0;
+        const factor = n.config.factor ?? 2;
+        const phase = n.config.phase ?? 0;
+        if (!Number.isInteger(factor) || factor < 1 || !Number.isInteger(phase) || phase < 0 || phase >= factor) throw Error('Decimação: fator inteiro positivo e fase entre 0 e fator−1.');
         const data = arr(signal).map(complex);
         const resampled = [];
         for (let k = phase; k < data.length; k += factor) resampled.push(data[k]);
-        return { resampled: { ...signal, data: resampled } };
+        return { resampled: { ...signal, fs: sampleRateOf(signal) / factor, sampleRate: sampleRateOf(signal) / factor, ...(signal.sps ? { sps: signal.sps / factor } : {}), data: resampled } };
     };
 
     // Digital Receiver
     processors.hard_ask = (n, { symbols }) => {
-        const thresh = n.config.threshold || 0.5;
+        const thresh = n.config.threshold ?? 0.5;
         return { bits: arr(symbols).map(complex).map(s => (s.re >= thresh ? 1 : 0)) };
     };
     processors.hard_bpsk = (n, { symbols }) => { return { bits: arr(symbols).map(complex).map(s => (s.re < 0 ? 1 : 0)) }; };
@@ -860,7 +848,7 @@ export function createProcessors(results) {
         return { bits };
     };
     processors.analog_sideband = (n, { message }) => {
-        const mode = n.config.mode || 'DSB-SC', fc = n.config.carrier || 2000;
+        const mode = n.config.mode || 'DSB-SC', fc = n.config.carrier ?? 2000;
         const fs = sampleRateOf(message);
         const mHat = analyticSignal(message).map(s => s.im);
         const data = message.data.map((s, k) => {
@@ -873,7 +861,7 @@ export function createProcessors(results) {
         return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
     };
     processors.coherent_am_detector = (n, { signal }) => {
-        const fc = n.config.carrier || 2000, phase = (+n.config.phase || 0) * Math.PI / 180, frequencyOffset = +n.config.frequencyOffset || 0;
+        const fc = n.config.carrier ?? 2000, phase = (+n.config.phase || 0) * Math.PI / 180, frequencyOffset = +n.config.frequencyOffset || 0;
         const fs = sampleRateOf(signal);
         const data = arr(signal).map(complex);
         const mixed = data.map((s, k) => {
@@ -894,7 +882,7 @@ export function createProcessors(results) {
         return { message: filtered };
     };
     processors.costas_loop = (n, { signal }) => {
-        const fc = n.config.carrier || 2000, wn = 2 * Math.PI * Math.max(1, +n.config.loopBandwidth || 60), zeta = Math.max(.05, +n.config.zeta || .707);
+        const fc = n.config.carrier ?? 2000, wn = 2 * Math.PI * Math.max(1, +n.config.loopBandwidth || 60), zeta = Math.max(.05, +n.config.zeta || .707);
         const fs = sampleRateOf(signal), dt = 1 / fs;
         const data = arr(signal).map(complex);
         const Kp = 2 * zeta * wn, Ki = wn * wn; // filtro PI de 2ª ordem clássico: Kp=2ζωₙ, Ki=ωₙ²
@@ -932,7 +920,7 @@ export function createProcessors(results) {
         return { message: { kind: 'samples', fs: sampleRateOf(signal), sampleRate: sampleRateOf(signal), data: message.map(m => ({ re: removeDC ? m.re - mean : m.re, im: 0 })) } };
     };
     processors.phase_demod = (n, { signal }) => {
-        const fc = n.config.carrier || 2000, mode = n.config.mode || 'PM';
+        const fc = n.config.carrier ?? 2000, mode = n.config.mode || 'PM';
         const fs = sampleRateOf(signal);
         const data = arr(signal).map(complex);
         const analytic = analyticSignal({ data, fs });
@@ -1010,7 +998,7 @@ export function createProcessors(results) {
         return {};
     };
     processors.signal_stats = (n, { signal }) => {
-        const data = arr(signal).map(complex), powers = data.map(x => x.re * x.re + x.im * x.im), average = powers.reduce((sum, x) => sum + x, 0) / Math.max(1, powers.length), papr = average ? Math.max(...powers, 0) / average : NaN;
+        const data = arr(signal).map(complex), powers = data.map(x => x.re * x.re + x.im * x.im), average = powers.reduce((sum, x) => sum + x, 0) / Math.max(1, powers.length), papr = average ? powers.reduce((peak, value) => Math.max(peak, value), 0) / average : NaN;
         results.push({ type: 'metric', title: 'PAPR', value: papr, detail: `${(10 * Math.log10(papr)).toFixed(2)} dB` });
         return {};
     };
@@ -1043,14 +1031,14 @@ export function createProcessors(results) {
         const samples = data.map(s => {
             const x = s.re;
             const clamped = Math.max(-range, Math.min(range, x));
-            const q = Math.round((clamped + range) / delta);
+            const q = Math.floor((clamped + range) / delta);
             const reconstructed = (Math.max(0, Math.min(levels - 1, q)) * delta + delta / 2) - range;
             return { re: reconstructed, im: 0 };
         });
         return { samples: { kind: 'samples', fs: sampleRateOf(message), sampleRate: sampleRateOf(message), data: samples } };
     };
     processors.compander = (n, { message }) => {
-        const mode = n.config.mode || 'compressor', mu = n.config.mu || 255;
+        const mode = n.config.mode || 'compressor', mu = n.config.mu ?? 255;
         const data = arr(message).map(complex);
         const samples = data.map(s => {
             const x = s.re;
@@ -1134,7 +1122,7 @@ export function createProcessors(results) {
         return { message: { kind: 'samples', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data: smoothed } };
     };
     processors.lms_equalizer = (n, { waveform, ideal }) => {
-        const tapsCount = n.config.taps || 7, mu = n.config.mu || 0.05, trainSymbols = n.config.train || 400;
+        const tapsCount = n.config.taps || 7, mu = n.config.mu ?? 0.05, trainSymbols = n.config.train || 400;
         const data = arr(waveform).map(complex);
         const idealData = arr(ideal).map(complex);
         const delay = Math.floor(tapsCount / 2);
