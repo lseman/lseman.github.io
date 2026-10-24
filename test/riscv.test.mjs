@@ -623,3 +623,26 @@ test('VHDL core matches the JavaScript pipeline: registers and cycle count', { s
   }
   fs.rmSync(work, { recursive:true, force:true });
 });
+
+test('symbolic labels resolve byte PCs across comments, blank lines and aliases', () => {
+  const source = '# countdown\nstart:\n  addi a0, zero, 3\n\nloop: again: addi a0, a0, -1 # decrement\n bne a0, zero, loop\n jal zero, done\n addi a1, zero, 99\ndone: nop\nend:';
+  const program = parseProgram(source);
+  assert.equal(program.length, 6);
+  assert.equal(program[2].imm, -4);
+  assert.equal(program[3].imm, 8);
+  const cpu = new CPU(program); run(cpu);
+  assert.equal(cpu.regs[10], 0);
+  assert.equal(cpu.regs[11], 0);
+  assert.equal(cpu.retired, 9);
+  assert.equal(parseProgram('jal zero, end\nnop\nend:')[0].imm, 8);
+});
+
+test('label diagnostics retain source lines and validate resolved offset ranges', () => {
+  assert.throws(() => parseProgram('# comment\nloop: nop\nloop: nop'), /Line 3: Duplicate label: loop/);
+  assert.throws(() => parseProgram('\nbeq x0, x0, missing'), /Line 2: Unknown label: missing/);
+  assert.throws(() => parseProgram('Loop: nop\nbne x0, x0, loop'), /Line 2: Unknown label: loop/);
+  assert.throws(() => parseProgram('beq x0, x0, far\n' + 'nop\n'.repeat(1023) + 'far: nop'), /Line 1: Immediate 4096 must be/);
+  assert.throws(() => parseProgram('entry:\n\naddi x1, x0, 9999'), /Line 3: Immediate/);
+  assert.equal(parseProgram('.L_start: jal x0, .L_start')[0].imm, 0);
+  assert.equal(parseProgram('beq x0, x0, 8')[0].imm, 8);
+});

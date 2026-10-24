@@ -4,6 +4,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="architecture/study.css" />
+  <link rel="stylesheet" href="architecture/learning.css" />
+  <script type="module" src="architecture/theory.mjs"></script>
+  <script type="module" src="architecture/study.mjs"></script>
+  <script type="module" src="architecture/datapath.mjs"></script>
   <title>RISC-V Pipeline Explorer · Architecture Lab</title>
   <meta name="description" content="An interactive RISC-V architecture lab. Follow instructions through a five-stage pipeline, inspect live signals, and explore hazards, forwarding, and instruction formats." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -586,8 +591,8 @@
   <!-- Header / Hero -->
   <a class="skip-link" href="#sim">Skip to simulator</a>
   <nav class="lab-nav" aria-label="Main navigation">
-    <a class="brand" href="#"><span class="brand-icon" aria-hidden="true">RV<span>32</span></span> Architecture lab <span class="nav-divider">/</span> <span class="nav-course">RISC-V</span></a>
-    <div class="nav-links"><a href="#sim">Simulator</a><a href="#reference">Instruction reference</a></div>
+    <a class="brand" href="index.html"><span class="brand-icon" aria-hidden="true">RV<span>32</span></span> Architecture lab <span class="nav-divider">/</span> <span class="nav-course">RISC-V</span></a>
+    <div class="nav-links"><a href="index.html">Study workspace</a><a href="#sim">Simulator</a><a href="#reference">Instruction reference</a></div>
   </nav>
   <header class="bg-hero">
     <div class="hero-layout">
@@ -607,8 +612,9 @@
       </div>
     </div>
   </header>
-  <nav class="section-nav" aria-label="Page sections"><div><a href="#guide"><span>01</span> Concepts</a><a href="#sim"><span>02</span> Simulate</a><a href="#trace"><span>03</span> Trace</a><a href="#units"><span>04</span> Execution units</a><a href="#rtl"><span>05</span> Hardware</a><a href="#reference"><span>06</span> Reference</a></div></nav>
+  <nav class="section-nav" aria-label="Page sections"><div><a href="#study-plan">Theory</a><a href="#guide"><span>01</span> Concepts</a><a href="#sim"><span>02</span> Simulate</a><a href="#trace"><span>03</span> Trace</a><a href="#units"><span>04</span> Execution units</a><a href="#architecture"><span>05</span> Architecture paths</a><a href="#rtl"><span>06</span> Hardware</a><a href="#reference"><span>07</span> Reference</a></div></nav>
   <main>
+  <section id="study-plan" data-theory aria-label="Processor theory"></section>
   <!-- Concepts -->
   <section id="guide" class="py-12 bg-slate-50">
     <div class="max-w-7xl mx-auto px-6">
@@ -710,7 +716,7 @@
             <button id="btnApply"
               class="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm shadow hover:bg-slate-800">Load program</button>
           </div>
-          <p class="datapath-intro">Registers as x0–x31 or ABI names (a0, sp, ra…). PC and branch/JAL offsets are in bytes (relative to the instruction). LUI/AUIPC take an unshifted 20-bit immediate.</p>
+          <p class="datapath-intro">Registers as x0–x31 or ABI names (a0, sp, ra…). Branches and JAL accept labels (<code>loop: addi a0, a0, -1</code> / <code>bne a0, zero, loop</code>) or byte offsets relative to the instruction. Labels are case-sensitive. LUI/AUIPC take an unshifted 20-bit immediate.</p>
           <div class="editor-chrome"><span><i aria-hidden="true"></i>program.s</span><span>RISC-V ASSEMBLY</span></div>
           <textarea id="progText" spellcheck="false" autocapitalize="off" aria-describedby="parseErr"
             class="w-full h-44 rounded-lg border border-slate-200 bg-white/70 p-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
@@ -1235,8 +1241,10 @@ return;</textarea>
   </section>
 
   <!-- RTL view -->
+  <section id="architecture" aria-label="Architecture study paths"></section>
+
   <section id="rtl" aria-labelledby="rtlHeading">
-    <header><p class="eyebrow">05 / BUILD IT IN HARDWARE</p><h2 id="rtlHeading">The same machine, as hardware you can build.</h2>
+    <header><p class="eyebrow">06 / BUILD IT IN HARDWARE</p><h2 id="rtlHeading">The same machine, as hardware you can build.</h2>
       <p>Each datapath block is a small VHDL-2008 entity, and <code>rv32_core.vhd</code> wires them together with the four pipeline registers. It follows the simulator's rules exactly (prediction off): a regression test runs the same programs on both and requires identical registers and identical cycle counts. The multiply/divide unit is <code>mdu.vhd</code>. Pick a file, read it next to the diagram, then simulate it yourself.</p></header>
     <div class="rtl-layout">
       <nav class="rtl-files" aria-label="VHDL files"><ul id="rtlFiles"></ul></nav>
@@ -1266,7 +1274,7 @@ ghdl --elab-run --std=08 tb_rv32_soc -gPROGRAM=program.hex</pre></article>
      ========================= -->
 <section id="reference" class="max-w-7xl mx-auto mt-10 mb-16 px-6">
   <header class="mb-4">
-    <p class="eyebrow">06 / THE INSTRUCTION SET</p><h2 class="text-xl font-semibold text-slate-800">A reference, bit by bit.</h2>
+    <p class="eyebrow">07 / THE INSTRUCTION SET</p><h2 class="text-xl font-semibold text-slate-800">A reference, bit by bit.</h2>
     <p class="text-sm text-slate-600">
       Each row shows the instruction group, its format and its 32-bit encoding drawn to scale. Open a row's fields for what each one means. Filter by format or show only the M extension.
     </p>
@@ -2306,10 +2314,32 @@ ghdl --elab-run --std=08 tb_rv32_soc -gPROGRAM=program.hex</pre></article>
     }
 
     function parseProgram(source) {
-      return source.split('\n').map((line, index) => {
-        try { return parseLine(line); }
-        catch (error) { throw new Error(`Line ${index + 1}: ${error.message}`); }
-      }).filter(Boolean);
+      // Collect byte addresses first so both forward and backward labels work.
+      const labels = new Map(), instructions = [];
+      source.split('\n').forEach((line, index) => {
+        let text = line.replace(/#.*$/, '').trim(), match;
+        while ((match = text.match(/^([A-Za-z_.$][\w.$]*):\s*/))) {
+          const name = match[1];
+          if (labels.has(name)) throw new Error(`Line ${index + 1}: Duplicate label: ${name}`);
+          labels.set(name, instructions.length * 4);
+          text = text.slice(match[0].length);
+        }
+        if (text) instructions.push({ text, line: index + 1, pc: instructions.length * 4 });
+      });
+      return instructions.map(({ text, line, pc }) => {
+        try {
+          const tokens = text.replace(/,/g, ' ').split(/\s+/), op = tokens[0].toUpperCase();
+          const targetIndex = BRANCHES.has(op) ? 3 : op === 'JAL' ? 2 : -1;
+          const target = tokens[targetIndex];
+          if (tokens.length === targetIndex + 1 && /^[A-Za-z_.$][\w.$]*$/.test(target ?? '')) {
+            if (!labels.has(target)) throw new Error('Unknown label: ' + target);
+            tokens[targetIndex] = String(labels.get(target) - pc);
+            text = tokens.join(' ');
+          }
+          return parseLine(text);
+        }
+        catch (error) { throw new Error(`Line ${line}: ${error.message}`); }
+      });
     }
 
     function applyProgramFromTextarea() {
@@ -2424,7 +2454,7 @@ ghdl --elab-run --std=08 tb_rv32_soc -gPROGRAM=program.hex</pre></article>
     });
     qs('#btnComparePrediction').addEventListener('click', comparePrediction);
     qs('#btnPredictionDemo').addEventListener('click', () => {
-      el.progText.value = 'addi x1, x0, 12\naddi x1, x1, -1\nbne x1, x0, -4\nnop';
+      el.progText.value = 'addi x1, x0, 12\nloop: addi x1, x1, -1\nbne x1, x0, loop\nnop';
       applyProgramFromTextarea(); showTab(qs('#tab-asm'));
     });
 

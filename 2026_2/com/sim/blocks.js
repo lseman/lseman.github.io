@@ -1,6 +1,6 @@
 // blocks.js - Block definitions and processors
 
-import { arr, complex, sampleRateOf, assertSameRate, bitsToInts, intsToBits, binaryToGray, grayToBinary, unwrap, parseTaps, binaryPolynomial, polynomialRemainder, hamming74Word, hammingSyndrome, convTransition, convolveSignal, convolveFull, rrcTaps, computeFFT, gaussianShape, apskPoints, analyticSignal, radix2FFT, qFunction } from './utils.js';
+import { arr, complex, sampleRateOf, assertSameRate, bitsToInts, intsToBits, binaryToGray, grayToBinary, unwrap, parseTaps, binaryPolynomial, polynomialRemainder, hamming74Word, hammingSyndrome, convTransition, convolveSignal, convolveFull, rrcTaps, computeFFT, gaussianShape, apskPoints, analyticSignal, radix2FFT, nextPowerOfTwo, qFunction } from './utils.js';
 
 export const COLORS = { Sources: '#60a5fa', Coding: '#a78bfa', 'Digital Modulation': '#f59e0b', 'Analog Modulation': '#f97316', Channel: '#fb7185', 'Signal Processing': '#38bdf8', 'Digital Receiver': '#34d399', 'Analog Receiver': '#2dd4bf', Analysis: '#22d3ee', Custom: '#e879f9' };
 export const TYPE_COLORS = { bits: '#a78bfa', real: '#60a5fa', complex: '#f59e0b', any: '#94a3b8' };
@@ -75,6 +75,7 @@ export const defs = {
     bpsk: { name: 'Mapeador BPSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: '0 → +1, 1 → −1', config: {}, theory: 'Mapeamento antipodal com energia média unitária.', equation: 's[k]=1−2b[k]' },
     qpsk: { name: 'Mapeador QPSK Gray', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: '2 bits por símbolo', config: {}, theory: 'Mapeamento Gray normalizado para Es=1.', equation: 's=(I+jQ)/√2' },
     mpsk: { name: 'Mapeador M-PSK Gray', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: 'PSK Gray de ordem configurável', config: { M: { type: 'select', label: 'Ordem M', value: 8, options: [2, 4, 8, 16] } }, theory: 'Agrupa log₂M bits e seleciona fases equiespaçadas com rotulagem Gray circular, reduzindo erros de bits entre vizinhos.', equation: 'sₘ=e^{j2πm/M}, rótulo=Gray(m)' },
+    mpsk_mod: { name: 'Modulador M-PSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Bits → forma de onda PSK em banda base', config: { M: { type: 'select', label: 'Ordem M', value: 8, options: [2, 4, 8, 16, 32] }, sps: { type: 'number', label: 'Amostras/símbolo', value: 8, min: 2, max: 32 }, pulse: { type: 'select', label: 'Pulso', value: 'RRC', options: ['RRC', 'Retangular'] }, alpha: { type: 'number', label: 'Roll-off α (RRC)', value: .35, min: 0, max: 1 }, span: { type: 'number', label: 'Span RRC (símbolos)', value: 8, min: 2, max: 20 }, phase: { type: 'number', label: 'Fase inicial φ₀ (graus)', value: 0, min: -180, max: 180 } }, theory: 'Agrupa log₂M bits, escolhe a fase com rotulagem Gray (vizinhos diferem em um bit) e conforma os símbolos com pulso retangular ou RRC. Envoltória complexa com Es=1 por símbolo.', equation: 's(t)=Σₖ e^{j(2πmₖ/M+φ₀)}·p(t−kTs)' },
     qam: { name: 'Mapeador QAM', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: 'QAM quadrada normalizada', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [4, 16, 64, 256] } }, theory: 'Mapeia grupos de log₂M bits em uma grade quadrada e normaliza Es=1.', equation: 's=(I+jQ)/√E{|I+jQ|²}' },
     fsk: { name: 'Modulador M-FSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Tons ortogonais por símbolo', config: { M: { type: 'select', label: 'Ordem M', value: 2, options: [2, 4, 8] }, sps: { type: 'number', label: 'Amostras/símbolo', value: 16, min: 4, max: 128 } }, theory: 'Cada símbolo seleciona um tom complexo ortogonal ao longo de Ts.', equation: 'sₘ[n]=e^{j2πmn/N}' },
     am: { name: 'Modulador AM', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'AM convencional DSB-LC', config: { carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 }, mu: { type: 'number', label: 'Índice μ', value: .7, min: 0, max: 2 } }, theory: 'Modulação AM com portadora. Para evitar sobremodulação com mensagem normalizada, use μ≤1.', equation: 's(t)=[1+μm(t)]cos(2πfct)' },
@@ -87,8 +88,8 @@ export const defs = {
     multipath: { name: 'Canal multipercurso', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal FIR com ecos', config: { taps: { type: 'text', label: 'Taps reais', value: '1, 0.45, -0.2' } }, theory: 'Convolui o sinal com uma resposta impulsiva finita, introduzindo dispersão e ISI.', equation: 'r[n]=Σh[k]s[n−k]' },
     iq_imbalance: { name: 'Desbalanço I/Q', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Ganho e quadratura imperfeitos', config: { gain: { type: 'number', label: 'Erro de ganho (%)', value: 8 }, phase: { type: 'number', label: 'Erro de quadratura (°)', value: 5 } }, theory: 'Modela diferenças de ganho e erro angular entre os caminhos I e Q.', equation: 'Q′=(1+g)Q, quadratura=90°+φ' },
     clipper: { name: 'Limitador / clipping', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Não linearidade de amplitude', config: { level: { type: 'number', label: 'Nível máximo', value: 1, min: .05, max: 10 } }, theory: 'Limita o módulo e modela saturação de amplificador.', equation: 'y=x·min(1,Amax/|x|)' },
-    rayleigh_fading: { name: 'Desvanecimento Rayleigh', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal plano sem LOS', config: { seed: { type: 'number', label: 'Semente', value: 11 }, doppler_hz: { type: 'number', label: 'Doppler (Hz)', value: 100, min: 0, max: 10000 } }, theory: 'Gera um canal plano com envelope Rayleigh e componentes I/Q gaussianos correlacionados pelo modelo AR(1) com rho=J0(2πfdTs).', equation: 'h[n]=(g1[n]+jg2[n])/√2, E{|h|²}=1' },
-    rician_fading: { name: 'Desvanecimento Rician', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal plano com componente LOS', config: { seed: { type: 'number', label: 'Semente', value: 12 }, K_dB: { type: 'number', label: 'Fator K (dB)', value: 3, min: -10, max: 40 }, doppler_hz: { type: 'number', label: 'Doppler (Hz)', value: 100, min: 0, max: 10000 } }, theory: 'Canal com componente de linha de visada (LOS) e multipercurso. O fator K é a razão de potências LOS/NLOS.', equation: 'h=h_LOS+h_NLOS, K=P_LOS/P_NLOS' },
+    rayleigh_fading: { name: 'Desvanecimento Rayleigh', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal plano sem LOS', config: { seed: { type: 'number', label: 'Semente', value: 11 }, doppler_hz: { type: 'number', label: 'Doppler (Hz)', value: 100, min: 0, max: 10000 } }, theory: 'Gera um canal plano com envelope Rayleigh e componentes I/Q gaussianos com espectro Doppler de Jakes (ruído branco moldado por √S(f) no domínio da frequência), cuja autocorrelação é J0(2πf_dτ): tempo de coerência ≈0,423/f_d.', equation: 'S(f)∝1/√(1−(f/f_d)²), R(τ)=J0(2πf_dτ), E{|h|²}=1' },
+    rician_fading: { name: 'Desvanecimento Rician', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Canal plano com componente LOS', config: { seed: { type: 'number', label: 'Semente', value: 12 }, K_dB: { type: 'number', label: 'Fator K (dB)', value: 3, min: -10, max: 40 }, doppler_hz: { type: 'number', label: 'Doppler (Hz)', value: 100, min: 0, max: 10000 } }, theory: 'Canal com componente de linha de visada (LOS) e multipercurso. O fator K é a razão de potências LOS/NLOS; a parcela NLOS usa o mesmo processo Doppler de Jakes do bloco Rayleigh.', equation: 'h=√(K/(K+1))+h_NLOS/√(K+1), K=P_LOS/P_NLOS' },
     phase_noise: { name: 'Ruído de fase', category: 'Channel', inputs: ['signal'], outputs: ['impaired'], summary: 'Rotação estocástica de portadora', config: { variance: { type: 'number', label: 'Variância de fase (rad²)', value: 0.01, min: 0, max: 1 } }, theory: 'Aplica uma rotação de fase estocástica modelando ruído de oscilador.', equation: 'r[n]=s[n]e^{jφ[n]}, φ[n]~N(0,σ²)' },
     gain: { name: 'Ganho', category: 'Signal Processing', inputs: ['signal'], outputs: ['signal'], summary: 'Escala real ou complexa', config: { gain: { type: 'number', label: 'Ganho linear', value: 1 } }, theory: 'Multiplica todas as amostras por um ganho escalar.', equation: 'y[n]=Gx[n]' },
     mixer: { name: 'Misturador / NCO', category: 'Signal Processing', inputs: ['signal'], outputs: ['mixed'], summary: 'Translação de frequência em Hz', config: { frequency: { type: 'number', label: 'Frequência do NCO (Hz)', value: 1000 }, phase: { type: 'number', label: 'Fase (°)', value: 0 } }, theory: 'Multiplica o sinal por um oscilador complexo e desloca seu espectro. Usa Fs transportada pelo sinal.', equation: 'y[n]=x[n]e^{j(2πf₀n/Fₛ+φ)}' },
@@ -104,24 +105,25 @@ export const defs = {
     hard_bpsk: { name: 'Detector BPSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Limiar em Re{r}=0', config: {}, theory: 'Decisão ML para BPSK equiprovável em AWGN.', equation: 'b̂=1 se Re{r}<0' },
     hard_qpsk: { name: 'Detector QPSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Decisão por quadrante', config: {}, theory: 'Decisões independentes nos eixos I e Q para o mapeamento Gray usado.', equation: 'b̂I=[I<0], b̂Q=[Q<0]' },
     hard_mpsk: { name: 'Detector M-PSK Gray', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Fase mais próxima e rótulo Gray', config: { M: { type: 'select', label: 'Ordem M', value: 8, options: [2, 4, 8, 16] } }, theory: 'Seleciona a fase ideal mais próxima e converte seu índice para o rótulo Gray correspondente.', equation: 'm̂=round[M·arg(r)/(2π)], b̂=Gray(m̂)' },
+    mpsk_demod: { name: 'Demodulador M-PSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits', 'symbols'], summary: 'Filtro casado, amostragem e decisão de fase', config: { M: { type: 'select', label: 'Ordem M', value: 8, options: [2, 4, 8, 16, 32] }, phase: { type: 'number', label: 'Fase de referência φ₀ (graus)', value: 0, min: -180, max: 180 } }, theory: 'Aplica o filtro casado ao pulso do transmissor (integra-e-descarrega ou RRC, lidos do sinal), amostra uma vez por símbolo e decide pela fase mais próxima. A saída symbols expõe as variáveis de decisão para constelação e EVM.', equation: 'm̂=round[M(arg r−φ₀)/2π] mod M, b̂=Gray(m̂)' },
     hard_qam: { name: 'Detector QAM', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Ponto da grade mais próximo', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [4, 16, 64, 256] } }, theory: 'Quantiza independentemente I e Q para o nível permitido mais próximo.', equation: 'ŝ=arg min |r−sₘ|²' },
     fsk_detector: { name: 'Detector M-FSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Banco de correlatores', config: {}, theory: 'Calcula a correlação com cada tom e escolhe a maior magnitude.', equation: 'm̂=arg maxₘ |Σr[n]e^{-j2πmn/N}|' },
     ofdm_tx: { name: 'Transmissor multicarrier', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'OFDM, DMT ou SC-FDMA', config: { mode: { type: 'select', label: 'Forma multicarrier', value: 'OFDM', options: ['OFDM', 'DMT', 'SC-FDMA'] }, carriers: { type: 'select', label: 'Subportadoras N', value: 64, options: [16, 32, 64, 128] }, cp: { type: 'number', label: 'Prefixo cíclico', value: 16, min: 0, max: 64 } }, theory: 'OFDM usa subportadoras QPSK ortogonais; DMT impõe simetria hermitiana para saída real; SC-FDMA acrescenta espalhamento por DFT para menor PAPR.', equation: 'x[n]=IFFT{X[k]}, xCP=[x[N−L…N−1],x]' },
     ofdm_rx: { name: 'Receptor multicarrier', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'OFDM, DMT ou SC-FDMA', config: { mode: { type: 'select', label: 'Forma multicarrier', value: 'OFDM', options: ['OFDM', 'DMT', 'SC-FDMA'] }, carriers: { type: 'select', label: 'Subportadoras N', value: 64, options: [16, 32, 64, 128] }, cp: { type: 'number', label: 'Prefixo cíclico', value: 16, min: 0, max: 64 } }, theory: 'Remove o prefixo, aplica FFT e, em SC-FDMA, desfaz o espalhamento por DFT antes da decisão QPSK.', equation: 'X̂[k]=FFT{x[n]}' },
     msk: { name: 'Modulador MSK / GMSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'CPFSK de fase contínua e envelope constante', config: { mode: { type: 'select', label: 'Forma de pulso', value: 'MSK', options: ['MSK', 'GMSK'] }, sps: { type: 'number', label: 'Amostras/bit', value: 16, min: 4, max: 64 }, bt: { type: 'number', label: 'Produto BT (GMSK)', value: .3, min: .15, max: 1 } }, theory: 'MSK é CPFSK com índice h=1/2. GMSK filtra os dados NRZ com pulso gaussiano antes da integração de fase, reduzindo lóbulos laterais.', equation: 's[n]=e^{jφ[n]}, Δφ=πa[n]/(2Ns)' },
-    msk_detector: { name: 'Detector MSK / GMSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Decisão pela variação de fase', config: {}, theory: 'Acumula a diferença de fase ao longo de cada intervalo de bit e decide pelo sinal da rotação.', equation: 'b̂[k]=[ΣΔφ[n]≥0]' },
+    msk_detector: { name: 'Detector MSK / GMSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'MLSE coerente na treliça de fase', config: {}, theory: 'Correlaciona cada bit com as duas trajetórias de fase ±π/2 e escolhe, por Viterbi nos 4 estados de fase {0, π/2, π, 3π/2}, a sequência de máxima verossimilhança. Sem pré-codificação, cada evento de erro mínimo troca dois bits: Pb≈2Q(√(2Eb/N0)), cerca de 0,4 dB do BPSK. Em GMSK a ISI gaussiana não modelada custa mais alguns décimos de dB.', equation: 'b̂=arg max Σₖ Re{e^{−jθₖ}Σₙr[n]e^{−jπa(n+1)/(2Ns)}}' },
     pulse_mod: { name: 'Modulação por pulsos', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'PAM, PPM ou PWM binária', config: { mode: { type: 'select', label: 'Modulação', value: 'PAM', options: ['PAM', 'PPM', 'PWM'] }, sps: { type: 'number', label: 'Amostras/bit', value: 16, min: 8, max: 128 } }, theory: 'Representa informação na amplitude (PAM), posição (PPM) ou largura (PWM) de pulsos dentro de cada intervalo.', equation: 'PAM: A(b); PPM: τ(b); PWM: Tpulso(b)' },
     pulse_detector: { name: 'Detector de pulsos', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Decisão PAM, PPM ou PWM', config: {}, theory: 'Usa média de amplitude para PAM, energia por metade para PPM e duração acima do limiar para PWM.', equation: 'b̂=arg max métrica do pulso' },
     dpsk: { name: 'Modulador DPSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: 'DBPSK, DQPSK ou π/4-DQPSK', config: { mode: { type: 'select', label: 'Esquema diferencial', value: 'DBPSK', options: ['DBPSK', 'DQPSK', 'π/4-DQPSK'] } }, theory: 'Codifica a informação na diferença de fase entre símbolos consecutivos, dispensando referência absoluta de fase.', equation: 's[k]=s[k−1]e^{jΔφ(b[k])}' },
     dpsk_detector: { name: 'Detector DPSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Decisão diferencial de fase', config: { mode: { type: 'select', label: 'Esquema diferencial', value: 'DBPSK', options: ['DBPSK', 'DQPSK', 'π/4-DQPSK'] } }, theory: 'Multiplica o símbolo atual pelo conjugado do anterior e decide o incremento de fase mais próximo.', equation: 'Δφ̂=arg{r[k]r*[k−1]}' },
-    oqpsk: { name: 'Modulador OQPSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Q atrasado em meio símbolo', config: { sps: { type: 'number', label: 'Amostras/símbolo', value: 16, min: 4, max: 64 } }, theory: 'Atrasa o ramo Q em Ts/2, impedindo transições simultâneas de I e Q e reduzindo saltos de fase de 180°.', equation: 's(t)=I(t)+jQ(t−Ts/2)' },
-    oqpsk_detector: { name: 'Detector OQPSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Realinha I/Q e decide sinais', config: {}, theory: 'Amostra I e o ramo Q atrasado nas respectivas metades do símbolo.', equation: 'b̂I=[I<0], b̂Q=[Qdel<0]' },
+    oqpsk: { name: 'Modulador OQPSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Q atrasado em meio símbolo', config: { sps: { type: 'number', label: 'Amostras/símbolo', value: 16, min: 4, max: 64 } }, theory: 'Atrasa o ramo Q em Ts/2, impedindo transições simultâneas de I e Q e reduzindo saltos de fase de 180°. Amplitudes ±1/√2, Es=1.', equation: 's(t)=I(t)+jQ(t−Ts/2)' },
+    oqpsk_detector: { name: 'Detector OQPSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Integra I/Q escalonados e decide sinais', config: {}, theory: 'Filtro casado (integra-e-descarrega) no ramo I sobre [kTs,(k+1)Ts) e no ramo Q sobre o intervalo deslocado de Ts/2. Mesma BER do QPSK.', equation: 'b̂I=[∫I<0], b̂Q=[∫Q(t−Ts/2)<0]' },
     apsk: { name: 'Mapeador APSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['symbols'], summary: '16-APSK ou 32-APSK em anéis', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [16, 32] } }, theory: 'Distribui símbolos em anéis concêntricos, combinando modulação de amplitude e fase como em enlaces via satélite.', equation: 'sₘ=Rᵣe^{jθₘ}' },
     apsk_detector: { name: 'Detector APSK', category: 'Digital Receiver', inputs: ['symbols'], outputs: ['bits'], summary: 'Ponto APSK mais próximo', config: { M: { type: 'select', label: 'Ordem M', value: 16, options: [16, 32] } }, theory: 'Seleciona o ponto ideal de menor distância euclidiana entre todos os anéis.', equation: 'm̂=arg minₘ|r−sₘ|²' },
     cpfsk: { name: 'Modulador CPFSK / GFSK', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'FSK binária de fase contínua', config: { mode: { type: 'select', label: 'Forma de pulso', value: 'CPFSK', options: ['CPFSK', 'GFSK'] }, h: { type: 'number', label: 'Índice de modulação h', value: .7, min: .1, max: 2 }, sps: { type: 'number', label: 'Amostras/bit', value: 16, min: 4, max: 64 }, bt: { type: 'number', label: 'Produto BT (GFSK)', value: .5, min: .15, max: 1 } }, theory: 'Mantém fase contínua entre símbolos. GFSK suaviza os dados com filtro gaussiano para reduzir ocupação espectral.', equation: 'Δφ=πh·a[k]/Ns' },
-    cpfsk_detector: { name: 'Detector CPFSK / GFSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Decisão pela rotação de fase', config: {}, theory: 'Integra a rotação de fase em cada bit e decide o sinal da frequência instantânea.', equation: 'b̂=[ΣΔφ≥0]' },
-    spread_tx: { name: 'Espalhamento DSSS / FHSS', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Sequência direta ou saltos de frequência', config: { mode: { type: 'select', label: 'Técnica', value: 'DSSS', options: ['DSSS', 'FHSS'] }, code: { type: 'text', label: 'Código / padrão de saltos', value: '1101001' }, sps: { type: 'number', label: 'Amostras por chip', value: 8, min: 2, max: 32 } }, theory: 'DSSS multiplica cada bit por uma sequência de chips. FHSS alterna a frequência portadora conforme um padrão conhecido.', equation: 'DSSS: c[n]b[k]; FHSS: f=fhop[n]+fb' },
-    spread_rx: { name: 'Receptor DSSS / FHSS', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Desespalhamento coerente', config: {}, theory: 'Correlaciona com o mesmo código ou padrão de saltos para recuperar os bits.', equation: 'b̂=sign(Σr[n]c[n])' },
+    cpfsk_detector: { name: 'Detector CPFSK / GFSK', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'MLSE na treliça de fase (h racional)', config: {}, theory: 'Lê h do sinal. Para h=p/q a fase nos limites de bit assume 2q valores πj/q, e o Viterbi nessa treliça faz detecção coerente de máxima verossimilhança. Para h sem fração simples (denominador > 64) usa um correlator não coerente de dois tons por bit.', equation: 'θₖ₊₁=θₖ+πh·aₖ, b̂=arg max Σ Re{e^{−jθₖ}cₖ(aₖ)}' },
+    spread_tx: { name: 'Espalhamento DSSS / FHSS', category: 'Digital Modulation', inputs: ['bits'], outputs: ['waveform'], summary: 'Sequência direta ou saltos de frequência', config: { mode: { type: 'select', label: 'Técnica', value: 'DSSS', options: ['DSSS', 'FHSS'] }, code: { type: 'text', label: 'Código (chips 0/1) / padrão de saltos (canais 0–9)', value: '1101001' }, sps: { type: 'number', label: 'Amostras por chip', value: 8, min: 2, max: 32 } }, theory: 'DSSS multiplica cada bit BPSK por L chips do código. FHSS (salto lento) transmite cada bit BPSK em um canal do padrão, espaçados de 1/(2Ns) ciclos/amostra; cada bit dura L·Ns amostras nos dois modos. Em AWGN, a BER por Eb/N0 é a do BPSK: o ganho de processamento combate interferência, não ruído branco.', equation: 'DSSS: b[k]c[n]; FHSS: b[k]e^{j2πf_{c[k]}n}' },
+    spread_rx: { name: 'Receptor DSSS / FHSS', category: 'Digital Receiver', inputs: ['waveform'], outputs: ['bits'], summary: 'Desespalhamento coerente', config: {}, theory: 'Correlaciona com o mesmo código (DSSS) ou desfaz o salto com o padrão conhecido (FHSS) e integra ao longo do bit.', equation: 'b̂=sign(Re Σr[n]c*[n])' },
     analog_sideband: { name: 'Modulador de bandas laterais', category: 'Analog Modulation', inputs: ['message'], outputs: ['modulated'], summary: 'DSB-SC, USB, LSB ou VSB', config: { mode: { type: 'select', label: 'Modo', value: 'DSB-SC', options: ['DSB-SC', 'USB', 'LSB', 'VSB'] }, carrier: { type: 'number', label: 'Portadora fc (Hz)', value: 2000 } }, theory: 'Remove a portadora de AM e permite transmitir duas bandas laterais, apenas uma banda, ou uma banda com vestígio da outra.', equation: 'sUSB=m cosωct−m̂ sinωct' },
     coherent_am_detector: { name: 'Detector AM coerente', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Mixer local e passa-baixas para DSB-SC, SSB e VSB', config: { carrier: { type: 'number', label: 'Portadora local (Hz)', value: 2000 }, phase: { type: 'number', label: 'Erro de fase (°)', value: 0, min: -180, max: 180 }, frequencyOffset: { type: 'number', label: 'Erro Δf (Hz)', value: 0 }, cutoff: { type: 'number', label: 'Corte do LPF (Hz)', value: 500, min: 1 } }, theory: 'Multiplica por uma portadora local de ganho 2 e aplica um FIR passa-baixas. Erro de fase escala a saída por cosφ; erro de frequência produz batimento.', equation: 'm̂(t)=LPF{2s(t)cos[2π(fc+Δf)t+φ]}' },
     envelope: { name: 'Detector de envelope', category: 'Analog Receiver', inputs: ['signal'], outputs: ['message'], summary: 'Demodulação AM não coerente', config: { removeDC: { type: 'select', label: 'Remover DC', value: 'sim', options: ['sim', 'não'] } }, theory: 'Obtém a magnitude do sinal analítico simplificado. Adequado para AM sem sobremodulação.', equation: 'm̂(t)∝|s_a(t)|' },
@@ -148,6 +150,73 @@ export const defs = {
 };
 
 // Processors object
+// DSSS codes are binary chips; FHSS patterns are decimal channel indices (0–9).
+function spreadCode(text, mode) {
+    const code = String(text).split('').filter(c => mode === 'FHSS' ? /[0-9]/.test(c) : c === '0' || c === '1').map(Number);
+    if (!code.length) throw Error(mode === 'FHSS' ? 'FHSS: padrão de saltos deve conter dígitos 0–9.' : 'DSSS: código deve conter chips 0/1.');
+    return code;
+}
+// Normalized hop frequency (cycles/sample) for bit k, centered on the channels used by the pattern.
+function hopFrequency(code, k, sps) {
+    return (code[k % code.length] - Math.max(...code) / 2) / (2 * sps);
+}
+
+// Binary CPFSK detection. For rational h=p/q the phase at bit boundaries lives on 2q states
+// (πj/q), so a Viterbi search over that trellis gives coherent MLSE (BPSK-like BER for MSK).
+// Irrational-looking h falls back to a noncoherent two-tone correlator per bit.
+function cpfskDetect(data, sps, h) {
+    const count = Math.floor(data.length / sps), corr = [];
+    for (let i = 0; i < count; i++) {
+        const pair = [-1, 1].map(a => {
+            let re = 0, im = 0;
+            for (let s = 0; s < sps; s++) {
+                const z = data[i * sps + s], w = -a * Math.PI * h * (s + 1) / sps, c = Math.cos(w), sn = Math.sin(w);
+                re += z.re * c - z.im * sn; im += z.re * sn + z.im * c;
+            }
+            return { re, im };
+        });
+        corr.push(pair);
+    }
+    let q = 0, p = 0;
+    for (let d = 1; d <= 64 && !q; d++) if (Math.abs(h * d - Math.round(h * d)) < 1e-9) { q = d; p = Math.round(h * d); }
+    if (!q) return corr.map(([m, P]) => Math.hypot(P.re, P.im) >= Math.hypot(m.re, m.im) ? 1 : 0);
+    const S = 2 * q, cos = Array.from({ length: S }, (_, j) => Math.cos(Math.PI * j / q)), sin = Array.from({ length: S }, (_, j) => Math.sin(Math.PI * j / q));
+    let metrics = new Float64Array(S).fill(-Infinity); metrics[0] = 0;
+    const from = new Int16Array(count * S), bit = new Uint8Array(count * S);
+    for (let i = 0; i < count; i++) {
+        const next = new Float64Array(S).fill(-Infinity);
+        for (let j = 0; j < S; j++) {
+            if (metrics[j] === -Infinity) continue;
+            for (let b = 0; b < 2; b++) {
+                const c = corr[i][b], to = ((j + (2 * b - 1) * p) % S + S) % S, m = metrics[j] + c.re * cos[j] + c.im * sin[j];
+                if (m > next[to]) { next[to] = m; from[i * S + to] = j; bit[i * S + to] = b; }
+            }
+        }
+        metrics = next;
+    }
+    const bits = new Array(count);
+    let state = metrics.indexOf(Math.max(...metrics));
+    for (let i = count - 1; i >= 0; i--) { bits[i] = bit[i * S + state]; state = from[i * S + state]; }
+    return bits;
+}
+
+// Unit-variance I/Q Gaussian processes with the Jakes Doppler spectrum (IDFT method):
+// white Gaussian bins shaped by √S(f), S(f)∝(1−(f/fd)²)^−½ for |f|<fd. fd=0 gives a static channel.
+function dopplerGaussian(length, doppler, fs, gaussian) {
+    if (!(doppler > 0)) { const a = gaussian(), b = gaussian(); return { g1: new Float64Array(length).fill(a), g2: new Float64Array(length).fill(b) }; }
+    const N = nextPowerOfTwo(Math.max(2, length)), fd = Math.min(doppler, fs / 2), re = new Array(N).fill(0), im = new Array(N).fill(0);
+    let energy = 0;
+    for (let k = 0; k < N; k++) {
+        const x = Math.abs((k < N / 2 ? k : k - N) * fs / N) / fd;
+        if (x >= 1) continue;
+        const w = (1 - x * x) ** -.25;
+        re[k] = w * gaussian(); im[k] = w * gaussian(); energy += w * w;
+    }
+    radix2FFT(re, im, true);
+    const scale = N / Math.sqrt(energy);
+    return { g1: Float64Array.from({ length }, (_, k) => re[k] * scale), g2: Float64Array.from({ length }, (_, k) => im[k] * scale) };
+}
+
 export function createProcessors(results) {
     const processors = {};
 
@@ -182,7 +251,7 @@ export function createProcessors(results) {
         const dur = n.config.duration || 0.1;
         const phi = (n.config.phase || 0) * Math.PI / 180;
         const N = Math.round(fs * dur);
-        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data: Array.from({ length: N }, (_, k) => ({ re: A * Math.cos(2 * Math.PI * f * k / fs + phi), im: A * Math.sin(2 * Math.PI * f * k / fs + phi) })) } };
+        return { waveform: { kind: 'waveform', fs, sampleRate: fs, toneFrequency: f, highestFrequency: Math.abs(f), data: Array.from({ length: N }, (_, k) => ({ re: A * Math.cos(2 * Math.PI * f * k / fs + phi), im: A * Math.sin(2 * Math.PI * f * k / fs + phi) })) } };
     };
     processors.noise_source = (n) => {
         const fs = sampleRateOf(null);
@@ -295,13 +364,12 @@ export function createProcessors(results) {
         const terminated = n.config.terminated === 'sim', finalState = terminated ? 0 : metrics.indexOf(Math.min(...metrics)), tail = terminated ? 2 : 0;
         results.push({ type: 'metric', title: `Métrica de Viterbi ${soft ? 'suave' : 'dura'}`, value: metrics[finalState], detail: `${steps} passos · estado final ${finalState}` });
         
-        // Backtrack to reconstruct path
+        // Backtrack to reconstruct path; the last `tail` steps are flush bits and are dropped.
         const decoded = new Uint8Array(Math.max(0, steps - tail));
         let currentState = finalState;
-        for (let k = steps - 1; k >= tail; k--) {
+        for (let k = steps - 1; k >= 0; k--) {
             const idx = k * 4 + currentState;
-            const bit = prevBits[idx];
-            decoded[steps - 1 - k] = bit;
+            if (k < steps - tail) decoded[k] = prevBits[idx];
             currentState = prevStates[idx];
         }
         return { decoded: Array.from(decoded) };
@@ -329,8 +397,8 @@ export function createProcessors(results) {
         const symbols = [];
         for (let i = 0; i + k <= bits.length; i += k) {
             let val = 0; for (let j = 0; j < k; j++) val = (val << 1) | bits[i + j];
-            const gray = val ^ (val >> 1);
-            const angle = 2 * Math.PI * gray / M - Math.PI;
+            // Position p carries label Gray(p), so adjacent phases differ in one bit.
+            const angle = 2 * Math.PI * grayToBinary(val) / M - Math.PI;
             symbols.push({ re: Math.cos(angle), im: Math.sin(angle) });
         }
         return { symbols: { kind: 'symbols', data: symbols, bitsPerSymbol: k } };
@@ -382,13 +450,17 @@ export function createProcessors(results) {
             phase += 2 * Math.PI * dev * message.data[k].re / fs;
             data.push({ re: Math.cos(2 * Math.PI * fc * k / fs + phase), im: Math.sin(2 * Math.PI * fc * k / fs + phase) });
         }
-        return { modulated: { kind: 'waveform', fs, sampleRate: fs, data: data.slice(1) } };
+        // Carson: the occupied band ends near fc + Δf + fm.
+        const fm = Number(message.toneFrequency);
+        return { modulated: { kind: 'waveform', fs, sampleRate: fs, carrierFrequency: fc, highestFrequency: fc + Math.abs(dev) + (Number.isFinite(fm) ? fm : 0), data: data.slice(1) } };
     };
     processors.pm = (n, { message }) => {
         const fc = n.config.carrier ?? 2000, kp = n.config.kp ?? 1;
         const fs = sampleRateOf(message);
         const data = message.data.map((s, k) => ({ re: Math.cos(2 * Math.PI * fc * k / fs + kp * s.re), im: Math.sin(2 * Math.PI * fc * k / fs + kp * s.re) }));
-        return { modulated: { kind: 'waveform', fs, sampleRate: fs, data } };
+        // Carson with β=kp for a unit-amplitude tone: B ≈ 2(β+1)fm.
+        const fm = Number(message.toneFrequency);
+        return { modulated: { kind: 'waveform', fs, sampleRate: fs, carrierFrequency: fc, highestFrequency: fc + (Number.isFinite(fm) ? (Math.abs(kp) + 1) * fm : 0), data } };
     };
     processors.rrc_tx = (n, { symbols }) => {
         const sps = n.config.sps || 8, alpha = n.config.alpha ?? 0.35, span = n.config.span || 8;
@@ -428,7 +500,8 @@ export function createProcessors(results) {
         const gammaLinear = Math.pow(10, snrDb / 10);
         let noiseVar;
         if (mode === 'Eb/N0') {
-            const Ns = signal?.sps || 1, k = signal?.bitsPerSymbol || 1, R = n.config.codeRate || 1;
+            // Spread-spectrum waveforms carry sps per chip; a symbol spans chipsPerSymbol chips.
+            const Ns = (signal?.sps || 1) * (signal?.chipsPerSymbol || 1), k = signal?.bitsPerSymbol || 1, R = n.config.codeRate || 1;
             noiseVar = power * Ns / (2 * k * R * gammaLinear);
         } else {
             noiseVar = power / (2 * gammaLinear);
@@ -491,10 +564,8 @@ export function createProcessors(results) {
         const fs = sampleRateOf(signal);
         const r = (function(s) { let state = s; return function() { return ((state = (Math.imul(1664525, state) + 1013904223) | 0) >>> 0) / 4294967296 } })(seed);
         const gaussian = () => { const u = Math.max(1e-12, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
-        const rho = doppler > 0 ? Math.max(0, Math.min(1, Math.cos(2 * Math.PI * doppler / fs))) : 1;
-        let g1 = gaussian(), g2 = gaussian();
-        const data = arr(signal).map(complex);
-        return { impaired: { ...signal, data: data.map(s => { g1 = rho * g1 + Math.sqrt(1 - rho * rho) * gaussian(); g2 = rho * g2 + Math.sqrt(1 - rho * rho) * gaussian(); const h_re = g1 / Math.SQRT2, h_im = g2 / Math.SQRT2; return { re: s.re * h_re - s.im * h_im, im: s.re * h_im + s.im * h_re }; }) } };
+        const data = arr(signal).map(complex), { g1, g2 } = dopplerGaussian(data.length, doppler, fs, gaussian);
+        return { impaired: { ...signal, data: data.map((s, k) => { const h_re = g1[k] / Math.SQRT2, h_im = g2[k] / Math.SQRT2; return { re: s.re * h_re - s.im * h_im, im: s.re * h_im + s.im * h_re }; }) } };
     };
     processors.rician_fading = (n, { signal }) => {
         const seed = n.config.seed ?? 12;
@@ -506,10 +577,8 @@ export function createProcessors(results) {
         const K = Math.pow(10, KdB / 10);
         const sigma = Math.sqrt(1 / (2 * (K + 1)));
         const LOS_re = Math.sqrt(K / (K + 1)), LOS_im = 0;
-        const rho = doppler > 0 ? Math.max(0, Math.min(1, Math.cos(2 * Math.PI * doppler / fs))) : 1;
-        let g1 = gaussian(), g2 = gaussian();
-        const data = arr(signal).map(complex);
-        return { impaired: { ...signal, data: data.map(s => { g1 = rho * g1 + Math.sqrt(1 - rho * rho) * gaussian(); g2 = rho * g2 + Math.sqrt(1 - rho * rho) * gaussian(); const hNLOS_re = g1 * sigma, hNLOS_im = g2 * sigma; const h_re = LOS_re + hNLOS_re, h_im = LOS_im + hNLOS_im; return { re: s.re * h_re - s.im * h_im, im: s.re * h_im + s.im * h_re }; }) } };
+        const data = arr(signal).map(complex), { g1, g2 } = dopplerGaussian(data.length, doppler, fs, gaussian);
+        return { impaired: { ...signal, data: data.map((s, k) => { const hNLOS_re = g1[k] * sigma, hNLOS_im = g2[k] * sigma; const h_re = LOS_re + hNLOS_re, h_im = LOS_im + hNLOS_im; return { re: s.re * h_re - s.im * h_im, im: s.re * h_im + s.im * h_re }; }) } };
     };
     processors.phase_noise = (n, { signal }) => {
         const varPhase = n.config.variance ?? 0.01;
@@ -584,12 +653,58 @@ export function createProcessors(results) {
         const bits = [];
         for (const s of arr(symbols).map(complex)) {
             const angle = Math.atan2(s.im, s.re);
-            let gray = Math.round((angle + Math.PI) * M / (2 * Math.PI)) % M;
-            if (gray < 0) gray += M;
-            const val = grayToBinary(gray);
+            let position = Math.round((angle + Math.PI) * M / (2 * Math.PI)) % M;
+            if (position < 0) position += M;
+            const val = binaryToGray(position);
             for (let j = k - 1; j >= 0; j--) { bits.push((val >> j) & 1); }
         }
         return { bits };
+    };
+    processors.mpsk_mod = (n, { bits }) => {
+        const M = +n.config.M || 8, k = Math.log2(M), sps = +n.config.sps || 8, pulse = n.config.pulse || 'RRC', alpha = n.config.alpha ?? .35, span = n.config.span || 8, phase = (n.config.phase || 0) * Math.PI / 180;
+        if (!Number.isInteger(k) || k < 1) throw Error('M-PSK: M deve ser potência de dois.');
+        if (!Number.isInteger(sps) || sps < 2) throw Error('M-PSK: amostras por símbolo deve ser inteiro ≥ 2.');
+        const source = arr(bits);
+        const symbols = bitsToInts(source, k).map(label => {
+            const angle = 2 * Math.PI * grayToBinary(label) / M + phase;
+            return { re: Math.cos(angle), im: Math.sin(angle) };
+        });
+        let data;
+        if (pulse === 'RRC') {
+            const upsampled = Array.from({ length: Math.max(0, (symbols.length - 1) * sps + 1) }, () => ({ re: 0, im: 0 }));
+            symbols.forEach((sym, i) => { upsampled[i * sps] = sym; });
+            data = convolveFull(upsampled, rrcTaps(sps, alpha, span));
+        } else {
+            data = symbols.flatMap(sym => Array.from({ length: sps }, () => ({ re: sym.re, im: sym.im })));
+        }
+        const fs = sampleRateOf(null);
+        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, sps, symbolCount: symbols.length, bitsPerSymbol: k, sourceBitCount: source.length, pulse, alpha, span } };
+    };
+    processors.mpsk_demod = (n, { waveform }) => {
+        const M = +n.config.M || 8, k = Math.log2(M), phase = (n.config.phase || 0) * Math.PI / 180, sps = waveform?.sps || 8, data = arr(waveform).map(complex), zero = { re: 0, im: 0 };
+        if (!Number.isInteger(k) || k < 1) throw Error('M-PSK: M deve ser potência de dois.');
+        let symbols;
+        if (waveform?.pulse === 'RRC') {
+            // Matched RRC filter; TX+RX group delay is the full filter length minus one.
+            const taps = rrcTaps(sps, waveform.alpha ?? .35, waveform.span || 8), filtered = convolveFull(data, taps), delay = taps.length - 1;
+            const count = waveform.symbolCount ?? Math.max(0, Math.floor((data.length - taps.length) / sps) + 1);
+            symbols = Array.from({ length: count }, (_, i) => filtered[delay + i * sps] || zero);
+        } else {
+            // Integrate-and-dump: matched filter for the rectangular pulse.
+            const count = waveform?.symbolCount ?? Math.floor(data.length / sps);
+            symbols = Array.from({ length: count }, (_, i) => {
+                let re = 0, im = 0;
+                for (let j = 0; j < sps; j++) { const z = data[i * sps + j] || zero; re += z.re; im += z.im; }
+                return { re: re / sps, im: im / sps };
+            });
+        }
+        const labels = symbols.map(s => {
+            let position = Math.round((Math.atan2(s.im, s.re) - phase) * M / (2 * Math.PI)) % M;
+            if (position < 0) position += M;
+            return binaryToGray(position);
+        });
+        const fs = sampleRateOf(waveform) / sps;
+        return { bits: intsToBits(labels, k), symbols: { kind: 'symbols', data: symbols, fs, sampleRate: fs, bitsPerSymbol: k } };
     };
     processors.hard_qam = (n, { symbols }) => {
         const M = n.config.M || 16, k = Math.log2(M), root = Math.sqrt(M);
@@ -651,24 +766,13 @@ export function createProcessors(results) {
         const data = [];
         let phase = 0;
         for (const a of nrz) {
-            phase += a * Math.PI / sps;
+            // h=1/2: each bit rotates the phase by ±π/2.
+            phase += a * Math.PI / (2 * sps);
             data.push({ re: Math.cos(phase), im: Math.sin(phase) });
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps, h: .5, bitsPerSymbol: 1 } };
     };
-    processors.msk_detector = (n, { waveform }) => {
-        const data = arr(waveform).map(complex);
-        const sps = waveform?.sps || 16;
-        const bits = [];
-        for (let start = 0; start + sps <= data.length; start += sps) {
-            let phaseAcc = 0;
-            for (let k = Math.max(1, start); k < start + sps; k++) {
-                phaseAcc += Math.atan2(data[k].im * data[k - 1].re - data[k].re * data[k - 1].im, data[k].re * data[k - 1].re + data[k].im * data[k - 1].im);
-            }
-            bits.push(phaseAcc >= 0 ? 1 : 0);
-        }
-        return { bits };
-    };
+    processors.msk_detector = (n, { waveform }) => ({ bits: cpfskDetect(arr(waveform).map(complex), waveform?.sps || 16, waveform?.h ?? .5) });
     processors.pulse_mod = (n, { bits }) => {
         const mode = n.config.mode || 'PAM', sps = n.config.sps || 16;
         const data = [];
@@ -726,11 +830,11 @@ export function createProcessors(results) {
         const mode = n.config.mode || 'DBPSK';
         const bits = [];
         if (mode === 'DBPSK') {
-            let prev = 1;
+            // Noncoherent: Re{r[k]r*[k−1]} needs no absolute phase; the transmitter's reference symbol is +1.
+            let prev = { re: 1, im: 0 };
             for (const s of arr(symbols).map(complex)) {
-                const curr = s.re >= 0 ? 1 : -1;
-                bits.push(curr === prev ? 0 : 1);
-                prev = curr;
+                bits.push(s.re * prev.re + s.im * prev.im >= 0 ? 0 : 1);
+                prev = s;
             }
         } else {
             const base = mode === 'π/4-DQPSK' ? Math.PI / 4 : 0;
@@ -749,10 +853,10 @@ export function createProcessors(results) {
     };
     processors.oqpsk = (n, { bits }) => {
         const sps = n.config.sps || 16, half = sps / 2;
-        const symbols = [];
+        const symbols = [], a = Math.SQRT1_2;
         for (let i = 0; i + 2 <= bits.length; i += 2) {
-            const I = bits[i] === 0 ? 1 : -1;
-            const Q = bits[i + 1] === 0 ? 1 : -1;
+            const I = bits[i] === 0 ? a : -a;
+            const Q = bits[i + 1] === 0 ? a : -a;
             symbols.push({ I, Q });
         }
         // I is symbol-aligned; Q is delayed by half a symbol (Ts/2), the defining OQPSK stagger.
@@ -762,15 +866,18 @@ export function createProcessors(results) {
             for (let s = 0; s < sps; s++) data[i * sps + s].re = symbols[i].I;
             for (let s = 0; s < sps; s++) data[half + i * sps + s].im = symbols[i].Q;
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps, symbolCount: symbols.length, bitsPerSymbol: 2 } };
     };
     processors.oqpsk_detector = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
-        const sps = waveform?.sps || 16, half = sps / 2;
+        const sps = waveform?.sps || 16, half = Math.floor(sps / 2);
+        const count = waveform?.symbolCount ?? Math.floor((data.length - half) / sps);
         const bits = [];
-        for (let k = 0; k + half < data.length; k += sps) {
-            bits.push(data[k + half].re >= 0 ? 0 : 1);
-            if (half + k + half < data.length) bits.push(data[half + k + half].im >= 0 ? 0 : 1);
+        // Integrate-and-dump on each branch over its own (staggered) symbol interval.
+        for (let i = 0; i < count; i++) {
+            let I = 0, Q = 0;
+            for (let s = 0; s < sps; s++) { I += data[i * sps + s]?.re ?? 0; Q += data[half + i * sps + s]?.im ?? 0; }
+            bits.push(I >= 0 ? 0 : 1, Q >= 0 ? 0 : 1);
         }
         return { bits };
     };
@@ -800,47 +907,50 @@ export function createProcessors(results) {
             phase += a * Math.PI * h / sps;
             data.push({ re: Math.cos(phase), im: Math.sin(phase) });
         }
-        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps } };
+        return { waveform: { kind: 'waveform', fs: sampleRateOf(null), sampleRate: sampleRateOf(null), data, sps, h, bitsPerSymbol: 1 } };
     };
-    processors.cpfsk_detector = (n, { waveform }) => {
-        const data = arr(waveform).map(complex);
-        const sps = waveform?.sps || 16;
-        const bits = [];
-        for (let start = 0; start + sps <= data.length; start += sps) {
-            let phaseAcc = 0;
-            for (let k = Math.max(1, start); k < start + sps; k++) {
-                phaseAcc += Math.atan2(data[k].im * data[k - 1].re - data[k].re * data[k - 1].im, data[k].re * data[k - 1].re + data[k].im * data[k - 1].im);
-            }
-            bits.push(phaseAcc >= 0 ? 1 : 0);
-        }
-        return { bits };
-    };
+    processors.cpfsk_detector = (n, { waveform }) => ({ bits: cpfskDetect(arr(waveform).map(complex), waveform?.sps || 16, waveform?.h ?? .7) });
     processors.spread_tx = (n, { bits }) => {
         const mode = n.config.mode || 'DSSS', codeStr = n.config.code || '1101001', sps = n.config.sps || 8;
-        const code = codeStr.split('').map(c => +c);
+        const code = spreadCode(codeStr, mode);
         const data = [];
-        for (const b of bits) {
-            for (let cIdx = 0; cIdx < code.length; cIdx++) {
-                const chip = (b === 0 ? 1 : -1) * (code[cIdx] === 0 ? 1 : -1);
-                for (let s = 0; s < sps; s++) data.push({ re: chip, im: 0 });
+        if (mode === 'FHSS') {
+            // Slow hopping: one BPSK bit per hop, hop channel c[k mod L] spaced by 1/(2·sps) cycles/sample.
+            const bitLength = sps * code.length;
+            bits.forEach((b, k) => {
+                const f = hopFrequency(code, k, sps), amp = b === 0 ? 1 : -1;
+                for (let s = 0; s < bitLength; s++) data.push({ re: amp * Math.cos(2 * Math.PI * f * s), im: amp * Math.sin(2 * Math.PI * f * s) });
+            });
+        } else {
+            for (const b of bits) {
+                for (let cIdx = 0; cIdx < code.length; cIdx++) {
+                    const chip = (b === 0 ? 1 : -1) * (code[cIdx] === 0 ? 1 : -1);
+                    for (let s = 0; s < sps; s++) data.push({ re: chip, im: 0 });
+                }
             }
         }
         const fs = sampleRateOf(null);
-        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, code: codeStr, sps } };
+        return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, code: codeStr, spreadMode: mode, sps, chipsPerSymbol: code.length, bitsPerSymbol: 1 } };
     };
     processors.spread_rx = (n, { waveform }) => {
         const data = arr(waveform).map(complex);
-        const codeStr = waveform?.code || n.config.code || '1101001', sps = waveform?.sps || n.config.sps || 8;
-        const code = codeStr.split('').map(c => +c);
+        const codeStr = waveform?.code || n.config.code || '1101001', sps = waveform?.sps || n.config.sps || 8, mode = waveform?.spreadMode || 'DSSS';
+        const code = spreadCode(codeStr, mode);
         const codeLen = code.length;
         const bits = [];
-        for (let k = 0; k < data.length; k += sps * codeLen) {
+        for (let k = 0, bit = 0; k < data.length; k += sps * codeLen, bit++) {
             let sum = 0;
-            for (let c = 0; c < codeLen; c++) {
-                const polarity = code[c] === 0 ? 1 : -1;
-                for (let s = 0; s < sps; s++) {
-                    const idx = k + c * sps + s;
-                    if (idx < data.length) sum += data[idx].re * polarity;
+            if (mode === 'FHSS') {
+                // Dehop with the known pattern and correlate coherently over the hop.
+                const f = hopFrequency(code, bit, sps);
+                for (let s = 0; s < sps * codeLen && k + s < data.length; s++) sum += data[k + s].re * Math.cos(2 * Math.PI * f * s) + data[k + s].im * Math.sin(2 * Math.PI * f * s);
+            } else {
+                for (let c = 0; c < codeLen; c++) {
+                    const polarity = code[c] === 0 ? 1 : -1;
+                    for (let s = 0; s < sps; s++) {
+                        const idx = k + c * sps + s;
+                        if (idx < data.length) sum += data[idx].re * polarity;
+                    }
                 }
             }
             bits.push(sum >= 0 ? 0 : 1);
@@ -886,14 +996,15 @@ export function createProcessors(results) {
         const fs = sampleRateOf(signal), dt = 1 / fs;
         const data = arr(signal).map(complex);
         const Kp = 2 * zeta * wn, Ki = wn * wn; // filtro PI de 2ª ordem clássico: Kp=2ζωₙ, Ki=ωₙ²
-        let phiHat = (+n.config.phaseInit || 0) * Math.PI / 180, yI = 0, yQ = 0, intErr = 0;
+        let phiHat = (+n.config.phaseInit || 0) * Math.PI / 180, yI = 0, yQ = 0, uI = 0, uQ = 0, intErr = 0;
         const message = new Array(data.length), errorTrace = new Array(data.length);
-        const alpha = Math.min(1, 8 * fc / fs); // I/Q branch LPF cutoff tied to carrier for stability across Fs
+        // Two-pole I/Q branch LPF at fc/2: passes the message, attenuates the 2fc mixing product ~24 dB.
+        const alpha = 1 - Math.exp(-Math.PI * fc / fs);
         for (let k = 0; k < data.length; k++) {
             const angle = 2 * Math.PI * fc * k * dt + phiHat;
             const yIraw = data[k].re * 2 * Math.cos(angle), yQraw = data[k].re * -2 * Math.sin(angle);
-            yI = (1 - alpha) * yI + alpha * yIraw;
-            yQ = (1 - alpha) * yQ + alpha * yQraw;
+            uI += alpha * (yIraw - uI); yI += alpha * (uI - yI);
+            uQ += alpha * (yQraw - uQ); yQ += alpha * (uQ - yQ);
             const ve = yI * yQ;
             intErr += ve * dt;
             const vc = Math.max(-50, Math.min(50, Kp * ve + Ki * intErr));
@@ -904,8 +1015,11 @@ export function createProcessors(results) {
         }
         const steadyStart = Math.floor(data.length * .5);
         const steady = errorTrace.slice(steadyStart).map(s => s.re);
-        const rms = steady.length ? Math.sqrt(steady.reduce((sum, v) => sum + v * v, 0) / steady.length) : NaN;
-        results.push({ type: 'metric', title: 'Costas Loop · erro de fase RMS (regime)', value: rms, detail: `${rms.toFixed(2)}° sobre as últimas ${steady.length} amostras` });
+        // Costas locks at 0° or 180° (π ambiguity): measure the residual relative to the nearest lock point.
+        const residual = steady.map(v => ((v + 90) % 180 + 180) % 180 - 90);
+        const rms = steady.length ? Math.sqrt(residual.reduce((sum, v) => sum + v * v, 0) / steady.length) : NaN;
+        const lock = steady.length && Math.abs(steady.at(-1)) > 90 ? 180 : 0;
+        results.push({ type: 'metric', title: 'Costas Loop · erro de fase RMS mod 180° (regime)', value: rms, detail: `${rms.toFixed(2)}° · travado em ${lock}° · últimas ${steady.length} amostras` });
         return {
             message: { kind: 'samples', fs, sampleRate: fs, data: message },
             error: { kind: 'samples', fs, sampleRate: fs, data: errorTrace }
@@ -1003,8 +1117,9 @@ export function createProcessors(results) {
         return {};
     };
     processors.sampling_audit = (n, { signal }) => {
-        const fs = sampleRateOf(signal), highest = signal?.highestFrequency, value = highest ? fs / highest : signal?.sps;
-        results.push({ type: 'metric', title: 'Auditoria de amostragem', value, detail: highest ? `${value.toFixed(2)} amostras/ciclo` : `${arr(signal).length} amostras · Fs=${fs} Hz` });
+        const fs = sampleRateOf(signal), highest = signal?.highestFrequency, value = highest ? fs / highest : signal?.sps ?? NaN, recommended = +n.config.recommended || 10;
+        const verdict = !highest ? '' : value <= 2 ? ' · ALIAS: abaixo de Nyquist' : value < recommended ? ` · sem alias, abaixo de ${recommended} recomendadas` : ' · OK';
+        results.push({ type: 'metric', title: 'Auditoria de amostragem', value, detail: highest ? `${value.toFixed(2)} amostras/ciclo em ${highest} Hz · Fs=${fs} Hz${verdict}` : signal?.sps ? `${signal.sps} amostras/símbolo · Fs=${fs} Hz` : `${arr(signal).length} amostras · Fs=${fs} Hz · sem frequência máxima conhecida` });
         return {};
     };
     processors.ber = (n, { reference, received }) => {
