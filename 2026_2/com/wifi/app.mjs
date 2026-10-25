@@ -762,11 +762,11 @@ try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { /* ignore
 // A session saved by an older build may no longer load; drop it instead of leaving the page dead.
 try {
     if (saved?.state?.devices) load(saved.state, saved.scenario || 'custom');
-    else load(SCENARIOS.first.build(), 'first');
+    else load(SCENARIOS.office.build(), 'office');
 } catch (err) {
     console.warn('Wi-Fi Lab: sessão salva incompatível, carregando o cenário inicial.', err);
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
-    load(SCENARIOS.first.build(), 'first');
+    load(SCENARIOS.office.build(), 'office');
 }
 loadFromHash();
 requestAnimationFrame(tick);
