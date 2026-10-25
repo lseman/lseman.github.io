@@ -411,7 +411,8 @@ export function createProcessors(results) {
             const I_val = grayToBinary((val >> (k / 2)) & (root - 1)), Q_val = grayToBinary(val & (root - 1));
             const I = 2 * I_val - (root - 1);
             const Q = 2 * Q_val - (root - 1);
-            const norm = Math.sqrt(2 / (root * root - 1));
+            // Square M-QAM with levels ±1, ±3, …: E{|s|²} = 2(M−1)/3, so this scale gives Es = 1.
+            const norm = Math.sqrt(3 / (2 * (root * root - 1)));
             symbols.push({ re: I * norm, im: Q * norm });
         }
         return { symbols: { kind: 'symbols', data: symbols, bitsPerSymbol: k } };
@@ -709,7 +710,7 @@ export function createProcessors(results) {
     processors.hard_qam = (n, { symbols }) => {
         const M = n.config.M || 16, k = Math.log2(M), root = Math.sqrt(M);
         const bits = [];
-        const norm = Math.sqrt(2 / (root * root - 1));
+        const norm = Math.sqrt(3 / (2 * (root * root - 1)));
         const levels = Array.from({ length: root }, (_, i) => 2 * i - (root - 1));
         for (const s of arr(symbols).map(complex)) {
             const reScaled = s.re / norm, imScaled = s.im / norm;

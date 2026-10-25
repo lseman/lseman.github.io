@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#070a11" />
+  <title>CommsLab — Wi-Fi Lab</title>
+  <meta name="description" content="Laboratório Wi-Fi interativo: configure roteadores Wi-Fi 4/5/6/6E/7, modulação, canais e DHCP; veja SNR, MCS, PER e os quadros 802.11 trocados; use ping, nslookup e iperf3 no terminal." />
+  <link rel="icon" href="../../../assets/favicon.ico" />
+  <link rel="stylesheet" href="style.css" />
+  <meta name="wifilab-version" content="6" />
+  <script type="module" src="app.mjs"></script>
+  <script>
+    // Page and scripts must come from the same release: a browser cache can serve an older app.mjs
+    // with a newer page (or vice versa), which leaves new panels empty without any error.
+    let bootError = null;
+    addEventListener("error", e => { bootError ??= e.message; });
+    addEventListener("unhandledrejection", e => { bootError ??= String(e.reason?.message ?? e.reason); });
+    addEventListener("load", () => setTimeout(() => {
+      const expected = document.querySelector('meta[name="wifilab-version"]').content;
+      const actual = window.wifiLab?.version;
+      if (actual === expected) return;
+      const bar = document.createElement("div");
+      bar.className = "stale-banner";
+      // Blame the cache when an older app.mjs ran, or when a cached module lacks an export a newer one
+      // imports (mixed releases); otherwise surface the real error.
+      const mixed = /does not provide an export|doesn't provide an export|not found in module|import not found/i.test(bootError || "");
+      bar.innerHTML = actual || mixed
+        ? "Arquivos de versões diferentes no cache do navegador. Recarregue com <b>Ctrl+Shift+R</b> (Mac: <b>Cmd+Shift+R</b>)."
+        : "O laboratório não iniciou" + (bootError ? ": <code></code>" : ". Veja o console do navegador (F12).");
+      if (!actual && bootError) bar.querySelector("code").textContent = bootError;
+      document.body.prepend(bar);
+    }, 1500));
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="brand"><span class="mark">⌔</span><div><strong>CommsLab</strong><small>WI-FI LAB</small></div></div>
+      <label class="scenario"><span>CENÁRIO</span><select id="scenario-select"></select></label>
+      <div class="clock" title="Relógio da simulação"><span>t</span><strong id="clock">0.000 s</strong></div>
+      <div class="toolbar">
+        <a class="ghost" href="../sim/" title="Editor de blocos de comunicações">Block Studio ↗</a>
+        <button id="reset-btn" class="ghost" title="Recarregar o cenário original">Reiniciar</button>
+        <button id="export-btn" class="ghost">Exportar JSON</button>
+        <button id="import-btn" class="ghost">Importar JSON</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden />
+        <button id="theme-btn" class="ghost" title="Alternar tema">◑</button>
+      </div>
+    </header>
+    <main>
+      <aside class="left">
+        <div class="panel-title"><span>DISPOSITIVOS</span></div>
+        <div id="palette" class="palette"></div>
+        <div class="panel-title"><span>FERRAMENTAS</span></div>
+        <div class="tools">
+          <div class="segmented" id="tool-mode">
+            <button data-tool="select" class="active">Selecionar</button>
+            <button data-tool="wall">Desenhar parede</button>
+          </div>
+          <label class="row">Material <select id="wall-material"></select></label>
+          <label class="row">Cobertura <select id="heatmap-mode"><option value="off">Desligada</option><option value="sinr">SINR (dB)</option><option value="mcs">MCS máximo</option></select></label>
+          <label class="row">Animação <select id="anim-mode"><option value="normal">Normal</option><option value="slow">Lenta</option><option value="off">Desligada</option></select></label>
+        </div>
+        <div class="panel-title"><span>AMBIENTE</span></div>
+        <div id="env-form" class="tools"></div>
+        <div class="panel-title"><span>OBJETIVO</span></div>
+        <p id="goal" class="goal"></p>
+      </aside>
+      <section id="stage">
+        <svg id="plan" aria-label="Planta baixa com dispositivos Wi-Fi"></svg>
+        <div id="legend" class="legend" hidden></div>
+        <div class="stage-hint">Arraste dispositivos · duplo clique abre o terminal · <kbd>Del</kbd> remove o selecionado</div>
+      </section>
+      <aside class="inspector">
+        <div class="panel-title"><span>INSPETOR</span></div>
+        <div id="inspector"></div>
+      </aside>
+    </main>
+    <section id="bottom">
+      <div id="bottom-resizer" title="Arraste para redimensionar"></div>
+      <div class="bottom-head">
+        <div class="bottom-tabs" id="bottom-tabs">
+          <button data-bottom="events" class="active">Eventos e quadros <strong id="event-count">0</strong></button>
+          <button data-bottom="metrics">Métricas por dispositivo</button>
+          <button data-bottom="plots">Gráficos</button>
+          <button data-bottom="ofdm">OFDM · subportadoras e multipercurso</button>
+          <button data-bottom="ofdma" hidden title="Disponível para APs Wi-Fi 6/6E/7">OFDMA · RUs multiusuário</button>
+        </div>
+        <div class="filters" id="metrics-filters" hidden>
+          <div class="segmented" id="dir-mode"><button data-dir="dl" class="active" title="AP → cliente">↓ Descida</button><button data-dir="ul" title="cliente → AP">↑ Subida</button></div>
+          <button id="bottom-expand" class="ghost expand-btn" title="Expandir / recolher o painel">⤢</button>
+        </div>
+        <div class="filters" id="event-filters">
+          <select id="proto-filter"><option value="">Todos os protocolos</option><option>802.11</option><option>EAPOL</option><option>DHCP</option><option>ARP</option><option>ICMP</option><option>DNS</option><option>TCP</option><option>Sistema</option></select>
+          <label><input type="checkbox" id="only-selected" /> só o selecionado</label>
+          <button id="clear-log" class="ghost">Limpar</button>
+          <button class="ghost expand-btn" title="Expandir / recolher o painel">⤢</button>
+        </div>
+      </div>
+      <div id="metrics-view" class="metrics-view" hidden></div>
+      <div id="plots-view" class="plots-view" hidden></div>
+      <div id="ofdm-view" class="ofdm-view" hidden></div>
+      <div id="ofdma-view" class="ofdm-view" hidden></div>
+      <div class="bottom-body" id="events-view">
+        <div class="event-table"><table><thead><tr><th>t (ms)</th><th>De</th><th>Para</th><th>Protocolo</th><th>Informação</th><th>PHY</th><th>Tent.</th></tr></thead><tbody id="events"></tbody></table></div>
+        <div id="event-detail" class="event-detail"><div class="placeholder">Clique em um quadro para ver as camadas (802.11, IP, UDP, DHCP…) e a camada física usada.</div></div>
+      </div>
+    </section>
+  </div>
+  <div id="browser" class="terminal browser" hidden>
+    <div class="term-head"><strong id="br-title">Navegador</strong><span id="br-sub"></span><button id="br-close" title="Fechar">×</button></div>
+    <form id="br-form" class="br-bar"><button type="button" id="br-reload" title="Recarregar">↻</button><span id="br-lock" class="br-lock"></span><input id="br-url" autocomplete="off" spellcheck="false" placeholder="Digite o IP do roteador, ex.: 192.168.0.1" /><button type="submit">Ir</button></form>
+    <div id="br-page" class="br-page"></div>
+  </div>
+  <div id="terminal" class="terminal" hidden>
+    <div class="term-head"><strong id="term-title">Terminal</strong><span id="term-sub"></span><button id="term-close" title="Fechar (Esc)">×</button></div>
+    <pre id="term-out"></pre>
+    <div class="term-input"><span id="term-prompt">&gt;</span><input id="term-in" autocomplete="off" spellcheck="false" /></div>
+  </div>
+</body>
+</html>
