@@ -214,3 +214,17 @@ test('router web admin: HTTP reachability over Wi-Fi, draft validation and chann
     const s = channelSurvey(noisy, noisy.routers[0]);
     assert.ok(s.heard.length >= 2 && [1, 6, 11].includes(s.best) && s.bestCost <= s.current);
 });
+
+test('shareable links round-trip the network, title and goal, and reject damaged links', async () => {
+    const { encodeShare, decodeShare, parseShareHash, labLink } = await import('../2026_2/com/wifi/share.mjs');
+    const state = SCENARIOS.troubleshoot.build();
+    const code = await encodeShare({ title: 'Prova', goal: 'Corrija o DHCP.', state });
+    assert.match(code, /^z\.[A-Za-z0-9_-]+$/, 'URL-safe and compressed');
+    assert.ok(code.length < JSON.stringify(state).length / 2);
+    const back = await decodeShare(parseShareHash(new URL(labLink('https://x/wifi/', code)).hash).lab);
+    assert.deepEqual(back.state, JSON.parse(JSON.stringify(state)));
+    assert.equal(back.goal, 'Corrija o DHCP.');
+    assert.deepEqual(parseShareHash('#cenario=interference'), { scenario: 'interference' });
+    await assert.rejects(decodeShare(code.slice(0, 40)), /corrompido/);
+    await assert.rejects(decodeShare('q.abc'), /formato/);
+});

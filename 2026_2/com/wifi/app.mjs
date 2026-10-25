@@ -9,6 +9,7 @@ import { linkMetrics } from './metrics.mjs';
 import { renderOfdm, defaultOfdmState, ofdmParams } from './ofdm-view.mjs';
 import { renderOfdma, defaultOfdmaState, ofdmaAvailable } from './ofdma-view.mjs';
 import { createBrowser } from './browser.mjs';
+import { encodeShare, decodeShare, labLink, scenarioLink, parseShareHash } from './share.mjs';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -116,8 +117,9 @@ function setBottomHeight(h) {
 }
 function renderClock() { $('#clock').textContent = `${(lab.now / 1000).toFixed(3)} s`; }
 function renderScenario() {
-    $('#scenario-select').innerHTML = Object.entries(SCENARIOS).map(([k, s]) => `<option value="${k}" ${k === scenarioKey ? 'selected' : ''}>${esc(s.name)}</option>`).join('') + (SCENARIOS[scenarioKey] ? '' : '<option selected value="custom">Personalizado (importado)</option>');
-    $('#goal').textContent = SCENARIOS[scenarioKey]?.goal || 'Cenário importado. Monte sua rede: adicione um roteador, configure SSID e DHCP e conecte os clientes.';
+    $('#scenario-select').innerHTML = Object.entries(SCENARIOS).map(([k, s]) => `<option value="${k}" ${k === scenarioKey ? 'selected' : ''}>${esc(s.name)}</option>`).join('') + (SCENARIOS[scenarioKey] ? '' : `<option selected value="custom">${esc(state.title || 'Personalizado (importado)')}</option>`);
+    // A goal written by the teacher (shared link or imported file) wins over the scenario's own.
+    $('#goal').textContent = state.goal || SCENARIOS[scenarioKey]?.goal || 'Cenário importado. Monte sua rede: adicione um roteador, configure SSID e DHCP e conecte os clientes.';
 }
 function renderEnv() {
     const e = state.env, f = (key, label, min, max, step, unit) => `<label class="row">${label}<input type="number" data-env="${key}" value="${e[key]}" min="${min}" max="${max}" step="${step}" title="${unit}"></label>`;
@@ -497,6 +499,71 @@ function submitCommand(line) {
     step();
 }
 
+// ---------- shareable links ----------
+const shareBase = () => location.origin + location.pathname;
+// Unchanged built-in scenarios get the short #cenario= link; anything else carries the full state.
+async function shareLink() {
+    const pristine = SCENARIOS[scenarioKey] && !state.title && !state.goal && JSON.stringify(state) === JSON.stringify(SCENARIOS[scenarioKey].build());
+    return pristine ? scenarioLink(shareBase(), scenarioKey) : labLink(shareBase(), await encodeShare({ title: state.title, goal: state.goal, state }));
+}
+async function refreshShareDialog() {
+    const link = await shareLink();
+    $('#share-link').value = link;
+    $('#share-info').textContent = `${link.length} caracteres${link.length > 6000 ? ' — link longo: alguns sistemas podem cortá-lo; prefira Exportar JSON.' : ''} · contém a configuração completa, inclusive senhas.`;
+}
+function openShareDialog() {
+    $('#share-title').value = state.title || (SCENARIOS[scenarioKey]?.name ?? '');
+    $('#share-goal').value = state.goal || SCENARIOS[scenarioKey]?.goal || '';
+    $('#share-copy').textContent = 'Copiar link';
+    $('#share-dialog').showModal();
+    refreshShareDialog();
+}
+// Title and goal typed in the dialog become part of this network (and of the link).
+function editShareText() {
+    const title = $('#share-title').value.trim(), goal = $('#share-goal').value.trim();
+    state.title = title && title !== SCENARIOS[scenarioKey]?.name ? title : undefined;
+    state.goal = goal && goal !== SCENARIOS[scenarioKey]?.goal ? goal : undefined;
+    save(); renderScenario(); refreshShareDialog();
+}
+function showNotice(html, undo) {
+    const el = $('#share-note');
+    el.innerHTML = `<span>${html}</span>${undo ? '<button class="btn" data-note="undo">Desfazer</button>' : ''}<button class="btn" data-note="close" title="Fechar">×</button>`;
+    el.hidden = false;
+    el.onclick = e => {
+        const a = e.target.closest('[data-note]')?.dataset.note;
+        if (a === 'undo') {
+            try { load(undo.state, undo.scenario || 'custom'); save(); }
+            catch { alert('A sessão anterior não pôde ser restaurada.'); }
+        }
+        if (a) el.hidden = true;
+    };
+}
+// Opening a shared link replaces the session (kept for undo) and strips the hash, so reloading keeps progress.
+async function loadFromHash() {
+    const req = parseShareHash(location.hash);
+    if (!req) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    let previous = null;
+    try { previous = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { /* ignore */ }
+    try {
+        let title;
+        if (req.scenario) {
+            if (!SCENARIOS[req.scenario]) throw Error(`o cenário "${req.scenario}" não existe`);
+            load(SCENARIOS[req.scenario].build(), req.scenario); title = SCENARIOS[req.scenario].name;
+        } else {
+            const p = await decodeShare(req.lab), s = p.state;
+            s.walls ||= []; s.plan ||= { width: 40, height: 24 };
+            if (p.title) s.title = p.title;
+            if (p.goal) s.goal = p.goal;
+            load(s, 'custom'); title = p.title;
+        }
+        save();
+        showNotice(`Rede compartilhada carregada${title ? `: <b>${esc(title)}</b>` : ''}. Leia o objetivo no painel à esquerda.`, previous?.state?.devices ? previous : null);
+    } catch (err) {
+        showNotice(`Não foi possível abrir o link compartilhado: ${esc(err.message)}. O link pode ter sido cortado ao ser copiado.`);
+    }
+}
+
 // ---------- interaction ----------
 function svgPoint(evt) { const svg = $('#plan'), p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
 const clampX = x => Math.max(.5, Math.min(state.plan.width - .5, x)), clampY = y => Math.max(.5, Math.min(state.plan.height - .5, y));
@@ -516,6 +583,14 @@ function bind() {
     $('#scenario-select').onchange = e => { const k = e.target.value; if (SCENARIOS[k]) { load(SCENARIOS[k].build(), k); save(); } };
     $('#reset-btn').onclick = () => { if (SCENARIOS[scenarioKey] && confirm('Recarregar o cenário original? As alterações serão perdidas.')) { load(SCENARIOS[scenarioKey].build(), scenarioKey); save(); } };
     $('#export-btn').onclick = () => { const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'wifi-lab.json'; a.click(); URL.revokeObjectURL(a.href); };
+    $('#share-btn').onclick = openShareDialog;
+    $('#share-title').oninput = $('#share-goal').oninput = editShareText;
+    $('#share-copy').onclick = async () => {
+        const input = $('#share-link');
+        try { await navigator.clipboard.writeText(input.value); } catch { input.select(); document.execCommand('copy'); }
+        $('#share-copy').textContent = 'Copiado ✓';
+    };
+    addEventListener('hashchange', loadFromHash);
     $('#import-btn').onclick = () => $('#import-file').click();
     $('#import-file').onchange = async e => {
         const file = e.target.files[0]; e.target.value = '';
@@ -693,7 +768,8 @@ try {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     load(SCENARIOS.first.build(), 'first');
 }
+loadFromHash();
 requestAnimationFrame(tick);
 // Handle for the browser console (and automated checks) to inspect the engine.
-const VERSION = '6';
+const VERSION = '7';
 window.wifiLab = { version: VERSION, get lab() { return lab; }, ui, renderAll, openTerminal, submitCommand, browser, select: id => { ui.selected = { kind: 'device', id }; renderAll(); } };
