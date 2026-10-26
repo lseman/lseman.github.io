@@ -106,6 +106,16 @@ export function requiredSnr(mcs, bytes = MPDU_BYTES, target = PER_TARGET) {
 // Spatial multiplexing splits power across Nss streams; extra receive chains give array (MRC) gain.
 export const streamSnr = (snrDb, nss, rxChains) => snrDb - 10 * Math.log10(nss) + 10 * Math.log10(Math.max(1, rxChains / nss));
 
+// Transmit beamforming (explicit NDP sounding, VHT/HE/EHT): precoding Nss streams over Ntx antennas
+// adds coherently at the receiver, an array gain of 10·log10(Ntx/Nss). No spare antennas ⇒ no gain.
+export const BF_MIN_RANK = 5;
+export const bfGain = (txChains, nss) => Math.max(0, 10 * Math.log10(txChains / nss));
+// Compressed beamforming report (Ng = 4 tone grouping, φ 6 bits + ψ 4 bits per Givens angle, 8-bit SNR per stream).
+export function bfReportBytes(standard, width, nr, nc) {
+    const groups = Math.ceil(STANDARDS[standard].subcarriers[width] / 4), angles = nc * (2 * nr - nc - 1);
+    return Math.ceil((groups * angles * 5 + 8 * nc) / 8) + 7;
+}
+
 export const thermalNoiseDbm = (widthMhz, noiseFigure) => -174 + 10 * Math.log10(widthMhz * 1e6) + noiseFigure;
 export const fsplAt1m = freqMhz => 20 * Math.log10(freqMhz) - 27.55;
 export const dbmToMw = dbm => 10 ** (dbm / 10);
@@ -155,15 +165,16 @@ export function aggregateGoodput(standard, width, mcs, nss, gi, per) {
 }
 
 // Choose (MCS, Nss) maximizing expected throughput with PER ≤ target, or apply a fixed MCS.
-export function selectRate({ standard, width, gi, maxNss, rxChains, snrDb, fixedMcs = null }) {
+// With beamforming, fewer streams leave more antennas for array gain, so the chosen Nss can drop.
+export function selectRate({ standard, width, gi, maxNss, rxChains, snrDb, fixedMcs = null, txChains = 0 }) {
     const options = [];
     for (let nss = 1; nss <= maxNss; nss++) {
-        const sinr = streamSnr(snrDb, nss, rxChains);
+        const sinr = streamSnr(snrDb, nss, rxChains) + (txChains ? bfGain(txChains, nss) : 0);
         for (let mcs = 0; mcs <= STANDARDS[standard].maxMcs; mcs++) {
             if (!mcsValid(standard, width, mcs, nss)) continue;
             if (fixedMcs !== null && mcs !== fixedMcs) continue;
             const per = packetErrorRate(sinr, mcs), rate = dataRate(standard, width, mcs, nss, gi);
-            options.push({ mcs, nss, per, rate, streamSnr: sinr, score: rate * (1 - per) });
+            options.push({ mcs, nss, per, rate, streamSnr: sinr, bfGain: txChains ? bfGain(txChains, nss) : 0, score: rate * (1 - per) });
         }
     }
     if (!options.length) return null;

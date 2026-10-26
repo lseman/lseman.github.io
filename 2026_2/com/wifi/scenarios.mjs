@@ -1,5 +1,5 @@
 // Preset scenarios. Each `build()` returns a fresh serializable state.
-import { makeRouter, makeClient, defaultEnvironment } from './net.mjs';
+import { makeRouter, makeClient, makeMeshNode, defaultEnvironment } from './net.mjs';
 
 const base = (devices, walls = [], env = {}) => ({ version: 1, seed: 1, plan: { width: 40, height: 24 }, env: { ...defaultEnvironment(), ...env }, devices, walls });
 const wall = (id, x1, y1, x2, y2, material) => ({ id, x1, y1, x2, y2, material });
@@ -70,6 +70,34 @@ export const SCENARIOS = {
         build: () => base([
             makeRouter('r1', 'AP Wi-Fi 6', 20, 12, { wifi: { standard: 'wifi6', width: 80, channel: 42, streams: 2 } }),
             makeClient('c1', 'laptop', 'Notebook', 24, 12, { ...join('LabWiFi', 'senha1234'), snrOverride: 25 }),
+        ]),
+    },
+    beamforming: {
+        name: 'Beamforming (TxBF)',
+        goal: 'O AP Wi-Fi 6 tem 4 antenas, mas cada cliente só usa 1 ou 2 fluxos. Ligue "Beamforming" na aba Wi-Fi do AP: veja a sondagem (NDP Announcement → NDP → Beamforming Report) no log, o ganho 10·log₁₀(4/Nss) na aba Enlace e o MCS dos clientes distantes subir — às vezes com menos fluxos. Por que a impressora Wi-Fi 4 não ganha nada? Reduza o AP para 2 fluxos: o que sobra do ganho? O mapa de cobertura muda?',
+        build: () => base([
+            makeRouter('r1', 'AP Wi-Fi 6 (4×4)', 6, 12, { wifi: { streams: 4 } }),
+            makeClient('c1', 'laptop', 'Notebook 2×2', 16, 6, join('LabWiFi', 'senha1234')),
+            makeClient('c2', 'phone', 'Celular 1×1', 33, 19, { wifi: { ssid: 'LabWiFi', password: 'senha1234', streams: 1 } }),
+            makeClient('c3', 'desktop', 'Desktop Wi-Fi 5', 30, 5, join('LabWiFi', 'senha1234')),
+            makeClient('c4', 'printer', 'Impressora Wi-Fi 4', 24, 15, { ...join('LabWiFi', 'senha1234'), wifi: { ssid: 'LabWiFi', password: 'senha1234', standard: 'wifi4' } }),
+        ], [
+            wall('w1', 12, 0, 12, 9, 'drywall'), wall('w2', 22, 9, 40, 9, 'tijolo'), wall('w3', 20, 14, 20, 24, 'tijolo'),
+        ]),
+    },
+    mesh: {
+        name: 'Casa com rede mesh',
+        goal: 'O roteador fica na sala; dois nós mesh repetem a mesma rede "CasaMesh". O tracejado roxo é o backhaul: o nó do quarto não alcança a raiz e passa pelo nó do corredor (2 saltos). Abra a aba Mesh da raiz. No notebook do quarto rode iperf3 -c 192.168.0.1 e ipconfig /all (quem deu o IP?). Troque o backhaul do nó do quarto para "Wi-Fi dedicado" e depois "Cabo Ethernet" e compare a vazão. Arraste o celular da sala até o quarto e observe o roaming no log.',
+        build: () => base([
+            makeRouter('r1', 'Roteador (raiz)', 5, 12, { wifi: { ssid: 'CasaMesh' }, mesh: { role: 'root', id: 'CasaMesh' } }),
+            makeMeshNode('r2', 'Nó corredor', 19, 12, { mesh: { id: 'CasaMesh' }, lan: { ip: '192.168.0.2' } }),
+            makeMeshNode('r3', 'Nó quarto', 34, 18, { mesh: { id: 'CasaMesh' }, lan: { ip: '192.168.0.3' } }),
+            makeClient('c1', 'phone', 'Celular', 10, 19, join('CasaMesh', 'senha1234')),
+            makeClient('c2', 'laptop', 'Notebook quarto', 36, 21, join('CasaMesh', 'senha1234')),
+            makeClient('c3', 'desktop', 'Desktop escritório', 30, 4, join('CasaMesh', 'senha1234')),
+        ], [
+            wall('w1', 12, 0, 12, 9, 'tijolo'), wall('w2', 12, 15, 12, 24, 'tijolo'), wall('w3', 26, 0, 26, 24, 'concreto'),
+            wall('w4', 26, 9, 40, 9, 'tijolo'),
         ]),
     },
 };

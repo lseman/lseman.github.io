@@ -228,3 +228,65 @@ test('shareable links round-trip the network, title and goal, and reject damaged
     await assert.rejects(decodeShare(code.slice(0, 40)), /corrompido/);
     await assert.rejects(decodeShare('q.abc'), /formato/);
 });
+
+import { bfGain, bfReportBytes } from '../2026_2/com/wifi/phy.mjs';
+import { makeMeshNode } from '../2026_2/com/wifi/net.mjs';
+
+test('beamforming: array gain 10·log10(Ntx/Nss), NDP sounding in the log, no gain for Wi-Fi 4 or spare-less arrays', () => {
+    assert.equal(bfGain(4, 1).toFixed(2), '6.02');
+    assert.equal(bfGain(2, 2), 0);
+    assert.ok(bfReportBytes('wifi6', 80, 4, 2) > bfReportBytes('wifi6', 20, 4, 2));
+    const build = bf => world([ap({ wifi: { streams: 4, beamforming: bf } }), sta('far', { wifi: { streams: 1 } }, 'phone', 36, 20), sta('old', { wifi: { standard: 'wifi4' } }, 'printer', 30, 16)]);
+    const off = build(false), on = build(true);
+    const far = l => l.currentLink(l.device('far')), old = l => l.currentLink(l.device('old'));
+    assert.equal(far(on).dl.sinr, far(off).dl.sinr, 'beacons and the reported SINR are not beamformed');
+    assert.ok(Math.abs(far(on).rates.dl.streamSnr - far(off).rates.dl.streamSnr - 6.02) < .01);
+    assert.ok(far(on).rates.dl.mcs > far(off).rates.dl.mcs);
+    assert.equal(far(on).rates.ul.mcs, far(off).rates.ul.mcs, 'downlink only');
+    assert.ok(on.iperf(on.device('far'), '192.168.0.1').mean > 0);
+    assert.equal(old(on).beamforming.active, false);
+    assert.equal(old(on).rates.dl.mcs, old(off).rates.dl.mcs);
+    assert.ok(['NDP Announcement', 'NDP ·', 'Compressed Beamforming Report'].every(k => on.events.some(e => e.info.startsWith(k))));
+    assert.ok(!off.events.some(e => /NDP/.test(e.info)));
+    const twoByTwo = world([ap({ wifi: { streams: 2, beamforming: true } }), sta('a')]);
+    assert.equal(twoByTwo.currentLink(twoByTwo.device('a')).beamforming.gain, 0);
+    // Turning it on after association triggers one sounding without reassociating.
+    off.device('r1').wifi.beamforming = true; off.reconcile();
+    assert.ok(off.events.some(e => /Compressed Beamforming Report/.test(e.info)) && off.rt('far').assoc);
+});
+
+test('mesh: nodes bridge to the root DHCP/NAT, pick the least-airtime parent, and backhaul choice sets the throughput', () => {
+    const lab = new Lab(SCENARIOS.mesh.build()); lab.reconcile();
+    const tree = lab.meshTree(), nb = lab.device('c2');
+    assert.equal(tree.get('r2').parent, 'r1');
+    assert.equal(tree.get('r3').parent, 'r2', 'the far node relays through the hallway node');
+    assert.equal(lab.associatedAp(nb).id, 'r3');
+    const ip = lab.rt('c2').ip;
+    assert.equal(ip.source, 'dhcp'); assert.equal(ip.gateway, '192.168.0.1');
+    assert.ok(lab.leases(lab.device('r1')).some(l => l.ip === ip.address && l.connected));
+    assert.ok(lab.events.some(e => e.proto === 'DHCP' && e.mesh && /backhaul mesh/.test(e.info)));
+    assert.ok(lab.ping(nb, 'google.com').replies.every(r => r.ok));
+    assert.ok(lab.ping(nb, lab.ipOf(lab.device('c1'))).replies.every(r => r.ok), 'clients on different nodes share one LAN');
+    assert.match(runCommand(lab, lab.device('r1'), 'show mesh').join('\n'), /Nó quarto\s+Nó corredor\s+2/);
+    const iperfWith = backhaul => { const st = SCENARIOS.mesh.build(); st.devices.find(d => d.id === 'r3').mesh.backhaul = backhaul; const l = new Lab(st); l.reconcile(); return l.iperf(l.device('c2'), '192.168.0.1'); };
+    const shared = iperfWith('wifi'), dedicated = iperfWith('dedicated'), wired = iperfWith('ethernet');
+    assert.equal(shared.sharedHops, 3);
+    assert.ok(shared.mean < dedicated.mean && dedicated.mean < wired.mean, JSON.stringify([shared.mean, dedicated.mean, wired.mean]));
+    assert.deepEqual(wired.path, ['Notebook quarto', 'Nó quarto', 'Roteador (raiz)']);
+});
+
+test('mesh: SSID is pushed from the root, a node out of range has no backhaul, and clients roam to a stronger node', () => {
+    const lab = world([makeRouter('r1', 'Raiz', 4, 12, { mesh: { role: 'root', id: 'M' } }), makeMeshNode('n1', 'Nó', 28, 12, { mesh: { id: 'M' } }), makeMeshNode('n2', 'Atrás do metal', 38, 21, { mesh: { id: 'M' } }), sta('p', {}, 'phone', 8, 12)], { walls: [{ id: 'w1', x1: 33, y1: 17, x2: 40, y2: 17, material: 'metal' }, { id: 'w2', x1: 33, y1: 17, x2: 33, y2: 24, material: 'metal' }] });
+    assert.equal(lab.device('n1').wifi.ssid, 'LabWiFi');
+    lab.device('r1').wifi.ssid = 'NovaRede'; lab.device('p').wifi.ssid = 'NovaRede'; lab.reconcile();
+    assert.equal(lab.device('n1').wifi.ssid, 'NovaRede');
+    assert.match(lab.meshError(lab.device('n2')) || '', /Sem backhaul/);
+    assert.equal(lab.associatedAp(lab.device('p')).id, 'r1');
+    // Sticky client: still on the root at −62 dBm, roams once the root falls below −67 dBm and the node is ≥ 8 dB stronger.
+    Object.assign(lab.device('p'), { x: 22, y: 12 }); lab.reconcile();
+    assert.equal(lab.associatedAp(lab.device('p')).id, 'r1');
+    Object.assign(lab.device('p'), { x: 34, y: 12 }); lab.reconcile();
+    assert.equal(lab.associatedAp(lab.device('p')).id, 'n1');
+    assert.ok(lab.events.some(e => /roaming/.test(e.info)));
+    assert.equal(lab.rt('p').ip.gateway, '192.168.0.1');
+});

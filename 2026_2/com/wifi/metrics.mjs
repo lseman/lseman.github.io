@@ -11,7 +11,7 @@ export function linkMetrics(lab, client, dir = 'dl') {
     const n = l.negotiation, r = l.rates[dir], m = MCS[r.mcs], k = Math.log2(m.M), side = l[dir];
     const esn0 = r.streamSnr, ebn0Coded = esn0 - db(k), ebn0 = esn0 - db(k * m.rate);
     const capacity = r.nss * n.width * Math.log2(1 + lin(esn0));
-    const goodput = aggregateGoodput(n.standard, n.width, r.mcs, r.nss, n.gi, r.per) * (1 - l.utilization);
+    const goodput = lab.hopGoodput(l, dir);
     return {
         client, ap: l.ap, dir, link: l, standard: n.standard, width: n.width, gi: n.gi, nss: r.nss, mcs: r.mcs, modulation: m, bitsPerSymbol: k,
         distance: l.distance, rssi: side.rssi, noise: side.noise, interference: side.interference, sinr: side.sinr,

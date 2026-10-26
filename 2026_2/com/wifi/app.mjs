@@ -1,7 +1,7 @@
 import { createProcessors, defs } from '../sim/blocks.js';
 import { rng } from '../sim/utils.js';
-import { STANDARDS, STANDARD_ORDER, MCS, MATERIALS, channelsFor, widthsFor, centerFrequency, dataRate, mcsValid, packetErrorRate, requiredSnr, aggregateGoodput, clientBands } from './phy.mjs';
-import { Lab, makeRouter, makeClient, CLIENT_TYPES, SECURITY_OPTIONS, securityLabel, apConfigError, lanConfigError, isIp, formatLease, prefixOf } from './net.mjs';
+import { STANDARDS, STANDARD_ORDER, MCS, MATERIALS, channelsFor, widthsFor, centerFrequency, dataRate, mcsValid, packetErrorRate, requiredSnr, clientBands } from './phy.mjs';
+import { Lab, makeRouter, makeClient, makeMeshNode, defaultMesh, MESH_BACKHAULS, CLIENT_TYPES, SECURITY_OPTIONS, securityLabel, apConfigError, lanConfigError, isIp, formatLease, prefixOf } from './net.mjs';
 import { SCENARIOS } from './scenarios.mjs';
 import { runCommand } from './terminal.mjs';
 import { renderMetrics, renderPlots } from './analysis.mjs';
@@ -27,9 +27,13 @@ const ICONS = {
     phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
     desktop: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8.5 20h7"/>',
     printer: '<path d="M7 9V3.5h10V9"/><rect x="3" y="9" width="18" height="8" rx="1.5"/><path d="M7 14h10v6.5H7z"/>',
+    mesh: '<circle cx="12" cy="15" r="5.5"/><circle cx="12" cy="15" r="1.2"/><path d="M7.5 6.5a6.4 6.4 0 0 1 9 0M9.6 8.8a3.3 3.3 0 0 1 4.8 0"/>',
 };
 const iconSvg = (type, size = 26) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[type]}</svg>`;
-const TYPE_LABEL = { router: 'Roteador Wi-Fi', ...Object.fromEntries(Object.entries(CLIENT_TYPES).map(([k, v]) => [k, v.label])) };
+const TYPE_LABEL = { router: 'Roteador Wi-Fi', mesh: 'Nó mesh', ...Object.fromEntries(Object.entries(CLIENT_TYPES).map(([k, v]) => [k, v.label])) };
+// Mesh nodes are routers in bridge mode: same engine type, their own icon and label.
+const isNode = d => d?.type === 'router' && d.mesh?.role === 'node';
+const glyphOf = d => isNode(d) ? 'mesh' : d.type;
 
 // ---------- state lifecycle ----------
 function load(newState, key) {
@@ -48,6 +52,7 @@ const selectedWall = () => ui.selected?.kind === 'wall' ? state.walls.find(w => 
 function nextId(prefix) { let n = 1; while (state.devices.some(d => d.id === prefix + n) || state.walls.some(w => w.id === prefix + n)) n++; return prefix + n; }
 
 function normalizeAp(ap) {
+    ap.mesh = { ...defaultMesh(), ...ap.mesh };
     const w = ap.wifi, std = STANDARDS[w.standard];
     if (!std.bands.includes(w.band)) w.band = std.bands.includes('5') ? '5' : std.bands[0];
     const widths = widthsFor(w.standard, w.band);
@@ -62,7 +67,7 @@ function normalizeAp(ap) {
 const anim = { queue: [], current: null, start: 0 };
 let eventsDirty = false;
 function onEvent(ev) {
-    if (ui.anim !== 'off' && ev.medium === 'wifi') { anim.queue.push(ev); if (anim.queue.length > 30) anim.queue.splice(0, anim.queue.length - 30); }
+    if (ui.anim !== 'off' && (ev.medium === 'wifi' || ev.medium === 'eth')) { anim.queue.push(ev); if (anim.queue.length > 30) anim.queue.splice(0, anim.queue.length - 30); }
     if (!eventsDirty) { eventsDirty = true; requestAnimationFrame(() => { eventsDirty = false; renderEvents(); renderClock(); }); }
 }
 function posOf(id) { const d = lab.device(id); return d ? { x: d.x, y: d.y } : null; }
@@ -137,6 +142,23 @@ function renderPlan() {
     const heat = heatmapImage();
     if (heat) g += `<image href="${heat}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" opacity=".62"/>`;
     for (const w of state.walls) g += `<line class="wall ${ui.selected?.id === w.id ? 'selected' : ''}" data-wall="${w.id}" x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" stroke="${MATERIALS[w.material].color}"><title>${MATERIALS[w.material].label}: ${MATERIALS[w.material].loss['2.4']}/${MATERIALS[w.material].loss['5']}/${MATERIALS[w.material].loss['6']} dB (2,4/5/6 GHz)</title></line>`;
+    // Beam lobes: narrower with more antennas (≈ 100°/N_tx), reaching toward each beamformed client.
+    for (const c of lab.clients) {
+        const l = lab.currentLink(c), bf = l?.beamforming;
+        if (!bf?.active || bf.gain <= 0) continue;
+        const dx = c.x - l.ap.x, dy = c.y - l.ap.y, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len, L = Math.min(len * .92, 4 + 1.6 * bf.gain), s = Math.tan(Math.PI / 180 * 50 / bf.txChains) * 1.25;
+        const pt = (a, b) => `${(l.ap.x + L * (a * ux - b * uy)).toFixed(2)} ${(l.ap.y + L * (a * uy + b * ux)).toFixed(2)}`;
+        g += `<path class="beam" d="M ${l.ap.x} ${l.ap.y} Q ${pt(.8, s)} ${pt(1, 0)} Q ${pt(.8, -s)} ${l.ap.x} ${l.ap.y} Z"><title>Beamforming para ${esc(c.name)}: +${bf.gain.toFixed(1)} dB</title></path>`;
+    }
+    // Mesh backhaul: dashed line from each node to the parent chosen by the airtime metric.
+    const tree = lab.meshTree();
+    for (const n of lab.routers) {
+        const t = tree.get(n.id), p = t?.parent && lab.device(t.parent);
+        if (!p) continue;
+        const r = t.link?.rates.dl, mx = (n.x + p.x) / 2, my = (n.y + p.y) / 2;
+        g += `<line class="backhaul ${t.link ? '' : 'wired'}" x1="${p.x}" y1="${p.y}" x2="${n.x}" y2="${n.y}"/>`;
+        g += `<text class="link-label backhaul-label" x="${mx}" y="${my - .35}">${t.link ? `backhaul ${t.link.dl.sinr.toFixed(0)} dB · MCS ${r.mcs}×${r.nss} · ${lab.hopGoodput(t.link, 'dl').toFixed(0)} Mb/s` : 'backhaul · cabo 1 Gb/s'}</text>`;
+    }
     for (const c of lab.clients) {
         const l = lab.currentLink(c);
         if (!l) continue;
@@ -147,11 +169,15 @@ function renderPlan() {
     for (const d of state.devices) {
         const isRouter = d.type === 'router', sel = ui.selected?.id === d.id;
         let sub, err = false;
-        if (isRouter) { const e = apConfigError(d); sub = e ? '⚠ rádio inativo' : `${d.wifi.ssid} · ${d.wifi.band} GHz ch ${d.wifi.channel}`; err = !!e; }
+        if (isRouter) {
+            const e = lab.apError(d), hops = tree.get(d.id)?.hops;
+            sub = e ? (lab.meshError(d) && !apConfigError(d) ? '⚠ sem backhaul' : '⚠ rádio inativo') : isNode(d) ? `nó mesh · ${hops} salto${hops > 1 ? 's' : ''} · ch ${d.wifi.channel}` : `${d.wifi.ssid} · ${d.wifi.band} GHz ch ${d.wifi.channel}${d.mesh?.role === 'root' ? ' · raiz mesh' : ''}`;
+            err = !!e;
+        }
         else { const ip = lab.rt(d.id).ip, assoc = lab.rt(d.id).assoc; sub = !assoc ? 'desconectado' : !ip ? 'sem IP' : ip.address + (ip.source === 'apipa' ? ' (APIPA)' : ''); err = !assoc || !ip || ip.source === 'apipa'; }
         g += `<g class="device ${d.type} ${isRouter ? 'router' : ''} ${sel ? 'selected' : ''}" data-device="${d.id}" transform="translate(${d.x} ${d.y})">
             <circle class="halo" r="1.25"/><rect class="body" x="-.85" y="-.85" width="1.7" height="1.7" rx=".4"/>
-            <g class="glyph" transform="translate(-.7 -.7) scale(${1.4 / 24})" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)">${ICONS[d.type]}</g>
+            <g class="glyph" transform="translate(-.7 -.7) scale(${1.4 / 24})" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)">${ICONS[glyphOf(d)]}</g>
             <text y="1.55">${esc(d.name)}</text><text class="sub ${err ? 'err' : ''}" y="2.1">${esc(sub)}</text></g>`;
     }
     if (ui.draft) g += `<line class="draft" x1="${ui.draft.x1}" y1="${ui.draft.y1}" x2="${ui.draft.x2}" y2="${ui.draft.y2}"/>`;
@@ -233,9 +259,10 @@ function renderInspector() {
 }
 function overview() {
     return `<p class="empty">Selecione um dispositivo na planta para configurá-lo, ou adicione um pela paleta à esquerda.</p>
-    <div class="section">DISPOSITIVOS</div><div class="scan">${state.devices.map(d => `<div class="scan-item" data-select="${d.id}" style="cursor:pointer"><b>${esc(d.name)}</b><small>${TYPE_LABEL[d.type]}</small><small>${d.type === 'router' ? esc(d.wifi.ssid) + ' · ' + d.lan.ip : esc(lab.ipOf(d) || 'sem IP')}</small></div>`).join('')}</div>
+    <div class="section">DISPOSITIVOS</div><div class="scan">${state.devices.map(d => `<div class="scan-item" data-select="${d.id}" style="cursor:pointer"><b>${esc(d.name)}</b><small>${TYPE_LABEL[glyphOf(d)]}</small><small>${isNode(d) ? `${esc(d.wifi.ssid)} · ponte para ${esc(lab.rootOf(d).name)}` : d.type === 'router' ? esc(d.wifi.ssid) + ' · ' + d.lan.ip : esc(lab.ipOf(d) || 'sem IP')}</small></div>`).join('')}</div>
     <div class="section" style="margin-top:14px">COMO FUNCIONA</div>
-    <p class="empty">A SNR vem da potência, da perda de percurso log-distância (FSPL a 1 m + 10·n·log d), das paredes, do ruído térmico −174 dBm/Hz + 10·log B + NF e da interferência de canais sobrepostos. A PER de cada MCS usa a BER Gray de M-QAM com ganho de codificação; a taxa PHY é N<sub>ss</sub>·N<sub>sd</sub>·log₂M·R/(T<sub>sym</sub>+GI).</p>`;
+    <p class="empty">A SNR vem da potência, da perda de percurso log-distância (FSPL a 1 m + 10·n·log d), das paredes, do ruído térmico −174 dBm/Hz + 10·log B + NF e da interferência de canais sobrepostos. A PER de cada MCS usa a BER Gray de M-QAM com ganho de codificação; a taxa PHY é N<sub>ss</sub>·N<sub>sd</sub>·log₂M·R/(T<sub>sym</sub>+GI).</p>
+    <p class="empty"><b>Beamforming</b> (Wi-Fi 5+): após a sondagem NDP o AP pré-codifica N<sub>ss</sub> fluxos em N<sub>tx</sub> antenas e ganha 10·log₁₀(N<sub>tx</sub>/N<sub>ss</sub>) dB nos dados. <b>Mesh</b>: nós em ponte repetem o SSID da raiz; cada nó escolhe o caminho de menor tempo no ar até a raiz (métrica airtime do 802.11s), e saltos no mesmo canal dividem a vazão.</p>`;
 }
 function wallInspector(w) {
     const m = MATERIALS[w.material];
@@ -244,31 +271,40 @@ function wallInspector(w) {
         <p class="empty">Atenuação por travessia: ${m.loss['2.4']} dB (2,4 GHz) · ${m.loss['5']} dB (5 GHz) · ${m.loss['6']} dB (6 GHz). Frequências mais altas penetram menos.</p>
         <div class="actions"><button class="btn danger" data-action="delete">Excluir parede</button></div></div>`;
 }
-function head(d) { return `<div class="ins-head">${iconSvg(d.type, 30)}<input type="text" data-bind="name" value="${esc(d.name)}" aria-label="Nome"></div>`; }
+function head(d) { return `<div class="ins-head">${iconSvg(glyphOf(d), 30)}<input type="text" data-bind="name" value="${esc(d.name)}" aria-label="Nome"></div>`; }
 
+// Fields a mesh node receives from the controller are shown but not editable.
+const locked = (html, on) => on ? html.replace(/^<(select|input)/, '<$1 disabled') : html;
 function routerInspector(r) {
-    const w = r.wifi, std = STANDARDS[w.standard], err = apConfigError(r), lanErr = lanConfigError(r);
+    const w = r.wifi, std = STANDARDS[w.standard], err = lab.apError(r), lanErr = lanConfigError(r), node = isNode(r), root = node ? lab.meshRoot(r) : null;
+    const synced = node && !!root, sameChannel = synced && r.mesh.backhaul === 'wifi', fromRoot = root ? `definido pela raiz ${esc(root.name)}` : '';
     let body = '';
     if (ui.tab.router === 'wifi') {
         const maxRate = dataRate(w.standard, +w.width, std.maxMcs, +w.streams, +w.gi), [f0, f1] = [centerFrequency(w.band, +w.channel) - w.width / 2, centerFrequency(w.band, +w.channel) + w.width / 2];
-        body = `${err ? `<div class="banner error">Rádio não transmite: ${esc(err)}</div>` : `<div class="banner ok">Transmitindo "${esc(w.ssid)}" · ${lab.clientsOf(r).length} cliente(s)</div>`}
+        body = `${err ? `<div class="banner error">Rádio não transmite: ${esc(err)}</div>` : `<div class="banner ok">Transmitindo "${esc(w.ssid)}" · ${lab.clientsOf(r).length} cliente(s)${root ? ` · ponte mesh para ${esc(root.name)}` : ''}</div>`}
         ${field('Rádio ligado', check('wifi.enabled', w.enabled))}
-        ${field('SSID', text('wifi.ssid', w.ssid, 'maxlength="32"'))}
-        ${field('Segurança', select('wifi.security', w.security, SECURITY_OPTIONS.map(s => [s, securityLabel(s, w.band)])))}
-        ${w.security !== 'Aberta' ? field('Senha (PSK/SAE)', text('wifi.password', w.password)) : ''}
+        ${field('SSID', locked(text('wifi.ssid', w.ssid, 'maxlength="32"'), synced), fromRoot)}
+        ${field('Segurança', locked(select('wifi.security', w.security, SECURITY_OPTIONS.map(s => [s, securityLabel(s, w.band)])), synced))}
+        ${w.security !== 'Aberta' ? field('Senha (PSK/SAE)', locked(text('wifi.password', w.password), synced)) : ''}
         <div class="section">RÁDIO</div>
         ${field('Padrão', select('wifi.standard', w.standard, STANDARD_ORDER.map(s => [s, STANDARDS[s].label])))}
-        ${field('Banda', select('wifi.band', w.band, std.bands.map(b => [b, `${b} GHz`])))}
-        ${field('Largura', select('wifi.width', w.width, widthsFor(w.standard, w.band).map(x => [x, `${x} MHz`]), 'number'))}
-        ${field('Canal', select('wifi.channel', w.channel, channelsFor(w.band, +w.width).map(c => [c, channelLabel(w.band, +w.width, c)]), 'number'), `ocupa ${f0}–${f1} MHz`)}
+        ${field('Banda', locked(select('wifi.band', w.band, std.bands.map(b => [b, `${b} GHz`])), sameChannel), sameChannel ? 'backhaul compartilhado: mesmo canal da raiz' : '')}
+        ${field('Largura', locked(select('wifi.width', w.width, widthsFor(w.standard, w.band).map(x => [x, `${x} MHz`]), 'number'), sameChannel))}
+        ${field('Canal', locked(select('wifi.channel', w.channel, channelsFor(w.band, +w.width).map(c => [c, channelLabel(w.band, +w.width, c)]), 'number'), sameChannel), `ocupa ${f0}–${f1} MHz`)}
         ${field('Potência Tx', num('wifi.txPower', w.txPower, 0, 30), 'dBm (EIRP = potência + ganho da antena)')}
         ${field('Ganho da antena', num('wifi.antennaGain', w.antennaGain, 0, 12, .5), 'dBi')}
-        ${field('Fluxos espaciais', select('wifi.streams', w.streams, [1, 2, 3, 4, 8].filter(n => n <= std.maxStreams), 'number'), 'MIMO N×N')}
+        ${field('Fluxos espaciais', select('wifi.streams', w.streams, [1, 2, 3, 4, 8].filter(n => n <= std.maxStreams), 'number'), 'MIMO N×N · antenas de transmissão')}
+        ${field('Beamforming (TxBF)', check('wifi.beamforming', w.beamforming), std.rank >= 5 ? `sondagem NDP explícita · ganho 10·log₁₀(${w.streams}/N<sub>ss</sub>) nos dados` : 'Wi-Fi 4: sem sondagem padronizada, sem efeito')}
         ${field('Intervalo de guarda', select('wifi.gi', w.gi, std.gis.map(g => [g, `${g} µs`]), 'number'), `símbolo OFDM de ${std.symbol} µs`)}
         ${field('MCS', select('wifi.mcs', w.mcs, [['auto', 'Automático (adaptação de taxa)'], ...MCS.slice(0, std.maxMcs + 1).map((m, i) => [i, `MCS ${i} · ${m.label} ${m.code}`])]))}
         ${field('Carga do BSS', num('wifi.load', w.load, 0, 100, 5), '% do tempo no ar ocupado (afeta vizinhos)')}
         ${field('Isolamento', check('wifi.isolation', w.isolation), 'bloqueia tráfego cliente↔cliente')}
         <div class="metrics">${metric('Taxa PHY máxima', `${maxRate.toFixed(0)} Mb/s`, `MCS ${std.maxMcs} · ${w.streams} fluxo(s)`)}${metric('Subportadoras', std.subcarriers[w.width], `${std.short} · ${w.width} MHz`)}</div>`;
+    } else if (ui.tab.router === 'mesh') {
+        body = meshPanel(r);
+    } else if (node && (ui.tab.router === 'lan' || ui.tab.router === 'dns')) {
+        body = `<div class="banner ${root ? 'ok' : 'error'}">${root ? `Nó em modo ponte (bridge): DHCP, DNS e NAT são do gateway <b>${esc(root.name)}</b> (${root.lan.ip}). Os clientes deste nó recebem IP da faixa ${root.dhcp.start}–${root.dhcp.end}.` : esc(lab.meshError(r))}</div>
+        <p class="empty">Um nó mesh não roteia: os quadros dos clientes atravessam o backhaul até a raiz com 4 endereços MAC (RA, TA, DA, SA), e o broadcast DHCP chega ao servidor da raiz como se o cliente estivesse ao lado dela.</p>`;
     } else if (ui.tab.router === 'lan') {
         const d = r.dhcp, size = isIp(d.start) && isIp(d.end) ? Math.max(0, ipToNum(d.end) - ipToNum(d.start) + 1) : 0;
         body = `${lanErr ? `<div class="banner error">${esc(lanErr)}</div>` : ''}
@@ -301,10 +337,36 @@ function routerInspector(r) {
         <div class="section" style="margin-top:10px">CONCESSÕES DHCP</div>
         <table class="mini"><tr><th>IP</th><th>MAC</th><th>Host</th><th>Estado</th></tr>${lab.leases(r).map(l => `<tr><td>${l.ip}</td><td>${l.mac}</td><td>${esc(l.hostname)}</td><td>${l.connected ? 'ativo' : 'livre'}</td></tr>`).join('') || '<tr><td colspan="4">nenhuma</td></tr>'}</table>`;
     }
-    return `${head(r)}${tabs('router', [['wifi', 'Wi-Fi'], ['lan', 'LAN & DHCP'], ['dns', 'DNS'], ['clients', 'Clientes']])}<div class="form">${body}</div>
+    return `${head(r)}${tabs('router', [['wifi', 'Wi-Fi'], ['mesh', 'Mesh'], ['lan', 'LAN & DHCP'], ['dns', 'DNS'], ['clients', 'Clientes']])}<div class="form">${body}</div>
         <div class="actions"><button class="btn" data-action="terminal">Console</button><button class="btn" data-action="browser" title="Navegador num PC ligado à porta LAN">Página de administração</button><button class="btn danger" data-action="delete">Excluir</button></div>`;
 }
 const ipToNum = s => s.split('.').reduce((a, o) => a * 256 + +o, 0);
+
+function backhaulText(t) {
+    if (!t.link) return 'cabo Ethernet · 1 Gb/s';
+    const r = t.link.rates.dl;
+    return `${t.link.dl.sinr.toFixed(0)} dB · MCS ${r.mcs}×${r.nss} · ${lab.hopGoodput(t.link, 'dl').toFixed(0)} Mb/s`;
+}
+function meshPanel(r) {
+    const m = r.mesh, tree = lab.meshTree();
+    let html = field('Papel na malha', select('mesh.role', m.role, [['off', 'Desligado · AP independente'], ['root', 'Raiz · gateway (WAN, DHCP, DNS)'], ['node', 'Nó · satélite em ponte']]));
+    if (m.role === 'off') return html + `<p class="empty">Uma rede mesh espalha o mesmo SSID por vários pontos de acesso. A <b>raiz</b> é o roteador ligado à Internet; os <b>nós</b> só repassam quadros (ponte) por um <b>backhaul</b> — sem fio ou por cabo — até ela. Escolha "Raiz" aqui e adicione um <b>Nó mesh</b> pela paleta.</p>`;
+    html += field('Mesh ID', text('mesh.id', m.id), 'raiz e nós com o mesmo Mesh ID formam uma malha');
+    if (m.role === 'node') {
+        html += field('Backhaul', select('mesh.backhaul', m.backhaul, Object.entries(MESH_BACKHAULS)), m.backhaul === 'wifi' ? 'um rádio só: clientes e backhaul no mesmo canal' : m.backhaul === 'dedicated' ? 'rádio extra (tri-band): backhaul não disputa o canal dos clientes' : 'nó ligado à raiz por cabo');
+        const e = lab.meshError(r), t = tree.get(r.id);
+        if (e) return html + `<div class="banner error">${esc(e)}</div><p class="empty">Aproxime o nó da raiz (ou de outro nó já conectado), retire paredes do caminho ou use backhaul por cabo.</p>`;
+        const chain = lab.upChain(r), path = lab.pathGoodput(lab.route(r, chain.at(-1)));
+        html += `<div class="banner ok">Caminho: ${chain.map(d => esc(d.name)).join(' → ')}</div>
+        <div class="metrics">${metric('Saltos até a raiz', t.hops, t.hops > 1 ? 'passa por outro nó' : 'direto')}${metric('Pai escolhido', esc(lab.device(t.parent).name), 'menor tempo no ar acumulado')}${metric('Backhaul', backhaulText(t).split(' · ').slice(-1)[0], backhaulText(t))}${metric('Vazão nó → raiz', `${path.mbps.toFixed(0)} Mb/s`, path.sharedHops > 1 ? `${path.sharedHops} saltos no mesmo canal` : 'sem disputa de canal')}${metric('Métrica airtime', `${(t.cost * 1e3).toFixed(1)}`, 'Σ 1/vazão por salto (ms por Mb)')}</div>`;
+        return html;
+    }
+    const nodes = lab.meshNodes(r);
+    html += `<div class="section">NÓS DA MALHA "${esc(m.id)}"</div>
+    <table class="mini"><tr><th>Nó</th><th>Pai</th><th>Saltos</th><th>Backhaul</th><th>Clientes</th></tr>${nodes.map(n => { const t = tree.get(n.id); return `<tr><td>${esc(n.name)}</td><td>${t ? esc(lab.device(t.parent).name) : '—'}</td><td>${t?.hops ?? '—'}</td><td>${t ? backhaulText(t) : `<span style="color:var(--red)">${esc(lab.meshError(n))}</span>`}</td><td>${lab.clientsOf(n).length}</td></tr>`; }).join('') || '<tr><td colspan="5">nenhum — adicione um Nó mesh pela paleta</td></tr>'}</table>
+    <p class="empty">SSID, segurança e senha da raiz são copiados para todos os nós (controlador estilo EasyMesh). Cada nó escolhe o pai que minimiza o tempo no ar acumulado até a raiz, como a métrica airtime do HWMP (802.11s). Os clientes de qualquer nó recebem IP do DHCP desta raiz e fazem roaming para o nó mais forte.</p>`;
+    return html;
+}
 
 function clientInspector(c) {
     const rt = lab.rt(c.id), ap = lab.associatedAp(c), ip = rt.ip;
@@ -338,7 +400,8 @@ function clientInspector(c) {
         const l = lab.currentLink(c);
         if (!l) body = `${status}<p class="empty">Conecte-se a uma rede para ver o enlace.</p>`;
         else {
-            const n = l.negotiation, dl = l.rates.dl, ul = l.rates.ul, gp = aggregateGoodput(n.standard, n.width, dl.mcs, dl.nss, n.gi, dl.per) * (1 - l.utilization);
+            const n = l.negotiation, dl = l.rates.dl, ul = l.rates.ul, gp = lab.hopGoodput(l, 'dl'), bf = l.beamforming, root = lab.rootOf(l.ap);
+            const path = l.ap !== root && lab.pathGoodput(lab.route(root, c));
             body = `${status}
             <div class="metrics">
                 ${metric('Distância', `${l.distance.toFixed(1)} m`, `perda ${l.pathLoss.toFixed(1)} dB${l.wallLoss ? ` (paredes ${l.wallLoss} dB)` : ''}`)}
@@ -351,6 +414,8 @@ function clientInspector(c) {
                 ${metric('MCS subida', `${ul.mcs} × ${ul.nss}`, `${MCS[ul.mcs].label} ${MCS[ul.mcs].code} · PER ${(100 * ul.per).toFixed(2)}%`)}
                 ${metric('Taxa PHY', `${dl.rate.toFixed(1)} Mb/s`, `subida ${ul.rate.toFixed(1)} Mb/s`)}
                 ${metric('Vazão estimada', `${gp.toFixed(0)} Mb/s`, 'TCP com A-MPDU (descida)')}
+                ${metric('Beamforming', bf.active ? `+${bf.gain.toFixed(1)} dB` : bf.enabled ? 'inativo' : 'desligado', bf.active ? `${bf.txChains} antenas → ${dl.nss} fluxo(s) · sondagem ${(100 * bf.overhead).toFixed(1)}% do ar` : bf.reason || 'ative no AP (Wi-Fi 5+)')}
+                ${path ? metric('Caminho mesh', `${path.mbps.toFixed(0)} Mb/s`, `${lab.upChain(l.ap).map(d => esc(d.name)).join(' → ')}${path.sharedHops > 1 ? ` · ${path.sharedHops} saltos no mesmo canal` : ''}`) : ''}
                 ${detectionMetrics(c)}
             </div>
             <div class="section">CONSTELAÇÃO RECEBIDA (DESCIDA, 1 FLUXO)</div>
@@ -435,6 +500,7 @@ function filteredEvents() {
 }
 function phyText(e) {
     if (e.medium === 'wan') return 'WAN';
+    if (e.medium === 'eth') return 'Ethernet';
     if (!e.phy) return '';
     return e.phy.legacy ? 'legado 6 Mb/s' : `MCS${e.phy.mcs}×${e.phy.nss} ${e.phy.rate.toFixed(0)}`;
 }
@@ -455,7 +521,7 @@ function renderEventDetail() {
     const layer = (name, fields) => `<div class="layer"><h4>${esc(name)}</h4>${fields.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>`;
     let html = `<div style="margin-bottom:8px;color:var(--text)">#${e.id} · t = ${e.t.toFixed(3)} ms · ${esc(e.info)}</div>`;
     if (e.phy) {
-        const p = e.phy, fields = p.legacy ? [['Modo', 'OFDM legado (não-HT) 6 Mb/s · BPSK 1/2'], ['Largura', '20 MHz (primário)']] : [['Padrão', STANDARDS[p.standard].label], ['MCS', `${p.mcs} · ${MCS[p.mcs].label} ${MCS[p.mcs].code}`], ['Fluxos espaciais', p.nss], ['Largura', `${p.width} MHz`], ['Intervalo de guarda', `${p.gi} µs`], ['Taxa PHY', `${p.rate.toFixed(1)} Mb/s`]];
+        const p = e.phy, fields = p.legacy ? [['Modo', 'OFDM legado (não-HT) 6 Mb/s · BPSK 1/2'], ['Largura', '20 MHz (primário)']] : [['Padrão', STANDARDS[p.standard].label], ['MCS', `${p.mcs} · ${MCS[p.mcs].label} ${MCS[p.mcs].code}`], ['Fluxos espaciais', p.nss], ['Largura', `${p.width} MHz`], ['Intervalo de guarda', `${p.gi} µs`], ['Taxa PHY', `${p.rate.toFixed(1)} Mb/s`], ...(p.bf ? [['Beamforming', `+${p.bf.toFixed(1)} dB de ganho de arranjo`]] : [])];
         html += layer('Camada física', [...fields, ['Sentido', e.dir === 'dl' ? 'descida (AP → cliente)' : 'subida (cliente → AP)'], ['SINR', `${p.snr.toFixed(1)} dB`], ['PER por tentativa', `${(100 * p.per).toFixed(3)}%`], ['Tentativas', `${e.attempts}${e.kind === 'bcast' ? ' (difusão: sem ACK, sem retransmissão)' : ''}`], ['Tempo no ar', `${e.airtime.toFixed(0)} µs (inclui DIFS, backoff e ACK)`], ['Tamanho', `${e.bytes} bytes`], ['Resultado', e.ok ? 'entregue' : 'perdido após todas as tentativas']]);
     }
     for (const l of e.layers || []) html += layer(l.name, l.fields);
@@ -730,15 +796,23 @@ function bind() {
 function setPath(obj, path, value) { const keys = path.split('.'), last = keys.pop(); let o = obj; for (const k of keys) o = o[k]; o[last] = value; }
 
 function addDevice(type) {
-    const n = state.devices.filter(d => d.type === type).length + 1, x = 8 + ((n * 7) % 24), y = 5 + ((n * 5) % 14);
+    const n = (type === 'mesh' ? state.devices.filter(isNode) : state.devices.filter(d => d.type === type && !isNode(d))).length + 1, x = 8 + ((n * 7) % 24), y = 5 + ((n * 5) % 14);
     let d;
-    if (type === 'router') {
+    if (type === 'mesh') {
+        // A node needs a root: promote the first standalone router when the network has none yet.
+        let root = state.devices.find(r => r.mesh?.role === 'root');
+        if (!root && (root = state.devices.find(r => r.type === 'router' && !isNode(r)))) { root.mesh = { ...defaultMesh(), ...root.mesh, role: 'root' }; lab.note(`${root.name} virou a raiz (gateway) da malha "${root.mesh.id}".`, 'info', root.id); }
+        const k = state.devices.filter(isNode).length + 1, used = new Set(state.devices.filter(r => r.type === 'router').map(r => r.lan.ip)), base = root ? root.lan.ip.split('.').slice(0, 3).join('.') : '192.168.0';
+        let host = 2; while (used.has(`${base}.${host}`)) host++;
+        d = makeMeshNode(nextId('r'), `Nó mesh ${k}`, x, y, { mesh: { id: root?.mesh.id || 'LabMesh' }, lan: { ip: `${base}.${host}`, mask: root?.lan.mask || '255.255.255.0' } });
+    } else if (type === 'router') {
         const net = state.devices.filter(d => d.type === 'router').length;
         d = makeRouter(nextId('r'), n > 1 ? `Roteador ${n}` : 'Roteador', x, y, { wifi: { ssid: net ? `LabWiFi-${net + 1}` : 'LabWiFi' }, lan: { ip: `192.168.${net}.1` }, dhcp: { start: `192.168.${net}.100`, end: `192.168.${net}.199`, dns1: `192.168.${net}.1` } });
     } else d = makeClient(nextId('c'), type, `${CLIENT_TYPES[type].label} ${n}`, x, y);
     state.devices.push(d);
     ui.selected = { kind: 'device', id: d.id };
-    if (type !== 'router') ui.tab.client = 'wifi';
+    if (type === 'mesh') ui.tab.router = 'mesh';
+    else if (type !== 'router') ui.tab.client = 'wifi';
     changed();
 }
 function deleteSelected() {
@@ -771,5 +845,5 @@ try {
 loadFromHash();
 requestAnimationFrame(tick);
 // Handle for the browser console (and automated checks) to inspect the engine.
-const VERSION = '7';
+const VERSION = '8';
 window.wifiLab = { version: VERSION, get lab() { return lab; }, ui, renderAll, openTerminal, submitCommand, browser, select: id => { ui.selected = { kind: 'device', id }; renderAll(); } };

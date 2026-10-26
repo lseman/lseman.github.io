@@ -4,7 +4,7 @@ import { rng } from '../sim/utils.js';
 import {
     STANDARDS, MCS, MATERIALS, centerFrequency, channelsFor, widthsFor, effectiveStandard, clientBands,
     pathLoss, wallLoss, thermalNoiseDbm, dbmToMw, mwToDbm, spectralOverlap, selectRate, packetErrorRate,
-    streamSnr, ppduAirtime, legacyAirtime, aggregateGoodput, TIMING, dataRate,
+    streamSnr, ppduAirtime, legacyAirtime, aggregateGoodput, TIMING, dataRate, PER_TARGET, BF_MIN_RANK, bfReportBytes,
 } from './phy.mjs';
 
 // ---------- IPv4 helpers ----------
@@ -42,13 +42,21 @@ export const CLIENT_TYPES = {
 export function makeRouter(id, name, x, y, over = {}) {
     return deepMerge({
         id, type: 'router', name, x, y,
-        wifi: { enabled: true, ssid: 'LabWiFi', security: 'WPA2/WPA3', password: 'senha1234', standard: 'wifi6', band: '5', channel: 42, width: 80, txPower: 20, antennaGain: 3, streams: 2, gi: 0.8, mcs: 'auto', isolation: false, load: 20 },
+        wifi: { enabled: true, ssid: 'LabWiFi', security: 'WPA2/WPA3', password: 'senha1234', standard: 'wifi6', band: '5', channel: 42, width: 80, txPower: 20, antennaGain: 3, streams: 2, gi: 0.8, mcs: 'auto', isolation: false, load: 20, beamforming: false },
         lan: { ip: '192.168.0.1', mask: '255.255.255.0' },
         dhcp: { enabled: true, start: '192.168.0.100', end: '192.168.0.199', lease: 86400, dns1: '192.168.0.1', dns2: '' },
         dns: { enabled: true, records: [] },
         wan: { connected: true, ip: '100.64.12.34', bandwidth: 500 },
         admin: { user: 'admin', password: 'admin' },
+        mesh: defaultMesh(),
     }, over);
+}
+// Mesh role: 'off' (standalone AP), 'root' (gateway with the WAN, DHCP and DNS) or 'node' (bridged satellite).
+// backhaul: 'wifi' (same radio and channel as the clients), 'dedicated' (extra radio) or 'ethernet'.
+export const defaultMesh = () => ({ role: 'off', id: 'LabMesh', backhaul: 'wifi' });
+export const MESH_BACKHAULS = { wifi: 'Wi-Fi compartilhado (mesmo rádio e canal)', dedicated: 'Wi-Fi dedicado (rádio extra)', ethernet: 'Cabo Ethernet' };
+export function makeMeshNode(id, name, x, y, over = {}) {
+    return makeRouter(id, name, x, y, deepMerge({ mesh: { role: 'node' }, dhcp: { enabled: false }, dns: { enabled: false }, wan: { connected: false } }, over));
 }
 export function makeClient(id, type, name, x, y, over = {}) {
     const t = CLIENT_TYPES[type];
@@ -100,6 +108,7 @@ export class Lab {
         this.state = state;
         this.state.env = { ...defaultEnvironment(), ...state.env };
         this.state.walls ||= [];
+        for (const d of state.devices) if (d.type === 'router') d.mesh = { ...defaultMesh(), ...d.mesh };
         this.random = rng(seed);
         this.now = 0;
         this.events = [];
@@ -180,25 +189,45 @@ export class Lab {
         };
         const dl = side(+ap.wifi.txPower, +ap.wifi.antennaGain, this.interferenceMw(ap, client));
         const ul = side(+client.wifi.txPower, +ap.wifi.antennaGain, this.interferenceMw(ap, ap));
-        const forced = client.snrOverride !== null && client.snrOverride !== '' && Number.isFinite(+client.snrOverride);
+        const forced = client.snrOverride != null && client.snrOverride !== '' && Number.isFinite(+client.snrOverride);
         if (forced) dl.sinr = ul.sinr = +client.snrOverride;
         // Beacons/management use 6 Mb/s on the 20 MHz primary: less noise bandwidth than the full channel.
         const mgmtDl = dl.sinr + 10 * Math.log10(width / 20) * !forced, mgmtUl = ul.sinr + 10 * Math.log10(width / 20) * !forced;
         const out = { ap, client, band, freq, distance: Math.hypot(ap.x - client.x, ap.y - client.y), pathLoss: pl, wallLoss: walls, width, dl, ul, mgmtDl, mgmtUl, forced, negotiation, utilization: this.utilization(ap) };
         if (negotiation.ok) {
             const n = negotiation, fixed = ap.wifi.mcs === 'auto' ? null : Math.min(+ap.wifi.mcs, STANDARDS[n.standard].maxMcs);
+            // Downlink transmit beamforming steers only data PPDUs: beacons and management frames stay omnidirectional.
+            const bf = { enabled: !!ap.wifi.beamforming, active: false, txChains: n.apChains, gain: 0, overhead: 0 };
+            if (bf.enabled) {
+                if (STANDARDS[n.standard].rank < BF_MIN_RANK) bf.reason = `${STANDARDS[n.standard].short} (Wi-Fi 4) sem sondagem NDP padronizada`;
+                else if (forced) bf.reason = 'SNR forçada substitui o canal';
+                else bf.active = true;
+            }
             out.rates = {
-                dl: selectRate({ standard: n.standard, width: n.width, gi: n.gi, maxNss: n.nss, rxChains: n.clientChains, snrDb: dl.sinr, fixedMcs: fixed }),
+                dl: selectRate({ standard: n.standard, width: n.width, gi: n.gi, maxNss: n.nss, rxChains: n.clientChains, snrDb: dl.sinr, fixedMcs: fixed, txChains: bf.active ? n.apChains : 0 }),
                 ul: selectRate({ standard: n.standard, width: n.width, gi: n.gi, maxNss: n.nss, rxChains: n.apChains, snrDb: ul.sinr, fixedMcs: fixed }),
             };
+            if (bf.active) { bf.gain = out.rates.dl.bfGain; bf.sounding = this.soundingAirtime(out); bf.overhead = bf.sounding / SOUNDING_PERIOD_US; }
+            out.beamforming = bf;
             out.fixedMcs = fixed;
         }
         return out;
     }
+    // NDPA + SIFS + NDP + SIFS + compressed beamforming report (sent at the uplink data rate), in µs.
+    soundingAirtime(l) {
+        const n = l.negotiation, nc = l.rates.dl.nss, ul = l.rates.ul;
+        const ndp = ppduAirtime(n.standard, n.width, 0, n.apChains, n.gi, 0);
+        return legacyAirtime(17 + 4) + TIMING.sifs + ndp + TIMING.sifs + ppduAirtime(n.standard, n.width, ul.mcs, ul.nss, n.gi, bfReportBytes(n.standard, n.width, n.apChains, nc));
+    }
+    // Saturated TCP goodput of one hop, after co-channel contention and sounding airtime.
+    hopGoodput(l, dir) {
+        const r = l.rates[dir], n = l.negotiation;
+        return aggregateGoodput(n.standard, n.width, r.mcs, r.nss, n.gi, r.per) * (1 - l.utilization) * (1 - (l.beamforming?.overhead || 0));
+    }
     beaconPer(link) { return packetErrorRate(streamSnr(link.mgmtDl, 1, link.negotiation.clientChains || 1), 0, 300); }
     scan(client) {
         const bands = clientBands(client.wifi.standard);
-        return this.routers.filter(ap => !apConfigError(ap) && bands.includes(ap.wifi.band)).map(ap => {
+        return this.routers.filter(ap => !this.apError(ap) && bands.includes(ap.wifi.band)).map(ap => {
             const l = this.link(ap, client);
             return { ap, link: l, ssid: ap.wifi.ssid, bssid: this.mac(ap), rssi: l.dl.rssi, snr: l.mgmtDl, band: ap.wifi.band, channel: +ap.wifi.channel, width: +ap.wifi.width, security: securityLabel(ap.wifi.security, ap.wifi.band), standard: STANDARDS[ap.wifi.standard].label, visible: this.beaconPer(l) < .5 };
         }).filter(s => s.visible).sort((a, b) => b.rssi - a.rssi);
@@ -215,7 +244,7 @@ export class Lab {
             const r = link.rates[dir];
             per = packetErrorRate(r.streamSnr, r.mcs, bytes);
             airtime = ppduAirtime(n.standard, n.width, r.mcs, r.nss, n.gi, bytes);
-            phy = { standard: n.standard, mcs: r.mcs, nss: r.nss, width: n.width, gi: n.gi, rate: r.rate, snr: dir === 'dl' ? link.dl.sinr : link.ul.sinr, per };
+            phy = { standard: n.standard, mcs: r.mcs, nss: r.nss, width: n.width, gi: n.gi, rate: r.rate, snr: dir === 'dl' ? link.dl.sinr : link.ul.sinr, per, bf: r.bfGain || 0 };
         } else {
             per = packetErrorRate(streamSnr(dir === 'dl' ? link.mgmtDl : link.mgmtUl, 1, rx), 0, bytes);
             airtime = legacyAirtime(bytes);
@@ -233,6 +262,13 @@ export class Lab {
         const ap = link.ap, client = link.client;
         this.emit({ medium: 'wifi', dir, kind, from: dir === 'dl' ? ap.id : client.id, to: dir === 'dl' ? (kind === 'bcast' ? null : client.id) : ap.id, bytes, attempts, ok, airtime: elapsed, phy, ...ev });
         return ok;
+    }
+    // Cable hop of a mesh node with Ethernet backhaul: no contention, no loss.
+    wired(step, ev, info) {
+        this.now += 0.02;
+        const [a, b] = step.dir === 'ul' ? [step.node, step.parent] : [step.parent, step.node];
+        this.emit({ medium: 'eth', dir: step.dir, from: a.id, to: b.id, proto: ev.proto, info, ok: true, bytes: ev.bytes, layers: [{ name: 'Ethernet II', fields: [['Destino', ev.da || this.mac(b)], ['Origem', ev.sa || this.mac(a)], ['Enlace', 'backhaul cabeado 1 Gb/s']] }, ...ev.layers] });
+        return true;
     }
     wan(router, proto, info, ok, layers, dir = 'out') { this.emit({ medium: 'wan', from: dir === 'out' ? router.id : 'internet', to: dir === 'out' ? 'internet' : router.id, proto, info, ok, layers }); }
 
@@ -295,13 +331,136 @@ export class Lab {
         }
         rt.assoc = { apId: ap.id, since: this.now, signature: wifiSignature(ap), clientSig: clientSignature(client) };
         rt.arp.clear();
-        this.note(`${client.name} associado a "${ssid}" (${STANDARDS[n.standard].label}, ${n.width} MHz, ${n.nss}×${n.nss} MIMO)`, 'ok', client.id);
-        rt.ipSig = ipSignature(client, ap);
+        this.note(`${client.name} associado a "${ssid}" via ${ap.name} (${STANDARDS[n.standard].label}, ${n.width} MHz, ${n.nss}×${n.nss} MIMO)`, 'ok', client.id);
+        if (link.beamforming?.active) this.sound(link);
+        rt.ipSig = ipSignature(client, this.rootOf(ap));
         rt.last = { ok: true, message: `Conectado a "${ssid}".` };
         this.configureIp(client);
         return { ok: true, message: `Conectado a "${ssid}".`, ap };
     }
     clientsOf(ap) { return this.clients.filter(c => this.rt(c.id).assoc?.apId === ap.id); }
+
+    // ---------- beamforming ----------
+    // Explicit sounding (VHT/HE/EHT): the AP announces, sends a Null Data PPDU with one training field per antenna,
+    // and the client answers with the compressed steering matrix V. Repeated every SOUNDING_PERIOD_US.
+    sound(link) {
+        const n = link.negotiation, ap = link.ap, c = link.client, bssid = this.mac(ap), sta = this.mac(c), nr = n.apChains, nc = link.rates.dl.nss;
+        const bytes = bfReportBytes(n.standard, n.width, nr, nc), angles = nc * (2 * nr - nc - 1);
+        this.transmit(link, 'dl', 'mgmt', 21, { proto: '802.11', info: `NDP Announcement · sondagem do canal (${STANDARDS[n.standard].short})`, layers: [mac80211('NDP Announcement (controle)', sta, bssid, bssid), { name: 'Sondagem', fields: [['Beamformer', `${ap.name} · ${nr} antenas`], ['Beamformee', `${c.name} · feedback SU`], ['Nc pedido', nc], ['Agrupamento', 'Ng = 4 subportadoras']] }] });
+        this.transmit(link, 'dl', 'bcast', 0, { proto: '802.11', info: `NDP · ${nr} campos de treinamento (LTF), sem dados`, layers: [{ name: 'NDP (Null Data PPDU)', fields: [['Campos LTF', `${nr} — um por antena de transmissão`], ['Carga útil', 'nenhuma'], ['No cliente', `estima a matriz de canal H (${c.wifi.streams}×${nr}) em cada subportadora`]] }] });
+        this.transmit(link, 'ul', 'mgmt', bytes, { proto: '802.11', info: `Compressed Beamforming Report · V ${nr}×${nc} · ${bytes} B`, layers: [mac80211('Action No Ack (Beamforming Report)', bssid, sta, bssid), { name: 'Relatório de beamforming', fields: [['Matriz V', `${nr}×${nc} (vetores singulares direitos de H)`], ['Compressão', `${angles} ângulos de Givens φ/ψ por grupo (6 + 4 bits)`], ['SNR por fluxo', `${link.rates.dl.streamSnr.toFixed(1)} dB`], ['Tamanho', `${bytes} bytes`], ['Ganho resultante', `+${link.beamforming.gain.toFixed(1)} dB = 10·log₁₀(${nr}/${nc})`]] }] });
+        const rt = this.rt(c.id);
+        if (rt.assoc) rt.assoc.sounded = true;
+    }
+
+    // ---------- mesh (802.11s-style: one root gateway, bridged nodes, airtime-metric tree) ----------
+    meshRole(ap) { return ap?.mesh?.role || 'off'; }
+    meshRoot(ap) { return this.routers.find(r => this.meshRole(r) === 'root' && r.mesh.id === ap.mesh.id) || null; }
+    // Router that serves DHCP, DNS and NAT for clients of this AP.
+    rootOf(ap) { return this.meshRole(ap) === 'node' ? this.meshRoot(ap) || ap : ap; }
+    lanClients(router) { return this.clients.filter(c => { const ap = this.associatedAp(c); return ap && this.rootOf(ap) === router; }); }
+    meshNodes(root) { return this.routers.filter(n => this.meshRole(n) === 'node' && this.meshRoot(n) === root); }
+    // Parent of every reachable node, chosen like HWMP: least cumulative airtime (1/goodput per hop) to the root.
+    meshTree() {
+        const key = JSON.stringify([this.state.env, this.state.walls, this.routers.map(r => [r.id, r.x, r.y, r.wifi, r.mesh])]);
+        if (this.meshCache?.key === key) return this.meshCache.tree;
+        const tree = new Map();
+        for (const root of this.routers.filter(r => this.meshRole(r) === 'root' && !apConfigError(r))) {
+            tree.set(root.id, { root: root.id, parent: null, hops: 0, cost: 0 });
+            const settled = [root], pending = new Set(this.meshNodes(root).filter(n => !apConfigError(n)));
+            while (pending.size) {
+                let best = null;
+                const offer = (n, parent, cost, link) => { if (!best || cost < best.cost) best = { n, parent, cost, link }; };
+                for (const n of pending) {
+                    if (n.mesh.backhaul === 'ethernet') { offer(n, root, 1 / ETHERNET_MBPS, null); continue; }
+                    for (const p of settled) {
+                        const l = this.link(p, n);
+                        if (!l.negotiation.ok || this.beaconPer(l) >= .5 || l.rates.dl.per > PER_TARGET) continue;
+                        offer(n, p, tree.get(p.id).cost + 1 / this.hopGoodput(l, 'dl'), l);
+                    }
+                }
+                if (!best) break;
+                pending.delete(best.n); settled.push(best.n);
+                tree.set(best.n.id, { root: root.id, parent: best.parent.id, hops: tree.get(best.parent.id).hops + 1, cost: best.cost, link: best.link });
+            }
+        }
+        this.meshCache = { key, tree };
+        return tree;
+    }
+    meshError(ap) {
+        if (this.meshRole(ap) !== 'node') return null;
+        const root = this.meshRoot(ap);
+        if (!root) return `Nenhum gateway mesh (raiz) com Mesh ID "${ap.mesh.id}".`;
+        if (apConfigError(root)) return `Gateway mesh ${root.name} inativo.`;
+        if (!this.meshTree().has(ap.id)) return 'Sem backhaul: nenhum nó da malha ao alcance com PER ≤ 10%.';
+        return null;
+    }
+    apError(ap) { return apConfigError(ap) || this.meshError(ap); }
+    // The mesh controller (EasyMesh-style) pushes the root's SSID and credentials to every node; a node whose
+    // backhaul shares the client radio must also sit on the root's channel.
+    syncMesh() {
+        for (const n of this.routers) {
+            const root = this.meshRole(n) === 'node' && this.meshRoot(n);
+            if (!root) continue;
+            Object.assign(n.wifi, { ssid: root.wifi.ssid, security: root.wifi.security, password: root.wifi.password });
+            if (n.mesh.backhaul === 'wifi') Object.assign(n.wifi, { band: root.wifi.band, width: root.wifi.width, channel: root.wifi.channel });
+        }
+    }
+    // Routers from this AP up to its mesh root (just [ap] outside a mesh).
+    upChain(ap) {
+        const tree = this.meshTree(), out = [ap];
+        for (let t = tree.get(ap.id); t?.parent; t = tree.get(t.parent)) out.push(this.device(t.parent));
+        return out;
+    }
+    backhaulStep(node, dir) {
+        const t = this.meshTree().get(node.id);
+        return t.link ? { link: t.link, dir, mesh: true } : { wired: true, dir, node, parent: this.device(t.parent) };
+    }
+    // Radio (and cable) hops between two devices on one LAN: up the tree to the common ancestor, then down.
+    route(src, dst) {
+        const start = d => d.type === 'router' ? d : this.associatedAp(d);
+        const a = this.upChain(start(src)), b = this.upChain(start(dst)), meet = a.find(x => b.includes(x));
+        const steps = src.type === 'router' ? [] : [{ link: this.link(start(src), src), dir: 'ul' }];
+        if (!meet) return steps;
+        for (const n of a.slice(0, a.indexOf(meet))) steps.push(this.backhaulStep(n, 'ul'));
+        for (const n of b.slice(0, b.indexOf(meet)).reverse()) steps.push(this.backhaulStep(n, 'dl'));
+        if (dst.type !== 'router') steps.push({ link: this.link(start(dst), dst), dir: 'dl' });
+        return steps;
+    }
+    // Send one frame along a route. ev: { proto, bytes, info, layers (above 802.11), da, sa, bcastLast, lastInfo }.
+    carry(steps, ev, offset = 0) {
+        return steps.every((s, k) => {
+            const i = k + offset, last = k === steps.length - 1;
+            const info = (last && ev.lastInfo) || ev.info + (s.mesh ? ' (backhaul mesh)' : s.wired ? ' (backhaul cabeado)' : i > 0 ? ' (repassado pelo AP)' : '');
+            if (s.wired) return this.wired(s, ev, info);
+            const kind = ev.bcastLast && last ? 'bcast' : 'data';
+            return this.transmit(s.link, s.dir, kind, ev.bytes, { proto: ev.proto, info, mesh: !!s.mesh, layers: [this.macHeader(s, ev, kind), ...ev.layers] });
+        });
+    }
+    macHeader(s, ev, kind) {
+        const { ap, client } = s.link, up = s.dir === 'ul', bssid = this.mac(ap), sta = this.mac(client);
+        const ra = up ? bssid : kind === 'bcast' ? 'ff:ff:ff:ff:ff:ff' : sta, ta = up ? sta : bssid;
+        if (!s.mesh) return mac80211('QoS Data', ra, ta, bssid);
+        return { name: 'IEEE 802.11 · mesh (4 endereços)', fields: [['Tipo', 'Dados (2)'], ['Subtipo', 'QoS Data · ToDS = FromDS = 1'], ['Endereço 1 (RA)', ra], ['Endereço 2 (TA)', ta], ['Endereço 3 (DA)', ev.da || '—'], ['Endereço 4 (SA)', ev.sa || '—'], ['Mesh Control', `Mesh ID "${client.mesh.id}" · TTL 31`]] };
+    }
+    // End-to-end saturated goodput: hops on one channel share airtime (1/Σ 1/gᵢ); separate channels and cables
+    // run in parallel, so the slowest group bounds the path.
+    pathGoodput(steps) {
+        const groups = new Map();
+        for (const s of steps) {
+            if (s.wired) { groups.set(`eth:${s.node.id}`, [ETHERNET_MBPS]); continue; }
+            const l = s.link, key = s.mesh && l.client.mesh.backhaul === 'dedicated' ? `bh:${l.client.id}` : `${l.ap.wifi.band}:${l.freq}`;
+            groups.set(key, [...(groups.get(key) || []), this.hopGoodput(l, s.dir)]);
+        }
+        const sums = [...groups.values()].map(g => 1 / g.reduce((a, x) => a + 1 / Math.max(x, 1e-6), 0));
+        return { mbps: sums.length ? Math.min(...sums) : ETHERNET_MBPS, sharedHops: Math.max(0, ...[...groups.values()].map(g => g.length)) };
+    }
+    isolated(src, dst) { return [this.associatedAp(src), this.associatedAp(dst)].some(a => a?.wifi.isolation); }
+    // A client whose AP is weak moves to a clearly stronger AP of the same SSID (mesh node or root).
+    roamTarget(client, ap, link) {
+        if (link.dl.rssi >= ROAM_RSSI) return null;
+        return this.scan(client).find(s => s.ap !== ap && s.ssid === ap.wifi.ssid && s.rssi > link.dl.rssi + ROAM_HYSTERESIS)?.ap || null;
+    }
 
     // ---------- IP configuration ----------
     configureIp(client) {
@@ -320,9 +479,11 @@ export class Lab {
     dhcp(client) {
         const rt = this.rt(client.id), ap = this.associatedAp(client), sta = this.mac(client), host = this.hostname(client);
         if (!ap) return { ok: false, message: 'Sem associação Wi-Fi.' };
-        const link = this.link(ap, client), router = ap, server = router.dhcp, routerMac = this.mac(router);
+        // In a mesh the node only bridges: the root router answers DHCP, so frames cross the backhaul too.
+        const link = this.link(ap, client), router = this.rootOf(ap), server = router.dhcp, routerMac = this.mac(router);
+        const up = this.route(client, router), down = this.route(router, client);
         const xid = '0x' + Math.floor(this.random() * 2 ** 32).toString(16).padStart(8, '0');
-        const send = (dir, msg, info, extra, kind = 'data') => this.transmit(link, dir, kind, 342, { proto: 'DHCP', info: `DHCP ${msg} · ${info} · xid ${xid}`, layers: [mac80211('QoS Data', dir === 'ul' ? routerMac : sta, dir === 'ul' ? sta : routerMac, routerMac), ipLayer(dir === 'ul' ? '0.0.0.0' : router.lan.ip, dir === 'ul' ? '255.255.255.255' : (extra.yiaddr || '255.255.255.255'), 'UDP', 64), udpLayer(dir === 'ul' ? 68 : 67, dir === 'ul' ? 67 : 68), { name: 'DHCP', fields: [['Tipo (opção 53)', msg], ['xid', xid], ['Cliente (chaddr)', sta], ...(extra.fields || [])] }] });
+        const send = (dir, msg, info, extra) => this.carry(dir === 'ul' ? up : down, { proto: 'DHCP', bytes: 342, info: `DHCP ${msg} · ${info} · xid ${xid}`, da: dir === 'ul' ? 'ff:ff:ff:ff:ff:ff' : sta, sa: dir === 'ul' ? sta : routerMac, layers: [ipLayer(dir === 'ul' ? '0.0.0.0' : router.lan.ip, dir === 'ul' ? '255.255.255.255' : (extra.yiaddr || '255.255.255.255'), 'UDP', 64), udpLayer(dir === 'ul' ? 68 : 67, dir === 'ul' ? 67 : 68), { name: 'DHCP', fields: [['Tipo (opção 53)', msg], ['xid', xid], ['Cliente (chaddr)', sta], ...(extra.fields || [])] }] });
         for (let round = 0; round < 3; round++) {
             let offered = null;
             for (let attempt = 0; attempt < 4 && !offered; attempt++) {
@@ -382,49 +543,45 @@ export class Lab {
     release(client) {
         const rt = this.rt(client.id), ap = this.associatedAp(client);
         if (!ap || rt.ip?.source !== 'dhcp') { rt.ip = rt.ip?.source === 'static' ? rt.ip : null; return; }
-        this.transmit(this.link(ap, client), 'ul', 'data', 342, { proto: 'DHCP', info: `DHCP RELEASE · devolve ${rt.ip.address}`, layers: [mac80211('QoS Data', this.mac(ap), this.mac(client), this.mac(ap)), ipLayer(rt.ip.address, ap.lan.ip, 'UDP', 128), udpLayer(68, 67), { name: 'DHCP', fields: [['Tipo (opção 53)', 'RELEASE'], ['ciaddr', rt.ip.address]] }] });
-        this.rt(ap.id).leases.delete(this.mac(client));
+        const router = this.rootOf(ap);
+        this.carry(this.route(client, router), { proto: 'DHCP', bytes: 342, info: `DHCP RELEASE · devolve ${rt.ip.address}`, layers: [ipLayer(rt.ip.address, router.lan.ip, 'UDP', 128), udpLayer(68, 67), { name: 'DHCP', fields: [['Tipo (opção 53)', 'RELEASE'], ['ciaddr', rt.ip.address]] }] });
+        this.rt(router.id).leases.delete(this.mac(client));
         rt.ip = null; rt.arp.clear();
     }
     leases(router) { return [...this.rt(router.id).leases.values()]; }
 
     // ---------- L2/L3 ----------
     ipOf(dev) { return dev.type === 'router' ? dev.lan.ip : this.rt(dev.id).ip?.address; }
-    // Device on the router's LAN that owns `ip` (router itself or an associated client).
+    // Device on the router's LAN that owns `ip` (router itself or a client of any AP bridged to it).
     ownerOf(router, ip, except = null) {
         if (router.lan.ip === ip) return router;
-        return this.clientsOf(router).find(c => c !== except && this.rt(c.id).ip?.address === ip) || null;
+        return this.lanClients(router).find(c => c !== except && this.rt(c.id).ip?.address === ip) || null;
     }
     duplicates(client) {
         const ap = this.associatedAp(client), ip = this.ipOf(client);
         if (!ap || !ip) return [];
-        return [ap, ...this.clientsOf(ap)].filter(d => d !== client && this.ipOf(d) === ip);
+        const router = this.rootOf(ap);
+        return [router, ...this.lanClients(router)].filter(d => d !== client && this.ipOf(d) === ip);
     }
     arpResolve(src, ip) {
         const rt = this.rt(src.id), ap = this.associatedAp(src);
         if (rt.arp.has(ip)) return rt.arp.get(ip);
         const link = this.link(ap, src), myIp = this.ipOf(src), sta = this.mac(src);
-        const owner = this.ownerOf(ap, ip, src);
+        const owner = this.ownerOf(this.rootOf(ap), ip, src);
+        const request = { proto: 'ARP', bytes: 64, info: `ARP Quem tem ${ip}? Responda a ${myIp}`, da: 'ff:ff:ff:ff:ff:ff', sa: sta, layers: [arpLayer('requisição', sta, myIp, '00:00:00:00:00:00', ip)] };
+        const reply = owner && { proto: 'ARP', bytes: 64, info: `ARP ${ip} está em ${this.mac(owner)}`, da: sta, sa: this.mac(owner), layers: [arpLayer('resposta', this.mac(owner), ip, sta, myIp)] };
         for (let attempt = 0; attempt < 3; attempt++) {
-            const layers = [mac80211('Data', 'ff:ff:ff:ff:ff:ff', sta, this.mac(ap)), arpLayer('requisição', sta, myIp, '00:00:00:00:00:00', ip)];
-            if (!this.transmit(link, 'ul', 'data', 64, { proto: 'ARP', info: `ARP Quem tem ${ip}? Responda a ${myIp}`, layers })) continue;
-            if (owner && owner.type !== 'router') {
+            if (!this.carry([{ link, dir: 'ul' }], request)) continue;
+            if (!owner) { this.now += 1000; continue; }
+            const rest = this.route(src, owner).slice(1);
+            if (owner.type !== 'router') {
                 // The AP rebroadcasts on the downlink at the basic rate, without ACK; isolation blocks STA↔STA.
-                if (ap.wifi.isolation) { this.note(`${ap.name}: isolamento de clientes bloqueou o ARP de ${src.name}.`, 'warn', ap.id); continue; }
-                const ownerLink = this.link(ap, owner);
-                if (!this.transmit(ownerLink, 'dl', 'bcast', 64, { proto: 'ARP', info: `ARP Quem tem ${ip}? (difusão do AP)`, layers })) continue;
-                const reply = [mac80211('Data', this.mac(ap), this.mac(owner), this.mac(ap)), arpLayer('resposta', this.mac(owner), ip, sta, myIp)];
-                if (!this.transmit(ownerLink, 'ul', 'data', 64, { proto: 'ARP', info: `ARP ${ip} está em ${this.mac(owner)}`, layers: reply })) continue;
-                if (!this.transmit(link, 'dl', 'data', 64, { proto: 'ARP', info: `ARP ${ip} está em ${this.mac(owner)}`, layers: reply })) continue;
-                rt.arp.set(ip, { mac: this.mac(owner), device: owner.id, t: this.now });
-                return rt.arp.get(ip);
-            }
-            if (owner) {
-                if (!this.transmit(link, 'dl', 'data', 64, { proto: 'ARP', info: `ARP ${ip} está em ${this.mac(owner)}`, layers: [mac80211('Data', sta, this.mac(ap), this.mac(ap)), arpLayer('resposta', this.mac(owner), ip, sta, myIp)] })) continue;
-                rt.arp.set(ip, { mac: this.mac(owner), device: owner.id, t: this.now });
-                return rt.arp.get(ip);
-            }
-            this.now += 1000;
+                if (this.isolated(src, owner)) { this.note(`${ap.name}: isolamento de clientes bloqueou o ARP de ${src.name}.`, 'warn', ap.id); continue; }
+                if (!this.carry(rest, { ...request, bcastLast: true, lastInfo: `ARP Quem tem ${ip}? (difusão do AP)` })) continue;
+            } else if (!this.carry(rest, request, 1)) continue;
+            if (!this.carry(this.route(owner, src), reply)) continue;
+            rt.arp.set(ip, { mac: this.mac(owner), device: owner.id, t: this.now });
+            return rt.arp.get(ip);
         }
         return null;
     }
@@ -439,12 +596,12 @@ export class Lab {
         const local = sameSubnet(cfg.address, dstIp, cfg.mask), hop = local ? dstIp : cfg.gateway;
         if (!local && !isIp(hop)) return { ok: false, error: 'nogw' };
         if (!this.arpResolve(src, hop)) return { ok: false, error: 'unreachable' };
-        const t0 = this.now, link = this.link(ap, src), sta = this.mac(src), apMac = this.mac(ap);
-        const frame = (l, dir, info, a, b, ttl, reply) => this.transmit(l, dir, 'data', spec.bytes, { proto: spec.proto, info, layers: [mac80211('QoS Data', dir === 'ul' ? apMac : this.mac(l.client), dir === 'ul' ? this.mac(l.client) : apMac, apMac), ipLayer(a, b, spec.l4, ttl), ...spec.layers(reply)] });
-        if (!frame(link, 'ul', spec.info(false), cfg.address, dstIp, ttlOf(src), false)) return { ok: false, error: 'timeout' };
-        const hopDev = this.ownerOf(ap, hop, src);
+        const t0 = this.now, link = this.link(ap, src), hopDev = this.ownerOf(this.rootOf(ap), hop, src);
+        const frame = (steps, reply, a, b, ttl, offset) => this.carry(steps, { proto: spec.proto, bytes: spec.bytes, info: spec.info(reply), layers: [ipLayer(a, b, spec.l4, ttl), ...spec.layers(reply)] }, offset);
+        if (!frame([{ link, dir: 'ul' }], false, cfg.address, dstIp, ttlOf(src))) return { ok: false, error: 'timeout' };
         let res = null, responder = null;
         if (hopDev?.type === 'router') {
+            if (!frame(this.route(src, hopDev).slice(1), false, cfg.address, dstIp, ttlOf(src), 1)) return { ok: false, error: 'timeout' };
             const router = hopDev, inLan = sameSubnet(cfg.address, router.lan.ip, router.lan.mask);
             if (!inLan) return { ok: false, error: 'timeout', why: `${router.name} não tem rota de volta para ${cfg.address} (fora da sub-rede ${router.lan.ip}/${prefixOf(router.lan.mask)}).` };
             if (dstIp === router.lan.ip) { responder = router; res = spec.at(router); }
@@ -470,21 +627,19 @@ export class Lab {
         if (!res) return { ok: false, error: 'timeout', why: res === false ? 'Destino não respondeu.' : undefined };
         this.now += 0.2;
         const ttl = responder.ttl ?? ttlOf(responder);
-        if (!frame(link, 'dl', spec.info(true), dstIp, cfg.address, ttl, true)) return { ok: false, error: 'timeout' };
+        if (!frame(this.route(hopDev, src), true, dstIp, cfg.address, ttl)) return { ok: false, error: 'timeout' };
         return { ok: true, rtt: this.now - t0, ttl, responder, value: res };
     }
-    // Client → AP → client on the same BSS (two hops each way).
+    // Client → AP (→ mesh backhaul) → client on the same LAN; the first uplink hop was already sent.
     viaAp(src, dst, spec, t0, cfg, dstIp) {
         const ap = this.associatedAp(src);
-        if (ap.wifi.isolation) { this.note(`${ap.name}: isolamento de clientes descartou ${spec.proto} ${src.name} → ${dst.name}.`, 'warn', ap.id); return { ok: false, error: 'timeout', why: 'Isolamento de clientes ativo no AP.' }; }
-        const l1 = this.link(ap, src), l2 = this.link(ap, dst), apMac = this.mac(ap);
-        const frame = (l, dir, info, a, b, ttl, reply) => this.transmit(l, dir, 'data', spec.bytes, { proto: spec.proto, info, layers: [mac80211('QoS Data', dir === 'ul' ? apMac : this.mac(l.client), dir === 'ul' ? this.mac(l.client) : apMac, apMac), ipLayer(a, b, spec.l4, ttl), ...spec.layers(reply)] });
-        if (!frame(l2, 'dl', spec.info(false) + ' (repassado pelo AP)', cfg.address, dstIp, ttlOf(src), false)) return { ok: false, error: 'timeout' };
+        if (this.isolated(src, dst)) { this.note(`${ap.name}: isolamento de clientes descartou ${spec.proto} ${src.name} → ${dst.name}.`, 'warn', ap.id); return { ok: false, error: 'timeout', why: 'Isolamento de clientes ativo no AP.' }; }
+        const frame = (steps, reply, a, b, ttl, offset) => this.carry(steps, { proto: spec.proto, bytes: spec.bytes, info: spec.info(reply), layers: [ipLayer(a, b, spec.l4, ttl), ...spec.layers(reply)] }, offset);
+        if (!frame(this.route(src, dst).slice(1), false, cfg.address, dstIp, ttlOf(src), 1)) return { ok: false, error: 'timeout' };
         const res = spec.at(dst);
         if (!res) return { ok: false, error: 'timeout', why: dst.firewall && spec.proto === 'ICMP' ? `Firewall de ${dst.name} bloqueia ICMP.` : undefined };
         this.now += 0.3 + this.random() * 0.7;
-        if (!frame(l2, 'ul', spec.info(true), dstIp, cfg.address, ttlOf(dst), true)) return { ok: false, error: 'timeout' };
-        if (!frame(l1, 'dl', spec.info(true) + ' (repassado pelo AP)', dstIp, cfg.address, ttlOf(dst), true)) return { ok: false, error: 'timeout' };
+        if (!frame(this.route(dst, src), true, dstIp, cfg.address, ttlOf(dst))) return { ok: false, error: 'timeout' };
         return { ok: true, rtt: this.now - t0, ttl: ttlOf(dst), responder: dst, value: res };
     }
 
@@ -580,7 +735,7 @@ export class Lab {
         const gw = [0, 1, 2].map(() => { const r = this.exchange(src, cfg.gateway, { proto: 'ICMP', l4: 'ICMP', bytes: 92, info: r => r ? 'ICMP Time Exceeded' : 'ICMP Echo TTL=1', layers: () => [], at: () => true }); return r.ok ? r.rtt : null; });
         hops.push({ ip: cfg.gateway, rtts: gw });
         const host = internetByIp(ip);
-        if (!gw.some(v => v !== null) || !ap.wan.connected || !host) { for (let i = 0; i < 3; i++) hops.push({ ip: null, rtts: [null, null, null] }); return { target, ip, hops, incomplete: true }; }
+        if (!gw.some(v => v !== null) || !this.rootOf(ap).wan.connected || !host) { for (let i = 0; i < 3; i++) hops.push({ ip: null, rtts: [null, null, null] }); return { target, ip, hops, incomplete: true }; }
         const base = gw.filter(v => v !== null).reduce((a, b) => a + b, 0) / gw.filter(v => v !== null).length;
         ISP_HOPS.forEach((h, i) => hops.push({ ip: h, rtts: [0, 1, 2].map(() => base + host.latency * (i + 1) / (ISP_HOPS.length + 1) * (0.9 + 0.3 * this.random())) }));
         hops.push({ ip, rtts: [probe(), probe(), probe()].map(r => r.ok ? r.rtt : null) });
@@ -592,32 +747,37 @@ export class Lab {
         if (!isIp(target)) { const r = this.resolve(src, target); if (!r.ok) return { error: r.error, message: r.message }; ip = r.ip; }
         const reach = this.exchange(src, ip, { proto: 'TCP', l4: 'TCP', bytes: 78, info: r => r ? 'TCP SYN/ACK :5201' : 'TCP SYN :5201', layers: () => [{ name: 'TCP', fields: [['Porta destino', 5201], ['Flags', 'SYN']] }], at: d => d.type ? true : (d.iperf ? true : null) });
         if (!reach.ok) return { ip, error: reach.error, why: reach.why };
-        const goodput = l => { const r = l.rates.ul, n = l.negotiation; return aggregateGoodput(n.standard, n.width, r.mcs, r.nss, n.gi, r.per) * (1 - l.utilization); };
-        const goodputDl = l => { const r = l.rates.dl, n = l.negotiation; return aggregateGoodput(n.standard, n.width, r.mcs, r.nss, n.gi, r.per) * (1 - l.utilization); };
-        const l1 = this.currentLink(src), parts = [goodput(l1)];
-        if (reach.responder?.type && reach.responder.type !== 'router') parts.push(goodputDl(this.currentLink(reach.responder)));
-        let total = 1 / parts.reduce((a, g) => a + 1 / Math.max(g, 1e-6), 0);
-        if (!reach.responder?.type) total = Math.min(total, this.associatedAp(src).wan.bandwidth);
+        const ap = this.associatedAp(src), root = this.rootOf(ap), far = reach.responder?.type ? reach.responder : root;
+        const steps = this.route(src, far), path = this.pathGoodput(steps);
+        let total = path.mbps;
+        if (!reach.responder?.type) total = Math.min(total, root.wan.bandwidth);
         const intervals = Array.from({ length: seconds }, () => total * (0.94 + 0.1 * this.random()));
-        this.emit({ medium: 'wifi', dir: 'ul', kind: 'data', from: src.id, to: this.associatedAp(src).id, proto: 'TCP', info: `iperf3 → ${ip}: ${total.toFixed(1)} Mb/s por ${seconds} s`, ok: true, bytes: 1500, attempts: 1, phy: null });
+        this.emit({ medium: 'wifi', dir: 'ul', kind: 'data', from: src.id, to: ap.id, proto: 'TCP', info: `iperf3 → ${ip}: ${total.toFixed(1)} Mb/s por ${seconds} s`, ok: true, bytes: 1500, attempts: 1, phy: null });
         this.now += seconds * 1000;
-        return { ip, intervals, mean: intervals.reduce((a, b) => a + b, 0) / seconds, responder: reach.responder, hops: parts.length };
+        const via = [src, ...steps.map(s => s.wired ? (s.dir === 'ul' ? s.parent : s.node) : s.dir === 'ul' ? s.link.ap : s.link.client)];
+        return { ip, intervals, mean: intervals.reduce((a, b) => a + b, 0) / seconds, responder: reach.responder, hops: steps.filter(s => !s.wired).length, sharedHops: path.sharedHops, mesh: steps.some(s => s.mesh || s.wired), path: via.map(d => d.name) };
     }
 
     // ---------- keep runtime consistent with configuration ----------
     reconcile() {
+        this.syncMesh();
         for (const c of this.clients) {
             const rt = this.rt(c.id), ap = this.associatedAp(c);
             if (rt.assoc && !ap) { rt.assoc = null; rt.ip = null; rt.arp.clear(); }
             if (ap) {
-                const sig = wifiSignature(ap), cfgError = apConfigError(ap);
+                const sig = wifiSignature(ap), cfgError = this.apError(ap);
                 if (cfgError || sig !== rt.assoc.signature || c.wifi.ssid !== ap.wifi.ssid || rt.assoc.clientSig !== clientSignature(c)) {
                     this.note(`${c.name}: configuração da rede mudou (${cfgError || 'parâmetros Wi-Fi'}) → reassociação.`, 'warn', c.id);
                     rt.assoc = null; rt.ip = null; rt.arp.clear();
                 } else {
                     const l = this.link(ap, c);
+                    const roam = l.negotiation.ok && c.wifi.autoConnect && this.roamTarget(c, ap, l);
                     if (!l.negotiation.ok || this.beaconPer(l) > .9) { this.note(`${c.name}: perda de beacons de "${ap.wifi.ssid}" (SNR ${l.mgmtDl.toFixed(1)} dB) → desassociado.`, 'error', c.id); rt.assoc = null; rt.ip = null; rt.arp.clear(); }
-                    else if (rt.ipSig !== ipSignature(c, ap)) { rt.ipSig = ipSignature(c, ap); this.configureIp(c); }
+                    else if (roam) { this.note(`${c.name}: roaming de ${ap.name} (${l.dl.rssi.toFixed(0)} dBm) para ${roam.name}, sinal mais forte no mesmo SSID.`, 'warn', c.id); this.connect(c); }
+                    else {
+                        if (rt.ipSig !== ipSignature(c, this.rootOf(ap))) { rt.ipSig = ipSignature(c, this.rootOf(ap)); this.configureIp(c); }
+                        if (l.beamforming?.active && !rt.assoc.sounded) this.sound(l);
+                    }
                 }
             }
             if (!rt.assoc && c.wifi.autoConnect && c.wifi.ssid) this.connect(c);
@@ -625,7 +785,8 @@ export class Lab {
     }
 }
 
-const wifiSignature = ap => JSON.stringify(ap.wifi, (k, v) => ['txPower', 'load', 'mcs', 'antennaGain', 'isolation'].includes(k) ? undefined : v);
+const wifiSignature = ap => JSON.stringify(ap.wifi, (k, v) => ['txPower', 'load', 'mcs', 'antennaGain', 'isolation', 'beamforming'].includes(k) ? undefined : v);
+const SOUNDING_PERIOD_US = 20000, ETHERNET_MBPS = 940, ROAM_RSSI = -67, ROAM_HYSTERESIS = 8;
 const clientSignature = c => JSON.stringify([c.wifi.ssid, c.wifi.password, c.wifi.standard, c.wifi.streams]);
 const ipSignature = (c, ap) => JSON.stringify([c.ip, ap.lan, ap.dhcp]);
 export const formatLease = s => s >= 86400 ? `${+(s / 86400).toFixed(1)} d` : s >= 3600 ? `${+(s / 3600).toFixed(1)} h` : `${s} s`;

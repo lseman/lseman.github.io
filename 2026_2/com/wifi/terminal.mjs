@@ -47,14 +47,27 @@ export function runCommand(lab, device, line) {
 
 function routerCommand(lab, router, args) {
     const cmd = args[0].toLowerCase();
-    if (cmd === 'help') return ['Console do roteador: show clients | show leases | show wifi | show dns'];
+    if (cmd === 'help') return ['Console do roteador: show clients | show leases | show wifi | show dns | show mesh'];
     if (cmd !== 'show') return [`Comando desconhecido: ${args[0]}. Use help.`];
     const what = (args[1] || '').toLowerCase();
     if (what === 'clients') return ['MAC                IP               Nome              SNR   MCS', ...lab.clientsOf(router).map(c => { const l = lab.link(router, c); return `${lab.mac(c)}  ${(lab.ipOf(c) || '—').padEnd(15)}  ${c.name.padEnd(16)}  ${l.dl.sinr.toFixed(0).padStart(3)}dB  ${l.rates?.dl?.mcs ?? '—'}`; })];
     if (what === 'leases') return ['IP               MAC                Hostname          Estado', ...lab.leases(router).map(l => `${l.ip.padEnd(15)}  ${l.mac}  ${l.hostname.padEnd(16)}  ${l.connected ? 'ativo' : 'expirando'}`)];
-    if (what === 'wifi') { const w = router.wifi; return [`SSID ${w.ssid} · ${STANDARDS[w.standard].label} · ${w.band} GHz canal ${w.channel} · ${w.width} MHz · ${w.streams} fluxos · ${w.txPower} dBm`]; }
+    if (what === 'wifi') { const w = router.wifi; return [`SSID ${w.ssid} · ${STANDARDS[w.standard].label} · ${w.band} GHz canal ${w.channel} · ${w.width} MHz · ${w.streams} fluxos · ${w.txPower} dBm · beamforming ${w.beamforming ? 'ligado' : 'desligado'}`]; }
+    if (what === 'mesh') return meshShow(lab, router);
     if (what === 'dns') return router.dns.records.map(r => `${r.name}  A  ${r.ip}`).concat(lab.leases(router).filter(l => l.connected).map(l => `${l.hostname}.lan  A  ${l.ip}  (DHCP)`));
-    return ['show clients | show leases | show wifi | show dns'];
+    return ['show clients | show leases | show wifi | show dns | show mesh'];
+}
+function meshShow(lab, router) {
+    const role = lab.meshRole(router);
+    if (role === 'off') return ['Mesh desligado neste roteador (AP independente).'];
+    const root = role === 'root' ? router : lab.meshRoot(router);
+    if (!root) return [`Mesh ID "${router.mesh.id}": nenhum gateway (raiz) encontrado.`];
+    const tree = lab.meshTree(), out = [`Malha "${root.mesh.id}" · raiz ${root.name} (${root.lan.ip})`, 'Nó                Pai               Saltos  Backhaul'];
+    for (const n of lab.meshNodes(root)) {
+        const t = tree.get(n.id), r = t?.link?.rates.dl;
+        out.push(`${n.name.padEnd(16)}  ${(t ? lab.device(t.parent).name : '—').padEnd(16)}  ${String(t?.hops ?? '—').padStart(6)}  ${!t ? lab.meshError(n) : t.link ? `${t.link.dl.sinr.toFixed(0)} dB · MCS ${r.mcs}×${r.nss} · ${lab.hopGoodput(t.link, 'dl').toFixed(0)} Mb/s` : 'Ethernet 1 Gb/s'}`);
+    }
+    return out;
 }
 
 function ipconfig(lab, dev, args) {
@@ -202,6 +215,7 @@ function iperf(lab, dev, args) {
     const out = [`Connecting to host ${target}, port 5201`, '[ ID] Intervalo        Transferido   Vazão'];
     r.intervals.forEach((v, k) => out.push(`[  5] ${k}.00-${k + 1}.00 s  ${(v / 8).toFixed(1).padStart(7)} MBytes  ${v.toFixed(1).padStart(7)} Mbits/s`));
     out.push(`[  5] 0.00-${t}.00 s  ${(r.mean * t / 8).toFixed(1).padStart(7)} MBytes  ${r.mean.toFixed(1).padStart(7)} Mbits/s  (média)`);
-    if (r.hops > 1) out.push('  [nota] cliente→AP→cliente: o mesmo canal é usado duas vezes, a vazão cai pela metade.');
+    if (r.mesh) out.push(`  [nota] caminho mesh: ${r.path.join(' → ')}`);
+    if (r.sharedHops > 1) out.push(`  [nota] ${r.sharedHops} saltos sem fio no mesmo canal: o tempo no ar se soma e a vazão cai para ~1/${r.sharedHops}.`);
     return out;
 }
