@@ -359,13 +359,21 @@ function meshPanel(r) {
         const chain = lab.upChain(r), path = lab.pathGoodput(lab.route(r, chain.at(-1)));
         html += `<div class="banner ok">Caminho: ${chain.map(d => esc(d.name)).join(' → ')}</div>
         <div class="metrics">${metric('Saltos até a raiz', t.hops, t.hops > 1 ? 'passa por outro nó' : 'direto')}${metric('Pai escolhido', esc(lab.device(t.parent).name), 'menor tempo no ar acumulado')}${metric('Backhaul', backhaulText(t).split(' · ').slice(-1)[0], backhaulText(t))}${metric('Vazão nó → raiz', `${path.mbps.toFixed(0)} Mb/s`, path.sharedHops > 1 ? `${path.sharedHops} saltos no mesmo canal` : 'sem disputa de canal')}${metric('Métrica airtime', `${(t.cost * 1e3).toFixed(1)}`, 'Σ 1/vazão por salto (ms por Mb)')}</div>`;
+        html += meshExplanation();
         return html;
     }
     const nodes = lab.meshNodes(r);
     html += `<div class="section">NÓS DA MALHA "${esc(m.id)}"</div>
     <table class="mini"><tr><th>Nó</th><th>Pai</th><th>Saltos</th><th>Backhaul</th><th>Clientes</th></tr>${nodes.map(n => { const t = tree.get(n.id); return `<tr><td>${esc(n.name)}</td><td>${t ? esc(lab.device(t.parent).name) : '—'}</td><td>${t?.hops ?? '—'}</td><td>${t ? backhaulText(t) : `<span style="color:var(--red)">${esc(lab.meshError(n))}</span>`}</td><td>${lab.clientsOf(n).length}</td></tr>`; }).join('') || '<tr><td colspan="5">nenhum — adicione um Nó mesh pela paleta</td></tr>'}</table>
     <p class="empty">SSID, segurança e senha da raiz são copiados para todos os nós (controlador estilo EasyMesh). Cada nó escolhe o pai que minimiza o tempo no ar acumulado até a raiz, como a métrica airtime do HWMP (802.11s). Os clientes de qualquer nó recebem IP do DHCP desta raiz e fazem roaming para o nó mais forte.</p>`;
-    return html;
+    return html + meshExplanation();
+}
+
+function meshExplanation() {
+    return `<div class="section">COMO A MALHA FUNCIONA NESTE MODELO</div>
+    <p class="empty"><b>1 · Acesso:</b> o cliente associa-se a um AP; o nó atua como ponte e a raiz fornece DHCP, DNS e acesso à Internet. O roaming é uma troca de AP quando outro sinal da mesma rede fica claramente mais forte.</p>
+    <p class="empty"><b>2 · Rota:</b> o simulador constrói uma árvore até a raiz e escolhe o menor custo acumulado <b>C = Σ 1/g<sub>i</sub></b>, onde g<sub>i</sub> é a vazão estimada de cada salto em Mb/s. Enlaces com PER acima de 10% não entram na árvore. Esta é uma aproximação inspirada na métrica airtime, não uma implementação completa de HWMP ou EasyMesh.</p>
+    <p class="empty"><b>3 · Capacidade:</b> saltos no mesmo canal compartilham o tempo: <b>G = 1/(Σ 1/g<sub>i</sub>)</b>. Por exemplo, dois saltos de 100 Mb/s no mesmo canal resultam em 50 Mb/s. Grupos em canais separados e cabos são limitados pelo grupo mais lento. Rádio dedicado é idealizado como canal independente; Ethernet é modelada a 1 Gb/s.</p>`;
 }
 
 function clientInspector(c) {
@@ -418,6 +426,9 @@ function clientInspector(c) {
                 ${path ? metric('Caminho mesh', `${path.mbps.toFixed(0)} Mb/s`, `${lab.upChain(l.ap).map(d => esc(d.name)).join(' → ')}${path.sharedHops > 1 ? ` · ${path.sharedHops} saltos no mesmo canal` : ''}`) : ''}
                 ${detectionMetrics(c)}
             </div>
+            <div class="actions"><a class="btn primary" href="${physicsLink(l)}" target="_blank" rel="noopener" title="Abre as aulas de camada física com a SNR, o padrão, o MCS e as antenas deste enlace">Estudar este enlace na camada física ↗</a></div>
+            <div class="section">COMO O BEAMFORMING AFETA ESTE ENLACE</div>
+            <p class="empty">O AP envia um anúncio e um NDP; o cliente estima o canal e devolve um relatório comprimido. O AP usa esse feedback para pré-codificar os dados na descida. No modelo ideal, <b>G = 10·log₁₀(N<sub>tx</sub>/N<sub>ss</sub>)</b>: com ${bf.txChains} antenas e ${dl.nss} fluxo(s), o ganho potencial é ${Math.max(0, 10 * Math.log10(bf.txChains / dl.nss)).toFixed(1)} dB. ${bf.active ? `Aqui está ativo: ganho +${bf.gain.toFixed(1)} dB; a sondagem consome ${(100 * bf.overhead).toFixed(2)}% do tempo.` : `Aqui está ${bf.enabled ? 'inativo: ' + esc(bf.reason || 'sem ganho disponível') : 'desligado no AP'}.`} O ganho entra na SNR dos dados, podendo alterar o MCS e o número de fluxos; beacons e cobertura exibida não recebem esse ganho. A sondagem tem custo, e o ganho ideal não representa multipercurso ou erro de estimativa.</p>
             <div class="section">CONSTELAÇÃO RECEBIDA (DESCIDA, 1 FLUXO)</div>
             <canvas id="constellation" class="chart" width="700" height="460"></canvas>
             <div class="section">PER × SNR POR FLUXO (MPDU 1538 B)</div>
@@ -428,6 +439,13 @@ function clientInspector(c) {
     }
     return `${head(c)}${tabs('client', [['wifi', 'Wi-Fi'], ['ip', 'IP'], ['link', 'Enlace']])}<div class="form">${body}</div>
         <div class="actions"><button class="btn" data-action="terminal">Terminal</button><button class="btn" data-action="browser">Navegador</button><button class="btn danger" data-action="delete">Excluir</button></div>`;
+}
+// Link parameters for the PHY lessons page. The AP array lies along the plan's x axis, so θ is measured from its broadside (y axis).
+function physicsLink(l) {
+    const n = l.negotiation, dl = l.rates.dl, dx = l.client.x - l.ap.x, dy = l.client.y - l.ap.y;
+    const angle = Math.round(Math.atan2(dx, Math.abs(dy) || 1e-9) * 180 / Math.PI);
+    const q = new URLSearchParams({ lesson: 'mcs', std: n.standard, w: n.width, gi: n.gi, nss: dl.nss, snr: dl.streamSnr.toFixed(1), M: MCS[dl.mcs].M, ntx: n.apChains, angle });
+    return `fisica.html?${q}`;
 }
 function detectionMetrics(c) {
     const m = linkMetrics(lab, c, 'dl'), sci = v => v < 1e-15 ? '<1e-15' : v >= .01 ? v.toFixed(3) : v.toExponential(1);

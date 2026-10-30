@@ -55,7 +55,7 @@ export function renderOfdma(el, state, { lab, ap, dir }) {
         ${m('Tempo de ar SU-OFDM', us(p.su.total), `${users.length} acessos ao meio + ACKs`)}
         ${m('Tempo de ar OFDMA', p.blocked ? '—' : us(p.mu.total), `${p.mu.rounds} ${dir === 'dl' ? 'MU PPDU' : 'Trigger + TB PPDU'}`)}
         ${m('Ganho', p.blocked ? '—' : `${p.gain.toFixed(2)}×`, p.gain >= 1 ? 'OFDMA mais rápido' : 'SU mais rápido (pacotes grandes)')}
-        ${m('Vazão útil', `${p.suGoodput.toFixed(1)} / ${p.muGoodput.toFixed(1)} Mb/s`, 'SU / OFDMA')}
+        ${m('Vazão útil', `${p.suGoodput.toFixed(1)} / ${p.muGoodput.toFixed(1)} Mb/s`, 'SU / OFDMA · MU sem retransmissões')}
         ${m('Latência média', `${us(p.suLatency)} / ${us(p.muLatency)}`, 'SU (fila) / OFDMA (paralelo)')}
         ${m(dir === 'ul' ? 'Ganho de potência' : 'Padding', dir === 'ul' ? `+${p.ulGain.toFixed(1)} dB` : `${(100 * p.mu.padding).toFixed(0)}%`, dir === 'ul' ? 'potência da STA concentrada no RU' : 'RUs completados até o usuário mais lento')}
     </div>`;

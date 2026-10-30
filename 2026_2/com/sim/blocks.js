@@ -280,7 +280,7 @@ export function createProcessors(results) {
         const out = [];
         for (let i = 0; i + nRep <= bits.length; i += nRep) {
             let sum = 0; for (let j = 0; j < nRep; j++) sum += bits[i + j];
-            out.push(sum >= nRep / 2 ? 1 : 0);
+            out.push(sum > nRep / 2 ? 1 : 0);
         }
         return { decoded: out };
     };
@@ -853,8 +853,9 @@ export function createProcessors(results) {
         return { bits };
     };
     processors.oqpsk = (n, { bits }) => {
-        const sps = n.config.sps || 16, half = sps / 2;
-        const symbols = [], a = Math.SQRT1_2;
+        const sps = n.config.sps || 16;
+        if (!Number.isInteger(sps) || sps < 2 || sps % 2) throw Error('OQPSK: amostras por símbolo deve ser um inteiro par.');
+        const half = sps / 2, symbols = [], a = Math.SQRT1_2;
         for (let i = 0; i + 2 <= bits.length; i += 2) {
             const I = bits[i] === 0 ? a : -a;
             const Q = bits[i + 1] === 0 ? a : -a;
@@ -1175,9 +1176,9 @@ export function createProcessors(results) {
         for (const b of bits) {
             if (code === 'NRZ polar') for (let s = 0; s < sps; s++) data.push({ re: b ? 1 : -1, im: 0 });
             else if (code === 'NRZ unipolar') for (let s = 0; s < sps; s++) data.push({ re: b ? 1 : 0, im: 0 });
-            else if (code === 'RZ polar') { for (let s = 0; s < sps / 2; s++) data.push({ re: b ? 1 : -1, im: 0 }); for (let s = sps / 2; s < sps; s++) data.push({ re: 0, im: 0 }); }
+            else if (code === 'RZ polar') { for (let s = 0; s < sps; s++) data.push({ re: s < Math.ceil(sps / 2) ? (b ? 1 : -1) : 0, im: 0 }); }
             else if (code === 'Manchester') for (let s = 0; s < sps; s++) data.push({ re: b ? (s < sps / 2 ? 1 : -1) : (s < sps / 2 ? -1 : 1), im: 0 });
-            else if (code === 'AMI') { const mark = lastMark === 1 ? -1 : 1; lastMark = b ? mark : 0; for (let s = 0; s < sps; s++) data.push({ re: lastMark, im: 0 }); }
+            else if (code === 'AMI') { const mark = b ? (lastMark === 1 ? -1 : 1) : 0; if (b) lastMark = mark; for (let s = 0; s < sps; s++) data.push({ re: mark, im: 0 }); }
         }
         const fs = sampleRateOf(null);
         return { waveform: { kind: 'waveform', fs, sampleRate: fs, data, lineCode: code, sps } };

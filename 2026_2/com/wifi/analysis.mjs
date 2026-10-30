@@ -1,5 +1,5 @@
 // Analysis panel: per-device metrics table and course plots (BER, Shannon, throughput, range, spectrum).
-import { STANDARDS } from './phy.mjs';
+import { STANDARDS, bfGain } from './phy.mjs';
 import { allMetrics, berCurve, codedBerCurve, shannonCurve, mcsSteps, rateVsDistance, spectrumAt, spectralMask, BAND_RANGE, noisePsd, MODULATION_ORDERS, modulationLabel } from './metrics.mjs';
 import { plot, PALETTE } from './charts.mjs';
 
@@ -35,6 +35,7 @@ export function renderMetrics(el, lab, { dir, selectedId }) {
 export function renderPlots(el, lab, { dir, focusAp, selected }) {
     const rows = allMetrics(lab, dir);
     const cards = [
+        ['beam', 'Beamforming · ganho por fluxo', 'Modelo idealizado de ganho de arranjo na descida: G = 10·log₁₀(Ntx/Nss). As curvas mostram o compromisso entre antenas e fluxos; o ponto indica o enlace selecionado. Não representa um diagrama de radiação nem ganhos medidos.'],
         ['ber', 'BER × Eb/N0', 'Curvas M-QAM Gray em AWGN (sólidas) e pós-FEC do MCS em uso (tracejadas). Círculo cheio: BER bruta da constelação (Eb/N0 por bit codificado). Círculo vazado: BER depois do decodificador (Eb/N0 por bit de informação). O salto entre eles é o ganho do código.'],
         ['shannon', 'Eficiência espectral × SNR', 'Cada degrau é um MCS (PER ≤ 10%). A distância horizontal até a curva log₂(1+SNR) é o gap para a capacidade; os pontos são os dispositivos, por fluxo espacial.'],
         ['throughput', 'Vazão por dispositivo', 'Overhead de MAC (preâmbulo, DIFS, backoff, Block Ack), retransmissões e canal ocupado separam a taxa PHY da vazão útil.'],
@@ -45,6 +46,15 @@ export function renderPlots(el, lab, { dir, focusAp, selected }) {
     const canvas = id => el.querySelector(`[data-plot="${id}"]`), titles = Object.fromEntries(cards.map(([id, t]) => [id, t]));
     const dirLabel = dir === 'dl' ? 'descida' : 'subida';
 
+    // Ideal array gain for the selected link, independent of whether beamforming is enabled.
+    {
+        const client = selected?.type !== 'router' ? selected : null;
+        const link = client && lab.currentLink(client);
+        const chains = link?.negotiation?.apChains || +focusAp?.wifi.streams || 4;
+        const series = [1, 2, 3, 4].map(n => ({ points: Array.from({ length: n }, (_, i) => [i + 1, bfGain(n, i + 1)]), color: PALETTE[n - 1], width: n === chains ? 2.5 : 1.2 }));
+        const markers = link?.rates ? [{ x: link.rates.dl.nss, y: bfGain(chains, link.rates.dl.nss), color: PALETTE[chains - 1], label: `${client.name} · ${link.beamforming.active ? 'ativo' : 'potencial'}` }] : [];
+        plot(canvas('beam'), { title: `${titles.beam} · ${chains} antena(s) no AP`, x: { min: 1, max: 4, ticks: 3, label: 'fluxos espaciais Nss' }, y: { min: 0, max: 7, label: 'ganho ideal (dB)' }, series, markers, legend: [1, 2, 3, 4].map(n => ({ label: `${n} antena(s)`, color: PALETTE[n - 1] })) });
+    }
     // 1. BER vs Eb/N0
     {
         const used = new Set(rows.map(m => m.modulation.M));
@@ -79,9 +89,9 @@ export function renderPlots(el, lab, { dir, focusAp, selected }) {
         rows.forEach((m, i) => {
             bars.push({ x0: i - .38, x1: i - .14, y: m.capacity, color: '#64748b' });
             bars.push({ x0: i - .12, x1: i + .12, y: m.phyRate, color: PALETTE[0] });
-            bars.push({ x0: i + .14, x1: i + .38, y: Math.max(m.goodput, 1.01), color: PALETTE[1] });
+            bars.push({ x0: i + .14, x1: i + .38, y: m.goodput, color: PALETTE[1] });
         });
-        const top = Math.max(10, ...rows.map(m => m.capacity));
+        const top = Math.max(10, ...rows.flatMap(m => [m.capacity, m.phyRate, m.goodput]));
         plot(canvas('throughput'), {
             title: `${titles.throughput} (${dirLabel})`, x: { min: -.5, max: Math.max(.5, n - .5), label: 'dispositivo', format: v => Number.isInteger(v) ? (rows[v]?.client.name || '') : '', ticks: Math.max(1, n) },
             y: { min: 0, max: Math.ceil(Math.log10(top)), log: true, label: 'Mb/s' }, bars,
@@ -92,7 +102,7 @@ export function renderPlots(el, lab, { dir, focusAp, selected }) {
     {
         const curve = focusAp ? rateVsDistance(lab, focusAp, 50) : [];
         const mine = rows.filter(m => m.ap === focusAp);
-        const top = Math.max(10, ...curve.map(p => p.capacity).slice(0, 4), ...mine.map(m => m.phyRate));
+        const top = Math.max(10, ...curve.map(p => p.capacity), ...mine.map(m => m.phyRate));
         plot(canvas('range'), {
             title: titles.range, x: { min: 0, max: 50, label: 'distância (m)' }, y: { min: 0, max: top * 1.08, label: 'Mb/s' },
             series: [

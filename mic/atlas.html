@@ -1,0 +1,1433 @@
+<!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>RISC-V Extension Atlas</title>
+<meta name="description" content="An interactive RISC-V field guide: explore ISA extensions, configure a core, trace pipeline hazards, and decode instruction bits.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: an EDA workbench. Dark schematic canvas by default, datasheet-white in light mode.
+   Signal colors follow a logic analyzer: orange data, cyan control, magenta forwarding, gold pipeline registers. */
+:root{
+  color-scheme:dark;
+  --bg:#0F141B; --panel:#151C25; --panel2:#1B2430; --grid:#1E2834; --line:#2C3746; --ink:#E4E9F0; --muted:#8E9AAB;
+  --sig:#FF8A3D; --sig-soft:#3B2515; --ctl:#5CC8E0; --fwd:#E86CBC; --reg:#C9A227; --ok:#5FD08A; --no:#F07A6E;
+  --i0:#FF8A3D; --i1:#7BD88F; --i2:#8E9CFF; --i3:#E8C14F;
+  --c-base:#A3B6CB; --c-int:#4FD1B5; --c-fp:#8E9CFF; --c-comp:#B5D45E; --c-bit:#E8C14F; --c-vec:#FF7A6B; --c-crypto:#D58BF0; --c-sys:#6CB6FF;
+  --f-display:"Saira","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  color-scheme:light;
+  --bg:#EDF0F4; --panel:#FFFFFF; --panel2:#F5F7FA; --grid:#E2E7ED; --line:#C6CFDA; --ink:#121A24; --muted:#586677;
+  --sig:#D0580C; --sig-soft:#FCE6D5; --ctl:#0A82A0; --fwd:#AE2C7B; --reg:#A8841A; --ok:#23824B; --no:#B33A2E;
+  --i0:#D0580C; --i1:#2D8A47; --i2:#4752C6; --i3:#977405;
+  --c-base:#3E5468; --c-int:#1C7E6D; --c-fp:#4752C6; --c-comp:#5E7A17; --c-bit:#977405; --c-vec:#C2412F; --c-crypto:#8B3FA0; --c-sys:#2364A8}}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#EDF0F4; --panel:#FFFFFF; --panel2:#F5F7FA; --grid:#E2E7ED; --line:#C6CFDA; --ink:#121A24; --muted:#586677;
+  --sig:#D0580C; --sig-soft:#FCE6D5; --ctl:#0A82A0; --fwd:#AE2C7B; --reg:#A8841A; --ok:#23824B; --no:#B33A2E;
+  --i0:#D0580C; --i1:#2D8A47; --i2:#4752C6; --i3:#977405;
+  --c-base:#3E5468; --c-int:#1C7E6D; --c-fp:#4752C6; --c-comp:#5E7A17; --c-bit:#977405; --c-vec:#C2412F; --c-crypto:#8B3FA0; --c-sys:#2364A8}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-padding-top:64px}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--f-display);font-stretch:82%;text-wrap:balance;margin:0;line-height:1.02}
+h2{font-size:clamp(26px,3.2vw,36px);font-weight:700;letter-spacing:-.005em}
+.eyebrow{font:500 11px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.eyebrow b{color:var(--sig);font-weight:700}
+.lede{color:var(--muted);max-width:66ch;margin:0}
+code{font-family:var(--f-mono);font-size:.9em;color:var(--ink)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+.small{font-size:12.5px;color:var(--muted);margin:0}
+
+/* Top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px))}
+.top-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px}
+.brand{display:flex;align-items:center;gap:10px;font:700 17px var(--f-display);font-stretch:80%;letter-spacing:.02em;white-space:nowrap}
+.chipmark{width:22px;height:22px;border:2px solid var(--sig);border-radius:3px;position:relative}
+.chipmark::before,.chipmark::after{content:"";position:absolute;inset:-6px 4px;border-left:2px dotted var(--muted);border-right:2px dotted var(--muted)}
+.chipmark::after{inset:4px -6px;border:0;border-top:2px dotted var(--muted);border-bottom:2px dotted var(--muted)}
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.nav a{color:var(--muted);text-decoration:none;font:500 12.5px var(--f-mono);padding:6px 10px;border-radius:3px;white-space:nowrap}
+.nav a:hover{color:var(--ink);background:var(--panel2)}
+.nav a span{color:var(--sig)}
+
+/* Hero */
+.hero{padding-top:44px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:36px;align-items:end}
+.hero h1{font-size:clamp(42px,6.4vw,82px);font-weight:800;letter-spacing:-.015em}
+.hero h1 em{font-style:normal;color:var(--sig)}
+.hero-l{display:grid;gap:18px}
+.isa-card{border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:16px;display:grid;gap:12px}
+.isa-line{display:flex;flex-wrap:wrap;gap:6px}
+.isa-tok{display:grid;gap:5px;border:1px solid var(--line);border-bottom-width:3px;border-bottom-color:var(--tok);background:var(--panel2);padding:10px 11px 8px;cursor:pointer;text-align:left;border-radius:3px;transition:transform .15s,background .15s}
+.isa-tok:hover{transform:translateY(-2px);background:color-mix(in srgb,var(--tok) 12%,var(--panel2))}
+.isa-tok b{font:700 28px/1 var(--f-mono);color:var(--tok)}
+.isa-tok small{font:500 10.5px/1.2 var(--f-mono);color:var(--muted);white-space:nowrap}
+
+section{padding-top:64px;display:grid;gap:20px}
+.sec-head{display:grid;gap:10px}
+.panel{border:1px solid var(--line);background:var(--panel);border-radius:4px;min-width:0}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pb{padding:16px;display:grid;gap:14px;align-content:start}
+
+/* Atlas */
+.atlas{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;align-items:start}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;padding:5px 10px;border-radius:3px;font:500 12px var(--f-mono);cursor:pointer;display:inline-flex;align-items:center;gap:7px;color:var(--muted)}
+.chip i{width:8px;height:8px;border-radius:1px;background:var(--cc,var(--ink))}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:var(--ink);background:var(--panel2)}
+.die{position:relative;padding:14px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;
+  background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:16px 16px;background-color:var(--panel)}
+.blk{position:relative;border:1px solid color-mix(in srgb,var(--cc) 45%,var(--line));background:color-mix(in srgb,var(--cc) 8%,var(--panel2));
+  padding:10px 10px 9px;text-align:left;cursor:pointer;display:grid;gap:3px;align-content:start;min-height:80px;border-radius:3px;transition:opacity .2s,box-shadow .15s,transform .15s}
+.blk::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--cc);opacity:.6}
+.blk:hover{transform:translateY(-1px);box-shadow:0 0 0 1px var(--cc)}
+.blk .tag{font:700 19px/1 var(--f-mono);color:var(--cc)}
+.blk .nm{font-size:12.5px;line-height:1.3}
+.blk .yr{position:absolute;top:8px;right:9px;font:500 10px/1 var(--f-mono);color:var(--muted)}
+.blk.wide{grid-column:span 2}.blk.xwide{grid-column:span 3}
+.blk[aria-pressed="true"]{box-shadow:0 0 0 2px var(--cc);background:color-mix(in srgb,var(--cc) 18%,var(--panel2))}
+.blk.dim{opacity:.2}
+.inspector{position:sticky;top:68px;overflow:hidden}
+.insp-top{padding:16px 18px 14px;border-bottom:1px solid var(--line);display:grid;gap:8px;background:linear-gradient(color-mix(in srgb,var(--cc) 14%,transparent),transparent)}
+.insp-top .tag{font:700 34px/1 var(--f-mono);color:var(--cc)}
+.insp-top h3{font-size:23px;font-weight:700}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:500 10.5px/1 var(--f-mono);padding:5px 7px;border:1px solid var(--line);border-radius:2px;color:var(--muted)}
+.insp-body{padding:14px 18px 18px;display:grid;gap:14px}
+.insp-body p{margin:0;font-size:14px}
+.insp-body h4,.lbl{margin:0;font:500 10.5px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.code{background:var(--bg);border:1px solid var(--line);padding:10px 12px;font:12.5px/1.65 var(--f-mono);overflow-x:auto;white-space:pre;border-radius:3px}
+.code .cm{color:var(--muted)}
+.deps{display:flex;flex-wrap:wrap;gap:6px}
+.deps button,.btn{border:1px solid var(--line);background:var(--panel2);padding:4px 9px;font:500 12px var(--f-mono);cursor:pointer;border-radius:3px}
+.deps button:hover,.btn:hover{border-color:var(--sig);color:var(--sig)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* Builder */
+.builder{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;width:max-content}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font:600 12.5px var(--f-mono);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.toggles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.tg{display:flex;align-items:center;gap:8px;border:1px solid var(--line);padding:7px 9px;border-radius:3px;cursor:pointer;font-size:13px;background:var(--panel2);text-align:left}
+.tg .led{width:9px;height:9px;border-radius:50%;flex:none;border:1.5px solid var(--muted)}
+.tg[aria-pressed="true"]{border-color:color-mix(in srgb,var(--cc) 60%,var(--line))}
+.tg[aria-pressed="true"] .led{background:var(--cc);border-color:var(--cc);box-shadow:0 0 8px var(--cc)}
+.tg b{font-family:var(--f-mono);font-weight:600}
+.tg.forced{opacity:.7}
+.isa-out{font:700 clamp(20px,3vw,30px)/1.15 var(--f-mono);color:var(--sig);word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:12px 14px}
+.implied{font-size:12.5px;color:var(--muted);min-height:1.5em;margin:0}
+.prof-row{border:1px solid var(--line);padding:12px;border-radius:3px;display:grid;gap:8px;background:var(--panel2)}
+.prof-row header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.prof-row header b{font:700 14px var(--f-mono)}
+.status{font:600 10.5px/1 var(--f-mono);letter-spacing:.06em;padding:4px 7px;border-radius:2px}
+.status.ok{color:var(--ok);border:1px solid var(--ok)} .status.no{color:var(--no);border:1px solid var(--no)}
+.req{display:flex;flex-wrap:wrap;gap:4px}
+.req span{font:500 11px var(--f-mono);padding:2px 6px;border-radius:2px;border:1px solid var(--line)}
+.req span.have{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.req span.miss{color:var(--no);border-style:dashed;border-color:var(--no)}
+
+/* Pipeline */
+.dp-tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dp-left{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.dp-ops{display:flex;flex-wrap:wrap;gap:4px}
+.dp-step{display:flex;align-items:center;gap:6px}
+.dp-cyc{font:600 12.5px var(--f-mono);min-width:112px;text-align:center}
+.canvas{overflow-x:auto;background-color:var(--bg);background-image:radial-gradient(var(--grid) 1.1px,transparent 1.3px);background-size:14px 14px}
+.canvas-in{min-width:920px}
+.strip{display:grid;grid-template-columns:255fr 245fr 330fr 200fr 170fr;border-bottom:1px solid var(--line)}
+.strip > div{padding:8px 10px;display:flex;flex-direction:column;gap:5px;border-right:1px dashed var(--line);min-width:0}
+.strip > div:last-child{border-right:0}
+.strip .sn{font:700 15px/1 var(--f-display);font-stretch:80%;letter-spacing:.1em;color:var(--muted)}
+.strip .sn small{font:500 10px var(--f-mono);letter-spacing:.04em;margin-left:6px}
+.strip .occ{font:600 12px/1.25 var(--f-mono);min-height:24px;padding:4px 7px;border-radius:3px;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .occ.on{border-color:var(--oc);background:color-mix(in srgb,var(--oc) 15%,transparent);color:var(--ink)}
+.strip .occ.bub{border:1px dashed var(--muted);color:var(--muted)}
+.strip .occ.idle{color:var(--muted);opacity:.6}
+.strip > div.cur .sn{color:var(--sig)}
+#dpSvg{display:block;width:100%;height:auto}
+#dpSvg text{font-family:var(--f-body);fill:var(--ink)}
+#dpSvg .stg{fill:var(--sig);opacity:0;transition:opacity .25s}
+#dpSvg .stg.cur{opacity:.07}
+#dpSvg .bar{fill:var(--reg)}
+#dpSvg .bar-lab{font:600 9.5px var(--f-mono);fill:var(--muted);text-anchor:middle}
+#dpSvg .w{fill:none;stroke:var(--line);stroke-width:1.8;marker-end:url(#mOff);transition:stroke .2s,opacity .2s}
+#dpSvg .w.ctrl{stroke-dasharray:5 4}
+#dpSvg .w.fwd{stroke-dasharray:2 3}
+#dpSvg .w.trail{stroke:color-mix(in srgb,var(--sig) 40%,var(--line));stroke-width:2.2;marker-end:url(#mTrail)}
+#dpSvg .w.ctrl.trail{stroke:color-mix(in srgb,var(--ctl) 40%,var(--line));marker-end:url(#mCtlT)}
+#dpSvg .w.hot{stroke:var(--wc,var(--sig));stroke-width:3;stroke-dasharray:9 5;animation:flow .8s linear infinite}
+#dpSvg .w.ctrl.hot{stroke:var(--wc,var(--ctl));stroke-width:2.3;stroke-dasharray:5 4}
+#dpSvg .w.fwd.hot{stroke:var(--fwd);stroke-width:3.2;stroke-dasharray:7 4}
+@keyframes flow{to{stroke-dashoffset:-14}}
+#dpSvg .dot{fill:var(--line)} #dpSvg .dot.on{fill:var(--sig)}
+#dpSvg .wl{font:500 10px var(--f-mono);fill:var(--muted)}
+#dpSvg .wl.f{fill:var(--fwd)}
+#dpSvg .b{cursor:pointer}
+#dpSvg .b .sh{fill:var(--panel);stroke:var(--muted);stroke-width:1.3;transition:fill .2s,stroke .2s}
+#dpSvg .b.cp .sh{fill:var(--panel2);stroke-dasharray:3 2}
+#dpSvg .b.on .sh{fill:color-mix(in srgb,var(--bc,var(--sig)) 16%,var(--panel));stroke:var(--bc,var(--sig));stroke-width:2;stroke-dasharray:none}
+#dpSvg .b:hover .sh,#dpSvg .b:focus-visible .sh{stroke:var(--ink);stroke-width:2.2}
+#dpSvg .b.sel .sh{stroke:var(--ink);stroke-width:2.6}
+#dpSvg .b:focus{outline:none}
+#dpSvg .bl{font:600 12.5px var(--f-body);text-anchor:middle;pointer-events:none}
+#dpSvg .bs{font:500 9.5px var(--f-mono);fill:var(--muted);text-anchor:middle;pointer-events:none}
+#dpSvg .x .sh{fill:transparent;stroke:var(--muted);stroke-dasharray:4 3}
+#dpSvg .x .bl{fill:var(--muted)}
+#dpSvg .x.cfg .sh{fill:color-mix(in srgb,var(--cc) 12%,var(--panel));stroke:var(--cc);stroke-dasharray:none}
+#dpSvg .x.cfg .bl{fill:var(--ink)}
+#dpSvg .x .xt{font:700 10.5px var(--f-mono);fill:var(--cc);text-anchor:middle;pointer-events:none}
+#dpSvg .x.on .sh{stroke-width:3;fill:color-mix(in srgb,var(--cc) 28%,var(--panel))}
+#dpSvg .lane{stroke:var(--line);stroke-dasharray:2 4}
+#dpSvg .lane-lab{font:600 9.5px var(--f-mono);fill:var(--muted);letter-spacing:.12em}
+#dpSvg .cp-lab{font:600 9.5px var(--f-mono);fill:var(--muted);letter-spacing:.12em}
+#dpSvg .alu-tags{font:600 9.5px var(--f-mono);fill:var(--c-bit);text-anchor:middle}
+#dpSvg .cone{fill:var(--cc);opacity:.07}
+#dpSvg .zpanel{fill:color-mix(in srgb,var(--cc) 4%,var(--panel));stroke:color-mix(in srgb,var(--cc) 45%,var(--line));stroke-width:1.2}
+#dpSvg .ztitle{font:700 11px var(--f-mono);fill:var(--cc);letter-spacing:.06em}
+#dpSvg .pp{fill:var(--cc);opacity:.35;transition:opacity .2s}
+#dpSvg .b.on .pp{opacity:.9}
+#dpSvg .cell{fill:transparent;stroke:color-mix(in srgb,var(--cc) 40%,var(--line))}
+#dpSvg .b.on .cell{fill:color-mix(in srgb,var(--cc) 18%,transparent)}
+#dpSvg .x.d .bl{font-size:11.5px}
+.dp-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font:500 11.5px var(--f-mono);color:var(--muted);padding:10px 14px;border-top:1px solid var(--line)}
+.dp-legend span{display:inline-flex;align-items:center;gap:6px}
+.lg{display:inline-block;width:22px;height:0;border-top:3px solid var(--sig)}
+.lg.ctrl{border-top:2px dashed var(--ctl)}.lg.fwd{border-top:3px dotted var(--fwd)}.lg.trail{border-top-color:color-mix(in srgb,var(--sig) 40%,var(--line))}
+.lg.bar{width:6px;height:14px;border:0;background:var(--reg)}.lg.ext{width:16px;height:10px;border:1.5px dashed var(--muted)}
+.word{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.word .hx{font:700 16px var(--f-mono);color:var(--sig)}
+.word .asm{font:600 14px var(--f-mono)}
+.wbar{display:flex;flex:1 1 380px;min-width:0;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.wbar div{min-width:0;padding:4px 4px 3px;border-right:1px solid var(--line);background:color-mix(in srgb,var(--fc) 14%,transparent);font:600 10px/1.2 var(--f-mono);color:var(--fc);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wbar div:last-child{border-right:0}
+.wbar div small{display:block;color:var(--ink);font-weight:500}
+.dp-info{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:0;border-top:1px solid var(--line)}
+.dp-info > div{padding:16px;min-width:0;display:grid;gap:10px;align-content:start}
+.dp-info > div + div{border-left:1px solid var(--line)}
+.dp-st{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:7px 10px;border:0;border-left:3px solid var(--line);font-size:13.5px;cursor:pointer;background:transparent;text-align:left;border-radius:0}
+.dp-st b{font:700 11.5px/1.7 var(--f-mono);color:var(--muted)}
+.dp-st.done{border-left-color:color-mix(in srgb,var(--sig) 45%,var(--line))}
+.dp-st.cur{border-left-color:var(--sig);background:var(--sig-soft)}
+.dp-st.cur b{color:var(--sig)}
+.dp-block h4{font-size:21px;font-weight:700}
+.dp-block p{margin:0;font-size:13.5px}
+.note{border-left:3px solid var(--sig);background:var(--sig-soft);padding:10px 12px;font-size:13.5px;border-radius:0 3px 3px 0}
+.note b{font-family:var(--f-mono);font-size:12px;color:var(--sig);display:block;margin-bottom:2px}
+.pchart-wrap{overflow-x:auto}
+table.pchart{border-collapse:separate;border-spacing:2px;font:500 11.5px var(--f-mono);font-variant-numeric:tabular-nums}
+.pchart th{color:var(--muted);font-weight:500;padding:2px 4px;text-align:center;cursor:pointer}
+.pchart th.cur{color:var(--sig);font-weight:700}
+.pchart td{width:42px;height:24px;text-align:center;border-radius:2px;cursor:pointer}
+.pchart td.asm{width:auto;text-align:left;padding-right:10px;white-space:nowrap;cursor:default;color:var(--ink)}
+.pchart td.asm i{display:inline-block;width:8px;height:8px;border-radius:1px;background:var(--oc);margin-right:7px}
+.pchart td.s{background:color-mix(in srgb,var(--oc) 20%,transparent);color:var(--ink);border:1px solid color-mix(in srgb,var(--oc) 50%,transparent)}
+.pchart td.stall{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--oc) 22%,transparent) 0 4px,transparent 4px 8px)}
+.pchart td.bub{border:1px dashed var(--muted);color:var(--muted)}
+.pchart td.fl{color:var(--no);font-weight:700}
+.pchart td.cur{outline:2px solid var(--sig);outline-offset:-1px}
+.pchart tr.ghost td.asm{color:var(--muted);text-decoration:line-through}
+
+/* Bench */
+.bench-ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.fld{display:grid;gap:4px;font:500 11px var(--f-mono);color:var(--muted)}
+.fld select,.fld input{font:500 14px var(--f-mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:7px 8px;border-radius:3px;width:100%}
+.fld input{width:96px}
+.hexout{display:flex;flex-wrap:wrap;gap:18px;align-items:baseline}
+.hexout .asm{font:600 19px var(--f-mono)}
+.hexout b{font:700 26px var(--f-mono);color:var(--sig)}
+.bits-wrap{overflow-x:auto;padding-bottom:4px}
+.bits{display:grid;grid-template-columns:repeat(32,minmax(18px,1fr));min-width:640px}
+.bitn{font:500 9.5px var(--f-mono);color:var(--muted);text-align:center;padding-bottom:3px}
+.bit{font:600 13px/30px var(--f-mono);text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--fc) 14%,var(--panel))}
+.bit.edge{border-left:2px solid var(--fc)}
+.flab{font:600 11px/1.3 var(--f-mono);text-align:center;padding:6px 2px 0;color:var(--fc);border-top:2px solid var(--fc);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flab small{display:block;font-weight:400;color:var(--muted)}
+.formats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.fmt{border:1px solid var(--line);padding:10px;border-radius:3px;font-size:12.5px;background:var(--panel2)}
+.fmt b{font:700 13px var(--f-mono)}
+.fmt.on{border-color:var(--sig);box-shadow:inset 0 0 0 1px var(--sig)}
+
+footer{padding-top:48px;color:var(--muted);font-size:12.5px}
+
+@media (max-width:980px){.atlas,.builder,.hero{grid-template-columns:minmax(0,1fr)}.inspector{position:static}}
+@media (max-width:820px){.dp-info{grid-template-columns:minmax(0,1fr)}.dp-info > div + div{border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:560px){.die{grid-template-columns:repeat(2,minmax(0,1fr))}.blk.wide,.blk.xwide{grid-column:span 2}.isa-tok b{font-size:22px}.brand span{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}#dpSvg .w.hot{animation:none}}
+
+/* Editorial hierarchy around a technical workbench. */
+:root{--bg:#10191d;--panel:#172329;--panel2:#1c2b32;--grid:#213139;--line:#35474f;--ink:#e7eeed;--muted:#a0b4b9;--sig:#f2ae72;--sig-soft:#362a22;--ctl:#7bd3de;--reg:#b5bc87}
+:root[data-theme="light"]{--bg:#f3f3ec;--panel:#fdfdf8;--panel2:#eaece4;--grid:#dde2d9;--line:#c6cec4;--ink:#1d3437;--muted:#536b6b;--sig:#a94c21;--sig-soft:#f7e6d5;--ctl:#087581;--reg:#797638}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3f3ec;--panel:#fdfdf8;--panel2:#eaece4;--grid:#dde2d9;--line:#c6cec4;--ink:#1d3437;--muted:#536b6b;--sig:#a94c21;--sig-soft:#f7e6d5;--ctl:#087581;--reg:#797638}}
+body{font-size:15px;line-height:1.65;padding-left:max(clamp(16px,3vw,48px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,3vw,48px),env(safe-area-inset-right,0px))}
+.wrap,.top-in{max-width:1360px}
+a{color:var(--ctl);text-underline-offset:4px}
+.skip{position:fixed;top:-100px;left:16px;z-index:20;background:var(--ink);color:var(--bg);padding:12px}.skip:focus{top:8px}
+.top{margin-inline:calc(-1 * clamp(16px,3vw,48px));padding-inline:clamp(16px,3vw,48px)}
+.top-in{height:68px;gap:22px}.brand{font-size:18px}.nav{margin-left:auto}.nav a{font-size:11px;padding:8px 12px}.theme{white-space:nowrap}
+.hero{padding-top:70px;padding-bottom:45px;gap:70px;align-items:center;border-bottom:1px solid var(--line)}
+.hero h1{font-size:clamp(52px,6.6vw,90px);line-height:1.02;letter-spacing:-.035em}.hero-l{gap:24px}.hero .lede{font-size:17px;max-width:51ch}
+.hero-actions{display:flex;gap:22px;align-items:center;flex-wrap:wrap}.hero-actions a{font-size:13px;font-weight:600;text-decoration:none;color:var(--ink)}
+.hero-actions .primary{display:flex;align-items:center;gap:28px;background:var(--sig);color:var(--bg);padding:12px 18px;border-radius:3px}.hero-actions a:hover{text-decoration:underline}
+.hero-meta{display:flex;gap:20px;flex-wrap:wrap;font:10px var(--f-mono);color:var(--muted);padding-top:8px}
+.isa-card{padding:24px;gap:22px;border-top:3px solid var(--sig);background:linear-gradient(135deg,var(--panel),var(--bg));box-shadow:10px 10px 0 color-mix(in srgb,var(--line) 25%,transparent)}
+.isa-tok{flex:1 0 63px;padding:16px 10px 12px;min-height:86px}.isa-tok b{font-size:25px}.isa-tok small{font-size:10px}
+section{padding-top:76px;gap:25px}.sec-head{gap:14px;max-width:850px}.sec-head h2{font-size:clamp(30px,3.5vw,44px);letter-spacing:-.02em;line-height:1.12}.sec-head .lede{max-width:77ch}
+.panel{border-radius:6px;overflow:hidden}.pb{padding:22px;gap:18px}.ph{padding:14px 18px}.atlas{grid-template-columns:minmax(0,1fr) 380px;gap:22px}
+.atlas-toolbar{gap:16px}.search{display:flex;align-items:center;gap:10px;flex:1 1 240px;color:var(--muted);border-bottom:1px solid var(--line)}.search input{border:0;background:transparent;color:var(--ink);width:100%;padding:8px 0;font:14px var(--f-body)}.search input::placeholder{color:var(--muted)}.filters{flex-basis:100%;gap:7px}.chip{font-size:10.5px;padding:7px 9px}.chip[aria-pressed="true"]{border-color:var(--sig);color:var(--sig)}
+.die{padding:18px;gap:10px;min-height:160px}.blk{min-height:98px;padding:14px 12px;gap:8px}.blk .tag{font-size:20px}.blk .nm{font-size:12px;max-width:18ch}.blk .yr{display:none}.blk[aria-pressed="true"]::before{content:"↗";position:absolute;right:10px;top:10px;color:var(--cc)}
+.inspector{top:86px}.insp-top{padding:22px;gap:12px}.insp-body{padding:22px;gap:20px}.insp-body p{line-height:1.7}.code{font-size:11px;line-height:1.8}.meta{gap:7px}.pill{line-height:1.4}
+.builder{gap:22px}.tg{padding:11px}.tg.forced .led{box-shadow:none}.isa-out{padding:18px;font-size:24px}.prof-row{padding:16px;gap:12px}
+.model-note{display:flex;align-items:baseline;gap:20px;padding:14px 18px;border-left:3px solid var(--ctl);background:var(--panel);font-size:12px;color:var(--muted)}.model-note b{color:var(--ctl);white-space:nowrap;font:600 11px var(--f-mono)}
+.schematic-caption{padding:14px 18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.dp-tools{padding:16px 18px;gap:16px}.dp-step .btn{min-height:34px}.dp-ops .btn{font-size:11px;padding:6px 9px}.seg button{padding:9px 12px}.dp-info>div{padding:22px}.dp-legend{padding:14px 18px;font-size:10px}.strip>div{padding:12px}.strip .sn{font-size:17px}.canvas-in{min-width:1040px}
+#dpSvg .w{stroke-width:1.5;opacity:.55}#dpSvg .w.hot,#dpSvg .w.trail{opacity:1}#dpSvg .bar{opacity:.6}#dpSvg .bar-lab{fill:var(--ink)}#dpSvg .bl{font-size:12px}#dpSvg .w.hot{stroke-width:2.8}
+.flow-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:0}.flow-tabs{display:grid;gap:0;align-content:start;border-right:1px solid var(--line)}.flow-tab{border:0;border-bottom:1px solid var(--line);border-left:3px solid transparent;background:transparent;text-align:left;padding:20px;cursor:pointer}.flow-tab b{display:block;font:600 15px var(--f-mono);color:var(--ink)}.flow-tab small{display:block;margin-top:5px;color:var(--muted);font:12px var(--f-body)}.flow-tab[aria-pressed="true"]{background:var(--sig-soft);border-left-color:var(--sig)}.flow-tab[aria-pressed="true"] b{color:var(--sig)}
+.flow-body{padding:26px;min-width:0;display:grid;gap:20px;align-content:start}.flow-body h3{font-size:26px}.flow-body p{margin:0;color:var(--muted);font-size:14px}.flow-scroll{overflow-x:auto}.flow-svg{width:100%;min-width:650px;display:block}.flow-svg text{fill:var(--ink);font-family:var(--f-mono)}.flow-svg .node{fill:var(--panel2);stroke:var(--line)}.flow-svg .active{stroke:var(--sig);fill:var(--sig-soft)}.flow-svg .route{fill:none;stroke:var(--sig);stroke-width:2.5}.flow-svg .sub{fill:var(--muted);font-size:10px}.flow-svg .stage{fill:var(--muted);font-size:10px;letter-spacing:1px}.flow-rule{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding-top:16px;border-top:1px solid var(--line)}.flow-rule b{font:500 10px var(--f-mono);letter-spacing:.08em;color:var(--ctl);display:block;margin-bottom:7px}.flow-rule p{font-size:13px}.flow-body .btn{justify-self:start}
+.bench-ctl{gap:16px}.fld input,.fld select{padding:10px}.bits-wrap{padding-block:8px 16px}.hexout{padding-block:12px}.formats{gap:10px}.fmt{padding:14px}
+footer{display:flex;justify-content:space-between;gap:30px;border-top:1px solid var(--line);margin-top:70px;padding-top:28px}.sources{display:flex;gap:8px;flex-direction:column;font-size:12px}.sources a{color:var(--muted)}
+@media(min-width:1100px){.insp-body .code{max-height:300px;overflow:auto}}
+@media(max-width:1100px){.hero{gap:32px}.atlas{grid-template-columns:minmax(0,1fr) 340px}.nav a{padding-inline:7px}.brand{font-size:16px}}
+@media(max-width:980px){.hero,.atlas,.builder{grid-template-columns:minmax(0,1fr)}.hero{padding-top:45px;gap:32px}.isa-card{max-width:720px}.inspector{position:static}.flow-layout{grid-template-columns:200px minmax(0,1fr)}}
+@media(max-width:700px){.top-in{height:auto;min-height:62px;flex-wrap:wrap;gap:8px;padding-block:10px}.nav{order:3;flex-basis:100%;margin:0}.nav a{flex:1;text-align:center}.theme{margin-left:auto}.hero{padding-top:36px}.hero-meta{font-size:9px}section{padding-top:52px}.flow-layout{grid-template-columns:1fr}.flow-tabs{grid-template-columns:repeat(3,1fr);border-right:0}.flow-tab{padding:14px 10px;border-left:0;border-top:3px solid transparent}.flow-tab[aria-pressed="true"]{border-top-color:var(--sig)}.flow-tab b{font-size:12px}.flow-tab small{font-size:10px}.flow-body{padding:18px}.model-note{display:grid;gap:8px}.hero h1{font-size:60px}.flow-rule{grid-template-columns:1fr;gap:14px}.dp-step{flex-wrap:wrap}.pb,.dp-info>div{padding:16px}footer{flex-direction:column}.inspector{scroll-margin-top:120px}}
+@media(max-width:400px){.hero h1{font-size:49px}.isa-card{padding:16px}.isa-tok{flex-basis:54px}.hero-actions{gap:16px}}
+/* Primer: the ISA / microarchitecture split, illustrated. */
+.primer{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.layers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:22px;gap:0}
+.layer{position:relative;display:grid;gap:8px;align-content:start;padding:16px 14px;border:1px solid var(--line);border-top:3px solid var(--lc,var(--sig));background:var(--panel2);border-radius:4px;text-align:left;cursor:pointer;margin-right:26px;min-width:0}
+.layer:last-child{margin-right:0}
+.layer:not(:last-child)::after{content:"→";position:absolute;right:-20px;top:50%;transform:translateY(-50%);color:var(--sig);font:700 16px var(--f-mono)}
+.layer:hover{border-color:var(--lc,var(--sig))}
+.layer .v{font:600 13px/1.5 var(--f-mono);color:var(--lc,var(--ink));word-break:break-word}
+.layer small{color:var(--muted);font-size:12px;line-height:1.5}
+.layer .wbar{flex:none;margin-top:2px}
+.layer .stg5{display:flex;gap:3px}.layer .stg5 span{flex:1;font:600 9.5px/1 var(--f-mono);text-align:center;padding:5px 0;border:1px solid color-mix(in srgb,var(--lc) 50%,var(--line));border-radius:2px;color:var(--lc)}
+.layers-foot{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;margin-top:16px;font:500 10px var(--f-mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.layers-foot span{flex:1;border-top:2px solid var(--fc);padding-top:6px}
+.contract{display:grid;grid-template-columns:1fr 1fr minmax(0,.8fr);gap:0}
+.contract > div{padding:18px 20px;display:grid;gap:8px;align-content:start}
+.contract > div + div{border-left:1px dashed var(--line)}
+@media(max-width:820px){.contract{grid-template-columns:1fr}.contract > div + div{border-left:0;border-top:1px dashed var(--line)}}
+.contract ul{margin:0;padding-left:18px;font-size:13.5px;display:grid;gap:3px}
+.contract b{font:600 10.5px var(--f-mono);letter-spacing:.1em;text-transform:uppercase}
+
+/* Inspector: before/after and dependency chain */
+.cmp-h{display:flex;justify-content:space-between;gap:8px;font:500 10px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.cmp-h.w{color:var(--cc)}
+.cmp .code{font-size:10.5px;line-height:1.7}
+.cmp .code.w{border-color:color-mix(in srgb,var(--cc) 55%,var(--line))}
+.meter{display:grid;gap:6px;margin-top:4px}
+.meter > div{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:8px;align-items:center;font:500 10.5px var(--f-mono);color:var(--muted)}
+.meter i{display:block;height:9px;border-radius:2px;background:var(--muted);opacity:.55;min-width:3px}
+.meter .w i{background:var(--cc);opacity:1}.meter .w{color:var(--ink)}
+.lineage{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.lineage button{border:1px solid var(--line);background:var(--panel2);padding:4px 8px;font:500 12px var(--f-mono);cursor:pointer;border-radius:3px}
+.lineage button:hover{border-color:var(--sig);color:var(--sig)}
+.lineage .me{border:1px solid var(--cc);color:var(--cc);background:color-mix(in srgb,var(--cc) 14%,transparent);padding:4px 8px;font:700 12px var(--f-mono);border-radius:3px}
+.lineage .ar{color:var(--muted);font:12px var(--f-mono)}
+
+/* Encoding: decoder + immediate map */
+.dec-row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;padding-top:16px;border-top:1px solid var(--line)}
+#hexIn{width:160px}
+.enc-explain{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:22px}
+.enc-explain > div{display:grid;gap:10px;align-content:start;min-width:0}
+.dsteps{margin:0;padding:0;list-style:none;display:grid;gap:6px;counter-reset:d}
+.dsteps li{counter-increment:d;display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;font-size:13.5px;align-items:baseline}
+.dsteps li::before{content:counter(d);font:700 11px/20px var(--f-mono);width:20px;height:20px;border-radius:50%;text-align:center;border:1px solid var(--sig);color:var(--sig)}
+.dsteps code{color:var(--fc,var(--ink));font-weight:600}
+.imap{display:flex;flex-wrap:wrap;gap:5px}
+.iseg{flex:1 1 auto;min-width:70px;border:1px solid color-mix(in srgb,var(--sc) 55%,var(--line));border-top:3px solid var(--sc);background:color-mix(in srgb,var(--sc) 8%,var(--panel2));border-radius:3px;padding:7px 8px;display:grid;gap:3px;cursor:default}
+.iseg b{font:600 10.5px var(--f-mono);color:var(--sc)}
+.iseg code{font:600 12.5px var(--f-mono);letter-spacing:.06em;word-break:break-all}
+.iseg small{font:500 10px var(--f-mono);color:var(--muted)}
+.iseg.zero{border-style:dashed;border-top-style:solid;opacity:.75}
+.bits.hlon .bit:not(.hl){opacity:.3}
+.bit.hl{box-shadow:inset 0 -4px 0 var(--hc)}
+.bit{transition:opacity .15s}
+
+/* Pipeline: predict-first + stats */
+.predict{border:1px dashed var(--ctl);border-radius:3px;padding:10px 12px;font-size:13.5px}
+.predict summary{cursor:pointer;color:var(--ctl);font-weight:600}
+.predict summary span{font:600 10.5px var(--f-mono);letter-spacing:.08em;margin-right:6px}
+.predict p{margin:8px 0 0}
+.pstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.pstats div{border:1px solid var(--line);border-radius:3px;padding:8px 10px;background:var(--panel2);display:grid;gap:2px}
+.pstats b{font:700 20px/1.1 var(--f-mono)}.pstats span{font:500 10px var(--f-mono);color:var(--muted)}
+.pstats .bad b{color:var(--no)}
+.cycbar{display:flex;height:12px;border-radius:2px;overflow:hidden;border:1px solid var(--line)}
+.cycbar i{display:block}.cycbar .fill{background:color-mix(in srgb,var(--muted) 35%,transparent)}.cycbar .work{background:var(--ok)}.cycbar .lost{background:repeating-linear-gradient(135deg,var(--no) 0 3px,transparent 3px 6px)}
+
+@media(max-width:980px){.primer,.enc-explain{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:820px){.layers{grid-template-columns:minmax(0,1fr)}.layer{margin:0 0 26px}.layer:last-child{margin:0}.layer:not(:last-child)::after{content:"↓";right:auto;left:50%;top:auto;bottom:-23px;transform:translateX(-50%)}.layers-foot{flex-direction:column;gap:8px}.pstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{.top,.hero-actions,.dp-tools,.filters,.search,.theme{display:none}section{break-inside:avoid;padding-top:24px}.inspector{position:static}.canvas-in{min-width:0}body{background:white;color:black}}
+</style>
+</head><body>
+<a class="skip" href="#atlas">Skip to the atlas</a>
+<div class="top"><div class="top-in">
+  <div class="brand"><div class="chipmark" aria-hidden="true"></div><span>RISC-V Extension Atlas</span></div>
+  <nav class="nav" aria-label="Sections"><a href="#primer"><span>00</span> Idea</a><a href="#atlas"><span>01</span> Extensions</a><a href="#builder"><span>02</span> Configure</a><a href="#datapath"><span>03</span> Pipeline</a><a href="#bench"><span>04</span> Encoding</a></nav><button class="btn theme" id="themeToggle" aria-label="Switch color theme">◐ <span>Theme</span></button>
+</div></div>
+
+<main class="wrap" id="main">
+<header class="hero">
+  <div class="hero-l">
+    <span class="eyebrow"><b>●</b> Open instruction set architecture</span>
+    <h1>From instruction<br>to <em>execution.</em></h1>
+    <p class="lede">Read the ISA. Follow the data. Understand the hardware. Explore how RISC-V extensions change what software can express, then trace how a teaching core executes each instruction.</p>
+    <div class="hero-actions"><a class="primary" href="#primer">Start with the big idea <span>↓</span></a><a href="#atlas">Explore the atlas →</a></div>
+    <div class="hero-meta"><span>01 — ISA building blocks</span><span>02 — Hardware consequences</span></div>
+  </div>
+  <div class="isa-card">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="lbl">Decode an ISA string</span><span class="small">click a letter</span></div>
+    <div class="isa-line" id="heroIsa"></div>
+    <p class="small"><code>RV64IMAFDCV</code> describes 64-bit integer registers plus the extensions above. Add <code>Zicsr</code> and <code>Zifencei</code> to write the shorthand <code>RV64GCV</code>. <code>G</code> is shorthand for <code>IMAFD_Zicsr_Zifencei</code>.</p>
+  </div>
+</header>
+
+<section id="primer" aria-labelledby="primerHeading">
+  <div class="sec-head">
+    <span class="eyebrow"><b>00</b> · The big idea</span>
+    <h2 id="primerHeading">One line of C, four layers down</h2>
+    <p class="lede">An instruction set is a contract between software and hardware. Follow one array read from source code to silicon. The middle two layers belong to the ISA, so every RISC-V core agrees on them. The last layer is the microarchitecture, which each design is free to choose. Select a layer to open its section.</p>
+  </div>
+  <div class="primer">
+    <div class="panel"><div class="layers" id="layers"></div></div>
+    <div class="panel contract">
+      <div><b style="color:var(--sig)">The ISA promises</b><ul><li>32 registers, with <code>x0</code> always zero</li><li>what each instruction computes</li><li>the exact bit encoding of every instruction</li><li>how memory accesses may be ordered</li></ul></div>
+      <div><b style="color:var(--ctl)">The microarchitecture decides</b><ul><li>how many pipeline stages there are</li><li>cache sizes and memory latency</li><li>whether and how branches are predicted</li><li>how many instructions run per cycle</li></ul></div>
+      <div><p class="small">Sections 01, 02 and 04 describe the contract. Section 03 shows one way to build hardware that keeps it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="atlas">
+  <div class="sec-head">
+    <span class="eyebrow"><b>01</b> · Extensions</span>
+    <h2>A map of capabilities</h2>
+    <p class="lede">Choose a capability to see its instructions, dependencies, and hardware implications. Colors identify families; tile sizes are for navigation, not silicon area.</p>
+  </div>
+  <div class="atlas">
+    <div class="panel">
+      <div class="ph atlas-toolbar"><label class="search"><span>⌕</span><input id="extensionSearch" type="search" placeholder="Find an extension or capability…" aria-label="Search extensions"></label><span class="small" id="matchCount" aria-live="polite"></span><div class="filters" id="filters" role="group" aria-label="Extension families"></div></div>
+      <div class="die" id="die"></div>
+      <div class="ph" style="border-top:1px solid var(--line);border-bottom:0"><span class="small">Selected capabilities, not a complete ISA catalog. “Sv” and “Zvk” group related specifications; they are not standalone extension names.</span></div>
+    </div>
+    <aside class="panel inspector" id="insp" aria-live="polite"></aside>
+  </div>
+</section>
+
+<section id="builder">
+  <div class="sec-head">
+    <span class="eyebrow"><b>02</b> · Configure</span>
+    <h2>Build a core, read its ISA string</h2>
+    <p class="lede">Choose a register width and add capabilities. Dependencies turn on automatically, and the hardware map below follows your choices. The string is a teaching summary of the extensions modeled here.</p>
+  </div>
+  <div class="builder">
+    <div class="panel">
+      <div class="ph">
+        <div class="seg" id="xlen" role="group" aria-label="Register width"><button data-x="32">RV32</button><button data-x="64">RV64</button></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="lbl" style="align-self:center">Presets</span>
+          <button class="btn" data-preset="mcu">MCU</button><button class="btn" data-preset="rva22">RVA22-like</button><button class="btn" data-preset="rva23">RVA23-like</button></div>
+      </div>
+      <div class="pb">
+        <div class="toggles" id="toggles"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="lbl">ISA string</span><button class="btn" id="copyIsa">Copy</button></div>
+        <div class="isa-out" id="isaOut" tabindex="0"></div>
+        <p class="implied" id="implied"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="lbl">Profile comparison · selected requirements</span></div>
+      <div class="pb">
+        <div id="profiles" style="display:grid;gap:10px"></div>
+        <p class="small">This is a partial comparison, not a conformance test. Profiles also specify execution behavior, privilege features, and extensions omitted here. “Meets shown” only means this selection covers the displayed checklist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section id="flow" aria-labelledby="flowHeading">
+  <div class="sec-head"><span class="eyebrow"><b>FIELD NOTES</b> · Before the schematic</span><h2 id="flowHeading">Same pipeline. Different journeys.</h2><p class="lede">Start with the useful work: compute a value, move data, or choose a new address. These simplified paths show what changes before you explore the wires.</p></div>
+  <div class="panel flow-layout">
+    <div class="flow-tabs" role="group" aria-label="Data-flow examples">
+      <button class="flow-tab" data-flow="add" aria-pressed="true"><b>01 / Compute</b><small>add x5, x6, x7</small></button>
+      <button class="flow-tab" data-flow="lw" aria-pressed="false"><b>02 / Load</b><small>lw x5, 8(x6)</small></button>
+      <button class="flow-tab" data-flow="beq" aria-pressed="false"><b>03 / Branch</b><small>beq x6, x7, label</small></button>
+    </div>
+    <div class="flow-body" id="flowBody" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="datapath">
+  <div class="sec-head">
+    <span class="eyebrow"><b>03</b> · Pipeline</span>
+    <h2>Inside a five-stage pipeline</h2>
+    <p class="lede">Follow one instruction, or step through overlapping instructions to see forwarding, stalls, and branch recovery. Select any hardware block for an explanation. Below the pipeline, close-ups open the multiplier, the FPU's internal stages, and the vector unit's parallel lanes. Trace <code>mul</code>, <code>fadd.s</code> or <code>vadd.vv</code> to see them light up. Instruction colors track ownership; dashed cyan paths carry control.</p>
+  </div>
+  <div class="model-note"><b>Model assumptions</b><span>Single issue · in order · 32-bit instructions · one-cycle memory · branches resolve in EX. Extensions below are attachment points; their full timing is not simulated.</span></div>
+  <div class="panel">
+    <div class="dp-tools">
+      <div class="dp-left">
+        <div class="seg" id="dpMode" role="group" aria-label="Mode"><button data-m="single">One instruction</button><button data-m="prog">Program</button></div>
+        <div class="dp-ops" id="dpOps" role="group" aria-label="Instruction or scenario"></div>
+      </div>
+      <div class="dp-step">
+        <button class="btn" id="dpPrev" aria-label="Previous cycle">◀</button>
+        <span class="dp-cyc" id="dpCyc" aria-live="polite" aria-atomic="true"></span>
+        <button class="btn" id="dpNext" aria-label="Next cycle">▶</button>
+        <button class="btn" id="dpPlay">Play</button>
+        <button class="btn" id="dpAll">All</button>
+      </div>
+    </div>
+    <div class="word" id="dpWord"></div>
+    <div class="schematic-caption"><span class="lbl">Detailed schematic</span><span class="small">Select a block to inspect · scroll horizontally on small screens</span></div><div class="canvas" tabindex="0" role="region" aria-label="Scrollable pipeline schematic"><div class="canvas-in">
+      <div class="strip" id="dpStrip"></div>
+      <svg id="dpSvg" viewBox="0 0 1200 1490" role="group" aria-label="Interactive five-stage RISC-V pipeline datapath"><title>Five-stage in-order teaching pipeline</title><desc>Data moves left to right through fetch, decode, execute, memory, and writeback. Feedback paths carry writeback, forwarded operands, and branch redirects. Each hardware block is keyboard selectable.</desc></svg>
+    </div></div>
+    <div class="dp-legend">
+      <span><i class="lg"></i>data</span><span><i class="lg ctrl"></i>control</span><span><i class="lg fwd"></i>forwarding</span><span><i class="lg trail"></i>earlier stage</span><span><i class="lg bar"></i>pipeline register</span><span><i class="lg ext"></i>extension unit not in your core</span>
+    </div>
+    <div class="dp-info">
+      <div id="dpLeft"></div>
+      <div class="dp-block" id="dpBlock"></div>
+    </div>
+  </div>
+</section>
+
+<section id="bench">
+  <div class="sec-head">
+    <span class="eyebrow"><b>04</b> · Encoding</span>
+    <h2>32 bits, six formats</h2>
+    <p class="lede">When present, rs1, rs2, and rd keep their bit positions across the base formats, simplifying decode. Signed immediates use instruction bit 31 as their sign bit. Change an operand to see the encoded word; selecting an instruction also opens its pipeline trace.</p>
+  </div>
+  <div class="panel"><div class="pb">
+    <div class="bench-ctl">
+      <label class="fld">INSTRUCTION<select id="op"></select></label>
+      <label class="fld" id="f-rd">RD<input id="rd" type="number" min="0" max="31" value="5"></label>
+      <label class="fld" id="f-rs1">RS1<input id="rs1" type="number" min="0" max="31" value="6"></label>
+      <label class="fld" id="f-rs2">RS2<input id="rs2" type="number" min="0" max="31" value="7"></label>
+      <label class="fld" id="f-imm">IMM<input id="imm" type="number" value="0"></label>
+    </div>
+    <div class="hexout"><span class="asm" id="asm"></span><b id="hex"></b><span class="small" id="immNote"></span></div>
+    <div class="bits-wrap"><div class="bits" id="bits"></div></div>
+    <div class="enc-explain">
+      <div><span class="lbl">How the decoder reads it</span><ol class="dsteps" id="dsteps"></ol></div>
+      <div><span class="lbl">Where the immediate comes from · hover a piece</span><div class="imap" id="immMap"></div><p class="small" id="immWhy"></p></div>
+    </div>
+    <div class="formats" id="formats"></div>
+    <div class="dec-row">
+      <label class="fld">DECODE A WORD (HEX)<input id="hexIn" type="text" placeholder="0x0085A503" spellcheck="false" autocomplete="off"></label>
+      <button class="btn" id="hexGo">Decode</button>
+      <span class="small" id="hexMsg" aria-live="polite">Paste a 32-bit word to run the decoder in reverse. Try 0xFE628EE3 or 0x02B50533.</span>
+    </div>
+  </div></div>
+</section>
+
+
+<footer><div><span class="eyebrow"><b>RISC-V</b> / Extension Atlas</span><p>An ISA defines visible behavior. A microarchitecture chooses how to deliver it.</p></div><div class="sources"><a href="https://docs.riscv.org/reference/isa/">ISA specifications ↗</a><a href="https://docs.riscv.org/reference/rva20-rvi20-rva22/rva22.html">RVA22 profiles ↗</a><a href="https://docs.riscv.org/reference/rva23/rva23-profiles.html">RVA23 profiles ↗</a><span>Educational model · not a specific processor</span></div></footer>
+</main>
+
+<script>
+const CATS={base:["Base ISA","--c-base"],int:["Integer & system","--c-int"],fp:["Floating point","--c-fp"],comp:["Compressed","--c-comp"],bit:["Bit manipulation","--c-bit"],vec:["Vector","--c-vec"],crypto:["Cryptography","--c-crypto"],sys:["Privileged & memory","--c-sys"]};
+const EXT=[
+ {id:"I",cat:"base",span:"xwide",name:"Base integer ISA",yr:2019,
+  what:"The standard integer base: integer add/sub, logic, shifts, compares, loads and stores, branches and jumps. 32 integer registers, x0 hardwired to zero. RV32I and RV64I differ in register width; RV64I adds word ops such as ADDW that work on the low 32 bits and sign-extend.",
+  code:"add   x5, x6, x7    <span class=cm># x5 = x6 + x7</span>\naddi  sp, sp, -16   <span class=cm># 12-bit signed imm</span>\nld    a0, 8(sp)     <span class=cm># RV64 only</span>\nbeq   a0, zero, .L1\njal   ra, func",
+  why:"Small enough for a tiny microcontroller, complete enough to be a compiler target on its own. Everything else is optional.",deps:[],fmt:"~40 instructions"},
+ {id:"E",cat:"base",span:"",name:"Embedded base",yr:null,
+  what:"An alternative to I with only 16 integer registers (x0–x15). Reduces register storage; total area savings depend on the implementation.",
+  code:"<span class=cm># same instructions as RV32I,</span>\n<span class=cm># but x16–x31 do not exist</span>\naddi a5, a4, 1",
+  why:"Register files dominate area in deeply embedded designs. Uses its own ABI (ilp32e).",deps:[],fmt:"16 GPRs"},
+ {id:"M",cat:"int",span:"",name:"Multiply & divide",yr:2019,
+  what:"Integer multiplication, division and remainder, including high-half multiplies for 64×64→128 results.",
+  code:"mul    a0, a1, a2\nmulhu  a3, a1, a2  <span class=cm># upper bits</span>\ndiv    a4, a1, a2\nrem    a5, a1, a2",
+  why:"Division by zero does not trap; it returns all ones. That keeps the pipeline simple, and software checks if it cares.",deps:["I"],fmt:"R-type, funct7=0000001"},
+ {id:"A",cat:"int",span:"",name:"Atomics",yr:2019,
+  what:"Load-reserved / store-conditional pairs and atomic read-modify-write ops (AMOs) with acquire/release ordering bits.",
+  code:"lr.w     t0, (a0)\nsc.w     t1, t2, (a0)\namoadd.w.aqrl t0, t1, (a0)\namoswap.d t0, t1, (a0)",
+  why:"Supports shared-memory synchronization in operating systems and runtimes. Split into Zalrsc and Zaamo so small cores can support just one half.",deps:["I"],fmt:"R-type, AMO opcode"},
+ {id:"Zicsr",cat:"int",span:"",name:"Control & status registers",yr:2019,
+  what:"Instructions to read and write CSRs: cycle counters, FP rounding mode, and all privileged machine state.",
+  code:"csrr  t0, mstatus\ncsrrw t1, mtvec, t2\ncsrsi fcsr, 0x1",
+  why:"Was part of the base until 2019, then split out so the base stays minimal. Included in G.",deps:["I"],fmt:"I-type, SYSTEM opcode"},
+ {id:"Zifencei",cat:"int",span:"",name:"Instruction-fetch fence",yr:2019,
+  what:"FENCE.I synchronises the instruction stream with prior stores, needed after writing code at run time.",
+  code:"sw   t0, 0(a0)  <span class=cm># patch code</span>\nfence.i",
+  why:"JITs and loaders need it. Split from the base because it is hard to implement on large out-of-order cores.",deps:["I"],fmt:"I-type, MISC-MEM"},
+ {id:"Zicond",cat:"int",span:"",name:"Conditional zero",yr:2023,
+  what:"Two instructions that zero a value based on a condition register. Together with OR they give a branch-free select.",
+  code:"czero.eqz t0, a1, a0  <span class=cm># a0==0 ? 0 : a1</span>\nczero.nez t1, a2, a0\nor        a3, t0, t1   <span class=cm># select</span>",
+  why:"Removes hard-to-predict branches without adding a three-operand cmov to the register file.",deps:["I"],fmt:"R-type"},
+ {id:"F",cat:"fp",span:"",name:"Single-precision FP",yr:2019,
+  what:"IEEE 754 binary32 arithmetic, a separate file of 32 FP registers (f0–f31), fused multiply-add and the fcsr register.",
+  code:"flw      ft0, 0(a0)\nfmadd.s  ft1, ft0, ft2, ft3\nfcvt.w.s a1, ft1, rtz",
+  why:"Rounding mode is encoded per instruction or taken from fcsr, so no mode-switching is needed for conversions.",deps:["Zicsr"],fmt:"R4-type for FMA"},
+ {id:"D",cat:"fp",span:"",name:"Double-precision FP",yr:2019,
+  what:"Widens the FP registers to 64 bits and adds binary64 arithmetic. Single values are NaN-boxed inside the wider registers.",
+  code:"fld     fa0, 0(a0)\nfmul.d  fa1, fa0, fa0\nfcvt.d.s fa2, ft0",
+  why:"Required for G and for the standard lp64d Linux ABI.",deps:["F"],fmt:"fmt field = 01"},
+ {id:"Q",cat:"fp",span:"",name:"Quad-precision FP",yr:2019,
+  what:"binary128 arithmetic with 128-bit FP registers. Rare in hardware.",
+  code:"flq    fa0, 0(a0)\nfadd.q fa1, fa0, fa0",
+  why:"Defined for completeness and scientific niches; most implementations leave it out.",deps:["D"],fmt:"fmt field = 11"},
+ {id:"Zfh",cat:"fp",span:"",name:"Half-precision FP",yr:2021,
+  what:"binary16 arithmetic in the FP registers. Zfhmin is the smaller subset with only loads, stores and conversions.",
+  code:"flh       fa0, 0(a0)\nfadd.h    fa1, fa0, fa0\nfcvt.s.h  fa2, fa1",
+  why:"ML and signal processing want fp16 storage; Zfhmin gives that at almost no cost.",deps:["F"],fmt:"fmt field = 10"},
+ {id:"C",cat:"comp",span:"wide",name:"Compressed instructions",yr:2019,
+  what:"16-bit encodings of the most common instructions. Mixed freely with 32-bit ones; the low two bits tell the length. Typically cuts code size 25–30%.",
+  code:"c.addi  a0, 1      <span class=cm># 16 bits</span>\nc.lw    a1, 4(a2)\nc.mv    a0, a1\nc.j     .Lloop",
+  why:"Most C instructions only reach the 8 'popular' registers x8–x15. Now subdivided into Zca, Zcf and Zcd.",deps:["I"],fmt:"CR CI CSS CIW CL CS CB CJ"},
+ {id:"Zcb",cat:"comp",span:"",name:"More compressed ops",yr:2023,
+  what:"Extra 16-bit forms for byte and halfword loads and stores, zero/sign extension, NOT and MUL.",
+  code:"c.lbu    a0, 1(a1)\nc.zext.b a0\nc.mul    a0, a1",
+  why:"Fills gaps found by profiling real embedded code. Mandatory in RVA23; its compressed MUL form also needs multiplication support.",deps:["C"],fmt:"16-bit"},
+ {id:"Zba",cat:"bit",span:"",name:"Address generation",yr:2021,
+  what:"Shift-and-add instructions for array indexing, plus unsigned-word variants for RV64.",
+  code:"sh2add a0, a1, a2  <span class=cm># a2 + (a1&lt;&lt;2)</span>\nadd.uw a0, a1, a2",
+  why:"Indexing int[] or pointer arrays becomes one instruction instead of two.",deps:["I"],fmt:"part of B"},
+ {id:"Zbb",cat:"bit",span:"",name:"Basic bit manipulation",yr:2021,
+  what:"Count leading/trailing zeros, popcount, min/max, rotations, byte reverse, AND-NOT and sign/zero extension.",
+  code:"clz   a0, a1\ncpop  a0, a1\nrori  a0, a1, 8\nrev8  a0, a1\nmax   a0, a1, a2",
+  why:"Speeds up hashing, string functions, compression and bitset algorithms.",deps:["I"],fmt:"part of B"},
+ {id:"Zbs",cat:"bit",span:"",name:"Single-bit ops",yr:2021,
+  what:"Set, clear, invert or extract one bit selected by a register or immediate.",
+  code:"bset  a0, a0, a1\nbclri a0, a0, 3\nbexti a1, a0, 7",
+  why:"Ideal for flag words and bitmaps. Zba + Zbb + Zbs together form the B extension.",deps:["I"],fmt:"part of B"},
+ {id:"V",cat:"vec",span:"xwide",name:"Vector extension",yr:2021,
+  what:"Length-agnostic vectors: 32 vector registers whose width (VLEN) the hardware chooses. Code asks for a length with vsetvli and the hardware says how many elements it will process. Registers can be grouped (LMUL) for longer vectors.",
+  code:"<span class=cm># a0 = count &gt; 0; a1/a2 = inputs; a3 = output</span>\nloop:\n  vsetvli t0, a0, e32, m1, ta, ma\n  vle32.v v0, (a1)\n  vle32.v v1, (a2)\n  vadd.vv v2, v0, v1\n  vse32.v v2, (a3)\n  slli t1, t0, 2   <span class=cm># bytes processed</span>\n  add a1, a1, t1\n  add a2, a2, t1\n  add a3, a3, t1\n  sub a0, a0, t0\n  bnez a0, loop",
+  why:"Length-agnostic code adapts to different VLEN values when the required extensions and element widths are supported. The last iteration uses a shorter vl. Smaller subsets (Zve32x, Zve64d…) suit embedded parts.",deps:["D"],fmt:"OP-V opcode"},
+ {id:"Zk",cat:"crypto",span:"",name:"Scalar cryptography",yr:2021,
+  what:"Zk bundles the NIST algorithm suite (Zkn), entropy-source access (Zkr), and data-independent execution latency (Zkt). The separate Zks suite covers SM3/SM4.",
+  code:"aes64es    a0, a1, a2\nsha256sig0 a0, a1",
+  why:"Accelerates cryptographic primitives in integer registers. Constant-time software still needs safe memory access and control flow.",deps:["I"],fmt:"Zkn + Zkr + Zkt"},
+ {id:"Zvk",cat:"crypto",span:"wide",name:"Vector cryptography",yr:2023,
+  what:"AES, SHA-2, GHASH, SM3/SM4 rounds operating on element groups inside vector registers, plus bit ops (Zvbb).",
+  code:"vsetivli zero, 4, e32, m1, ta, ma\nvaesem.vv v1, v2\nvghsh.vv  v4, v8, v12",
+  why:"Lets application cores reach high TLS and disk-encryption throughput.",deps:["V"],fmt:"Zvkned, Zvknh, Zvkg…"},
+ {id:"H",cat:"sys",span:"",name:"Hypervisor",yr:2021,
+  what:"Adds virtualized supervisor mode (VS) and two-stage address translation so guests run their kernels natively.",
+  code:"hfence.gvma\nhlv.w  a0, (a1)  <span class=cm># load as guest</span>\ncsrw   hgatp, t0",
+  why:"Required for KVM-style virtualization on servers. Mandatory in RVA23S64.",deps:["Sv"],fmt:"privileged"},
+ {id:"Sv",cat:"sys",span:"",name:"Virtual memory (Sv39/48/57)",yr:2019,
+  what:"A group of RV64 supervisor translation modes: Sv39, Sv48, and Sv57 use 3, 4, or 5 page-table levels. RV32 uses Sv32. “Sv” here is a teaching label, not an ISA-string extension.",
+  code:"csrw  satp, t0\nsfence.vma",
+  why:"What a Linux-class core needs. Svpbmt and Svnapot add page attributes and larger contiguous pages.",deps:["Zicsr"],fmt:"RV64 translation modes"},
+ {id:"Zicbom",cat:"sys",span:"",name:"Cache-block management",yr:2021,
+  what:"Clean, flush and invalidate a cache block by address. Companions: Zicboz (zero a block), Zicbop (prefetch hints).",
+  code:"cbo.flush (a0)\ncbo.clean (a0)\ncbo.zero  (a1)  <span class=cm># Zicboz</span>",
+  why:"DMA drivers need software cache maintenance on non-coherent systems.",deps:["I"],fmt:"I-type"}
+];
+const byId=Object.fromEntries(EXT.map(e=>[e.id,e]));
+// Same task written without and with the extension. n = [without, with] estimated count; u = what n measures.
+const CMP={
+ I:{task:"y = x * 10 with no multiplier",wo:"slli t0, a0, 3   <span class=cm># x·8</span>\nslli t1, a0, 1   <span class=cm># x·2</span>\nadd  a1, t0, t1  <span class=cm># x·8 + x·2</span>",note:"Without M, compilers build constant multiplies from shifts and adds. The base ISA is a complete compiler target on its own."},
+ M:{task:"a0 = a1 × a2 (32-bit)",wo:"  li   a0, 0        <span class=cm># product = 0</span>\nloop:\n  andi t0, a2, 1     <span class=cm># low bit of b?</span>\n  beqz t0, skip\n  add  a0, a0, a1    <span class=cm># yes: add a</span>\nskip:\n  slli a1, a1, 1     <span class=cm># a = a·2</span>\n  srli a2, a2, 1     <span class=cm># b = b/2</span>\n  bnez a2, loop",w:"mul  a0, a1, a2",n:[193,1],u:"dynamic instructions, worst case",note:"The software loop handles one bit per pass, up to 32 passes of about 6 instructions each."},
+ A:{task:"counter++ shared by two harts",wo:"lw   t0, 0(a0)\naddi t0, t0, 1   <span class=cm># other hart can</span>\nsw   t0, 0(a0)   <span class=cm># interleave here</span>",w:"li        t1, 1\namoadd.w  zero, t1, (a0)",note:"Correctness, not speed: when both harts run lw/addi/sw at the same time, both can read the old value, and one increment is lost. An AMO does the read-modify-write as one indivisible operation."},
+ Zicond:{task:"a3 = (a0 != 0) ? a1 : a2",wo:"  beqz a0, else     <span class=cm># a0 == 0?</span>\n  mv   a3, a1       <span class=cm># no:  a3 = a1</span>\n  j    done\nelse:\n  mv   a3, a2       <span class=cm># yes: a3 = a2</span>\ndone:",w:"czero.eqz t0, a1, a0\nczero.nez t1, a2, a0\nor        a3, t0, t1",n:[3,3],u:"instructions executed, worst case · the right side has no branch",note:"Both versions are short. The difference is that the branch-free version cannot be mispredicted, which matters when a0 is random."},
+ F:{task:"a + b on two floats",wo:"<span class=cm># soft-float library call</span>\ncall __addsf3   <span class=cm># unpack, align,</span>\n                <span class=cm># add, normalize,</span>\n                <span class=cm># round, repack</span>",w:"fadd.s fa0, fa0, fa1",n:[60,1],u:"dynamic instructions, typical",note:"Software floating point is correct but slow: the library routine handles exponents, rounding and special values in integer code."},
+ D:{task:"a × b on two doubles (RV32)",wo:"call __muldf3   <span class=cm># 64-bit values split</span>\n                <span class=cm># across register pairs</span>",w:"fmul.d fa0, fa0, fa1",n:[100,1],u:"dynamic instructions, typical",note:"On RV32 without D, every double occupies two integer registers, so software multiply is especially costly."},
+ C:{task:"the same four instructions",wo:"addi a0, a0, 1    <span class=cm># 4 B</span>\nlw   a1, 4(a2)    <span class=cm># 4 B</span>\nmv   a0, a1       <span class=cm># 4 B</span>\nj    .Lloop       <span class=cm># 4 B</span>",w:"c.addi a0, 1      <span class=cm># 2 B</span>\nc.lw   a1, 4(a2)  <span class=cm># 2 B</span>\nc.mv   a0, a1     <span class=cm># 2 B</span>\nc.j    .Lloop     <span class=cm># 2 B</span>",n:[16,8],u:"bytes of code",note:"Same instructions, half the bytes. Smaller code takes fewer instruction-cache misses and less flash."},
+ Zcb:{task:"load an unsigned byte, zero-extend",wo:"lbu  a0, 1(a1)    <span class=cm># 4 B</span>\nandi a0, a0, 255  <span class=cm># 4 B</span>",w:"c.lbu    a0, 1(a1)  <span class=cm># 2 B</span>\nc.zext.b a0         <span class=cm># 2 B</span>",n:[8,4],u:"bytes of code",note:"Zcb adds compressed forms for operations that were common in embedded code but had no 16-bit encoding."},
+ Zba:{task:"&a[i] for an int array",wo:"slli t0, a1, 2    <span class=cm># i·4</span>\nadd  a0, a2, t0   <span class=cm># base + i·4</span>",w:"sh2add a0, a1, a2",n:[2,1],u:"instructions per access",note:"Array indexing runs in almost every loop, so saving one instruction per access adds up."},
+ Zbb:{task:"popcount(a1) on RV64",wo:"  li   a0, 0        <span class=cm># count = 0</span>\nloop:\n  andi t0, a1, 1     <span class=cm># low bit</span>\n  add  a0, a0, t0\n  srli a1, a1, 1     <span class=cm># next bit</span>\n  bnez a1, loop",w:"cpop a0, a1",n:[257,1],u:"dynamic instructions, worst case",note:"A loop over 64 bits becomes one instruction. Hash tables, chess engines and compressors use operations like this constantly."},
+ Zbs:{task:"set bit n of a flag word",wo:"li   t0, 1\nsll  t0, t0, a1\nor   a0, a0, t0",w:"bset a0, a0, a1",n:[3,1],u:"instructions",note:"It also frees a temporary register, which matters in tight driver code."},
+ V:{task:"c[i] = a[i] + b[i], 64 elements, VLEN = 256",wo:"loop:\n  lw   t0, 0(a1)\n  lw   t1, 0(a2)\n  add  t0, t0, t1\n  sw   t0, 0(a3)\n  addi a1, a1, 4\n  addi a2, a2, 4\n  addi a3, a3, 4\n  addi a0, a0, -1\n  bnez a0, loop",w:"<span class=cm># loop from the sample above:</span>\n<span class=cm># 12 instructions handle</span>\n<span class=cm># 8 elements per pass</span>",n:[576,96],u:"dynamic instructions",note:"9 instructions × 64 elements without V, against 12 × 8 passes with it. The same vector binary runs faster on a core with wider VLEN, without being recompiled."},
+ Zk:{task:"one AES round on 128 bits",wo:"<span class=cm># T-table AES: ~16 table loads</span>\n<span class=cm># + XORs per round. Load</span>\n<span class=cm># addresses depend on the key,</span>\n<span class=cm># so cache timing can leak it.</span>",w:"aes64esm a0, a1, a2\naes64esm a3, a2, a1",n:[40,2],u:"instructions per round, approx.",note:"The speedup matters, but the bigger gain is security: with no secret-dependent memory accesses, there is no cache-timing side channel to measure."}
+};
+const smooth=()=>matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth";
+
+/* Hero */
+const heroToks=[["RV64","xlen","64-bit regs"],["I","I","base"],["M","M","mul/div"],["A","A","atomics"],["F","F","float32"],["D","D","float64"],["C","C","compressed"],["V","V","vector"]];
+const hero=document.getElementById("heroIsa");
+heroToks.forEach(([t,id,lab])=>{
+  const b=document.createElement("button");b.className="isa-tok";
+  b.style.setProperty("--tok",id==="xlen"?"var(--muted)":`var(${CATS[byId[id].cat][1]})`);b.innerHTML=`<b>${t}</b><small>${lab}</small>`;
+  b.onclick=()=>{select(id==="xlen"?"I":id);document.getElementById("atlas").scrollIntoView({behavior:smooth()})};
+  hero.appendChild(b);
+});
+
+/* Atlas */
+let filter="all", current="V", search="";
+const die=document.getElementById("die"), insp=document.getElementById("insp"), fwrap=document.getElementById("filters");
+[["all","All",null],...Object.entries(CATS).map(([k,v])=>[k,v[0],v[1]])].forEach(([k,lab,c])=>{
+  const b=document.createElement("button");b.className="chip";b.dataset.f=k;
+  if(c)b.style.setProperty("--cc",`var(${c})`);
+  b.innerHTML=(c?"<i></i>":"")+lab;b.setAttribute("aria-pressed",k===filter);
+  b.onclick=()=>{filter=k;fwrap.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x.dataset.f===k));paintDie()};
+  fwrap.appendChild(b);
+});
+EXT.forEach(e=>{
+  const b=document.createElement("button");b.className="blk "+e.span;b.dataset.id=e.id;
+  b.style.setProperty("--cc",`var(${CATS[e.cat][1]})`);
+  b.innerHTML=`<span class="tag">${e.id}</span><span class="nm">${e.name}</span>${e.yr?`<span class="yr">${e.yr}</span>`:""}`;
+  b.onclick=()=>select(e.id);die.appendChild(b);
+});
+document.getElementById("extensionSearch").addEventListener("input",e=>{search=e.target.value.trim().toLowerCase();paintDie()});
+function paintDie(){let count=0;die.querySelectorAll(".blk").forEach(b=>{const e=byId[b.dataset.id];
+  const matches=(filter==="all"||e.cat===filter)&&(!search||`${e.id} ${e.name} ${e.what}`.toLowerCase().includes(search));
+  b.hidden=!matches;if(matches)count++;b.setAttribute("aria-pressed",e.id===current)});
+  document.getElementById("matchCount").textContent=`${count} / ${EXT.length} capabilities`;
+}
+const usedBy=id=>EXT.filter(e=>e.deps.includes(id)).map(e=>e.id);
+const HW={C:"rvcexp",Zicsr:"csrarr",F:"falign",D:"falign",M:"mularr",V:"vseq",A:"amoalu",Sv:"tlb",H:"ptw",Zicbom:"cbops",Zba:"alu",Zbb:"alu",Zbs:"alu",Zicond:"alu",Zk:"alu",I:"rf"};
+function select(id){
+  current=id;const e=byId[id];
+  if((filter!=="all"&&e.cat!==filter)||(search&&!`${e.id} ${e.name} ${e.what}`.toLowerCase().includes(search))){filter="all";search="";document.getElementById("extensionSearch").value="";fwrap.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x.dataset.f==="all"))}paintDie();
+  insp.style.setProperty("--cc",`var(${CATS[e.cat][1]})`);
+  const ub=usedBy(id), hw=HW[id];
+  const chain=[];for(let x=id;byId[x].deps.length;){x=byId[x].deps[0];chain.unshift(x)}
+  const lineage=chain.map(d=>`<button data-go="${d}">${d}</button><span class="ar">→</span>`).join("")+`<span class="me">${id}</span>`
+    +(ub.length?`<span class="ar">→</span>${ub.map(d=>`<button data-go="${d}">${d}</button>`).join("")}`:"");
+  const c=CMP[id];let cmp="";
+  if(c){const mx=c.n?Math.max(...c.n):1;
+    cmp=`<div class="cmp" style="display:grid;gap:8px"><h4>Without vs. with ${id} · ${c.task}</h4>
+     <div><div class="cmp-h"><span>${c.w?"Without "+id:"Base only"}</span></div><div class="code">${c.wo}</div></div>
+     ${c.w?`<div><div class="cmp-h w"><span>With ${id}</span></div><div class="code w">${c.w}</div></div>`:""}
+     ${c.n?`<div class="meter" aria-label="${c.u}: ${c.n[0]} without, ${c.n[1]} with"><div><span>without</span><i style="width:${c.n[0]/mx*100}%"></i><span>${c.n[0]}</span></div><div class="w"><span>with ${id}</span><i style="width:${c.n[1]/mx*100}%"></i><span>${c.n[1]}</span></div><span class="small">${c.u}</span></div>`:""}
+     <p class="small">${c.note}</p></div>`}
+  insp.innerHTML=`<div class="insp-top"><span class="tag">${e.id}</span><h3>${e.name}</h3>
+   <div class="meta"><span class="pill">${CATS[e.cat][0]}</span><span class="pill">${e.fmt}</span></div></div>
+   <div class="insp-body"><p>${e.what}</p>
+   <div style="display:grid;gap:6px"><h4>Sample</h4><div class="code">${e.code}</div></div>
+   ${cmp}
+   <div style="display:grid;gap:6px"><h4>Why it matters</h4><p>${e.why}</p></div>
+   <div style="display:grid;gap:6px"><h4>Dependency chain · builds on → this → enables</h4><div class="lineage">${lineage}</div>${chain.length?"":`<span class="small">A base ISA: everything else builds on one.</span>`}</div>
+   ${hw?`<div class="deps"><button data-hw="${hw}">Show in the pipeline →</button></div>`:""}
+   </div>`;
+  insp.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>select(b.dataset.go));
+  insp.querySelectorAll("[data-hw]").forEach(b=>b.onclick=()=>{window.dpPick&&window.dpPick(b.dataset.hw);document.getElementById("datapath").scrollIntoView({behavior:smooth()})});
+}
+select(current);
+
+/* Builder */
+const TOG=["M","A","F","D","Q","C","B","V","H","Zicsr","Zifencei","Zicond","Zfh","Zcb","Zk","Zvk","Zicbom"];
+const IMPL={F:["Zicsr"],D:["F"],Q:["D"],Zfh:["F"],V:["D"],Zvk:["V"],Zcb:["C"],H:["Zicsr"]};
+const st={x:64,on:new Set(["M","A","F","D","C","Zicsr","Zifencei"])};
+const PRE={mcu:{x:32,on:["M","C","Zicsr"]},rva22:{x:64,on:["M","A","F","D","C","B","Zicsr","Zifencei","Zicbom"]},rva23:{x:64,on:["M","A","F","D","C","B","V","H","Zicsr","Zifencei","Zicond","Zcb","Zicbom","Zfh"]}};
+const PROF=[
+ {n:"RVA22U64",d:"2022 baseline for 64-bit application software",x:64,req:["M","A","F","D","C","B","Zicsr","Zicbom"]},
+ {n:"RVA23U64",d:"2024 profile: vector and Zicond become mandatory",x:64,req:["M","A","F","D","C","B","V","Zicsr","Zicond","Zcb","Zicbom"]},
+ {n:"RVA23S64",d:"Adds supervisor features, including the hypervisor",x:64,req:["M","A","F","D","C","B","V","H","Zicsr","Zicond","Zcb","Zicbom"]}
+];
+function closure(set){const out=new Set(set),forced=new Set();let ch=true;
+  while(ch){ch=false;for(const k of [...out])for(const d of (IMPL[k]||[]))if(!out.has(d)){out.add(d);forced.add(d);ch=true}}
+  return [out,forced]}
+const ORDER="IMAFDQLCBKJTPVH";
+function isaString(on){
+  const single=["M","A","F","D","Q","C","B","V","H"].filter(k=>on.has(k));
+  const g=["M","A","F","D","Zicsr","Zifencei"].every(k=>on.has(k));
+  const letters=g?"g"+single.filter(k=>!"MAFD".includes(k)).join("").toLowerCase():"i"+single.join("").toLowerCase();
+  const multi=[...on].filter(k=>k!=="Zvk"&&k.length>1&&!(g&&(k==="Zicsr"||k==="Zifencei")))
+    .sort((a,b)=>ORDER.indexOf(a[1].toUpperCase())-ORDER.indexOf(b[1].toUpperCase())||a.localeCompare(b));
+  return "rv"+st.x+letters+(multi.length?"_"+multi.map(m=>m.toLowerCase()).join("_"):"");
+}
+const tgw=document.getElementById("toggles");
+TOG.forEach(k=>{const b=document.createElement("button");b.className="tg";b.dataset.k=k;
+  const cat=k==="B"?"bit":byId[k].cat;b.style.setProperty("--cc",`var(${CATS[cat][1]})`);
+  b.innerHTML=`<span class="led"></span><b>${k}</b>`;b.title=k==="B"?"Zba + Zbb + Zbs":byId[k].name;
+  b.onclick=()=>{st.on.has(k)?st.on.delete(k):st.on.add(k);
+    if(!st.on.has(k)){const removed=new Set([k]);let changed=true;while(changed){changed=false;for(const [a,ds] of Object.entries(IMPL))if(!removed.has(a)&&ds.some(d=>removed.has(d))){st.on.delete(a);removed.add(a);changed=true}}}
+    renderB()};
+  tgw.appendChild(b)});
+document.querySelectorAll("#xlen button").forEach(b=>b.onclick=()=>{st.x=+b.dataset.x;renderB()});
+document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{const p=PRE[b.dataset.preset];st.x=p.x;st.on=new Set(p.on);renderB()});
+function renderB(){
+  const [on,forced]=closure(st.on);
+  document.querySelectorAll("#xlen button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.x===st.x));
+  tgw.querySelectorAll(".tg").forEach(b=>{b.setAttribute("aria-pressed",on.has(b.dataset.k));b.classList.toggle("forced",forced.has(b.dataset.k))});
+  document.getElementById("isaOut").textContent=isaString(on);
+  document.getElementById("implied").textContent=forced.size?"Added as dependencies: "+[...forced].join(", ")+".":(["M","A","F","D","Zicsr","Zifencei"].every(k=>on.has(k))?"IMAFD + Zicsr + Zifencei collapses to g.":"");
+  document.getElementById("profiles").innerHTML=PROF.map(p=>{
+    const miss=p.req.filter(r=>!on.has(r)),xok=st.x===p.x,ok=!miss.length&&xok;
+    return `<div class="prof-row"><header><b>${p.n}</b><span class="status ${ok?"ok":"no"}">${ok?"MEETS SHOWN":"MISSING "+(miss.length+(xok?0:1))}</span></header>
+     <p class="small">${p.d}</p><div class="req"><span class="${xok?"have":"miss"}">RV64I</span>${p.req.map(r=>`<span class="${on.has(r)?"have":"miss"}">${r}</span>`).join("")}</div></div>`}).join("");
+  if(on.has("Zvk"))document.getElementById("implied").textContent+=" Zvk is a family label; choose concrete Zv* extensions for a toolchain ISA string.";
+  window.coreOn=on; if(window.dpExt)window.dpExt();
+}
+renderB();
+document.getElementById("copyIsa").onclick=async e=>{const t=document.getElementById("isaOut").textContent;
+  try{await navigator.clipboard.writeText(t);e.target.textContent="Copied"}catch(_){const r=document.createRange();r.selectNodeContents(document.getElementById("isaOut"));const s=getSelection();s.removeAllRanges();s.addRange(r);e.target.textContent="Selected"}
+  setTimeout(()=>e.target.textContent="Copy",1400)};
+
+/* Encoding */
+const OPS={
+ add:{f:"R",op:0x33,f3:0,f7:0,ext:"I"}, sub:{f:"R",op:0x33,f3:0,f7:0x20,ext:"I"}, mul:{f:"R",op:0x33,f3:0,f7:1,ext:"M"},
+ addi:{f:"I",op:0x13,f3:0,ext:"I",imm:-16}, lw:{f:"I",op:0x03,f3:2,ext:"I",imm:8,mem:1},
+ sw:{f:"S",op:0x23,f3:2,ext:"I",imm:12}, beq:{f:"B",op:0x63,f3:0,ext:"I",imm:-8},
+ lui:{f:"U",op:0x37,ext:"I",imm:0x12345}, jal:{f:"J",op:0x6F,ext:"I",imm:2048},
+ "fadd.s":{f:"R",op:0x53,f3:7,f7:0,ext:"F",rf:"f"}, csrrw:{f:"I",op:0x73,f3:1,ext:"Zicsr",imm:0x300,csr:1}, "amoadd.w":{f:"R",op:0x2F,f3:2,f7:0,ext:"A",amo:1}, "vadd.vv":{f:"R",op:0x57,f3:0,f7:1,ext:"V",rf:"v"}
+};
+const FMT={R:"Register–register",I:"Immediate, loads",S:"Stores",B:"Branches",U:"Upper immediate",J:"Jumps"};
+const ABI=["zero","ra","sp","gp","tp","t0","t1","t2","s0","s1","a0","a1","a2","a3","a4","a5","a6","a7","s2","s3","s4","s5","s6","s7","s8","s9","s10","s11","t3","t4","t5","t6"];
+const FC={op:"--c-base",rd:"--c-int",f3:"--c-bit",rs1:"--c-fp",rs2:"--c-vec",f7:"--c-crypto",f6:"--c-crypto",vm:"--c-comp",imm:"--c-sys"};
+const CSRN={0x300:"mstatus",0x305:"mtvec",0x341:"mepc",0x342:"mcause",0x180:"satp",0x003:"fcsr",0xC00:"cycle",0xC01:"time"};
+const LIM={I:[-2048,2047],S:[-2048,2047],B:[-4096,4094],U:[0,0xFFFFF],J:[-1048576,1048574]};
+const bits=(v,hi,lo)=>(v>>>lo)&((1<<(hi-lo+1))-1);
+function encode(name,rd,rs1,rs2,imm){
+  const o=OPS[name],f=o.f;let note="";
+  if(LIM[f]){const [lo,hi]=o.csr?[0,4095]:LIM[f];if(imm<lo||imm>hi){imm=Math.max(lo,Math.min(hi,imm));note=`clamped to ${f}-type range ${lo}…${hi}`}}
+  if((f==="B"||f==="J")&&imm%2){imm-=1;note="branch offsets are multiples of 2"}
+  let w=0,F=[];const u=imm>>>0;
+  if(f==="R"){w=(o.f7<<25)|(rs2<<20)|(rs1<<15)|(o.f3<<12)|(rd<<7)|o.op;F=o.rf==="v"?[[31,26,"funct6","f6"],[25,25,"vm","vm"],[24,20,"vs2","rs2"],[19,15,"vs1","rs1"],[14,12,"funct3","f3"],[11,7,"vd","rd"],[6,0,"opcode","op"]]:[[31,25,"funct7","f7"],[24,20,"rs2","rs2"],[19,15,"rs1","rs1"],[14,12,"funct3","f3"],[11,7,"rd","rd"],[6,0,"opcode","op"]]}
+  if(f==="I"){w=(bits(u,11,0)<<20)|(rs1<<15)|(o.f3<<12)|(rd<<7)|o.op;F=[[31,20,"imm[11:0]","imm"],[19,15,"rs1","rs1"],[14,12,"funct3","f3"],[11,7,"rd","rd"],[6,0,"opcode","op"]]}
+  if(f==="S"){w=(bits(u,11,5)<<25)|(rs2<<20)|(rs1<<15)|(o.f3<<12)|(bits(u,4,0)<<7)|o.op;F=[[31,25,"imm[11:5]","imm"],[24,20,"rs2","rs2"],[19,15,"rs1","rs1"],[14,12,"funct3","f3"],[11,7,"imm[4:0]","imm"],[6,0,"opcode","op"]]}
+  if(f==="B"){w=(bits(u,12,12)<<31)|(bits(u,10,5)<<25)|(rs2<<20)|(rs1<<15)|(o.f3<<12)|(bits(u,4,1)<<8)|(bits(u,11,11)<<7)|o.op;
+    F=[[31,31,"12","imm"],[30,25,"imm[10:5]","imm"],[24,20,"rs2","rs2"],[19,15,"rs1","rs1"],[14,12,"funct3","f3"],[11,8,"imm[4:1]","imm"],[7,7,"11","imm"],[6,0,"opcode","op"]]}
+  if(f==="U"){w=(bits(u,19,0)<<12)|(rd<<7)|o.op;F=[[31,12,"imm[31:12]","imm"],[11,7,"rd","rd"],[6,0,"opcode","op"]]}
+  if(f==="J"){w=(bits(u,20,20)<<31)|(bits(u,10,1)<<21)|(bits(u,11,11)<<20)|(bits(u,19,12)<<12)|(rd<<7)|o.op;
+    F=[[31,31,"20","imm"],[30,21,"imm[10:1]","imm"],[20,20,"11","imm"],[19,12,"imm[19:12]","imm"],[11,7,"rd","rd"],[6,0,"opcode","op"]]}
+  w>>>=0;const R=r=>o.rf?o.rf+r:ABI[r],P=o.rf||"x";let asm;
+  if(o.amo)asm=`${name} ${R(rd)}, ${R(rs2)}, (${R(rs1)})`;
+  else if(f==="R")asm=o.rf==="v"?`${name} ${R(rd)}, ${R(rs2)}, ${R(rs1)}`:`${name} ${R(rd)}, ${R(rs1)}, ${R(rs2)}`;
+  else if(o.csr)asm=`${name} ${R(rd)}, ${CSRN[imm]||"0x"+imm.toString(16)}, ${R(rs1)}`;
+  else if(f==="I")asm=o.mem?`${name} ${R(rd)}, ${imm}(${R(rs1)})`:`${name} ${R(rd)}, ${R(rs1)}, ${imm}`;
+  else if(f==="S")asm=`${name} ${R(rs2)}, ${imm}(${R(rs1)})`;
+  else if(f==="B")asm=`${name} ${R(rs1)}, ${R(rs2)}, ${imm>=0?"+":""}${imm}`;
+  else if(f==="U")asm=`${name} ${R(rd)}, 0x${imm.toString(16)}`;
+  else asm=`${name} ${R(rd)}, ${imm>=0?"+":""}${imm}`;
+  const val=k=>k==="rd"?P+rd:k==="rs1"?P+rs1:k==="rs2"?P+rs2:k==="op"?o.op.toString(2).padStart(7,"0"):k==="f3"?String(o.f3):k==="f7"?o.f7.toString(2).padStart(7,"0"):k==="f6"?(o.f7>>1).toString(2).padStart(6,"0"):k==="vm"?String(o.f7&1):"";
+  return {w,F,asm,note,f,val,imm,name,rd,rs1,rs2,hex:"0x"+w.toString(16).toUpperCase().padStart(8,"0")};
+}
+// Inverse of encode for the instructions modeled here.
+function decodeWord(w){
+  const opc=w&0x7f,f3=bits(w,14,12),f7=bits(w,31,25),s=w|0;
+  const name=Object.keys(OPS).find(k=>{const o=OPS[k];return o.op===opc&&(o.f3===undefined||o.f3===f3)&&(o.f!=="R"||o.f7===f7)});
+  if(!name)return null;
+  const f=OPS[name].f;let imm=0;
+  if(f==="I")imm=OPS[name].csr?bits(w,31,20):s>>20;
+  if(f==="S")imm=((s>>25)<<5)|bits(w,11,7);
+  if(f==="B")imm=((s>>31)<<12)|(bits(w,7,7)<<11)|(bits(w,30,25)<<5)|(bits(w,11,8)<<1);
+  if(f==="U")imm=bits(w,31,12);
+  if(f==="J")imm=((s>>31)<<20)|(bits(w,19,12)<<12)|(bits(w,20,20)<<11)|(bits(w,30,21)<<1);
+  return {name,rd:bits(w,11,7),rs1:bits(w,19,15),rs2:bits(w,24,20),imm};
+}
+const OPNAME={0x73:"SYSTEM",0x2F:"AMO · atomic memory op",0x53:"OP-FP · floating point",0x57:"OP-V · vector",0x33:"OP · register–register",0x13:"OP-IMM · register–immediate",0x03:"LOAD",0x23:"STORE",0x63:"BRANCH",0x37:"LUI",0x6F:"JAL"};
+// Immediate pieces: [imm hi, imm lo, instruction hi, instruction lo]; no source = always zero.
+const IMAP={I:[[11,0,31,20]],S:[[11,5,31,25],[4,0,11,7]],B:[[12,12,31,31],[11,11,7,7],[10,5,30,25],[4,1,11,8],[0,0]],U:[[31,12,31,12],[11,0]],J:[[20,20,31,31],[19,12,19,12],[11,11,20,20],[10,1,30,21],[0,0]]};
+const IWHY={
+ I:"The 12 immediate bits sit in one block at the top of the word, and bits above imm[11] copy instruction bit 31 (sign extension).",
+ S:"Stores have no rd, so imm[4:0] goes where rd normally sits. rs1 and rs2 keep their usual positions, and decode never has to move them.",
+ B:"Branch offsets are always even, so imm[0] is never stored. imm[11] moves to bit 7, which lets every other bit line up with the S-type layout and keeps bit 31 as the sign. The hardware needs fewer multiplexers per immediate bit.",
+ U:"The 20 bits become the upper part of a 32-bit constant. The low 12 bits are zero. A following addi can fill them in.",
+ J:"Like B-type, the scramble keeps bit 31 as the sign and keeps imm[19:12] where U-type has them. The result is a ±1 MiB reach."
+};
+const opSel=document.getElementById("op");
+Object.keys(OPS).forEach(k=>opSel.add(new Option(`${k}  (${OPS[k].f}-type${OPS[k].ext!=="I"?", "+OPS[k].ext:""})`,k)));
+document.getElementById("formats").innerHTML=Object.entries(FMT).map(([k,v])=>`<div class="fmt" data-f="${k}"><b>${k}-type</b><div>${v}</div></div>`).join("");
+const rv=i=>{let v=parseInt(document.getElementById(i).value,10);return isNaN(v)?0:Math.max(0,Math.min(31,v))};
+opSel.onchange=()=>{const o=OPS[opSel.value];if(o.imm!==undefined)document.getElementById("imm").value=o.imm;renderE();if(window.dpSetOp)window.dpSetOp(opSel.value,true)};
+["rd","rs1","rs2","imm"].forEach(i=>document.getElementById(i).oninput=renderE);
+function renderE(){
+  const name=opSel.value,o=OPS[name],f=o.f;
+  const E=encode(name,rv("rd"),rv("rs1"),rv("rs2"),parseInt(document.getElementById("imm").value,10)||0);
+  window.lastEnc=E;
+  const show={rd:"RIUJ".includes(f),rs1:"RISB".includes(f),rs2:"RSB".includes(f),imm:f!=="R"};
+  for(const k in show)document.getElementById("f-"+k).hidden=!show[k];
+  document.getElementById("asm").textContent=E.asm;document.getElementById("hex").textContent=E.hex;document.getElementById("immNote").textContent=E.note;
+  let h="";for(let i=31;i>=0;i--)h+=`<div class="bitn">${i}</div>`;
+  const fieldOf=i=>E.F.find(([hi,lo])=>i<=hi&&i>=lo);
+  for(let i=31;i>=0;i--){const fd=fieldOf(i);h+=`<div class="bit${fd[0]===i?" edge":""}" data-b="${i}" style="--fc:var(${FC[fd[3]]})">${(E.w>>>i)&1}</div>`}
+  E.F.forEach(([hi,lo,lab,k])=>{const v=E.val(k);h+=`<div class="flab" style="grid-column:span ${hi-lo+1};--fc:var(${FC[k]})" title="${lab}">${lab}${v&&hi-lo>=2?`<small>${v}</small>`:""}</div>`});
+  const bitsEl=document.getElementById("bits");bitsEl.innerHTML=h;
+  // Decoder walkthrough
+  const fb=(hi,lo)=>bits(E.w,hi,lo).toString(2).padStart(hi-lo+1,"0"),reg=r=>o.rf?`${o.rf}${r} (${o.rf==="f"?"FP":"vector"} register)`:`x${r} (${ABI[r]})`,c=(k,t)=>`<code style="--fc:var(${FC[k]})">${t}</code>`;
+  const ds=[`bits [1:0] = ${c("op","11")}, so this is a 32-bit instruction. Any other value would mean a 16-bit compressed one.`,
+    `opcode [6:0] = ${c("op",fb(6,0))} → ${OPNAME[o.op]} group, which uses the <b>${f}-type</b> layout.`];
+  if(o.amo)ds.push(`funct7 = ${c("f7",fb(31,25))} splits into funct5 = 00000 → <b>amoadd</b>, plus the aq and rl ordering bits (both 0 here). funct3 = ${c("f3",fb(14,12))} → 32-bit word.`);
+  else if(o.rf==="v")ds.push(`funct6 = ${c("f6",fb(31,26))} → add. funct3 = ${c("f3",fb(14,12))} → OPIVV (vector–vector). vm = ${c("vm",fb(25,25))} → unmasked: every element is written. Element width comes from vtype, not from the instruction.`);
+  else if(o.rf==="f")ds.push(`funct7 = ${c("f7",fb(31,25))} → <b>fadd</b>; its low two bits (00) select single precision. funct3 = ${c("f3",fb(14,12))} is the rounding-mode field; 111 means use the dynamic mode in fcsr.`);
+  else if(f==="R")ds.push(`funct3 = ${c("f3",fb(14,12))} and funct7 = ${c("f7",fb(31,25))} → <b>${name}</b>${name==="sub"?" (bit 30 turns add into sub)":name==="mul"?" (funct7 = 0000001 marks the M extension)":""}.`);
+  else if(o.f3!==undefined)ds.push(`funct3 [14:12] = ${c("f3",fb(14,12))} → <b>${name}</b> within that group.`);
+  else ds.push(`No funct3: the opcode alone identifies <b>${name}</b>.`);
+  const regs=[];if("RIUJ".includes(f))regs.push(`rd = ${c("rd",reg(E.rd))}`);if("RISB".includes(f))regs.push(`rs1 = ${c("rs1",reg(E.rs1))}`);if("RSB".includes(f))regs.push(`rs2 = ${c("rs2",reg(E.rs2))}`);
+  ds.push(`Register fields: ${regs.join(", ")}. They can be read before the instruction is fully decoded because they never move.`);
+  if(o.csr)ds.push(`The 12-bit field is not an offset. It is the CSR address ${c("imm","0x"+E.imm.toString(16).padStart(3,"0"))}${CSRN[E.imm]?" ("+CSRN[E.imm]+")":""}, unsigned. Its top bits encode read-only status and privilege level.`);
+  else if(f!=="R")ds.push(`The immediate is reassembled from its pieces → ${c("imm",f==="U"?"0x"+E.imm.toString(16)+" << 12":String(E.imm))}${"ISBJ".includes(f)?", sign-extended from bit 31":""}.`);
+  document.getElementById("dsteps").innerHTML=ds.map(s=>`<li><span>${s}</span></li>`).join("");
+  // Immediate map
+  const iv=f==="U"?(E.imm<<12)>>>0:E.imm>>>0, map=IMAP[f]||[];
+  document.getElementById("immMap").innerHTML=map.length?map.map(([ih,il,bh,bl],k)=>{let s="";for(let i=ih;i>=il;i--)s+=(iv>>>i)&1;
+    const zero=bh===undefined;return `<div class="iseg${zero?" zero":""}" data-hi="${bh??""}" data-lo="${bl??""}" style="--sc:var(--i${k%4})"><b>imm[${ih}${ih!==il?":"+il:""}]</b><code>${s}</code><small>${zero?"not stored · always 0":"← inst["+bh+(bh!==bl?":"+bl:"")+"]"}</small></div>`}).join(""):`<span class="small">R-type has no immediate: both operands come from registers.</span>`;
+  document.getElementById("immWhy").textContent=IWHY[f]||"R-type uses funct7 for extra opcode space instead of an immediate.";
+  document.querySelectorAll("#immMap .iseg:not(.zero)").forEach(sg=>{const hi=+sg.dataset.hi,lo=+sg.dataset.lo;
+    const on=()=>{bitsEl.classList.add("hlon");bitsEl.style.setProperty("--hc",getComputedStyle(sg).getPropertyValue("--sc"));bitsEl.querySelectorAll(".bit").forEach(b=>b.classList.toggle("hl",+b.dataset.b<=hi&&+b.dataset.b>=lo))};
+    const off=()=>{bitsEl.classList.remove("hlon");bitsEl.querySelectorAll(".bit.hl").forEach(b=>b.classList.remove("hl"))};
+    sg.onmouseenter=on;sg.onmouseleave=off;sg.tabIndex=0;sg.onfocus=on;sg.onblur=off});
+  document.querySelectorAll(".fmt").forEach(d=>d.classList.toggle("on",d.dataset.f===f));
+  if(window.dpRenderWord)window.dpRenderWord();
+}
+renderE();
+function runDecode(){
+  const raw=document.getElementById("hexIn").value.trim(),msg=document.getElementById("hexMsg");
+  if(!/^(0x)?[0-9a-f]{1,8}$/i.test(raw)){msg.textContent="Enter up to 8 hex digits, for example 0x00B50533.";return}
+  const w=parseInt(raw.replace(/^0x/i,""),16)>>>0;
+  if((w&3)!==3){msg.textContent="The low two bits are not 11, so this is a 16-bit compressed instruction. This bench decodes 32-bit words only.";return}
+  const d=decodeWord(w);
+  if(!d){msg.textContent=`Opcode ${(w&0x7f).toString(2).padStart(7,"0")} with these funct fields is not one of the ${Object.keys(OPS).length} instructions modeled here (${Object.keys(OPS).join(", ")}).`;return}
+  opSel.value=d.name;["rd","rs1","rs2","imm"].forEach(k=>document.getElementById(k).value=d[k]);
+  renderE();msg.textContent=`Decoded as ${d.name}. Re-encoding gives ${window.lastEnc.hex}: the same word.`;
+  if(window.dpSetOp)window.dpSetOp(d.name);
+}
+document.getElementById("hexGo").onclick=runDecode;
+document.getElementById("hexIn").onkeydown=e=>{if(e.key==="Enter")runDecode()};
+
+/* Primer: one load through the four layers */
+(function(){
+  const E=encode("lw",10,11,0,8);
+  const wbar=`<div class="wbar">${E.F.map(([hi,lo,lab,k])=>`<div style="flex:${hi-lo+1};--fc:var(${FC[k]})" title="${lab} [${hi}:${lo}]">${hi-lo>=4?lab.replace(/\[.*\]/,""):""}</div>`).join("")}</div>`;
+  const L=[
+   ["Source code","--muted","x = p[2];","<code>p</code> is an <code>int*</code>. Each int is 4 bytes, so element 2 sits 8 bytes past <code>p</code>.","flow"],
+   ["Assembly · ISA","--sig","lw a0, 8(a1)","The compiler has kept <code>p</code> in <code>a1</code> and <code>x</code> in <code>a0</code>. The ISA defines exactly what <code>lw</code> does.","atlas"],
+   ["Machine word · ISA","--c-int",E.hex+wbar,"These 32 bits are what fetch actually reads. Fixed fields let the decoder find opcode, registers and offset immediately.","bench"],
+   ["Hardware · μarch","--ctl",`<div class="stg5">${["IF","ID","EX","MEM","WB"].map(s=>`<span>${s}</span>`).join("")}</div>`,"EX adds <code>a1 + 8</code>, MEM reads the word, WB writes <code>a0</code>. Another core may do this differently, but the result must match.","datapath"]
+  ];
+  const box=document.getElementById("layers");
+  box.innerHTML=L.map(([t,c,v,s,go],i)=>`<button class="layer" data-go="${go}" style="--lc:var(${c})"><span class="lbl">${i+1} · ${t}</span><div class="v">${v}</div><small>${s}</small></button>`).join("")
+    +`<div class="layers-foot"><span style="--fc:var(--muted)">software writes</span><span style="--fc:var(--sig);flex:2">the ISA contract</span><span style="--fc:var(--ctl)">hardware chooses</span></div>`;
+  box.querySelectorAll(".layer").forEach(b=>b.onclick=()=>{const go=b.dataset.go;
+    if(go==="flow")document.querySelector('[data-flow="lw"]').click();
+    if(go==="atlas")select("I");
+    if(go==="bench"||go==="datapath"){opSel.value="lw";document.getElementById("rd").value=10;document.getElementById("rs1").value=11;document.getElementById("imm").value=8;renderE();window.dpSetOp&&window.dpSetOp("lw")}
+    document.getElementById(go).scrollIntoView({behavior:smooth()})});
+})();
+
+/* ---------- Pipeline ---------- */
+(function(){
+const NS="http://www.w3.org/2000/svg", svg=document.getElementById("dpSvg");
+const SN=["IF","ID","EX","MEM","WB"], SFULL=["fetch","decode","execute","memory","writeback"];
+const STG=[[0,250],[260,500],[510,830],[840,1030],[1040,1200]];
+const BARS=[[250,"IF/ID"],[500,"ID/EX"],[830,"EX/MEM"],[1030,"MEM/WB"]];
+const ALL=["add","sub","mul","addi","lw","sw","beq","jal","lui","fadd.s","vadd.vv","csrrw","amoadd.w"];
+const FA=["fadd.s"], VA=["vadd.vv"];
+const LX=[730,844,958,1072]; // vector lane x positions in the close-up
+const RD1=["add","sub","mul","addi","lw","sw","beq","csrrw","amoadd.w"], RD2=["add","sub","mul","sw","beq","amoadd.w"], IMM=["addi","lw","sw","beq","jal","lui"];
+const ALUOPS=["add","sub","addi","lw","sw","beq","lui","jal","amoadd.w"], ARES=["add","sub","addi","lw","sw","lui","jal","amoadd.w"], LS=["lw","sw","amoadd.w"];
+const WRITES=["add","sub","mul","addi","lw","jal","lui","csrrw","amoadd.w"], NONLD=["add","sub","mul","addi","lui","jal","csrrw"], BR=["beq","jal"];
+// [id, path, stage, ops (single & program occupant), kind, event (program mode)]
+const W=[
+ ["pc_imem","M115 330 H140",1,ALL],
+ ["pc_add4","M90 300 V232",1,ALL],
+ ["add4_mux","M95 190 V150 H14 V300 H30",1,ALL],
+ ["mux_pc","M52 330 H65",1,ALL],
+ ["imem_ifid","M235 330 H250",1,ALL],
+ ["pc_btb","M127 330 V212 H140",1,ALL],
+ ["btb_pred","M187 180 V170 H22 V330 H30",1,null,"","predict"],
+ ["pc_ifid","M127 330 V262 H250",1,BR],
+ ["ins_ctrl","M260 330 H275 V137 H290",2,ALL],
+ ["ins_rs1","M260 330 H282 V300 H300",2,RD1],
+ ["ins_rs2","M260 330 H282 V360 H300",2,RD2],
+ ["ins_imm","M260 330 H275 V462 H300",2,IMM],
+ ["rd1_idex","M420 300 H500",2,RD1],
+ ["rd2_idex","M420 360 H500",2,RD2],
+ ["imm_idex","M420 462 H500",2,IMM],
+ ["pc_idex","M260 262 H500",2,BR],
+ ["ctrl_idex","M410 137 H500",2,ALL,"ctrl"],
+ ["hz_rs","M275 137 V56 H290",2,null,"ctrl","stall"],
+ ["hz_ld","M520 137 V68 H432",2,null,"ctrl","stall"],
+ ["hz_pc","M290 78 H58 V315 H65",2,null,"ctrl","stall"],
+ ["hz_ifid","M255 78 V103",2,null,"ctrl","stall"],
+ ["hz_bubble","M432 80 H505 V103",2,null,"ctrl","stall"],
+ ["rd1_fa","M510 300 H516 V282 H525",3,RD1],
+ ["rd2_fb","M510 360 H516 V347 H525",3,RD2],
+ ["fa_amux","M547 300 H565",3,["add","sub","addi","lw","sw","beq","mul","amoadd.w"]],
+ ["fb_bmux","M547 365 H556 V355 H565",3,["add","sub","beq","mul"]],
+ ["imm_bmux","M510 462 H560 V385 H565",3,["addi","lw","sw","lui"]],
+ ["amux_alu","M587 300 H610",3,ALUOPS],
+ ["bmux_alu","M587 370 H610",3,ALUOPS],
+ ["alu_exmem","M690 340 H830",3,ARES],
+ ["pc_badd","M510 262 H595 V165 H610",3,BR],
+ ["imm_badd","M510 462 H560 V428 H600 V182 H610",3,BR],
+ ["alu_br","M670 294 V227 H720",3,["beq"],"ctrl"],
+ ["br_redirect","M790 227 H805",3,["beq"],"ctrl","redirect"],
+ ["redirect","M680 172 H805 V30 H6 V362 H30",3,BR,"","redirect"],
+ ["flush","M755 205 V96 H255 V103",3,null,"ctrl","redirect"],
+ ["store_ex","M551 365 V488 H830",3,["sw","amoadd.w"]],
+ ["ctrl_exmem","M510 137 H830",3,ALL,"ctrl"],
+ ["fu_in","M845 137 V68 H782",3,null,"ctrl","fwd"],
+ ["fu_in2","M1045 137 V56 H782",3,null,"ctrl","fwdmw"],
+ ["fu_sel","M650 88 V112 H536 V274",3,null,"ctrl","fwdany"],
+ ["fwd_em","M850 340 V440 H519 V300 H525",3,null,"fwd","fwd"],
+ ["fwd_em_b","M519 365 H525",3,null,"fwd","fwdB"],
+ ["fwd_mw","M522 510 V318 H525",3,null,"fwd","fwdmw"],
+ ["fwd_mw_b","M522 383 H525",3,null,"fwd","fwdmwB"],
+ ["mul_in","M547 300 H551 V532 H510 V557 H520",3,["mul"]],
+ ["mul_in_b","M547 365 H555 V532 H600 V565 H605",3,["mul"]],
+ ["pc_link","M510 262 H553 V311 H565",3,["jal"]],
+ ["four_link","M560 410 H565 V385",3,["jal"]],
+ ["mul_out","M563 540 V520 H835 V502",3,["mul"]],
+ ["addr_dmem","M840 340 H870",4,LS],
+ ["bypass","M840 340 H855 V215 H1030",4,NONLD],
+ ["store_mem","M840 488 H855 V400 H870",4,["sw","amoadd.w"]],
+ ["dmem_out","M990 365 H1030",4,["lw","amoadd.w"]],
+ ["ctrl_memwb","M840 137 H1030",4,ALL,"ctrl"],
+ ["ld_wb","M1040 365 H1060",5,["lw","amoadd.w"]],
+ ["alu_wb","M1040 215 H1050 V315 H1060",5,NONLD],
+ ["wb_rf","M1082 340 H1110 V510 H286 V395 H300",5,WRITES],
+ ["wbsel","M1040 137 H1071 V292",5,WRITES,"ctrl"],
+ // Close-up: issue paths from decode into the extension units
+ ["ins_fprf","M266 330 V531 H430 V540",2,FA],
+ ["ins_vec","M272 330 V536 H781 V540",2,VA],
+ // Mul/Div close-up
+ ["mul_pp","M562 588 V597 H200 V706",3,["mul"]],
+ ["pp_tree","M132 806 V818",3,["mul"]],
+ ["tree_out","M132 854 V866",3,["mul"]],
+ ["div_loop","M196 942 V954 H68 V942",3,[]],
+ // FPU close-up
+ ["fp_in","M385 588 V607 H284 V770 H300",3,FA],
+ ["fp_um","M370 770 H385",3,[]],
+ ["fp_skip","M370 806 H377 V842 H462 V806 H470",3,FA],
+ ["fp_ma","M455 770 H470",3,[]],
+ ["fp_an","M540 770 H555",3,FA],
+ ["fp_nr","M617 770 H628",3,FA],
+ ["fp_frm","M657 905 V826",3,FA,"ctrl"],
+ ["fp_wb","M686 770 H702 V627 H440 V588",5,FA],
+ // Vector close-up
+ ["vec_in","M781 588 V684",3,VA],
+ ["v_cfg","M864 706 H880",3,VA,"ctrl"],
+ ["v_mask","M1046 706 H1030",3,[],"ctrl"],
+ ...LX.flatMap((x,k)=>[
+  ["v_iss"+k,`M955 728 V740 H${x+50} V752`,3,VA,"ctrl"],
+  ["v_ra"+k,`M${x+38} 822 V836`,3,VA],["v_rb"+k,`M${x+62} 822 V836`,3,VA],
+  ["v_wb"+k,`M${x+50} 876 V888 H${x+107} V809 H${x+100}`,5,VA],
+  ["v_ls"+k,`M${x+8} 822 V902`,4,[]]])
+];
+const DOTS=[[275,330,2,ALL],[282,330,2,RD1],[127,330,1,ALL],[560,462,3,IMM],[855,340,4,NONLD],[850,340,4,null,"fwd"],[551,365,3,["sw"]],[519,365,3,null,"fwdB"],[522,383,3,null,"fwdmwB"],[522,510,5,null,"fwdmw"],[520,137,2,null,"stall"],[845,137,4,null,"fwd"],[1045,137,5,null,"fwdmw"],[255,78,2,null,"stall"]];
+const WLAB=[[436,292,"rd1"],[436,352,"rd2"],[436,455,"imm"],[690,166,"target"],[700,332,"result"],[34,144,"PC+4"],[870,207,"ALU result (bypass)"],[995,357,"load"],[600,481,"rs2 → store data"],[300,24,"redirect on taken branch / jump"],[598,108,"flush"],[195,160,"predicted"],[690,455,"forward from EX/MEM","f"],[340,504,"writeback → rd   ·   from MEM/WB","f"]];
+// Blocks: [id,x,y,w,h,label,sub,stage,shape,title,info,controlPlane?]
+const B=[
+ ["pcmux",30,280,22,100,"","",1,"mux","Next-PC mux","Picks the next fetch address from three sources: PC+4 for sequential flow, the predictor's target on a BTB hit, or the corrected target from EX when a branch was mispredicted."],
+ ["pc",65,300,50,60,"PC","",1,"rect","Program counter","Holds the address being fetched. The hazard unit can freeze it (PCWrite = 0) during a load-use stall so the same instruction is fetched again."],
+ ["add4",65,190,60,42,"+4","",1,"rect","PC incrementer","A dedicated adder for PC+4, so the ALU stays free for EX work. With the C extension the step is +2 or +4 depending on instruction length."],
+ ["btb",140,180,95,65,"Predictor","BTB · 2-bit",1,"rect","Branch predictor","Looked up with the PC every cycle. A branch target buffer remembers where taken branches went, and 2-bit counters decide whether to follow it. A hit lets fetch jump to the target in the same cycle; a wrong guess costs two cycles."],
+ ["imem",140,280,95,100,"Instruction","memory",1,"rect","Instruction memory","Returns a 32-bit word (the L1 instruction cache in a real core). Its output is latched in IF/ID; the strip above the diagram shows that word for the traced instruction."],
+ ["hazard",290,45,142,43,"Hazard unit","load-use · stall",2,"rect","Hazard detection unit","Compares the rs1/rs2 fields of the instruction in ID with the rd of a load in EX. If they match, the value cannot be forwarded in time, so it freezes PC and IF/ID and injects a bubble (all control bits zero) into ID/EX for one cycle.",1],
+ ["ctrl",290,115,120,45,"Control","opcode · funct",2,"rect","Control decoder","Turns opcode, funct3 and funct7 into the control bits that travel down the pipeline registers: ALU operation, operand selects, memory read/write, register write, writeback select."],
+ ["rf",300,270,120,140,"Register file","x0–x31 · 2R/1W",2,"rect","Integer register file","32 registers, two read ports and one write port. x0 always reads zero. This model assumes write-before-read behavior within a cycle. Actual register-file timing and bypass logic depend on the implementation."],
+ ["imm",300,440,120,45,"Imm gen","I · S · B · U · J",2,"rect","Immediate generator","Reassembles and sign-extends the immediate for the format. For signed base-format immediates, instruction bit 31 supplies the sign. CSR immediate operands are unsigned and handled separately."],
+ ["fwdA",525,270,22,60,"","",3,"mux","Forward mux A","Chooses where operand A comes from: the register file value read in ID, the result now in EX/MEM, or the value being written back from MEM/WB. Driven by the forwarding unit."],
+ ["fwdB",525,335,22,60,"","",3,"mux","Forward mux B","Same as mux A for the second operand. Its output also feeds the store-data path, so a store can save a value produced one instruction earlier."],
+ ["amux",565,275,22,50,"","",3,"mux","ALU operand A","Selects the (forwarded) rs1, the PC for AUIPC/JAL, or zero for LUI."],
+ ["bmux",565,340,22,60,"","",3,"mux","ALU operand B","Selects the (forwarded) rs2 for register–register ops or the immediate for I, S and U-type."],
+ ["fwdunit",640,45,142,43,"Forwarding unit","EX/MEM · MEM/WB → EX",3,"rect","Forwarding unit","Compares EX/MEM.rd and MEM/WB.rd with the source registers of the instruction in EX. On a match (and rd ≠ x0) it steers the newer value into the ALU instead of the stale one read from the register file. The nearer stage wins.",1],
+ ["badd",610,150,70,45,"PC + imm","",3,"rect","Branch target adder","Computes the branch or JAL target in parallel with the ALU."],
+ ["alu",610,260,80,160,"ALU","",3,"alu","ALU","Add, subtract, logic, shifts and set-less-than. For BEQ it subtracts and reports zero to the branch logic. Bit-manipulation (B), Zicond and scalar crypto (Zk) are usually extra ALU operations rather than separate units."],
+ ["brlog",720,205,70,45,"Branch","taken?",3,"rect","Branch logic","Combines the ALU comparison with funct3 to decide taken / not taken, then checks it against the prediction. On a mismatch it redirects fetch and flushes the two younger instructions."],
+ ["dmem",870,270,120,150,"Data","memory",4,"rect","Data memory","Loads read here and stores write here. Everything else passes by on the bypass wire. In a real core this is the L1 data cache behind a TLB."],
+ ["wbmux",1060,290,22,100,"","",5,"mux","Writeback select","Chooses the ALU result or the loaded value to write into rd. Its output is also the MEM/WB forwarding source."]
+];
+// Extension units: [id,x,w,label,exts,stage,info,ops]
+const X=[
+ ["rvc",130,95,"RVC expander",["C"],1,"One common C implementation expands compressed instructions before decode. Fetch must also handle halfword alignment and instruction boundaries; this timing model keeps 32-bit fetches.",[]],
+ ["csr",262,100,"CSR file",["Zicsr"],2,"Control and status registers: counters, trap vectors, mstatus, satp. CSR instructions read and write them atomically.",[]],
+ ["fprf",370,124,"FP registers",["F","D"],2,"A second register file, f0–f31, with three read ports for fused multiply-add. 32 bits wide with F, 64 with D.",[]],
+ ["muldiv",520,85,"Mul / Div",["M"],3,"M can use a multiplier and divider with implementation-dependent latency. Here MUL is idealized as a one-cycle EX operation; multi-cycle execution and its hazards are not modeled.",["mul"]],
+ ["fpu",613,85,"FPU",["F","D"],3,"Floating-point add, multiply, FMA, divide, square root and conversions; multi-cycle and pipelined.",[]],
+ ["vec",706,150,"Vector unit",["V"],3,"Its own 32 vector registers, lanes of ALUs and a load/store path to memory, often a decoupled back end fed by the scalar pipeline. Spans EX and MEM.",[]],
+ ["amo",866,82,"AMO · LR/SC",["A"],4,"An atomic unit near the cache that performs read-modify-write as one operation and tracks LR reservations.",[]],
+ ["mmu",956,100,"MMU · TLB",["Sv","H"],4,"Translates virtual to physical addresses through page tables (Sv39/48/57). With H it walks two stages: guest virtual → guest physical → host physical.",[]],
+ ["cbo",1064,110,"Cache-block ops",["Zicbom"],4,"Clean, flush and invalidate a cache line by address, needed by drivers on non-coherent DMA systems.",[]]
+];
+const STEPS={
+ add:["Fetch the word at PC; compute PC+4; the predictor sees no branch.","Decode; read rs1 and rs2.","ALU adds the two operands (forwarded if needed).","No memory access; the result passes by.","Write the sum to rd."],
+ sub:["Fetch; compute PC+4.","Decode: funct7 = 0100000 marks SUB; read rs1, rs2.","ALU subtracts.","No memory access.","Write the difference to rd."],
+ mul:["Fetch; compute PC+4.","Decode: funct7 = 0000001 marks an M-extension op; read rs1, rs2.","Operands go to the Mul/Div unit instead of the ALU.","No memory access; the product passes by.","Write the low 32 bits of the product to rd."],
+ addi:["Fetch; compute PC+4.","Decode; read rs1; sign-extend the 12-bit immediate.","ALU adds rs1 + imm.","No memory access.","Write the sum to rd."],
+ lw:["Fetch; compute PC+4.","Decode; read rs1 (base); build the I-type offset.","ALU computes rs1 + offset.","Read the word from data memory.","Write it to rd. A dependent instruction right behind must stall one cycle."],
+ sw:["Fetch; compute PC+4.","Decode; read rs1 (base) and rs2 (data); build the S-type offset.","ALU computes the address; rs2 travels on as store data.","Write rs2 into data memory.","Nothing to write back."],
+ beq:["Fetch; the predictor guesses taken or not taken.","Decode; read rs1, rs2; build the B-type offset; carry PC along.","ALU compares; the target adder computes PC + offset. If the guess was wrong, redirect and flush.","No memory access.","Nothing to write back."],
+ jal:["Fetch; a BTB hit could redirect right away.","Decode; build the J-type offset; carry PC along.","Target adder computes PC + offset; PC+4 becomes the link value.","No memory access.","Write PC+4 to rd (ra by convention)."],
+ lui:["Fetch; compute PC+4.","Decode; build the U-type immediate (imm << 12).","ALU passes 0 + imm through.","No memory access.","Write the upper immediate to rd."],
+ "fadd.s":["Fetch; compute PC+4. The word looks like any other 32-bit instruction.","Decode: opcode OP-FP routes it to the FPU. fs1 and fs2 come from the FP register file, not x0–x31.","Inside the FPU: unpack, align exponents, add mantissas, normalize, round. fadd skips the multiplier. A real FPU takes 3–5 pipelined cycles for this; the model shows it as one EX step.","No memory access.","Write the rounded sum to fd in the FP register file. Sticky flags such as inexact accumulate in fcsr."],
+ "csrrw":["Fetch; compute PC+4.","Decode: opcode SYSTEM with funct3 = 001 is csrrw. Read rs1. The 12-bit field names a CSR (here mstatus), not an offset.","Inside the CSR file, the old value is read and rs1 is written in one atomic step. Simple cores often drain the pipeline around CSR writes, because they can change privilege or translation.","No data-memory access.","Write the old CSR value to rd."],
+ "amoadd.w":["Fetch; compute PC+4.","Decode: opcode AMO, funct5 = 00000 → amoadd. Read rs1 (the address) and rs2 (the addend).","The ALU passes rs1 through as the address. AMOs have no offset field.","The AMO unit holds the cache line exclusively, reads the old word, adds rs2, and writes the sum back as one indivisible step. The TLB translates the address first.","Write the old memory value to rd, so software knows what the counter was."],
+ "vadd.vv":["Fetch; compute PC+4. One 32-bit instruction will do the work of several.","Decode: opcode OP-V sends it to the vector unit. vtype (set earlier by vsetvli) says the elements are 32-bit.","The sequencer splits it into vl element operations. Four lanes each add one element pair at the same time: vd[i] = vs2[i] + vs1[i].","No memory access. A vle32.v would use the vector load/store unit here.","Each lane writes its element of vd into its own slice of the vector register file."]
+};
+// Program scenarios
+const SCN={
+ fwd:{name:"Forwarding",n:8,rows:[
+   {asm:"add x5, x6, x7",op:"add",c:{1:"IF",2:"ID",3:"EX",4:"MEM",5:"WB"}},
+   {asm:"sub x8, x5, x9",op:"sub",c:{2:"IF",3:"ID",4:"EX",5:"MEM",6:"WB"}},
+   {asm:"and x10, x5, x11",op:"add",c:{3:"IF",4:"ID",5:"EX",6:"MEM",7:"WB"}},
+   {asm:"or x12, x1, x2",op:"add",c:{4:"IF",5:"ID",6:"EX",7:"MEM",8:"WB"}}],
+  ev:{4:{fwd:1},5:{fwdmw:1}},
+  notes:["add enters fetch.","add decodes; sub is fetched.","add computes x6 + x7. sub reads x5 in ID, but that copy is stale: add has not written it yet.","Forwarding: EX/MEM.rd is x5, which is sub's rs1. The new x5 goes straight from EX/MEM into the ALU. No stall.","and also needs x5. add is now in WB, so the value is forwarded from MEM/WB.","or has no dependences; the pipeline runs at one instruction per cycle.","Draining.","Four instructions in eight cycles, with no bubbles. Forwarding hid both dependences."]},
+ load:{name:"Load-use stall",n:8,rows:[
+   {asm:"lw x5, 0(x6)",op:"lw",c:{1:"IF",2:"ID",3:"EX",4:"MEM",5:"WB"}},
+   {asm:"add x7, x5, x8",op:"add",c:{2:"IF",3:"ID",4:"ID*",5:"EX",6:"MEM",7:"WB"}},
+   {asm:"bubble",bub:1,c:{4:"EX",5:"MEM",6:"WB"}},
+   {asm:"sub x9, x7, x5",op:"sub",c:{3:"IF",4:"IF*",5:"ID",6:"EX",7:"MEM",8:"WB"}}],
+  ev:{3:{stall:1},5:{fwdmw:1},6:{fwd:1}},
+  notes:["lw enters fetch.","lw decodes; add is fetched.","Hazard: lw is in EX and its rd (x5) is add's rs1, but the loaded value only exists after MEM. The hazard unit freezes PC and IF/ID and turns the next ID/EX entry into a bubble.","Stall cycle: add stays in ID, sub stays in IF, a bubble moves into EX. lw reads memory.","lw is in WB with x5; it is forwarded from MEM/WB into add in EX.","sub needs x7 from add, now in EX/MEM: forwarded. x5 was written in cycle 5, so sub read it normally.","Draining.","One cycle lost: the load-use penalty compilers try to schedule around."]},
+ miss:{name:"Branch mispredict",n:8,rows:[
+   {asm:"beq x1, x2, L",op:"beq",c:{1:"IF",2:"ID",3:"EX",4:"MEM",5:"WB"}},
+   {asm:"add x3, x4, x5",op:"add",ghost:1,c:{2:"IF",3:"ID",4:"×"}},
+   {asm:"sub x6, x7, x8",op:"sub",ghost:1,c:{3:"IF",4:"×"}},
+   {asm:"bubble",bub:1,c:{4:"EX",5:"MEM",6:"WB"}},
+   {asm:"bubble",bub:1,c:{4:"ID",5:"EX",6:"MEM",7:"WB"}},
+   {asm:"L: addi x9, x9, 1",op:"addi",c:{4:"IF",5:"ID",6:"EX",7:"MEM",8:"WB"}}],
+  ev:{3:{redirect:1}},
+  notes:["beq is fetched. The predictor has no entry for it, so fetch continues at PC+4.","beq decodes; add, on the fall-through path, is fetched.","beq resolves in EX: x1 = x2, so it is taken. The target adder's PC + imm redirects fetch, and the two younger instructions are flushed.","Fetch restarts at L. The flushed slots travel down the pipe as bubbles.","Draining bubbles.","addi executes.","Draining.","Two cycles lost to the misprediction. The predictor now records beq as taken."]},
+ hit:{name:"Predicted taken",n:7,rows:[
+   {asm:"beq x1, x2, L",op:"beq",c:{1:"IF",2:"ID",3:"EX",4:"MEM",5:"WB"}},
+   {asm:"L: addi x9, x9, 1",op:"addi",c:{2:"IF",3:"ID",4:"EX",5:"MEM",6:"WB"}},
+   {asm:"add x10, x9, x3",op:"add",c:{3:"IF",4:"ID",5:"EX",6:"MEM",7:"WB"}}],
+  ev:{1:{predict:1},5:{fwd:1}},
+  notes:["beq is fetched and the BTB hits: it predicts taken and supplies the target L in the same cycle.","Fetch is already at L; addi enters IF.","beq resolves taken in EX, matching the prediction: no redirect, no flush.","addi executes; add decodes.","add needs x9 from addi, now in EX/MEM: forwarded.","Draining.","Three instructions in seven cycles. Under this model’s predictor timing, the taken branch adds no recovery bubbles."]}
+};
+// Predict-before-you-step prompts, one per scenario.
+const ASK={
+ fwd:["sub reads x5 one cycle after add computes it. Will the pipeline stall?","No. add's result exists at the end of its EX stage, and the forwarding unit sends it from EX/MEM into sub's ALU input in cycle 4. A value can be forwarded as soon as it exists."],
+ load:["Forwarding fixed add → sub. Why can't it fix lw → add?","The loaded word exists only at the end of MEM (cycle 4), but add needs it at the start of its EX, also cycle 4. A value cannot be forwarded before it exists, so one bubble is needed. A compiler can fill that slot with an independent instruction."],
+ miss:["When beq turns out taken in EX, how many already-fetched instructions are wrong?","Two: the instructions in IF and in ID. That is this design's 2-cycle mispredict penalty. Resolving branches in ID would cut it to one, at the cost of a comparator and forwarding paths in decode."],
+ hit:["The predictor guessed right. How many cycles does the branch cost?","No extra cycles. The BTB supplied the target during fetch, so the instruction after beq already came from L. Prediction turns control hazards into a bet, and a good predictor usually wins it."]
+};
+const predOpen={};
+const ICOL=["--i0","--i1","--i2","--i3","--i0","--i1"];
+
+let mode="prog", op="add", scn="load", stage=0, cyc=3, timer=null, sel="hazard";
+
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e}
+const defs=el("defs",{});
+const MK=[["mOff","var(--line)"],["mTrail","color-mix(in srgb,var(--sig) 40%,var(--line))"],["mHot","var(--sig)"],["mCtl","var(--ctl)"],["mCtlT","color-mix(in srgb,var(--ctl) 40%,var(--line))"],["mFwd","var(--fwd)"],["mI0","var(--i0)"],["mI1","var(--i1)"],["mI2","var(--i2)"],["mI3","var(--i3)"]];
+MK.forEach(([id,c])=>{const m=el("marker",{id,viewBox:"0 0 8 8",refX:"7",refY:"4",markerWidth:"6",markerHeight:"6",orient:"auto",markerUnits:"userSpaceOnUse"},defs);
+  el("path",{d:"M0 0 L8 4 L0 8 z"},m).style.fill=c});
+const stgRects=STG.map(([a,b])=>el("rect",{class:"stg",x:a,y:36,width:b-a,height:486}));
+el("text",{class:"cp-lab",x:452,y:52}).textContent="CONTROL PLANE";
+el("line",{class:"lane",x1:0,x2:1200,y1:526,y2:526});
+el("text",{class:"lane-lab",x:8,y:610}).textContent="EXTENSION UNITS";
+BARS.forEach(([x,n])=>{el("rect",{class:"bar",x,y:105,width:10,height:395,rx:1});el("text",{class:"bar-lab",x:x+5,y:517}).textContent=n});
+/* Close-up area: each extension box "zooms" into a panel that shows what is inside it. */
+el("line",{class:"lane",x1:0,x2:1200,y1:618,y2:618});
+el("text",{class:"lane-lab",x:8,y:642}).textContent="CLOSE-UP · INSIDE THE EXECUTION UNITS";
+const PAN=[["M",520,605,12,252,"M · multiply / divide",24,"start"],["F",613,698,264,694,"F / D · floating-point unit",684,"end"],["V",706,856,712,1190,"V · vector unit · VLEN 128, SEW 32 → 4 lanes",1180,"end"]];
+PAN.forEach(([x,b0,b1,p0,p1,t,tx,ta])=>{const g=el("g",{});g.style.setProperty("--cc",`var(${CATS[byId[x].cat][1]})`);
+  el("polygon",{class:"cone",points:`${b0},588 ${b1},588 ${p1},655 ${p0},655`},g);
+  el("rect",{class:"zpanel",x:p0,y:655,width:p1-p0,height:330,rx:6},g);
+  el("text",{class:"ztitle",x:tx,y:675,"text-anchor":ta},g).textContent=t});
+/* Support-unit close-ups: two more rows of panels, one per remaining extension unit. */
+const P2=[["C",12,1000,"C · RVC expander · fetch / decode"],["Zicsr",406,1000,"Zicsr · CSR file · decode / execute"],["F",802,1000,"F / D · FP register file · decode"],
+ ["A",12,1245,"A · atomic memory ops · memory"],["Sv",406,1245,"Sv39 · MMU and TLB · memory"],["Zicbom",802,1245,"Zicbom · cache-block ops · memory"]];
+P2.forEach(([x,ox,oy,t])=>{const g=el("g",{});g.style.setProperty("--cc",`var(${CATS[byId[x].cat][1]})`);
+  el("rect",{class:"zpanel",x:ox,y:oy,width:388,height:230,rx:6},g);el("text",{class:"ztitle",x:ox+12,y:oy+20},g).textContent=t});
+W.push(
+ ["rvc_a","M206 1070 V1084",1,[]],["rvc_b","M206 1124 V1140",1,[]],
+ ["csr_a","M600 1068 V1080",3,["csrrw"]],["csr_b","M600 1186 V1194",3,["csrrw"]],
+ ["fr_r1","M1052 1052 H1064",2,FA],["fr_r2","M1052 1072 H1064",2,FA],["fr_r3","M1052 1092 H1064",2,[]],["fr_w","M1064 1114 H1052",5,FA],
+ ["amo_old","M300 1325 V1341 H240 V1355",4,["amoadd.w"]],["amo_rs2","M100 1375 H162",4,["amoadd.w"]],["amo_new","M212 1395 V1415 H360 V1325",4,["amoadd.w"]],
+ ["mmu_va","M497 1295 V1315",4,LS],["mmu_pa","M497 1365 V1415",4,LS],["mmu_miss","M576 1330 H624",4,[],"ctrl"],["mmu_fill","M624 1352 H576",4,[]],
+ ["cb_wb","M1054 1300 H1064",4,[]]);
+const wires=W.map(([id,d,s,ops,kind,ev])=>({id,s,ops,kind:kind||"",ev,e:el("path",{class:"w"+(kind?" "+kind:""),d})}));
+const dots=DOTS.map(([x,y,s,ops,ev])=>({s,ops,ev,e:el("circle",{class:"dot",cx:x,cy:y,r:3.2})}));
+WLAB.forEach(([x,y,t,c])=>{el("text",{class:"wl"+(c==="f"?" f":""),x,y}).textContent=t});
+el("path",{class:"w",d:"M187 380 V538",style:"stroke-dasharray:3 3"});
+
+function shape(g,s,x,y,w,h){
+  if(s==="mux")return el("path",{class:"sh",d:`M${x} ${y} L${x+w} ${y+10} L${x+w} ${y+h-10} L${x} ${y+h} Z`},g);
+  if(s==="alu")return el("path",{class:"sh",d:`M${x} ${y} L${x+w} ${y+h*.28} L${x+w} ${y+h*.72} L${x} ${y+h} L${x} ${y+h*.58} L${x+w*.22} ${y+h/2} L${x} ${y+h*.42} Z`},g);
+  return el("rect",{class:"sh",x,y,width:w,height:h,rx:3},g);
+}
+const blocks={};
+function bind(g,id){g.onclick=()=>pick(id);g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick(id)}}}
+B.forEach(([id,x,y,w,h,l,sub,s,sh,title,info,cp])=>{
+  const g=el("g",{class:"b"+(cp?" cp":""),tabindex:"0",role:"button","aria-label":title});shape(g,sh,x,y,w,h);
+  const cx=sh==="alu"?x+w*.6:x+w/2;
+  if(l)el("text",{class:"bl",x:cx,y:y+h/2+(sub?-2:4)},g).textContent=l;
+  if(sub)el("text",{class:(id==="imem"||id==="dmem")?"bl":"bs",x:cx,y:y+h/2+13},g).textContent=sub;
+  blocks[id]={g,s,title,info,kind:cp?"cp":"core"};bind(g,id);
+});
+el("text",{class:"wl",x:524,y:241}).textContent="PC (link)";
+el("text",{class:"wl",x:548,y:423}).textContent="4";
+el("text",{class:"alu-tags",x:752,y:398}).textContent="+ B · Zicond · Zk ops";
+X.forEach(([id,x,w,l,exts,s,info,ops])=>{
+  const g=el("g",{class:"b x",tabindex:"0",role:"button","aria-label":l});
+  g.style.setProperty("--cc",`var(${CATS[byId[exts[0]].cat][1]})`);
+  el("rect",{class:"sh",x,y:540,width:w,height:48,rx:3},g);
+  el("text",{class:"bl",x:x+w/2,y:561},g).textContent=l;
+  el("text",{class:"xt",x:x+w/2,y:578},g).textContent=exts.join(" · ");
+  blocks[id]={g,s,title:l,info,kind:"ext",exts,ops};bind(g,id);
+});
+// Close-up blocks: same "ext" behavior (dashed until the extension is in your core).
+function dblk(id,ext,title,info,draw,s=3){
+  const g=el("g",{class:"b x d",tabindex:"0",role:"button","aria-label":title});
+  g.style.setProperty("--cc",`var(${CATS[byId[ext].cat][1]})`);draw(g);
+  blocks[id]={g,s,title,info,kind:"ext",exts:[ext],ops:[]};bind(g,id);
+}
+const T=(g,x,y,t,cls,anchor)=>{const e=el("text",{class:cls||"bl",x,y},g);if(anchor)e.style.textAnchor=anchor;e.textContent=t;return e};
+const tz=(g,x,y,w,h)=>el("path",{class:"sh",d:`M${x} ${y} H${x+w} L${x+w*.8} ${y+h} H${x+w*.2} Z`},g);
+// Mul/Div
+T(svg,24,700,"a × b","wl");
+dblk("mularr","M","Partial-product array","A multiply is a sum of shifted copies of the multiplicand. Each row is a ANDed with one bit of b, shifted left by that bit's position. The hardware forms every row at once instead of looping over the bits.",g=>{
+  el("rect",{class:"sh",x:24,y:706,width:216,height:100,rx:3},g);T(g,32,722,"Partial products","bl","start");T(g,32,735,"row i = a · b[i], shifted by i","bs","start");
+  for(let r=0;r<5;r++)for(let c=0;c<8;c++)el("rect",{class:"pp",x:150-r*11+c*10,y:744+r*11,width:8,height:8,rx:1},g)});
+dblk("multree","M","Adder tree","Carry-save adders reduce all the rows to two in about log₂(n) levels, and one carry-propagate adder produces the product. That is why MUL takes about 3 cycles rather than 32.",g=>{tz(g,44,818,176,36);T(g,132,840,"Adder tree","bl","middle")});
+T(svg,132,869,"product → rd · ≈3 cycles","wl").setAttribute("text-anchor","middle");
+dblk("divider","M","Iterative divider","Division is hard to parallelize because each quotient bit depends on the remainder left by the previous one. A simple divider produces one bit per cycle, so DIV takes about 32–64 cycles while the pipeline stalls or tracks the busy unit. Faster designs retire 2–4 bits per cycle.",g=>{
+  el("rect",{class:"sh",x:24,y:880,width:216,height:62,rx:3},g);T(g,132,906,"Divider","bl","middle");T(g,132,922,"1 quotient bit per cycle","bs","middle")});
+T(svg,132,972,"shift · compare · subtract · repeat ×32","wl").setAttribute("text-anchor","middle");
+// FPU
+[["cycle 1",335],["cycle 2",420],["cycle 3",505],["cycle 4",586],["cycle 5",657]].forEach(([t,x])=>T(svg,x,705,t,"cp-lab").setAttribute("text-anchor","middle"));
+const FPS=[
+ ["funpack",300,70,"Unpack","sign · exp","NaN? ∞?","Unpack and classify","Splits each operand into sign, exponent and mantissa, restores the hidden leading 1, and flags special cases (zero, infinity, NaN, subnormal) so later stages can handle them."],
+ ["fmul",385,70,"Multiply","mant×mant","exp+exp","Mantissa multiplier","Multiplies the 24-bit mantissas (53-bit with D) and adds the exponents. fmul and fused multiply-add (fmadd) use it. fadd and fsub bypass it."],
+ ["falign",470,70,"Align · add","Δexp shift","then add","Align and add","Shifts the smaller operand's mantissa right by the exponent difference so both share one exponent, then adds or subtracts. In an FMA the unrounded product enters here, so the result is rounded once instead of twice."],
+ ["fnorm",555,62,"Normalize","LZC","+ shift","Normalize","After cancellation the sum can have leading zeros, or it can carry out. A leading-zero counter finds the shift that restores the 1.xxx form, and the exponent is adjusted to match."],
+ ["fround",628,58,"Round","rm from","fcsr","Round","Rounds to the destination width using the instruction's rm field, or fcsr.frm when rm = 111. The modes are nearest-even, toward zero, down, up and nearest-max. Rounding can raise inexact or overflow."]];
+FPS.forEach(([id,x,w,l,s1,s2,title,info])=>dblk(id,"F",title,info,g=>{el("rect",{class:"sh",x,y:715,width:w,height:111,rx:3},g);T(g,x+w/2,760,l,"bl","middle");T(g,x+w/2,778,s1,"bs","middle");T(g,x+w/2,791,s2,"bs","middle")}));
+T(svg,420,856,"fadd skips the multiplier","wl f").setAttribute("text-anchor","middle");
+[[1,"","--no"],[8,"exp · 8","--c-bit"],[23,"mantissa · 23","--c-fp"]].reduce((x,[n,t,c])=>{const w=n/32*285;
+  const r=el("rect",{x,y:872,width:w,height:22,rx:1});r.style.fill=`color-mix(in srgb,var(${c}) 25%,transparent)`;r.style.stroke=`var(${c})`;
+  T(svg,x+w/2,887,t,"bs","middle");return x+w},300);
+T(svg,300,912,"binary32 = (−1)ˢ × 1.m × 2^(e − 127)","wl");
+T(svg,300,928,"binary64 with D: 1 · 11 · 52 bits","wl");
+T(svg,276,972,"Pipelined: a new fadd can start each cycle; each takes ~4.","wl");
+dblk("fcsr","F","fcsr","fcsr holds the dynamic rounding mode (frm) and the accrued exception flags (fflags: NV, DZ, OF, UF, NX). RISC-V FP exceptions never trap. They set sticky flags that software can check later.",g=>{el("rect",{class:"sh",x:600,y:905,width:86,height:36,rx:3},g);T(g,643,921,"fcsr","bl","middle");T(g,643,934,"frm · flags","bs","middle")});
+// Vector
+dblk("vcfg","V","vl · vtype","vsetvli writes vl, the number of elements to process, and vtype: element width (SEW), register grouping (LMUL) and tail/mask policy. Every vector instruction reads them, so the same vadd.vv adds bytes or 64-bit words depending on vtype.",g=>{el("rect",{class:"sh",x:724,y:684,width:140,height:44,rx:3},g);T(g,794,703,"vl · vtype","bl","middle");T(g,794,718,"set by vsetvli","bs","middle")});
+dblk("vseq","V","Sequencer","Turns one vector instruction into element operations. With VLEN = 128 and SEW = 32 there are 4 elements, so one pass over 4 lanes is enough. With LMUL > 1, or a VLEN longer than the lanes, it issues several passes. This is how one binary scales across implementations.",g=>{el("rect",{class:"sh",x:880,y:684,width:150,height:44,rx:3},g);T(g,955,703,"Sequencer","bl","middle");T(g,955,718,"1 instr → vl element ops","bs","middle")});
+dblk("vmask","V","Mask register v0","With vm = 0, v0 supplies one enable bit per element. Masked-off elements are left unchanged, or filled with all ones under the agnostic policy. This is how if-statements inside loops become vector code. Here vm = 1, so the mask is idle.",g=>{el("rect",{class:"sh",x:1046,y:684,width:132,height:44,rx:3},g);T(g,1112,703,"Mask v0","bl","middle");T(g,1112,718,"idle: vm = 1","bs","middle")});
+LX.forEach((x,k)=>dblk("vlane"+k,"V",`Lane ${k}`,`Lane ${k} holds element ${k} of every vector register (its slice of the VRF) and has its own ALU. All four lanes run the same operation on different data in the same cycle (SIMD). Element-wise operations need no wires between lanes. Reductions and permutes need a cross-lane network.`,g=>{
+  el("rect",{class:"sh",x,y:752,width:100,height:70,rx:3},g);T(g,x+50,766,`lane ${k} · VRF`,"bs","middle");
+  ["vs1","vs2","vd"].forEach((r,i)=>{el("rect",{class:"cell",x:x+8,y:772+i*15,width:84,height:12,rx:1},g);T(g,x+50,781+i*15,`${r}[e${k}]`,"bs","middle")});
+  tz(g,x+20,836,60,40);T(g,x+50,860,"+","bl","middle")}));
+dblk("vlsu","V","Vector load/store unit","Moves whole vectors between memory and the VRF: unit-stride (contiguous), strided (every k-th element), and indexed gather/scatter. Memory bandwidth is usually what limits a vector unit, so this path is often the widest in the core.",g=>{el("rect",{class:"sh",x:724,y:902,width:454,height:34,rx:3},g);T(g,951,918,"Vector load / store unit","bl","middle");T(g,951,930,"unit-stride · strided · indexed  ↔  data memory","bs","middle")});
+T(svg,724,972,"4 adds per pass here. On VLEN 512 the same binary does 16.","wl");
+// Field bars: segs = [bits, label, color var]
+function fbar(g,x,y,w,h,total,segs){let cx=x;segs.forEach(([n,t,c])=>{const sw=n/total*w;
+  const r=el("rect",{x:cx,y,width:sw,height:h,rx:1},g);r.style.fill=`color-mix(in srgb,var(${c}) 22%,transparent)`;r.style.stroke=`var(${c})`;
+  T(g,cx+sw/2,y+h/2+3.5,t,"bs","middle");cx+=sw})}
+// RVC
+T(svg,24,1036,"c.addi a0, 1 · 16 bits · low bits 01 ≠ 11","wl");
+fbar(svg,24,1048,364,22,16,[[3,"000","--c-bit"],[1,"i5","--c-sys"],[5,"rd = a0","--c-int"],[5,"imm = 1","--c-sys"],[2,"01","--c-base"]]);
+dblk("rvcexp","C","RVC expander","Each 16-bit instruction is shorthand for a 32-bit one. The expander is a combinational table that rebuilds the full form, so the rest of the pipeline only ever sees 32-bit instructions. Compressed forms reach only common registers (often x8–x15) and small immediates, which is why they fit in 16 bits.",g=>{
+  el("rect",{class:"sh",x:124,y:1084,width:164,height:40,rx:3},g);T(g,206,1101,"Expander","bl","middle");T(g,206,1115,"rebuilds the 32-bit form","bs","middle")},1);
+fbar(svg,24,1140,364,22,32,[[12,"imm = 1","--c-sys"],[5,"a0","--c-fp"],[3,"000","--c-bit"],[5,"a0","--c-int"],[7,"0010011","--c-base"]]);
+T(svg,24,1176,"addi a0, a0, 1 · 32 bits · what decode sees","wl");
+dblk("rvcalign","C","Fetch aligner","With C, an instruction can start at any 2-byte boundary, and a 32-bit instruction can straddle two fetch blocks or even two cache lines. The aligner buffers halfwords and checks the low two bits to find where each instruction begins. The PC advances by 2 or 4.",g=>{
+  el("rect",{class:"sh",x:24,y:1188,width:364,height:32,rx:3},g);T(g,206,1201,"Fetch aligner","bl","middle");T(g,206,1214,"instructions may start at any 2-byte boundary","bs","middle")},1);
+// CSR
+dblk("csrdec","Zicsr","CSR address decode","The instruction's 12-bit csr field selects one of up to 4096 registers. The address itself carries access rules: if bits [11:10] are 11 the CSR is read-only, and bits [9:8] give the lowest privilege allowed to touch it. Breaking either rule raises an illegal-instruction exception.",g=>{
+  el("rect",{class:"sh",x:418,y:1032,width:364,height:36,rx:3},g);T(g,600,1047,"Address decode","bl","middle");T(g,600,1061,"csr = instruction[31:20], 12 bits, unsigned","bs","middle")});
+fbar(svg,418,1080,364,20,12,[[2,"r/o","--c-crypto"],[2,"priv","--c-sys"],[8,"index [7:0]","--c-int"]]);
+T(svg,418,1114,"0x300 mstatus: [11:10]=00 writable · [9:8]=11 M-mode","wl");
+dblk("csrarr","Zicsr","CSR registers","Each CSR is architectural state with its own meaning: mstatus holds interrupt-enable and privilege bits, mtvec the trap handler address, mepc and mcause describe the last trap, satp points at the page table, fcsr holds FP rounding and flags, and cycle/time are counters. Some are not storage at all: reading time can query a platform timer.",g=>{
+  el("rect",{class:"sh",x:418,y:1122,width:364,height:64,rx:3},g);
+  [["mstatus","300"],["mtvec","305"],["mepc","341"],["mcause","342"],["satp","180"],["fcsr","003"],["cycle","C00"],["time","C01"]].forEach(([n,a],i)=>{const cx=424+(i%4)*89,cy=1128+Math.floor(i/4)*27;
+    el("rect",{class:"cell",x:cx,y:cy,width:84,height:23,rx:2},g);T(g,cx+42,cy+15,`${n} · ${a}`,"bs","middle")})});
+dblk("csrrmw","Zicsr","Atomic read-modify-write","csrrw swaps: the old value goes to rd and rs1 becomes the new value, in one step. csrrs and csrrc set or clear the bits given by a mask. With rd = x0, csrrw skips the read entirely, which matters for CSRs whose reads have side effects.",g=>{
+  el("rect",{class:"sh",x:418,y:1194,width:364,height:28,rx:3},g);T(g,600,1212,"csrrw: old value → rd · rs1 → CSR, in one step","bs","middle")});
+// FP register file
+dblk("fpregs","F","FP register file · NaN-boxing","f0–f31 are separate from x0–x31: more registers without longer instruction fields. With D each register is 64 bits wide. A single-precision value is stored NaN-boxed, with the upper 32 bits all ones. If a register is read as a float and the box is missing, the hardware returns the canonical NaN instead, which exposes bugs where a double is reused as a float.",g=>{
+  el("rect",{class:"sh",x:814,y:1032,width:238,height:96,rx:3},g);T(g,822,1046,"f-regs · 64 bits wide with D","bs","start");
+  [["f0","FFFFFFFF","3F800000","1.0f"],["f1","3FF00000","00000000","1.0 (D)"],["f2","00000000","3F800000","→ NaN"]].forEach(([n,hi,lo,c],i)=>{const y=1054+i*24;
+    T(g,830,y+13,n,"bs","middle");const a=el("rect",{class:"cell",x:842,y,width:70,height:18,rx:2},g);if(i===0)a.style.fill="color-mix(in srgb,var(--cc) 22%,transparent)";
+    el("rect",{class:"cell",x:914,y,width:70,height:18,rx:2},g);T(g,877,y+13,hi,"bs","middle");T(g,949,y+13,lo,"bs","middle");T(g,988,y+13,c,"bs","start")})},2);
+dblk("fpports","F","FP register ports","The FP file needs three read ports, because fused multiply-add (fmadd rd = rs1 × rs2 + rs3) reads three operands. The integer file needs only two. That third port costs area, so FP and integer registers live in separate files.",g=>{
+  el("rect",{class:"sh",x:1064,y:1032,width:114,height:96,rx:3},g);T(g,1121,1050,"Ports","bl","middle");T(g,1121,1066,"read rs1 · rs2","bs","middle");T(g,1121,1080,"read rs3 (FMA)","bs","middle");T(g,1121,1104,"1 write port","bs","middle")},2);
+T(svg,814,1148,"fmv.x.w / fmv.w.x copy raw bits between x and f;","wl");
+T(svg,814,1162,"fcvt converts values: 1.0f ↔ integer 1.","wl");
+T(svg,814,1190,"Separate files let int and FP work in parallel,","wl");
+T(svg,814,1204,"and FP code gets 32 more registers for free.","wl");
+// AMO
+dblk("amores","A","LR/SC reservation","lr.w loads a word and places a reservation on its address. sc.w stores only if no other hart has written that address in the meantime, and writes 0 (success) or non-zero (failure) to rd. Software retries in a loop, which is how compare-and-swap is built.",g=>{
+  el("rect",{class:"sh",x:24,y:1277,width:168,height:48,rx:3},g);T(g,108,1294,"Reservation","bl","middle");T(g,108,1308,"lr.w marks the address","bs","middle");T(g,108,1320,"sc.w fails if it was lost","bs","middle")},4);
+dblk("amoline","A","Cache line held exclusively","While the AMO runs, the cache keeps the line in an exclusive state and delays other harts' requests for it. That is what makes read-modify-write indivisible. In larger systems the AMO may be sent to a shared cache or to the memory controller instead.",g=>{
+  el("rect",{class:"sh",x:212,y:1277,width:176,height:48,rx:3},g);T(g,300,1296,"L1 cache line","bl","middle");T(g,300,1312,"held exclusively","bs","middle")},4);
+dblk("amoalu","A","AMO ALU","A small ALU next to the cache: add, swap, and, or, xor, signed and unsigned min and max. It combines the old memory word with rs2. The old word also goes to rd.",g=>{
+  tz(g,152,1355,120,40);T(g,212,1378,"AMO ALU","bl","middle")},4);
+T(svg,60,1379,"rs2","wl");T(svg,100,1347,"old value → ALU and rd","wl");T(svg,226,1428,"new value written back","wl");
+T(svg,24,1446,"Without A: two harts both read 5 and both write 6.","wl");
+T(svg,24,1460,"With amoadd.w the line is held: the result is 7.","wl");
+// MMU
+fbar(svg,418,1275,364,20,39,[[9,"VPN[2]","--c-sys"],[9,"VPN[1]","--c-fp"],[9,"VPN[0]","--c-int"],[12,"offset","--c-bit"]]);
+T(svg,508,1307,"virtual address · 39 bits","wl");
+dblk("tlb","Sv","TLB","A small cache of recent translations from virtual page number to physical page number, with permission bits. A hit translates in the same cycle as the cache lookup, so most loads and stores pay nothing for virtual memory.",g=>{
+  el("rect",{class:"sh",x:418,y:1315,width:158,height:50,rx:3},g);T(g,497,1336,"TLB","bl","middle");T(g,497,1352,"VPN → PPN cache","bs","middle")},4);
+dblk("ptw","Sv","Page-table walker","On a TLB miss, hardware walks the page table in memory. satp gives the root, and each of the three levels uses 9 bits of the VPN to pick an entry. That can mean three dependent memory reads before the original load continues. With H, translation has two stages, and a walk can take up to 15 reads.",g=>{
+  el("rect",{class:"sh",x:624,y:1315,width:158,height:50,rx:3},g);T(g,703,1336,"Page-table walker","bl","middle");T(g,703,1352,"miss: up to 3 memory reads","bs","middle");
+  ["L2","L1","L0"].forEach((t,i)=>{el("rect",{class:"cell",x:630+i*52,y:1375,width:42,height:20,rx:2},g);T(g,651+i*52,1389,t,"bs","middle");if(i<2)el("path",{class:"w",d:`M${672+i*52} 1385 H${682+i*52}`},g)})},4);
+T(svg,582,1389,"satp →","wl");T(svg,580,1326,"miss","wl");T(svg,580,1364,"refill","wl");
+fbar(svg,418,1415,364,20,56,[[44,"PPN · 44 bits","--c-sys"],[12,"offset","--c-bit"]]);
+T(svg,418,1450,"physical address · offset copied unchanged","wl");
+// Cache-block ops
+dblk("cbline","Zicbom","Cache line","A 64-byte cache line, here marked dirty: it holds newer data than memory. A DMA device that reads memory directly would see stale data unless software cleans the line first.",g=>{
+  el("rect",{class:"sh",x:814,y:1277,width:240,height:46,rx:3},g);T(g,822,1290,"L1 line · 64 B · dirty","bs","start");
+  for(let i=0;i<8;i++)el("rect",{class:"cell",x:822+i*28,y:1297,width:24,height:18,rx:1},g)},4);
+dblk("cbmem","Zicbom","Memory and DMA devices","Devices such as network cards and disks read and write memory directly. On systems where they do not snoop the CPU caches, drivers must clean lines before a device reads and invalidate them before the CPU reads what the device wrote.",g=>{
+  el("rect",{class:"sh",x:1064,y:1277,width:114,height:46,rx:3},g);T(g,1121,1296,"Memory","bl","middle");T(g,1121,1311,"+ DMA devices","bs","middle")},4);
+dblk("cbops","Zicbom","Cache-block operations","Each instruction takes an address in rs1 and acts on the whole cache line that contains it. clean writes it back and keeps it; flush writes it back and drops it; inval drops it and may lose dirty data, so it is privileged. cbo.zero (Zicboz) zeroes a line without reading memory first, which makes memset faster.",g=>{
+  el("rect",{class:"sh",x:814,y:1335,width:364,height:90,rx:3},g);
+  [["cbo.clean","write back, keep the copy"],["cbo.flush","write back, then drop"],["cbo.inval","drop · dirty data may be lost"],["cbo.zero","zero the line, no memory read"]].forEach(([a,b],i)=>{T(g,826,1355+i*20,a,"bl","start");T(g,910,1355+i*20,b,"bs","start")})},4);
+T(svg,814,1446,"Needed when devices access memory without","wl");
+T(svg,814,1460,"snooping the CPU caches (non-coherent DMA).","wl");
+
+
+/* Occupancy for program mode */
+function occAt(c){ // returns per-stage {row index, stall}
+  const S=SCN[scn], occ=[null,null,null,null,null];
+  S.rows.forEach((r,i)=>{const v=r.c[c];if(!v||v==="×")return;const stall=v.endsWith("*");const k=SN.indexOf(v.replace("*",""));if(k>=0)occ[k]={i,stall,bub:!!r.bub}});
+  return occ;
+}
+function evAt(c){return SCN[scn].ev[c]||{}}
+
+function wireState(w){
+  if(mode==="single"){
+    if(!w.ops||!w.ops.includes(op))return null;
+    if(stage===0||w.s===stage)return {cls:"hot"};
+    if(w.s<stage)return {cls:"trail"};return null;
+  }
+  const occ=occAt(cyc), ev=evAt(cyc);
+  if(w.ev){const on=w.ev==="fwdany"?(ev.fwd||ev.fwdmw):ev[w.ev];
+    if(on)return {cls:"hot",col:null};
+    return null}
+  const o=occ[w.s-1];if(!o||o.bub)return null;
+  const r=SCN[scn].rows[o.i];
+  if(w.ops&&w.ops.includes(r.op)){
+    return {cls:"hot",col:w.kind==="ctrl"?"--ctl":ICOL[o.i]}}
+  return null;
+}
+function render(){
+  // toolbar
+  document.querySelectorAll("#dpMode button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode));
+  const ob=document.getElementById("dpOps");
+  ob.innerHTML=(mode==="single"?ALL.map(o=>`<button class="btn" data-k="${o}" aria-pressed="${o===op}">${o}</button>`):Object.entries(SCN).map(([k,s])=>`<button class="btn" data-k="${k}" aria-pressed="${k===scn}">${s.name}</button>`)).join("");
+  ob.querySelectorAll("button").forEach(b=>b.onclick=()=>{stop();if(mode==="single")setOp(b.dataset.k);else{scn=b.dataset.k;cyc=1;render()}});
+  document.getElementById("dpAll").hidden=mode!=="single";
+  const N=mode==="single"?5:SCN[scn].n, cur=mode==="single"?stage:cyc;
+  document.getElementById("dpCyc").textContent=mode==="single"?(stage===0?"All stages":`Stage ${stage} · ${SN[stage-1]}`):`Cycle ${cyc} / ${N}`;
+  // wires
+  wires.forEach(w=>{const s=wireState(w);w.e.classList.remove("hot","trail");w.e.style.removeProperty("--wc");
+    let mk=w.kind==="ctrl"?"mCtl":w.kind==="fwd"?"mFwd":"mHot";
+    if(s){w.e.classList.add(s.cls);
+      if(s.col){w.e.style.setProperty("--wc",`var(${s.col})`);mk="mI"+s.col.slice(-1)}
+      w.e.style.markerEnd=s.cls==="trail"?(w.kind==="ctrl"?"url(#mCtlT)":"url(#mTrail)"):`url(#${mk})`}
+    else w.e.style.markerEnd="url(#mOff)"});
+  dots.forEach(d=>{let on=false;
+    if(mode==="single")on=!!(d.ops&&d.ops.includes(op)&&(stage===0||d.s<=stage));
+    else{const ev=evAt(cyc),occ=occAt(cyc);if(d.ev)on=!!ev[d.ev];else{const o=occ[d.s-1];on=!!(o&&!o.bub&&d.ops&&d.ops.includes(SCN[scn].rows[o.i].op))}}
+    d.e.classList.toggle("on",on)});
+  stgRects.forEach((r,i)=>r.classList.toggle("cur",mode==="single"&&stage===i+1));
+  // blocks
+  const used=new Map();
+  const use=(id,s,col)=>{used.set(id,col||null)};
+  const opUse=(o,s,col)=>{
+    if(s===1)["pcmux","pc","add4","imem","btb"].forEach(i=>use(i,s,col));
+    if(s===2){use("ctrl",s,col);if(RD1.includes(o)||RD2.includes(o))use("rf",s,col);if(IMM.includes(o))use("imm",s,col);if(o==="fadd.s")use("fprf",s,col)}
+    if(s===3){if(RD1.includes(o))use("fwdA",s,col);if(RD2.includes(o))use("fwdB",s,col);
+      if(ALUOPS.includes(o)){use("alu",s,col);use("amux",s,col);use("bmux",s,col)}
+      if(BR.includes(o))use("badd",s,col);if(o==="beq")use("brlog",s,col);
+      if(o==="mul")["muldiv","mularr","multree"].forEach(i=>use(i,s,col));
+      if(o==="fadd.s")["fpu","funpack","falign","fnorm","fround","fcsr"].forEach(i=>use(i,s,col));
+      if(o==="vadd.vv")["vec","vcfg","vseq","vlane0","vlane1","vlane2","vlane3"].forEach(i=>use(i,s,col))}
+    if(s===4&&LS.includes(o))["dmem","mmu","tlb"].forEach(i=>use(i,s,col));
+    if(s===4&&o==="amoadd.w")["amo","amoline","amoalu"].forEach(i=>use(i,s,col));
+    if(s===3&&o==="csrrw")["csr","csrdec","csrarr","csrrmw"].forEach(i=>use(i,s,col));
+    if(s===2&&o==="fadd.s")["fpregs","fpports"].forEach(i=>use(i,s,col));
+    if(s===5&&o==="fadd.s")use("fpregs",s,col);
+    if(s===5&&WRITES.includes(o)){use("wbmux",s,col);use("rf",s,col)}
+    if(s===5&&o==="fadd.s")use("fprf",s,col);
+    if(s===5&&o==="vadd.vv")["vlane0","vlane1","vlane2","vlane3"].forEach(i=>use(i,s,col))
+  };
+  if(mode==="single"){for(let s=1;s<=5;s++)if(stage===0||s<=stage)opUse(op,s)}
+  else{const occ=occAt(cyc),ev=evAt(cyc);occ.forEach((o,k)=>{if(o&&!o.bub)opUse(SCN[scn].rows[o.i].op,k+1,ICOL[o.i])});
+    if(ev.stall)use("hazard",2,"--ctl");if(ev.fwd||ev.fwdmw){use("fwdunit",3,"--fwd");use("fwdA",3,"--fwd")}
+    if(ev.predict)use("btb",1,"--ctl");if(ev.redirect){use("brlog",3,"--ctl");use("pcmux",1,"--ctl")}}
+  for(const id in blocks){const b=blocks[id],u=used.has(id);b.g.classList.toggle("on",u);
+    if(u&&used.get(id)&&b.kind!=="ext")b.g.style.setProperty("--bc",`var(${used.get(id)})`);else b.g.style.removeProperty("--bc");
+    b.g.classList.toggle("sel",id===sel)}
+  dpExt();renderStrip();window.dpRenderWord();renderLeft();renderInfo();
+}
+function renderStrip(){
+  const el=document.getElementById("dpStrip");let h="";
+  if(mode==="single"){SN.forEach((n,i)=>{const on=stage===0||stage===i+1;
+    h+=`<div class="${stage===i+1?"cur":""}"><span class="sn">${n}<small>${SFULL[i]}</small></span><span class="occ ${on?"on":"idle"}" style="--oc:var(--sig)">${on?op:"·"}</span></div>`})}
+  else{const occ=occAt(cyc);SN.forEach((n,i)=>{const o=occ[i];let c="idle",t="empty";
+    if(o){const r=SCN[scn].rows[o.i];if(o.bub){c="bub";t="bubble"}else{c="on";t=r.asm+(o.stall?"  (stalled)":"")}}
+    h+=`<div><span class="sn">${n}<small>${SFULL[i]}</small></span><span class="occ ${c}" style="--oc:var(${o&&!o.bub?ICOL[o.i]:"--sig"})" title="${t}">${t}</span></div>`})}
+  el.innerHTML=h;
+}
+window.dpRenderWord=function(){
+  const box=document.getElementById("dpWord");
+  if(mode!=="single"||!window.lastEnc){box.hidden=true;return}
+  box.hidden=false;const E=window.lastEnc;
+  box.innerHTML=`<span class="lbl">IF/ID latch</span><span class="asm">${E.asm}</span><span class="hx">${E.hex}</span><div class="wbar">${E.F.map(([hi,lo,lab,k])=>`<div style="flex:${hi-lo+1};--fc:var(${FC[k]})" title="${lab} [${hi}:${lo}]">${hi-lo>=3?lab:""}<small>${hi-lo>=3?(E.val(k)||"&nbsp;"):"&nbsp;"}</small></div>`).join("")}</div>`;
+};
+function renderLeft(){
+  const L=document.getElementById("dpLeft");
+  if(mode==="single"){
+    L.innerHTML=`<span class="lbl">${op} through the pipe</span>`+STEPS[op].map((s,i)=>`<button class="dp-st${stage===i+1?" cur":(stage===0||i+1<stage)?" done":""}" data-s="${i+1}"><b>${SN[i]}</b><span>${s}</span></button>`).join("");
+    L.querySelectorAll(".dp-st").forEach(b=>b.onclick=()=>{stop();stage=+b.dataset.s;render()});
+    return}
+  const S=SCN[scn];let th="<tr><th></th>";for(let c=1;c<=S.n;c++)th+=`<th class="${c===cyc?"cur":""}" data-c="${c}" tabindex="0" role="button" aria-label="Show cycle ${c}">${c}</th>`;th+="</tr>";
+  let rows="";S.rows.forEach((r,i)=>{rows+=`<tr class="${r.ghost?"ghost":""}"><td class="asm" style="--oc:var(${r.bub?"--muted":ICOL[i]})"><i></i>${r.asm}</td>`;
+    for(let c=1;c<=S.n;c++){const v=r.c[c];let cls="",t="";
+      if(v==="×"){cls="fl";t="×"}else if(v){t=v.replace("*","");cls=r.bub?"bub":"s"+(v.endsWith("*")?" stall":"")}
+      rows+=`<td class="${cls}${c===cyc&&v?" cur":""}" data-c="${c}" tabindex="0" role="button" aria-label="${r.asm}, cycle ${c}${t?", "+t:""}" style="--oc:var(${ICOL[i]})">${t}</td>`}
+    rows+="</tr>"});
+  const real=S.rows.filter(r=>!r.bub&&!r.ghost).length,ideal=real+4,lost=S.n-ideal,cpi=((S.n-4)/real).toFixed(2),[q,a]=ASK[scn];
+  const stats=`<span class="lbl">Cost of this program</span><div class="pstats"><div><b>${real}</b><span>useful instr.</span></div><div><b>${S.n}</b><span>cycles</span></div><div class="${lost?"bad":""}"><b>${lost}</b><span>cycles lost</span></div><div class="${lost?"bad":""}"><b>${cpi}</b><span>CPI after fill</span></div></div>
+   <div class="cycbar" role="img" aria-label="4 fill cycles, ${real} useful, ${lost} lost"><i class="fill" style="flex:4"></i><i class="work" style="flex:${real}"></i>${lost?`<i class="lost" style="flex:${lost}"></i>`:""}</div>
+   <p class="small">An ideal five-stage pipe needs 4 cycles to fill, then completes one instruction per cycle (CPI = 1). Each stall or flushed slot adds a cycle.</p>`;
+  L.innerHTML=`<details class="predict"${predOpen[scn]?" open":""}><summary><span>PREDICT FIRST</span>${q}</summary><p>${a}</p></details><div class="note"><b>Cycle ${cyc}</b>${S.notes[cyc-1]}</div><span class="lbl">Pipeline chart · click a cycle</span><div class="pchart-wrap"><table class="pchart">${th}${rows}</table></div>${stats}`;
+  L.querySelector(".predict").ontoggle=e=>{predOpen[scn]=e.target.open};
+  L.querySelectorAll("[data-c]").forEach(x=>{const activate=()=>{stop();cyc=+x.dataset.c;render()};x.onclick=activate;x.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();const c=x.dataset.c;activate();L.querySelector(`th[data-c="${c}"]`)?.focus()}}});
+}
+function renderInfo(){
+  const b=blocks[sel];let extra="";
+  if(b.kind==="ext"){const on=window.coreOn||new Set();const have=b.exts.some(e=>on.has(e)||(e==="Sv"&&on.has("H")));
+    extra=`<p class="small">${have?"Present in the core you configured.":"Not in the core you configured. Enable "+b.exts.filter(e=>e!=="Sv").join(" or ")+" in section 02 to light it up."}</p><div class="deps">${b.exts.map(e=>`<button data-go="${e}">${e} in the atlas</button>`).join("")}</div>`}
+  const kind=b.kind==="ext"?"Extension unit":b.kind==="cp"?"Control plane":"Datapath";
+  document.getElementById("dpBlock").innerHTML=`<span class="eyebrow"><b>${kind}</b> · ${SN[b.s-1]} stage</span><h4>${b.title}</h4><p>${b.info}</p>${extra}<p class="small">Click any block in the diagram to read about it.</p>`;
+  document.querySelectorAll("#dpBlock [data-go]").forEach(x=>x.onclick=()=>{select(x.dataset.go);document.getElementById("atlas").scrollIntoView({behavior:smooth()})});
+}
+function pick(id){sel=id;render()}
+window.dpPick=pick;
+window.dpExt=function(){const on=window.coreOn||new Set();
+  for(const id in blocks){const b=blocks[id];if(b.kind!=="ext")continue;b.g.classList.toggle("cfg",b.exts.some(e=>on.has(e)||(e==="Sv"&&on.has("H"))))}};
+function stop(){if(timer){clearInterval(timer);timer=null;document.getElementById("dpPlay").textContent="Play"}}
+function setOp(o){op=o;if(opSel.value!==o){opSel.value=o;const d=OPS[o];if(d.imm!==undefined)document.getElementById("imm").value=d.imm;renderE()}render()}
+window.dpSetOp=function(o){if(mode!=="single")mode="single";op=o;stop();render()};
+document.querySelectorAll("#dpMode button").forEach(b=>b.onclick=()=>{stop();mode=b.dataset.m;if(mode==="prog")cyc=1;render()});
+const N=()=>mode==="single"?5:SCN[scn].n;
+function step(d){if(mode==="single"){stage=stage===0?(d>0?1:5):((stage-1+d+5)%5)+1}else{cyc=((cyc-1+d+N())%N())+1}render()}
+document.getElementById("dpNext").onclick=()=>{stop();step(1)};
+document.getElementById("dpPrev").onclick=()=>{stop();step(-1)};
+document.getElementById("dpAll").onclick=()=>{stop();stage=0;render()};
+document.getElementById("dpPlay").onclick=e=>{if(timer){stop();return}
+  e.target.textContent="Pause";
+  if(mode==="single"){stage=stage>=5||stage===0?1:stage}else if(cyc>=N())cyc=1;
+  render();
+  timer=setInterval(()=>{if(mode==="single"?stage>=5:cyc>=N()){stop();return}if(mode==="single")stage++;else cyc++;render()},1200)};
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stop()});
+render();
+})();
+</script>
+
+<script>
+/* Saved theme is optional: blocked storage must not prevent the atlas from loading. */
+const themeToggle=document.getElementById("themeToggle");
+try{const saved=localStorage.getItem("riscv-atlas-theme");if(saved==="light"||saved==="dark")document.documentElement.dataset.theme=saved}catch{}
+function themeLabel(){const dark=document.documentElement.dataset.theme?document.documentElement.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;themeToggle.setAttribute("aria-label",`Switch to ${dark?"light":"dark"} theme`)}
+themeLabel();themeToggle.onclick=()=>{const dark=document.documentElement.dataset.theme?document.documentElement.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.dataset.theme=dark?"light":"dark";try{localStorage.setItem("riscv-atlas-theme",dark?"light":"dark")}catch{}themeLabel()};
+const FLOWS={
+ add:{title:"Compute, then write a register.",labels:["Fetch","Read x6, x7","Add","Pass result","Write x5"],subs:["instruction","two operands","x6 + x7","no data access","architectural state"],rule:"The result exists after EX, before it is written back in WB.",hazard:"A following instruction can use that result through EX/MEM forwarding instead of waiting for the register-file write.",desc:"The ALU does the work. The MEM stage carries the result onward without reading or writing data memory."},
+ lw:{title:"Compute an address, then read memory.",labels:["Fetch","Read x6","Address","Read word","Write x5"],subs:["instruction","base + offset","x6 + 8","memory[address]","loaded value"],rule:"EX produces an address. The requested data arrives only after MEM.",hazard:"An immediate consumer in EX would be one cycle too early. This model inserts one bubble, then forwards from MEM/WB.",desc:"A load uses the ALU for address calculation. The value written to x5 comes from memory, not from the ALU."},
+ beq:{title:"Compare values, then choose the next PC.",labels:["Fetch","Read x6, x7","Compare","No write","No write"],subs:["predicted path","branch operands","equal? PC + offset","no data access","no destination"],rule:"A branch changes control flow; it does not write an integer destination register.",hazard:"With resolution in EX, a wrong prediction discards the two younger instructions. A correct prediction avoids those recovery bubbles.",desc:"The comparison decides taken or not taken while a separate adder forms the target. Only a prediction mismatch redirects fetch."}
+};
+function renderFlow(key){const f=FLOWS[key];document.querySelectorAll("[data-flow]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.flow===key));
+ const nodes=f.labels.map((label,i)=>{const x=14+i*152,active=key!=="beq"||i<3;return `<text class="stage" x="${x+65}" y="20" text-anchor="middle">${["IF","ID","EX","MEM","WB"][i]}</text><rect class="node ${active?"active":""}" x="${x}" y="40" width="130" height="66" rx="5"/><text x="${x+65}" y="67" text-anchor="middle" font-size="12">${label}</text><text class="sub" x="${x+65}" y="88" text-anchor="middle">${f.subs[i]}</text>${i<4?`<path class="route" d="M${x+131} 73 h20" marker-end="url(#flowArrow)" opacity="${key==="beq"&&i>=2?.2:1}"/>`:""}`}).join("");
+ const feedback=key==="beq"?'<path class="route" d="M383 107 V142 H79 V108" marker-end="url(#flowArrow)"/><text class="sub" x="231" y="161" text-anchor="middle">redirect PC if prediction is wrong</text>':'';
+ document.getElementById("flowBody").innerHTML=`<h3>${f.title}</h3><p>${f.desc}</p><div class="flow-scroll" tabindex="0" role="region" aria-label="Scrollable ${key} data flow"><svg class="flow-svg" viewBox="0 0 766 ${key==="beq"?180:125}" role="img" aria-label="${f.labels.join(' → ')}"><defs><marker id="flowArrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8Z" fill="var(--sig)"/></marker></defs>${nodes}${feedback}</svg></div><div class="flow-rule"><div><b>WHEN IS THE RESULT READY?</b><p>${f.rule}</p></div><div><b>WHAT CAN GO WRONG?</b><p>${f.hazard}</p></div></div><button class="btn" id="traceFlow">Trace ${key} in the detailed pipeline →</button>`;
+ document.getElementById("traceFlow").onclick=()=>{opSel.value=key;const o=OPS[key];if(o.imm!==undefined)document.getElementById("imm").value=o.imm;renderE();window.dpSetOp(key);document.getElementById("datapath").scrollIntoView({behavior:smooth()})};
+}
+document.querySelectorAll("[data-flow]").forEach(b=>b.onclick=()=>renderFlow(b.dataset.flow));renderFlow("add");
+</script>
+</body></html>

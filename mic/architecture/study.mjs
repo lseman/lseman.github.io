@@ -8,7 +8,7 @@ const modes = {
   static:{ title:'Static loop cache · software-selected hot regions', text:'Boot software selects and copies code regions, then programs address-range registers. Runtime hardware chooses the buffer by PC range. Calls and returns do not invalidate it; a helper outside the selected regions still reads IMEM.' },
 };
 root.innerHTML = `<div class="max-w-7xl mx-auto px-6">
-<p class="eyebrow">STUDY PATHS / BEYOND THE BASELINE</p>
+<p class="eyebrow">05 / COMPARE ARCHITECTURES</p>
 <h2>Change one architectural idea.<br>See what it changes.</h2>
 <p class="study-intro">Start with issue width, then scheduling, then instruction reuse. These are independent design choices: a superscalar core may execute in order or out of order, and either can use a loop buffer. The five-stage workbench above remains the detailed baseline.</p>
 <div class="study-tabs" role="tablist" aria-label="Architecture study path">${Object.keys(modes).map((key,i) => `<button type="button" role="tab" id="study-tab-${key}" aria-controls="study-panel" aria-selected="${i===0}" tabindex="${i===0 ? 0 : -1}" data-mode="${key}">${['1 · Scalar','2 · Superscalar','3 · Out of order','4 · Dynamic loop cache','5 · Static loop cache'][i]}</button>`).join('')}</div>

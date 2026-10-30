@@ -32,7 +32,8 @@ export function plot(canvas, spec) {
         ctx.strokeStyle = line; ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(W - pad.r, yy); ctx.stroke();
         ctx.fillStyle = dim; ctx.textAlign = 'right'; ctx.fillText(y.log ? (t >= 0 ? fmt(10 ** t) : `1e${t}`) : (y.format || fmt)(t), pad.l - 5, yy + 3);
     }
-    for (const t of niceTicks(x.min, x.max, x.ticks || 7)) {
+    const xticks = x.log ? Array.from({ length: Math.floor(Math.log10(x.max)) - Math.ceil(Math.log10(x.min)) + 1 }, (_, i) => 10 ** (Math.ceil(Math.log10(x.min)) + i)) : niceTicks(x.min, x.max, x.ticks || 7);
+    for (const t of xticks) {
         const xx = px(t); ctx.strokeStyle = line; ctx.beginPath(); ctx.moveTo(xx, pad.t); ctx.lineTo(xx, H - pad.b); ctx.stroke();
         ctx.fillStyle = dim; ctx.textAlign = 'center'; ctx.fillText((x.format || fmt)(t), xx, H - pad.b + 13);
     }

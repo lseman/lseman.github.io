@@ -1,5 +1,6 @@
 import { executionFrames } from './model.mjs';
 import { datapathSVG } from './datapath-svg.mjs';
+import { mountVectorView } from './vector.mjs';
 
 // This view owns its lesson clock; the workbench retains its own CPU state.
 const baseline = document.querySelector('#svg89').parentElement;
@@ -9,7 +10,7 @@ host.hidden = true;
 baseline.after(host);
 const controls = document.createElement('div');
 controls.className = 'study-controls';
-controls.innerHTML = `<label for="datapath-mode">Datapath architecture <select id="datapath-mode"><option value="baseline">Scalar · five-stage workbench</option><option value="superscalar">Superscalar · two-wide in order</option><option value="ooo">Superscalar · two-wide out of order</option></select></label>`;
+controls.innerHTML = `<label for="datapath-mode">Datapath architecture <select id="datapath-mode"><option value="baseline">Scalar · five-stage workbench</option><option value="superscalar">Superscalar · two-wide in order</option><option value="ooo">Superscalar · two-wide out of order</option><option value="vector">Vector · RVV concept</option></select></label>`;
 baseline.before(controls);
 let mode = 'baseline', index = 0;
 const baselineNotes = baseline.parentElement.querySelector('.datapath-notes');
@@ -20,7 +21,8 @@ controls.querySelector('select').addEventListener('change', event => {
   const wide = mode !== 'baseline';
   baseline.hidden = wide; host.hidden = !wide;
   baselineNotes.hidden = wide; legend.hidden = wide; intro.hidden = wide;
-  if (wide) render();
+  if (mode === 'vector') mountVectorView(host);
+  else if (wide) render();
 });
 const ids = rows => rows.map(r => `I${r.id + 1}`).join(', ') || '—';
 function render() {

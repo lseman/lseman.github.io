@@ -507,6 +507,7 @@
     .section-nav a:hover { background:#0f16220a; color:var(--ink); border-color:transparent; }
     .section-nav a.is-current { background:var(--ink); color:#f6f4ee; }
     .section-nav a.is-current span { color:#f0a58c; }
+    main > section[id], #sim { scroll-margin-top:76px; }
 
     /* Hero */
     .bg-hero { background:
@@ -600,7 +601,7 @@
         <p class="eyebrow"><span class="hero-dot" aria-hidden="true"></span> A LOOK INSIDE THE PROCESSOR</p>
         <h1>One instruction.<br><span>Five stages.</span><br><span class="hero-last">See it happen.</span></h1>
         <p class="hero-description">See what happens inside a processor. Step through a RISC-V pipeline, follow the data, and make sense of every stall.</p>
-        <div class="hero-actions"><a class="primary-link" href="#sim">Explore the pipeline <span aria-hidden="true">↓</span></a><a class="secondary-link" href="#guide">Understand how it works</a><span class="hero-credit">Prof. Laio Oriel Seman · UFSC</span></div>
+        <div class="hero-actions"><a class="primary-link" href="#sim">Explore the pipeline <span aria-hidden="true">↓</span></a><a class="secondary-link" href="#study-plan">Understand how it works</a><span class="hero-credit">Prof. Laio Oriel Seman · UFSC</span></div>
         <div class="hero-tags"><span>RV32IM subset</span><span>Data forwarding</span><span>Hazard detection</span></div>
       </div>
       <div class="chart-card">
@@ -612,14 +613,13 @@
       </div>
     </div>
   </header>
-  <nav class="section-nav" aria-label="Page sections"><div><a href="#study-plan">Theory</a><a href="#guide"><span>01</span> Concepts</a><a href="#sim"><span>02</span> Simulate</a><a href="#trace"><span>03</span> Trace</a><a href="#units"><span>04</span> Execution units</a><a href="#architecture"><span>05</span> Architecture paths</a><a href="#rtl"><span>06</span> Hardware</a><a href="#reference"><span>07</span> Reference</a></div></nav>
+  <nav class="section-nav" aria-label="Page sections"><div><a href="#guide"><span>01</span> Examples</a><a href="#sim"><span>02</span> Workbench</a><a href="#trace"><span>03</span> Instruction trace</a><a href="#study-plan"><span>04</span> Theory</a><a href="#architecture"><span>05</span> Compare architectures</a><a href="#units"><span>06</span> Execution units</a><a href="#rtl"><span>07</span> Hardware</a><a href="#reference"><span>08</span> Reference</a></div></nav>
   <main>
-  <section id="study-plan" data-theory aria-label="Processor theory"></section>
   <!-- Concepts -->
   <section id="guide" class="py-12 bg-slate-50">
     <div class="max-w-7xl mx-auto px-6">
       <div class="mb-8">
-        <p class="eyebrow">01 / CONCEPTS</p><h2 class="text-3xl font-bold tracking-tight text-slate-900">Four ideas run this pipeline.</h2>
+        <p class="eyebrow">01 / START WITH AN EXAMPLE</p><h2 class="text-3xl font-bold tracking-tight text-slate-900">Four ideas run this pipeline.</h2>
         <p class="mt-2 text-slate-600">Each example below loads a program into the simulator. Use Step to follow the same instruction from IF through WB.</p>
       </div>
       <div class="guide-grid">
@@ -670,7 +670,7 @@
         </div>
       </div>
 
-      <details class="teaching-note" open>
+      <details class="teaching-note">
         <summary>How to follow an execution</summary>
         <ol>
           <li><strong>Load:</strong> choose an example above, or edit the assembly and click Load program. Editing the text alone does not change the running program.</li>
@@ -1198,8 +1198,12 @@ return;</textarea>
     </div>
   </section>
 
+  <section id="study-plan" data-theory aria-label="Processor theory"></section>
+
+  <section id="architecture" aria-label="Architecture study paths"></section>
+
   <section id="units" aria-labelledby="unitHeading">
-    <header><p class="eyebrow">04 / DESIGN THE EXECUTION UNIT</p><h2 id="unitHeading">One instruction. A whole machine inside.</h2>
+    <header><p class="eyebrow">06 / DESIGN THE EXECUTION UNIT</p><h2 id="unitHeading">One instruction. A whole machine inside.</h2>
       <p>Multiplication and division can live in independent hardware modules. Explore the work inside each unit, then see how latency and throughput change its schedule.</p>
       <p>The workbench's RV32M unit treats these designs as fixed latencies: multiply holds EX for 3 cycles, like the 3-stage pipeline here, and divide for 16, like an iterative radix-4 divider on 32-bit operands. This lab opens those cycles up with unsigned 8-bit operands, so every algorithm step stays visible. RISC-V’s M extension defines results, not cycle counts.</p></header>
     <div class="unit-layout">
@@ -1240,11 +1244,8 @@ return;</textarea>
     <details><summary>RV32M results and corner cases</summary><p><code>MUL</code> returns the low 32 product bits; <code>MULH / MULHU / MULHSU</code> return the high half with signed/signed, unsigned/unsigned, or signed/unsigned inputs. <code>DIV / DIVU</code> return a quotient; <code>REM / REMU</code> return the remainder. Signed division truncates toward zero, and a nonzero remainder has the dividend’s sign.</p><p>For RV32 division by zero, the quotient is <code>0xffffffff</code> and the remainder is the dividend. Signed <code>−2147483648 / −1</code> returns <code>−2147483648</code> with remainder zero. These cases do not trap. Hardware can share work for matching quotient/remainder pairs or high/low product pairs.</p><p>The trace below the controls is an 8-bit teaching model: its divide-by-zero quotient is 255 and remainder is A. <a href="https://docs.riscv.org/reference/isa/v20240411/unpriv/m-st-ext.html" target="_blank" rel="noopener noreferrer">Read the official M-extension specification ↗</a></p></details>
   </section>
 
-  <!-- RTL view -->
-  <section id="architecture" aria-label="Architecture study paths"></section>
-
   <section id="rtl" aria-labelledby="rtlHeading">
-    <header><p class="eyebrow">06 / BUILD IT IN HARDWARE</p><h2 id="rtlHeading">The same machine, as hardware you can build.</h2>
+    <header><p class="eyebrow">07 / BUILD IT IN HARDWARE</p><h2 id="rtlHeading">The same machine, as hardware you can build.</h2>
       <p>Each datapath block is a small VHDL-2008 entity, and <code>rv32_core.vhd</code> wires them together with the four pipeline registers. It follows the simulator's rules exactly (prediction off): a regression test runs the same programs on both and requires identical registers and identical cycle counts. The multiply/divide unit is <code>mdu.vhd</code>. Pick a file, read it next to the diagram, then simulate it yourself.</p></header>
     <div class="rtl-layout">
       <nav class="rtl-files" aria-label="VHDL files"><ul id="rtlFiles"></ul></nav>
@@ -1274,7 +1275,7 @@ ghdl --elab-run --std=08 tb_rv32_soc -gPROGRAM=program.hex</pre></article>
      ========================= -->
 <section id="reference" class="max-w-7xl mx-auto mt-10 mb-16 px-6">
   <header class="mb-4">
-    <p class="eyebrow">07 / THE INSTRUCTION SET</p><h2 class="text-xl font-semibold text-slate-800">A reference, bit by bit.</h2>
+    <p class="eyebrow">08 / THE INSTRUCTION SET</p><h2 class="text-xl font-semibold text-slate-800">A reference, bit by bit.</h2>
     <p class="text-sm text-slate-600">
       Each row shows the instruction group, its format and its 32-bit encoding drawn to scale. Open a row's fields for what each one means. Filter by format or show only the M extension.
     </p>

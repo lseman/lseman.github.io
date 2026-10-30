@@ -67,7 +67,7 @@ export function planOfdma({ standard, width, gi, users, ruTones = 'auto', bytes 
     const out = users.map((u, i) => {
         const uStd = u.standard || standard, uWidth = u.width || width, uTop = STANDARDS[uStd].maxMcs;
         const su = bestRate({ standard: uStd, dataTones: STANDARDS[uStd].subcarriers[uWidth], topMcs: uTop, gi, maxNss: u.nss, rxChains: u.rxChains, snrDb: u.snrDb, bytes, fixedMcs: fixedMcs === null ? null : Math.min(fixedMcs, uTop) });
-        const mu = blocked ? null : bestRate({ standard, dataTones: ru.data, topMcs: Math.min(top, uTop), gi, maxNss: u.nss, rxChains: u.rxChains, snrDb: u.snrDb + ulGain, bytes, fixedMcs });
+        const mu = blocked ? null : bestRate({ standard, dataTones: ru.data, topMcs: Math.min(top, uTop), gi, maxNss: u.nss, rxChains: u.rxChains, snrDb: u.snrDb + ulGain, bytes, fixedMcs: fixedMcs === null ? null : Math.min(fixedMcs, uTop) });
         return { ...u, standard: uStd, width: uWidth, index: i, round: Math.floor(i / count), ruIndex: i % count, tones: ruTonesAt(i % count), ruSnrDb: u.snrDb + ulGain, su, mu };
     });
 
