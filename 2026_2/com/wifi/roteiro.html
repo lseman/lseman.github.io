@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#070a11" />
+  <title>Roteiro do Wi-Fi Lab</title>
+  <meta name="description" content="Roteiro prático do CommsLab Wi-Fi Lab: montar uma rede do zero, conectar dispositivos, paredes e propagação, SNR e MCS, formas de onda OFDM, interferência, beamforming, mesh e OFDMA." />
+  <link rel="icon" href="../../../assets/favicon.ico" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+  <style>
+    *{box-sizing:border-box}
+    :root{--bg:#f8fafc;--panel:#ffffff;--panel2:#f1f5f9;--line:#e2e8f0;--text:#0f172a;--muted:#334155;--dim:#64748b;--cyan:#0891b2;--green:#059669;--purple:#6366f1;--amber:#b45309;--red:#dc2626;--font:"DM Sans",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;color-scheme:light}
+    @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#070a11;--panel:#0d121d;--panel2:#121a29;--line:#202a3b;--text:#edf3fa;--muted:#b4c0d0;--dim:#8390a4;--cyan:#51d5e6;--green:#45d39a;--purple:#9a8cff;--amber:#f4b860;--red:#fb7185;color-scheme:dark}}
+    :root[data-theme="dark"]{--bg:#070a11;--panel:#0d121d;--panel2:#121a29;--line:#202a3b;--text:#edf3fa;--muted:#b4c0d0;--dim:#8390a4;--cyan:#51d5e6;--green:#45d39a;--purple:#9a8cff;--amber:#f4b860;--red:#fb7185;color-scheme:dark}
+    html{scroll-behavior:smooth;scroll-padding-top:72px}
+    body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--font)}
+    a{color:var(--cyan)}
+    code,kbd,.mono{font-family:var(--mono);font-size:.86em}
+    code{padding:1px 5px;border-radius:5px;background:var(--panel2);border:1px solid var(--line)}
+    kbd{padding:1px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--panel)}
+    header.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:9px;margin-right:auto}
+    .mark{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#2dd4bf,#3b82f6);color:#fff;font-size:19px;font-weight:700}
+    .brand div{display:flex;flex-direction:column;line-height:1.2}.brand strong{font-size:14px}.brand small{color:var(--dim);font:9px var(--mono);letter-spacing:.12em}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text);font:600 12px var(--font);text-decoration:none;white-space:nowrap;cursor:pointer}
+    .btn:hover{border-color:var(--cyan)}
+    .btn.primary{background:linear-gradient(135deg,#5eead4,#38bdf8);color:#05171a;border:0}
+    .layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:36px;max-width:1220px;margin:0 auto;padding:28px 20px 80px}
+    nav.toc{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto;font-size:13px}
+    nav.toc .lbl{color:var(--dim);font:600 10px var(--mono);letter-spacing:.13em;margin-bottom:8px}
+    nav.toc ol{list-style:none;margin:0;padding:0}
+    nav.toc a{display:block;padding:4px 10px;border-left:2px solid var(--line);color:var(--muted);text-decoration:none}
+    nav.toc a:hover{color:var(--text);border-color:var(--cyan)}
+    nav.toc .progress{margin-top:14px;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:12px;color:var(--muted)}
+    nav.toc .bar{height:6px;border-radius:3px;background:var(--panel2);margin-top:6px;overflow:hidden}
+    nav.toc .bar i{display:block;height:100%;width:0;background:var(--green);transition:width .2s}
+    main{min-width:0}
+    h1{font-size:34px;line-height:1.15;margin:0 0 10px;letter-spacing:-.01em}
+    h2{font-size:24px;margin:56px 0 6px;padding-top:18px;border-top:1px solid var(--line);letter-spacing:-.005em}
+    h2 .num{color:var(--cyan);font-family:var(--mono);font-size:.8em;margin-right:8px}
+    h3{font-size:17px;margin:28px 0 8px}
+    p,li{color:var(--muted)}
+    strong,b{color:var(--text)}
+    .lead{font-size:17px;color:var(--muted);max-width:760px}
+    .meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+    .meta span{padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:12px;color:var(--muted)}
+    .card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px 18px;margin:16px 0}
+    .card > :first-child{margin-top:0}.card > :last-child{margin-bottom:0}
+    .goal{border-left:3px solid var(--cyan)}
+    .tip{border-left:3px solid var(--green)}
+    .warn{border-left:3px solid var(--amber)}
+    .q{border-left:3px solid var(--purple)}
+    .tag{display:inline-block;font:600 10px var(--mono);letter-spacing:.12em;color:var(--dim);margin-bottom:4px}
+    ol.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0}
+    ol.steps > li{counter-increment:s;position:relative;padding:8px 10px 8px 48px;border-radius:9px}
+    ol.steps > li:hover{background:var(--panel)}
+    ol.steps > li::before{content:counter(s);position:absolute;left:10px;top:8px;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font:600 12px var(--mono);color:var(--muted)}
+    ol.steps > li.done{opacity:.55}
+    ol.steps > li.done::before{content:"✓";background:var(--green);border-color:var(--green);color:#fff}
+    ol.steps > li > input[type=checkbox]{position:absolute;left:10px;top:8px;width:26px;height:26px;margin:0;opacity:0;cursor:pointer}
+    .table-wrap{overflow-x:auto;margin:12px 0}
+    table{border-collapse:collapse;width:100%;font-size:13px;background:var(--panel)}
+    th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+    th{background:var(--panel2);font-weight:600;color:var(--text)}
+    td.blank{min-width:70px;height:30px}
+    td[contenteditable]{outline:0}
+    td[contenteditable]:focus{background:var(--panel2);box-shadow:inset 0 0 0 1px var(--cyan)}
+    .formula{font-family:var(--mono);font-size:13.5px;padding:10px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow-x:auto;white-space:pre;color:var(--text)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .ui{font-weight:600;color:var(--text);white-space:nowrap}
+    .ui::before{content:"▸ ";color:var(--cyan)}
+    details{margin:10px 0;border:1px dashed var(--line);border-radius:9px;padding:8px 14px;background:var(--panel)}
+    details summary{cursor:pointer;font-weight:600;color:var(--text)}
+    .shots{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;margin:14px 0}
+    figure.shot{margin:14px 0}
+    .shots figure.shot{margin:0}
+    figure.shot img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.12);background:var(--panel)}
+    figure.shot a{display:block}
+    figure.shot.sm{flex:0 1 380px;max-width:380px}
+    figure.shot.sm.xs{max-width:240px}
+    figure.shot.md{flex:1 1 520px;max-width:830px}
+    figure.shot figcaption{margin-top:6px;font-size:12.5px;color:var(--dim);line-height:1.45}
+    figure.shot figcaption b{color:var(--muted)}
+    footer{margin-top:60px;color:var(--dim);font-size:12px}
+    @media (max-width:900px){.layout{grid-template-columns:1fr;padding:20px 16px 60px}nav.toc{position:static;max-height:none}.grid2{grid-template-columns:1fr}h1{font-size:28px}}
+    @media print{header.top,nav.toc{display:none}.layout{display:block;padding:0}body{background:#fff;color:#000;font-size:11pt}h2{break-before:page}figure.shot img{box-shadow:none}.card,table{break-inside:avoid}ol.steps>li::before{content:"☐"}}
+  </style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">⌔</span><div><strong>CommsLab</strong><small>ROTEIRO · WI-FI LAB</small></div></div>
+  <a class="btn primary" href="index.html" target="_blank" rel="noopener">Abrir o Wi-Fi Lab ↗</a>
+  <a class="btn" href="fisica.html" target="_blank" rel="noopener">Camada física ↗</a>
+  <button class="btn" id="theme" title="Alternar tema">◑</button>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Sumário">
+  <div class="lbl">SUMÁRIO</div>
+  <ol>
+    <li><a href="#intro">Antes de começar</a></li>
+    <li><a href="#p0">0 · Conhecendo a tela</a></li>
+    <li><a href="#p1">1 · Rede do zero</a></li>
+    <li><a href="#p2">2 · Vários dispositivos</a></li>
+    <li><a href="#p3">3 · Distância e paredes</a></li>
+    <li><a href="#p4">4 · Da SNR à vazão</a></li>
+    <li><a href="#p5">5 · Formas de onda OFDM</a></li>
+    <li><a href="#p6">6 · Laboratório de camada física</a></li>
+    <li><a href="#p7">7 · Interferência e canais</a></li>
+    <li><a href="#p8">8 · Beamforming</a></li>
+    <li><a href="#p9">9 · Rede mesh</a></li>
+    <li><a href="#p10">10 · OFDMA (Wi-Fi 6)</a></li>
+    <li><a href="#p11">11 · Diagnóstico</a></li>
+    <li><a href="#p12">12 · Projeto final</a></li>
+    <li><a href="#ref">Referência rápida</a></li>
+    <li><a href="#entrega">Entrega e avaliação</a></li>
+  </ol>
+  <div class="progress"><span id="prog-text">0 de 0 passos</span><div class="bar"><i id="prog-bar"></i></div></div>
+</nav>
+
+<main>
+<section id="intro">
+  <h1>Roteiro do Wi-Fi Lab: da primeira rede ao mesh com beamforming</h1>
+  <p class="lead">Você vai montar uma rede Wi-Fi do zero no simulador, conectar dispositivos de padrões diferentes, colocar paredes, medir como a SNR vira MCS, taxa e vazão, abrir as formas de onda OFDM e testar interferência, beamforming, mesh e OFDMA. Cada parte tem passos, uma tabela para registrar medidas e perguntas para o relatório.</p>
+  <div class="meta"><span>⏱ 3 a 4 encontros de 100 min</span><span>👥 duplas</span><span>🖥 navegador (Chrome, Firefox ou Edge)</span><span>📄 entrega: relatório + JSON da rede</span></div>
+
+  <div class="card goal">
+    <div class="tag">AO FINAL VOCÊ DEVE SABER</div>
+    <ul>
+      <li>configurar SSID, segurança, canal, largura, fluxos e DHCP de um roteador e explicar a sequência de quadros que conecta um cliente;</li>
+      <li>prever a SNR de um enlace a partir de potência, perda de percurso, paredes e piso de ruído, e conferir no simulador;</li>
+      <li>explicar por que a SNR define o MCS, o MCS define a taxa PHY e por que a vazão TCP é menor que a taxa PHY;</li>
+      <li>relacionar multipercurso, prefixo cíclico, equalização e erro de frequência ao que aparece na constelação OFDM;</li>
+      <li>planejar canais sem sobreposição, quantificar o ganho de beamforming e o custo de saltos sem fio num mesh.</li>
+    </ul>
+  </div>
+
+  <div class="card tip">
+    <div class="tag">COMO USAR ESTE ROTEIRO</div>
+    <p>Marque cada passo clicando no número ao lado dele; o progresso fica salvo neste navegador. As células cinzas das tabelas são editáveis, mas <b>não são salvas</b>: copie os valores para o relatório (ou imprima esta página com <kbd>Ctrl</kbd>+<kbd>P</kbd> e preencha à mão).</p>
+    <p>Salve a rede com <span class="ui">Exportar JSON</span> ao fim de cada parte (<code>parte1.json</code>, <code>parte2.json</code>…). Se algo sair do controle, <span class="ui">Importar JSON</span> volta ao ponto salvo.</p>
+  </div>
+
+  <div class="card warn">
+    <div class="tag">MODELO, NÃO REALIDADE</div>
+    <p>O simulador usa perda log-distância, atenuação fixa por parede, BER de M-QAM em AWGN com ganho de código e um ganho ideal de beamforming. Os números servem para comparar situações e entender tendências; um site survey real teria variações de vários dB. Sempre que uma pergunta pedir "por quê", responda com a física do modelo.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p0">
+  <h2><span class="num">0</span>Conhecendo a tela</h2>
+  <p>Abra o <a href="index.html" target="_blank" rel="noopener">Wi-Fi Lab</a>. Se aparecer uma faixa avisando de arquivos de versões diferentes, recarregue com <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>.</p>
+  <figure class="shot"><a href="img/roteiro/tela-geral.webp" target="_blank" rel="noopener"><img src="img/roteiro/tela-geral.webp" width="1440" height="900" loading="lazy" alt="Tela completa do Wi-Fi Lab com as cinco regiões numeradas"></a><figcaption>A tela do Wi-Fi Lab. <b>1</b> escolha do cenário · <b>2</b> paleta de dispositivos, ferramentas e ambiente · <b>3</b> planta baixa (40 × 24 m) · <b>4</b> inspetor do item selecionado · <b>5</b> painel inferior: eventos, métricas, gráficos, OFDM e OFDMA. Clique em qualquer imagem para ampliar.</figcaption></figure>
+  <ol class="steps" data-part="p0">
+    <li>Percorra a lista <span class="ui">CENÁRIO</span> e leia o <b>Objetivo</b> de dois cenários. Os cenários prontos serão usados como referência depois; a rede principal você monta sozinho.</li>
+    <li>Clique num espaço vazio da planta: o inspetor mostra a lista de dispositivos e a seção <b>COMO FUNCIONA</b>. Leia os dois parágrafos — eles resumem todo o modelo físico que você vai usar.</li>
+    <li>Arraste a borda superior do painel inferior para aumentá-lo e use o botão <kbd>⤢</kbd> para expandir/recolher. Você vai alternar muito entre planta e painel.</li>
+    <li>Em <span class="ui">Animação</span>, escolha <b>Lenta</b>. Assim os quadros aparecem voando entre os dispositivos e dá tempo de acompanhar o log.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="p1">
+  <h2><span class="num">1</span>Montando a rede do zero</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Criar um roteador, configurar a rede sem fio e a LAN, conectar o primeiro cliente e entender cada quadro trocado até ele navegar.</p></div>
+
+  <h3>1.1 Planta vazia</h3>
+  <ol class="steps" data-part="p1a">
+    <li>Escolha o cenário <b>Primeira rede Wi-Fi 6</b> (é o que não tem paredes).</li>
+    <li>Clique em cada dispositivo e aperte <kbd>Del</kbd> até a planta ficar vazia. No painel <span class="ui">Eventos e quadros</span>, clique em <span class="ui">Limpar</span>.</li>
+    <li>Em <span class="ui">AMBIENTE</span>, anote os valores padrão de <b>Expoente n</b>, <b>Fig. ruído</b>, <b>Ruído extra</b> e <b>Perda impl.</b>. Você vai mexer neles na Parte 3 e precisa saber voltar.</li>
+  </ol>
+
+  <h3>1.2 O roteador</h3>
+  <ol class="steps" data-part="p1b">
+    <li>Na paleta, clique em <span class="ui">Roteador Wi-Fi</span>. Arraste-o para o centro da planta (≈ 20 m × 12 m).</li>
+    <li>Renomeie-o (campo de nome no topo do inspetor) para <code>AP-Lab-&lt;sobrenome&gt;</code>.</li>
+    <li>Aba <span class="ui">Wi-Fi</span>: defina um SSID próprio (ex.: <code>Lab-Grupo3</code>), segurança <b>WPA2/WPA3</b> e uma senha de 8+ caracteres. Mantenha <b>Wi-Fi 6 · 5 GHz · 80 MHz · canal 42 · 2 fluxos · MCS automático</b>.</li>
+    <li>Anote a <b>Taxa PHY máxima</b> e o número de <b>Subportadoras</b> mostrados no fim da aba. Mude a largura para 20, 40, 80 e 160 MHz e preencha a tabela; depois volte para 80 MHz.</li>
+    <li>Aba <span class="ui">LAN &amp; DHCP</span>: confira IP do roteador <code>192.168.0.1/24</code>, faixa DHCP <code>.100–.199</code>, lease e DNS primário. Encurte o lease para <b>600 s</b>.</li>
+    <li>Clique em <span class="ui">Página de administração</span>. Entre com <code>admin</code>/<code>admin</code>, percorra <b>Status</b>, <b>Rede sem fio</b>, <b>LAN e DHCP</b> e <b>Análise de canais</b>. Em <b>Sistema</b>, troque a senha de administrador — por que um roteador de fábrica com <code>admin/admin</code> é um risco?</li>
+  </ol>
+<div class="shots"><figure class="shot sm xs"><a href="img/roteiro/paleta-roteador.webp" target="_blank" rel="noopener"><img src="img/roteiro/paleta-roteador.webp" width="230" height="147" loading="lazy" alt="Paleta: Roteador Wi-Fi adiciona um AP na planta."></a><figcaption>Paleta: <b>Roteador Wi-Fi</b> adiciona um AP na planta.</figcaption></figure><figure class="shot sm"><a href="img/roteiro/roteador-ssid.webp" target="_blank" rel="noopener"><img src="img/roteiro/roteador-ssid.webp" width="380" height="331" loading="lazy" alt="Aba Wi-Fi do roteador: 1 nome · 2 SSID · 3 segurança · 4 senha."></a><figcaption>Aba Wi-Fi do roteador: <b>1</b> nome · <b>2</b> SSID · <b>3</b> segurança · <b>4</b> senha.</figcaption></figure><figure class="shot sm"><a href="img/roteiro/roteador-radio.webp" target="_blank" rel="noopener"><img src="img/roteiro/roteador-radio.webp" width="380" height="628" loading="lazy" alt="Mais abaixo: 1 largura · 2 fluxos espaciais · 3 taxa PHY máxima e subportadoras."></a><figcaption>Mais abaixo: <b>1</b> largura · <b>2</b> fluxos espaciais · <b>3</b> taxa PHY máxima e subportadoras.</figcaption></figure></div>
+  <div class="shots"><figure class="shot sm"><a href="img/roteiro/roteador-lan-dhcp.webp" target="_blank" rel="noopener"><img src="img/roteiro/roteador-lan-dhcp.webp" width="380" height="422" loading="lazy" alt="Aba LAN &amp; DHCP: faixa de endereços e lease."></a><figcaption>Aba <b>LAN &amp; DHCP</b>: faixa de endereços e lease.</figcaption></figure><figure class="shot md"><a href="img/roteiro/admin-login.webp" target="_blank" rel="noopener"><img src="img/roteiro/admin-login.webp" width="992" height="672" loading="lazy" alt="Página de administração: entre com admin / admin."></a><figcaption><b>Página de administração</b>: entre com admin / admin.</figcaption></figure><figure class="shot md"><a href="img/roteiro/admin-canais.webp" target="_blank" rel="noopener"><img src="img/roteiro/admin-canais.webp" width="992" height="672" loading="lazy" alt="Menu Análise de canais: redes vizinhas e recomendação (usada na Parte 7)."></a><figcaption>Menu <b>Análise de canais</b>: redes vizinhas e recomendação (usada na Parte 7).</figcaption></figure></div>
+    <div class="table-wrap"><table>
+    <tr><th>Largura (MHz)</th><th>Subportadoras</th><th>Taxa PHY máxima (Mb/s)</th><th>Taxa ÷ largura (b/s/Hz)</th></tr>
+    <tr><td>20</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>40</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>80</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>160</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+  <div class="card q"><div class="tag">PERGUNTA 1.1</div><p>A taxa dobra exatamente quando a largura dobra? Use a fórmula <code>R = N<sub>ss</sub>·N<sub>sd</sub>·log₂M·R<sub>c</sub>/(T<sub>sym</sub>+GI)</code> e o número de subportadoras de dados para explicar a diferença.</p></div>
+
+  <h3>1.3 O primeiro cliente</h3>
+  <ol class="steps" data-part="p1c">
+    <li>Adicione um <span class="ui">Notebook</span> a uns 6 m do roteador. Ele aparece como <b>desconectado</b> (SSID vazio).</li>
+    <li>Na aba <span class="ui">Wi-Fi</span> do notebook, veja <b>REDES VISÍVEIS</b>: anote RSSI, banda, canal e largura da sua rede.</li>
+    <li>Digite uma senha <b>errada</b> no campo Senha, preencha o SSID e clique <span class="ui">Conectar</span>. No log, filtre por <b>EAPOL</b>: em que mensagem do 4-way handshake a conexão falha, e por quê?</li>
+    <li>Corrija a senha e conecte. Limpe o filtro e, com <span class="ui">só o selecionado</span> marcado, copie para o relatório a sequência completa de quadros até o cliente ter IP.</li>
+    <li>Clique em cada quadro e veja as camadas no painel à direita do log. Identifique: <i>Probe Request/Response</i>, <i>Authentication</i>, <i>Association Request/Response</i>, as 4 mensagens <i>EAPOL</i>, <i>DHCP DISCOVER → OFFER → REQUEST → ACK</i> e o <i>ARP</i>. Para cada um, anote a coluna <b>PHY</b> (taxa usada).</li>
+  </ol>
+<div class="shots"><figure class="shot sm"><a href="img/roteiro/cliente-conectar.webp" target="_blank" rel="noopener"><img src="img/roteiro/cliente-conectar.webp" width="380" height="287" loading="lazy" alt="Aba Wi-Fi do cliente: 1 SSID · 2 senha · 3 Conectar · 4 redes visíveis (cada uma tem seu próprio botão Conectar)."></a><figcaption>Aba Wi-Fi do cliente: <b>1</b> SSID · <b>2</b> senha · <b>3</b> Conectar · <b>4</b> redes visíveis (cada uma tem seu próprio botão Conectar).</figcaption></figure></div>
+  <figure class="shot"><a href="img/roteiro/log-quadros.webp" target="_blank" rel="noopener"><img src="img/roteiro/log-quadros.webp" width="1440" height="250" loading="lazy" alt="Painel Eventos e quadros: 1 filtro por protocolo · 2 só o dispositivo selecionado · 3 clique numa linha… · 4 …e veja as camadas e a camada física usada."></a><figcaption>Painel <b>Eventos e quadros</b>: <b>1</b> filtro por protocolo · <b>2</b> só o dispositivo selecionado · <b>3</b> clique numa linha… · <b>4</b> …e veja as camadas e a camada física usada.</figcaption></figure>
+    <div class="card q"><div class="tag">PERGUNTA 1.2</div><p>Os quadros de gerência e o DHCP broadcast saem a uma taxa PHY muito menor que os dados. Por quê o AP faz isso? O que aconteceria com um cliente distante se ele usasse MCS alto nos beacons?</p></div>
+
+  <h3>1.4 Testes de rede pelo terminal</h3>
+  <p>Dê duplo clique no notebook (ou botão <span class="ui">Terminal</span>). Rode e salve a saída de:</p>
+  <div class="formula">ipconfig /all
+ping 192.168.0.1
+ping google.com
+nslookup google.com
+tracert ufpr.br
+arp -a
+netsh wlan show interfaces
+iperf3 -c 192.168.0.1 -t 10</div>
+<figure class="shot md"><a href="img/roteiro/terminal.webp" target="_blank" rel="noopener"><img src="img/roteiro/terminal.webp" width="732" height="452" loading="lazy" alt="Terminal do notebook (duplo clique no dispositivo). Digite o comando no campo destacado e tecle Enter; ↑ repete comandos anteriores."></a><figcaption>Terminal do notebook (duplo clique no dispositivo). Digite o comando no campo destacado e tecle Enter; <kbd>↑</kbd> repete comandos anteriores.</figcaption></figure>
+    <ol class="steps" data-part="p1d">
+    <li>No <code>ipconfig /all</code>, identifique IP, máscara, gateway, DNS, servidor DHCP e validade do lease. Bate com a aba LAN &amp; DHCP?</li>
+    <li>Em <code>netsh wlan show interfaces</code>, anote o padrão, canal, sinal e taxas de recepção/transmissão.</li>
+    <li>Rode <code>ipconfig /release</code> e depois <code>ipconfig /renew</code>, observando no log que o DHCP agora faz só <i>REQUEST → ACK</i> ou o DORA inteiro. Explique.</li>
+    <li>No roteador, abra o <span class="ui">Console</span> e rode <code>show clients</code>, <code>show leases</code> e <code>show wifi</code>.</li>
+    <li>Exporte a rede como <code>parte1.json</code>.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="p2">
+  <h2><span class="num">2</span>Conectando dispositivos diferentes</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Ver como o padrão do rádio e o número de antenas do cliente limitam o enlace, e configurar endereçamento estático e DNS local.</p></div>
+  <ol class="steps" data-part="p2">
+    <li>Adicione um <span class="ui">Celular</span>, um <span class="ui">Desktop</span> e uma <span class="ui">Impressora</span>, todos a ~8 m do roteador, e conecte-os à sua rede. Para o celular use o terminal: <code>nmcli dev wifi connect Lab-Grupo3 password &lt;senha&gt;</code>.</li>
+    <li>Para cada cliente, abra a aba <span class="ui">Enlace</span> e preencha a tabela abaixo (padrão negociado, largura, fluxos, MCS, taxa PHY, vazão).</li>
+    <li>A impressora é Wi-Fi 4 (1 antena). Na aba <span class="ui">IP</span>, coloque-a em modo <b>Estático</b> com <code>192.168.0.50/24</code>, gateway e DNS <code>192.168.0.1</code>. Por que dar IP fixo fora da faixa DHCP?</li>
+    <li>No roteador, aba <span class="ui">DNS</span>, adicione o registro <code>impressora.lan → 192.168.0.50</code>. Do notebook: <code>ping impressora.lan</code>. Veja também os nomes automáticos que o DHCP criou.</li>
+    <li>Coloque o desktop em estático com o <b>mesmo IP</b> da impressora. O que o inspetor mostra? Qual quadro ARP denuncia o conflito? Desfaça.</li>
+    <li>Marque <span class="ui">Firewall bloqueia ping</span> no celular e faça <code>ping</code> nele a partir do notebook. Depois ligue <span class="ui">Isolamento</span> no roteador e repita com o firewall desligado. Qual é a diferença entre as duas falhas?</li>
+    <li>Mude o celular para <b>1 fluxo</b> (aba Wi-Fi do cliente) e veja a taxa cair. Mude o padrão do notebook para <b>Wi-Fi 5</b> e depois de volta para Wi-Fi 6.</li>
+    <li>Exporte <code>parte2.json</code>.</li>
+  </ol>
+<div class="shots"><figure class="shot sm"><a href="img/roteiro/cliente-ip-estatico.webp" target="_blank" rel="noopener"><img src="img/roteiro/cliente-ip-estatico.webp" width="380" height="317" loading="lazy" alt="Aba IP do cliente: 2 modo Estático · 3–5 endereço, gateway e DNS."></a><figcaption>Aba <b>IP</b> do cliente: <b>2</b> modo Estático · <b>3–5</b> endereço, gateway e DNS.</figcaption></figure><figure class="shot sm"><a href="img/roteiro/dns-registro.webp" target="_blank" rel="noopener"><img src="img/roteiro/dns-registro.webp" width="380" height="266" loading="lazy" alt="Aba DNS do roteador: 3 “+ Registro” cria uma linha na tabela 2."></a><figcaption>Aba <b>DNS</b> do roteador: <b>3</b> “+ Registro” cria uma linha na tabela <b>2</b>.</figcaption></figure></div>
+    <div class="table-wrap"><table>
+    <tr><th>Cliente</th><th>Padrão negociado</th><th>Largura</th><th>N<sub>ss</sub></th><th>SINR desc. (dB)</th><th>MCS desc.</th><th>Taxa PHY (Mb/s)</th><th>Vazão (Mb/s)</th></tr>
+    <tr><td>Notebook (Wi-Fi 6, 2×2)</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Celular (Wi-Fi 6, 2×2)</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Desktop (Wi-Fi 5)</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Impressora (Wi-Fi 4, 1×1)</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+  <div class="card q"><div class="tag">PERGUNTA 2.1</div><p>Os quatro estão à mesma distância, mas com taxas muito diferentes. Separe as causas: padrão (MCS máximo, símbolo OFDM, largura máxima), número de fluxos e potência de transmissão do cliente (que afeta só a <b>subida</b> — confira com o seletor ↑ Subida em <span class="ui">Métricas por dispositivo</span>).</p></div>
+  <div class="card q"><div class="tag">PERGUNTA 2.2</div><p>Em 2,4 GHz o Wi-Fi 4 não atrapalha só a si mesmo: um cliente lento ocupa o canal por mais tempo para enviar o mesmo pacote. Explique a "anomalia de desempenho" do 802.11 com os números da sua tabela.</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p3">
+  <h2><span class="num">3</span>Distância, bandas e paredes</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Verificar o balanço de enlace (link budget) do modelo, medir a atenuação de cada material e comparar 2,4, 5 e 6 GHz.</p></div>
+  <div class="formula">RSSI = P_tx + G_ant − [FSPL(1 m) + 10·n·log₁₀(d)] − Σ L_paredes          (dBm)
+FSPL(1 m) = 20·log₁₀(f_MHz) − 27,55  ≈ 40,2 dB (canal 6, 2437 MHz) · 46,8 dB (canal 42, 5210 MHz) · ≈ 48 dB (6 GHz)
+Ruído = −174 + 10·log₁₀(B) + NF   ≈ −101 + NF (20 MHz) · −95 + NF (80 MHz)       (dBm)
+SNR = RSSI − Ruído</div>
+
+  <h3>3.1 Curva de distância (sem paredes)</h3>
+  <ol class="steps" data-part="p3a">
+    <li>Deixe só o roteador e o notebook. Coloque o roteador em (5, 12) e o notebook na mesma linha horizontal (y = 12).</li>
+    <li>Confirme o ambiente padrão (n = 3, NF = 7 dB, ruído extra 0, perda de implementação 2 dB). Leve o notebook a 2, 5, 10, 15, 20, 25 e 30 m. Em cada ponto, anote da aba <span class="ui">Enlace</span>: perda, RSSI, ruído, SINR, MCS, taxa PHY e vazão.</li>
+    <li>Calcule à mão o RSSI e a SNR esperados para 10 m (P<sub>tx</sub> = 20 dBm, G = 3 dBi, n e NF do ambiente) e compare.</li>
+    <li>Abra <span class="ui">Gráficos</span> e observe o card <b>Taxa × distância</b>: seus pontos devem cair sobre a curva. Cada degrau é uma troca de MCS.</li>
+    <li>Mude o <b>Expoente n</b> de 3 para 2 (espaço livre) e para 4 (ambiente muito obstruído). A que distância o MCS cai abaixo de 5 em cada caso?</li>
+  </ol>
+<div class="shots"><figure class="shot sm"><a href="img/roteiro/cliente-enlace.webp" target="_blank" rel="noopener"><img src="img/roteiro/cliente-enlace.webp" width="380" height="466" loading="lazy" alt="Aba Enlace do cliente: tudo o que você vai anotar — distância e perda, RSSI, ruído, 2 SINR, 3 MCS, taxa PHY e 4 vazão."></a><figcaption>Aba <b>Enlace</b> do cliente: tudo o que você vai anotar — distância e perda, RSSI, ruído, <b>2</b> SINR, <b>3</b> MCS, taxa PHY e <b>4</b> vazão.</figcaption></figure><figure class="shot sm xs"><a href="img/roteiro/ambiente.webp" target="_blank" rel="noopener"><img src="img/roteiro/ambiente.webp" width="230" height="224" loading="lazy" alt="Painel AMBIENTE: expoente de perda n e parâmetros de ruído."></a><figcaption>Painel <b>AMBIENTE</b>: expoente de perda n e parâmetros de ruído.</figcaption></figure></div>
+    <div class="table-wrap"><table>
+    <tr><th>d (m)</th><th>Perda (dB)</th><th>RSSI (dBm)</th><th>Ruído (dBm)</th><th>SINR (dB)</th><th>MCS × N<sub>ss</sub></th><th>Taxa PHY</th><th>Vazão</th></tr>
+    <tr><td>2</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>5</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>10</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>15</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>20</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>25</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>30</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+  <div class="card q"><div class="tag">PERGUNTA 3.1</div><p>Quanto a perda aumenta quando a distância dobra (de 5 para 10 m, de 10 para 20 m)? Mostre que o valor é 10·n·log₁₀2 ≈ 3·n dB.</p></div>
+
+  <h3>3.2 Paredes e materiais</h3>
+  <ol class="steps" data-part="p3b">
+    <li>Fixe o notebook a 10 m. Em <span class="ui">FERRAMENTAS</span>, escolha <span class="ui">Desenhar parede</span>, material <b>Drywall</b>, e arraste na planta uma parede vertical entre o roteador e o notebook (ex.: de (10, 4) a (10, 20)).</li>
+    <li>Volte a <span class="ui">Selecionar</span> e clique na parede: o inspetor mostra a atenuação em 2,4/5/6 GHz e permite trocar o material.</li>
+    <li>Troque o material para Vidro, Tijolo, Concreto e Metal, anotando SINR e MCS em cada caso.</li>
+    <li>Coloque duas paredes de tijolo em série. A perda soma?</li>
+  </ol>
+<div class="shots"><figure class="shot sm xs"><a href="img/roteiro/desenhar-parede.webp" target="_blank" rel="noopener"><img src="img/roteiro/desenhar-parede.webp" width="230" height="163" loading="lazy" alt="1 Desenhar parede · 2 material da próxima parede. Arraste na planta para desenhar."></a><figcaption><b>1</b> Desenhar parede · <b>2</b> material da próxima parede. Arraste na planta para desenhar.</figcaption></figure><figure class="shot"><a href="img/roteiro/parede-inspetor.webp" target="_blank" rel="noopener"><img src="img/roteiro/parede-inspetor.webp" width="1210" height="420" loading="lazy" alt="Com Selecionar, clique numa parede (1) para ver a atenuação por banda e trocar o material (2)."></a><figcaption>Com <b>Selecionar</b>, clique numa parede (<b>1</b>) para ver a atenuação por banda e trocar o material (<b>2</b>).</figcaption></figure></div>
+    <div class="table-wrap"><table>
+    <tr><th>Material</th><th>Atenuação 5 GHz (dB)</th><th>SINR (dB)</th><th>MCS × N<sub>ss</sub></th><th>Vazão (Mb/s)</th></tr>
+    <tr><td>Sem parede</td><td>0</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Drywall</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Vidro</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Tijolo</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Concreto</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Metal</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+
+  <h3>3.3 Mapa de cobertura e bandas</h3>
+  <ol class="steps" data-part="p3c">
+    <li>Desenhe uma planta com pelo menos 3 salas: use drywall para divisórias, tijolo para paredes externas e uma parede de concreto (poço de elevador, por exemplo).</li>
+    <li>Selecione o roteador e ligue <span class="ui">Cobertura</span> → <b>SINR (dB)</b>. Tire um print. Repita com <b>MCS máximo</b>.</li>
+    <li>Mude o roteador para <b>2,4 GHz / 20 MHz / canal 6</b> e depois <b>6 GHz</b> (exige padrão Wi-Fi 6E ou 7). Tire prints do mapa nas três bandas.</li>
+    <li>Arraste o roteador pela planta com o mapa ligado e encontre a posição que cobre todas as salas com MCS ≥ 7. Anote a posição.</li>
+    <li>Aumente <b>Ruído extra</b> para 10 dB. Quanto o raio de cobertura encolhe? Volte a 0.</li>
+    <li>Exporte <code>parte3.json</code>.</li>
+  </ol>
+<figure class="shot"><a href="img/roteiro/cobertura.webp" target="_blank" rel="noopener"><img src="img/roteiro/cobertura.webp" width="1060" height="594" loading="lazy" alt="1 Cobertura → SINR (dB) pinta a planta para o AP selecionado; 2 legenda de cores. Note a sombra atrás das paredes de concreto e tijolo."></a><figcaption><b>1</b> Cobertura → SINR (dB) pinta a planta para o AP selecionado; <b>2</b> legenda de cores. Note a sombra atrás das paredes de concreto e tijolo.</figcaption></figure>
+    <div class="card q"><div class="tag">PERGUNTA 3.2</div><p>2,4 GHz chega mais longe e atravessa melhor as paredes; por que, então, os roteadores modernos preferem 5 e 6 GHz? Use pelo menos três argumentos: largura de canal disponível, número de canais sem sobreposição e interferência de vizinhos.</p></div>
+  <div class="card q"><div class="tag">PERGUNTA 3.3</div><p>Por que o padrão não manda simplesmente aumentar a potência de transmissão do AP para 30 dBm? Pense no enlace de subida (o celular transmite com 15 dBm) e na interferência com os vizinhos.</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p4">
+  <h2><span class="num">4</span>Da SNR à vazão: MCS, PER e Shannon</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Construir a curva de adaptação de enlace, ver o limite de Shannon e entender onde a taxa PHY se perde até virar vazão TCP.</p></div>
+  <div class="formula">R_PHY = N_ss · N_sd · log₂(M) · R_c / (T_sym + GI)
+PER   = 1 − (1 − BER)^(8·1538)
+C     = N_ss · B · log₂(1 + SNR)          (capacidade de Shannon)
+MCS escolhido = o mais alto com PER ≤ 10 %</div>
+
+  <h3>4.1 Varredura de SNR</h3>
+  <ol class="steps" data-part="p4a">
+    <li>No notebook, aba <span class="ui">Wi-Fi</span> → <b>TESTE</b>, marque <span class="ui">SNR forçada</span>. Ela substitui o canal físico nos dois sentidos.</li>
+    <li>Varie a SNR de 0 a 45 dB em passos de 5 dB. Em cada valor, anote MCS, modulação, taxa de código, PER, taxa PHY e a vazão do <code>iperf3 -c 192.168.0.1</code>.</li>
+    <li>Na aba <span class="ui">Enlace</span>, observe a <b>CONSTELAÇÃO RECEBIDA</b> e o gráfico <b>PER × SNR</b> a cada valor: como a nuvem de pontos se compara às fronteiras de decisão?</li>
+    <li>Abra <span class="ui">Gráficos</span>: nos cards <b>BER × Eb/N0</b> e <b>Eficiência espectral × SNR</b>, localize o ponto do notebook. Meça o gap (em dB) entre o degrau do MCS em uso e a curva de Shannon.</li>
+  </ol>
+<div class="shots"><figure class="shot sm"><a href="img/roteiro/snr-forcada.webp" target="_blank" rel="noopener"><img src="img/roteiro/snr-forcada.webp" width="380" height="224" loading="lazy" alt="Seção TESTE da aba Wi-Fi do cliente: marque a caixa e digite a SNR."></a><figcaption>Seção <b>TESTE</b> da aba Wi-Fi do cliente: marque a caixa e digite a SNR.</figcaption></figure><figure class="shot sm"><a href="img/roteiro/estudar-enlace.webp" target="_blank" rel="noopener"><img src="img/roteiro/estudar-enlace.webp" width="380" height="331" loading="lazy" alt="Na aba Enlace: 1 atalho para a aula de camada física com os parâmetros deste enlace · 2 constelação recebida."></a><figcaption>Na aba Enlace: <b>1</b> atalho para a aula de camada física com os parâmetros deste enlace · <b>2</b> constelação recebida.</figcaption></figure></div>
+  <figure class="shot"><a href="img/roteiro/graficos.webp" target="_blank" rel="noopener"><img src="img/roteiro/graficos.webp" width="1440" height="450" loading="lazy" alt="Aba Gráficos: ganho de beamforming, BER × Eb/N0, eficiência × SNR (Shannon), vazão, taxa × distância e espectro. 2 alterna descida/subida."></a><figcaption>Aba <b>Gráficos</b>: ganho de beamforming, BER × Eb/N0, eficiência × SNR (Shannon), vazão, taxa × distância e espectro. <b>2</b> alterna descida/subida.</figcaption></figure>
+    <div class="table-wrap"><table>
+    <tr><th>SNR (dB)</th><th>MCS</th><th>Modulação / R<sub>c</sub></th><th>PER</th><th>Taxa PHY</th><th>Shannon C</th><th>Vazão iperf3</th><th>Vazão / PHY</th></tr>
+    <tr><td>0</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>5</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>10</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>15</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>20</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>25</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>30</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>35</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>40</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>45</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+
+  <h3>4.2 MCS fixo: o que a adaptação evita</h3>
+<div class="shots"><figure class="shot sm"><a href="img/roteiro/mcs-fixo.webp" target="_blank" rel="noopener"><img src="img/roteiro/mcs-fixo.webp" width="380" height="171" loading="lazy" alt="Na aba Wi-Fi do roteador: 1 intervalo de guarda · 2 MCS (Automático ou fixo)."></a><figcaption>Na aba Wi-Fi do roteador: <b>1</b> intervalo de guarda · <b>2</b> MCS (Automático ou fixo).</figcaption></figure></div>
+    <ol class="steps" data-part="p4b">
+    <li>Com SNR forçada em 25 dB, mude o <b>MCS</b> do roteador de "Automático" para <b>MCS 11</b> (1024-QAM 5/6).</li>
+    <li>Rode <code>iperf3</code> e observe no log a coluna <b>Tent.</b> (tentativas) e as retransmissões. Qual é a vazão?</li>
+    <li>Suba a SNR de 1 em 1 dB até a PER cair abaixo de 10 %. Anote o limiar. Compare com o limiar em que o MCS automático escolhia o 11.</li>
+    <li>Fixe agora <b>MCS 0</b> com SNR de 40 dB. O enlace é confiável, mas qual é o desperdício?</li>
+    <li>Volte para <b>Automático</b> e desmarque a SNR forçada.</li>
+  </ol>
+
+  <h3>4.3 Intervalo de guarda, largura e fluxos</h3>
+  <ol class="steps" data-part="p4c">
+    <li>No roteador, troque o <b>Intervalo de guarda</b> entre 0,8, 1,6 e 3,2 µs. Calcule a perda de taxa esperada com T<sub>sym</sub> = 12,8 µs e confira.</li>
+    <li>Com o notebook longe (SINR ≈ 15 dB), compare 20, 40, 80 e 160 MHz. A largura maior aumenta a taxa ou diminui? Explique com o piso de ruído (cada duplicação da banda custa 3 dB de SNR).</li>
+    <li>Com o notebook perto (SINR &gt; 35 dB), repita. Onde está o ponto de troca?</li>
+    <li>Compare 1 e 2 fluxos no AP com o notebook a 5 m e a 25 m. Com 2 fluxos a potência se divide: quando 1 fluxo com MCS mais alto vence 2 fluxos com MCS mais baixo?</li>
+  </ol>
+  <div class="card q"><div class="tag">PERGUNTA 4.1</div><p>Na tabela 4.1, a razão vazão/PHY nunca chega a 100 %. Liste as fontes de overhead indicadas no card <b>Vazão por dispositivo</b> (preâmbulo, DIFS, backoff, Block Ack, retransmissões, canal ocupado) e diga quais pesam mais em pacotes pequenos.</p></div>
+  <div class="card q"><div class="tag">PERGUNTA 4.2</div><p>O cenário pronto <b>Wi-Fi 7 em 6 GHz (320 MHz)</b> mostra o 4096-QAM aparecendo só com 1 fluxo. Abra-o, reproduza e explique em termos de SNR por fluxo.</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p5">
+  <h2><span class="num">5</span>Formas de onda: dentro do símbolo OFDM</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Ver como os bits viram subportadoras, como o multipercurso distorce o sinal e por que o prefixo cíclico, a estimação de canal e o equalizador são necessários.</p></div>
+  <p>Selecione o notebook e abra a aba <span class="ui">OFDM · subportadoras e multipercurso</span>. Com <b>Seguir enlace</b> marcado, a numerologia, largura, GI, modulação e SNR vêm do enlace real; desmarque para controlar tudo à mão.</p>
+<figure class="shot"><a href="img/roteiro/ofdm-eco.webp" target="_blank" rel="noopener"><img src="img/roteiro/ofdm-eco.webp" width="1440" height="450" loading="lazy" alt="Aba OFDM: 1 desmarque “Seguir enlace” para controlar à mão · 2 intervalo de guarda · 3 perfil de multipercurso. Os cartões mostram FFT, Δf, símbolo, atraso, banda de coerência, ISI, BER e EVM."></a><figcaption>Aba <b>OFDM</b>: <b>1</b> desmarque “Seguir enlace” para controlar à mão · <b>2</b> intervalo de guarda · <b>3</b> perfil de multipercurso. Os cartões mostram FFT, Δf, símbolo, atraso, banda de coerência, ISI, BER e EVM.</figcaption></figure>
+    <div class="formula">Wi-Fi 4/5:   Δf = 312,5 kHz   T_sym = 3,2 µs   GI = 0,4 ou 0,8 µs
+Wi-Fi 6/6E/7: Δf = 78,125 kHz  T_sym = 12,8 µs  GI = 0,8, 1,6 ou 3,2 µs
+Banda de coerência  B_c ≈ 1 / (5·τ_rms)</div>
+
+  <h3>5.1 Anatomia do sinal (sem multipercurso)</h3>
+  <ol class="steps" data-part="p5a">
+    <li>Desmarque <span class="ui">Seguir enlace</span>. Escolha Wi-Fi 6, 20 MHz, GI 0,8 µs, 16-QAM, SNR 30 dB, Multipercurso <b>Sem multipercurso (só AWGN)</b>.</li>
+    <li><b>Mapa de subportadoras</b>: conte dados, pilotos e nulas. Onde ficam a DC e as bandas de guarda?</li>
+    <li><b>Ortogonalidade</b>: veja os sincs; no instante de amostragem todas as vizinhas valem zero.</li>
+    <li><b>Formação de um símbolo</b>: algumas subportadoras e a soma. Note a região do CP: ela é uma cópia do final do símbolo.</li>
+    <li><b>Espectro transmitido</b>: topo plano e queda nas guardas. Troque para Wi-Fi 5 e compare a largura de cada subportadora.</li>
+    <li><b>Sinal no tempo</b>: compare transmitido × recebido. O sinal OFDM parece ruído — por que isso implica PAPR alto e amplificadores caros?</li>
+  </ol>
+
+  <h3>5.2 Multipercurso e prefixo cíclico</h3>
+  <ol class="steps" data-part="p5b">
+    <li>Percorra os perfis <b>TGn B → C → D → E → F</b>. Para cada um, anote τ<sub>rms</sub>, B<sub>c</sub> (título do card <b>Resposta em frequência</b>) e a BER total (card <b>BER por subportadora</b>).</li>
+    <li>Observe a <b>SNR por subportadora</b>: a SNR média é a mesma, mas algumas subportadoras caem em vales profundos. Elas dominam a BER — por quê?</li>
+    <li>Escolha <b>Dois raios: eco em 400 ns</b>. Conte os vales em |H<sub>k</sub>|² dentro de 20 MHz e compare com o espaçamento esperado 1/400 ns = 2,5 MHz.</li>
+    <li>Escolha <b>Eco forte em 2 µs (maior que o CP)</b> com Wi-Fi 6 e GI 0,8 µs. No card <b>Sinal no tempo</b> aparecem faixas vermelhas de <b>ISI</b>. Anote EVM e BER.</li>
+    <li>Mude o GI para <b>3,2 µs</b>. A ISI some? Anote EVM e BER. Agora mude a numerologia para Wi-Fi 5 (GI máximo 0,8 µs): é possível salvar esse enlace?</li>
+  </ol>
+<figure class="shot"><a href="img/roteiro/ofdm-isi.webp" target="_blank" rel="noopener"><img src="img/roteiro/ofdm-isi.webp" width="1440" height="450" loading="lazy" alt="Mais abaixo no painel: 1 sinal no tempo com prefixos cíclicos (âmbar) e ISI (vermelho) · 2 perfil de atraso, com o CP em destaque. Aqui o eco de 2 µs ultrapassa o GI de 0,8 µs."></a><figcaption>Mais abaixo no painel: <b>1</b> sinal no tempo com prefixos cíclicos (âmbar) e ISI (vermelho) · <b>2</b> perfil de atraso, com o CP em destaque. Aqui o eco de 2 µs ultrapassa o GI de 0,8 µs.</figcaption></figure>
+    <div class="table-wrap"><table>
+    <tr><th>Perfil</th><th>τ<sub>rms</sub> (ns)</th><th>B<sub>c</sub> (MHz)</th><th>EVM (%)</th><th>BER</th><th>ISI?</th></tr>
+    <tr><td>AWGN</td><td>0</td><td>—</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>TGn B</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>TGn D</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>TGn F</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Eco 2 µs · GI 0,8</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Eco 2 µs · GI 3,2</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+
+  <h3>5.3 Estimação, equalização e sincronismo</h3>
+  <ol class="steps" data-part="p5c">
+    <li>Com TGn D e 16-QAM, coloque <b>Equalizador: Nenhum</b>. Compare <b>Constelação recebida</b> e <b>Constelação equalizada</b>: cada subportadora gira e escala de forma diferente.</li>
+    <li>Mude para <b>Zero-forcing</b> e depois <b>MMSE</b>, com SNR 30 dB e depois 10 dB. Em qual SNR o MMSE se destaca? Olhe as subportadoras nos vales (cores na constelação).</li>
+    <li>Troque <b>Estimação</b> de <i>Ideal</i> para <i>LTF (mínimos quadrados)</i>. Os pontos da estimativa aparecem sobre |H<sub>k</sub>|²; quanto a EVM piora?</li>
+    <li>Coloque <b>CFO</b> em 2 %, 5 % e 10 % de Δf. Veja o vazamento (ICI) no card <b>Ortogonalidade</b> e a constelação girar.</li>
+    <li>Marque <span class="ui">Rastrear fase pelos pilotos</span>. Que parte do erro os pilotos corrigem e que parte (a ICI) continua?</li>
+    <li>Compare CFO de 5 % em Wi-Fi 5 e Wi-Fi 6: o mesmo desvio em Hz é uma fração maior de Δf no Wi-Fi 6. Por que isso torna o Wi-Fi 6 mais exigente com o oscilador?</li>
+    <li>Use <span class="ui">Nova realização</span> várias vezes no perfil TGn D: a BER varia muito entre realizações? Por quê?</li>
+    <li>Marque <span class="ui">Seguir enlace</span> de novo, arraste o notebook para longe na planta e acompanhe a constelação se espalhar em tempo real.</li>
+  </ol>
+<figure class="shot"><a href="img/roteiro/ofdm-equalizador.webp" target="_blank" rel="noopener"><img src="img/roteiro/ofdm-equalizador.webp" width="1440" height="450" loading="lazy" alt="1 equalizador · 2 estimação de canal · 3 CFO. Repare como EVM e BER respondem."></a><figcaption><b>1</b> equalizador · <b>2</b> estimação de canal · <b>3</b> CFO. Repare como EVM e BER respondem.</figcaption></figure>
+  <figure class="shot"><a href="img/roteiro/ofdm-constelacoes.webp" target="_blank" rel="noopener"><img src="img/roteiro/ofdm-constelacoes.webp" width="1440" height="450" loading="lazy" alt="1 constelação antes do equalizador (cada subportadora gira e escala) · 2 depois do equalizador, colorida por subportadora."></a><figcaption><b>1</b> constelação antes do equalizador (cada subportadora gira e escala) · <b>2</b> depois do equalizador, colorida por subportadora.</figcaption></figure>
+    <div class="card q"><div class="tag">PERGUNTA 5.1</div><p>O Wi-Fi 6 quadruplicou o tamanho do símbolo (3,2 → 12,8 µs). Explique as duas vantagens (overhead relativo do GI menor e GI longo para ambientes externos) e a desvantagem (sensibilidade a CFO e ruído de fase).</p></div>
+  <div class="card q"><div class="tag">PERGUNTA 5.2</div><p>A BER por subportadora mostra erros concentrados nos vales. Como o entrelaçador e o código convolucional/LDPC resolvem isso no Wi-Fi real? (Dica: Parte 6, aula Codificação.)</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p6">
+  <h2><span class="num">6</span>Laboratório de camada física</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Aprofundar a modulação, o pulso, a BER, o código e o desvanecimento que estão por trás do número "MCS" visto na rede.</p></div>
+  <p>Na aba <span class="ui">Enlace</span> de qualquer cliente, clique em <span class="ui">Estudar este enlace na camada física ↗</span>: a página abre na aula <b>MCS &amp; Shannon</b> com a SNR, o padrão e as antenas desse enlace. As demais aulas estão no menu do topo.</p>
+<figure class="shot"><a href="img/roteiro/fisica-beamforming.webp" target="_blank" rel="noopener"><img src="img/roteiro/fisica-beamforming.webp" width="1440" height="900" loading="lazy" alt="Página de camada física: 1 menu das 8 aulas · 2 controles da aula (aqui, Beamforming). Os gráficos se atualizam ao mexer."></a><figcaption>Página de camada física: <b>1</b> menu das 8 aulas · <b>2</b> controles da aula (aqui, Beamforming). Os gráficos se atualizam ao mexer.</figcaption></figure>
+    <div class="table-wrap"><table>
+    <tr><th>Aula</th><th>O que mexer</th><th>O que registrar</th></tr>
+    <tr><td><a href="fisica.html?lesson=mod" target="_blank" rel="noopener">1 · Modulação</a></td><td>Família PSK/QAM, ordem M, rótulos Gray × binário; o gráfico de forma de onda mostra I(t), Q(t) e s(t).</td><td>Em que ordem o PSK deixa de compensar frente ao QAM? Quanto o Gray reduz a BER na mesma SNR? Em PSK a amplitude de s(t) é constante; em QAM, não.</td></tr>
+    <tr><td><a href="fisica.html?lesson=pulse" target="_blank" rel="noopener">2 · Pulsos &amp; olho</a></td><td>Pulso TX, filtro RX, roll-off α, erro de tempo τ.</td><td>Print do olho aberto e fechado. Banda ocupada (1+α)·R<sub>s</sub>/2 para α = 0,2 e 1. Efeito de τ na ISI.</td></tr>
+    <tr><td><a href="fisica.html?lesson=ber" target="_blank" rel="noopener">3 · BER × Eb/N0</a></td><td>Esquemas exibidos, canal AWGN × Rayleigh.</td><td>E<sub>b</sub>/N<sub>0</sub> para BER 10⁻⁵ de BPSK, 16-QAM e 64-QAM; inclinação em Rayleigh; limite −1,59 dB.</td></tr>
+    <tr><td><a href="fisica.html?lesson=fec" target="_blank" rel="noopener">4 · Codificação</a></td><td>Modulação, decisão dura × suave, LDPC, modelo do simulador.</td><td>Ganho de codificação em BER 10⁻⁴ para R = 1/2, 2/3, 3/4, 5/6. Ganho da decisão suave.</td></tr>
+    <tr><td><a href="fisica.html?lesson=fading" target="_blank" rel="noopener">5 · Desvanecimento</a></td><td>Ramos L, MRC × seleção, Doppler f<sub>d</sub>, SNR média.</td><td>Probabilidade de outage a −10 dB para L = 1, 2, 4. Por que mais antenas no AP ajudam mesmo com 1 fluxo.</td></tr>
+    <tr><td><a href="fisica.html?lesson=bf" target="_blank" rel="noopener">6 · Beamforming</a></td><td>Antenas N, espaçamento d, pesos MRT/ZF, usuários.</td><td>Use na Parte 8.</td></tr>
+    <tr><td><a href="fisica.html?lesson=ofdm" target="_blank" rel="noopener">7 · OFDM</a></td><td>Teoria e deduções da Parte 5.</td><td>Revise antes do relatório da Parte 5.</td></tr>
+    <tr><td><a href="fisica.html?lesson=mcs" target="_blank" rel="noopener">8 · MCS &amp; Shannon</a></td><td>Padrão, largura, GI, fluxos, SNR por fluxo.</td><td>Confira a tabela 4.1 contra os degraus e a curva PER × SNR.</td></tr>
+  </table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p7">
+  <h2><span class="num">7</span>Interferência e planejamento de canais</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Distinguir interferência de canal adjacente (soma ao ruído) de compartilhamento co-canal (divide o tempo no ar) e planejar canais.</p></div>
+  <ol class="steps" data-part="p7">
+    <li>Parta de <code>parte2.json</code>. Coloque seu AP em <b>2,4 GHz / 20 MHz / canal 6</b> e reconecte os clientes se necessário. O desktop Wi-Fi 5 vai cair — por quê? (Veja as bandas suportadas na aba Wi-Fi dele.)</li>
+    <li>Adicione dois roteadores "vizinhos" a ~10 m do seu, com SSIDs próprios (<code>VizinhoA</code>, <code>VizinhoB</code>), em <b>2,4 GHz / 20 MHz</b>, canais <b>3</b> e <b>6</b>, e <b>Carga do BSS</b> de 60 %. Cada roteador novo já vem com sua sub-rede (192.168.1.x, 192.168.2.x).</li>
+    <li>No notebook, aba <span class="ui">Enlace</span>: anote <b>Ruído + interf.</b>, <b>SINR</b>, <b>Canal ocupado</b>, MCS e vazão (<code>iperf3 -c 192.168.0.1</code>).</li>
+    <li>Abra <span class="ui">Gráficos</span> → <b>Espectro recebido</b>: veja as máscaras espectrais se sobrepondo.</li>
+    <li>Na página de administração do seu roteador, abra <b>Análise de canais</b>. Qual canal ela recomenda?</li>
+    <li>Reconfigure os vizinhos para <b>1</b> e <b>11</b> (mantendo o seu no 6). Repita as medidas.</li>
+    <li>Coloque os três no canal <b>6</b>. A SINR melhora ou piora em relação ao caso 1/3/6? E o canal ocupado?</li>
+    <li>Mova tudo para 5 GHz em canais de 80 MHz diferentes (ex.: 42, 58, 155). Repita.</li>
+    <li>Compare com o cenário pronto <b>Interferência em 2,4 GHz</b>.</li>
+  </ol>
+<div class="shots"><figure class="shot sm"><a href="img/roteiro/interferencia-canal.webp" target="_blank" rel="noopener"><img src="img/roteiro/interferencia-canal.webp" width="380" height="263" loading="lazy" alt="Em cada AP vizinho: 1 canal · 2 carga do BSS."></a><figcaption>Em cada AP vizinho: <b>1</b> canal · <b>2</b> carga do BSS.</figcaption></figure></div>
+  <figure class="shot"><a href="img/roteiro/espectro-interferencia.webp" target="_blank" rel="noopener"><img src="img/roteiro/espectro-interferencia.webp" width="1440" height="450" loading="lazy" alt="Card Espectro recebido: máscaras dos três APs no ponto do cliente e o piso de ruído."></a><figcaption>Card <b>Espectro recebido</b>: máscaras dos três APs no ponto do cliente e o piso de ruído.</figcaption></figure>
+    <div class="table-wrap"><table>
+    <tr><th>Configuração</th><th>Ruído + interf. (dBm)</th><th>SINR (dB)</th><th>Canal ocupado (%)</th><th>MCS</th><th>Vazão (Mb/s)</th></tr>
+    <tr><td>2,4 GHz · 3 / 6 / 6</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>2,4 GHz · 1 / 6 / 11</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>2,4 GHz · 6 / 6 / 6</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>5 GHz · canais distintos</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+  <div class="card q"><div class="tag">PERGUNTA 7.1</div><p>Com todos no mesmo canal o CSMA/CA funciona (os APs se ouvem e se revezam); com canais parcialmente sobrepostos eles não se decodificam e a energia vira ruído. Qual dos dois é pior para a SINR? E para a vazão? Use a tabela.</p></div>
+  <div class="card q"><div class="tag">PERGUNTA 7.2</div><p>Por que 1, 6 e 11 são os únicos três canais de 20 MHz sem sobreposição em 2,4 GHz? Faça a conta com o espaçamento de 5 MHz entre canais.</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p8">
+  <h2><span class="num">8</span>Beamforming</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Medir o ganho do beamforming transmitido (TxBF), ver a sondagem NDP no log e entender o compromisso entre antenas e fluxos.</p></div>
+  <div class="formula">G_BF = 10·log₁₀(N_tx / N_ss)   dB   (modelo ideal, só nos dados de descida)
+4 antenas → 1 fluxo: 6,0 dB · 2 fluxos: 3,0 dB · 4 fluxos: 0 dB</div>
+
+  <h3>8.1 Montagem</h3>
+  <ol class="steps" data-part="p8a">
+    <li>Monte uma nova rede: um roteador Wi-Fi 6 com <b>4 fluxos espaciais</b> perto de uma parede lateral, e quatro clientes a distâncias diferentes: notebook 2×2 a ~10 m, celular <b>1×1</b> a ~25 m atrás de uma parede de tijolo, desktop Wi-Fi 5 a ~22 m e impressora Wi-Fi 4 a ~18 m.</li>
+    <li>Com <b>Beamforming</b> desligado, anote para cada cliente: SINR desc., MCS × N<sub>ss</sub>, taxa PHY.</li>
+  </ol>
+
+  <h3>8.2 Ligando o TxBF</h3>
+  <ol class="steps" data-part="p8b">
+    <li>Na aba <span class="ui">Wi-Fi</span> do roteador, marque <span class="ui">Beamforming (TxBF)</span>.</li>
+    <li>No log, filtre por <b>802.11</b> e encontre a sondagem: <i>NDP Announcement → NDP → Compressed Beamforming Report</i>. Quem envia cada quadro? O que vai dentro do relatório?</li>
+    <li>Na planta aparecem os <b>lóbulos</b> apontando para cada cliente beneficiado. Abra a aba <span class="ui">Enlace</span> de cada um e anote o ganho, as antenas usadas e o overhead da sondagem.</li>
+    <li>Preencha a tabela e confira o ganho contra a fórmula. Algum cliente mudou o <b>número de fluxos</b> ao ganhar SNR?</li>
+    <li>Por que a impressora Wi-Fi 4 não ganha nada? Leia a dica ao lado da opção no inspetor.</li>
+    <li>Reduza o AP para <b>2 fluxos</b>. O que sobra do ganho para o celular 1×1 e para o notebook 2×2?</li>
+    <li>Ligue o mapa de <span class="ui">Cobertura</span>. Ele muda com o beamforming? Por que os beacons não recebem esse ganho?</li>
+    <li>Em <span class="ui">Gráficos</span> → <b>Beamforming · ganho por fluxo</b>, localize o ponto de cada cliente nas curvas de 1 a 4 antenas.</li>
+  </ol>
+<div class="shots"><figure class="shot sm"><a href="img/roteiro/beamforming-ligar.webp" target="_blank" rel="noopener"><img src="img/roteiro/beamforming-ligar.webp" width="380" height="196" loading="lazy" alt="Aba Wi-Fi do AP: 1 fluxos (antenas) · 2 Beamforming (TxBF)."></a><figcaption>Aba Wi-Fi do AP: <b>1</b> fluxos (antenas) · <b>2</b> Beamforming (TxBF).</figcaption></figure><figure class="shot md"><a href="img/roteiro/beamforming-planta.webp" target="_blank" rel="noopener"><img src="img/roteiro/beamforming-planta.webp" width="830" height="394" loading="lazy" alt="Com TxBF ligado, a planta desenha um lóbulo para cada cliente beneficiado."></a><figcaption>Com TxBF ligado, a planta desenha um lóbulo para cada cliente beneficiado.</figcaption></figure></div>
+  <figure class="shot"><a href="img/roteiro/beamforming-ndp.webp" target="_blank" rel="noopener"><img src="img/roteiro/beamforming-ndp.webp" width="1440" height="450" loading="lazy" alt="Log filtrado por 802.11: NDP Announcement → NDP → Compressed Beamforming Report, para cada cliente."></a><figcaption>Log filtrado por 802.11: NDP Announcement → NDP → Compressed Beamforming Report, para cada cliente.</figcaption></figure>
+    <div class="table-wrap"><table>
+    <tr><th>Cliente</th><th>SINR sem BF</th><th>SINR com BF</th><th>Ganho medido</th><th>10·log₁₀(N<sub>tx</sub>/N<sub>ss</sub>)</th><th>MCS × N<sub>ss</sub> antes → depois</th><th>Taxa antes → depois</th></tr>
+    <tr><td>Notebook 2×2</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Celular 1×1</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Desktop Wi-Fi 5</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Impressora Wi-Fi 4</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+
+  <h3>8.3 O arranjo por dentro</h3>
+  <ol class="steps" data-part="p8c">
+    <li>Abra a aula <a href="fisica.html?lesson=bf" target="_blank" rel="noopener">Beamforming</a>. Com 1 usuário, varie <b>Antenas N</b> de 1 a 16 e veja o card de ganho seguir 10·log₁₀N.</li>
+    <li>Com N = 8, aumente o <b>Espaçamento</b> de 0,5 λ para 1 λ e 2 λ. Aparecem <b>lobos de grade</b> no diagrama polar — por quê?</li>
+    <li>Observe o card <b>Fase dos pesos</b>: uma rampa linear. Mude o ângulo do usuário e confira a inclinação −360°·(d/λ)·sinθ.</li>
+    <li>Coloque 2 usuários. Compare pesos <b>MRT</b> e <b>ZF</b> no card de SINR × posição do usuário 2: quando os dois usuários estão quase alinhados, qual técnica sofre mais e por quê?</li>
+  </ol>
+  <div class="card q"><div class="tag">PERGUNTA 8.1</div><p>Beamforming e multiplexação espacial disputam as mesmas antenas. Para um cliente distante, é melhor usar as 4 antenas para 1 fluxo com +6 dB ou para 2 fluxos com +3 dB? Use a sua tabela e a curva de Shannon (ganho logarítmico em SNR × ganho linear em fluxos).</p></div>
+  <div class="card q"><div class="tag">PERGUNTA 8.2</div><p>A sondagem consome tempo no ar e o relatório envelhece se o cliente se move. O que limita a frequência de sondagem num celular em movimento? (Relacione com o Doppler e T<sub>c</sub> da aula de desvanecimento.)</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p9">
+  <h2><span class="num">9</span>Rede mesh</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Construir uma malha do zero, entender a escolha de rota pela métrica de tempo no ar e medir o custo de cada salto sem fio.</p></div>
+  <div class="formula">Custo do caminho:     C = Σ 1/g_i            (g_i = vazão do salto i, Mb/s)
+Saltos no mesmo canal: G = 1 / (Σ 1/g_i)      ex.: 100 e 100 Mb/s → 50 Mb/s
+Canais separados ou cabo: G = mín(g_i)</div>
+
+  <h3>9.1 Montando a casa</h3>
+  <ol class="steps" data-part="p9a">
+    <li>Comece de uma planta vazia. Desenhe uma casa comprida: paredes de <b>tijolo</b> em x = 12 e x = 26 (deixe uma porta de 6 m em cada), e uma parede de <b>concreto</b> fechando o fundo da casa.</li>
+    <li>Coloque o roteador na sala (x ≈ 5). Na aba <span class="ui">Mesh</span>, mude o papel para <b>Raiz · gateway</b> e defina o Mesh ID <code>CasaMesh</code>. Mude o SSID para <code>CasaMesh</code>.</li>
+    <li>Na paleta, clique em <span class="ui">Nó mesh</span> duas vezes. Arraste o primeiro para o corredor (x ≈ 19) e o segundo para o quarto do fundo (x ≈ 34).</li>
+    <li>Note que os nós copiam SSID, segurança e senha da raiz (campos travados), e que a aba LAN &amp; DHCP do nó diz que DHCP, DNS e NAT são da raiz.</li>
+    <li>Coloque um notebook no quarto e um celular na sala, ambos com SSID <code>CasaMesh</code>.</li>
+  </ol>
+
+  <h3>9.2 Rota e backhaul</h3>
+<div class="shots"><figure class="shot sm xs"><a href="img/roteiro/mesh-paleta.webp" target="_blank" rel="noopener"><img src="img/roteiro/mesh-paleta.webp" width="230" height="147" loading="lazy" alt="Paleta: Nó mesh (se ainda não houver raiz, o primeiro roteador vira raiz)."></a><figcaption>Paleta: <b>Nó mesh</b> (se ainda não houver raiz, o primeiro roteador vira raiz).</figcaption></figure><figure class="shot sm"><a href="img/roteiro/mesh-raiz.webp" target="_blank" rel="noopener"><img src="img/roteiro/mesh-raiz.webp" width="380" height="320" loading="lazy" alt="Aba Mesh da raiz: 2 papel · 3 Mesh ID · 4 tabela com pai, saltos e backhaul de cada nó."></a><figcaption>Aba <b>Mesh</b> da raiz: <b>2</b> papel · <b>3</b> Mesh ID · <b>4</b> tabela com pai, saltos e backhaul de cada nó.</figcaption></figure></div>
+    <ol class="steps" data-part="p9b">
+    <li>Na planta, a linha tracejada roxa é o backhaul, com SINR, MCS e vazão de cada salto. Na aba <span class="ui">Mesh</span> da raiz, a tabela mostra pai, saltos e backhaul de cada nó. No console da raiz: <code>show mesh</code>.</li>
+    <li>O nó do quarto deve ter <b>2 saltos</b> (passa pelo corredor). Na aba Mesh dele, anote <b>Caminho</b>, <b>Pai escolhido</b>, <b>Vazão nó → raiz</b> e <b>Métrica airtime</b>.</li>
+    <li>Calcule à mão C e G a partir da vazão de cada salto e confira.</li>
+    <li>No notebook do quarto: <code>ipconfig /all</code> (quem deu o IP?), <code>tracert google.com</code> e <code>iperf3 -c 192.168.0.1</code>. Por que o tracert não mostra os nós mesh como saltos IP?</li>
+    <li>Troque o backhaul do nó do quarto para <b>Wi-Fi dedicado</b> e depois para <b>Cabo Ethernet</b>. Rode o iperf3 em cada caso e preencha a tabela.</li>
+    <li>Arraste o nó do corredor para longe até ele perder a raiz. O que acontece com o nó do quarto? Leia a mensagem de erro e aproxime de novo.</li>
+    <li>Mova o nó do quarto para perto da raiz (sem parede): ele passa a ter 1 salto? A métrica sempre escolhe o caminho de menos saltos?</li>
+  </ol>
+<div class="shots"><figure class="shot md"><a href="img/roteiro/mesh-planta.webp" target="_blank" rel="noopener"><img src="img/roteiro/mesh-planta.webp" width="830" height="394" loading="lazy" alt="Na planta, o tracejado roxo é o backhaul: SINR, MCS e vazão de cada salto."></a><figcaption>Na planta, o tracejado roxo é o backhaul: SINR, MCS e vazão de cada salto.</figcaption></figure><figure class="shot sm"><a href="img/roteiro/mesh-no.webp" target="_blank" rel="noopener"><img src="img/roteiro/mesh-no.webp" width="380" height="256" loading="lazy" alt="Aba Mesh de um nó: 1 tipo de backhaul · 2 caminho até a raiz · 3 saltos, pai, vazão e métrica airtime."></a><figcaption>Aba Mesh de um nó: <b>1</b> tipo de backhaul · <b>2</b> caminho até a raiz · <b>3</b> saltos, pai, vazão e métrica airtime.</figcaption></figure></div>
+    <div class="table-wrap"><table>
+    <tr><th>Backhaul do nó do quarto</th><th>Saltos</th><th>Vazão por salto (Mb/s)</th><th>Vazão nó → raiz</th><th>iperf3 notebook (Mb/s)</th></tr>
+    <tr><td>Wi-Fi compartilhado</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Wi-Fi dedicado</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>Cabo Ethernet</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td><i>Sem mesh (notebook direto na raiz)</i></td><td>—</td><td>—</td><td>—</td><td class="blank" contenteditable></td></tr>
+  </table></div>
+
+  <h3>9.3 Roaming</h3>
+  <ol class="steps" data-part="p9c">
+    <li>Filtre o log por <b>Sistema</b> e <b>802.11</b> com <span class="ui">só o selecionado</span> marcado no celular.</li>
+    <li>Arraste lentamente o celular da sala até o quarto. Registre em que ponto (RSSI) acontece cada roaming e para qual nó.</li>
+    <li>Depois do roaming, o IP do celular mudou? O DHCP rodou de novo? Por quê?</li>
+    <li>Ligue o beamforming na raiz e nos nós. O backhaul também ganha? Confira na linha tracejada.</li>
+    <li>Exporte <code>parte9.json</code> e compare com o cenário pronto <b>Casa com rede mesh</b>.</li>
+  </ol>
+  <div class="card q"><div class="tag">PERGUNTA 9.1</div><p>Um repetidor de rádio único divide a vazão a cada salto. Mostre com G = 1/(Σ1/g<sub>i</sub>) o que acontece com 3 saltos de 300 Mb/s e explique por que os kits mesh "tri-band" vendem um rádio dedicado ao backhaul.</p></div>
+  <div class="card q"><div class="tag">PERGUNTA 9.2</div><p>Onde você colocaria os nós para maximizar a vazão do quarto: perto da raiz, perto do quarto ou no meio? Justifique com a métrica e teste.</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p10">
+  <h2><span class="num">10</span>OFDMA: vários usuários no mesmo símbolo</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Ver por que o OFDMA do Wi-Fi 6 ajuda com muitos clientes e pacotes pequenos, e por que não ajuda com downloads grandes.</p></div>
+  <ol class="steps" data-part="p10">
+    <li>Use uma rede com AP Wi-Fi 6 e pelo menos 3 clientes Wi-Fi 6. Selecione o AP e abra a aba <span class="ui">OFDMA · RUs multiusuário</span> (só aparece em AP Wi-Fi 6/6E/7).</li>
+    <li>Com <b>Pacote</b> = 100 bytes, compare os cards <b>SU-OFDM</b> e <b>OFDMA</b> no plano tempo × frequência. Anote o tempo de ar total de cada um.</li>
+    <li>Mude o pacote para 1500 bytes. O ganho do OFDMA cai? Veja o card <b>Tempo de ar × tamanho do pacote</b>.</li>
+    <li>Aumente <b>Estações simuladas</b> para 8, 20 e 40. Veja <b>Tempo de ar × número de usuários</b>.</li>
+    <li>Troque o <b>Tamanho do RU</b> manualmente (26, 52, 106, 242 tons). Note que 1024-QAM só existe em RU ≥ 242 tons; o card <b>Tempo de ar OFDMA × tamanho do RU</b> mostra o compromisso entre RUs grandes e número de rodadas.</li>
+    <li>Alterne ↓ Descida e ↑ Subida. Na subida aparece o quadro <b>Trigger</b>: por que o AP precisa coordenar quem transmite em cada RU?</li>
+    <li>Adicione um cliente Wi-Fi 5 à rede. Onde ele aparece na aba OFDMA?</li>
+  </ol>
+<figure class="shot"><a href="img/roteiro/ofdma.webp" target="_blank" rel="noopener"><img src="img/roteiro/ofdma.webp" width="1440" height="450" loading="lazy" alt="Aba OFDMA (só com AP Wi-Fi 6/6E/7): 2 tamanho do RU · 3 tamanho do pacote · 4 estações simuladas."></a><figcaption>Aba <b>OFDMA</b> (só com AP Wi-Fi 6/6E/7): <b>2</b> tamanho do RU · <b>3</b> tamanho do pacote · <b>4</b> estações simuladas.</figcaption></figure>
+    <div class="card q"><div class="tag">PERGUNTA 10.1</div><p>Dê dois exemplos de tráfego real em que o OFDMA faz grande diferença e um em que quase não faz. Use o tempo de ar medido.</p></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p11">
+  <h2><span class="num">11</span>Diagnóstico de falhas</h2>
+  <div class="card goal"><div class="tag">OBJETIVO</div><p>Usar o terminal, o log e a página do roteador para achar defeitos sem olhar a configuração "de cima".</p></div>
+  <ol class="steps" data-part="p11">
+    <li>Abra o cenário <b>Diagnóstico: encontre os 5 defeitos</b>. <b>Regra:</b> para cada defeito, primeiro registre o sintoma e o comando ou quadro que o revelou; só depois abra o inspetor para corrigir.</li>
+    <li>Preencha a tabela abaixo.</li>
+    <li>Troque de máquina com outra dupla: cada uma estraga a rede da outra com 3 defeitos novos e envia por <span class="ui">Compartilhar link</span>, com um objetivo escrito no campo "Objetivo / instruções".</li>
+  </ol>
+<div class="shots"><figure class="shot md"><a href="img/roteiro/compartilhar.webp" target="_blank" rel="noopener"><img src="img/roteiro/compartilhar.webp" width="576" height="423" loading="lazy" alt="Compartilhar link: 1 título · 2 objetivo para quem recebe · 3 copiar o link."></a><figcaption><b>Compartilhar link</b>: <b>1</b> título · <b>2</b> objetivo para quem recebe · <b>3</b> copiar o link.</figcaption></figure></div>
+    <div class="table-wrap"><table>
+    <tr><th>#</th><th>Sintoma</th><th>Comando / quadro que revelou</th><th>Causa</th><th>Correção</th></tr>
+    <tr><td>1</td><td>Celular não conecta</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>2</td><td>Impressora não responde ao ping</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>3</td><td>Notebook não resolve nomes</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>4</td><td>Desktop recebe 169.254.x.x</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+    <tr><td>5</td><td>Tablet pinga o roteador, mas não a Internet</td><td class="blank" contenteditable></td><td class="blank" contenteditable></td><td class="blank" contenteditable></td></tr>
+  </table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="p12">
+  <h2><span class="num">12</span>Projeto final: escritório de 40 × 24 m</h2>
+  <div class="card goal"><div class="tag">ENUNCIADO</div>
+    <p>Projete a rede Wi-Fi de um escritório com <b>recepção</b>, <b>open space</b>, <b>2 salas de reunião com parede de vidro</b>, <b>sala de servidores com parede de metal</b> e <b>área técnica de concreto</b>. Use no máximo <b>3 equipamentos</b> (roteadores ou nós mesh) e cabo Ethernet só entre dois deles.</p>
+    <p><b>Requisitos:</b></p>
+    <ul>
+      <li>MCS ≥ 7 em todo o open space e nas salas de reunião (mapa de cobertura "MCS máximo");</li>
+      <li>≥ 200 Mb/s no <code>iperf3</code> para um notebook em qualquer sala de reunião;</li>
+      <li>impressora Wi-Fi 4 com IP fixo e nome <code>impressora.lan</code>;</li>
+      <li>pelo menos 8 clientes de tipos variados, todos com IP e acesso à Internet;</li>
+      <li>uma rede vizinha em 5 GHz já ocupa o canal 42 com 70 % de carga — não a mova.</li>
+    </ul>
+  </div>
+  <ol class="steps" data-part="p12">
+    <li>Desenhe a planta com os materiais corretos.</li>
+    <li>Faça um primeiro posicionamento e ligue o mapa. Justifique cada posição no relatório.</li>
+    <li>Escolha banda, canal, largura, fluxos e beamforming de cada equipamento. Justifique com números das Partes 3, 4, 7 e 8.</li>
+    <li>Se usar mesh, decida o tipo de backhaul de cada nó e mostre a vazão nó → raiz.</li>
+    <li>Meça e apresente: tabela de clientes (SINR, MCS, vazão), prints do mapa SINR e MCS, saída de <code>iperf3</code> nas salas de reunião.</li>
+    <li>Gere um link com <span class="ui">Compartilhar link</span> e exporte <code>projeto.json</code>.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section id="ref">
+  <h2><span class="num">★</span>Referência rápida</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="tag">TERMINAL DOS CLIENTES</div>
+      <div class="table-wrap"><table>
+        <tr><td><code>ipconfig /all</code> · <code>ip a</code></td><td>configuração IP</td></tr>
+        <tr><td><code>ipconfig /release</code> · <code>/renew</code></td><td>libera / renova DHCP</td></tr>
+        <tr><td><code>ping [-n N] [-l bytes] host</code></td><td>teste ICMP</td></tr>
+        <tr><td><code>tracert host</code> · <code>traceroute</code></td><td>rota IP</td></tr>
+        <tr><td><code>nslookup nome [servidor]</code></td><td>consulta DNS</td></tr>
+        <tr><td><code>arp -a</code></td><td>tabela ARP</td></tr>
+        <tr><td><code>netsh wlan show interfaces</code> · <code>iw dev wlan0 link</code></td><td>estado do enlace</td></tr>
+        <tr><td><code>netsh wlan show networks</code> · <code>nmcli dev wifi</code></td><td>redes visíveis</td></tr>
+        <tr><td><code>netsh wlan connect name=SSID key=senha</code></td><td>conectar</td></tr>
+        <tr><td><code>nmcli dev wifi connect SSID password senha</code></td><td>conectar</td></tr>
+        <tr><td><code>iperf3 -c host [-t s]</code></td><td>vazão TCP (servidores: roteador, clientes, <code>iperf.lab</code>)</td></tr>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="tag">CONSOLE DO ROTEADOR</div>
+      <p><code>show clients</code> · <code>show leases</code> · <code>show wifi</code> · <code>show dns</code> · <code>show mesh</code></p>
+      <div class="tag" style="margin-top:12px">ATENUAÇÃO DAS PAREDES (dB)</div>
+      <div class="table-wrap"><table>
+        <tr><th>Material</th><th>2,4 GHz</th><th>5 GHz</th><th>6 GHz</th></tr>
+        <tr><td>Drywall</td><td>3</td><td>4</td><td>5</td></tr>
+        <tr><td>Vidro</td><td>2</td><td>4</td><td>5</td></tr>
+        <tr><td>Tijolo</td><td>8</td><td>12</td><td>14</td></tr>
+        <tr><td>Concreto</td><td>12</td><td>18</td><td>22</td></tr>
+        <tr><td>Metal</td><td>25</td><td>30</td><td>32</td></tr>
+      </table></div>
+      <div class="tag" style="margin-top:12px">INTERNET SIMULADA</div>
+      <p><code>google.com</code> · <code>ufpr.br</code> · <code>example.com</code> · <code>lseman.github.io</code> · <code>dns.google</code> · <code>iperf.lab</code></p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tag">FÓRMULAS</div>
+    <div class="formula">Perda:        L(d) = FSPL(1 m) + 10·n·log₁₀(d) + Σ L_parede
+Ruído:        N = −174 dBm/Hz + 10·log₁₀(B) + NF
+Taxa PHY:     R = N_ss · N_sd · log₂M · R_c / (T_sym + GI)
+Shannon:      C = N_ss · B · log₂(1 + SNR)
+Eb/N0:        Eb/N0 = Es/N0 − 10·log₁₀(k·R_c)
+PER:          1 − (1 − BER)^(8·1538)
+Beamforming:  G = 10·log₁₀(N_tx / N_ss)
+Mesh:         C = Σ 1/g_i    G_mesmo canal = 1 / Σ 1/g_i</div>
+  </div>
+  <details>
+    <summary>Problemas comuns no simulador</summary>
+    <ul>
+      <li><b>Painéis vazios ou faixa vermelha no topo:</b> cache misturado — <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>.</li>
+      <li><b>Cliente "desconectado" logo após ser criado:</b> o SSID começa vazio; preencha SSID e senha e clique Conectar.</li>
+      <li><b>Cliente não vê a rede:</b> confira se o padrão do cliente suporta a banda do AP (Wi-Fi 6 não enxerga 6 GHz).</li>
+      <li><b>Campos travados num nó mesh:</b> eles vêm da raiz; mude na raiz.</li>
+      <li><b>Aba OFDMA sumiu:</b> só aparece com um AP Wi-Fi 6/6E/7 selecionado (ou associado ao cliente selecionado).</li>
+      <li><b>Valores "presos":</b> veja se a SNR forçada ou um MCS fixo ficou ligado de uma parte anterior.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ============================================================ -->
+<section id="entrega">
+  <h2><span class="num">✓</span>Entrega e avaliação</h2>
+  <div class="card">
+    <div class="tag">ENTREGAR (UM POR DUPLA)</div>
+    <ul>
+      <li>Relatório em PDF com as tabelas preenchidas, prints pedidos e respostas às perguntas (numeradas como neste roteiro);</li>
+      <li>arquivos <code>parte1.json</code>, <code>parte3.json</code>, <code>parte9.json</code> e <code>projeto.json</code>;</li>
+      <li>o link de compartilhamento do projeto final.</li>
+    </ul>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>Critério</th><th>Peso</th><th>O que se espera</th></tr>
+    <tr><td>Montagem e protocolos (Partes 1–2)</td><td>15 %</td><td>Sequência de quadros correta e explicada; DHCP, DNS e IP estático funcionando.</td></tr>
+    <tr><td>Propagação e link budget (Parte 3)</td><td>15 %</td><td>Cálculo à mão próximo do simulador; materiais e bandas comparados com números.</td></tr>
+    <tr><td>SNR → MCS → vazão (Partes 4 e 6)</td><td>15 %</td><td>Curva completa; gap para Shannon e fontes de overhead identificados.</td></tr>
+    <tr><td>Formas de onda OFDM (Parte 5)</td><td>15 %</td><td>Relação correta entre τ<sub>rms</sub>, B<sub>c</sub>, GI, ISI, equalizador e CFO.</td></tr>
+    <tr><td>Interferência, beamforming, mesh e OFDMA (Partes 7–10)</td><td>20 %</td><td>Ganhos medidos conferidos com as fórmulas; compromissos discutidos.</td></tr>
+    <tr><td>Projeto final (Parte 12)</td><td>20 %</td><td>Requisitos atendidos e cada decisão justificada com medidas.</td></tr>
+  </table></div>
+  <footer>CommsLab · Wi-Fi Lab · roteiro de atividades práticas. Os resultados dependem do modelo simplificado do simulador; justifique sempre com a física.</footer>
+</section>
+</main>
+</div>
+
+<script>
+  (() => {
+    const KEY = 'wifilab-roteiro-steps';
+    let done = {};
+    try { done = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { done = {}; }
+    const items = [...document.querySelectorAll('ol.steps > li')];
+    items.forEach((li, i) => {
+      const id = `${li.parentElement.dataset.part}-${[...li.parentElement.children].indexOf(li)}`;
+      const box = document.createElement('input');
+      box.type = 'checkbox'; box.title = 'Marcar passo como feito'; box.checked = !!done[id];
+      li.classList.toggle('done', box.checked);
+      box.onchange = () => {
+        li.classList.toggle('done', box.checked);
+        if (box.checked) done[id] = 1; else delete done[id];
+        try { localStorage.setItem(KEY, JSON.stringify(done)); } catch { /* ignore */ }
+        progress();
+      };
+      li.prepend(box);
+    });
+    function progress() {
+      const n = items.filter(li => li.classList.contains('done')).length;
+      document.getElementById('prog-text').textContent = `${n} de ${items.length} passos`;
+      document.getElementById('prog-bar').style.width = `${(100 * n / items.length).toFixed(1)}%`;
+    }
+    progress();
+    document.getElementById('theme').onclick = () => {
+      const root = document.documentElement, dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('wifilab-roteiro-theme', root.dataset.theme); } catch { /* ignore */ }
+    };
+    try { const t = localStorage.getItem('wifilab-roteiro-theme'); if (t) document.documentElement.dataset.theme = t; } catch { /* ignore */ }
+  })();
+</script>
+</body>
+</html>

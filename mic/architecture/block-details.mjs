@@ -1,0 +1,48 @@
+// Conceptual close-ups: the scalar simulator defines behavior, not a gate-level netlist.
+const views = {
+  alu: { title:'Integer ALU', input:'forwarded A + selected B · ALU control', steps:[['Arithmetic','32-bit add / subtract','Address, ADD, SUB'],['Logic','AND · OR · XOR','Bitwise operations'],['Shift','barrel shifter','SLL · SRL · SRA'],['Compare','signed / unsigned','SLT · SLTU'],['Result select','operation mux','32-bit result']], note:'The arithmetic, logic, shift and compare paths operate in parallel and feed the result selector; the diagram lists them in order for readability. Branch decisions are shown in the separate branch block.' },
+  mdu: { title:'Multiply / divide unit', input:'latched rs1, rs2 · operation', steps:[['Operand preparation','signedness / magnitude','MULH variants · DIV / REM'],['Multiply','partial products','32 × 32 → 64 bits'],['Reduction','carry-save tree','reduce partial products'],['Final addition','carry-propagate adder','select low / high half'],['Divide path','iterative quotient / remainder','special cases + sign correction']], note:'Multiply and divide are alternative paths; the diagram lists them together for readability. Illustrative internals: the workbench models the architectural result and fixed EX occupancy (3 cycles for multiply, 16 for divide), not these individual stages. EX blocks younger instructions while busy.', link:'#units', linkText:'Explore multiply and divide cycle by cycle →' },
+  registers: { title:'Integer register file', input:'rs1, rs2 · WB rd, value, write enable', steps:[['Address decode','two read addresses','rs1 / rs2'],['32 registers','x0 … x31','x0 always reads zero'],['Read selection','two independent ports','source operands'],['Write port','rd + write enable','ignore writes to x0'],['Timing','WB before ID reads','same-cycle visibility']], note:'The workbench specifies the visible read/write behavior; physical port circuitry is illustrative.' },
+  decode: { title:'Instruction decode', input:'32-bit instruction from IF/ID', steps:[['Field extraction','opcode · funct3 · funct7','rs1 · rs2 · rd'],['Operation decode','instruction class','ALU · load/store · branch'],['Register usage','which sources are read?','used by hazard logic'],['Control generation','ALU / memory / WB','travel with instruction'],['Immediate format','I · S · B · U · J','sent to immediate generator']], note:'Control travels with the instruction through pipeline registers. Invalid instructions are handled by the workbench’s fault model.' },
+  immediate: { title:'Immediate generator', input:'instruction bits · format', steps:[['Select fields','I / S / B / U / J','reassemble scattered bits'],['Insert low bit','B and J offsets','bit 0 = 0'],['Extend','sign extend to 32 bits','U places bits at 31:12'],['Output','immediate value','ALU or target calculation']], note:'B and J encode offsets in multiples of two; this workbench additionally requires instruction targets to be word aligned.' },
+  predictor: { title:'Fetch predictor', input:'fetch PC · prediction mode', steps:[['Index','PC or PC XOR history','16 counter entries'],['Direction table','2-bit saturating counters','taken / not taken'],['Tagged BTB','PC tag + target','16 entries'],['Next-PC select','prediction or PC + 4','BTB miss → sequential'],['Resolution','compare in EX','train and recover on mismatch']], note:'Gshare uses four bits of resolved global history. Prediction metadata travels with the instruction so EX can compare actual and predicted next PCs.' },
+  forwarding: { title:'Forwarding logic', input:'EX source registers · older destination tags', steps:[['Compare tags','rs1 and rs2 independently','ignore x0'],['EX/MEM candidate','nearest producer','loads cannot bypass here'],['MEM/WB candidate','older producer','writeback value'],['Priority select','EX/MEM before MEM/WB','otherwise register value'],['Operand muxes','forward A / forward B','B also supplies store data']], note:'An immediately dependent load still needs a stall: its data is not available from EX/MEM.' },
+  hazard: { title:'Load-use and MDU hazards', input:'ID source usage · EX destination / MDU busy', steps:[['Load-use compare','load rd vs used rs1 / rs2','ignore rd = x0'],['MDU busy','multiply / divide in EX','hold until completion'],['Hold front end','PC and IF/ID','preserve younger work'],['Insert bubble','load-use: ID/EX','MDU busy: EX/MEM'],['Resume','dependency or busy clears','continue pipeline']], note:'Recovery and fault handling have priority over an ordinary stall. The two stall cases insert bubbles at different boundaries.' },
+  memory: { title:'Data memory', input:'effective address · store data · memory control', steps:[['Access guard','alignment + bounds','suppress invalid access'],['Address','byte address','word-aligned LW / SW'],['Read path','32-bit word','load → WB selector'],['Write path','32-bit store data','SW updates memory']], note:'The workbench uses separate single-cycle instruction and data memories; it does not model caches.' },
+  branch: { title:'Branch and jump resolution', input:'forwarded operands · PC · immediate', steps:[['Compare operands','equal / signed / unsigned','branch condition'],['Target calculation','PC + offset or rs1 + offset','JALR clears bit 0'],['Actual next PC','taken target or PC + 4','check target alignment'],['Recovery comparison','actual vs predicted','flush younger work on mismatch']], note:'A correctly predicted control transfer does not require a recovery flush.' },
+  fpu: { title:'Floating-point unit · reference only', input:'FP operands · operation · rounding mode', steps:[['Unpack / classify','sign · exponent · significand','zero · subnormal · infinity · NaN'],['Align / multiply','shift significands or multiply','FMA retains extra precision'],['Arithmetic','add / subtract / fused add','divide and square root use separate paths'],['Normalize','leading-zero detection + shift','adjust exponent'],['Round / pack','rounding mode + guard / round / sticky','produce IEEE 754 result'],['Flags','invalid · div-zero · overflow','underflow · inexact → fflags']], note:'Conceptual F/D extension hardware for comparison with Atlas. The scalar workbench has no FP registers, FPU, fcsr, or floating-point instructions; these stages are not simulated.' }
+};
+
+const names = {alu:'ALU',mdu:'Multiply / divide',registers:'Register file',decode:'Decode',immediate:'Immediate generator',predictor:'Predictor',forwarding:'Forwarding',hazard:'Hazards',memory:'Data memory',branch:'Branch / jump',fpu:'FPU reference'};
+const baseline = document.querySelector('#svg89').parentElement;
+const panel = document.createElement('section');
+panel.className = 'block-closeup';
+panel.hidden = true;
+panel.setAttribute('aria-labelledby','closeup-title');
+panel.innerHTML = `<div class="closeup-head"><div><span class="closeup-kicker">HARDWARE CLOSE-UP</span><h5 id="closeup-title"></h5></div><button type="button" class="closeup-close" aria-label="Close hardware close-up">×</button></div><label>Explore a block <select class="closeup-select"></select></label><p class="closeup-input"></p><div class="closeup-scroll" tabindex="0" role="region" aria-label="Scrollable internal block diagram"><svg class="closeup-svg" role="img"></svg></div><p class="closeup-note"></p><a class="closeup-link"></a>`;
+baseline.prepend(panel);
+const select = panel.querySelector('select');
+select.innerHTML = Object.entries(names).map(([id,name])=>`<option value="${id}">${name}</option>`).join('');
+function render(key, anchor = null) {
+  const view = views[key]; if (!view) return;
+  panel.hidden = false; select.value = key;
+  if (anchor) {
+    const container = baseline.getBoundingClientRect(), target = anchor.getBoundingClientRect();
+    panel.style.top = `${Math.max(8, baseline.scrollTop + target.top - container.top)}px`;
+    panel.style.left = `${baseline.scrollLeft + 8}px`;
+  }
+  panel.querySelector('h5').textContent = view.title;
+  panel.querySelector('.closeup-input').textContent = `INPUTS / CONTROL  ·  ${view.input}`;
+  panel.querySelector('.closeup-note').textContent = view.note;
+  const link=panel.querySelector('.closeup-link'); link.hidden=!view.link; if(view.link){link.href=view.link;link.textContent=view.linkText;}
+  const svg=panel.querySelector('svg'), width=Math.max(720,view.steps.length*165);
+  svg.setAttribute('viewBox',`0 0 ${width} 144`); svg.setAttribute('aria-label',`${view.title}: ${view.steps.map(s=>s.join(', ')).join(' → ')}`);
+  const boxWidth=width/view.steps.length;
+  svg.innerHTML=view.steps.map(([title,detail,sub],i)=>{const x=i*boxWidth;return `${i?`<path d="M${x-18} 70 H${x-3}" class="closeup-wire"/>`:''}<g transform="translate(${x},0)"><rect x="0" y="18" width="${boxWidth-22}" height="105" rx="8"/><text x="12" y="42" class="closeup-number">${String(i+1).padStart(2,'0')}</text><text x="12" y="64" class="closeup-name">${title.replaceAll('&','&amp;')}</text><text x="12" y="84" class="closeup-detail">${detail.replaceAll('&','&amp;')}</text><text x="12" y="105" class="closeup-sub">${sub.replaceAll('&','&amp;')}</text></g>`;}).join('');
+}
+select.addEventListener('change',()=>render(select.value));
+panel.querySelector('.closeup-close').addEventListener('click',()=>{panel.hidden=true;});
+document.querySelector('#svg89').addEventListener('click',event=>{const block=event.target.closest('[data-block]'); if(block && views[block.dataset.block]) { render(block.dataset.block, block); panel.scrollIntoView({block:'nearest', inline:'nearest'}); }});
+document.querySelector('#datapath-mode')?.addEventListener('change', event => {
+  if (event.target.value !== 'baseline') panel.hidden = true;
+});
