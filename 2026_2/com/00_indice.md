@@ -46,15 +46,16 @@ Cada capítulo depende dos anteriores. O receptor completo é construído increm
 | # | Arquivo | Tópico | Conteúdo Principal |
 |---|---|---|---|
 | 00 | [00_indice.md](00_indice.md) | **Capa / Índice** | Visão geral, ementa, simbologia, fundamentos matemáticos |
-| 01 | [01_introducao_sistemas_comunicacoes.md](01_introducao_sistemas_comunicacoes.md) | **Introdução** | Blocos do sistema, métricas (BER, spectral efficiency), dB, orçamento de enlace, figura de ruído, Shannon |
-| 02 | [02_modulacao_am.md](02_modulacao_am.md) | **Modulação AM** | DSB-SC, AM convencional, detecção coerente/envelope, SSB, VSB |
-| 03 | [03_modulacao_fm.md](03_modulacao_fm.md) | **Modulação FM** | Frequência instantânea, NBFM/WBFM, funções de Bessel, regra de Carson, discriminador e PLL |
-| 04 | [04_banda_base_nyquist.md](04_banda_base_nyquist.md) | **Banda Base / Nyquist** | PAM, filtro casado, ISI, critério de Nyquist, raised cosine (RC/RRC), olho digital |
-| 05 | [05_digital_passband_ask_psk_fsk.md](05_digital_passband_ask_psk_fsk.md) | **ASK, PSK, FSK** | Espaço de sinais, ASK/OOK, BPSK/QPSK, FSK (coerente e não-coerente), BER Monte Carlo |
-| 06 | [06_digital_passband_qam.md](06_digital_passband_qam.md) | **QAM** | QAM quadrada, Gray coding, normalização de energia, EVM, BER Monte Carlo |
-| 07 | [07_equalizacao.md](07_equalizacao.md) | **Equalização** | ZF, MMSE, LMS/NLMS, DFE, MLSE/Viterbi, equalização em frequência (OFDM) |
-| 08 | [08_sincronismo.md](08_sincronismo.md) | **Sincronismo** | CFO/fase (Costas loop), timing (Gardner, M&M), frame sync, OFDM sync, BER com erros de sync |
-| 09 | [09_codigos_corretores_erros.md](09_codigos_corretores_erros.md) | **Códigos Corretores de Erros** | Distância de Hamming, códigos lineares, Hamming, CRC, convolucionais, Viterbi e Shannon |
+| 01 | [01_sinais_fourier_ruido.md](01_sinais_fourier_ruido.md) | **Sinais, Fourier e Ruído** | Energia e potência, Fourier, envelope complexo, processos aleatórios, PSD e AWGN |
+| 02 | [02_introducao_sistemas_comunicacoes.md](02_introducao_sistemas_comunicacoes.md) | **Introdução** | Blocos do sistema, métricas (BER, spectral efficiency), dB, orçamento de enlace, figura de ruído, Shannon |
+| 03 | [03_modulacao_am.md](03_modulacao_am.md) | **Modulação AM** | DSB-SC, AM convencional, detecção coerente/envelope, SSB, VSB |
+| 04 | [04_modulacao_fm.md](04_modulacao_fm.md) | **Modulação FM** | Frequência instantânea, NBFM/WBFM, funções de Bessel, regra de Carson, discriminador e PLL |
+| 05 | [05_banda_base_nyquist.md](05_banda_base_nyquist.md) | **Banda Base / Nyquist** | PAM, filtro casado, ISI, critério de Nyquist, raised cosine (RC/RRC), olho digital |
+| 06 | [06_digital_passband_ask_psk_fsk.md](06_digital_passband_ask_psk_fsk.md) | **ASK, PSK, FSK** | Espaço de sinais, ASK/OOK, BPSK/QPSK, FSK (coerente e não-coerente), BER Monte Carlo |
+| 07 | [07_digital_passband_qam.md](07_digital_passband_qam.md) | **QAM** | QAM quadrada, Gray coding, normalização de energia, EVM, BER Monte Carlo |
+| 08 | [08_equalizacao.md](08_equalizacao.md) | **Equalização** | ZF, MMSE, LMS/NLMS, DFE, MLSE/Viterbi, equalização em frequência (OFDM) |
+| 09 | [09_sincronismo.md](09_sincronismo.md) | **Sincronismo** | CFO/fase (Costas loop), timing (Gardner, M&M), frame sync, OFDM sync, BER com erros de sync |
+| 10 | [10_codigos_corretores_erros.md](10_codigos_corretores_erros.md) | **Códigos Corretores de Erros** | Distância de Hamming, códigos lineares, Hamming, CRC, convolucionais, Viterbi e Shannon |
 
 ---
 
@@ -64,13 +65,13 @@ Cada capítulo depende dos anteriores. O receptor completo é construído increm
 
 | Módulo | Ementa | Capítulos |
 |---|---|---|
-| I | Introdução a sistemas de comunicações | 00–01 |
-| II | Modulação analógica | 02–03 |
-| III | Formatação e transmissão em banda base | 04 |
-| IV | Transmissão digital em banda passante | 05–06 |
-| V | Equalização | 07 |
-| VI | Sincronismo | 08 |
-| VII | Codificação de canal | 09 |
+| I | Introdução a sistemas de comunicações | 00–02 |
+| II | Modulação analógica | 03–04 |
+| III | Formatação e transmissão em banda base | 05 |
+| IV | Transmissão digital em banda passante | 06–07 |
+| V | Equalização | 08 |
+| VI | Sincronismo | 09 |
+| VII | Codificação de canal | 10 |
 
 ### Pré-requisitos
 
@@ -151,8 +152,10 @@ $$
 
 ### Autocorrelação e Wiener–Khinchin
 
+Para um processo estacionário em sentido amplo (WSS), com a convenção válida também para sinais complexos:
+
 $$
-R_x(\tau) = \mathbb{E}\bigl[x(t)\,x(t+\tau)\bigr]
+R_x(\tau) = \mathbb{E}\bigl[x(t+\tau)\,x^*(t)\bigr]
 $$
 
 $$
@@ -203,16 +206,17 @@ $$
 
 ## Roteiro de Estudo
 
-> **Laboratório interativo:** monte encoders, moduladores, canais e receptores no [CommsLab Block Studio](blocklab/index.html). Consulte as [instruções de execução](blocklab/README.md).
+> **Laboratório interativo:** monte encoders, moduladores, canais e receptores no [CommsLab Block Studio](sim/index.html).
 
 ### Sequência de Leitura
 
-1. **00 (este arquivo)** e **01**: fixar transformadas, PSD, AWGN, $Q(x)$, SNR, $E_b/N_0$ e o orçamento de enlace
-2. **02 e 03**: comparar AM e FM, identificando os compromissos de banda, potência e complexidade
-3. **04**: derivar o filtro casado e o critério de Nyquist antes de usar raised cosine
-4. **05 e 06**: executar os Monte Carlo e confrontar pontos simulados com curvas teóricas de BER
-5. **07**: entender como o equalizador restaura a forma do pulso e abre o olho digital
-6. **08**: fechar a cadeia com sincronismo, observando como erros dephasam a constelação e deformam o olho
+1. **00 (este arquivo) e 01**: revisar Fourier, PSD, AWGN e a função $Q$.
+2. **02**: relacionar SNR, $E_b/N_0$, capacidade e orçamento de enlace.
+3. **03 e 04**: comparar AM e FM, identificando os compromissos de banda, potência e complexidade.
+4. **05**: derivar o filtro casado e o critério de Nyquist antes de usar raised cosine.
+5. **06 e 07**: executar Monte Carlo e comparar a BER simulada com a teórica.
+6. **08 e 09**: analisar ISI, equalização e recuperação de portadora, símbolo e quadro.
+7. **10**: distinguir detecção e correção de erros e avaliar o efeito da taxa de código.
 
 ### Laboratório (Python)
 
@@ -225,7 +229,7 @@ Cada capítulo contém exercícios resolvidos e propostos em Python. O laborató
 - Em Monte Carlo, simular até observar pelo menos 100 erros por ponto ou informar que o ponto é apenas um limite superior; uma contagem fixa de símbolos não garante precisão em BER baixa
 - Identificar eixos, unidades, parâmetros e normalizações em todos os gráficos
 
-O [plano de aprendizagem](ementa.md) organiza esses experimentos em oito laboratórios e propõe um projeto integrador de receptor QPSK/16-QAM.
+A [ementa](ementa.md) lista os conteúdos da disciplina. Como projeto integrador, implemente um receptor QPSK/16-QAM com equalização e sincronismo.
 
 ### Avaliação Sugerida
 
@@ -264,4 +268,4 @@ O [plano de aprendizagem](ementa.md) organiza esses experimentos em oito laborat
 
 ---
 
-[Ementa](ementa.md) · [Próximo: Sinais, Fourier e Ruído →](00_sinais_fourier_ruido.md)
+[Ementa](ementa.md) · [Próximo: Sinais, Fourier e Ruído →](01_sinais_fourier_ruido.md)

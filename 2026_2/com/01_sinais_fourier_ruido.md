@@ -254,7 +254,7 @@ Propriedades fundamentais (demonstráveis diretamente da definição):
 - $R_X(0) = E[X^2(t)] = $ potência média do processo (sempre real e não-negativa).
 - $R_X(\tau) = R_X(-\tau)$ (simetria par, para processos reais — troque $t\to t-\tau$ na definição).
 - $|R_X(\tau)| \le R_X(0)$ (consequência da desigualdade de Cauchy-Schwarz aplicada a $X(t)$ e $X(t+\tau)$).
-- $R_X(\tau)\to \mu_X^2$ quando $\tau\to\infty$, se o processo "esquece" sua correlação com o passado distante (ergodicidade em correlação).
+- $R_X(\tau)\to \mu_X^2$ quando $|\tau|\to\infty$, se a autocovariância tende a zero. Essa propriedade adicional não decorre apenas de WSS nem deve ser confundida com ergodicidade.
 
 ---
 
@@ -330,7 +330,7 @@ $$
 f_N(n) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{n^2}{2\sigma^2}\right),\qquad \sigma^2 = P_N = N_0B
 $$
 
-$\sigma^2$ é a variância (= potência média do ruído filtrado). Após um passa-baixas retangular, o ruído Gaussiano já não é independente em instantes arbitrários: sua autocorrelação tem forma sinc. Amostras Gaussianas são independentes quando sua correlação é nula; no filtro ideal acima, isso ocorre em separações inteiras de $1/(2B)$. No receptor digital, o filtro casado e a amostragem nos instantes de símbolo produzem as variáveis de decisão modeladas como i.i.d. quando os pulsos são ortogonais e o canal não introduz memória. Essa é a base do **canal AWGN discreto** usado nas simulações de BER (arquivos 5 e 6): cada símbolo recebido é o símbolo transmitido mais uma amostra de $\mathcal{N}(0,\sigma^2)$, independente das demais sob essas hipóteses.
+$\sigma^2$ é a variância (= potência média do ruído filtrado). Após um passa-baixas retangular, o ruído Gaussiano já não é independente em instantes arbitrários: sua autocorrelação tem forma sinc. Amostras Gaussianas são independentes quando sua correlação é nula; no filtro ideal acima, isso ocorre em separações inteiras de $1/(2B)$. No receptor digital, o filtro casado e a amostragem nos instantes de símbolo produzem as variáveis de decisão modeladas como i.i.d. quando os pulsos são ortogonais e o canal não introduz memória. Essa é a base do **canal AWGN discreto** usado nas simulações de BER (capítulos 6 e 7): cada símbolo recebido é o símbolo transmitido mais uma amostra de $\mathcal{N}(0,\sigma^2)$, independente das demais sob essas hipóteses.
 
 ---
 
@@ -348,7 +348,7 @@ Propriedades: $Q(0)=1/2$; $Q(-x)=1-Q(x)$; $Q(x)$ é monotonicamente decrescente;
 
 ### Dedução da probabilidade de erro para detecção binária em AWGN
 
-Considere a detecção de um bit binário: transmite-se $+A$ (bit 1) ou $-A$ (bit 0), o receptor observa $r=s+n$ com $n\sim\mathcal N(0,\sigma^2)$, e decide "1" se $r>0$, "0" caso contrário (**detector de limiar ótimo** para sinais antipodais equiprováveis, resultado que será justificado formalmente no arquivo 5 via detecção de máxima verossimilhança). Dado que "0" foi transmitido ($s=-A$), o erro ocorre se $r>0$, isto é, se $n>A$:
+Considere a detecção de um bit binário: transmite-se $+A$ (bit 1) ou $-A$ (bit 0), o receptor observa $r=s+n$ com $n\sim\mathcal N(0,\sigma^2)$, e decide "1" se $r>0$, "0" caso contrário (**detector de limiar ótimo** para sinais antipodais equiprováveis, resultado que será justificado formalmente no capítulo 6 via detecção de máxima verossimilhança). Dado que "0" foi transmitido ($s=-A$), o erro ocorre se $r>0$, isto é, se $n>A$:
 
 $$
 P(\text{erro}\,|\,s=-A) = P(n>A) = \int_A^\infty\frac{1}{\sqrt{2\pi}\sigma}e^{-n^2/(2\sigma^2)}\,dn
@@ -366,17 +366,32 @@ $$
 \boxed{P_e = Q\!\left(\frac{A}{\sigma}\right)}
 $$
 
-Esta é a fórmula-mãe de onde **todas** as expressões de BER (Bit Error Rate) do restante da apostila são derivadas (ASK, PSK, FSK, QAM — arquivos 5 e 6), trocando $A/\sigma$ pela distância euclidiana relevante entre símbolos da constelação, normalizada pelo desvio padrão do ruído.
+O resultado vale para dois sinais antipodais equiprováveis com decisão por limiar em ruído gaussiano. Constelações com mais símbolos exigem integrar as regiões de decisão; nem toda BER se reduz a uma única função $Q$.
 
 ### Relação com $E_b/N_0$
 
-Definindo a energia por bit $E_b = A^2T_b$ (para um pulso retangular de amplitude $A$ e duração $T_b$) e usando $\sigma^2=N_0B$ com $B\approx1/(2T_b)$ (banda de um filtro casado, resultado justificado no arquivo 5):
+Para um pulso retangular, transmita $s(t)=\pm A$ em $0\le t<T_b$ e use resistência normalizada de $1\,\Omega$, de modo que $E_b=A^2T_b$. O receptor calcula a média no intervalo de bit:
 
 $$
-\frac{A}{\sigma} = \sqrt{\frac{2E_b}{N_0}} \quad\Rightarrow\quad \boxed{P_e = Q\!\left(\sqrt{\frac{2E_b}{N_0}}\right)}
+y=\frac{1}{T_b}\int_0^{T_b}r(t)\,dt=\pm A+w.
 $$
 
-Esta é a forma em que a probabilidade de erro é universalmente reportada na literatura de comunicações digitais — em função da razão **energia por bit sobre densidade espectral de ruído**, $E_b/N_0$, permitindo comparar esquemas de modulação diferentes em bases equivalentes (mesma energia gasta por bit de informação).
+Como o AWGN real tem autocorrelação $R_n(\tau)=(N_0/2)\delta(\tau)$, a variância após integração é
+
+$$
+\sigma_w^2=\frac{1}{T_b^2}\int_0^{T_b}\int_0^{T_b}\frac{N_0}{2}\delta(t-u)\,dt\,du
+=\frac{N_0}{2T_b}.
+$$
+
+Portanto,
+
+$$
+\frac{A}{\sigma_w}=\sqrt{\frac{2A^2T_b}{N_0}}
+\quad\Rightarrow\quad
+\boxed{P_b=Q\!\left(\sqrt{\frac{2E_b}{N_0}}\right)}.
+$$
+
+**Observação:** o integrador é equivalente ao filtro casado amostrado no fim do bit. Sua banda equivalente de ruído unilateral é $1/(2T_b)$; isso não significa que o pulso retangular ou o filtro tenham suporte espectral limitado a essa banda. A expressão de BER também vale para outros pulsos de energia $E_b$ com recepção casada em AWGN e sem interferência entre símbolos.
 
 ---
 
@@ -391,6 +406,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.special import erfc
+
+rng = np.random.default_rng(42)
 
 # === Série de Fourier de uma onda quadrada ===
 def coef_fourier_onda_quadrada(n, A=1.0):
@@ -407,7 +424,7 @@ cs = np.array([coef_fourier_onda_quadrada(n) for n in ns])
 t = np.linspace(-1, 1, 2000)
 f0 = 1.0
 x_reconstruida = np.real(sum(cs[i]*np.exp(1j*2*np.pi*ns[i]*f0*t) for i in range(len(ns))))
-print(f"Reconstrução com {N_harm} harmônicos ímpares: max={x_reconstruida.max():.3f} (ideal=1.0, fenômeno de Gibbs)")
+print(f"Reconstrução com índices harmônicos de -{N_harm} a {N_harm}: max={x_reconstruida.max():.3f} (ideal=1.0, fenômeno de Gibbs)")
 
 # === Transformada de Fourier numérica: pulso retangular -> sinc ===
 def pulso_retangular(t, T):
@@ -417,7 +434,7 @@ Fs = 1000
 t_vec = np.arange(-5, 5, 1/Fs)
 T_pulso = 1.0
 x = pulso_retangular(t_vec, T_pulso)
-X = np.fft.fftshift(np.fft.fft(x)) / Fs
+X = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(x))) / Fs
 f_vec = np.fft.fftshift(np.fft.fftfreq(len(t_vec), 1/Fs))
 
 X_teorico = T_pulso * np.sinc(f_vec*T_pulso)
@@ -434,7 +451,7 @@ print(f"Energia na frequência: {E_freq:.4f}  (Parseval)")
 def gerar_awgn(N, N0_sobre_2, Fs):
     """Gera N amostras de ruído branco com PSD bilateral N0/2 (variância = N0/2 * Fs)."""
     sigma = np.sqrt(N0_sobre_2 * Fs)
-    return np.random.normal(0, sigma, N)
+    return rng.normal(0, sigma, N)
 
 N0_2 = 1e-3
 Fs_ruido = 10000
@@ -443,7 +460,7 @@ ruido = gerar_awgn(n_amostras, N0_2, Fs_ruido)
 print(f"\nRuído AWGN gerado: variância medida={np.var(ruido):.6e}, esperada={N0_2*Fs_ruido:.6e}")
 
 f_psd, Pxx = signal.welch(ruido, Fs_ruido, nperseg=1024)
-print(f"PSD média medida: {np.mean(Pxx):.6e} (esperado ~{N0_2:.6e}, unilateral = 2x bilateral)")
+print(f"PSD média medida: {np.mean(Pxx):.6e} (esperado ~{2*N0_2:.6e}, unilateral = 2x bilateral)")
 
 # === Função Q e probabilidade de erro binária ===
 def Q(x):
@@ -454,13 +471,15 @@ Pe = Q(A/sigma_ruido)
 print(f"\nP_e (detecção binária, A/sigma={A/sigma_ruido:.2f}): {Pe:.6e}")
 
 # Verificação por simulação Monte Carlo
-n_bits = 200000
-bits = np.random.randint(0, 2, n_bits)
+n_bits = 500000
+bits = rng.integers(0, 2, n_bits)
 s = np.where(bits==1, A, -A)
-r = s + np.random.normal(0, sigma_ruido, n_bits)
+r = s + rng.normal(0, sigma_ruido, n_bits)
 bits_detectados = (r > 0).astype(int)
-Pe_simulado = np.mean(bits_detectados != bits)
-print(f"P_e simulado (Monte Carlo, {n_bits} bits): {Pe_simulado:.6e}")
+n_erros = np.count_nonzero(bits_detectados != bits)
+Pe_simulado = n_erros / n_bits
+print(f"P_e simulado ({n_erros} erros em {n_bits} bits): {Pe_simulado:.6e}")
+print(f"Erro padrão estimado: {np.sqrt(Pe_simulado*(1-Pe_simulado)/n_bits):.2e}")
 
 # === Curva de P_e vs Eb/N0 ===
 EbN0_dB = np.arange(0, 13, 1)
@@ -479,7 +498,7 @@ plt.tight_layout()
 
 **Saída esperada**:
 
-- Reconstrução de Fourier: overshoot de ~9% acima da amplitude ideal (fenômeno de Gibbs), típico de truncar uma série de Fourier de um sinal descontínuo.
+- Reconstrução de Fourier: sobressinal de aproximadamente 9% da altura do salto (fenômeno de Gibbs). Para a onda de $-1$ a $+1$, o salto é 2 e o pico se aproxima de $1{,}179$, cerca de 18% acima do patamar +1.
 - FFT numérica vs. sinc teórico: erro pequeno (efeitos de janelamento/discretização).
 - Parseval: energia no tempo e na frequência coincidem.
 - Ruído AWGN: variância medida ≈ variância teórica.
@@ -508,9 +527,9 @@ plt.tight_layout()
 
 **E9.** Escreva o sinal passa-faixa $s(t)=3\cos(2\pi f_ct)-4\sin(2\pi f_ct)$ na forma envelope-fase $A(t)\cos(2\pi f_ct+\phi(t))$, determinando $A$ e $\phi$ (constantes, neste caso).
 
-**E10 (desafio).** Um sinal aleatório binário NRZ (Não-Retorno-a-Zero) transmite $+A$ ou $-A$ com igual probabilidade a cada intervalo de bit $T_b$, de forma independente entre intervalos. Mostre que sua autocorrelação é $R_X(\tau) = A^2\left(1-\dfrac{|\tau|}{T_b}\right)$ para $|\tau|<T_b$ e $R_X(\tau)=0$ para $|\tau|\ge T_b$ (dica: para $|\tau|<T_b$, considere a probabilidade de que $\tau$ "caia" dentro do mesmo intervalo de bit vs. em um intervalo adjacente). Em seguida, aplique o Teorema de Wiener-Khinchin para obter $S_X(f)=A^2T_b\,\text{sinc}^2(fT_b)$.
+**E10 (desafio).** Um sinal aleatório binário NRZ (Não-Retorno-a-Zero) transmite $+A$ ou $-A$ com igual probabilidade a cada intervalo de bit $T_b$, de forma independente entre intervalos. Para obter um processo WSS, adote uma origem de relógio aleatória, uniforme em $[0,T_b)$ e independente dos bits. Mostre que sua autocorrelação é $R_X(\tau) = A^2\left(1-\dfrac{|\tau|}{T_b}\right)$ para $|\tau|<T_b$ e $R_X(\tau)=0$ para $|\tau|\ge T_b$ (dica: para $|\tau|<T_b$, considere a probabilidade de que $\tau$ "caia" dentro do mesmo intervalo de bit vs. em um intervalo adjacente). Em seguida, aplique o Teorema de Wiener-Khinchin para obter $S_X(f)=A^2T_b\,\text{sinc}^2(fT_b)$.
 
-**E11 (desafio).** Um sinal passa-faixa real ocupa a faixa positiva de $f_c-B/2$ a $f_c+B/2$, com $f_c=1\,\text{GHz}$ e $B=1\,\text{MHz}$. Compare a taxa mínima para amostrar diretamente o sinal real RF e para amostrar o envelope complexo cujo suporte é $[-B/2,B/2]$. Quantas amostras complexas por segundo são poupadas?
+**E11 (desafio).** Um sinal passa-faixa real ocupa a faixa positiva de $f_c-B/2$ a $f_c+B/2$, com $f_c=1\,\text{GHz}$ e $B=1\,\text{MHz}$. Compare a taxa mínima para amostrar diretamente o sinal real RF e para amostrar o envelope complexo cujo suporte é $[-B/2,B/2]$. Qual é a razão entre as taxas de amostras reais em RF (sem subamostragem passa-faixa) e de amostras complexas em banda base? Cada amostra complexa contém duas componentes reais.
 
 **E12.** Verifique a identidade $\cos(2\pi f_ct+\phi) = \cos\phi\cos(2\pi f_ct)-\sin\phi\sin(2\pi f_ct)$ usando a fórmula de adição de ângulos, e identifique $s_I$ e $s_Q$ para $A=5$, $\phi=60°$.
 
@@ -562,7 +581,7 @@ $$
 \boxed{P_e\approx3{,}17\times10^{-5}\ \to\ P_e'\approx6{,}22\times10^{-16}\qquad\text{(redução de aproximadamente 11 ordens de grandeza)}}
 $$
 
-Isso ilustra a natureza extremamente não-linear (decaimento tipo $e^{-x^2/2}$) da função $Q$: dobrar a distância entre símbolos (ou, equivalentemente, quadruplicar a energia) reduz $P_e$ de forma dramática — motivo pelo qual pequenos aumentos de $E_b/N_0$ produzem grandes ganhos de confiabilidade (visível no "joelho" das curvas de BER, arquivos 5 e 6).
+Isso ilustra a natureza extremamente não-linear (decaimento tipo $e^{-x^2/2}$) da função $Q$: dobrar a distância entre símbolos (ou, equivalentemente, quadruplicar a energia) reduz $P_e$ de forma dramática — motivo pelo qual pequenos aumentos de $E_b/N_0$ produzem grandes ganhos de confiabilidade (visível no "joelho" das curvas de BER, capítulos 6 e 7).
 
 **E9.** Comparando com $s(t)=s_I\cos(2\pi f_ct)-s_Q\sin(2\pi f_ct)$: $s_I=3$, $s_Q=4$. Logo:
 
@@ -576,7 +595,7 @@ $$
 
 Verificação: $5\cos(53{,}13°)\approx3{,}0=s_I$ ✓, $5\sin(53{,}13°)\approx4{,}0=s_Q$ ✓.
 
-**E10 (desafio).** Para $|\tau|<T_b$: com probabilidade $1-|\tau|/T_b$, os instantes $t$ e $t+\tau$ caem no **mesmo** intervalo de bit (mesmo valor $\pm A$, produto $=A^2$); com probabilidade $|\tau|/T_b$, caem em intervalos **adjacentes distintos** e independentes (valores independentes $\pm A$ cada, produto médio $=E[\pm A]\cdot E[\pm A]=0\cdot0=0$, pois cada bit tem média zero). Logo:
+**E10 (desafio).** A média sobre a origem de relógio uniforme torna a probabilidade de pertencer ao mesmo bit independente de $t$. Para $|\tau|<T_b$: com probabilidade $1-|\tau|/T_b$, os instantes $t$ e $t+\tau$ caem no **mesmo** intervalo de bit (mesmo valor $\pm A$, produto $=A^2$); com probabilidade $|\tau|/T_b$, caem em intervalos **adjacentes distintos** e independentes (valores independentes $\pm A$ cada, produto médio $=E[\pm A]\cdot E[\pm A]=0\cdot0=0$, pois cada bit tem média zero). Logo:
 
 $$
 R_X(\tau) = \left(1-\frac{|\tau|}{T_b}\right)A^2 + \frac{|\tau|}{T_b}\cdot0 = A^2\left(1-\frac{|\tau|}{T_b}\right),\qquad |\tau|<T_b
@@ -588,9 +607,9 @@ $$
 \boxed{S_X(f) = A^2T_b\,\text{sinc}^2(fT_b)}
 $$
 
-Este é o espectro padrão de um sinal digital NRZ aleatório — um lóbulo principal de largura $2/T_b$ com lóbulos laterais decaindo como $1/f^2$, resultado usado extensivamente no arquivo 4 (banda base).
+Este é o espectro padrão de um sinal digital NRZ aleatório — um lóbulo principal de largura $2/T_b$ com lóbulos laterais decaindo como $1/f^2$, resultado usado extensivamente no capítulo 5 (banda base).
 
-**E11 (desafio).** Amostragem direta do sinal real: a maior frequência é $f_{\max}=f_c+B/2=1{,}0005$ GHz, logo a taxa mínima uniforme é
+**E11 (desafio).** Amostragem direta do sinal real: a maior frequência é $f_{\max}=f_c+B/2=1{,}0005$ GHz, logo o limite de Nyquist para amostragem sem sobreposição espectral em banda base é
 
 $$F_{s,\rm RF}\ge2f_{\max}=2{,}001\ \text{GHz}.$$
 
@@ -602,7 +621,7 @@ $$
 \boxed{\text{Razão}=\frac{2(f_c+B/2)}{B}=2001.}
 $$
 
-A simulação via envelope complexo exige cerca de **2000 vezes menos amostras**. Técnicas especializadas de subamostragem passa-faixa podem reduzir a taxa de uma representação RF sob condições estritas de filtragem e sincronismo, mas o envelope complexo é a representação robusta e usual em simulações de comunicação.
+A representação por envelope exige 2001 vezes menos instantes de amostragem. Como cada amostra complexa contém duas componentes reais, a redução no número de valores reais armazenados é de aproximadamente 1000,5 vezes, para a mesma duração e precisão por componente. Técnicas especializadas de subamostragem passa-faixa podem reduzir a taxa de uma representação RF sob condições estritas de filtragem e sincronismo, mas o envelope complexo é a representação robusta e usual em simulações de comunicação.
 
 **E12.** Pela fórmula de adição, $\cos(2\pi f_ct+\phi)=\cos(2\pi f_ct)\cos\phi-\sin(2\pi f_ct)\sin\phi$, que reescrita na forma-padrão $s_I\cos(2\pi f_ct)-s_Q\sin(2\pi f_ct)$ identifica $s_I=A\cos\phi$ e $s_Q=A\sin\phi$ (com $A$ a amplitude, aqui implicitamente $1$ na identidade trigonométrica pura). Para $A=5$, $\phi=60°$:
 

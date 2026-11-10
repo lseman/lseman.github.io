@@ -22,7 +22,7 @@ Ao final deste capítulo, você será capaz de:
 Antes de definir matematicamente as ondas eletromagnéticas, pense em termos físicos:
 
 - **Ondas eletromagnéticas** são perturbações auto-sustentadas dos campos elétrico e magnético que se propagam pelo espaço.
-- Os campos $\vec E$ e $\vec B$ são **perpendiculares entre si** e **perpendiculares à direção de propagação** (ondas transversais).
+- Em uma onda plana propagante no vácuo ou em um meio linear, homogêneo, isotrópico e sem perdas, os campos $\vec E$ e $\vec B$ são **perpendiculares entre si** e à direção de propagação. Campos próximos e superposições de ondas não precisam ter essa geometria local.
 - No vácuo, as ondas eletromagnéticas se propagam na **velocidade da luz** $c \approx 3\times10^8\,\text{m/s}$.
 - A luz visível, ondas de rádio, micro-ondas, raios X e raios gama são todas **ondas eletromagnéticas**, diferindo apenas em frequência e comprimento de onda.
 
@@ -57,13 +57,13 @@ Ao final, você deve deduzir a equação de onda a partir de Maxwell, relacionar
 
 ## Da equação de onda preliminar à forma completa
 
-No final do arquivo anterior (Seção “Verificação: a solução satisfaz as equações de Maxwell”.7.3), esboçamos que as equações de Maxwell no vácuo levam a uma **equação de onda** para o campo $\vec{E}$. O esboço foi:
+No [capítulo de eletrodinâmica](07_eletrodinamica_maxwell.md), a síntese das equações de Maxwell permite antecipar que as equações de Maxwell no vácuo levam a uma **equação de onda** para o campo $\vec{E}$. O esboço foi:
 
 $$
 \nabla^2\vec{E} = \mu_0\varepsilon_0\,\frac{\partial^2\vec{E}}{\partial t^2}
 $$
 
-Neste arquivo, fazemos a dedução completa e explícita — primeiro no vácuo, depois em meios materiais — e apresentamos a solução geral mais importante: a **onda plana monocromática**.
+Neste arquivo, fazemos a dedução completa e explícita — primeiro no vácuo, depois em meios materiais — e apresentamos uma solução particular: a **onda plana monocromática**.
 
 ## Equação de onda no vácuo — dedução completa
 
@@ -148,7 +148,7 @@ Esta é **exatamente a velocidade da luz** — a descoberta que levou Maxwell a 
 
 ### Meios lineares, homogêneos, isotrópicos (LIH), sem perdas
 
-Para um meio caracterizado por permissividade $\varepsilon$ e permeabilidade $\mu$ (sem condutividade, $\sigma=0$), as equações de Maxwell sem fontes são:
+Para um meio linear, homogêneo e isotrópico, com $\varepsilon$ e $\mu$ reais, positivos e constantes no tempo e na faixa de frequências considerada (sem condutividade, $\sigma=0$), as equações de Maxwell sem fontes são:
 
 $$
 \begin{aligned}
@@ -173,16 +173,14 @@ onde $n \equiv \sqrt{\mu_r\varepsilon_r}$ é o **índice de refração** do meio
 
 ### Exemplos de velocidade e índice de refração
 
-| Meio             | $\varepsilon_r$   | $\mu_r$    | $v\ (\text{m/s})$         | $n$            |
-| ---------------- | ----------------- | ---------- | ------------------------- | -------------- |
-| Vácuo            | 1                 | 1          | $2{,}998\times10^8$       | 1              |
-| Ar (STP)         | 1,0006            | $\approx1$ | $\approx c$               | 1,0003         |
-| Água (DC)        | 80                | 1          | $3{,}35\times10^7$        | $\approx8{,}9$ |
-| Água (óptico)    | $\approx1{,}77^2$ | 1          | $\approx2{,}25\times10^8$ | 1,33           |
-| Vidro crown      | $\approx2{,}5$    | 1          | $\approx1{,}90\times10^8$ | 1,58           |
-| Silício (óptico) | $\approx11{,}7$   | 1          | $\approx8{,}77\times10^7$ | 3,42           |
+| Modelo de meio | $\varepsilon_r$ | $\mu_r$ | $v\ (\text{m/s})$ | $n$ |
+|---|---|---|---|---|
+| Vácuo | 1 | 1 | $2{,}998\times10^8$ | 1 |
+| Dielétrico ideal | 2,25 | 1 | $1{,}999\times10^8$ | 1,50 |
+| Dielétrico ideal | 4 | 1 | $1{,}499\times10^8$ | 2 |
+| Água, aproximação no visível | $\approx1{,}77$ | $\approx1$ | $\approx2{,}25\times10^8$ | $\approx1{,}33$ |
 
-Note: a água tem $\varepsilon_r\approx80$ em baixas frequências, mas no regime óptico (altas frequências), a resposta das moléculas de água não acompanha a oscilação do campo, e o valor efetivo é $\varepsilon_r\approx1{,}77^2\approx3{,}14$ — o que dá $n=1{,}33$, consistente com o índice de refração medido experimentalmente.
+**Cuidado com a frequência:** para um meio não magnético com perdas desprezíveis, $\varepsilon_r\approx n^2$. Assim, $n\approx1{,}33$ implica $\varepsilon_r\approx1{,}77$, e não $1{,}77^2$. A permissividade estática da água, próxima de 80 à temperatura ambiente, não deve ser usada para prever sua velocidade de fase no visível. Os valores reais dependem de frequência, temperatura e perdas; o [modelo de índice de refração da IAPWS](https://iapws.org/technical-guidance/release/Rindex) explicita essas dependências.
 
 ## Onda Plana Monocromática
 
@@ -227,7 +225,7 @@ Assim, $\partial/\partial t\mapsto-i\omega$ e $\nabla\mapsto+i\vec k$. Muitos te
 
 ### Propriedades geométricas
 
-Uma onda plana monocrômática no vácuo/meio tem:
+Uma onda plana monocromática propagante nos meios sem perdas aqui considerados tem:
 
 1. $\vec{E} \perp \vec{B} \perp \vec{k}$ — os três vetores são mutuamente ortogonais (onda **transversal**);
 2. As frentes de onda ($\vec{k}\cdot\vec{r} - \omega t = \text{const.}$) são planos perpendiculares a $\vec{k}$;
@@ -244,16 +242,21 @@ $$
 \nabla\times\vec{E} = i\omega\vec{B} \quad\Rightarrow\quad \vec{B} = \frac{1}{i\omega}\,\nabla\times\vec{E}
 $$
 
-Para uma onda plana com $\vec{E} = E_0\hat{x}\,e^{-ikz}$ propagando-se em $+\hat{z}$:
+Para uma onda em $+\hat z$, mantenha a convenção $e^{-i\omega t}$ e use o fasor $\widetilde{\vec E}=E_0\hat x\,e^{+ikz}$. A componente $y$ do rotacional tem sinal positivo:
 
 $$
-\nabla\times\vec{E} = -\frac{\partial E_x}{\partial z}\,\hat{y} = ikE_0\,e^{-ikz}\,\hat{y}
+\nabla\times\widetilde{\vec E}
+=\frac{\partial\widetilde E_x}{\partial z}\hat y
+=ikE_0e^{+ikz}\hat y.
 $$
 
-Logo:
+Pela lei de Faraday,
 
 $$
-\vec{B} = \frac{ik}{i\omega}\,E_0\,e^{-ikz}\,\hat{y} = \frac{k}{\omega}\,E_0\,e^{-ikz}\,\hat{y} = \frac{1}{v}\,E_0\,e^{-ikz}\,\hat{y}
+\widetilde{\vec B}
+=\frac{1}{i\omega}\nabla\times\widetilde{\vec E}
+=\frac{k}{\omega}E_0e^{+ikz}\hat y
+=\frac{E_0}{v}e^{+ikz}\hat y.
 $$
 
 Definindo $B_0 = E_0/v$:
@@ -276,7 +279,7 @@ $$
 
 ### Impedância intrínseca do meio
 
-Define-se a **impedância intrínseca** (ou característic) do meio como a razão entre as amplitudes dos campos elétrico e magnético (mais precisamente, entre $\vec{E}$ e o campo magnético de H, $\vec{H}=\vec{B}/\mu$):
+Define-se a **impedância intrínseca** (ou característica) do meio como a razão entre as amplitudes dos campos elétrico e magnético (mais precisamente, entre $\vec{E}$ e o campo magnético de H, $\vec{H}=\vec{B}/\mu$):
 
 $$
 \boxed{\eta \equiv \frac{E_0}{H_0} = \frac{E_0}{B_0/\mu} = \mu v = \sqrt{\frac{\mu}{\varepsilon}}}
@@ -401,18 +404,25 @@ eta0 = np.sqrt(mu0/eps0)   # ~377 ohms
 def E_onda(z, t, E0, k, omega):
     return E0 * np.cos(k*z - omega*t)
 
-def d2E_dz2(z, t, E0, k, omega, h=1e-6):
+def d2E_dz2(z, t, E0, k, omega, h):
     return (E_onda(z+h,t,E0,k,omega) - 2*E_onda(z,t,E0,k,omega) + E_onda(z-h,t,E0,k,omega))/h**2
 
-def d2E_dt2(z, t, E0, k, omega, h=1e-6):
+def d2E_dt2(z, t, E0, k, omega, h):
     return (E_onda(z,t+h,E0,k,omega) - 2*E_onda(z,t,E0,k,omega) + E_onda(z,t-h,E0,k,omega))/h**2
 
 k = 2*np.pi / 500e-9    # luz verde, lambda = 500 nm
 omega = c * k
 z, t = 1e-6, 1e-15
-LHS = d2E_dz2(z, t, 1.0, k, omega)
-RHS = (1/c**2) * d2E_dt2(z, t, 1.0, k, omega)
-print(f"Equação de onda numérica: LHS={LHS:.4e}, RHS={RHS:.4e}, erro={abs(LHS-RHS)/abs(LHS):.2e}")
+# Passos com unidades próprias e menores que lambda e o período.
+# Use passos de fase diferentes para verificar convergência sem cancelamento artificial.
+for fase_passo in (0.1, 0.05, 0.025):
+    dz = fase_passo / k
+    dt = 0.8 * fase_passo / omega
+    LHS = d2E_dz2(z, t, 1.0, k, omega, dz)
+    RHS = d2E_dt2(z, t, 1.0, k, omega, dt) / c**2
+    escala = k**2  # E0 = 1 V/m: escala da segunda derivada espacial
+    residuo = abs(LHS - RHS) / escala
+    print(f"dz={dz:.2e} m, dt={dt:.2e} s: resíduo normalizado={residuo:.2e}")
 
 # --- 2. Onda em diferentes meios ---
 def indice_refracao(eps_r, mu_r=1.0):
@@ -422,14 +432,14 @@ def velocidade(eps_r, mu_r=1.0):
     return c / np.sqrt(eps_r * mu_r)
 
 def impedancia(eps_r, mu_r=1.0):
-    return np.sqrt(mu_r/mu0 * eps0/eps_r) if False else np.sqrt(mu0*mu_r/(eps0*eps_r))
+    return np.sqrt(mu0*mu_r/(eps0*eps_r))
 
 meios = {
     "vácuo": (1.0, 1.0),
     "ar": (1.0006, 1.0),
-    "água (óptico)": (1.77**2, 1.0),
-    "vidro crown": (2.5, 1.0),
-    "silício": (11.7, 1.0),
+    "água (visível, aprox.)": (1.77, 1.0),
+    "dielétrico εr=2,25": (2.25, 1.0),
+    "dielétrico εr=4": (4.0, 1.0),
 }
 
 print("\nVelocidade e índice de refração em diferentes meios:")
@@ -450,19 +460,19 @@ ax1.plot(z*1e9, E, 'b', linewidth=1.5)
 ax1.set_ylabel(r'$E/E_0$')
 ax1.set_title('Onda plana monocromática: campo elétrico')
 ax1.grid(True, alpha=0.3)
-ax2.plot(z*1e9, B*377, 'r', linewidth=1.5)  # escala B em unidades de E/eta
-ax2.set_ylabel(r'$B\cdot\eta$ (escala E)')
+ax2.plot(z*1e9, B*c, 'r', linewidth=1.5)  # B0 = E0/c; E0 = 1 V/m
+ax2.set_ylabel(r'$B/B_0$')
 ax2.set_xlabel('z (nm)')
 ax2.set_title('Campo magnético (escala comparável a E)')
 ax2.grid(True, alpha=0.3)
 plt.tight_layout()
 
 # --- 4. Vetor de Poynting ---
-z2 = np.linspace(0, 2*np.pi/k, 500)
+z2 = np.linspace(0, 2*np.pi/k, 500, endpoint=False)
 E_inst = np.cos(k*z2)
 S_inst = E_inst**2 / eta0   # S = E^2 / eta, instantâneo
 S_media = np.mean(S_inst)
-print(f"\nPonto de S(t): pico={np.max(S_inst)/eta0*eta0:.4f} W/m², "
+print(f"\nPonto de S(t): pico={np.max(S_inst):.4f} W/m², "
       f"média={S_media:.4f} W/m², razão pico/média={np.max(S_inst)/S_media:.2f}×")
 
 # --- 5. Comparação: energia elétrica vs. magnética ---
@@ -542,7 +552,7 @@ $$
 \vec{S}(z,t) = \frac{1}{\mu_0}\left[E_0\cos(kz-\omega t)\,\hat x\right]\times\left[B_0\cos(kz-\omega t)\,\hat y\right]
 $$
 
-Como $\hat x\times\hat y = \hat z$ e $E_0 B_0 = E_0^2/c = E_0^2\mu_0\varepsilon_0 c = E_0^2/\eta_0$ (onde $\eta_0 = \sqrt{\mu_0/\varepsilon_0} \approx 376{,}7\,\Omega$ é a impedância intrínseca do vácuo):
+Como $\hat x\times\hat y = \hat z$ e $E_0 B_0/\mu_0 = E_0^2/(\mu_0c) = E_0^2/\eta_0$ (onde $\eta_0 = \sqrt{\mu_0/\varepsilon_0} \approx 376{,}7\,\Omega$ é a impedância intrínseca do vácuo):
 $$
 \vec{S}(z,t) = \frac{E_0 B_0}{\mu_0}\cos^2(kz-\omega t)\,\hat z = \frac{E_0^2}{\mu_0 c}\cos^2(kz-\omega t)\,\hat z = \frac{E_0^2}{\eta_0}\cos^2(kz-\omega t)\,\hat z
 $$
@@ -919,7 +929,7 @@ $$
 \boxed{E_0 \approx 868\;\text{V/m}}
 $$
 
-(Valor tipicamente encontrado em lasers industriais de potência moderada focalizados — magnitude bem maior que a de uma onda de rádio, mas ainda muito menor que o campo de ruptura dielétrica do ar, $\sim3\times10^6\;\text{V/m}$.)
+O valor calculado é a amplitude de pico; o valor eficaz é $E_{\rm rms}=E_0/\sqrt{2}\approx614\;\text{V/m}$. A intensidade, por si só, não determina a frequência da onda nem o tipo de fonte.
 
 ### E11
 

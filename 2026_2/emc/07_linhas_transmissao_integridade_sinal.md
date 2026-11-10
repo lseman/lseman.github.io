@@ -29,7 +29,7 @@ Ao concluir este capítulo, você deverá ser capaz de:
 10. [Ondas estacionárias e potência](#ondas-estacionárias-e-potência)
 11. [Modelo concentrado aproximado](#modelo-concentrado-aproximado)
 12. [Armadilhas frequentes](#armadilhas-frequentes)
-13. [Exercícios propostos](#exercícios-propostos)
+13. [Lista de Exercícios Propostos](#lista-de-exercícios-propostos)
 14. [Exemplo numérico resolvido: linha de 3 m com carga reativa](#exemplo-numérico-resolvido-linha-de-3-m-com-carga-reativa)
 15. [Código Python: Reflexão e VSWR](#código-python-reflexão-e-vswr)
 16. [Código Python: Diagrama de reflexões no tempo](#código-python-diagrama-de-reflexões-no-tempo)

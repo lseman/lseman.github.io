@@ -89,7 +89,7 @@ window.MathJax = {
 </div>
 <nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="12_blindagem.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">12. Blindagem</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="14_modelagem_problemas_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">14. Modelagem de problemas EMC</span></span><span class="page-nav-arrow">→</span></a></nav><div class="chapter"><h1>13. Simulação numérica de EMC: FDTD e TLM</h1>
 <blockquote>
-<p>Enquanto modelos de circuito e SPICE são poderosos para frequências baixas e parâmetros distribuídos, muitos problemas de EMC envolvem comprimentos de onda comparáveis às dimensões físicas do sistema. Nestes casos, métodos numéricos de onda completa como FDTD (Finite-Difference Time-Domain) e TLM (Transmission Line Matrix) são necessários para resolver as equações de Maxwell diretamente nos domínios do tempo ou da frequência.</p>
+<p>Quando propagação, radiação ou ressonâncias espaciais determinam o comportamento do sistema, modelos de circuito podem exigir uma descrição de campo. FDTD (Finite-Difference Time-Domain) e TLM (Transmission Line Matrix) são métodos de domínio do tempo; respostas em frequência podem ser extraídas dos campos registrados por transformada de Fourier.</p>
 </blockquote>
 <h2 id="objetivos-de-aprendizagem"><span class="heading-number">13.1</span> Objetivos de aprendizagem</h2>
 <p>Ao final, você deve ser capaz de:</p>
@@ -103,14 +103,18 @@ window.MathJax = {
 </ol>
 <nav class="chapter-summary" aria-label="Sumário do capítulo"><h2 id="sumário">Sumário</h2><ol>
 <li><a href="#o-problema-eletromagn%C3%A9tico-completo">O problema eletromagnético completo</a></li>
-<li><a href="#fdt-e-a-grade-de-yee">FDTD e a grade de Yee</a></li>
+<li><a href="#fdtd-e-a-grade-de-yee">FDTD e a grade de Yee</a></li>
 <li><a href="#condi%C3%A7%C3%B5es-de-contorno-e-absor%C3%A7%C3%A3o">Condições de contorno e absorção</a></li>
 <li><a href="#tlm--transmission-line-matrix">TLM — Transmission Line Matrix</a></li>
-<li><a href="#compara%C3%A7%C3%A3o-fdt-vs-tlm">Comparação FDTD vs TLM</a></li>
+<li><a href="#compara%C3%A7%C3%A3o-fdtd-vs-tlm">Comparação FDTD vs TLM</a></li>
 <li><a href="#limita%C3%A7%C3%B5es-e-considera%C3%A7%C3%B5es-pr%C3%A1ticas">Limitações e considerações práticas</a></li>
+<li><a href="#exemplo-resolvido--dimensionamento-e-converg%C3%AAncia">Exemplo resolvido — dimensionamento e convergência</a></li>
+<li><a href="#lista-de-exerc%C3%ADcios-propostos">Lista de Exercícios Propostos</a></li>
+<li><a href="#gabarito">Gabarito</a></li>
+<li><a href="#refer%C3%AAncias-e-ferramentas">Referências e ferramentas</a></li>
 </ol></nav>
 <h2 id="o-problema-eletromagnético-completo"><span class="heading-number">13.2</span> O problema eletromagnético completo</h2>
-<p>As equações de Maxwell na forma diferencial, em um meio linear, isotrópico e sem fontes livres, são:</p>
+<p>As equações de Maxwell na forma diferencial, em um meio com densidade de carga livre $\rho$ e densidade de corrente livre $\mathbf J$, são:</p>
 
 <div class="math-display">
 $$
@@ -147,7 +151,7 @@ $$
 $$
 </div>
 
-<p>Com $\mathbf{D} = \varepsilon \mathbf{E}$ e $\mathbf{B} = \mu \mathbf{H}$. Para simulação no domínio do tempo, discretizamos o espaço e o tempo, transformando as derivadas parciais em diferenças finitas.</p>
+<p>Em um meio linear, isotrópico e não dispersivo, usamos $\mathbf{D} = \varepsilon \mathbf{E}$ e $\mathbf{B} = \mu \mathbf{H}$. Sem fontes livres, impomos $\rho=0$ e $\mathbf J=0$. Para simulação no domínio do tempo, discretizamos o espaço e o tempo, transformando as derivadas parciais em diferenças finitas.</p>
 <h2 id="fdtd-e-a-grade-de-yee"><span class="heading-number">13.3</span> FDTD e a grade de Yee</h2>
 <p>O método FDTD, introduzido por Kane Yee em 1966, discretiza o espaço usando uma grade escalonada conhecida como <strong>célula de Yee</strong>. Nesta célula, as componentes do campo elétrico ($E_x, E_y, E_z$) e as componentes do campo magnético ($H_x, H_y, H_z$) estão deslocadas por meio passo de grade no espaço.</p>
 <h3 id="esquema-de-discretização"><span class="heading-number">13.3.1</span> Esquema de discretização</h3>
@@ -156,11 +160,18 @@ $$
 <div class="math-display">
 $$
 
-H_x^{n+1/2}\left(i,j+\tfrac{1}{2},k+\tfrac{1}{2}\right) = H_x^{n-1/2}\left(i,j+\tfrac{1}{2},k+\tfrac{1}{2}\right) - \frac{\Delta t}{\mu \Delta} \left[ E_y^n\left(i,j+\tfrac{1}{2},k+1\right) - E_y^n\left(i,j+\tfrac{1}{2},k\right) - E_z^n\left(i,j+1,k+\tfrac{1}{2}\right) + E_z^n\left(i,j,k+\tfrac{1}{2}\right) \right]
+\begin{aligned}
+&amp;H_x^{n+1/2}\left(i,j+\tfrac12,k+\tfrac12\right)
+=H_x^{n-1/2}\left(i,j+\tfrac12,k+\tfrac12\right)\\
+&amp;\quad-\frac{\Delta t}{\mu\Delta}\Big[
+E_z^n\left(i,j+1,k+\tfrac12\right)-E_z^n\left(i,j,k+\tfrac12\right)\\
+&amp;\hspace{43mm}-E_y^n\left(i,j+\tfrac12,k+1\right)+E_y^n\left(i,j+\tfrac12,k\right)\Big].
+\end{aligned}
 
 $$
 </div>
 
+<p>O sinal segue $\partial H_x/\partial t=-(\partial E_z/\partial y-\partial E_y/\partial z)/\mu$. Os campos elétricos são amostrados em tempos inteiros e os magnéticos em meios passos (<em>leapfrog</em>).</p>
 <p>Equações análogas valem para $H_y, H_z$ e para as componentes de $\mathbf{E}$, que são atualizadas a partir de $\mathbf{H}$ usando a lei de Ampère.</p>
 <h3 id="condição-de-estabilidade-cfl"><span class="heading-number">13.3.2</span> Condição de estabilidade CFL</h3>
 <p>O esquema explícito FDTD requer uma condição de estabilidade para evitar divergência numérica. A condição de Courant-Friedrichs-Lewy (CFL) para uma grade cúbica é:</p>
@@ -173,7 +184,7 @@ $$
 $$
 </div>
 
-<p>onde $c$ é a velocidade da luz no meio. Para grades não cúbicas, a condição geral é:</p>
+<p>onde $c=1/\sqrt{\mu\varepsilon}$ é a velocidade de propagação no meio não dispersivo. Em uma malha com vários meios, use a maior velocidade presente. Modelos dispersivos, condutores ou extensões do algoritmo podem impor restrições adicionais. Para grades não cúbicas, a condição geral é:</p>
 
 <div class="math-display">
 $$
@@ -189,23 +200,17 @@ $$
 <li><strong>PEC (Perfect Electric Conductor):</strong> $\mathbf{E}_t = 0$ na superfície.</li>
 <li><strong>PMC (Perfect Magnetic Conductor):</strong> $\mathbf{H}_t = 0$ na superfície.</li>
 </ul>
-<p>Para fronteiras abertas (radiação para o espaço livre), usam-se <strong>Condições de Contorno Absorvedoras (ABC)</strong> ou <strong>Camadas Perfeitamente Casadas (PML - Perfectly Matched Layer)</strong>. A PML introduz um meio artificial com perdas concordantes que absorve as ondas incidentes sem reflexão, independentemente do ângulo ou frequência.</p>
+<p>Para fronteiras abertas (radiação para o espaço livre), usam-se <strong>Condições de Contorno Absorvedoras (ABC)</strong> ou <strong>Camadas Perfeitamente Casadas (PML - Perfectly Matched Layer)</strong>. A PML ideal é casada à região física na formulação contínua. Na implementação, espessura finita, discretização e perfil de absorção produzem reflexão residual. Verifique convergência aumentando a espessura e afastando a camada de campos evanescentes; meios não homogêneos também podem invalidar o casamento. Consulte a <a href="https://meep.readthedocs.io/en/latest/Perfectly_Matched_Layer/">documentação de PML do Meep</a>.</p>
 <h2 id="tlm--transmission-line-matrix"><span class="heading-number">13.5</span> TLM — Transmission Line Matrix</h2>
-<p>O método TLM, desenvolvido por John Shepherd, é outra técnica de domínio do tempo que modela o campo eletromagnético como uma rede de linhas de transmissão. Cada nó na malha TLM representa um ponto no espaço, e as linhas representam a propagação de ondas de tensão e corrente (análogas aos campos $\mathbf{E}$ e $\mathbf{H}$).</p>
+<p>O método TLM, introduzido por P. B. Johns e R. L. Beurle em 1971, é outra técnica de domínio do tempo que modela o campo eletromagnético como uma rede de linhas de transmissão. Cada nó na malha TLM representa um ponto no espaço, e as linhas representam a propagação de ondas de tensão e corrente (análogas aos campos $\mathbf{E}$ e $\mathbf{H}$).</p>
 <h3 id="esquema-de-espalhamento-e-conexão"><span class="heading-number">13.5.1</span> Esquema de espalhamento e conexão</h3>
 <p>No TLM, a matriz de espalhamento em cada nó descreve como as ondas incidentes são refletidas e transmitidas. A evolução temporal é obtida resolvendo iterativamente os passos de <strong>espalhamento</strong> (scattering) e <strong>conexão</strong> (connection):</p>
 <ol>
 <li><strong>Espalhamento:</strong> Ondas incidentes chegam ao nó e são espalhadas de acordo com a matriz de espalhamento do nó (que depende das impedâncias características das linhas conectadas).</li>
 <li><strong>Conexão:</strong> Ondas espalhadas de um nó tornam-se ondas incidentes para os nós vizinhos, propagando-se ao longo das linhas de transmissão.</li>
 </ol>
-<h3 id="vantagens-do-tlm"><span class="heading-number">13.5.2</span> Vantagens do TLM</h3>
-<p>O TLM é particularmente útil para modelar:</p>
-<ul>
-<li>Geometrias complexas e irregulares;</li>
-<li>Materiais anisotrópicos e não lineares;</li>
-<li>Problemas de acoplamento em eletrônica de potência.</li>
-</ul>
-<p>A rede de linhas de transmissão pode ser adaptada facilmente para diferentes propriedades de material, modificando as impedâncias características e tempos de viagem das linhas.</p>
+<h3 id="modelagem-e-limites-do-tlm"><span class="heading-number">13.5.2</span> Modelagem e limites do TLM</h3>
+<p>A rede permite interpretar propagação, espalhamento e condições de contorno por ondas de tensão e corrente. A representação de materiais depende do tipo de nó, das linhas auxiliares e das equações constitutivas implementadas. Geometrias curvas, anisotropia, dispersão e não linearidade exigem formulações próprias e validação; alterar apenas uma impedância não representa todos esses efeitos.</p>
 <h2 id="comparação-fdtd-vs-tlm"><span class="heading-number">13.6</span> Comparação FDTD vs TLM</h2>
 <table>
 <thead>
@@ -232,14 +237,14 @@ $$
 <td>Tensões e correntes nas linhas (análogas a $\mathbf{E}$ e $\mathbf{H}$)</td>
 </tr>
 <tr>
-<td><strong>Implementação</strong></td>
-<td>Amplamente implementada em softwares de EMC e antenas (CST, Meep, L-CAD)</td>
-<td>Uso histórico em engenharia de micro-ondas; aplicações específicas em EMI de potência</td>
+<td><strong>Atualização</strong></td>
+<td>Alterna os campos elétrico e magnético</td>
+<td>Alterna espalhamento nos nós e conexão entre nós</td>
 </tr>
 <tr>
-<td><strong>Materiais complexos</strong></td>
-<td>Requer modelos auxiliares (ADE, PSTD, Drude-Lorentz)</td>
-<td>Adaptação natural via impedâncias e constantes de tempo das linhas</td>
+<td><strong>Materiais dispersivos</strong></td>
+<td>Equações auxiliares ou convolução para a resposta constitutiva</td>
+<td>Nós e elementos auxiliares para a resposta constitutiva</td>
 </tr>
 </tbody>
 </table>
@@ -256,12 +261,12 @@ $$
 $$
 </div>
 
-<p>onde $\lambda_{\min}$ é o menor comprimento de onda de interesse no meio.</p>
+<p>onde $\lambda_{\min}$ é o menor comprimento de onda de interesse nos materiais simulados. Dez a vinte células por comprimento de onda são um ponto de partida, não uma garantia de precisão. Refine a malha e compare a grandeza de interesse; fendas, interfaces e curvaturas podem exigir células menores.</p>
 <h3 id="dispersão-material"><span class="heading-number">13.7.2</span> Dispersão material</h3>
 <p>Materiais com perdas ou dispersão (frequência-dependentes) requerem modelos auxiliares, como:</p>
 <ul>
 <li>Modelos de Drude, Lorentz e Debye para dielétricos dispersivos;</li>
-<li>Método ADE (Auxiliary Differential Equation) ou PSTD (Pseudospectral Time-Domain) para acoplar dispersão material com FDTD.</li>
+<li>Equações diferenciais auxiliares (ADE) ou convolução para discretizar a resposta constitutiva. PSTD é outra discretização espacial, não um modelo de dispersão material.</li>
 </ul>
 <h3 id="tempo-de-simulação"><span class="heading-number">13.7.3</span> Tempo de simulação</h3>
 <p>Simulações no domínio do tempo exigem muitas iterações para:</p>
@@ -269,20 +274,77 @@ $$
 <li>Alcançar o regime permanente (para análise de frequência via transformada de Fourier);</li>
 <li>Capturar transientes de longa duração ou baixas frequências.</li>
 </ul>
-<p>A transformada de Fourier de tempo finito (FTFT) ou a transformada discreta de Fourier (DFT) são aplicadas às campos registrados para obter a resposta em frequência.</p>
+<p>A transformada de Fourier de tempo finito (FTFT) ou a transformada discreta de Fourier (DFT) são aplicadas aos campos registrados para obter a resposta em frequência.</p>
 <h3 id="recursos-computacionais"><span class="heading-number">13.7.4</span> Recursos computacionais</h3>
 <p>FDTD e TLM são métodos <em>memory-intensive</em> e <em>compute-intensive</em>:</p>
 <ul>
 <li>O armazenamento dos campos $\mathbf{E}$ e $\mathbf{H}$ em 3D requer $O(N_x N_y N_z)$ palavras de memória;</li>
 <li>O passo de tempo $\Delta t$ é limitado pela menor célula da grade, o que pode exigir milhões de iterações para domínios grandes ou baixas frequências.</li>
 </ul>
-<p>Técnicas de paralelização (MPI, GPU) e adaptabilidade de grade (unstructured grids, multigrid) são essenciais para simulações EMC de larga escala.</p>
-<h2 id="referências-e-ferramentas"><span class="heading-number">13.8</span> Referências e ferramentas</h2>
+<p>Paralelização por MPI ou GPU pode reduzir o tempo de execução. Refinamento local exige tratar interfaces e estabilidade; malhas não estruturadas e multigrid não são recursos automáticos do esquema de Yee apresentado aqui.</p>
+<h2 id="exemplo-resolvido--dimensionamento-e-convergência"><span class="heading-number">13.8</span> Exemplo resolvido — dimensionamento e convergência</h2>
+<p><strong>Problema:</strong> modelar um domínio cúbico de 0,30 m de lado até 1 GHz, contendo ar e um dielétrico ideal com $\varepsilon_r=4$, $\mu_r=1$. Adote 20 células por menor comprimento de onda e fator de segurança temporal de 0,9. Use $c_0\approx3\times10^8\,\text{m/s}$.</p>
+<p>No dielétrico, $v=c_0/2$ e $\lambda_{\min}=v/f_{\max}=0{,}15\,\text{m}$. Logo,</p>
+
+<div class="math-display">
+$$
+\Delta=\frac{\lambda_{\min}}{20}=7{,}5\,\text{mm}.
+$$
+</div>
+
+<p>A maior velocidade está no ar, portanto o passo de tempo é limitado por</p>
+
+<div class="math-display">
+$$
+\Delta t=0{,}9\frac{\Delta}{c_0\sqrt3}\approx13{,}0\,\text{ps}.
+$$
+</div>
+
+<p>O domínio tem $40^3=64\,000$ células. Estimar seis componentes em dupla precisão dá $6\times8\times40^3=3\,072\,000$ bytes, cerca de 3,07 MB. Essa é apenas uma estimativa dos campos: não inclui PML, fontes, monitores, materiais, campos auxiliares nem diferenças nas dimensões dos arranjos escalonados.</p>
+<p>Para observar 100 ns, são necessários aproximadamente 7700 passos. O espaçamento entre frequências da DFT é $1/T_{\rm obs}=10$ MHz; a capacidade de separar ressonâncias também depende da janela e do decaimento dos campos. Acrescentar zeros à FFT não aumenta o tempo físico observado.</p>
+
+
+<div class="code-block"><div class="code-header"><span class="lang-tag">PYTHON</span></div><div class="highlight" style="background: #272822"><pre style="line-height: 125%;"><span></span><span style="color: #FF4689">import</span><span style="color: #F8F8F2"> math</span>
+
+<span style="color: #F8F8F2">c0</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">3e8</span>
+<span style="color: #F8F8F2">fmax</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">1e9</span>
+<span style="color: #F8F8F2">comprimento</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.30</span>
+<span style="color: #F8F8F2">observacao</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">100e-9</span>
+<span style="color: #F8F8F2">vmin</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">c0</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">math</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">4.0</span><span style="color: #F8F8F2">)</span>
+<span style="color: #F8F8F2">lambda_min</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">vmin</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">fmax</span>
+
+<span style="color: #66D9EF">for</span> <span style="color: #F8F8F2">celulas_por_onda</span> <span style="color: #FF4689">in</span> <span style="color: #F8F8F2">(</span><span style="color: #AE81FF">20</span><span style="color: #F8F8F2">,</span> <span style="color: #AE81FF">40</span><span style="color: #F8F8F2">):</span>
+    <span style="color: #F8F8F2">limite_dx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">lambda_min</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">celulas_por_onda</span>
+    <span style="color: #F8F8F2">n</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">math</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ceil(comprimento</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">limite_dx)</span>
+    <span style="color: #F8F8F2">dx</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">comprimento</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">n</span>
+    <span style="color: #F8F8F2">dt</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">0.9</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">dx</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">(c0</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">math</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">sqrt(</span><span style="color: #AE81FF">3</span><span style="color: #F8F8F2">))</span>
+    <span style="color: #F8F8F2">passos</span> <span style="color: #FF4689">=</span> <span style="color: #F8F8F2">math</span><span style="color: #FF4689">.</span><span style="color: #F8F8F2">ceil(observacao</span> <span style="color: #FF4689">/</span> <span style="color: #F8F8F2">dt)</span>
+    <span style="color: #F8F8F2">memoria_mb</span> <span style="color: #FF4689">=</span> <span style="color: #AE81FF">6</span> <span style="color: #FF4689">*</span> <span style="color: #AE81FF">8</span> <span style="color: #FF4689">*</span> <span style="color: #F8F8F2">n</span><span style="color: #FF4689">**</span><span style="color: #AE81FF">3</span> <span style="color: #FF4689">/</span> <span style="color: #AE81FF">1e6</span>
+    <span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;N={</span><span style="color: #F8F8F2">n</span><span style="color: #E6DB74">}³, dx={</span><span style="color: #F8F8F2">dx</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e3</span><span style="color: #E6DB74">:.3f} mm, dt={</span><span style="color: #F8F8F2">dt</span><span style="color: #FF4689">*</span><span style="color: #AE81FF">1e12</span><span style="color: #E6DB74">:.2f} ps, &quot;</span>
+          <span style="color: #E6DB74">f&quot;passos={</span><span style="color: #F8F8F2">passos</span><span style="color: #E6DB74">}, campos≈{</span><span style="color: #F8F8F2">memoria_mb</span><span style="color: #E6DB74">:.2f} MB&quot;</span><span style="color: #F8F8F2">)</span>
+
+<span style="color: #F8F8F2">print(</span><span style="color: #E6DB74">f&quot;Espaçamento da DFT: {</span><span style="color: #AE81FF">1</span><span style="color: #FF4689">/</span><span style="color: #F8F8F2">observacao</span><span style="color: #FF4689">/</span><span style="color: #AE81FF">1e6</span><span style="color: #E6DB74">:.1f} MHz&quot;</span><span style="color: #F8F8F2">)</span>
+</pre></div>
+<div class="output stdout"><strong>Output:</strong><pre style="margin:0.5em 0;">N=40³, dx=7.500 mm, dt=12.99 ps, passos=7699, campos≈3.07 MB
+N=80³, dx=3.750 mm, dt=6.50 ps, passos=15397, campos≈24.58 MB
+Espaçamento da DFT: 10.0 MHz</pre></div></div>
+
+<p><strong>Como validar:</strong> compare uma grandeza física, como frequência de ressonância ou campo em uma sonda, nas duas malhas. Reduzir $\Delta$ pela metade multiplica aproximadamente a memória por 8 e o trabalho total por 16 para a mesma duração física. Teste separadamente a espessura da PML e a duração da simulação. Satisfazer CFL evita uma instabilidade do esquema básico, mas não demonstra precisão nem convergência.</p>
+<h2 id="lista-de-exercícios-propostos"><span class="heading-number">13.9</span> Lista de Exercícios Propostos</h2>
+<p><strong>E1.</strong> Para uma grade cúbica de 5 mm em ar, calcule o limite CFL tridimensional e um passo com fator de segurança 0,9. Qual velocidade deve ser usada se parte do domínio contiver um dielétrico com $\varepsilon_r=9$?</p>
+<p><strong>E2.</strong> No exemplo resolvido, dobre a frequência máxima mantendo 20 células por comprimento de onda. Determine o novo passo espacial, a razão de memória e a razão de trabalho para os mesmos 100 ns.</p>
+<p><strong>E3.</strong> Uma FFT com observação de 100 ns tem espaçamento de 10 MHz. Aumentar o número de pontos por preenchimento com zeros permite resolver dois modos separados por 1 MHz? Justifique e indique uma alteração no experimento.</p>
+<p><strong>E4.</strong> A amplitude de um campo muda 12% ao refinar a malha e 8% ao dobrar a espessura da PML. É possível declarar convergência? Proponha dois testes que separem as fontes de erro.</p>
+<h2 id="gabarito"><span class="heading-number">13.10</span> Gabarito</h2>
+<p><strong>E1.</strong> $\Delta t_{\max}=5\times10^{-3}/(3\times10^8\sqrt3)\approx9{,}62$ ps; com fator 0,9, $\Delta t\approx8{,}66$ ps. O ar continua impondo a maior velocidade, $c_0$, mesmo com o dielétrico presente.</p>
+<p><strong>E2.</strong> $\Delta=3{,}75$ mm, aproximadamente oito vezes mais memória e dezesseis vezes mais trabalho. O passo de tempo cai pela metade, e o número de passos dobra.</p>
+<p><strong>E3.</strong> Não. O preenchimento interpola a representação espectral, mas não acrescenta dados físicos. A escala $1/\Delta f=1\,\mu$s indica um tempo de observação maior a investigar; a separação efetiva também depende da janela, do amortecimento e da relação sinal-ruído.</p>
+<p><strong>E4.</strong> Não há evidência de convergência dentro de uma tolerância menor que essas variações. Faça uma sequência de refinamentos com fronteiras absorvedoras já verificadas e, separadamente, aumente espessura/distância da PML com malha física fixa. Declare a tolerância da grandeza observada e teste também o tempo de decaimento.</p>
+<h2 id="referências-e-ferramentas"><span class="heading-number">13.11</span> Referências e ferramentas</h2>
 <ul>
 <li><strong>FDTD original:</strong> K. S. Yee, &quot;Numerical solution of initial boundary value problems involving maxwell's equations in isotropic media,&quot; <em>IEEE Transactions on Antennas and Propagation</em>, vol. 14, no. 3, pp. 302-307, May 1966.</li>
-<li><strong>TLM original:</strong> J. B. Shepherd, &quot;The transmission-line matrix method for the solution of electromagnetic problems,&quot; <em>Proceedings of the IEE</em>, vol. 127, Part C, no. 3, pp. 139-144, 1980.</li>
-<li><strong>Softwares FDTD abertos:</strong> <a href="https://meep.readthedocs.io">Meep</a>, <a href="https://github.com/l-cad">L-CAD</a>, <a href="https://rfsoftware.com">XFDTD</a>.</li>
-<li><strong>Softwares comerciais:</strong> CST Studio Suite (solver Time Domain), ANSYS HFSS (solver transient), FEKO.</li>
+<li><strong>TLM original:</strong> P. B. Johns e R. L. Beurle, &quot;Numerical solution of 2-dimensional scattering problems using a transmission-line matrix,&quot; <em>Proceedings of the IEE</em>, vol. 118, no. 9, pp. 1203–1208, 1971. <a href="https://cecas.clemson.edu/cvel/modeling/tutorials/techniques/tlm/transmission_line_matrix.html">Contexto e referência no tutorial do Clemson CVEL</a>.</li>
+<li><strong>Implementação e validação:</strong> <a href="https://meep.readthedocs.io/en/latest/Introduction/">Meep — introdução ao FDTD</a> e <a href="https://meep.readthedocs.io/en/latest/Perfectly_Matched_Layer/">PML e suas limitações</a>.</li>
 </ul>
 </div><nav class="page-nav" aria-label="Navegação entre capítulos"><a class="page-nav-link page-nav-prev" href="12_blindagem.html"><span class="page-nav-arrow">←</span><span class="page-nav-copy"><span class="page-nav-label">Capítulo anterior</span><span class="page-nav-title">12. Blindagem</span></span></a><a class="page-nav-home" href="index.html">⌂ Índice</a><a class="page-nav-link page-nav-next" href="14_modelagem_problemas_emc.html"><span class="page-nav-copy"><span class="page-nav-label">Próximo capítulo</span><span class="page-nav-title">14. Modelagem de problemas EMC</span></span><span class="page-nav-arrow">→</span></a></nav>
 

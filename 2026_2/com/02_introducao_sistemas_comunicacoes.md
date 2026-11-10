@@ -720,7 +720,7 @@ c) $100\,\text{mW}$ em dBW.
 
 **E11.** (Numérico) Para PCM com $f_s=8\,\text{kHz}$ (voz), determine o número mínimo de bits $n$ para atingir $\text{SNR}_q \ge 42\,\text{dB}$. Calcule a taxa de bits resultante e a largura de banda mínima Nyquist.
 
-**E12.** (Desafio) Mostre que, para uma fonte de entropia $H(X)$, o código de Huffman atinge $\bar{L} < H(X)+1$. Construa o código de Huffman para uma fonte com distribuição $\{0{,}40, 0{,}25, 0{,}15, 0{,}10, 0{,}05\}$ e verifique o limite.
+**E12.** (Desafio) Mostre que, para uma fonte de entropia $H(X)$, o código de Huffman atinge $\bar{L} < H(X)+1$. Construa o código de Huffman para uma fonte com distribuição $\{0{,}40, 0{,}25, 0{,}15, 0{,}10, 0{,}10\}$ e verifique o limite.
 
 ## Gabarito
 
@@ -779,10 +779,24 @@ $\text{SNR}=1000$ e, operando em $R_b=C$, $\eta=C/B\approx9{,}967$. Assim, $E_b/
 
 **E11.** $6{,}02n+1{,}76 \ge 42 \Rightarrow n \ge 6{,}69 \Rightarrow n=7$ bits. $R_b = 8000\times7 = 56\,\text{kbit/s}$. $B_{\min} = 28\,\text{kHz}$ (Nyquist).
 
-**E12.** Huffman: $\{0{,}40\to0,\; 0{,}25\to10,\; 0{,}15\to110,\; 0{,}10\to1110,\; 0{,}05\to1111\}$.
+**E12.** As probabilidades somam 1. Uma sequência de fusões de Huffman é $0{,}10+0{,}10=0{,}20$, $0{,}15+0{,}20=0{,}35$, $0{,}25+0{,}35=0{,}60$ e $0{,}40+0{,}60=1$. Um código resultante é:
 
-$\bar{L} = 0{,}40(1)+0{,}25(2)+0{,}15(3)+0{,}10(4)+0{,}05(4) = 0{,}40+0{,}50+0{,}45+0{,}40+0{,}20 = 1{,}95$ bits/símbolo.
+| Símbolo | Probabilidade | Palavra | Comprimento |
+|---|---|---|---|
+| A | 0,40 | `0` | 1 |
+| B | 0,25 | `10` | 2 |
+| C | 0,15 | `110` | 3 |
+| D | 0,10 | `1110` | 4 |
+| E | 0,10 | `1111` | 4 |
 
-$H = -\sum p_i\log_2 p_i = 0{,}40(1{,}322)+0{,}25(2)+0{,}15(2{,}737)+0{,}10(3{,}322)+0{,}05(4{,}322) = 0{,}529+0{,}500+0{,}411+0{,}332+0{,}216 = 1{,}988$ bits/símbolo.
+$$
+\bar L=0{,}40(1)+0{,}25(2)+0{,}15(3)+0{,}10(4)+0{,}10(4)=2{,}15\ \text{bits/símbolo}.
+$$
 
-$\bar{L} = 1{,}95 < 1{,}988+1 = 2{,}988$. Verificado.
+$$
+H(X)=-\sum_i p_i\log_2p_i\approx2{,}1037\ \text{bits/símbolo}.
+$$
+
+Assim, $H(X)\le\bar L<H(X)+1$: $2{,}1037\le2{,}15<3{,}1037$.
+
+Para justificar o limite superior, escolha comprimentos de Shannon $\ell_i=\lceil-\log_2p_i\rceil$. Como $\sum_i2^{-\ell_i}\le\sum_i p_i=1$, esses comprimentos admitem um código prefixo pela desigualdade de Kraft. Além disso, $\ell_i<-\log_2p_i+1$, logo $\bar L_{\rm Shannon}<H(X)+1$. Huffman minimiza o comprimento médio entre códigos prefixos binários, portanto $\bar L_{\rm Huffman}\le\bar L_{\rm Shannon}<H(X)+1$.
