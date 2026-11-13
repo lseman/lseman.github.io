@@ -4,6 +4,7 @@ export class BoardRuntime {
   #pending = null;
   #id = 0;
   #role;
+  #ready = null;
   constructor(role) {
     this.#role = role;
   }
@@ -15,7 +16,7 @@ export class BoardRuntime {
   async test(source) {
     this.#spawn();
     try {
-      return await this.#request({ type: "test", source, role: this.#role });
+      return await this.#request({ type: "test", source, role: this.#role }, 5000);
     } finally {
       this.dispose();
     }
@@ -26,7 +27,19 @@ export class BoardRuntime {
       new URL("./firmware-worker.mjs", import.meta.url),
       { type: "module" },
     );
+    let markReady, failReady;
+    this.#ready = new Promise((resolve, reject) => {
+      markReady = resolve;
+      failReady = reject;
+    });
+    this.#ready.catch(() => {});
+    const bootTimer = setTimeout(
+      () => failReady(Error(`Placa ${this.#role}: o simulador não carregou (rede lenta?). Tente de novo.`)),
+      20000,
+    );
+    this.#ready.finally(() => clearTimeout(bootTimer)).catch(() => {});
     this.#worker.onmessage = ({ data }) => {
+      if (data.ready) return markReady();
       const pending = this.#pending;
       if (!pending || pending.id !== data.id) return;
       this.#pending = null;
@@ -42,6 +55,7 @@ export class BoardRuntime {
     };
     this.#worker.onerror = (event) => {
       event.preventDefault();
+      failReady(Error(`Placa ${this.#role}: ${event.message || "falha ao carregar o worker"}`));
       this.dispose(
         Error(`Placa ${this.#role}: ${event.message || "falha no worker"}`),
       );
@@ -50,7 +64,7 @@ export class BoardRuntime {
   step(frame = null) {
     return this.#request({ type: "step", frame });
   }
-  #request(message) {
+  #request(message, budget = 1500) {
     if (!this.#worker)
       return Promise.reject(
         Error(`Carregue o firmware da placa ${this.#role}.`),
@@ -59,23 +73,33 @@ export class BoardRuntime {
       return Promise.reject(
         Error("A placa ainda está executando o ciclo anterior."),
       );
+    const worker = this.#worker;
     return new Promise((resolve, reject) => {
       const id = ++this.#id;
-      const timer = setTimeout(
-        () =>
-          this.dispose(
-            Error(
-              `Placa ${this.#role}: limite de execução excedido (1,5 s). Verifique loops sem fim.`,
-            ),
-          ),
-        1500,
+      this.#pending = { id, timer: null, resolve, reject };
+      // The execution budget starts only once the worker's modules are loaded.
+      this.#ready.then(
+        () => {
+          if (this.#worker !== worker || this.#pending?.id !== id) return;
+          this.#pending.timer = setTimeout(
+            () =>
+              this.dispose(
+                Error(
+                  `Placa ${this.#role}: limite de execução excedido (${(budget / 1000).toLocaleString("pt-BR")} s). Verifique loops sem fim.`,
+                ),
+              ),
+            budget,
+          );
+          try {
+            worker.postMessage({ ...message, id });
+          } catch (error) {
+            this.dispose(error);
+          }
+        },
+        (error) => {
+          if (this.#worker === worker) this.dispose(error);
+        },
       );
-      this.#pending = { id, timer, resolve, reject };
-      try {
-        this.#worker.postMessage({ ...message, id });
-      } catch (error) {
-        this.dispose(error);
-      }
     });
   }
   dispose(reason = Error("Execução interrompida.")) {

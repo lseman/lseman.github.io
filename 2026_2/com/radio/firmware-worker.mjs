@@ -16,3 +16,6 @@ self.onmessage = ({ data }) => {
     self.postMessage({ id: data.id, error: error.message, line: sourceLine(error) });
   }
 };
+// Signals that every module has loaded: the runtime only starts the
+// execution budget after this, so network/parse time never counts.
+self.postMessage({ ready: true });
