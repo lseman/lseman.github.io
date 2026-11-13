@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#11151b" />
+    <meta
+      name="description"
+      content="Bancada virtual de comunicações digitais: configure rádios, programe placas e meça sinais, BER, constelações e chirps LoRa."
+    />
+    <title>CommsLab — Radio / IoT Lab</title>
+    <link rel="icon" href="../../../assets/favicon.ico" />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="app.mjs"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#instruments">Ir para os instrumentos</a>
+    <header class="topbar">
+      <a class="brand" href="../wifi/"
+        ><span class="brand-mark" aria-hidden="true">⌁</span
+        ><span>CommsLab<small>RADIO / IoT LAB</small></span></a
+      >
+      <div class="bench-identity">
+        <span class="status-dot" aria-hidden="true"></span>BANCADA 01
+        <span class="divider">/</span><span>COMUNICAÇÕES DIGITAIS</span>
+      </div>
+      <nav aria-label="Laboratórios">
+        <a href="crc-laboratorio.html">Roteiro CRC ↗</a><a href="oled-tutorial.html">Tutorial OLED ↗</a><a href="../wifi/">Wi-Fi Lab ↗</a><a href="../sim/">Block Studio ↗</a
+        ><button
+          id="theme"
+          class="icon-button"
+          aria-label="Alternar tema"
+          aria-pressed="false"
+        >
+          ◐
+        </button>
+      </nav>
+    </header>
+    <main>
+      <section class="bench-toolbar" aria-label="Aquisição">
+        <div>
+          <h1>Bancada de rádio</h1>
+          <p>Configure. Transmita. Meça.</p>
+        </div>
+        <label class="scenario" for="scenario"
+          ><span>EXPERIMENTO</span
+          ><select id="scenario">
+            <option value="clean">01 · Primeiro contato</option>
+            <option value="noise">02 · Rádio sob ruído</option>
+            <option value="qam">03 · Mais bits por símbolo</option>
+            <option value="fsk">04 · Dois tons, uma mensagem</option>
+            <option value="lora">05 · LoRa: do chirp ao bit</option>
+          </select></label
+        >
+        <div class="acquisition-actions">
+          <button
+            id="run-loops"
+            title="Executar setup uma vez e repetir loop nas duas placas"
+          >
+            ▶ Executar loops</button
+          ><button id="stop-loops" disabled>■ Parar</button>
+          <button
+            id="send"
+            class="primary"
+            title="Transmitir um novo pacote (Ctrl/⌘ + Enter)"
+          >
+            <span aria-hidden="true">▶</span> 1 ciclo A → B</button
+          ><button
+            id="replay"
+            disabled
+            title="Repetir o último pacote com os ajustes atuais"
+          >
+            ↻ Repetir</button
+          ><button
+            id="export"
+            disabled
+            title="Exportar todas as aquisições da sessão"
+          >
+            ↓ CSV
+          </button>
+        </div>
+      </section>
+      <div class="bench-layout">
+        <aside class="sidebar" aria-label="Configuração e firmware">
+          <section class="panel controls">
+            <div class="panel-head">
+              <h2><span class="module-number">01</span> Gerador de sinal</h2>
+              <span class="port-tag">TX / RX</span>
+            </div>
+            <div class="panel-body">
+              <label for="mode"
+                >Modulação<select id="mode">
+                  <option>OOK</option>
+                  <option>FSK</option>
+                  <option selected>BPSK</option>
+                  <option>QPSK</option>
+                  <option value="16QAM">16-QAM</option>
+                  <option value="LoRa">LoRa · CSS didático</option>
+                </select></label
+              >
+              <fieldset id="lora-controls" hidden>
+                <legend>CHIRP SPREAD SPECTRUM</legend>
+                <label for="sf"
+                  >Spreading factor<select id="sf">
+                    <option value="7">SF7 · 128 chips</option>
+                    <option value="8">SF8 · 256 chips</option>
+                    <option value="9">SF9 · 512 chips</option>
+                    <option value="10">SF10 · 1024 chips</option>
+                    <option value="11">SF11 · 2048 chips</option>
+                    <option value="12">SF12 · 4096 chips</option>
+                  </select></label
+                >
+                <label for="bandwidth"
+                  >Largura de banda<select id="bandwidth">
+                    <option value="125000">125 kHz</option>
+                    <option value="250000">250 kHz</option>
+                    <option value="500000">500 kHz</option>
+                  </select></label
+                >
+                <p class="derived-value" id="lora-rate"></p>
+                <p class="hint">
+                  CSS didático sem FEC. SF e BW definem a taxa. Enquadramento
+                  CommsLab, sem compatibilidade com hardware LoRa.
+                </p>
+              </fieldset>
+              <label for="bitrate"
+                >Taxa de bits <span class="unit">bit/s</span
+                ><input
+                  id="bitrate"
+                  type="number"
+                  value="10000"
+                  min="100"
+                  max="100000"
+                  step="100"
+              /></label>
+              <div class="control-divider">
+                <span>CANAL DE PROPAGAÇÃO</span><span>AWGN</span>
+              </div>
+              <label for="ebn0"
+                >Eb/N₀ de referência
+                <output id="noise-value" for="ebn0"></output
+                ><input
+                  id="ebn0"
+                  type="range"
+                  min="-5"
+                  max="25"
+                  step="0.5"
+                  value="10"
+                /><span class="range-scale"
+                  ><span>−5 dB</span><span>a 10 m</span><span>25 dB</span></span
+                ></label
+              >
+              <label for="distance"
+                >Distância <output id="distance-value" for="distance"></output
+                ><input
+                  id="distance"
+                  type="range"
+                  min="1"
+                  max="100"
+                  value="10"
+                /><span class="range-scale"
+                  ><span>1 m</span><span>100 m</span></span
+                ></label
+              >
+              <label for="obstacle"
+                >Obstáculo<select id="obstacle">
+                  <option value="0">Visada livre · 0 dB</option>
+                  <option value="6">Obstáculo leve · 6 dB</option>
+                  <option value="15">Obstáculo forte · 15 dB</option>
+                </select></label
+              >
+              <label for="seed"
+                >Semente do ruído<input
+                  id="seed"
+                  type="number"
+                  value="42"
+                  min="1"
+                  max="4294967295"
+                  step="1"
+              /></label>
+              <p class="hint">
+                Ajustes compartilhados pelas placas. Use a mesma semente para
+                comparar o mesmo ruído.
+              </p>
+            </div>
+          </section>
+          <button id="reset" class="reset-button">
+            ↺ Limpar sessão de medições
+          </button>
+          <p class="sidebar-note">
+            SIMULAÇÃO LOCAL<br />Sem transmissão de RF real.
+          </p>
+        </aside>
+        <div class="workspace">
+          <section
+            class="measurement-rack"
+            aria-label="Medições da última aquisição"
+            aria-live="polite"
+          >
+            <article>
+              <span class="meter-label">TAXA DE ERRO DE BIT</span
+              ><strong id="ber">—</strong
+              ><span class="meter-detail" id="error-count"
+                >BER · aguardando aquisição</span
+              >
+            </article>
+            <article>
+              <span class="meter-label">ENTREGA DE PACOTES</span
+              ><strong id="delivery">—</strong
+              ><span class="meter-detail" id="delivery-rate"
+                >Acumulado da sessão</span
+              >
+            </article>
+            <article>
+              <span class="meter-label">TEMPO NO AR</span
+              ><strong id="airtime">—</strong
+              ><span class="meter-detail">Pacote completo · ms</span>
+            </article>
+            <article>
+              <span class="meter-label">Eb/N₀ NO RECEPTOR</span
+              ><strong id="effective">—</strong
+              ><span class="meter-detail">Após perda de percurso · dB</span>
+            </article>
+          </section>
+          <section class="panel link-bench" aria-label="Enlace entre as placas">
+            <div class="board tx-board">
+              <span class="board-chip" aria-hidden="true">µC</span>
+              <div>
+                <strong>PLACA A <span>TX</span></strong
+                ><small>setup() / loop() · USB</small>
+              </div>
+              <span class="board-led" aria-hidden="true"></span>
+            </div>
+            <div class="air">
+              <span id="link-label">10 m · visada livre</span>
+              <div class="signal-path" aria-hidden="true">
+                <i></i><span>CANAL AWGN</span><i></i><b>→</b>
+              </div>
+              <strong id="link-status" role="status"
+                >Pronto para transmitir</strong
+              >
+            </div>
+            <div class="board rx-board">
+              <span class="board-chip" aria-hidden="true">µC</span>
+              <div>
+                <strong>PLACA B <span>RX</span></strong
+                ><small>loop() + CRC · USB</small>
+              </div>
+              <span class="board-led" aria-hidden="true"></span>
+            </div>
+          </section>
+          <p id="error" role="alert" hidden></p>
+          <details class="panel firmware-rack" id="firmware-rack" open>
+            <summary>
+              <span class="module-number">02</span> Firmware das placas
+              <span class="port-tag">JAVASCRIPT · SETUP() + LOOP()</span>
+            </summary>
+            <div class="firmware-toolbar">
+              <button id="upload-firmware">⇧ Carregar A + B</button>
+              <button id="test-firmware" class="test-button" title="Executa testes automáticos do crc16 e dos quadros em um ambiente separado">✓ Testar A + B</button>
+              <div class="view-switch" role="group" aria-label="Disposição dos editores">
+                <button type="button" data-view="A" aria-pressed="false">A</button><button type="button" data-view="AB" aria-pressed="true">A | B</button><button type="button" data-view="B" aria-pressed="false">B</button>
+              </div>
+              <label for="loop-period"
+                >Intervalo mínimo (ms)<input
+                  id="loop-period"
+                  type="number"
+                  min="250"
+                  max="10000"
+                  step="250"
+                  value="1000"
+              /></label>
+              <span id="firmware-status" role="status"
+                >Pronto para carregar</span
+              ><span id="loop-count" class="port-tag">LOOP 0</span>
+            </div>
+            <div class="firmware-editors" id="firmware-editors" data-view="AB">
+              <section class="firmware-board">
+                <div class="editor-file">
+                  <span class="status-dot"></span>
+                  <h3>SETUP A · TRANSMISSOR</h3>
+                  <button
+                    id="show-crc-a"
+                    title="Localizar a função CRC a implementar"
+                  >
+                    Ver CRC</button
+                  ><button id="restore-a" title="Restaurar esqueleto da placa A (apaga suas alterações)">
+                    Reiniciar A
+                  </button>
+                </div>
+                <label for="program-a" class="sr-only"
+                  >Firmware da placa A</label
+                ><textarea
+                  id="program-a"
+                  spellcheck="false"
+                  wrap="off"
+                  aria-describedby="firmware-help"
+                ></textarea>
+                <p class="editor-footer">
+                  Implemente: montar cabeçalho, calcular CRC, transmitir bytes e incrementar
+                  sequência.
+                </p>
+                <div class="selftest" id="selftest-a" hidden aria-live="polite"></div>
+                <figure class="oled-module" aria-label="OLED da placa A">
+                  <figcaption>OLED · PLACA A <span>21 × 8 caracteres</span></figcaption>
+                  <pre id="oled-a" class="oled-screen" role="img" aria-label="Tela OLED da placa A: vazia"></pre>
+                  <p>Controlado pelo seu firmware · <a href="oled-tutorial.html">Como escrever no OLED →</a></p>
+                </figure>
+              </section>
+              <section class="firmware-board">
+                <div class="editor-file">
+                  <span class="status-dot rx-dot"></span>
+                  <h3>SETUP B · RECEPTOR</h3>
+                  <button
+                    id="show-crc-b"
+                    title="Localizar a função CRC a implementar"
+                  >
+                    Ver CRC</button
+                  ><button id="restore-b" title="Restaurar esqueleto da placa B (apaga suas alterações)">
+                    Reiniciar B
+                  </button>
+                </div>
+                <label for="program-b" class="sr-only"
+                  >Firmware da placa B</label
+                ><textarea
+                  id="program-b"
+                  spellcheck="false"
+                  wrap="off"
+                  aria-describedby="firmware-help"
+                ></textarea>
+                <p class="editor-footer">
+                  Implemente: receber bytes, recalcular CRC e decidir aceitar ou
+                  descartar.
+                </p>
+                <div class="selftest" id="selftest-b" hidden aria-live="polite"></div>
+                <figure class="oled-module" aria-label="OLED da placa B">
+                  <figcaption>OLED · PLACA B <span>21 × 8 caracteres</span></figcaption>
+                  <pre id="oled-b" class="oled-screen" role="img" aria-label="Tela OLED da placa B: vazia"></pre>
+                  <p>Controlado pelo seu firmware · <a href="oled-tutorial.html">Como escrever no OLED →</a></p>
+                </figure>
+              </section>
+            </div>
+            <p id="firmware-help" class="hint">
+              setup() executa uma vez ao carregar; loop() executa a cada ciclo.
+              radio.send(bytes) não acrescenta CRC. radio.receive() entrega os
+              bytes demodulados, mesmo com erros. Serial.println() escreve no
+              monitor. oled.clear(), setCursor(), print(), println() e display() controlam o OLED da placa. traceCRC() registra as operações manuais. JavaScript
+              síncrono em workers; não emula C++/ESP32. <strong>✓ Testar A + B</strong>
+              confere seu crc16 com vetores conhecidos e simula quadros válidos e
+              corrompidos em um ambiente separado, sem alterar as placas.
+            </p>
+            <p class="hint firmware-exercise">
+              Atividade: complete os TODOs de A e B. Os esqueletos não enviam
+              nem aceitam pacotes até sua implementação. Consulte o
+              <a href="crc-laboratorio.html">Roteiro CRC</a> para os conceitos e
+              exercícios do laboratório físico; os editores desta bancada usam JavaScript.
+            </p>
+          </details>
+
+          <section
+            class="panel instruments"
+            id="instruments"
+            aria-labelledby="instrument-heading"
+            tabindex="-1"
+          >
+            <div class="panel-head instrument-head">
+              <h2 id="instrument-heading">
+                <span class="module-number">03</span> Instrumentos
+              </h2>
+              <div class="acq-state">
+                <span id="acquisition-status" class="status-pill" role="status"
+                  >AGUARDANDO</span
+                ><span id="acquisition-number">ACQ —</span>
+              </div>
+            </div>
+            <div class="acquisition-caption">
+              <span id="capture-label"
+                >Nenhuma aquisição. Transmita um pacote para iniciar.</span
+              ><span class="port-tag" id="radio-badge"
+                >RÁDIO I/Q EDUCACIONAL</span
+              >
+            </div>
+            <div class="wave-tools" aria-label="Controles dos instrumentos">
+              <label for="wave-view"
+                >SINAL<select id="wave-view">
+                  <option value="carrier">Portadora didática</option>
+                  <option value="i">I · banda base</option>
+                  <option value="q">Q · banda base</option>
+                </select></label
+              >
+              <label for="wave-window"
+                >BASE DE TEMPO<select id="wave-window">
+                  <option value="1">1 símbolo</option>
+                  <option value="4" selected>4 símbolos</option>
+                  <option value="8">8 símbolos</option>
+                </select></label
+              >
+              <label id="wave-position-label" for="wave-position" hidden
+                >POSIÇÃO NO CHIRP<input
+                  id="wave-position"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="0"
+              /></label>
+              <label class="check" for="wave-rx"
+                ><input id="wave-rx" type="checkbox" /><span
+                  class="channel-dot rx-dot"
+                ></span>
+                Sobrepor RX e amostras</label
+              >
+              <div class="symbol-control">
+                <label for="symbol"
+                  >SÍMBOLO
+                  <output id="symbol-value" for="symbol">0</output></label
+                >
+                <div>
+                  <button
+                    id="symbol-prev"
+                    aria-label="Símbolo anterior"
+                    disabled
+                  >
+                    ‹</button
+                  ><input
+                    id="symbol"
+                    type="range"
+                    min="0"
+                    max="0"
+                    value="0"
+                  /><button
+                    id="symbol-next"
+                    aria-label="Próximo símbolo"
+                    disabled
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="plots primary-plots">
+              <figure class="instrument-screen">
+                <figcaption>
+                  <span class="channel-label"><i></i> CH1</span
+                  ><span id="wave-title">Osciloscópio · portadora didática</span
+                  ><span class="screen-kind">TEMPO</span>
+                </figcaption>
+                <canvas
+                  id="wave"
+                  width="720"
+                  height="265"
+                  role="img"
+                  aria-label="Forma de onda na janela de tempo selecionada"
+                ></canvas>
+                <p class="legend" id="wave-legend">
+                  TX ideal · aguardando aquisição
+                </p>
+              </figure>
+              <figure class="instrument-screen">
+                <figcaption>
+                  <span class="channel-label channel-rx"><i></i> CH2</span
+                  ><span id="constellation-title">Constelação I/Q</span
+                  ><span class="screen-kind" id="receiver-kind">I/Q</span>
+                </figcaption>
+                <canvas
+                  id="constellation"
+                  width="520"
+                  height="265"
+                  role="img"
+                  aria-label="Símbolos ideais e observados no receptor"
+                ></canvas>
+                <p class="legend" id="receiver-legend">
+                  ○ Ideal · recebido · decisão
+                </p>
+              </figure>
+            </div>
+            <details class="display-help">
+              <summary>Como ler esta visualização</summary>
+              <p id="wave-note" class="hint">
+                Transmita um pacote para visualizar os sinais.
+              </p>
+            </details>
+            <div id="lora-inspection" hidden>
+              <p id="lora-summary" class="lora-summary"></p>
+              <div class="plots">
+                <figure class="instrument-screen">
+                  <figcaption>
+                    <span class="channel-label"><i></i> CH3</span
+                    ><span>Chirp · frequência instantânea</span
+                    ><span class="screen-kind">BW / TEMPO</span>
+                  </figcaption>
+                  <canvas
+                    id="chirp"
+                    width="720"
+                    height="265"
+                    role="img"
+                    aria-label="Frequência do chirp com a janela selecionada em destaque"
+                  ></canvas>
+                  <p class="legend">
+                    TX ideal · faixa destacada = janela ampliada
+                  </p>
+                </figure>
+                <figure class="instrument-screen">
+                  <figcaption>
+                    <span class="channel-label channel-rx"><i></i> CH4</span
+                    ><span>Tom após dechirp</span
+                    ><span class="screen-kind">TEMPO</span>
+                  </figcaption>
+                  <canvas
+                    id="dechirped"
+                    width="520"
+                    height="265"
+                    role="img"
+                    aria-label="Tom após dechirp, ideal e recebido"
+                  ></canvas>
+                  <p class="legend" id="dechirped-legend">
+                    Ideal · curva e amostras
+                  </p>
+                </figure>
+              </div>
+            </div>
+          </section>
+          <section class="panel packet" aria-labelledby="packet-heading">
+            <div class="panel-head">
+              <h2 id="packet-heading">
+                <span class="module-number">04</span> Analisador de pacotes
+              </h2>
+              <div class="checks" title="Resultados declarados pelo firmware B">
+                <span>SYNC <b id="sync-state">—</b></span
+                ><span>LEN <b id="length-state">—</b></span
+                ><span>CRC <b id="crc-state">—</b></span>
+              </div>
+            </div>
+            <div class="signal-chain" aria-label="Etapas de processamento">
+              <span>UTF-8</span><i>→</i><span>Enquadramento</span><i>→</i
+              ><span>Símbolos</span><i>→</i><span>Canal</span><i>→</i
+              ><span>Decisão</span><i>→</i><span>CRC</span>
+            </div>
+            <div class="packet-body">
+              <p id="packet-info">
+                Transmita para inspecionar os bytes. Selecione um byte para
+                localizar seus símbolos.
+              </p>
+              <div id="bytes" aria-label="Bytes TX/RX do pacote"></div>
+              <p id="bit-info" class="hint"></p>
+            </div>
+          </section>
+
+          <section class="panel crc-inspector" aria-labelledby="crc-heading">
+            <div class="panel-head">
+              <h2 id="crc-heading">CRC manual · do byte à decisão</h2>
+              <span class="port-tag">TRAÇO DO FIRMWARE</span>
+            </div>
+            <div class="crc-values">
+              <article>
+                <span>Calculado por A</span><strong id="crc-tx">—</strong>
+              </article>
+              <article>
+                <span>Recebido por B</span><strong id="crc-wire">—</strong>
+              </article>
+              <article>
+                <span>Recalculado por B</span><strong id="crc-rx">—</strong>
+              </article>
+              <article>
+                <span>Decisão do firmware B</span
+                ><strong id="firmware-decision">—</strong>
+              </article>
+            </div>
+            <p id="crc-reference" class="hint">
+              O verificador de referência é independente e não bloqueia a
+              entrega ao firmware B.
+            </p>
+            <div class="crc-toolbar">
+              <label for="crc-board"
+                >Traço da placa<select id="crc-board">
+                  <option value="B">B · receptor</option>
+                  <option value="A">A · transmissor</option>
+                </select></label
+              ><label for="crc-byte"
+                >Byte do corpo<select id="crc-byte">
+                  <option value="0">—</option>
+                </select></label
+              >
+              <p id="crc-trace-info" class="hint">
+                Transmita para acompanhar os shifts e XORs registrados por
+                traceCRC().
+              </p>
+            </div>
+            <div class="crc-scroll">
+              <table>
+                <caption class="sr-only">
+                  Etapas bit a bit do cálculo de CRC do byte selecionado.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Bit</th>
+                    <th scope="col">Registro antes</th>
+                    <th scope="col">MSB</th>
+                    <th scope="col">Operação</th>
+                    <th scope="col">Registro depois</th>
+                  </tr>
+                </thead>
+                <tbody id="crc-trace-rows">
+                  <tr>
+                    <td colspan="5" class="empty-history">
+                      Aguardando traço do firmware.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <div class="logs-grid">
+            <section class="panel serial">
+              <div class="panel-head">
+                <h2>Monitor serial</h2>
+                <span class="port-tag">USB / UTF-8</span>
+              </div>
+              <div class="terminals">
+                <div>
+                  <h3><span class="channel-dot"></span> PLACA A · TX</h3>
+                  <pre id="tx-log" tabindex="0">Aguardando programa…</pre>
+                </div>
+                <div>
+                  <h3><span class="channel-dot rx-dot"></span> PLACA B · RX</h3>
+                  <pre id="rx-log" tabindex="0" aria-live="polite">
+Escutando o canal…</pre>
+                </div>
+              </div>
+            </section>
+            <section class="panel history-panel">
+              <div class="panel-head">
+                <h2>Registro de medições</h2>
+                <span class="port-tag" id="history-count">0 AQUISIÇÕES</span>
+              </div>
+              <div class="history-scroll">
+                <table>
+                  <caption class="sr-only">
+                    Últimas oito aquisições; exporte CSV para obter a sessão
+                    completa.
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">ACQ</th>
+                      <th scope="col">Modo</th>
+                      <th scope="col">Eb/N₀</th>
+                      <th scope="col">Erros</th>
+                      <th scope="col">Pacote</th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-rows">
+                    <tr>
+                      <td colspan="5" class="empty-history">
+                        As aquisições aparecerão aqui.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <section
+            class="reference-grid"
+            id="guide"
+            aria-label="Roteiro e fundamentação"
+          >
+            <details class="panel reference">
+              <summary>
+                Roteiro de experimentos <span>Firmware + modulação</span>
+              </summary>
+              <ol>
+                <li>
+                  Leia setup() e loop() em A e B. Execute três ciclos e observe
+                  a sequência de A e o contador de pacotes aceitos de B. setup()
+                  deve aparecer apenas uma vez nos monitores.
+                </li>
+                <li>
+                  Troque o polinômio do CRC apenas em B. Com BER igual a zero, B
+                  ainda aceita? Compare os registros bit a bit. Depois teste
+                  ignorar crcOK na decisão accepted e observe o verificador de
+                  referência.
+                </li>
+                <li>
+                  Transmita sem obstáculo. Identifique o preâmbulo e a mensagem
+                  em hexadecimal.
+                </li>
+                <li>
+                  Reduza Eb/N₀. O CRC falha antes de a mensagem ficar
+                  irreconhecível?
+                </li>
+                <li>
+                  Compare BPSK, QPSK e 16-QAM com a mesma mensagem, taxa de bits
+                  e Eb/N₀. Observe BER e largura de banda estimada.
+                </li>
+                <li>
+                  Em FSK, veja as duas saídas dos correlatores. Qual delas
+                  decide o bit?
+                </li>
+                <li>
+                  Selecione LoRa. Compare SF7 e SF12 em BW de 125 kHz; depois
+                  dobre BW. Explique as mudanças em Tₛ, taxa de bits e tempo no
+                  ar. Localize o símbolo pelo pico da FFT e teste a decisão sob
+                  ruído.
+                </li>
+                <li>
+                  Aumente a distância. Quanto Eb/N₀ de referência é necessário
+                  para recuperar o enlace?
+                </li>
+              </ol>
+            </details>
+            <details class="panel reference">
+              <summary>
+                Modelo e fundamentação <span>Hipóteses e referências</span>
+              </summary>
+              <p>
+                Rádio educacional em banda base complexa, canal AWGN e
+                sincronização ideal de fase e tempo. Modos lineares e FSK:
+                pulsos retangulares, 16 amostras por símbolo. LoRa didático:
+                chirps com 2^SF chips, Fs = BW e decisão não coerente pelo maior
+                módulo da FFT após dechirp. Sem codificação de canal ou
+                retransmissão.
+              </p>
+              <p>
+                Energia média nominal por símbolo Eₛ = 1 (OOK equiprovável).
+                Eb/N₀ inclui a perda adicional relativa a 10 m: 20 log₁₀(d/10) +
+                obstáculo. Não é uma previsão calibrada de alcance.
+              </p>
+              <p id="model-info">
+                A largura de banda é uma estimativa até o primeiro nulo,
+                unilateral em banda base: Rₛ para pulsos retangulares; 2Rᵦ para
+                BFSK ortogonal.
+              </p>
+              <p>
+                No modo LoRa, Tₛ = 2^SF/BW e Rᵦ = SF·BW/2^SF, sem FEC. O tempo
+                no ar conta os símbolos do pacote didático, incluindo bits de
+                preenchimento; não é o airtime de um pacote LoRa real. SNR =
+                Eb/N₀ + 10 log₁₀(SF/2^SF), integrado em BW. Manter Eb/N₀ fixo ao
+                trocar SF não equivale a manter a potência e o ruído fixos.
+              </p>
+              <p>
+                O modelo CSS usa mapeamento binário direto, sincronismo ideal e
+                o enquadramento CommsLab; não inclui preâmbulo LoRa real,
+                whitening, interleaving, FEC ou cabeçalho LoRa. As placas não
+                emulam firmware ESP32 ou LoRaWAN.
+              </p>
+              <p>
+                Referências:
+                <a
+                  href="https://www.mouser.com/pdfdocs/an120022.pdf"
+                  target="_blank"
+                  rel="noopener"
+                  >Semtech AN1200.22 — Modulation Basics</a
+                >
+                e
+                <a
+                  href="https://www.microsoft.com/en-us/research/wp-content/uploads/2023/08/2023_NSDI_OpenLoRa__Validating_LoRa_Implementations_through_an_Extensible_and_Open_sourced_Framework.pdf"
+                  target="_blank"
+                  rel="noopener"
+                  >OpenLoRa — receptor por dechirp e FFT</a
+                >.
+              </p>
+            </details>
+          </section>
+          <footer>
+            <span class="status-dot"></span> CommsLab · Rádio educacional em
+            banda base <span>Dados mantidos somente nesta sessão.</span>
+          </footer>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

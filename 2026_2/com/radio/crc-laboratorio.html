@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="description" content="Roteiro de laboratório: entenda o CRC com um exemplo numérico ilustrado, implemente um codificador e um verificador CRC-16 e investigue erros na bancada de rádio." />
+<title>Laboratório CRC — CommsLab</title>
+<link rel="icon" href="../../../assets/favicon.ico" />
+<link rel="stylesheet" href="style.css" />
+<style>
+body {font-size:16px;line-height:1.75} .lesson {max-width:960px;margin:auto;padding:32px 24px 80px} a {color:var(--accent)} h1 {font-size:clamp(28px,5vw,44px);line-height:1.2} h2 {font-size:25px;line-height:1.35} h3 {font-size:19px} section {margin:36px 0;padding-top:12px;border-top:1px solid var(--line);scroll-margin-top:20px} .eyebrow {color:var(--accent);font:13px var(--mono);letter-spacing:.1em} .lead {font-size:19px;color:var(--muted)} .callout {padding:16px 20px;background:var(--panel);border-left:3px solid var(--accent);margin:20px 0} pre {height:auto;max-height:none;min-width:0;margin:24px 0;padding:0;overflow:visible;white-space:pre-wrap;overflow-wrap:anywhere;background:transparent;border:0;border-radius:0;box-shadow:none;font:14px/1.7 var(--mono)} code {font-family:var(--mono);font-size:.9em} pre code {white-space:inherit;overflow-wrap:inherit} table {width:100%;border-collapse:collapse;font-size:14px} th,td {text-align:left;padding:12px;border-bottom:1px solid var(--line)} .table-scroll {overflow:auto} nav ol {columns:2;column-gap:32px} li {margin:8px 0} summary {cursor:pointer;color:var(--blue)} details {padding:14px;background:var(--panel);margin:16px 0} .checks label {display:block;margin:12px 0} .checks {display:block} :focus-visible {outline:3px solid var(--blue);outline-offset:4px} .lesson-top {display:flex;justify-content:space-between;gap:20px;align-items:center} @media(max-width:600px){nav ol {columns:1}.lesson {padding:24px 16px}th,td {padding:8px}}
+.student-code .keyword {color:#9dc8ff}.student-code .number {color:#f5ce7a}.student-code .string {color:#6ce7ba}.student-code .comment {color:#aebbc8}.student-code .todo {color:#ffd88e;font-weight:600}
+/* O roteiro usa fluxo de documento, independente dos painéis da bancada. */
+.lesson h1 {margin:16px 0 20px}
+.lesson h2 {display:block;margin:12px 0 20px}
+.lesson h3 {margin:28px 0 14px;line-height:1.4}
+.lesson p {margin:16px 0}
+.lesson .eyebrow {margin:8px 0 12px;line-height:1.5}
+.lesson header {margin:28px 0}
+.lesson nav {margin:28px 0}
+.lesson nav li {break-inside:avoid}
+.lesson pre code {display:block;font-size:inherit;line-height:inherit}
+.lesson table {font:14px/1.65 "DM Sans",system-ui,sans-serif}
+.lesson th,.lesson td {vertical-align:top;overflow-wrap:anywhere;white-space:normal}
+.lesson th {font-size:13px}
+.lesson .checks label {font-size:16px;line-height:1.65;color:var(--text)}
+.lesson-top {flex-wrap:wrap}
+
+/* ---------- Figuras SVG ---------- */
+.lesson figure {margin:28px 0}
+.lesson figcaption {display:block;font-size:14px;color:var(--muted);margin-top:10px;line-height:1.6;padding:0;background:none;border:0}
+.fig {display:block;width:100%;height:auto}
+.fig-scroll {overflow-x:auto;padding:4px 0}
+.fig-scroll .fig {width:auto;max-width:none}
+.fig text {font-family:var(--mono);font-size:13px;fill:var(--text);dominant-baseline:central}
+.fig .lbl {font-family:"DM Sans",system-ui,sans-serif;font-size:12px;fill:var(--muted);letter-spacing:.06em}
+.fig .small {font-size:10px;fill:var(--muted)}
+.fig .box {fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.fig .proc {fill:var(--raised);stroke:var(--accent);stroke-width:1.5}
+.fig .crcbox {fill:color-mix(in srgb,var(--amber) 16%,var(--panel));stroke:var(--amber);stroke-width:1.5}
+.fig .wire {stroke:var(--muted);stroke-width:1.5;fill:none}
+.fig .wire.on {stroke:var(--accent);stroke-width:2.2}
+.fig .wire.off {stroke-dasharray:4 4;opacity:.55}
+.fig .noise {stroke:var(--red);stroke-width:2;fill:none}
+.fig .arrowhead {fill:var(--muted)}
+.fig .t-ok {fill:var(--accent)} .fig .t-bad {fill:var(--red)} .fig .t-amber {fill:var(--amber)} .fig .t-blue {fill:var(--blue)} .fig .t-dim {fill:var(--muted);opacity:.5}
+.fig .pivot {fill:none;stroke:var(--amber);stroke-width:2}
+.fig .remainder {fill:color-mix(in srgb,var(--accent) 14%,transparent);stroke:var(--accent);stroke-width:2}
+.fig .rule {stroke:var(--text);stroke-width:1.2}
+.fig .cell {fill:var(--inset);stroke:var(--line);stroke-width:1.2}
+.fig .cell.one {fill:color-mix(in srgb,var(--accent) 22%,var(--inset))}
+.fig .cell.msb {stroke:var(--amber);stroke-width:2.4}
+.fig .cell.tap {stroke:var(--accent);stroke-width:2.4}
+.fig .cell.byte {fill:color-mix(in srgb,var(--blue) 14%,var(--inset));stroke:var(--blue)}
+.fig .xor {fill:var(--panel);stroke:var(--muted);stroke-width:1.5}
+.fig .xor.on {stroke:var(--accent);fill:color-mix(in srgb,var(--accent) 18%,var(--panel))}
+
+/* ---------- Widgets interativos ---------- */
+.lab-widget {background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:24px 0}
+.lab-widget h3 {margin-top:0}
+.widget-controls {display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end;margin:10px 0 14px}
+.widget-controls label {display:flex;flex-direction:column;font-size:13px;color:var(--muted);gap:4px}
+.widget-controls input {font:15px var(--mono);padding:6px 10px;background:var(--inset);color:var(--text);border:1px solid var(--line);border-radius:6px;min-width:0}
+.btn {font:14px "DM Sans",system-ui,sans-serif;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--raised);color:var(--text);cursor:pointer}
+.btn:hover {border-color:var(--accent)}
+.btn.primary {background:var(--accent);color:var(--bg);border-color:transparent}
+.btn:disabled {opacity:.45;cursor:default}
+.status {font-size:15px;line-height:1.65;padding:10px 14px;border-left:3px solid var(--blue);background:var(--inset);margin:12px 0;min-height:3em}
+.status.ok {border-left-color:var(--accent)} .status.bad {border-left-color:var(--red)}
+.input-error {color:var(--red);font-size:14px;min-height:1.4em}
+.bits {display:flex;flex-wrap:wrap;gap:4px;margin:10px 0}
+.bitbtn {font:600 16px var(--mono);width:34px;height:38px;padding:0;border-radius:5px;border:1px solid var(--line);background:var(--inset);color:var(--text);cursor:pointer;position:relative}
+.bitbtn.r {background:color-mix(in srgb,var(--amber) 14%,var(--inset));border-color:color-mix(in srgb,var(--amber) 60%,var(--line))}
+.bitbtn.flip {border-color:var(--red);color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.bitbtn .exp {position:absolute;top:-1px;right:3px;font-size:9px;font-weight:400;color:var(--muted)}
+.bits-sep {width:10px}
+.mono {font-family:var(--mono)}
+.eq {font:15px/1.9 var(--mono);background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin:18px 0;overflow-x:auto;white-space:nowrap}
+.eq .c {color:var(--muted)}
+.legend {display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted);margin:8px 0}
+.legend span::before {content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--sw)}
+.compare {display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+.compare > div {background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:15px}
+.compare .mono {font-size:14px}
+@media(max-width:600px){.compare {grid-template-columns:1fr}.lab-widget {padding:14px}}
+
+/* Quadro interativo */
+.frame {display:flex;flex-wrap:wrap;gap:5px;margin:14px 0 6px}
+.byte {display:flex;flex-direction:column;align-items:center;min-width:46px;padding:5px 4px 4px;border-radius:6px;border:1px solid var(--line);background:var(--inset);color:var(--text);cursor:pointer;font:600 15px var(--mono);border-top:4px solid var(--sw)}
+.byte small {font:400 10px var(--mono);color:var(--muted)}
+.byte.sel {outline:2px solid var(--blue);outline-offset:1px}
+.byte.bad {color:var(--red);border-color:var(--red);border-top-color:var(--red)}
+.byte.body {box-shadow:0 3px 0 -1px var(--accent)}
+.verdict {list-style:none;padding:0;margin:10px 0;font-size:15px}
+.verdict li {margin:6px 0}
+.verdict .ok {color:var(--accent)} .verdict .bad {color:var(--red)}
+
+@media print {
+  body {background:white;color:black;--bg:#fff;--panel:#f4f4f4;--raised:#eee;--inset:#fafafa;--line:#bbb;--text:#111;--muted:#444;--accent:#087550;--blue:#1b61ad;--amber:#875900;--red:#b52f30}
+  .lesson {max-width:none} a {color:inherit} button,.widget-controls,.btn {display:none}
+  .callout,details {background:#f3f3f3;color:black} pre {background:transparent;color:black}
+  section {break-inside:auto} figure,.lab-widget {break-inside:avoid} details {display:block}
+  .student-code span {color:#222 !important}.student-code .todo {font-weight:700}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#roteiro">Ir para o roteiro</a>
+<main class="lesson" id="roteiro">
+<div class="lesson-top"><a href="./">← Bancada de rádio</a><button type="button" id="print">Imprimir roteiro</button></div>
+<header><p class="eyebrow">COMMSLAB / LABORATÓRIO GUIADO</p><h1>Do bit ao pacote: construa seu CRC</h1><p class="lead">Entenda a divisão polinomial com um exemplo numérico, implemente a redundância no transmissor, verifique os bytes no receptor e descubra o que acontece quando o canal altera uma mensagem.</p><p><strong>Duração sugerida:</strong> 2 aulas de 50 minutos · <strong>Pré-requisitos:</strong> laços, funções, arrays, hexadecimal e operações de bits.</p></header>
+<div class="callout"><strong>Seu produto final:</strong> duas placas com CRC escrito por você, uma tabela de testes e uma explicação de por que um pacote deve ser aceito ou descartado. A implementação será feita em <strong>C++/Arduino, no laboratório físico</strong>, usando o ambiente de desenvolvimento e os rádios da aula. Este HTML é o roteiro de estudo e consulta; as figuras interativas servem para conferir seus cálculos.</div>
+<nav aria-label="Etapas do laboratório"><ol>
+<li><a href="#ideia">Entenda a redundância</a></li>
+<li><a href="#exemplo">Acompanhe um exemplo numérico</a></li>
+<li><a href="#porque">Entenda por que funciona</a></li>
+<li><a href="#papel">Faça a divisão no papel</a></li>
+<li><a href="#contrato">Defina o contrato do pacote</a></li>
+<li><a href="#registrador">Da divisão ao registrador</a></li>
+<li><a href="#algoritmo">Implemente o registrador</a></li>
+<li><a href="#encoder">Monte o codificador A</a></li>
+<li><a href="#decoder">Monte o verificador B</a></li>
+<li><a href="#testes">Injete erros e compare</a></li>
+<li><a href="#entrega">Registre suas conclusões</a></li>
+</ol></nav>
+
+<!-- ============================ 01 ============================ -->
+<section id="ideia"><p class="eyebrow">01 / CONCEITO</p><h2>Por que acrescentar bits?</h2>
+<p>O receptor pode receber uma mensagem diferente da enviada. O CRC (<em>Cyclic Redundancy Check</em>) acrescenta uma assinatura de tamanho fixo calculada a partir dos dados. O receptor repete o cálculo e compara o resultado com a assinatura recebida.</p>
+<figure>
+<svg class="fig" viewBox="0 0 1010 250" role="img" aria-labelledby="fig1-t">
+<title id="fig1-t">Fluxo do CRC: A calcula o CRC dos dados e o anexa; o canal pode inverter bits; B recalcula o CRC sobre os dados recebidos e compara com o CRC recebido.</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+<text class="lbl" x="30" y="16">A · TRANSMISSOR</text>
+<text class="lbl" x="300" y="16">CANAL</text>
+<text class="lbl" x="530" y="16">B · RECEPTOR</text>
+<!-- TX -->
+<rect class="box" x="30" y="40" width="130" height="38" rx="6"/><text x="95" y="59" text-anchor="middle">dados</text>
+<line class="wire" x1="95" y1="78" x2="95" y2="98" marker-end="url(#arr)"/>
+<rect class="proc" x="30" y="100" width="130" height="38" rx="19"/><text x="95" y="119" text-anchor="middle">calcula CRC</text>
+<path class="wire" d="M160 119 H195 V166" marker-end="url(#arr)"/>
+<path class="wire" d="M30 59 H16 V189 H26" marker-end="url(#arr)"/>
+<rect class="box" x="30" y="170" width="130" height="38" rx="6"/><text x="95" y="189" text-anchor="middle">dados</text>
+<rect class="crcbox" x="160" y="170" width="70" height="38" rx="6"/><text x="195" y="189" text-anchor="middle">CRC</text>
+<!-- canal -->
+<path class="wire" d="M236 189 q17.5 -14 35 0 t35 0 t35 0 t35 0 t35 0 t35 0 t35 0 t35 0" marker-end="url(#arr)"/>
+<path class="noise" d="M372 132 l-10 18 h12 l-10 20"/>
+<text class="lbl" x="300" y="222">ruído pode inverter bits</text>
+<!-- RX -->
+<rect class="box" x="530" y="170" width="130" height="38" rx="6"/><text x="595" y="189" text-anchor="middle">dados'</text>
+<rect class="crcbox" x="660" y="170" width="70" height="38" rx="6"/><text x="695" y="189" text-anchor="middle">CRC'</text>
+<line class="wire" x1="595" y1="170" x2="595" y2="140" marker-end="url(#arr)"/>
+<rect class="proc" x="530" y="100" width="130" height="38" rx="19"/><text x="595" y="119" text-anchor="middle">recalcula CRC</text>
+<line class="wire" x1="595" y1="100" x2="595" y2="80" marker-end="url(#arr)"/>
+<rect class="box" x="530" y="40" width="130" height="38" rx="6"/><text x="595" y="59" text-anchor="middle">CRC calculado</text>
+<line class="wire" x1="660" y1="59" x2="764" y2="59" marker-end="url(#arr)"/>
+<path class="wire" d="M695 170 V130 H790 V85" marker-end="url(#arr)"/>
+<circle class="proc" cx="790" cy="59" r="24"/><text x="790" y="59" text-anchor="middle">=?</text>
+<text class="t-ok" x="824" y="48">iguais → aceita</text>
+<text class="t-bad" x="824" y="72">diferentes → descarta</text>
+</svg>
+<figcaption>Figura 1 — A e B executam o <em>mesmo</em> cálculo. Se o canal alterar os dados ou o CRC, os dois valores comparados em B quase certamente deixam de coincidir.</figcaption>
+</figure>
+<p>Representamos os bits como coeficientes de um polinômio: <code>1101</code> significa <code>x³ + x² + 1</code>. Os coeficientes pertencem a GF(2): soma e subtração são XOR, sem transporte ou empréstimo. Assim, <code>1 XOR 1 = 0</code> e <code>1 XOR 0 = 1</code>.</p>
+<p>Na construção polinomial básica, multiplicamos a mensagem por <code>xʳ</code> (acrescentamos <code>r</code> zeros), dividimos pelo gerador de grau <code>r</code> e substituímos esses zeros pelo resto. O código resultante é divisível pelo gerador. Os parâmetros de inicialização de uma variante real também fazem parte do algoritmo.</p>
+<h3>Por que não simplesmente somar os bytes?</h3>
+<p>Uma soma simples não enxerga a <strong>ordem</strong> dos bytes. Na divisão polinomial, cada bit ocupa uma potência de <code>x</code> diferente, então trocar dois bytes de lugar muda o resto:</p>
+<div class="compare">
+<div><strong>Bytes <span class="mono">12 34</span></strong><br />soma: <span class="mono">0x12 + 0x34 = 0x46</span><br />CRC-16: <span class="mono">0x0EC9</span></div>
+<div><strong>Bytes <span class="mono">34 12</span></strong> (ordem trocada)<br />soma: <span class="mono">0x34 + 0x12 = 0x46</span> — igual!<br />CRC-16: <span class="mono">0xE62D</span> — diferente</div>
+</div>
+<div class="callout">CRC <strong>detecta</strong> erros; este laboratório não corrige os bits nem retransmite pacotes. CRC também não autentica mensagens: alguém que altera os dados pode recalculá-lo.</div>
+<p><strong>Antes de continuar:</strong> por que somar os bytes não preserva informação sobre a ordem deles? O que muda ao usar uma divisão polinomial?</p></section>
+
+<!-- ============================ 02 ============================ -->
+<section id="exemplo"><p class="eyebrow">02 / EXEMPLO RESOLVIDO</p><h2>Um CRC de 3 bits, passo a passo</h2>
+<p>Vamos proteger a mensagem <code>M = 100100</code> com o gerador <code>G = 1101</code>, isto é, <code>G(x) = x³ + x² + 1</code>. O grau de <code>G</code> é <code>r = 3</code>, então o CRC terá 3 bits.</p>
+<ol>
+<li><strong>Escreva a mensagem como polinômio.</strong> <code>100100</code> tem 1 nas posições <code>x⁵</code> e <code>x²</code>: <code>M(x) = x⁵ + x²</code>.</li>
+<li><strong>Abra espaço para o CRC.</strong> Multiplicar por <code>x³</code> desloca três casas e acrescenta três zeros: <code>M(x)·x³ = x⁸ + x⁵ → 100100<b>000</b></code>.</li>
+<li><strong>Divida em GF(2).</strong> Sempre que o bit mais à esquerda ainda “em jogo” for 1, alinhe o gerador sob ele e faça XOR. Se for 0, apenas avance uma coluna.</li>
+<li><strong>Leia o resto.</strong> Quando não houver mais espaço para alinhar o gerador, os 3 bits finais são o resto: <code>R = 001</code>.</li>
+<li><strong>Monte o código.</strong> Troque os zeros acrescentados pelo resto: <code>T = 100100 001</code>.</li>
+</ol>
+<p>Use os botões para avançar a divisão um XOR por vez. A caixa âmbar marca o próximo 1 que será eliminado; os bits apagados ainda não participaram de nenhum XOR. Você pode trocar a mensagem e o gerador para conferir outros exemplos.</p>
+<div class="lab-widget" id="div-widget">
+<h3>Divisão longa em GF(2)</h3>
+<div class="widget-controls">
+<label>Mensagem M (bits)<input id="div-msg" value="100100" maxlength="16" size="14" inputmode="numeric" autocomplete="off" /></label>
+<label>Gerador G (bits)<input id="div-gen" value="1101" maxlength="9" size="8" inputmode="numeric" autocomplete="off" /></label>
+<button class="btn" type="button" id="div-prev">◀ Voltar</button>
+<button class="btn primary" type="button" id="div-next">Próximo XOR ▶</button>
+<button class="btn" type="button" id="div-all">Mostrar tudo</button>
+</div>
+<div class="input-error" id="div-error" role="alert"></div>
+<div class="fig-scroll"><svg class="fig" id="div-svg" role="img" aria-label="Divisão longa passo a passo"></svg></div>
+<p class="status" id="div-status" aria-live="polite"></p>
+</div>
+<h3>E no receptor?</h3>
+<p>B recebe <code>T</code> e divide <em>sem</em> acrescentar zeros. Se nada mudou, o resto é <code>000</code>, porque <code>T(x)</code> é múltiplo de <code>G(x)</code>. Clique em qualquer bit abaixo para simular o canal invertendo-o e observe o resto.</p>
+<div class="lab-widget" id="rx-widget">
+<h3>Verificação de <span class="mono" id="rx-title">T</span> por <span class="mono" id="rx-gen">G</span></h3>
+<p style="margin:4px 0;font-size:14px;color:var(--muted)">Bits brancos: mensagem · bits âmbar: CRC · contorno vermelho: bit invertido pelo canal. O número pequeno é o expoente de <code>x</code>.</p>
+<div class="bits" id="rx-bits"></div>
+<div class="widget-controls" style="margin-top:4px">
+<button class="btn" type="button" id="rx-reset">Restaurar</button>
+<button class="btn" type="button" id="rx-sneaky">Gerar um erro indetectável</button>
+</div>
+<p class="status" id="rx-status" aria-live="polite"></p>
+</div>
+</section>
+
+<!-- ============================ 03 ============================ -->
+<section id="porque"><p class="eyebrow">03 / A MATEMÁTICA</p><h2>Por que o resto do código é zero?</h2>
+<p>Toda divisão de polinômios produz um quociente <code>Q(x)</code> e um resto <code>R(x)</code> de grau menor que <code>r</code>:</p>
+<div class="eq">M(x)·xʳ = Q(x)·G(x) + R(x)<br />
+<span class="c">no exemplo:</span> x⁸ + x⁵ = (x⁵ + x⁴ + x³ + x² + 1)·(x³ + x² + 1) + 1</div>
+<p>Em GF(2), somar e subtrair são a mesma operação (XOR). Somando <code>R(x)</code> aos dois lados, ele se cancela à direita:</p>
+<div class="eq">T(x) = M(x)·xʳ + R(x) = Q(x)·G(x)<br />
+<span class="c">no exemplo:</span> T = 100100001 = x⁸ + x⁵ + 1, múltiplo exato de x³ + x² + 1</div>
+<p>Esse é o segredo: o transmissor envia um polinômio que é múltiplo do gerador. O canal pode somar a ele um <strong>padrão de erro</strong> <code>E(x)</code>, com 1 em cada posição invertida. O receptor divide o que recebeu:</p>
+<div class="eq">resto de [T(x) + E(x)] ÷ G(x) = resto de E(x) ÷ G(x)<br />
+<span class="c">porque T(x) não deixa resto. Erro passa despercebido ⇔ G(x) divide E(x).</span></div>
+<p>No exemplo interativo acima, inverter o bit <code>x⁴</code> dá <code>E(x) = x⁴</code>, e o resto é o mesmo que o de <code>x⁴ ÷ (x³+x²+1)</code>. O botão “erro indetectável” escolhe <code>E(x) = G(x)·xᵏ</code>: é exatamente o caso em que o CRC falha.</p>
+<h3>O que o CRC garante — e o que não garante</h3>
+<div class="table-scroll"><table><caption>Consequências de “erro indetectável ⇔ G(x) divide E(x)”</caption><thead><tr><th>Tipo de erro</th><th>Por que é detectado</th></tr></thead><tbody>
+<tr><td>1 bit (<code>E = xⁱ</code>)</td><td><code>G</code> tem pelo menos dois termos, então não divide um monômio.</td></tr>
+<tr><td>Rajada de até <code>r</code> bits</td><td><code>E = xⁱ·B(x)</code> com grau de <code>B</code> menor que <code>r</code>; como <code>G</code> tem o termo <code>1</code>, não divide <code>xⁱ</code>, e não divide <code>B</code>, que tem grau menor.</td></tr>
+<tr><td>Número ímpar de bits</td><td>Vale quando <code>(x + 1)</code> divide <code>G</code>. O gerador CRC-16 da bancada, <code>x¹⁶ + x¹² + x⁵ + 1</code>, satisfaz isso (avalie em <code>x = 1</code>: 1+1+1+1 = 0).</td></tr>
+<tr><td>2 bits em quadros curtos</td><td>Para o CRC-16/CCITT, todo par de bits invertidos a menos de 32 767 posições de distância é detectado — muito mais que os 1 024 bits do maior quadro da bancada.</td></tr>
+</tbody></table></div>
+<p>Para o gerador de grau 16 usado aqui, todos os erros de um bit e todas as rajadas de até 16 bits são detectados. Uma rajada vai do primeiro ao último bit alterado, incluindo os bits intermediários. Erros cujo polinômio é múltiplo do gerador podem passar despercebidos. A estimativa de falha de <code>1/65536</code> depende de um modelo de erros com síndromes aproximadamente uniformes; não é garantia para qualquer padrão de erro.</p>
+</section>
+
+<!-- ============================ 04 ============================ -->
+<section id="papel"><p class="eyebrow">04 / PAPEL E LÁPIS</p><h2>Agora é sua vez, antes dos 16 bits</h2><ol><li>Use a mensagem <code>1101</code> e o gerador <code>1011</code> (<code>x³ + x + 1</code>). O grau é 3, portanto acrescente três zeros: <code>1101000</code>.</li><li>Alinhe o primeiro 1 do gerador com o primeiro 1 do dividendo. Faça XOR e repita com o próximo 1. Não subtraia números decimais.</li><li>Pare quando o restante tiver menos de quatro bits. Preserve três bits no resto, inclusive zeros à esquerda.</li><li>Junte a mensagem original e o resto. Divida novamente, agora sem acrescentar zeros.</li><li>Inverta um bit do código e repita a verificação. O resto ainda é zero?</li><li>Escreva <code>M(x)</code>, <code>Q(x)</code>, <code>R(x)</code> e confira que <code>M(x)·x³ = Q(x)·G(x) + R(x)</code>.</li></ol><details><summary>Conferência: abra depois de calcular</summary><pre>1101000 XOR 1011000 = 0110000
+0110000 XOR 0101100 = 0011100
+0011100 XOR 0010110 = 0001010
+0001010 XOR 0001011 = 0000001
+Resto: 001 · Código: 1101001</pre><p>A divisão de <code>1101001</code> por <code>1011</code> deixa resto zero. Inverter o último bit produz resto <code>001</code>. Você também pode digitar <code>1101</code> e <code>1011</code> no <a href="#exemplo">divisor interativo</a>. Este exemplo usa inicialização zero; não é ainda o CRC-16 da bancada.</p></details></section>
+
+<!-- ============================ 05 ============================ -->
+<section id="contrato"><p class="eyebrow">05 / PROTOCOLO</p><h2>Decida exatamente quais bytes entram no CRC</h2><div class="table-scroll"><table><caption>Formato do quadro da bancada (8 a 128 bytes)</caption><thead><tr><th>Índices</th><th>Campo</th><th>Protegido pelo CRC?</th></tr></thead><tbody><tr><td>0–3</td><td><code>AA AA D3 91</code> — preâmbulo e sincronismo</td><td>Não; verificação separada</td></tr><tr><td>4</td><td>Sequência (0–255)</td><td>Sim</td></tr><tr><td>5</td><td>Comprimento do payload em bytes</td><td>Sim</td></tr><tr><td>6 até os dois últimos bytes</td><td>Payload UTF-8 (0–120 bytes)</td><td>Sim</td></tr><tr><td>Penúltimo / último</td><td>CRC alto / CRC baixo</td><td>Não entram no recálculo comparativo</td></tr></tbody></table></div><p>Conte os bytes do payload, não os caracteres exibidos. Em uma string C++ literal, <code>sizeof(mensagem) - 1</code> exclui o terminador nulo. Monte o corpo com um byte de sequência, um byte de comprimento e os bytes do payload. O terminador nulo não é transmitido.</p>
+<h3>Exemplo: o quadro de “OK”</h3>
+<p>Com sequência <code>0</code> e payload <code>"OK"</code> (<code>0x4F 0x4B</code>), o corpo protegido é <code>00 02 4F 4B</code>. O CRC-16/CCITT-FALSE desses quatro bytes é <code>0x0EFD</code>, então o quadro completo tem 2 + 8 = 10 bytes:</p>
+<div class="lab-widget" id="frame-widget">
+<h3>Quadro interativo e receptor B</h3>
+<div class="widget-controls">
+<label>Sequência<input id="fr-seq" type="number" min="0" max="255" value="0" style="width:6em" /></label>
+<label>Payload (até 24 bytes)<input id="fr-payload" value="OK" maxlength="24" size="16" autocomplete="off" /></label>
+<button class="btn" type="button" id="fr-reset">Restaurar quadro</button>
+</div>
+<div class="legend"><span style="--sw:var(--muted)">preâmbulo/sincronismo</span><span style="--sw:var(--blue)">sequência e comprimento</span><span style="--sw:var(--accent)">payload</span><span style="--sw:var(--amber)">CRC (alto, baixo)</span><em style="font-style:normal;border-bottom:3px solid var(--accent)">sublinhado = coberto pelo CRC</em></div>
+<div class="frame" id="fr-bytes" aria-label="Bytes do quadro; clique para editar os bits"></div>
+<p style="font-size:14px;color:var(--muted);margin:6px 0">Clique em um byte e inverta seus bits para simular o canal. B executa as verificações do item 09:</p>
+<div class="bits" id="fr-bits"></div>
+<ul class="verdict" id="fr-verdict" aria-live="polite"></ul>
+</div>
+<p><strong>Contrato:</strong> CRC-16/CCITT-FALSE, largura 16, polinômio <code>0x1021</code>, registro inicial <code>0xFFFF</code>, entrada e saída sem reflexão, XOR final <code>0x0000</code>. Processe cada byte pelo bit mais significativo. O gerador completo é <code>x¹⁶ + x¹² + x⁵ + 1</code>; o termo <code>x¹⁶</code> fica implícito em <code>0x1021</code>.</p><div class="callout">O algoritmo de registrador abaixo já incorpora o processamento do CRC. <strong>Não acrescente 16 zeros aos bytes</strong> antes de chamá-lo. Em B, recalcule sobre o corpo e compare com o CRC recebido; não presuma resto zero usando uma rotina com inicialização diferente da divisão do exercício anterior.</div></section>
+
+<!-- ============================ 06 ============================ -->
+<section id="registrador"><p class="eyebrow">06 / DA DIVISÃO AO HARDWARE</p><h2>O registrador é a divisão longa vista por uma janela</h2>
+<p>Na divisão do item 02, em cada momento só importam <code>r</code> bits: os que estão sob o gerador. O registrador CRC guarda exatamente essa janela — o <strong>resto parcial</strong> — em 16 bits. Compare as operações:</p>
+<div class="table-scroll"><table><thead><tr><th>Divisão no papel</th><th>Registrador de 16 bits</th></tr></thead><tbody>
+<tr><td>“Descer” os próximos bits do dividendo</td><td>XOR do byte de entrada nos 8 bits altos: <code>crc ^= byte &lt;&lt; 8</code></td></tr>
+<tr><td>Olhar o bit mais à esquerda</td><td>Ler o bit 15 (MSB) <em>antes</em> de deslocar</td></tr>
+<tr><td>Avançar uma coluna</td><td>Deslocar uma posição à esquerda; o bit 15 sai do registrador</td></tr>
+<tr><td>Se era 1, fazer XOR com o gerador</td><td>Se o MSB que saiu era 1, <code>crc ^= 0x1021</code>. O <code>1</code> de <code>x¹⁶</code> cancelaria justamente o bit que saiu, por isso ele não aparece na constante.</td></tr>
+<tr><td>Acrescentar <code>r</code> zeros no fim</td><td>Desnecessário: injetar o byte no topo do registrador, e não no fim, já equivale a ter os zeros “à frente”.</td></tr>
+<tr><td>Começar com resto zero</td><td>Começar com <code>0xFFFF</code>: assim, zeros no início da mensagem também alteram o CRC.</td></tr>
+</tbody></table></div>
+<p>A figura mostra o CRC-16 da bancada processando o primeiro byte do vetor de teste, o caractere <code>'1'</code> (<code>0x31</code>). Avance um passo por vez e compare com as linhas que sua função vai imprimir na Serial.</p>
+<div class="lab-widget" id="reg-widget">
+<h3>Simulador do registrador CRC-16/CCITT-FALSE</h3>
+<div class="widget-controls">
+<label>Dados (texto ASCII)<input id="reg-data" value="123456789" maxlength="32" size="16" autocomplete="off" /></label>
+<button class="btn primary" type="button" id="reg-step">Próximo passo ▶</button>
+<button class="btn" type="button" id="reg-byte">Próximo byte ▶▶</button>
+<button class="btn" type="button" id="reg-end">Até o fim</button>
+<button class="btn" type="button" id="reg-reset">Reiniciar</button>
+</div>
+<div class="fig-scroll"><svg class="fig" id="reg-svg" viewBox="0 0 860 250" style="min-width:560px" role="img" aria-label="Registrador de 16 bits com realimentação nos bits 12, 5 e 0"></svg></div>
+<p class="status" id="reg-status" aria-live="polite"></p>
+<div class="table-scroll"><table><caption id="reg-caption">Traço do byte atual</caption><thead><tr><th>bit</th><th>antes</th><th>MSB</th><th>operação</th><th>depois</th></tr></thead><tbody id="reg-trace"></tbody></table></div>
+</div>
+</section>
+
+<!-- ============================ 07 ============================ -->
+<section id="algoritmo"><p class="eyebrow">07 / SUA IMPLEMENTAÇÃO · C++</p><h2>Construa a função <code>crc16</code></h2><p>No projeto usado no laboratório, crie a função abaixo e complete cada TODO. Use a mesma função no transmissor e no receptor. Os blocos são esqueletos de atividade: precisam ser completados antes de compilar e usar.</p><pre class="student-code"><code class="language-cpp"><span class="keyword">uint16_t</span> crc16(<span class="keyword">const</span> <span class="keyword">uint8_t</span>* bytes, <span class="keyword">size_t</span> length) {
+  <span class="keyword">uint16_t</span> crc; <span class="comment todo">// TODO 1: inicializar conforme o contrato.</span>
+  <span class="keyword">for</span> (<span class="keyword">size_t</span> index = <span class="number">0</span>; index &lt; length; ++index) {
+    <span class="comment todo">// TODO 2: alinhar o byte à parte alta e aplicar XOR.</span>
+    <span class="keyword">for</span> (<span class="keyword">uint8_t</span> bit = <span class="number">0</span>; bit &lt; <span class="number">8</span>; ++bit) {
+      <span class="keyword">const</span> <span class="keyword">uint16_t</span> before = crc;
+      <span class="comment todo">// TODO 3: salvar o bit 15 em uma variável bool msb.</span>
+      <span class="comment todo">// TODO 4: deslocar e manter os 16 bits inferiores.</span>
+      <span class="comment todo">// TODO 5: aplicar o polinômio se o MSB anterior era 1.</span>
+      <span class="comment todo">// TODO 6: imprimir index, bit, before, msb e crc na Serial.</span>
+    }
+  }
+  <span class="keyword">return</span> crc;
+}</code></pre><ol><li>Inicialize o registro uma vez por chamada, fora dos laços.</li><li>Promova o byte para um tipo sem sinal capaz de conter 16 bits antes de deslocá-lo oito posições. Em plataformas com <code>int</code> de 16 bits, use um intermediário <code>uint32_t</code> para os deslocamentos.</li><li>Teste o bit mais significativo com uma máscara e guarde o resultado <strong>antes</strong> de deslocar.</li><li>Mantenha os 16 bits inferiores com máscara ou conversão explícita para <code>uint16_t</code>.</li><li>Aplique XOR com o polinômio somente quando o MSB anterior era 1. Repita oito vezes por byte.</li><li>Use o monitor serial da IDE para comparar as oito atualizações de um byte com o <a href="#registrador">simulador</a>.</li></ol><details><summary>Dica: operadores em C++</summary><p><code>^</code> é XOR, <code>&amp;</code> aplica máscara, <code>|</code> é OR, <code>&lt;&lt;</code> e <code>&gt;&gt;</code> deslocam bits. XOR não é potência. Use <code>#include &lt;stdint.h&gt;</code> e <code>#include &lt;stddef.h&gt;</code> se esses tipos ainda não estiverem disponíveis no projeto.</p></details><h3>Checkpoint antes do rádio</h3><p>Complete sua função e execute o teste no <code>setup()</code>, após inicializar a Serial:</p><pre class="student-code"><code class="language-cpp"><span class="keyword">const</span> <span class="keyword">uint8_t</span> teste[] = <span class="string">&quot;123456789&quot;</span>;
+Serial.println(crc16(teste, sizeof(teste) - <span class="number">1</span>), HEX);
+<span class="comment">// Esperado: 29B1. O terminador nulo fica fora do cálculo.</span>
+Serial.println(crc16(teste, <span class="number">0</span>), HEX);
+<span class="comment">// Esperado: FFFF (nenhum byte processado).</span></code></pre><p>Esses vetores testam a função isolada, sem sequência nem comprimento do pacote. Para o primeiro byte <code>0x31</code>, após o XOR de entrada espere <code>0xCEFF</code>; após deslocamento, <code>0x9DFE</code>; após realimentação, <code>0x8DDF</code>. Confira no monitor serial antes de integrar ao rádio. Teste também o corpo do quadro de exemplo, <code>{0x00, 0x02, 0x4F, 0x4B}</code>: o esperado é <code>0EFD</code>.</p></section>
+
+<!-- ============================ 08 ============================ -->
+<section id="encoder"><p class="eyebrow">08 / SUA IMPLEMENTAÇÃO · TRANSMISSOR</p><h2>Codifique e serialize o quadro</h2><p>Implemente uma função que monte o quadro em um buffer fornecido pelo programa principal. O retorno indica quantos bytes enviar; zero sinaliza entrada inválida.</p><pre class="student-code"><code class="language-cpp"><span class="keyword">size_t</span> encodeFrame(<span class="keyword">const</span> <span class="keyword">uint8_t</span>* payload, <span class="keyword">size_t</span> length,
+                   <span class="keyword">uint8_t</span> sequence, <span class="keyword">uint8_t</span>* frame,
+                   <span class="keyword">size_t</span> capacity) {
+  <span class="comment todo">// TODO: rejeitar length &gt; 120 ou capacity &lt; length + 8.</span>
+  <span class="comment todo">// TODO: gravar AA AA D3 91 nos primeiros quatro bytes.</span>
+  <span class="comment todo">// TODO: gravar sequência e comprimento nos índices 4 e 5.</span>
+  <span class="comment todo">// TODO: copiar length bytes de payload a partir do índice 6.</span>
+  <span class="comment todo">// TODO: calcular o CRC sobre sequência + tamanho + payload.</span>
+  <span class="comment todo">// TODO: gravar CRC alto e CRC baixo nos dois bytes finais.</span>
+  <span class="comment todo">// TODO: retornar o comprimento total do quadro.</span>
+}</code></pre><p>Para obter o byte alto, desloque oito posições à direita e retenha oito bits. Para o baixo, retenha os oito bits inferiores. Se o CRC fosse <code>0x29B1</code>, os dois bytes finais seriam <code>29 B1</code>.</p><p>No programa do transmissor, reserve <code>uint8_t frame[128]</code>, chame sua função e envie apenas o comprimento retornado pela API da biblioteca de rádio utilizada na aula. Incremente a sequência após o envio, com retorno a zero depois de 255.</p><div class="callout">A inicialização do rádio, a frequência e a API de envio pertencem ao projeto de hardware da aula. O CRC deste roteiro é um campo do seu protocolo de aplicação; confira separadamente se o rádio também aplica CRC na camada física.</div><p><strong>Checkpoint:</strong> imprima os bytes do quadro no monitor serial antes de enviá-lo. Para <code>n</code> bytes de payload, devem existir <code>n + 8</code> bytes no quadro. Para sequência 0 e payload <code>"OK"</code>, compare com <code>AA AA D3 91 00 02 4F 4B 0E FD</code>. Não transmita o buffer inteiro quando apenas parte dele estiver preenchida.</p></section>
+
+<!-- ============================ 09 ============================ -->
+<section id="decoder"><p class="eyebrow">09 / SUA IMPLEMENTAÇÃO · RECEPTOR</p><h2>Verifique antes de entregar a mensagem</h2><p>Receba os bytes pela biblioteca de rádio do laboratório e passe o buffer e a quantidade efetivamente recebida à função abaixo. “Decodificar” aqui significa validar o quadro e extrair o payload; o CRC não corrige erros.</p><pre class="student-code"><code class="language-cpp"><span class="keyword">bool</span> decodeFrame(<span class="keyword">const</span> <span class="keyword">uint8_t</span>* frame, <span class="keyword">size_t</span> frameLength,
+                 <span class="keyword">uint8_t</span>* payload, <span class="keyword">size_t</span> capacity,
+                 <span class="keyword">size_t</span>* payloadLength) {
+  *payloadLength = <span class="number">0</span>;
+  <span class="comment todo">// TODO: rejeitar frameLength fora de 8 a 128 antes de indexar.</span>
+  <span class="comment todo">// TODO: verificar os quatro bytes de cabeçalho.</span>
+  <span class="comment todo">// TODO: verificar se frame[5] coincide com frameLength - 8.</span>
+  <span class="comment todo">// TODO: verificar a capacidade do buffer de saída.</span>
+  <span class="comment todo">// TODO: reconstruir o CRC recebido (alto primeiro).</span>
+  <span class="comment todo">// TODO: recalcular o CRC sobre o corpo, excluindo cabeçalho e CRC.</span>
+  <span class="comment todo">// TODO: imprimir CRC recebido e calculado para diagnóstico.</span>
+  <span class="comment todo">// TODO: retornar false se qualquer verificação falhar.</span>
+  <span class="comment todo">// TODO: copiar o payload somente após todas as verificações.</span>
+  <span class="comment todo">// TODO: preencher *payloadLength e retornar true.</span>
+}</code></pre><p>O corpo começa no índice 4 e tem <code>frameLength - 6</code> bytes. O payload começa no índice 6 e tem <code>frameLength - 8</code> bytes. Reconstrua o CRC recebido deslocando o byte alto oito posições e combinando com o baixo usando OR. Promova os operandos antes do deslocamento.</p><p>Considere os ponteiros de entrada e saída válidos e forneça um endereço válido para <code>payloadLength</code>. Documente esse contrato. Se for exibir o payload como texto, use seu comprimento explícito ou reserve espaço extra para o terminador nulo; o quadro não inclui esse terminador.</p><div class="callout">No programa principal, entregue a mensagem à aplicação apenas se sua função retornar <code>true</code>. Registre separadamente falhas de cabeçalho, comprimento e CRC. Alguns rádios descartam quadros com erro na camada física antes de entregá-los ao firmware.</div></section>
+
+<!-- ============================ 10 ============================ -->
+<section id="testes"><p class="eyebrow">10 / EXPERIMENTOS</p><h2>Uma hipótese, uma alteração, uma evidência</h2><p>Primeiro teste as funções localmente, usando o quadro produzido pelo codificador como entrada do decodificador. Depois integre aos dois rádios do laboratório. Para cada ensaio, anote o resultado esperado antes de executar e restaure a configuração antes do próximo. Os ensaios 2 a 4 podem ser previstos no <a href="#frame-widget">quadro interativo</a> do item 05 — registre a previsão e depois confirme com sua placa.</p><div class="table-scroll"><table><caption>Complete a tabela no relatório</caption><thead><tr><th>Ensaio</th><th>Alteração controlada</th><th>O que registrar</th></tr></thead><tbody><tr><td>1. Referência</td><td>Codificar e verificar o quadro sem alterações</td><td>Bytes, CRC calculado e recebido, aceitação</td></tr><tr><td>2. Erro no corpo</td><td>Após codificar, aplicar <code>frame[6] ^= 0x01;</code> a um payload não vazio</td><td>Falha de CRC sem alterar o comprimento</td></tr><tr><td>3. Erro no CRC</td><td>Inverter um bit do último byte do quadro</td><td>CRC recebido versus recalculado</td></tr><tr><td>4. Erro no cabeçalho</td><td>Inverter um bit de <code>frame[0]</code></td><td>CRC pode coincidir, mas o quadro deve ser rejeitado</td></tr><tr><td>5. Contrato diferente</td><td>Trocar apenas no receptor o polinômio para <code>0x8005</code></td><td>Divergência dos CRCs para o quadro escolhido</td></tr><tr><td>6. Ambos diferentes</td><td>Usar <code>0x8005</code> também no transmissor</td><td>Acordo entre as placas versus conformidade com CCITT-FALSE</td></tr><tr><td>7. Enlace físico</td><td>Restaurar <code>0x1021</code> e transmitir uma sequência de quadros pelo rádio</td><td>Quantidade enviada, recebida, aceita e descartada; configuração do rádio</td></tr></tbody></table></div><p>Execute as falhas controladas localmente antes do teste pelo rádio: um CRC de hardware pode impedir que quadros corrompidos cheguem à aplicação. Diminuição de recepção não demonstra, por si só, que seu verificador detectou erros. Diferencie quadros ausentes de quadros recebidos e rejeitados pelo seu código.</p><p>Os limites de detecção estão resumidos no <a href="#porque">item 03</a>. Use-os para justificar cada resultado da tabela.</p><p><strong>Discussão:</strong> Receber os mesmos bytes enviados garante que A e B usam o mesmo contrato? CRC válido garante que todo o cabeçalho está intacto? Por que recalcular o CRC depois de alterar os dados não simula uma falha detectável?</p></section>
+
+<!-- ============================ 11 ============================ -->
+<section id="entrega"><p class="eyebrow">11 / ENTREGA</p><h2>Demonstre seu raciocínio</h2><div class="checks"><label><input type="checkbox" /> Divisão manual com passos, resto, código final e a identidade <code>M(x)·xʳ = Q(x)·G(x) + R(x)</code>.</label><label><input type="checkbox" /> Firmware A e B escrito por você, com comentários sobre as máscaras, o MSB e a ordem dos bytes.</label><label><input type="checkbox" /> Vetores de teste e oito linhas de traço de um byte conferidas à mão.</label><label><input type="checkbox" /> Tabela dos sete experimentos, com resultados e explicação de divergências.</label><label><input type="checkbox" /> Um quadro aceito e um descartado, incluindo os três valores CRC e a decisão de B.</label><label><input type="checkbox" /> Conclusão: limites de detecção, diferença entre detectar e corrigir e importância do contrato.</label></div><p>As marcações são apenas uma lista de conferência nesta aba e não são salvas. Salve os programas das duas placas e os registros do monitor serial junto ao relatório. Na avaliação, explique como seu código produz cada resultado; só obter um pacote aceito não demonstra a implementação correta.</p><p><a href="./">Consultar a bancada virtual de rádio →</a></p></section>
+</main>
+<script>
+(() => {
+  "use strict";
+  document.getElementById("print").addEventListener("click", () => window.print());
+
+  const $ = (id) => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+  const sup = (n) => String(n).split("").map((d) => SUP[d]).join("");
+  const hex2 = (v) => v.toString(16).toUpperCase().padStart(2, "0");
+  const hex4 = (v) => "0x" + v.toString(16).toUpperCase().padStart(4, "0");
+  function el(tag, attrs = {}, text) {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function poly(bits) {
+    const n = bits.length, terms = [];
+    bits.forEach((b, i) => {
+      if (!b) return;
+      const e = n - 1 - i;
+      terms.push(e === 0 ? "1" : e === 1 ? "x" : "x" + sup(e));
+    });
+    return terms.length ? terms.join(" + ") : "0";
+  }
+  const parseBits = (s) => s.trim().split("").map(Number);
+  /* Resto de bits ÷ G (sem acrescentar zeros). */
+  function remainder(bits, G) {
+    const a = bits.slice();
+    for (let i = 0; i + G.length <= a.length; i++)
+      if (a[i]) for (let j = 0; j < G.length; j++) a[i + j] ^= G[j];
+    return a.slice(a.length - (G.length - 1));
+  }
+
+  /* ================= Divisão longa ================= */
+  const div = { msg: [], gen: [], steps: [], shown: 0, rem: [], q: "", dividend: [] };
+  function divCompute() {
+    const m = $("div-msg").value.trim(), g = $("div-gen").value.trim();
+    let err = "";
+    if (!/^[01]{1,16}$/.test(m)) err = "A mensagem deve ter de 1 a 16 bits (apenas 0 e 1).";
+    else if (!/^1[01]{1,8}$/.test(g)) err = "O gerador deve começar com 1 e ter de 2 a 9 bits.";
+    $("div-error").textContent = err;
+    if (err) return false;
+    const M = parseBits(m), G = parseBits(g), r = G.length - 1;
+    const a = M.concat(Array(r).fill(0));
+    div.dividend = a.slice();
+    div.steps = [];
+    let q = "";
+    for (let i = 0; i + G.length <= a.length; i++) {
+      q += a[i];
+      if (a[i]) {
+        for (let j = 0; j < G.length; j++) a[i + j] ^= G[j];
+        div.steps.push({ pos: i, row: a.slice() });
+      }
+    }
+    Object.assign(div, { msg: M, gen: G, r, rem: a.slice(a.length - r), q, shown: 0 });
+    return true;
+  }
+  function divRender() {
+    const svg = $("div-svg");
+    svg.replaceChildren();
+    const { dividend, gen, r, steps, shown, msg } = div;
+    const cols = dividend.length, cell = 26, L = 96, top = 40, rowH = 30;
+    const W = L + cols * cell + 16, H = top + (1 + 2 * shown) * rowH + 6;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", W);
+    svg.setAttribute("height", H);
+    const cx = (c) => L + c * cell + cell / 2;
+    const cy = (row) => top + row * rowH + rowH / 2 - 4;
+    // expoentes
+    for (let c = 0; c < cols; c++) svg.append(el("text", { x: cx(c), y: 16, "text-anchor": "middle", class: "small" }, "x" + sup(cols - 1 - c)));
+    svg.append(el("line", { x1: L + msg.length * cell, y1: 6, x2: L + msg.length * cell, y2: H - 4, class: "wire off" }));
+    // linha 0
+    svg.append(el("text", { x: 6, y: cy(0), class: "lbl" }, "M·x" + sup(r)));
+    dividend.forEach((b, c) => svg.append(el("text", { x: cx(c), y: cy(0), "text-anchor": "middle", class: c >= msg.length ? "t-amber" : "" }, b)));
+    let lastRow = 0;
+    for (let s = 0; s < shown; s++) {
+      const { pos, row } = steps[s];
+      const gr = 1 + 2 * s, rr = gr + 1;
+      svg.append(el("text", { x: 6, y: cy(gr), class: "lbl" }, "⊕ G"));
+      gen.forEach((b, j) => svg.append(el("text", { x: cx(pos + j), y: cy(gr), "text-anchor": "middle", class: "t-blue" }, b)));
+      const ly = cy(gr) + rowH / 2 - 1;
+      svg.append(el("line", { x1: L + pos * cell + 2, y1: ly, x2: L + (pos + gen.length) * cell - 2, y2: ly, class: "rule" }));
+      svg.append(el("text", { x: 6, y: cy(rr), class: "lbl" }, s === steps.length - 1 ? "resto" : "parcial"));
+      for (let c = pos + 1; c < cols; c++)
+        svg.append(el("text", { x: cx(c), y: cy(rr), "text-anchor": "middle", class: c > pos + r ? "t-dim" : "" }, row[c]));
+      lastRow = rr;
+    }
+    if (shown < steps.length) {
+      const p = steps[shown].pos;
+      svg.append(el("rect", { x: L + p * cell + 2, y: cy(lastRow) - 12, width: cell - 4, height: 24, rx: 5, class: "pivot" }));
+    } else {
+      svg.append(el("rect", { x: L + (cols - r) * cell + 1, y: cy(lastRow) - 13, width: r * cell - 2, height: 26, rx: 6, class: "remainder" }));
+    }
+    // status
+    const st = $("div-status");
+    st.className = "status";
+    const Mtxt = msg.join(""), Gtxt = gen.join("");
+    if (shown === 0 && steps.length) {
+      st.innerHTML = `M(x) = ${poly(msg)}. Acrescentamos ${r} zero(s) (âmbar), o que equivale a multiplicar por x${sup(r)}. O primeiro 1 está na coluna x${sup(cols - 1 - steps[0].pos)}: é ali que o gerador ${Gtxt} será alinhado.`;
+    } else if (shown < steps.length) {
+      const p = steps[shown - 1].pos, nxt = steps[shown].pos;
+      const skipped = nxt - p - 1;
+      st.innerHTML = `Passo ${shown} de ${steps.length}: gerador alinhado sob x${sup(cols - 1 - p)}; XOR bit a bit (1⊕1 = 0, 1⊕0 = 1). ` +
+        (skipped > 0 ? `As ${skipped} coluna(s) seguinte(s) começam com 0: o quociente recebe 0 e nada é subtraído. ` : "") +
+        `Próximo 1 em x${sup(cols - 1 - nxt)}.`;
+    } else {
+      const R = div.rem.join("");
+      st.className = "status ok";
+      st.innerHTML = `${steps.length ? `Fim após ${steps.length} XOR(s). ` : ""}Não há mais espaço para alinhar o gerador. <strong>Resto R = ${R}</strong> (R(x) = ${poly(div.rem)}). ` +
+        `Código transmitido T = <span class="mono">${Mtxt}&nbsp;${R}</span>. Quociente Q = <span class="mono">${div.q}</span> — não é transmitido; só o resto importa.`;
+    }
+    $("div-prev").disabled = shown === 0;
+    $("div-next").disabled = shown >= steps.length;
+    $("div-all").disabled = shown >= steps.length;
+  }
+  function divUpdate() {
+    if (!divCompute()) return;
+    divRender();
+    rxInit();
+  }
+  $("div-msg").addEventListener("input", divUpdate);
+  $("div-gen").addEventListener("input", divUpdate);
+  $("div-next").addEventListener("click", () => { if (div.shown < div.steps.length) { div.shown++; divRender(); } });
+  $("div-prev").addEventListener("click", () => { if (div.shown > 0) { div.shown--; divRender(); } });
+  $("div-all").addEventListener("click", () => { div.shown = div.steps.length; divRender(); });
+
+  /* ================= Receptor (bits clicáveis) ================= */
+  const rx = { code: [], flips: [] };
+  function rxInit() {
+    rx.code = div.msg.concat(div.rem);
+    rx.flips = rx.code.map(() => 0);
+    $("rx-title").textContent = "T = " + div.msg.join("") + " " + div.rem.join("");
+    $("rx-gen").textContent = "G = " + div.gen.join("");
+    rxRender();
+  }
+  function rxRender(note = "") {
+    const box = $("rx-bits");
+    box.replaceChildren();
+    const n = rx.code.length, m = div.msg.length;
+    rx.code.forEach((b, i) => {
+      if (i === m) { const s = document.createElement("span"); s.className = "bits-sep"; box.append(s); }
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "bitbtn" + (i >= m ? " r" : "") + (rx.flips[i] ? " flip" : "");
+      btn.textContent = b ^ rx.flips[i];
+      const e = document.createElement("span"); e.className = "exp"; e.textContent = n - 1 - i;
+      btn.append(e);
+      btn.setAttribute("aria-label", `bit x^${n - 1 - i}, valor ${b ^ rx.flips[i]}${rx.flips[i] ? ", invertido" : ""}`);
+      btn.addEventListener("click", () => { rx.flips[i] ^= 1; rxRender(); });
+      box.append(btn);
+    });
+    const recv = rx.code.map((b, i) => b ^ rx.flips[i]);
+    const rem = remainder(recv, div.gen);
+    const zero = rem.every((b) => !b);
+    const nflip = rx.flips.reduce((a, b) => a + b, 0);
+    const st = $("rx-status");
+    if (!nflip) {
+      st.className = "status ok";
+      st.innerHTML = `Sem erros: E(x) = 0. Resto de T ÷ G = <strong>${rem.join("")}</strong> → B aceita.`;
+    } else if (zero) {
+      st.className = "status bad";
+      st.innerHTML = `${note}E(x) = ${poly(rx.flips)}. Resto = <strong>${rem.join("")}</strong> → B <strong>aceita um quadro errado!</strong> Isso acontece porque E(x) é múltiplo de G(x).`;
+    } else {
+      st.className = "status ok";
+      st.innerHTML = `${nflip} bit(s) invertido(s): E(x) = ${poly(rx.flips)}. Resto = <strong>${rem.join("")}</strong> ≠ ${"0".repeat(div.r)} → erro detectado, B descarta. ` +
+        `Repare que o resto é o mesmo de E(x) ÷ G(x): ${remainder(rx.flips, div.gen).join("")}.`;
+    }
+  }
+  $("rx-reset").addEventListener("click", () => { rx.flips = rx.code.map(() => 0); rxRender(); });
+  $("rx-sneaky").addEventListener("click", () => {
+    const G = div.gen, n = rx.code.length;
+    const maxK = n - G.length;
+    if (maxK < 0) return;
+    const k = Math.floor(Math.random() * (maxK + 1));
+    rx.flips = rx.code.map(() => 0);
+    G.forEach((b, j) => { rx.flips[n - 1 - k - (G.length - 1) + j] = b; });
+    rxRender(`Escolhemos E(x) = G(x)·x${sup(k)}. `);
+  });
+
+  /* ================= CRC-16/CCITT-FALSE ================= */
+  function crc16(bytes) {
+    let c = 0xFFFF;
+    for (const b of bytes) {
+      c ^= b << 8;
+      for (let i = 0; i < 8; i++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF;
+    }
+    return c;
+  }
+
+  /* ================= Simulador do registrador ================= */
+  const TAPS = [12, 5, 0];
+  const reg = { bytes: [], i: 0, phase: 0, crc: 0xFFFF, trace: [], last: null };
+  function regReset() {
+    reg.bytes = Array.from(new TextEncoder().encode($("reg-data").value));
+    Object.assign(reg, { i: 0, phase: 0, crc: 0xFFFF, trace: [], last: null });
+    regRender();
+  }
+  const regDone = () => reg.i >= reg.bytes.length;
+  function regStep() {
+    if (regDone()) return;
+    const byte = reg.bytes[reg.i];
+    if (reg.phase === 0) {
+      const before = reg.crc;
+      reg.crc = (reg.crc ^ (byte << 8)) & 0xFFFF;
+      reg.trace = [];
+      reg.last = { type: "load", before, after: reg.crc, byte };
+      reg.phase = 1;
+    } else {
+      const k = reg.phase - 1, before = reg.crc, msb = (before & 0x8000) !== 0;
+      const shifted = (before << 1) & 0xFFFF;
+      reg.crc = msb ? shifted ^ 0x1021 : shifted;
+      reg.last = { type: "bit", k, before, shifted, msb, after: reg.crc, byte };
+      reg.trace.push(reg.last);
+      reg.phase++;
+      if (reg.phase > 8) { reg.phase = 0; reg.i++; }
+    }
+  }
+  function regRender() {
+    const svg = $("reg-svg");
+    svg.replaceChildren();
+    const defs = el("defs");
+    const mk = el("marker", { id: "arr2", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" });
+    mk.append(el("path", { d: "M0 0 L10 5 L0 10 z", class: "arrowhead" }));
+    defs.append(mk);
+    svg.append(defs);
+    const x0 = 60, w = 40, ry = 96, rh = 40;
+    const cxb = (b) => x0 + (15 - b) * w + w / 2;
+    const last = reg.last;
+    const active = last && last.type === "bit" && last.msb;
+    const curByte = last ? last.byte : reg.bytes[reg.i];
+    // byte de entrada
+    if (curByte !== undefined) {
+      const loading = last && last.type === "load";
+      for (let j = 0; j < 8; j++) {
+        const bit = (curByte >> (7 - j)) & 1;
+        svg.append(el("rect", { x: x0 + j * w + 3, y: 22, width: w - 6, height: 30, rx: 4, class: "cell byte" }));
+        svg.append(el("text", { x: x0 + j * w + w / 2, y: 37, "text-anchor": "middle" }, bit));
+        if (loading) svg.append(el("line", { x1: x0 + j * w + w / 2, y1: 53, x2: x0 + j * w + w / 2, y2: ry - 16, class: "wire on", "marker-end": "url(#arr2)" }));
+      }
+      const ch = curByte >= 32 && curByte < 127 ? ` '${String.fromCharCode(curByte)}'` : "";
+      svg.append(el("text", { x: x0 + 8 * w + 12, y: 37, class: "t-blue" }, `byte 0x${hex2(curByte)}${ch}`));
+      svg.append(el("text", { x: x0 + 8 * w + 12, y: 60, class: "lbl" }, loading ? "← XOR nos bits 15..8" : "entra nos bits 15..8 (XOR)"));
+    }
+    // índices e células
+    for (let b = 15; b >= 0; b--) {
+      const x = x0 + (15 - b) * w, val = (reg.crc >> b) & 1;
+      svg.append(el("text", { x: x + w / 2, y: ry - 8, "text-anchor": "middle", class: "small" }, b));
+      let cls = "cell" + (val ? " one" : "");
+      if (b === 15) cls += " msb";
+      if (active && TAPS.includes(b)) cls += " tap";
+      svg.append(el("rect", { x: x + 2, y: ry, width: w - 4, height: rh, rx: 4, class: cls }));
+      svg.append(el("text", { x: x + w / 2, y: ry + rh / 2, "text-anchor": "middle" }, val));
+    }
+    // realimentação
+    const fy = 196, wcls = "wire " + (active ? "on" : "off");
+    svg.append(el("path", { d: `M${x0} ${ry + rh / 2} H28 V${fy} H${cxb(0)}`, class: wcls }));
+    if (last && last.type === "bit") svg.append(el("text", { x: 24, y: ry + rh / 2 - 16, class: last.msb ? "t-amber" : "t-dim", "text-anchor": "middle" }, last.msb ? "1" : "0"));
+    for (const t of TAPS) {
+      svg.append(el("line", { x1: cxb(t), y1: fy - 12, x2: cxb(t), y2: ry + rh + 2, class: wcls, "marker-end": "url(#arr2)" }));
+      svg.append(el("circle", { cx: cxb(t), cy: fy, r: 12, class: "xor" + (active ? " on" : "") }));
+      svg.append(el("text", { x: cxb(t), y: fy, "text-anchor": "middle" }, "⊕"));
+    }
+    svg.append(el("text", { x: 34, y: 228, class: "lbl" }, "bit 15 que sai (MSB) realimenta as posições 12, 5 e 0  →  0x1021 = x¹² + x⁵ + 1"));
+    svg.append(el("text", { x: x0 + 16 * w + 14, y: ry + rh / 2, class: "t-ok" }, hex4(reg.crc)));
+    // status
+    const st = $("reg-status");
+    st.className = "status";
+    if (!last) {
+      st.innerHTML = reg.bytes.length
+        ? `Registro inicial <strong>0xFFFF</strong>. ${reg.bytes.length} byte(s) a processar. Clique em “Próximo passo”.`
+        : `Nenhum byte: o CRC é o próprio valor inicial, <strong>0xFFFF</strong>.`;
+    } else if (last.type === "load") {
+      st.innerHTML = `Byte ${reg.i} = 0x${hex2(last.byte)}: <span class="mono">${hex4(last.before)} ^ (0x${hex2(last.byte)} &lt;&lt; 8) = <strong>${hex4(last.after)}</strong></span>. Agora vêm 8 deslocamentos.`;
+    } else {
+      st.innerHTML = `Bit ${last.k}: MSB = ${last.msb ? 1 : 0}. Desloca: <span class="mono">${hex4(last.before)} → ${hex4(last.shifted)}</span>` +
+        (last.msb ? `; MSB era 1, então XOR com 0x1021 → <strong class="mono">${hex4(last.after)}</strong>.` : `; MSB era 0, sem XOR → <strong class="mono">${hex4(last.after)}</strong>.`);
+    }
+    if (regDone() && reg.bytes.length) {
+      st.className = "status ok";
+      const ok = $("reg-data").value === "123456789";
+      st.innerHTML += ` <br />Todos os bytes processados: <strong>CRC = ${hex4(reg.crc)}</strong>${ok ? " — confere com o vetor de teste 29B1." : "."}`;
+    }
+    // traço
+    const tb = $("reg-trace");
+    tb.replaceChildren();
+    const shownByte = last ? last.byte : undefined;
+    $("reg-caption").textContent = shownByte === undefined ? "Traço do byte atual" : `Traço do byte 0x${hex2(shownByte)} (como sua Serial deve imprimir)`;
+    for (const t of reg.trace) {
+      const tr = tb.insertRow();
+      for (const v of [t.k, hex4(t.before), t.msb ? "1" : "0", t.msb ? "shift + XOR 0x1021" : "shift", hex4(t.after)]) tr.insertCell().textContent = v;
+    }
+    if (!reg.trace.length) { const td = tb.insertRow().insertCell(); td.colSpan = 5; td.textContent = "Ainda sem deslocamentos neste byte."; td.style.color = "var(--muted)"; }
+    $("reg-step").disabled = $("reg-byte").disabled = $("reg-end").disabled = regDone();
+  }
+  $("reg-step").addEventListener("click", () => { regStep(); regRender(); });
+  $("reg-byte").addEventListener("click", () => {
+    const start = reg.i;
+    if (reg.phase === 0) regStep();
+    while (!regDone() && reg.i === start) regStep();
+    regRender();
+  });
+  $("reg-end").addEventListener("click", () => { while (!regDone()) regStep(); regRender(); });
+  $("reg-reset").addEventListener("click", regReset);
+  $("reg-data").addEventListener("input", regReset);
+
+  /* ================= Quadro interativo ================= */
+  const HDR = [0xAA, 0xAA, 0xD3, 0x91];
+  const fr = { orig: [], cur: [], sel: 6 };
+  function frBuild() {
+    const seq = Math.max(0, Math.min(255, Number($("fr-seq").value) | 0));
+    const payload = Array.from(new TextEncoder().encode($("fr-payload").value)).slice(0, 24);
+    const body = [seq, payload.length, ...payload];
+    const c = crc16(body);
+    fr.orig = [...HDR, ...body, c >> 8, c & 0xFF];
+    fr.cur = fr.orig.slice();
+    fr.sel = Math.min(fr.sel, fr.orig.length - 1);
+    frRender();
+  }
+  function field(i, n) {
+    if (i < 4) return ["var(--muted)", i < 2 ? "pre" : "sync"];
+    if (i === 4) return ["var(--blue)", "seq"];
+    if (i === 5) return ["var(--blue)", "len"];
+    if (i >= n - 2) return ["var(--amber)", i === n - 2 ? "crc hi" : "crc lo"];
+    return ["var(--accent)", "dado"];
+  }
+  function frRender() {
+    const n = fr.cur.length, box = $("fr-bytes");
+    box.replaceChildren();
+    fr.cur.forEach((b, i) => {
+      const [sw, tag] = field(i, n);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "byte" + (i === fr.sel ? " sel" : "") + (b !== fr.orig[i] ? " bad" : "") + (i >= 4 && i < n - 2 ? " body" : "");
+      btn.style.setProperty("--sw", sw);
+      btn.innerHTML = `<small>${i} · ${tag}</small>${hex2(b)}`;
+      btn.setAttribute("aria-pressed", i === fr.sel);
+      btn.addEventListener("click", () => { fr.sel = i; frRender(); });
+      box.append(btn);
+    });
+    // bits do byte selecionado
+    const bits = $("fr-bits");
+    bits.replaceChildren();
+    const lab = document.createElement("span");
+    lab.style.cssText = "align-self:center;font-size:14px;color:var(--muted);margin-right:6px";
+    lab.textContent = `frame[${fr.sel}] =`;
+    bits.append(lab);
+    for (let k = 7; k >= 0; k--) {
+      const v = (fr.cur[fr.sel] >> k) & 1, flipped = ((fr.cur[fr.sel] ^ fr.orig[fr.sel]) >> k) & 1;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "bitbtn" + (flipped ? " flip" : "");
+      btn.textContent = v;
+      const e = document.createElement("span"); e.className = "exp"; e.textContent = k;
+      btn.append(e);
+      btn.setAttribute("aria-label", `bit ${k} de frame[${fr.sel}], valor ${v}`);
+      btn.addEventListener("click", () => { fr.cur[fr.sel] ^= 1 << k; frRender(); });
+      bits.append(btn);
+    }
+    // verificações de B
+    const f = fr.cur;
+    const hdrOk = HDR.every((h, i) => f[i] === h);
+    const lenOk = f[5] === n - 8;
+    const recv = (f[n - 2] << 8) | f[n - 1];
+    const calc = crc16(f.slice(4, n - 2));
+    const crcOk = recv === calc;
+    const li = (ok, txt) => `<li><span class="${ok ? "ok" : "bad"}">${ok ? "✓" : "✗"}</span> ${txt}</li>`;
+    const all = hdrOk && lenOk && crcOk;
+    $("fr-verdict").innerHTML =
+      li(hdrOk, `Cabeçalho <span class="mono">${f.slice(0, 4).map(hex2).join(" ")}</span> ${hdrOk ? "=" : "≠"} AA AA D3 91`) +
+      li(lenOk, `Comprimento: frame[5] = ${f[5]} ${lenOk ? "=" : "≠"} ${n} − 8 = ${n - 8}`) +
+      li(crcOk, `CRC recebido <span class="mono">${hex4(recv)}</span> ${crcOk ? "=" : "≠"} CRC recalculado sobre frame[4..${n - 3}] <span class="mono">${hex4(calc)}</span>`) +
+      `<li><strong class="${all ? "ok" : "bad"}">${all ? "B aceita e entrega o payload." : "B descarta o quadro."}</strong>` +
+      (!hdrOk && lenOk && crcOk ? " Note: o CRC confere, porque o cabeçalho não é protegido por ele — a verificação separada é que rejeita." : "") + "</li>";
+  }
+  $("fr-seq").addEventListener("input", frBuild);
+  $("fr-payload").addEventListener("input", frBuild);
+  $("fr-reset").addEventListener("click", () => { fr.cur = fr.orig.slice(); frRender(); });
+
+  divUpdate();
+  regReset();
+  frBuild();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Tutorial OLED — CommsLab</title><link rel="stylesheet" href="style.css" /><style>
+body {font-size:16px;line-height:1.75} .lesson {max-width:960px;margin:auto;padding:32px 24px 80px} a {color:var(--accent)} h1 {font-size:clamp(28px,5vw,44px);line-height:1.2} h2 {font-size:25px;line-height:1.35} h3 {font-size:19px} section {margin:36px 0;padding-top:12px;border-top:1px solid var(--line);scroll-margin-top:20px} .eyebrow {color:var(--accent);font:13px var(--mono);letter-spacing:.1em} .lead {font-size:19px;color:var(--muted)} .callout {padding:16px 20px;background:var(--panel);border-left:3px solid var(--accent);margin:20px 0} pre {height:auto;max-height:none;min-width:0;margin:24px 0;padding:0;overflow:visible;white-space:pre-wrap;overflow-wrap:anywhere;background:transparent;border:0;border-radius:0;box-shadow:none;font:14px/1.7 var(--mono)} code {font-family:var(--mono);font-size:.9em} pre code {white-space:inherit;overflow-wrap:inherit} table {width:100%;border-collapse:collapse;font-size:14px} th,td {text-align:left;padding:12px;border-bottom:1px solid var(--line)} .table-scroll {overflow:auto} nav ol {columns:2;column-gap:32px} li {margin:8px 0} summary {cursor:pointer;color:var(--blue)} details {padding:14px;background:var(--panel);margin:16px 0} .checks label {display:block;margin:12px 0} .checks {display:block} :focus-visible {outline:3px solid var(--blue);outline-offset:4px} .lesson-top {display:flex;justify-content:space-between;gap:20px;align-items:center} @media(max-width:600px){nav ol {columns:1}.lesson {padding:24px 16px}th,td {padding:8px}} @media print {body {background:white;color:black} .lesson {max-width:none} a {color:inherit} button {display:none} .callout,details {background:#f3f3f3;color:black} pre {background:transparent;color:black} section {break-inside:avoid} details {display:block}}
+.student-code .keyword {color:#9dc8ff}.student-code .number {color:#f5ce7a}.student-code .string {color:#6ce7ba}.student-code .comment {color:#aebbc8}.student-code .todo {color:#ffd88e;font-weight:600} @media print {.student-code span {color:#222 !important}.student-code .todo {font-weight:700}}
+/* O roteiro usa fluxo de documento, independente dos painéis da bancada. */
+.lesson h1 {margin:16px 0 20px}
+.lesson h2 {display:block;margin:12px 0 20px}
+.lesson h3 {margin:28px 0 14px;line-height:1.4}
+.lesson p {margin:16px 0}
+.lesson .eyebrow {margin:8px 0 12px;line-height:1.5}
+.lesson header {margin:28px 0}
+.lesson nav {margin:28px 0}
+.lesson nav li {break-inside:avoid}
+.lesson pre code {display:block;font-size:inherit;line-height:inherit}
+.lesson table {font:14px/1.65 "DM Sans",system-ui,sans-serif}
+.lesson th,.lesson td {vertical-align:top;overflow-wrap:anywhere}
+.lesson .checks label {font-size:16px;line-height:1.65;color:var(--text)}
+.lesson-top {flex-wrap:wrap}
+</style></head><body><a class="skip-link" href="#tutorial">Ir para o tutorial</a><main class="lesson" id="tutorial"><div class="lesson-top"><a href="./">← Bancada de rádio</a><a href="crc-laboratorio.html">Roteiro CRC →</a></div><header><p class="eyebrow">COMMSLAB / TUTORIAL OLED</p><h1>Uma tela para cada placa</h1><p class="lead">Mostre o estado do transmissor e do receptor no display, a partir do seu próprio firmware.</p></header><div class="callout">Na bancada virtual, cada placa tem um OLED didático em modo texto: <strong>21 colunas × 8 linhas</strong>. A API abaixo usa JavaScript. A seção final mostra como adaptar a ideia a um OLED físico SSD1306 de 128 × 64 pixels em C++/Arduino. O simulador não emula pixels, I²C, fontes ou o controlador SSD1306.</div>
+<section><h2>1. Escreva sua primeira mensagem</h2><p>Acrescente estas chamadas ao <code>setup()</code> já existente da placa A. Não crie um segundo setup. Clique em <strong>Carregar A + B</strong>: a mensagem aparecerá no OLED de A. Repita em B, mudando o texto para identificar o receptor.</p><pre class="student-code"><code>oled.clear();
+oled.setCursor(<span class="number">0</span>, <span class="number">0</span>);
+oled.println(<span class="string">&quot;PLACA A / TX&quot;</span>);
+oled.println(<span class="string">&quot;Aguardando envio&quot;</span>);
+oled.display();</code></pre><p>Este teste de tela não precisa transmitir um quadro nem implementar CRC. Os TODOs do rádio continuam sendo sua atividade.</p></section>
+<section><h2>2. Entenda o buffer e o cursor</h2><table><caption>API do OLED virtual, disponível em setup() e loop()</caption><thead><tr><th>Comando</th><th>Efeito</th></tr></thead><tbody><tr><td><code>oled.clear()</code></td><td>Limpa o buffer e retorna o cursor a (0, 0).</td></tr><tr><td><code>oled.setCursor(coluna, linha)</code></td><td>Posiciona em coluna 0–20 e linha 0–7. Usa células de texto, não pixels.</td></tr><tr><td><code>oled.print(valor)</code></td><td>Escreve texto ou número a partir do cursor.</td></tr><tr><td><code>oled.println(valor)</code></td><td>Escreve e passa ao início da próxima linha.</td></tr><tr><td><code>oled.display()</code></td><td>Copia o buffer para a tela visível.</td></tr></tbody></table><p>Sem <code>display()</code>, as alterações ficam no buffer. O conteúdo visível persiste entre ciclos. Recarregar firmware ou limpar a sessão zera a tela; parar mantém a última imagem. A atualização chega à interface quando setup ou loop termina com sucesso.</p><p>Após 21 caracteres, a escrita continua na próxima linha; depois da oitava linha, o restante é cortado. Não há rolagem automática. Cada chamada print/println aceita até 1024 caracteres. Prefira textos curtos e sem acentos para facilitar a migração para fontes de hardware.</p></section>
+<section><h2>3. Atualize valores sem deixar restos</h2><p>Use uma função para redesenhar a tela inteira. Acrescente esta função ao programa e chame-a em seu próprio loop, depois de implementar o envio.</p><pre class="student-code"><code><span class="keyword">function</span> mostrarTX(numero, tamanho) {
+  oled.clear();
+  oled.println(<span class="string">&quot;TRANSMISSOR A&quot;</span>);
+  oled.print(<span class="string">&quot;Sequencia: &quot;</span>);
+  oled.println(numero);
+  oled.print(<span class="string">&quot;Bytes: &quot;</span>);
+  oled.println(tamanho);
+  oled.display();
+}
+<span class="comment">// No loop, use suas variaveis reais:</span>
+<span class="comment">// mostrarTX(sequence, frame.length);</span></code></pre><p>Limpar antes de redesenhar evita que um valor menor deixe caracteres antigos à direita. Para testar isso, escreva “1000” e depois “9” na mesma posição, primeiro sem limpar e depois limpando.</p></section>
+<section><h2>4. Mostre a decisão do receptor</h2><p>Depois de implementar a verificação do quadro, use o resultado real do seu código para atualizar o OLED de B. A tela apenas informa a decisão: não calcula nem valida o CRC.</p><pre class="student-code"><code><span class="keyword">function</span> mostrarRX(aceito, recebido, calculado) {
+  oled.clear();
+  oled.println(<span class="string">&quot;RECEPTOR B&quot;</span>);
+  oled.println(aceito ? <span class="string">&quot;ACEITO&quot;</span> : <span class="string">&quot;DESCARTADO&quot;</span>);
+  oled.println(<span class="string">&quot;RX: &quot;</span> + recebido.toString(<span class="number">16</span>).padStart(<span class="number">4</span>, <span class="string">&quot;0&quot;</span>));
+  oled.println(<span class="string">&quot;CRC: &quot;</span> + calculado.toString(<span class="number">16</span>).padStart(<span class="number">4</span>, <span class="string">&quot;0&quot;</span>));
+  oled.display();
+}
+<span class="comment">// Chame somente apos obter os valores no seu verificador.</span>
+<span class="comment">// mostrarRX(accepted, crcReceived, crcCalculated);</span></code></pre><p>No replay, o loop de A não executa: seu OLED permanece como estava, enquanto B pode atualizar sua tela. As telas são independentes; escrever em A não escreve em B.</p></section>
+<section><h2>5. Leve a ideia ao OLED físico</h2><p>Para um módulo <strong>SSD1306 I²C 128 × 64</strong>, instale as bibliotecas Adafruit SSD1306 e Adafruit GFX na IDE Arduino. Confirme o controlador, a alimentação, os pinos SDA/SCL e o endereço I²C do módulo da aula; outros controladores exigem outro driver. O exemplo assume endereço <code>0x3C</code>, barramento Wire padrão e ausência de pino de reset dedicado. Ajuste conforme sua placa.</p><pre class="student-code"><code>#include &lt;Wire.h&gt;
+#include &lt;Adafruit_GFX.h&gt;
+#include &lt;Adafruit_SSD1306.h&gt;
+
+Adafruit_SSD1306 display(<span class="number">128</span>, <span class="number">64</span>, &amp;Wire, -<span class="number">1</span>);
+
+<span class="keyword">void</span> setup() {
+  Serial.begin(<span class="number">115200</span>);
+  Wire.begin(); <span class="comment">// Ajuste os pinos conforme a placa do laboratorio.</span>
+  <span class="keyword">if</span> (!display.begin(SSD1306_SWITCHCAPVCC, <span class="number">0x3C</span>)) {
+    Serial.println(<span class="string">&quot;Falha ao inicializar OLED&quot;</span>);
+    while (<span class="keyword">true</span>) { delay(<span class="number">100</span>); }
+  }
+  display.clearDisplay();
+  display.setTextSize(<span class="number">1</span>);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(<span class="number">0</span>, <span class="number">0</span>); <span class="comment">// No hardware, coordenadas em PIXELS.</span>
+  display.println(<span class="string">&quot;PLACA A / TX&quot;</span>);
+  display.println(<span class="string">&quot;Aguardando envio&quot;</span>);
+  display.display();
+}
+
+<span class="keyword">void</span> loop() {
+  <span class="comment">// TODO: integrar a atualizacao da tela ao seu firmware de radio.</span>
+}</code></pre><p>Ao integrar, reúna a inicialização em um único setup e preserve a configuração do rádio. No hardware, <code>clearDisplay()</code> limpa o buffer e <code>display()</code> envia a imagem ao módulo. <code>setCursor(0, 16)</code> usa pixels, enquanto <code>oled.setCursor(0, 2)</code> no simulador usa a terceira linha de caracteres. Não copie as coordenadas diretamente.</p><p>Consulte a <a href="https://learn.adafruit.com/monochrome-oled-breakouts/arduino-library-and-examples">documentação oficial do driver SSD1306</a> e os exemplos da biblioteca para conferir a montagem e a configuração do seu módulo.</p></section>
+<section><h2>6. Sua atividade</h2><ol><li>Identifique cada placa e exiba seu estado inicial.</li><li>Em A, mostre a sequência e o tamanho do último quadro enviado.</li><li>Em B, mostre a decisão real de aceitação e os dois CRCs.</li><li>Compare um quadro correto e um quadro com erro deliberado.</li><li>Teste texto longo, atualização de um número maior para um menor e ausência de display(). Explique o resultado de cada teste.</li></ol><p>Entregue uma captura das duas telas e os trechos de firmware responsáveis por atualizá-las. O código do CRC e a decisão de entrega continuam sendo implementados por você.</p></section></main></body></html>
