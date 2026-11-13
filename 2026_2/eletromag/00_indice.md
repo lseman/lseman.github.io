@@ -29,6 +29,16 @@ Esta apostila desenvolve o eletromagnetismo clássico desde a linguagem matemát
 - A constante $\varepsilon_0$ representa a permissividade elétrica do vácuo e $\mu_0$ sua permeabilidade magnética.
 - Aproximações como fio infinito, solenoide longo e campo distante são identificadas no texto e devem ser usadas somente dentro do domínio declarado.
 
+## Apresentações
+
+- [Aula 7 — Eletrodinâmica e Equações de Maxwell](apresentacoes/maxwell.html): 88 slides com sequências visuais, deduções matemáticas passo a passo, perguntas de previsão e demonstrações interativas.
+- [Versão PDF da aula 7](apresentacoes/maxwell.pdf).
+
+## Listas de exercícios
+
+- [Capítulos 5 e 6 — 18 exercícios resolvidos e ilustrados](lista/magnetostatica_5_6_resolvida.html) · [PDF para impressão](lista/magnetostatica_5_6_resolvida.pdf).
+- [Lista complementar de magnetostática](lista/magnetostatica_exercicios.html).
+
 ## Ementa
 
 Consulte a [ementa consolidada](ementa.md) para a relação formal de conteúdos.

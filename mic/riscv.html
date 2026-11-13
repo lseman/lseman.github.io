@@ -591,6 +591,8 @@
     @media(prefers-reduced-motion:reduce) { .hero-pipeline>span,.hero-dot,.hero-layout>div:first-child>*,.chart-card { animation:none !important; } .reveal-ready .reveal { opacity:1; transform:none; transition:none; } #guide article:hover { transform:none; } }
   </style>
 
+  <link rel="stylesheet" href="architecture/schematic.css">
+  <script type="module" src="architecture/schematic.mjs"></script>
 </head>
 
 <body class="min-h-screen text-slate-800">
@@ -1154,6 +1156,7 @@ return;</textarea>
   <section id="trace" aria-labelledby="traceHeading">
     <header><p class="eyebrow">03 / TRACE ONE INSTRUCTION</p><h2 id="traceHeading">One instruction, stage by stage.</h2>
       <p>Pick an instruction type and step it through the datapath alone. Each stage lights only the wires and blocks this instruction uses in that cycle; earlier stages stay as a faint trail. The paths come from the simulator above, not from a separate drawing. Hover a bit field to see where it travels.</p></header>
+    <div id="tracePalette" class="instruction-palette" aria-label="Instruction examples"></div>
     <div class="trace-layout">
       <div class="trace-controls">
         <label for="tracePreset">Instruction type<select id="tracePreset"></select></label>
@@ -1180,6 +1183,19 @@ return;</textarea>
     </div>
     <div class="datapath-legend trace-legend" id="traceLegend"></div>
     <div id="traceDiagram" class="datapath-scroll" tabindex="0" role="region" aria-label="Scrollable instruction path diagram"></div>
+    <details class="signal-guide">
+      <summary>Read the drawing · instruction field → wire → destination</summary>
+      <p>Focus or hover a field below to locate its route in the schematic. Register indices are 5 bits; operand values and addresses are 32 bits. Control travels alongside the data through the pipeline registers.</p>
+      <div class="unit-scroll"><table class="unit-table"><caption>RV32I field routes · fields appear only in formats that use them</caption><thead><tr><th>Field</th><th>Instruction bits</th><th>Hardware route</th></tr></thead><tbody>
+        <tr><td><button type="button" data-route="control">opcode / funct</button></td><td>6:0 / 14:12 / 31:25</td><td>Decode → operation and mux controls; funct bits depend on the instruction format.</td></tr>
+        <tr><td><button type="button" data-route="rs1">rs1</button></td><td>19:15</td><td>Register read A → forwarding mux → ALU input A or branch comparator.</td></tr>
+        <tr><td><button type="button" data-route="rs2">rs2</button></td><td>24:20</td><td>Register read B → forwarding mux → ALU, branch comparator or store data.</td></tr>
+        <tr><td><button type="button" data-route="rd">rd</button></td><td>11:7</td><td>Destination index → pipeline registers → WB register write address. Writes to x0 are discarded.</td></tr>
+        <tr><td><button type="button" data-route="imm">immediate</button></td><td>Format-dependent</td><td>Reassemble and sign-extend → operand mux or target calculation. U-type fills the low 12 bits with zeros.</td></tr>
+      </tbody></table></div>
+      <p><strong>Read connections:</strong> a dot joins wires; an unmarked crossing does not. Solid wires carry data, dashed wires carry control, and gold bars latch the instruction’s state at the clock edge. Branch recovery and writeback return toward earlier stages on separate paths.</p>
+      <p class="trace-note">Presentation inspiration: <a href="https://godrock45.github.io/RV32I-Custom-DOOMED-CPU/DOOMED%20RV32I%20Datapath.html" target="_blank" rel="noopener">DOOMED RV32I Datapath ↗</a>. Signal names and behavior here follow this lab’s own model.</p>
+    </details>
     <div class="trace-details">
       <article><h3 id="traceStepsHeading">Inside this stage</h3><ol id="traceSteps"></ol></article>
       <article><h3>Control signals</h3><p>Decoded once in ID, then carried with the instruction. Highlighted rows are used by the displayed stage.</p><div class="unit-scroll"><table class="unit-table" id="traceSignals"></table></div></article>
@@ -2821,6 +2837,10 @@ ghdl --elab-run --std=08 tb_rv32_soc -gPROGRAM=program.hex</pre></article>
     }
 
     function update() {
+      $('#tracePalette').querySelectorAll('button').forEach(button => {
+        const [g, i] = button.dataset.preset.split(':').map(Number);
+        button.setAttribute('aria-pressed', String(PRESETS[g][1][i][0] === $('#traceAsm').value.trim()));
+      });
       $('#traceError').textContent = '';
       let instr;
       try { instr = parseSingleInstruction($('#traceAsm').value); }
@@ -3180,6 +3200,18 @@ ghdl --elab-run --std=08 tb_rv32_soc -gPROGRAM=program.hex</pre></article>
       $('#quizReveal').addEventListener('click', () => checkQuiz(true));
       renderDecode(); newQuiz();
       $('#tracePreset').innerHTML = PRESETS.map(([group, items], g) => `<optgroup label="${esc(group)}">${items.map(([asm, , , , label], i) => `<option value="${g}:${i}">${esc(label ?? asm)}</option>`).join('')}</optgroup>`).join('');
+      $('#tracePalette').innerHTML = PRESETS.slice(0, 6).map(([group, items], g) => `<div class="instruction-family"><strong>${esc(group)}</strong><div>${items.map(([asm, , , , label], i) => `<button type="button" data-preset="${g}:${i}" aria-pressed="false" title="${esc(label ?? asm)}">${esc(label ?? asm.split(' ')[0])}</button>`).join('')}</div></div>`).join('');
+      $('#tracePalette').addEventListener('click', event => {
+        const button = event.target.closest('[data-preset]');
+        if (button) { view = 0; applyPreset(button.dataset.preset); }
+      });
+      const guide = $('#trace .signal-guide');
+      const showRoute = event => { clearFocus(); const button = event.target.closest('[data-route]'); if (button) focusField(button.dataset.route); };
+      guide.addEventListener('mouseover', showRoute);
+      guide.addEventListener('focusin', showRoute);
+      guide.addEventListener('mouseleave', clearFocus);
+      guide.addEventListener('focusout', clearFocus);
+      guide.addEventListener('toggle', clearFocus);
       $('#traceLegend').innerHTML = TRACE_STAGES.map(s => `<span style="--sc:${STAGE_COLORS[s]}">${s} · ${STAGE_NAMES[s]}</span>`).join('') + '<span class="trace-legend-past" style="--sc:#6b7482">Faded: earlier stage</span><span class="trace-legend-ctrl">Dashed: control</span><span style="--sc:#94a3b8">Gray dotted: other instructions in flight</span><span style="--sc:#db2777">Pink: hovered bit field</span>';
       buildDiagram();
       $('#traceContext').innerHTML = Object.entries(TRACE_CONTEXTS).map(([key, ctx]) => `<option value="${key}">${esc(ctx.label)}</option>`).join('');
