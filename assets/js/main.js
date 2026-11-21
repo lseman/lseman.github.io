@@ -206,13 +206,13 @@ const EMPTY = document.getElementById("pub-empty");
 const FALLBACK_PUBLICATIONS = [
 	{
 		title:
-			"BALDES: A modern C++ Branch-and-Cut-and-Price solver for Vehicle Routing Problems",
+			"BALDES: A Rust branch-and-cut-and-price solver for vehicle routing problems",
 		year: 2024,
 		venue: "GitHub Repository",
 		url: "https://github.com/lseman/baldes",
 		authors: ["Laio O. Seman"],
 		abstract:
-			"Modern C++ implementation of state-of-the-art bucket graph labeling algorithms for vehicle routing problems.",
+			"Rust implementation of bucket-graph labeling algorithms for vehicle routing problems.",
 		citationCount: null,
 	},
 	{
@@ -334,15 +334,33 @@ function classifyPaper(p) {
 	return "or"; // default for academic OR/ML researcher
 }
 
+const paperQuery = document.getElementById("paper-query");
+const paperCount = document.getElementById("paper-count");
+const paperFilters = document.querySelectorAll(".pub-filter-btn");
+let indexedPapers = null;
+let paperArea = "all";
+
 function renderPublications(items) {
-	if (LIST) LIST.innerHTML = "";
-	if (!items || !items.length) {
-		if (EMPTY) EMPTY.classList.remove("hidden");
-		if (STATUS) STATUS.textContent = "No data";
-		return;
-	}
-	if (EMPTY) EMPTY.classList.add("hidden");
-	const top = items.sort((a, b) => (b.year || 0) - (a.year || 0)).slice(0, 10);
+	indexedPapers = [...(items || [])].sort((a, b) => (b.year || 0) - (a.year || 0));
+	showMatchingPapers();
+	buildAndRenderCloudFrom(indexedPapers);
+}
+
+function showMatchingPapers() {
+	if (!indexedPapers || !LIST) return;
+	const terms = paperQuery.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+	const matches = indexedPapers.filter((paper) => {
+		if (paperArea !== "all" && classifyPaper(paper) !== paperArea) return false;
+		const authors = (paper.authors || []).map(author => typeof author === "string" ? author : author.name);
+		const text = [paper.title, ...authors, paper.venue, paper.year].join(" ").toLowerCase();
+		return terms.every(term => text.includes(term));
+	});
+	const top = terms.length || paperArea !== "all" ? matches : matches.slice(0, 10);
+	LIST.replaceChildren();
+	EMPTY.classList.toggle("hidden", matches.length > 0);
+	paperCount.textContent = top.length < matches.length
+		? `Showing the latest ${top.length} of ${matches.length}. Search all indexed papers above.`
+		: `${matches.length} ${matches.length === 1 ? "result" : "results"}`;
 
 	if (LIST) {
 		top.forEach((p, idx) => {
@@ -412,7 +430,7 @@ function renderPublications(items) {
 		  : "";
 
 		const citationText = authors && year
-		  ? `${authors} (${year}). ${title}.${venue ? ` <em>${escapeHtml(venue)}</em>` : ``}`
+		  ? `${authors} (${year}). ${title}.${venue ? ` <em>${venue}</em>` : ``}`
 		  : "";
 
 		li.innerHTML = `
@@ -420,7 +438,7 @@ function renderPublications(items) {
           <div class="pub-gitlog-line">
             <span class="pub-hash mono">${hash}</span>${headMark ? `<span class="pub-head mono">${headMark}</span>` : ""}
             <span class="pub-title-main">${titleLine}</span>
-            <button class="cite-btn" title="Copy citation" aria-label="Copy citation" data-citation='${citationText.replace(/'/g, "\u2019")}'>📋 cite</button>
+            ${citationText ? `<button type="button" class="cite-btn" aria-expanded="false" aria-controls="citation-${idx}">Cite</button>` : ""}
           </div>
           <div class="pub-gitlog-meta">
             ${dateStr ? `<span class="pub-date mono">${dateStr}</span>` : ""}
@@ -428,7 +446,11 @@ function renderPublications(items) {
           </div>
           ${Array.isArray(p.authors) && p.authors.length ? `<p class="pub-authors">${p.authors.map((author) => escapeHtml(typeof author === "string" ? author : author.name || "")).join(", ")}</p>` : ""}
           ${abstract ? `<div class="pub-gitlog-desc">${abstract}${abstract.length >= 160 ? "…" : ""}</div>` : ""}
-          <div class="pub-citation-block hidden" aria-hidden="true"></div>
+          ${citationText ? `<div id="citation-${idx}" class="pub-citation-block" hidden>
+            <div class="citation-apa"><p>${citationText}</p></div>
+            <button type="button" class="cite-btn copy-citation">Copy citation</button>
+            <span role="status"></span>
+          </div>` : ""}
           <div class="pub-gitlog-footer">
             ${venue ? `<span class="pub-venue">${venue}</span>` : ""}
             ${citationCount ? `<span class="pub-cite-badge">${citationCount} citations</span>` : ""}
@@ -437,61 +459,44 @@ function renderPublications(items) {
         </div>
       `;
 
-		// Wire up cite button
-		const citeBtn = li.querySelector(".cite-btn");
-		const citationBlock = li.querySelector(".pub-citation-block");
-		if (citeBtn && citationText) {
-		  citeBtn.addEventListener("click", (e) => {
-		    e.stopPropagation();
-		    // Toggle citation visibility
-		    const isHidden = citationBlock.classList.toggle("hidden");
-		    citationBlock.setAttribute("aria-hidden", isHidden);
-		    if (!isHidden) {
-		      citationBlock.innerHTML = `<div class="citation-apa"><span class="t-comment">% APA</span><p>${citationText}</p></div>`;
-		    }
-		  });
-		}
-
-		// Copy citation to clipboard on double-click
-		if (citeBtn && citationText) {
-		  citeBtn.addEventListener("dblclick", (e) => {
-		    e.stopPropagation();
-		    navigator.clipboard.writeText(citationText).then(() => {
-		      const orig = citeBtn.textContent;
-		      citeBtn.textContent = "✓ copied";
-		      citeBtn.classList.add("copied");
-		      setTimeout(() => {
-		        citeBtn.textContent = orig;
-		        citeBtn.classList.remove("copied");
-		      }, 1500);
-		    }).catch(() => {});
-		  });
-		}
+			if (citationText) {
+				const toggle = li.querySelector("[aria-controls]");
+				const panel = li.querySelector(".pub-citation-block");
+				const feedback = panel.querySelector('[role="status"]');
+				toggle.addEventListener("click", () => {
+					panel.hidden = !panel.hidden;
+					toggle.setAttribute("aria-expanded", String(!panel.hidden));
+					feedback.textContent = "";
+				});
+				panel.querySelector(".copy-citation").addEventListener("click", async () => {
+					try {
+						await navigator.clipboard.writeText(panel.querySelector("p").textContent);
+						feedback.textContent = "Copied.";
+					} catch {
+						feedback.textContent = "Select the citation above and copy it manually.";
+					}
+				});
+			}
 			LIST.appendChild(li);
-			setTimeout(() => li.classList.add("show"), idx * 60);
+			li.classList.add("show");
 		});
 	}
 
-	if (STATUS) STATUS.textContent = "Loaded";
-	buildAndRenderCloudFrom(items);
 }
 
-/* Publication filter buttons */
-(function initPubFilters() {
-	const btns = document.querySelectorAll(".pub-filter-btn");
-	if (!btns.length) return;
-	btns.forEach((btn) => {
-		btn.addEventListener("click", () => {
-			btns.forEach((b) => b.classList.remove("active"));
-			btn.classList.add("active");
-			const filter = btn.dataset.filter;
-			document.querySelectorAll(".pub-card").forEach((card) => {
-				const show = filter === "all" || card.dataset.area === filter;
-				card.style.display = show ? "" : "none";
-			});
-		});
+paperQuery.addEventListener("input", showMatchingPapers);
+for (const button of paperFilters) {
+	button.setAttribute("aria-pressed", String(button.dataset.filter === paperArea));
+	button.addEventListener("click", () => {
+		paperArea = button.dataset.filter;
+		for (const filter of paperFilters) {
+			const selected = filter.dataset.filter === paperArea;
+			filter.classList.toggle("active", selected);
+			filter.setAttribute("aria-pressed", String(selected));
+		}
+		showMatchingPapers();
 	});
-})();
+}
 
 /* --------------------------------------------------------------------------
    GitHub repos
@@ -827,20 +832,7 @@ function buildAndRenderCloudFrom(items) {
 			renderPublications(items);
 		} catch (e2) {
 			console.log("Local file failed:", e2.message);
-			if (STATUS) {
-				const msg = document.createElement("div");
-				msg.className =
-					"text-sm bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4";
-				msg.innerHTML = `
-          <p class="font-semibold mb-2">Note: Using fallback publication data</p>
-          <p class="text-xs text-slate-600">The Semantic Scholar API is temporarily unavailable.
-          Create a <code class="bg-slate-100 px-1 rounded">publications.json</code> file to avoid this.
-          Data will be cached for 6 hours after the first successful load.</p>
-        `;
-				const container = document.querySelector("#publications .card");
-				if (container) container.insertBefore(msg, container.firstChild);
-				STATUS.textContent = "Using fallback data";
-			}
+			if (STATUS) STATUS.textContent = "Index offline · showing related software";
 			renderPublications(FALLBACK_PUBLICATIONS);
 		}
 	}
@@ -987,14 +979,12 @@ function buildAndRenderCloudFrom(items) {
 
 	if (!header || !tabs.length || !secs.length) return;
 
+	const sectionLinks = [...tabs, ...document.querySelectorAll(".mobile-ide-tab")];
 	const setActive = (id) => {
-		const current = document.querySelector('.ide-tab[aria-current="page"]');
-		const newActive = document.querySelector(
-			`.ide-tab[href="#${CSS.escape(id)}"]`,
-		);
-		if (current === newActive) return;
-		if (current) current.removeAttribute("aria-current");
-		if (newActive) newActive.setAttribute("aria-current", "page");
+		for (const link of sectionLinks) {
+			if (link.hash === "#" + id) link.setAttribute("aria-current", "location");
+			else link.removeAttribute("aria-current");
+		}
 	};
 
 	const pickMostVisible = () => {

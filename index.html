@@ -149,7 +149,7 @@
 
   <body>
     <!-- Retro terminal boot sequence -->
-    <div id="boot-overlay" aria-hidden="true">
+    <div id="boot-overlay" hidden aria-hidden="true">
       <div id="boot-terminal"></div>
     </div>
 
@@ -197,7 +197,7 @@
             <span class="ide-dot ide-dot--g"></span>
           </div>
           <nav class="ide-tabs" aria-label="Primary">
-            <a href="#top" class="ide-tab" aria-current="page" data-section="top"
+            <a href="#top" class="ide-tab" aria-current="location" data-section="top"
               >≡ README.md</a
             >
             <a href="#about" class="ide-tab" data-section="about">≡ about.md</a>
@@ -240,7 +240,7 @@
         <!-- Mobile nav -->
         <div id="mobile-nav">
           <nav class="mobile-tab-grid" aria-label="Mobile navigation">
-            <a href="#top" class="mobile-ide-tab">≡ README.md</a>
+            <a href="#top" class="mobile-ide-tab" aria-current="location">≡ README.md</a>
             <a href="#about" class="mobile-ide-tab">≡ about.md</a>
             <a href="#interests" class="mobile-ide-tab">≡ research.log</a>
             <a href="#projects" class="mobile-ide-tab">≡ software.json</a>
@@ -798,11 +798,11 @@
               <a
                 href="https://github.com/lseman/baldes"
                 class="jcard reveal"
-                data-search="baldes vehicle routing vrp cvrp vrptw bucket graph labeling algorithm branch cut price operations research c++ optimization"
+                data-search="baldes vehicle routing vrp cvrp vrptw bucket graph labeling algorithm branch cut price operations research rust optimization"
                 target="_blank"
                 rel="noreferrer"
               >
-                <div class="mach-badge mb-2"><span class="blink-dot"></span> C++17 · VRP</div>
+                <div class="mach-badge mb-2"><span class="blink-dot"></span> Rust · VRP</div>
                 <div class="jcard-inner">
                   <p><span class="jbrace">{</span></p>
                   <p class="jcard-field">
@@ -815,14 +815,14 @@
                     <span class="j-key">"what"</span
                     ><span class="j-punc"> : </span
                     ><span class="j-str"
-                      >"Modern C++ bucket-graph labeling for vehicle routing
+                      >"Bucket-graph labeling in Rust for vehicle routing
                       problems"</span
                     ><span class="j-punc"> ,</span>
                   </p>
                   <p class="jcard-field">
                     <span class="j-key">"stack"</span
                     ><span class="j-punc"> : [</span>
-                    <span class="j-val">"C++"</span
+                    <span class="j-val">"Rust"</span
                     ><span class="j-punc"> , </span
                     ><span class="j-val">"Vehicle Routing"</span
                     ><span class="j-punc"> , </span
@@ -1049,12 +1049,16 @@
                   Research in optimization, learning systems, and forecasting.
                 </p>
               </div>
-              <div class="mach-badge mb-3"><span class="blink-dot"></span> auto-indexed from Google Scholar</div>
+              <div class="mach-badge mb-3"><span class="blink-dot"></span> publication index</div>
               <div class="section-side">
                 <span id="pub-status" class="status-pill">Loading…</span>
               </div>
             </div>
 
+            <label class="paper-search" for="paper-query">
+              <span><span aria-hidden="true">$ </span>Search papers</span>
+              <input type="search" id="paper-query" placeholder="Title, author, venue, or year" aria-controls="pub-list" />
+            </label>
             <div class="pub-filter-row reveal">
               <button class="pub-filter-btn active" data-filter="all">
                 All
@@ -1067,12 +1071,13 @@
             <div class="grid xl:grid-cols-[1fr_320px] gap-5 items-start">
               <div>
                 <p class="publication-guide">Browse recent work below, or visit <a href="https://scholar.google.com.br/citations?user=PFcaR_MAAAAJ" target="_blank" rel="noreferrer">Google Scholar for my full publication record ↗</a>.</p>
+                <p id="paper-count" class="paper-count" role="status"></p>
                 <ol id="pub-list" class="pub-stack"></ol>
                 <p
                   id="pub-empty"
                   class="text-center text-slate-500 py-8 hidden"
                 >
-                  No items found.
+                  No matching papers. Try another search or research area.
                 </p>
               </div>
 
@@ -1370,12 +1375,12 @@
       const TERM = document.getElementById('boot-terminal');
       if (!BOOT || !TERM) return;
 
-      // Respect reduced motion — skip animation entirely
-      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (prefersReduced) {
-        BOOT.style.display = 'none';
-        return;
-      }
+      if (location.hash || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      try {
+        if (sessionStorage.getItem('portfolio-boot-seen')) return;
+        sessionStorage.setItem('portfolio-boot-seen', '1');
+      } catch { /* The intro also works when storage is unavailable. */ }
+      BOOT.hidden = false;
 
       const lines = [
         { text: '[  OK  ] Spacelab UFSC workstation initialized', cls: 'boot-sys' },
@@ -1401,7 +1406,7 @@
       ];
 
       let i = 0;
-      const speed = prefersReduced ? 0 : 35; // ms per line
+      const speed = 35; // ms per line
 
       function typeLine() {
         if (i >= lines.length) {
@@ -1412,7 +1417,7 @@
               BOOT.classList.add('boot-done');
               BOOT.setAttribute('aria-hidden', 'true');
             }, 600);
-          }, prefersReduced ? 100 : 400);
+          }, 400);
           return;
         }
         const line = lines[i];
